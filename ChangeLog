@@ -1,3 +1,26 @@
+2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get trashcan working.
+
+	* src/manage_sql.c (where_owned): Add check for task, because the trash
+	is in the regular table.
+	(count): Add trash_columns arg for trash case, because the owner column
+	accesses the table by name, so using the normal column causes an error.
+	Update all callers.  Also add checks for task, as above.
+	(ALERT_ITERATOR_TRASH_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Correct table name.
+	(trash_report_format_writable): Use trash specific function to get
+	global state.
+	(trash_report_format_global): New function.
+	(PERMISSION_ITERATOR_TRASH_COLUMNS): New define.
+	(TAG_ITERATOR_COLUMNS): Line up \.
+	(TAG_ITERATOR_TRASH_COLUMNS): Correct table name.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Call trash specific function
+	to get global state in trash case in GET_REPORT_FORMATS.
+
 2013-06-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (CPE_INFO_ITERATOR_FILTER_COLUMNS)

@@ -3814,7 +3814,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                                       = '%s'))))"
                             "  AND (%s))",
                             type,
-                            get->trash ? "_trash" : "",
+                            get->trash && strcmp (type, "task") ? "_trash" : "",
                             type,
                             get->trash ? 1 : 0,
                             current_credentials.uuid,
@@ -4096,10 +4096,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
  * @return Total number of resources in filtered set.
  */
 static int
-count (const char *type, const get_data_t *get,
-       const char *iterator_columns, const char **extra_columns,
-       int distinct, const char *extra_tables, const char *extra_where,
-       int owned)
+count (const char *type, const get_data_t *get, const char *iterator_columns,
+       const char *trash_columns, const char **extra_columns, int distinct,
+       const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
   gchar *clause, *owned_clause;
@@ -4131,14 +4130,18 @@ count (const char *type, const get_data_t *get,
     g_warning ("%s: get->actions given", __FUNCTION__);
 
   ret = sql_int (0, 0,
-                 "SELECT count (%s%ss.ROWID), %s"
-                 " FROM %ss%s"
+                 "SELECT count (%s%ss%s.ROWID), %s"
+                 " FROM %ss%s%s"
                  " WHERE %s"
                  "%s%s%s;",
                  distinct ? "DISTINCT " : "",
                  type,
-                 iterator_columns,
+                 get->trash && strcmp (type, "task") ? "_trash" : "",
+                 get->trash
+                  ? (trash_columns ? trash_columns : iterator_columns)
+                  : iterator_columns,
                  type,
+                 get->trash && strcmp (type, "task") ? "_trash" : "",
                  extra_tables ? extra_tables : "",
                  owned_clause,
                  clause ? " AND " : "",
@@ -6102,7 +6105,7 @@ alert_method (alert_t alert)
  * @brief Alert iterator columns for trash case.
  */
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter,"         \
+  GET_ITERATOR_COLUMNS (alerts_trash) ", event, condition, method, filter,"   \
   " filter_location"
 
 /**
@@ -6116,8 +6119,8 @@ int
 alert_count (const get_data_t *get)
 {
   static const char *extra_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
-  return count ("alert", get, ALERT_ITERATOR_COLUMNS, extra_columns, 0, 0,
-                0, TRUE);
+  return count ("alert", get, ALERT_ITERATOR_COLUMNS,
+                ALERT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -11433,7 +11436,7 @@ resource_count (const char *type, const get_data_t *get)
   count_get.actions = "g";
 
   return count (get->subtype ? get->subtype : type,
-                &count_get, "1", NULL, 0, NULL,
+                &count_get, "1", "1", NULL, 0, NULL,
                 strcmp (type, "task")
                  ? NULL
                  : (get->id
@@ -11497,6 +11500,9 @@ task_count (const get_data_t *get)
                 overrides
                  ? TASK_ITERATOR_COLUMNS ("1")
                  : TASK_ITERATOR_COLUMNS ("0"),
+                overrides
+                 ? TASK_ITERATOR_TRASH_COLUMNS ("1")
+                 : TASK_ITERATOR_TRASH_COLUMNS ("0"),
                 extra_columns, 0, NULL,
                 (get->id
                  && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
@@ -26325,8 +26331,8 @@ int
 target_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  return count ("target", get, TARGET_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("target", get, TARGET_ITERATOR_COLUMNS,
+                TARGET_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -28135,8 +28141,8 @@ int
 config_count (const get_data_t *get)
 {
   static const char *extra_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
-  return count ("config", get, CONFIG_ITERATOR_COLUMNS, extra_columns, 0, 0,
-                0, TRUE);
+  return count ("config", get, CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS,
+                extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -29477,7 +29483,7 @@ int
 nvt_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("nvt", get, NVT_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
+  return count ("nvt", get, NVT_ITERATOR_COLUMNS, NULL, extra_columns, 0, 0, 0,
                 FALSE);
 }
 
@@ -32351,7 +32357,8 @@ lsc_credential_count (const get_data_t *get)
 {
   static const char *extra_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
   return count ("lsc_credential", get, LSC_CREDENTIAL_ITERATOR_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+                LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -34170,8 +34177,8 @@ int
 agent_count (const get_data_t *get)
 {
   static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  return count ("agent", get, AGENT_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("agent", get, AGENT_ITERATOR_COLUMNS,
+                AGENT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -34559,7 +34566,8 @@ modify_note (note_t note, const char *active, const char* text,
   " iso_time (notes_trash.modification_time),"                             \
   " notes_trash.creation_time AS created,"                                 \
   " notes_trash.modification_time AS modified,"                            \
-  " (SELECT name FROM users WHERE users.ROWID = notes.owner) AS _owner,"   \
+  " (SELECT name FROM users WHERE users.ROWID = notes_trash.owner)"        \
+  " AS _owner,"                                                            \
   /* Columns specific to notes_trash. */                                   \
   " notes_trash.nvt AS oid, notes_trash.text,"                             \
   " notes_trash.hosts, notes_trash.port, notes_trash.threat,"              \
@@ -34670,6 +34678,7 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
   ret = count ("note",
                get,
                NOTE_ITERATOR_COLUMNS,
+               NOTE_ITERATOR_TRASH_COLUMNS,
                filter_columns,
                task || nvt,
                NULL,
@@ -35338,7 +35347,8 @@ modify_override (override_t override, const char *active, const char* text,
   " iso_time (overrides_trash.modification_time),"                             \
   " overrides_trash.creation_time AS created,"                                 \
   " overrides_trash.modification_time AS modified,"                            \
-  " (SELECT name FROM users WHERE users.ROWID = overrides.owner) AS _owner,"   \
+  " (SELECT name FROM users WHERE users.ROWID = overrides_trash.owner)"        \
+  " AS _owner,"                                                                \
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
   " overrides_trash.hosts, overrides_trash.port, overrides_trash.threat,"      \
@@ -35449,6 +35459,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
   ret = count ("override",
                get,
                OVERRIDE_ITERATOR_COLUMNS,
+               OVERRIDE_ITERATOR_TRASH_COLUMNS,
                filter_columns,
                task || nvt,
                NULL,
@@ -36220,8 +36231,8 @@ int
 schedule_count (const get_data_t *get)
 {
   static const char *extra_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
-  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS, extra_columns, 0, 0,
-                0, TRUE);
+  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS,
+                SCHEDULE_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -38478,7 +38489,7 @@ int
 trash_report_format_writable (report_format_t report_format)
 {
   return (trash_report_format_in_use (report_format) == 0
-          && report_format_global (report_format) == 0);
+          && trash_report_format_global (report_format) == 0);
 }
 
 /**
@@ -38525,6 +38536,22 @@ report_format_global (report_format_t report_format)
 {
   return sql_int (0, 0,
                   "SELECT owner is NULL FROM report_formats"
+                  " WHERE ROWID = %llu;",
+                  report_format);
+}
+
+/**
+ * @brief Return whether a report format is global.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return 1 if global, else 0.
+ */
+int
+trash_report_format_global (report_format_t report_format)
+{
+  return sql_int (0, 0,
+                  "SELECT owner is NULL FROM report_formats_trash"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
@@ -38895,7 +38922,8 @@ report_format_count (const get_data_t *get)
 {
   static const char *extra_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
   return count ("report_format", get, REPORT_FORMAT_ITERATOR_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+                REPORT_FORMAT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -39692,8 +39720,8 @@ int
 slave_count (const get_data_t *get)
 {
   static const char *extra_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
-  return count ("slave", get, SLAVE_ITERATOR_COLUMNS, extra_columns, 0, 0,
-                0, TRUE);
+  return count ("slave", get, SLAVE_ITERATOR_COLUMNS,
+                SLAVE_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -40479,8 +40507,8 @@ int
 group_count (const get_data_t *get)
 {
   static const char *extra_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  return count ("group", get, GROUP_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("group", get, GROUP_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -40885,6 +40913,33 @@ trash_permission_writable (permission_t permission)
   "  END) AS _subject"
 
 /**
+ * @brief Permission iterator columns.
+ */
+#define PERMISSION_ITERATOR_TRASH_COLUMNS                                   \
+  GET_ITERATOR_COLUMNS (permissions_trash) ", resource_type AS type,"       \
+  " resource_uuid,"                                                         \
+  " (CASE"                                                                  \
+  "  WHEN resource_type == '' OR resource_type IS NULL"                     \
+  "  THEN ''"                                                               \
+  "  ELSE resource_name (resource_type, resource_uuid)"                     \
+  "  END) AS _resource,"                                                    \
+  " subject_type,"                                                          \
+  " (CASE"                                                                  \
+  "  WHEN subject_type = 'user'"                                            \
+  "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
+  "  WHEN subject_type = 'group'"                                           \
+  "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
+  "  END) AS subject_uuid,"                                                 \
+  " (CASE"                                                                  \
+  "  WHEN subject_type = 'user'"                                            \
+  "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
+  "  WHEN subject_type = 'group'"                                           \
+  "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
+  "  END) AS _subject"
+
+/**
  * @brief Count number of permissions.
  *
  * @param[in]  get  GET params.
@@ -40895,8 +40950,9 @@ int
 permission_count (const get_data_t *get)
 {
   static const char *extra_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
-  return count ("permission", get, PERMISSION_ITERATOR_COLUMNS, extra_columns,
-                0, 0, 0, TRUE);
+  return count ("permission", get, PERMISSION_ITERATOR_COLUMNS,
+                PERMISSION_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -40919,7 +40975,7 @@ init_permission_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns. */
                             PERMISSION_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
-                            NULL,
+                            PERMISSION_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
                             NULL,
@@ -42489,7 +42545,7 @@ port_list_count (const get_data_t *get)
 {
   static const char *extra_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
   return count ("port_list", get, PORT_LIST_ITERATOR_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+                PORT_LIST_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -43043,8 +43099,8 @@ int
 role_count (const get_data_t *get)
 {
   static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  return count ("role", get, ROLE_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("role", get, ROLE_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -43556,8 +43612,8 @@ int
 filter_count (const get_data_t *get)
 {
   static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  return count ("filter", get, FILTER_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("filter", get, FILTER_ITERATOR_COLUMNS,
+                FILTER_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -45690,8 +45746,8 @@ int
 cpe_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                FALSE);
+  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, FALSE);
 }
 
 /**
@@ -45755,8 +45811,8 @@ int
 cve_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("cve", get, CVE_INFO_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                FALSE);
+  return count ("cve", get, CVE_INFO_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, FALSE);
 }
 
 /**
@@ -46021,8 +46077,8 @@ int
 ovaldef_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, extra_columns,
-                0, 0, 0, FALSE);
+  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, NULL,
+                extra_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -46191,7 +46247,7 @@ dfn_cert_adv_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] =
                       DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("dfn_cert_adv", get, DFN_CERT_ADV_INFO_ITERATOR_COLUMNS,
+  return count ("dfn_cert_adv", get, DFN_CERT_ADV_INFO_ITERATOR_COLUMNS, NULL,
                 extra_columns, 0, 0, 0, FALSE);
 }
 
@@ -47367,8 +47423,8 @@ int
 user_count (const get_data_t *get)
 {
   static const char *extra_columns[] = USER_ITERATOR_FILTER_COLUMNS;
-  return count ("user", get, USER_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("user", get, USER_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -47925,7 +47981,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  * @brief Tag iterator columns.
  */
 #define TAG_ITERATOR_COLUMNS                                    \
-  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"        \
+  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"       \
   "active, value,"                                              \
   "NOT resource_exists (attach_type, attach_id) AS orphaned,"   \
   "resource_name(attach_type, attach_id) AS attach_name"
@@ -47933,8 +47989,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 /**
  * @brief Tag iterator trash columns.
  */
-#define TAG_ITERATOR_TRASH_COLUMNS                          \
-  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"    \
+#define TAG_ITERATOR_TRASH_COLUMNS                                 \
+  GET_ITERATOR_COLUMNS (tags_trash) ", attach_type, attach_id,"    \
   "active, value"
 
 /**
@@ -47988,8 +48044,8 @@ int
 tag_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
-  return count ("tag", get, TAG_ITERATOR_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  return count ("tag", get, TAG_ITERATOR_COLUMNS, TAG_ITERATOR_TRASH_COLUMNS,
+                extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -48084,8 +48140,8 @@ int
 tag_name_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
-  return count ("tag", get, TAG_NAME_ITERATOR_COLUMNS, extra_columns, 1, 0, 0,
-                TRUE);
+  return count ("tag", get, TAG_NAME_ITERATOR_COLUMNS, NULL, extra_columns,
+                1, 0, 0, TRUE);
 }
 
 /**
