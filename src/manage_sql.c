@@ -18417,34 +18417,6 @@ set_report_slave_task_uuid (report_t report, const char *uuid)
 }
 
 /**
- * @brief Set a report parameter.
- *
- * @param[in]  report     The report.
- * @param[in]  parameter  The name of the parameter (in any case): COMMENT.
- * @param[in]  value      The value of the parameter.
- *
- * @return 0 success, -2 parameter name error,
- *         -3 failed to write parameter to disk,
- *         -4 username missing from current_credentials.
- */
-int
-set_report_parameter (report_t report, const char* parameter, const char* value)
-{
-  tracef ("   set_report_parameter %llu %s\n", report, parameter);
-  if (strcasecmp ("COMMENT", parameter) == 0)
-    {
-      gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE reports SET comment = '%s' WHERE ROWID = %llu;",
-           value,
-           report);
-      g_free (quote);
-    }
-  else
-    return -2;
-  return 0;
-}
-
-/**
  * @brief Prepare a partial report for restarting the scan from the beginning.
  *
  * @param[in]  report  The report.

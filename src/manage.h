@@ -955,9 +955,6 @@ modify_report (const char*, const char*);
 int
 delete_report (const char *, int);
 
-int
-set_report_parameter (report_t, const char*, const char*);
-
 void
 init_report_iterator (iterator_t*, task_t, report_t);
 

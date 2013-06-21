@@ -1,5 +1,10 @@
 2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c, src/manage.h (set_report_parameter): Remove unused
+	function.
+
+2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (modify_report): New function.
 
 	* src/manage.h: Add modify_report header.
