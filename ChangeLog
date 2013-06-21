@@ -1,5 +1,9 @@
 2013-06-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (copy_tag): Remove redundant null pointer check.
+
+2013-06-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (info_name_count): Quote name for SQL query.
 	(copy_tag): Free name and ID correctly when failing to find tag.
 	(init_resource_tag_iterator, resource_tag_count): Quote resource ID

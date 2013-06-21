@@ -47734,8 +47734,7 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
       == 0)
     {
       sql ("ROLLBACK;");
-      if (quoted_name)
-        g_free (quoted_name);
+      g_free (quoted_name);
       g_free (quoted_uuid);
       return 2;
     }
