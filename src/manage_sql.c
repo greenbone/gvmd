@@ -18241,6 +18241,65 @@ delete_report_internal (report_t report)
 }
 
 /**
+ * @brief Modify a report.
+ *
+ * @param[in]   report_id       UUID of report.
+ * @param[in]   comment         Comment on report.
+ *
+ * @return 0 success, 1 failed to find report, 2 report_id required, 3 comment
+ * required, 99 permission denied, -1 internal error.
+ */
+int
+modify_report (const char *report_id, const char *comment)
+{
+  gchar *quoted_comment;
+  report_t report;
+
+  if (report_id == NULL)
+    return 2;
+
+  if (comment == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  if (user_may ("modify_report") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  report = 0;
+  if (find_report (report_id, &report))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE reports SET"
+       " comment = '%s'"
+       " WHERE ROWID = %llu;",
+       quoted_comment,
+       report);
+
+  g_free (quoted_comment);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Delete a report.
  *
  * @param[in]  report_id  UUID of report.

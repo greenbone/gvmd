@@ -1,3 +1,12 @@
+2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_report): New function.
+
+	* src/manage.h: Add modify_report header.
+
+	* src/manage_sql.c (omp_xml_handle_end_element): Convert MODIFY_REPORT
+	case to use modify_report and new consistent style for modify commands.
+
 2013-06-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (NVT_ITERATOR_COLUMNS)

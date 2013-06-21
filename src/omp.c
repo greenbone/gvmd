@@ -21430,68 +21430,63 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT:
         {
-          report_t report = 0;
+          assert (strcasecmp ("MODIFY_REPORT", element_name) == 0);
 
-          if (user_may ("modify_report") == 0)
+          switch (modify_report
+                   (modify_report_data->report_id,
+                    modify_report_data->comment))
             {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_report",
-                                  "Permission denied"));
-              modify_report_data_reset (modify_report_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report %s has been modified",
+                       modify_report_data->report_id);
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_report",
+                                               "report",
+                                               modify_report_data->report_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_report",
+                                    "MODIFY_report requires a report_id"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX
+                  ("modify_report",
+                   "MODIFY_REPORT requires a COMMENT element"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_report",
+                                    "Permission denied"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
+                g_log ("event report", G_LOG_LEVEL_MESSAGE,
+                       "Report could not be modified");
+                break;
             }
 
-          if (modify_report_data->report_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report",
-                                "MODIFY_REPORT requires a report_id attribute"));
-          else if (modify_report_data->comment == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report",
-                                "MODIFY_REPORT requires a COMMENT element"));
-          else if (find_report (modify_report_data->report_id, &report))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_report"));
-          else if (report == 0)
-            {
-              if (send_find_error_to_client ("modify_report",
-                                             "report",
-                                             modify_report_data->report_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
-          else
-            {
-              int ret = set_report_parameter
-                         (report,
-                          "COMMENT",
-                          modify_report_data->comment);
-              switch (ret)
-                {
-                  case 0:
-                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
-                    break;
-                  case -2: /* Parameter name error. */
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_ERROR_SYNTAX ("modify_report",
-                                        "Bogus MODIFY_REPORT parameter"));
-                    break;
-                  case -3: /* Failed to write to disk. */
-                  default:
-                    SEND_TO_CLIENT_OR_FAIL
-                     (XML_INTERNAL_ERROR ("modify_report"));
-                    break;
-                }
-            }
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report"));
+          modify_report_data_reset (modify_report_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
         }
-        modify_report_data_reset (modify_report_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
       CLOSE (CLIENT_MODIFY_REPORT, COMMENT);
 
       case CLIENT_MODIFY_REPORT_FORMAT:

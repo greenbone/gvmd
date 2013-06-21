@@ -950,6 +950,9 @@ int
 report_timestamp (const char*, gchar**);
 
 int
+modify_report (const char*, const char*);
+
+int
 delete_report (const char *, int);
 
 int
