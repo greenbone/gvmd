@@ -4163,15 +4163,21 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 int
 info_name_count (const char *type, const char *name)
 {
+  gchar *quoted_name;
+  int count;
   assert(type);
   assert(name);
 
-  return sql_int (0, 0,
-                  "SELECT COUNT(ROWID)"
-                  " FROM %ss"
-                  " WHERE name = '%s';",
-                  type,
-                  name);
+  quoted_name = sql_quote (name);
+  count =  sql_int (0, 0,
+                    "SELECT COUNT(ROWID)"
+                    " FROM %ss"
+                    " WHERE name = '%s';",
+                    type,
+                    quoted_name);
+  g_free (quoted_name);
+
+  return count;
 }
 
 
@@ -47728,7 +47734,9 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
       == 0)
     {
       sql ("ROLLBACK;");
-      g_free (quoted_name);
+      if (quoted_name)
+        g_free (quoted_name);
+      g_free (quoted_uuid);
       return 2;
     }
 
@@ -48285,9 +48293,12 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                             const char* sort_field,
                             int ascending)
 {
+  gchar *quoted_id;
+
   assert (type);
   assert (id);
 
+  quoted_id = sql_quote (id);
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, value, comment, active"
                  " FROM tags"
@@ -48296,10 +48307,11 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  "   %s"
                  " ORDER BY %s %s;",
                  type,
-                 id,
+                 quoted_id,
                  active_only ? "AND active=1": "",
                  sort_field ? sort_field : "active DESC, name",
                  ascending ? "ASC" : "DESC");
+  g_free (quoted_id);
 
   return 0;
 }
@@ -48360,9 +48372,12 @@ int
 resource_tag_count (const char* type, const char* id, int active_only)
 {
   int ret;
+  gchar *quoted_id;
+
   assert (type);
   assert (id);
 
+  quoted_id = sql_quote (id);
   ret = sql_int (0, 0,
                  "SELECT count (ROWID)"
                  " FROM tags"
@@ -48370,8 +48385,9 @@ resource_tag_count (const char* type, const char* id, int active_only)
                  "   AND attach_id = '%s'"
                  "   %s;",
                  type,
-                 id,
+                 quoted_id,
                  active_only ? "AND active=1": "");
+  g_free (quoted_id);
 
   return ret;
 }

@@ -1,3 +1,10 @@
+2013-06-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (info_name_count): Quote name for SQL query.
+	(copy_tag): Free name and ID correctly when failing to find tag.
+	(init_resource_tag_iterator, resource_tag_count): Quote resource ID
+	for SQL query.
+
 2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c, src/manage.h: Rename manage_set_setting to
