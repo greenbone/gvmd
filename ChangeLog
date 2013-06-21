@@ -1,3 +1,10 @@
+2013-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Always use AND for the special
+	owner=any keyword, because this keyword is for the ownership clause
+	and using OR makes everything match the filter.  Also add the NOT case,
+	for completeness.
+
 2013-06-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (copy_tag): Remove redundant null pointer check.

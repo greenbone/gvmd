@@ -2905,9 +2905,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
           else
             g_string_append_printf (clause,
-                                    "%s(1",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not));
+                                    "%s (%i",
+                                    first_keyword ? "" : "AND",
+                                    last_was_not ? 0 : 1);
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
