@@ -2611,9 +2611,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " ASC",
                                         keyword->string);
               else if ((strcmp (type, "note")
-                   && strcmp (type, "override"))
-                  || (strcmp (keyword->string, "nvt")
-                      && strcmp (keyword->string, "name")))
+                        && strcmp (type, "override"))
+                       || (strcmp (keyword->string, "nvt")
+                           && strcmp (keyword->string, "name")))
                 g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE ASC",
                                         keyword->string);
               else
@@ -2652,9 +2652,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " DESC",
                                         keyword->string);
               else if ((strcmp (type, "note")
-                   && strcmp (type, "override"))
-                  || (strcmp (keyword->string, "nvt")
-                      && strcmp (keyword->string, "name")))
+                        && strcmp (type, "override"))
+                       || (strcmp (keyword->string, "nvt")
+                           && strcmp (keyword->string, "name")))
                 g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE DESC",
                                         keyword->string);
               else
@@ -21417,10 +21417,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (delta == 0)
     {
-      if(print_report_port_xml (report, out, first_result, max_results,
-                                   sort_order, sort_field, levels, autofp,
-                                   search_phrase, search_phrase_exact,
-                                   min_cvss_base, apply_overrides))
+      if (print_report_port_xml (report, out, first_result, max_results,
+                                 sort_order, sort_field, levels, autofp,
+                                 search_phrase, search_phrase_exact,
+                                 min_cvss_base, apply_overrides))
         return -1;
     }
 
