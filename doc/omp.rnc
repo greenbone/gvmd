@@ -6882,6 +6882,7 @@ get_info_response_info_allinfo
      {
        get_info_response_info_allinfo_type
        & get_info_response_info_allinfo_extra
+       & get_info_response_info_allinfo_severity
      }
 
 # Type of SecInfo entry..
@@ -6894,6 +6895,13 @@ get_info_response_info_allinfo_type
 # Extra information from the entry like title or description..
 get_info_response_info_allinfo_extra
  = element extra
+     {
+       text
+     }
+
+# Severity rating (CVSS score) of the entry..
+get_info_response_info_allinfo_severity
+ = element severity
      {
        text
      }

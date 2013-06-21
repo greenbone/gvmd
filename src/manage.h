@@ -2895,6 +2895,9 @@ all_info_iterator_type (iterator_t*);
 const char*
 all_info_iterator_extra (iterator_t*);
 
+const char*
+all_info_iterator_severity (iterator_t*);
+
 
 /* Settings. */
 

@@ -45705,26 +45705,27 @@ manage_set_setting (const gchar *uuid, const gchar *name,
  * @brief Filter columns for All SecInfo iterator.
  */
 #define ALL_INFO_ITERATOR_FILTER_COLUMNS                \
- { GET_ITERATOR_FILTER_COLUMNS, "type", "extra", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "type", "extra", "severity", NULL }
 
 /**
  * @brief All SecInfo iterator columns.
  */
 #define ALL_INFO_UNION_COLUMNS                                                 \
   "(SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, 'cve' AS type," \
-  "        description as extra"                                               \
-  " FROM cves"                                                                 \
+  "                  description as extra, cvss as severity"                   \
+  "          FROM cves"                                                        \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
-  "                  'cpe' AS type, title as extra"                            \
+  "                  'cpe' AS type, title as extra, max_cvss as severity"      \
   "           FROM cpes"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
-  "                  'nvt' AS type, summary as extra"                          \
+  "                  'nvt' AS type, summary as extra, cvss_base as severity"   \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
-  "                  'dfn_cert_adv' AS type, title as extra"                   \
+  "                  'dfn_cert_adv' AS type, title as extra,"                  \
+  "                  max_cvss as severity"                                     \
   "           FROM dfn_cert_advs"                                              \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
-  "                  'ovaldef' AS type, title as extra"                        \
+  "                  'ovaldef' AS type, title as extra, max_cvss as severity"  \
   "           FROM ovaldefs)"                                                  \
   " AS allinfo"
 
@@ -46555,7 +46556,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, comment, iso_time (created),"
                  "       iso_time (modified), created, modified, '' AS _owner,"
-                 "       type, extra"
+                 "       type, extra, severity"
                  " FROM" ALL_INFO_UNION_COLUMNS
                  " %s%s"
                  " %s"
@@ -46593,6 +46594,17 @@ DEF_ACCESS (all_info_iterator_type, GET_ITERATOR_COLUMN_COUNT);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (all_info_iterator_extra, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the severity from an all info iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return extra info secinfo entry,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 
 
 /* Users. */

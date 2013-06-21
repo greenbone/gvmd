@@ -12249,9 +12249,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   xml_string_append (result,
                                      "<allinfo>"
                                      "<type>%s</type>"
-                                     "<extra>%s</extra>",
+                                     "<extra>%s</extra>"
+                                     "<severity>%s</severity>",
                                      all_info_iterator_type (&info),
-                                     extra ? extra : "");
+                                     extra ? extra : "",
+                                     all_info_iterator_severity (&info));
                 }
 
               /* Append raw data if full details are requested */

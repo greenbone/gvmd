@@ -6764,6 +6764,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>type</e>
             <e>extra</e>
+            <e>severity</e>
           </pattern>
           <summary>A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.</summary>
           <ele>
@@ -6776,6 +6777,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>extra</name>
             <summary>Extra information from the entry like title or description.</summary>
+            <pattern>
+              <t>text</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Severity rating (CVSS score) of the entry.</summary>
             <pattern>
               <t>text</t>
             </pattern>

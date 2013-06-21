@@ -11194,6 +11194,11 @@ get_filters_response_filter_count_page
               <div style="margin-left: 15px; display: inline;">Extra information from the entry like title or description..</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity rating (CVSS score) of the entry..</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -11693,6 +11698,7 @@ get_info_response_info_allinfo
      {
        get_info_response_info_allinfo_type
        &amp; get_info_response_info_allinfo_extra
+       &amp; get_info_response_info_allinfo_severity
      }
 
 get_info_response_info_allinfo_type
@@ -11703,6 +11709,12 @@ get_info_response_info_allinfo_type
 
 get_info_response_info_allinfo_extra
  = element extra
+     {
+       text
+     }
+
+get_info_response_info_allinfo_severity
+ = element severity
      {
        text
      }
