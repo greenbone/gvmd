@@ -4658,6 +4658,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       DEF (summary);
       DEF (family);
       DEF (version);
+      DEF (xref);
       DEF (tag);
 #endif /* not S_SPLINT_S */
 
@@ -4729,7 +4730,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              nvt_iterator_cve (nvts),
                              nvt_iterator_bid (nvts),
                              cert_refs_str->str,
-                             nvt_iterator_xref (nvts),
+                             xref_text,
                              nvt_iterator_sign_key_ids (nvts),
                              tag_text,
                              pref_count,
@@ -4740,6 +4741,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_free (summary_text);
       g_free (family_text);
       g_free (version_text);
+      g_free (xref_text);
       g_free (tag_text);
       g_string_free(cert_refs_str, 1);
     }
