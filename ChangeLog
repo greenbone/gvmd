@@ -1,5 +1,10 @@
 2013-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_xml_handle_end_element): Add log for successful
+	creation in CREATE_NOTE and CREATE_OVERRIDE.
+
+2013-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause, print_report_xml): Neaten formatting.
 
 2013-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
