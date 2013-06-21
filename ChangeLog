@@ -1,3 +1,8 @@
+2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c, src/manage.h: Rename manage_set_setting to
+	modify_setting for consistency with other modify commands.
+
 2013-06-21  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (all_info_iterator_severity): New function prototype.

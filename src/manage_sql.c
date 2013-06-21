@@ -45375,8 +45375,8 @@ setting_value_int (const char *uuid, int *value)
  *         99 permission denied, -1 on error.
  */
 int
-manage_set_setting (const gchar *uuid, const gchar *name,
-                    const gchar *value_64, gchar **r_errdesc)
+modify_setting (const gchar *uuid, const gchar *name,
+                const gchar *value_64, gchar **r_errdesc)
 {
   char *filter_name;
 

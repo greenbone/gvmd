@@ -21743,10 +21743,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_setting",
                                 "MODIFY_SETTING requires a NAME or setting_id"
                                 " and a VALUE"));
-          else switch (manage_set_setting (modify_setting_data->setting_id,
-                                           modify_setting_data->name,
-                                           modify_setting_data->value,
-                                           &errdesc))
+          else switch (modify_setting (modify_setting_data->setting_id,
+                                       modify_setting_data->name,
+                                       modify_setting_data->value,
+                                       &errdesc))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
