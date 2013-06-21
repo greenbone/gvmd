@@ -37920,6 +37920,76 @@ copy_report_format (const char* name, const char* source_uuid,
 }
 
 /**
+ * @brief Modify a report format.
+ *
+ * @param[in]   report_format_id        UUID of report format.
+ * @param[in]   name            Name of report format.
+ * @param[in]   comment         Comment on report format.
+ *
+ * @return 0 success, 1 failed to find report format, 2 report format_id
+ * required, 3 failed to find report format parameter, 4 parameter value
+ * validation failed, 99 permission denied, -1 internal error.
+ */
+int
+modify_report_format (const char *report_format_id, const char *name,
+                      const char *summary, const char *active,
+                      const char *param_name, const char *param_value)
+{
+  report_format_t report_format;
+  int ret = 0;
+
+  if (report_format_id == NULL)
+    return 2;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  if (user_may ("modify_report_format") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  report_format = 0;
+  if (find_report_format (report_format_id, &report_format))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (report_format == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Update values */
+  if (name)
+    set_report_format_name (report_format, name);
+
+  if (summary)
+    set_report_format_summary (report_format, summary);
+
+  if (active)
+    set_report_format_active (report_format, strcmp (active, "0"));
+
+  sql ("COMMIT;");
+
+  /* Update format params if set */
+  if (param_name)
+    {
+      ret = set_report_format_param (report_format, param_name, param_value);
+      if (ret == 1)
+        ret = 3;
+      if (ret == 2)
+        ret = 4;
+    }
+
+  return ret;
+}
+
+/**
  * @brief Delete a report format.
  *
  * @param[in]  report_format_id  UUID of Report format.

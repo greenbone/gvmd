@@ -1,5 +1,15 @@
 2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (modify_report_format): New function.
+
+	* src/manage.h: Add modify_report_format header.
+
+	* src/manage_sql.c (omp_xml_handle_end_element): Convert
+	MODIFY_REPORT_FORMAT case to use modify_report_format and new
+	consistent style for modify commands.
+
+2013-06-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c, src/manage.h (set_report_parameter): Remove unused
 	function.
 

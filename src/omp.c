@@ -21491,94 +21491,85 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_REPORT_FORMAT:
         {
-          report_format_t report_format = 0;
+          assert (strcasecmp ("MODIFY_REPORT_FORMAT", element_name) == 0);
 
-          if (user_may ("modify_report_format") == 0)
+          switch (modify_report_format
+                   (modify_report_format_data->report_format_id,
+                    modify_report_format_data->name,
+                    modify_report_format_data->summary,
+                    modify_report_format_data->active,
+                    modify_report_format_data->param_name,
+                    modify_report_format_data->param_value))
             {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_report_format",
-                                  "Permission denied"));
-              modify_report_format_data_reset (modify_report_format_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          if (modify_report_format_data->report_format_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_report_format",
-                                "MODIFY_REPORT_FORMAT requires a"
-                                " report_format_id attribute"));
-          else if (find_report_format
-                    (modify_report_format_data->report_format_id,
-                     &report_format))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_INTERNAL_ERROR ("modify_report_format"));
-          else if (report_format == 0)
-            {
-              if (send_find_error_to_client
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
+                g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format %s has been modified",
+                       modify_report_format_data->report_format_id);
+                break;
+              case 1:
+                if (send_find_error_to_client
+                     ("modify_report_format",
+                      "report_format",
+                      modify_report_format_data->report_format_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event report format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX
                    ("modify_report_format",
-                    "report format",
-                    modify_report_format_data->report_format_id,
-                    write_to_client,
-                    write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
+                    "MODIFY_report_format requires a report_format_id"));
+                g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
+              case 3:
+                if (send_find_error_to_client
+                     ("modify_report_format",
+                      "report format param",
+                      modify_report_format_data->param_name,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                g_log ("event report format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_report_format",
+                                    "Parameter validation failed"));
+                g_log ("event report format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_report_format",
+                                    "Permission denied"));
+                g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
+                                         ("modify_report_format"));
+                g_log ("event report_format", G_LOG_LEVEL_MESSAGE,
+                       "Report Format could not be modified");
+                break;
             }
-          else
-            {
-              if (modify_report_format_data->active)
-                set_report_format_active
-                 (report_format,
-                  strcmp (modify_report_format_data->active, "0"));
-              if (modify_report_format_data->name)
-                set_report_format_name (report_format,
-                                        modify_report_format_data->name);
-              if (modify_report_format_data->summary)
-                set_report_format_summary (report_format,
-                                           modify_report_format_data->summary);
-              if (modify_report_format_data->param_name)
-                {
-                  switch (set_report_format_param
-                           (report_format,
-                            modify_report_format_data->param_name,
-                            modify_report_format_data->param_value))
-                    {
-                      case 0:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_OK ("modify_report_format"));
-                        break;
-                      case 1:
-                        if (send_find_error_to_client
-                             ("modify_report_format",
-                              "param",
-                              modify_report_format_data->param_name,
-                              write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        break;
-                      case 2:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_ERROR_SYNTAX ("modify_report_format",
-                                            "Parameter validation failed"));
-                        break;
-                      default:
-                        SEND_TO_CLIENT_OR_FAIL
-                         (XML_INTERNAL_ERROR ("modify_report_format"));
-                        break;
-                    }
-                }
-              else
-                SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_report_format"));
-            }
+
+          modify_report_format_data_reset (modify_report_format_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
         }
-        modify_report_format_data_reset (modify_report_format_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT, ACTIVE);
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT, NAME);
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT, SUMMARY);

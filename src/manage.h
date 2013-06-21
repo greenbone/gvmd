@@ -2088,6 +2088,10 @@ int
 copy_report_format (const char *, const char *, report_format_t*);
 
 int
+modify_report_format (const char *, const char *, const char *, const char *,
+                      const char *, const char *);
+
+int
 delete_report_format (const char *, int);
 
 int
