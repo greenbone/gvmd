@@ -1,5 +1,13 @@
 2013-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (delete_group): Handle move group to trashcan case.
+	Check whether a group is in use by a permission. Move group users too.
+	(group_in_use): Check for permissions using the group.
+	(manage_restore): Handle restoring a group from trashcan.
+	(manage_empty_trashcan): Empty groups_trash and group_users_trash too.
+
+2013-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_tables): Create groups_trash and
 	group_users_trash tables.
 	(GROUP_ITERATOR_TRASH_COLUMNS): New define.

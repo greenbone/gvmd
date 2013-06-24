@@ -40429,7 +40429,7 @@ create_group (const char *group_name, const char *comment, const char *users,
  * @param[in]  group_id  UUID of group.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 1 fail because a task refers to the group, 2 failed
+ * @return 0 success, 1 fail because a permission refers to the group, 2 failed
  *         to find group, 3 predefined group, 99 permission denied, -1 error.
  */
 int
@@ -40453,10 +40453,6 @@ delete_group (const char *group_id, int ultimate)
 
   if (group == 0)
     {
-#if 1
-      sql ("ROLLBACK;");
-      return 2;
-#else
       if (find_trash ("group", group_id, &group))
         {
           sql ("ROLLBACK;");
@@ -40474,36 +40470,40 @@ delete_group (const char *group_id, int ultimate)
           return 0;
         }
 
-      /* Check if it's in use by an alert in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM alerts_trash"
-                   " WHERE `group` = %llu"
-                   " AND group_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   group))
+      /* Check if it's in use by a permission in the trashcan. */
+      if (group_in_use (group))
         {
           sql ("ROLLBACK;");
           return 1;
         }
 
       sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", group);
+      sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", group);
       sql ("COMMIT;");
       return 0;
-#endif
+    }
+
+  if (group_in_use (group))
+    {
+      sql ("ROLLBACK;");
+      return 1;
     }
 
   if (ultimate == 0)
     {
-#if 0
       sql ("INSERT INTO groups_trash"
-           " (uuid, owner, name, comment, type, term, creation_time,"
-           "  modification_time)"
-           " SELECT uuid, owner, name, comment, type, term, creation_time,"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
            "  modification_time"
            " FROM groups WHERE ROWID = %llu;",
            group);
 
-      // FIX move permissions to trashcan too
-#endif
+      sql ("INSERT INTO group_users_trash"
+           " (`group`, user)"
+           " SELECT `group`, user"
+           " FROM group_users WHERE `group` = %llu;",
+           group);
+
     }
 
   sql ("DELETE FROM groups WHERE ROWID = %llu;", group);
@@ -40581,7 +40581,11 @@ trash_group_writable (group_t group)
 int
 group_in_use (group_t group)
 {
-  return 0;
+  return !!sql_int (0, 0,
+                    "SELECT count(*) FROM permissions"
+                    " WHERE subject = %llu"
+                    " AND subject_type = 'group';",
+                    group);
 }
 
 /**
@@ -44418,6 +44422,49 @@ manage_restore (const char *id)
       return 0;
     }
 
+  /* Group. */
+
+  if (find_trash ("group", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM groups"
+                   " WHERE name ="
+                   " (SELECT name FROM groups_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO groups"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time"
+           " FROM groups_trash WHERE ROWID = %llu;",
+           resource);
+
+      sql ("INSERT INTO group_users"
+           " (`group`, user)"
+           " SELECT `group`, user"
+           " FROM group_users_trash WHERE `group` = %llu;",
+           resource);
+
+      sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", resource);
+      sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   /* LSC credential. */
 
   if (find_trash ("lsc_credential", id, &resource))
@@ -44979,6 +45026,8 @@ manage_empty_trashcan ()
        " (SELECT nvt_selector FROM configs_trash);");
   sql ("DELETE FROM config_preferences_trash;");
   sql ("DELETE FROM configs_trash;");
+  sql ("DELETE FROM groups_trash;");
+  sql ("DELETE FROM group_users_trash;");
   sql ("DELETE FROM alert_condition_data_trash;");
   sql ("DELETE FROM alert_event_data_trash;");
   sql ("DELETE FROM alert_method_data_trash;");
