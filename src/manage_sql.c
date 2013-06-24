@@ -4244,7 +4244,12 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS groups"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS groups_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS group_users"
+       " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS group_users_trash"
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
@@ -40605,6 +40610,12 @@ trash_group_in_use (group_t group)
   GET_ITERATOR_COLUMNS (groups)
 
 /**
+ * @brief Group iterator columns for trash case.
+ */
+#define GROUP_ITERATOR_TRASH_COLUMNS                         \
+  GET_ITERATOR_COLUMNS (groups_trash)
+
+/**
  * @brief Count number of groups.
  *
  * @param[in]  get  GET params.
@@ -40615,7 +40626,8 @@ int
 group_count (const get_data_t *get)
 {
   static const char *extra_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  return count ("group", get, GROUP_ITERATOR_COLUMNS, NULL, extra_columns,
+  return count ("group", get, GROUP_ITERATOR_COLUMNS,
+                GROUP_ITERATOR_TRASH_COLUMNS, extra_columns,
                 0, 0, 0, TRUE);
 }
 
@@ -40639,7 +40651,7 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns. */
                             GROUP_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
-                            NULL,
+                            GROUP_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
                             NULL,

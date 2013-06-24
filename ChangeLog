@@ -1,3 +1,10 @@
+2013-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Create groups_trash and
+	group_users_trash tables.
+	(GROUP_ITERATOR_TRASH_COLUMNS): New define.
+	(group_count, init_group_iterator): Add trash columns.
+
 2013-06-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (omp_xml_handle_end_element): Add log for successful
