@@ -13,9 +13,10 @@ Description: Stylesheet for generating results as dot file.
 
 Authors:
 Michael Wiegand <michael.wiegand@greenbone.net>
+Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2010 Greenbone Networks GmbH
+Copyright (C) 2010, 2013 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,
@@ -77,20 +78,20 @@ digraph scan {
           </xsl:choose>
         </xsl:otherwise>
       </xsl:choose>
-      <xsl:apply-templates select="../results/result[host/text() = $current_host][port/text() = 'general/HOST-T']" mode="trace">
+      <xsl:apply-templates select="detail[name='traceroute']" mode="trace">
         <xsl:with-param name="host" select="$current_host" />
       </xsl:apply-templates>
+      <xsl:call-template name="port_recurse">
+        <xsl:with-param name="port_host" select="$current_host"/>
+        <xsl:with-param name="port_list" select="detail[name='ports']/value"/>
+      </xsl:call-template>
     </xsl:for-each>
 }
   </xsl:template>
 
-  <xsl:template match="result" mode="trace">
+  <xsl:template match="detail" mode="trace">
     <xsl:param name="host"/>
-    <xsl:variable name="space"><xsl:text>
-</xsl:text>
-    </xsl:variable>
-    <xsl:variable name="fullroute" select="substring-before(substring-after(description/text(), 'traceroute:'), $space)" />
-    <xsl:variable name="ports" select="substring-before(substring-after(description/text(), 'ports:'), $space)" />
+    <xsl:variable name="fullroute" select="value" />
     <xsl:variable name="gsm" select="substring-before($fullroute, ',')" />
     <xsl:variable name="route" select="substring-after($fullroute, ',')" />
     <xsl:variable name="nexthop" select="substring-before($route, ',')" />
@@ -112,12 +113,7 @@ digraph scan {
         </xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
-    <!-- Enable the following block for port visualisation -->
-    <xsl:call-template name="port_recurse">
-      <xsl:with-param name="port_list" select="$ports"/>
-      <xsl:with-param name="port_host" select="$host"/>
-    </xsl:call-template>
-</xsl:template>
+  </xsl:template>
 
   <xsl:template name="trace_recurse">
     <xsl:param name="trace_list"/>

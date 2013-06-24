@@ -1,3 +1,12 @@
+2013-06-24  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* src/report_formats/Topology/hostvisdot-summary.xsl (): Update
+	copyright and author data.
+	(report): Get traceroute and ports directly from host detail.
+	(result [trace]): Removed. Replaced by detail [trace].
+	(detail [trace]): New template, adapted result [trace] to use traceroute
+	from host detail element.
+
 2013-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (delete_group): Handle move group to trashcan case.
