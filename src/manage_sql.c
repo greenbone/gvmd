@@ -28669,6 +28669,7 @@ static int
 validate_results_port (const char *port)
 {
   int num;
+  char *buff;
 
   if (!port)
     return 1;
@@ -28677,6 +28678,11 @@ validate_results_port (const char *port)
     return 0;
 
   num = atoi (port);
+  if (num > 0 && num < 65535)
+    return 0;
+
+  buff = g_newa (char, strlen (port));
+  sscanf (port, "%s (%i/%s)", buff, &num, buff);
   if (num > 0 && num < 65535)
     return 0;
 
