@@ -169,6 +169,27 @@ update the information in the database from a newer list.
 Currently, the helper tool supports only the official IANA Services Names list.
 
 
+Migrating Credentials
+---------------------
+
+While OpenVAS Manager 4.0 initially place the credential encryption key in
+<install-prefix>/etc/openvas/gnupg, OpenVAS Manager 5.0 has switched to using
+<install-prefix>/var/lib/openvas/gnupg for better FHS compliance and to set the
+key apart from the one used for signature verification.
+
+In order to continue using your encrypted credentials, please copy the contents
+of <install-prefix>/etc/openvas/gnupg to
+<install-prefix>/var/lib/openvas/gnupg.
+
+Make sure the permissions on <install-prefix>/var/lib/openvas/gnupg are
+suitable for the user OpenVAS Manager is running as.
+
+Once your encrypted credentials are working again, feel free to remove the
+credential encryptions key from the keyring in
+<install-prefix>/etc/openvas/gnupg and the signature verification key from the
+one in <install-prefix>/var/lib/openvas/gnupg.
+
+
 Encrypted Credentials
 ---------------------
 
@@ -178,7 +199,7 @@ via backups.  To be able to do a proper restore of the data, it is
 important to also backup the encryption key.  The easiest way to do
 this is to create backup of the entire directory tree
 
-   <install-prefix>/etc/openvas/gnupg
+   <install-prefix>/var/lib/openvas/gnupg
 
 and store it at a safe place independent from the database backups.
 This needs to be done only once after the key has been created or
@@ -189,7 +210,7 @@ $ openvasmd --create-credentials-encryption-key
 
 To check whether the key has been generated you may use the command
 
-$ gpg --homedir <install-prefix>/etc/openvas/gnupg --list-secret-keys
+$ gpg --homedir <install-prefix>/var/lib/openvas/gnupg --list-secret-keys
 
 An example output would be
 
@@ -213,11 +234,11 @@ create a new key, this command will decrypt using the old but disabled key
 and then re-encrypt using the new key.  The command --decrypt-all-credentials
 may be used to revert to plaintext credentials:
 
-$ gpg --homedir /etc/openvas/gnupg -K
+$ gpg --homedir /var/lib/openvas/gnupg -K
 
 Look for the current key and remember its keyid. Then:
 
-$ gpg --homedir /etc/openvas/gnupg --edit-key KEYID
+$ gpg --homedir /var/lib/openvas/gnupg --edit-key KEYID
 
 At the prompt enter "disable" followed by "save" and "quit".
 Then create a new key and re-encrypt all passwords:

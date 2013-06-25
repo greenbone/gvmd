@@ -1,3 +1,50 @@
+openvas-manager 5.0+beta1 (2013-06-25)
+
+This is the first beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release moves user management to OpenVAS Manager from OpenVAS Scanner and
+OpenVAS Administrator, introduces group and permissions management and tag
+management among other new features.
+
+Please note that this release changes the location of the credential encryption
+key.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Rodolfo Gouveia, Andre Heinecke, Werner Koch, Matthew Mundell,
+Timo Pollmeier, Stefan Sperling, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 4.0 series:
+* The credential encryption keyring is now placed in var/lib/openvas/gnupg
+  instead of etc/openvas/gnupg.
+* The required minimum GnuTLS version has increased to 2.8.
+* The required minimum OpenVAS Libraries version has increased to 7.0.0.
+* User management has been moved to OpenVAS Manager from OpenVAS Scanner and
+  OpenVAS Administrator.
+* Support for group and permission management has been added.
+* Support for managing network service port names has been added.
+* Tag management has been added.
+* Handling of NVT risk factors has been removed as this is handled via CVSS scores now.
+* Handling of the OTP protocol has been updated to match the changes in OpenVAS
+  Libraries and OpenVAS Scanner.
+* Support for user defined OVAL repositories in private subdirectories has been added.
+* The scripts for SCAP and CERT data synchronization have been improved.
+* Support for searching in the complete SecInfo data has been added.
+* The speed of retrieving a task details overview has been improved.
+* The handling of missing, inaccessible or corrupt database files has been
+  improved.
+* A default "Discovery" scan configuration hase been added.
+* Signature verification now uses the "gpgv" command.
+* The verinice ISM report format plugin has been updated.
+* Code cleanup.
+* Documentation has been updated.
+
+
 openvas-manager 4.0+beta5 (2013-02-22)
 
 This is the fifth beta version of the upcoming 4.0 release of the OpenVAS

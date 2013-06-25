@@ -1,3 +1,12 @@
+2013-06-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 5.0+beta1 release.
+
+	* CHANGES: Updated.
+
+	* INSTALL: Updated, added section on credential encryption key
+	migration.
+
 2013-06-25  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* README: Dropped mentioning of special user "om" as it
