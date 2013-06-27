@@ -113,6 +113,9 @@ void
 sql_threat_level (sqlite3_context *, int argc, sqlite3_value **);
 
 void
+sql_regexp (sqlite3_context *, int, sqlite3_value**);
+
+void
 sql_run_status_name (sqlite3_context *, int, sqlite3_value **);
 
 void

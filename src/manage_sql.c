@@ -2528,7 +2528,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 {
   GString *clause, *order;
   keyword_t **point;
-  int first_keyword, first_order, last_was_and, last_was_not;
+  int first_keyword, first_order, last_was_and, last_was_not, last_was_re;
   array_t *split;
 
   if (filter == NULL)
@@ -2551,6 +2551,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
   first_keyword = 1;
   last_was_and = 0;
   last_was_not = 0;
+  last_was_re = 0;
   first_order = 1;
   while (*point)
     {
@@ -2586,6 +2587,22 @@ filter_clause (const char* type, const char* filter, const char **columns,
           && (strcasecmp (keyword->string, "not") == 0))
         {
           last_was_not = 1;
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "re") == 0))
+        {
+          last_was_re = 1;
+          point++;
+          continue;
+        }
+
+      if ((keyword->column == NULL)
+          && (strcasecmp (keyword->string, "regexp") == 0))
+        {
+          last_was_re = 1;
           point++;
           continue;
         }
@@ -3063,11 +3080,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "%s"
                                         "(%s IS NULL"
                                         " OR CAST (%s AS TEXT)"
-                                        " NOT LIKE '%%%%%s%%%%')",
+                                        " NOT %s '%s%s%s')",
                                         (index ? " AND " : ""),
                                         quoted_column,
                                         quoted_column,
-                                        quoted_keyword);
+                                        last_was_re ? "REGEXP" : "LIKE",
+                                        last_was_re ? "" : "%%",
+                                        quoted_keyword,
+                                        last_was_re ? "" : "%%");
                 g_free (quoted_column);
               }
           else
@@ -3078,10 +3098,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                 quoted_column = sql_quote (column);
                 g_string_append_printf (clause,
                                         "%sCAST (%s AS TEXT)"
-                                        " LIKE '%%%%%s%%%%'",
+                                        " %s '%s%s%s'",
                                         (index ? " OR " : ""),
                                         quoted_column,
-                                        quoted_keyword);
+                                        last_was_re ? "REGEXP" : "LIKE",
+                                        last_was_re ? "" : "%%",
+                                        quoted_keyword,
+                                        last_was_re ? "" : "%%");
                 g_free (quoted_column);
               }
         }
@@ -3092,6 +3115,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
       last_was_and = 0;
       last_was_not = 0;
+      last_was_re = 0;
       point++;
     }
   filter_free (split);
@@ -9088,6 +9112,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create resource_exists", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "regexp",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_regexp,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create regexp", __FUNCTION__);
       abort ();
     }
 

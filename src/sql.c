@@ -1210,6 +1210,46 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Do a regexp match.  Implements SQL REGEXP.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_regexp (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const unsigned char *string, *regexp;
+
+  assert (argc == 2);
+
+  regexp = sqlite3_value_text (argv[0]);
+  if (regexp == NULL)
+    {
+      /* Seems this happens when the query result is empty. */
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  string = sqlite3_value_text (argv[1]);
+  if (string == NULL)
+    {
+      /* Seems this happens when the query result is empty. */
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  if (g_regex_match_simple ((gchar *) regexp, (gchar *) string, 0, 0))
+    {
+      sqlite3_result_int (context, 1);
+      return;
+    }
+  sqlite3_result_int (context, 0);
+}
+
+/**
  * @brief Get the name of a task run status.
  *
  * This is a callback for a scalar SQL function of one argument.

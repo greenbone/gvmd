@@ -1,3 +1,15 @@
+2013-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add regular expression searching to powerfilter, using new RE or REGEXP
+	keyword.
+
+	* src/manage_sql.c (filter_clause): Support regexps.
+	(init_manage_process): Create SQL function regexp.
+
+	* src/sql.c (sql_regexp): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2013-06-26  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CMakeLists.txt: Make SVN revision in version string available again
