@@ -1506,7 +1506,8 @@ typedef enum
   KEYWORD_RELATION_COLUMN_ABOVE,
   KEYWORD_RELATION_COLUMN_APPROX,
   KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW
+  KEYWORD_RELATION_COLUMN_BELOW,
+  KEYWORD_RELATION_COLUMN_REGEXP
 } keyword_relation_t;
 
 /**
@@ -1767,6 +1768,7 @@ split_filter (const gchar* given_filter)
                 between = 0;
                 break;
               }
+          case ':':
           case '~':
           case '>':
           case '<':
@@ -1810,6 +1812,9 @@ split_filter (const gchar* given_filter)
                   break;
                 case '<':
                   keyword->relation = KEYWORD_RELATION_COLUMN_BELOW;
+                  break;
+                case ':':
+                  keyword->relation = KEYWORD_RELATION_COLUMN_REGEXP;
                   break;
               }
             break;
@@ -2427,6 +2432,9 @@ manage_clean_filter (const gchar *filter)
             case KEYWORD_RELATION_COLUMN_BELOW:
               append_relation (clean, keyword, '<');
               break;
+            case KEYWORD_RELATION_COLUMN_REGEXP:
+              append_relation (clean, keyword, ':');
+              break;
 
             case KEYWORD_RELATION_APPROX:
               if (keyword->quoted)
@@ -2839,6 +2847,41 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         type,
                                         tag_value);
             }
+          else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+            {
+              if (strcasecmp (type, "allinfo") == 0)
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name REGEXP '%s'"
+                                        "   AND tags.active != 0"
+                                        "   AND tags.attach_id = allinfo.uuid"
+                                        "   AND tags.attach_type = allinfo.type"
+                                        "   AND tags.value"
+                                        "       REGEXP '%s'))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        tag_value);
+              else
+                g_string_append_printf (clause,
+                                        "%s"
+                                        "(EXISTS"
+                                        "  (SELECT * FROM tags"
+                                        "   WHERE tags.name REGEXP '%s'"
+                                        "   AND tags.active != 0"
+                                        "   AND tags.attach_id = %ss.uuid"
+                                        "   AND tags.attach_type = '%s'"
+                                        "   AND tags.value"
+                                        "       REGEXP '%s'))",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        tag_name,
+                                        type,
+                                        type,
+                                        tag_value);
+            }
 
           g_strfreev(tag_split);
           g_free(tag_name);
@@ -3012,6 +3055,30 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                               last_was_not),
                                     quoted_column,
                                     quoted_keyword);
+          g_free (quoted_column);
+        }
+      else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
+        {
+          int ret;
+
+          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+            {
+              last_was_and = 0;
+              last_was_not = 0;
+              point++;
+              continue;
+            }
+
+          quoted_keyword = sql_quote (keyword->string);
+          quoted_column = ret == 2
+                           ? underscore_sql_quote (keyword->column)
+                           : sql_quote (keyword->column);
+          g_string_append_printf (clause,
+                                  "%s(CAST (%s AS TEXT) REGEXP '%s'",
+                                  get_join (first_keyword, last_was_and,
+                                            last_was_not),
+                                  quoted_column,
+                                  quoted_keyword);
           g_free (quoted_column);
         }
       else if (keyword->equal)

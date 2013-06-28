@@ -1,3 +1,11 @@
+2013-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add regular expression searching to powerfilter columns, using syntax
+	"column:regexp".
+
+	* src/manage_sql.c (keyword_relation_t): Add regexp element.
+	(split_filter, manage_clean_filter, filter_clause): Handle regexp case.
+
 2013-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add regular expression searching to powerfilter, using new RE or REGEXP
