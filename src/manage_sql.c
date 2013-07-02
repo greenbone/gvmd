@@ -20570,26 +20570,28 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
       if (last_port == NULL || strcmp (port, last_port)
           || strcmp (host, last_host))
         {
-          const char *type;
+          const char *cvss;
           gchar *item;
-          int port_len, type_len;
+          int port_len, cvss_len;
 
           g_free (last_port);
           last_port = g_strdup (port);
           g_free (last_host);
           last_host = g_strdup (host);
 
-          type = result_iterator_type (&results);
+          cvss = result_iterator_nvt_cvss_base (&results);
+          if (cvss == NULL)
+            cvss = "0.0";
           port_len = strlen (port);
-          type_len = strlen (type);
+          cvss_len = strlen (cvss);
           item = g_malloc (port_len
-                            + type_len
+                            + cvss_len
                             + strlen (host)
                             + 3);
           g_array_append_val (ports, item);
           strcpy (item, port);
-          strcpy (item + port_len + 1, type);
-          strcpy (item + port_len + type_len + 2, host);
+          strcpy (item + port_len + 1, cvss);
+          strcpy (item + port_len + cvss_len + 2, host);
         }
 
     }
@@ -20658,16 +20660,16 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
     while ((item = g_array_index (ports, gchar*, index++)))
       {
         int port_len = strlen (item);
-        int type_len = strlen (item + port_len + 1);
+        int cvss_len = strlen (item + port_len + 1);
         PRINT (out,
                  "<port>"
                  "<host>%s</host>"
                  "%s"
-                 "<threat>%s</threat>"
+                 "<cvss>%s</cvss>"
                  "</port>",
-                 item + port_len + type_len + 2,
+                 item + port_len + cvss_len + 2,
                  item,
-                 manage_result_type_threat (item + port_len + 1));
+                 item + port_len + 1);
         g_free (item);
       }
     g_array_free (ports, TRUE);

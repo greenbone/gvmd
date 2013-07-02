@@ -1,3 +1,8 @@
+2013-07-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_port_xml): Send matching port cvss
+	instead of threat string.
+
 2013-06-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add regular expression searching to powerfilter columns, using syntax
