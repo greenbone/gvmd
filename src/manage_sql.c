@@ -15857,7 +15857,8 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
   if (report)
     init_iterator (iterator,
                    "SELECT results.host, results.port, results.nvt,"
-                   " results.description, nvts.name, nvts.cvss_base"
+                   " results.description, nvts.name, nvts.cvss_base,"
+                   " results.nvt_version, results.severity"
                    " FROM results JOIN nvts"
                    " WHERE results.type = 'Error Message'"
                    "  AND results.nvt = nvts.oid"
@@ -15924,6 +15925,26 @@ DEF_ACCESS (report_errors_iterator_nvt_name, 4);
  *         before calling cleanup_iterator.
  */
 DEF_ACCESS (report_errors_iterator_nvt_cvss, 5);
+
+/**
+ * @brief Get the nvt cvss base from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The nvt version at scan time of the report error message.
+ *         Caller must use only before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_scan_nvt_version, 6);
+
+/**
+ * @brief Get the nvt cvss base from a report error messages iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity at scan time of the report error message.
+ *         Caller must use only before calling cleanup_iterator.
+ */
+DEF_ACCESS (report_errors_iterator_severity, 7);
 
 /**
  * @brief Return whether a host has results on a report.
@@ -20358,13 +20379,17 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<name>%s</name>"                                             \
              "<cvss_base>%s</cvss_base>"                                   \
              "</nvt>"                                                      \
+             "<scan_nvt_version>%s</scan_nvt_version>"                     \
+             "<severity>%s</severity>"                                     \
              "</error>",                                                   \
              report_errors_iterator_host (errors),                         \
              report_errors_iterator_port (errors),                         \
              report_errors_iterator_desc (errors),                         \
              report_errors_iterator_nvt_oid (errors),                      \
              report_errors_iterator_nvt_name (errors),                     \
-             report_errors_iterator_nvt_cvss (errors));                    \
+             report_errors_iterator_nvt_cvss (errors),                     \
+             report_errors_iterator_scan_nvt_version (errors),             \
+             report_errors_iterator_severity (errors));                    \
     }                                                                      \
   while (0)
 

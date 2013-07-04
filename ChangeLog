@@ -1,3 +1,11 @@
+2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_report_errors_iterator): Add columns
+	"nvt_version" and "severity".
+	(report_errors_iterator_scan_nvt_version)
+	(report_errors_iterator_severity): New iterator functions.
+	(PRINT_REPORT_ERROR): Add elements "scan_nvt_version" and "severity".
+
 2013-07-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Add
