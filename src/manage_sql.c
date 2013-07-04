@@ -15085,17 +15085,20 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       ? " ORDER BY port,"
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_severity ELSE 0.0 END)"
+                                        " DESC,"
+                                        " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
                                         " COLLATE collate_message_type DESC,"
-                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                        "        THEN cvss_base ELSE 0.0 END)"
-                                        "       AS REAL)) DESC,"
                                         " nvt,"
                                         " description"
                                       : " ORDER BY "
                                         " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_severity ELSE 0.0 END)"
+                                        " ASC,"
+                                        " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
-                                        " COLLATE collate_message_type,"
+                                        " COLLATE collate_message_type ASC,"
                                         " port,"
                                         " host COLLATE collate_ip,"
                                         " (CAST ((CASE WHEN cvss_base >= 0.0"
@@ -15109,22 +15112,22 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       ? " ORDER BY port DESC,"
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_severity ELSE auto_type END)"
+                                        " DESC,"
+                                        " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
                                         " COLLATE collate_message_type DESC,"
-                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                        "        THEN cvss_base ELSE 0.0 END)"
-                                        "       AS REAL)) DESC,"
                                         " nvt,"
                                         " description"
                                       : " ORDER BY"
+                                        " (CASE WHEN auto_type IS NULL"
+                                        "  THEN new_severity ELSE 0.0 END)"
+                                        " DESC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
                                         " COLLATE collate_message_type DESC,"
                                         " port,"
                                         " host COLLATE collate_ip,"
-                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                        "        THEN cvss_base ELSE 0.0 END)"
-                                        "       AS REAL)) DESC,"
                                         " nvt,"
                                         " description")),
                              max_results,
@@ -15660,6 +15663,29 @@ result_iterator_severity (iterator_t *iterator)
   /* new_type */
   const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
   return ret ? ret : "";
+}
+
+/**
+ * @brief Get the severity from a result iterator as double.
+ *
+ * This is the the autofp adjusted overridden severity.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+double
+result_iterator_severity_double (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0.0;
+
+  /* auto_type */
+  if (sqlite3_column_int (iterator->stmt, 7))
+    return 0.0;
+
+  return sqlite3_column_double (iterator->stmt, 14);
 }
 
 /**
@@ -18950,7 +18976,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   const char *host, *delta_host, *port, *delta_port, *type, *delta_type;
   const char *nvt, *delta_nvt;
   int ret;
-  double cvss, delta_cvss;
+  double severity, delta_severity;
 
   if (sort_field == NULL) sort_field = "type";
 
@@ -18963,8 +18989,8 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   type = result_iterator_type (results);
   delta_type = result_iterator_type (delta_results);
 
-  cvss = result_iterator_nvt_cvss_base_double (results);
-  delta_cvss = result_iterator_nvt_cvss_base_double (delta_results);
+  severity = result_iterator_severity_double (results);
+  delta_severity = result_iterator_severity_double (delta_results);
 
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
@@ -19042,6 +19068,16 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           if (ret)
             return -ret;
 
+          tracef ("   delta: %s: severity: %e VS %e",
+                  __FUNCTION__, severity, delta_severity);
+          if (severity >= 0 && delta_severity >= 0)
+            {
+              if (severity > delta_severity)
+                return -1;
+              if (severity < delta_severity)
+                return 1;
+            }
+
           ret = collate_message_type (NULL,
                                       strlen (type), type,
                                       strlen (delta_type), delta_type);
@@ -19049,18 +19085,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
                   __FUNCTION__, type, delta_type, ret);
           if (ret)
             return -ret;
-
-          tracef ("   delta: %s: cvss: %e VS %e",
-                  __FUNCTION__, cvss, delta_cvss);
-          if (cvss >= 0 && delta_cvss >= 0)
-            {
-              tracef ("   delta: %s: (NVTs: %s AND %s)",
-                      __FUNCTION__, nvt, delta_nvt);
-              if (cvss > delta_cvss)
-                return -1;
-              if (cvss < delta_cvss)
-                return 1;
-            }
 
           ret = strcmp (nvt, delta_nvt);
           tracef ("   delta: %s: NVT: %s VS %s (%i)",
@@ -19071,9 +19095,19 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
           return 0;
         }
 
-      /* Sorting threat first. */
+      /* Sorting severity first. */
 
-      tracef ("   delta: %s: threat first", __FUNCTION__);
+      tracef ("   delta: %s: severity first", __FUNCTION__);
+
+      tracef ("   delta: %s: severity: %e VS %e",
+              __FUNCTION__, severity, delta_severity);
+      if (severity >= 0 && delta_severity >= 0)
+        {
+          if (severity > delta_severity)
+            return -1;
+          if (severity < delta_severity)
+            return 1;
+        }
 
       ret = collate_message_type (NULL,
                                   strlen (type), type,
@@ -19088,18 +19122,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
               __FUNCTION__, port, delta_port, ret);
       if (ret)
         return ret;
-
-      tracef ("   delta: %s: cvss: %e VS %e",
-              __FUNCTION__, cvss, delta_cvss);
-      if (cvss >= 0 && delta_cvss >= 0)
-        {
-          tracef ("   delta: %s: (NVTs: %s AND %s)",
-                  __FUNCTION__, nvt, delta_nvt);
-          if (cvss > delta_cvss)
-            return -1;
-          if (cvss < delta_cvss)
-            return 1;
-        }
 
       ret = strcmp (nvt, delta_nvt);
       tracef ("   delta: %s: NVT: %s VS %s (%i)",
@@ -19132,15 +19154,13 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       if (ret)
         return ret;
 
-      tracef ("   delta: %s: cvss: %e VS %e",
-              __FUNCTION__, cvss, delta_cvss);
-      if (cvss >= 0 && delta_cvss >= 0)
+      tracef ("   delta: %s: severity: %e VS %e",
+              __FUNCTION__, severity, delta_severity);
+      if (severity >= 0 && delta_severity >= 0)
         {
-          tracef ("   delta: %s: (NVTs: %s AND %s)",
-                  __FUNCTION__, nvt, delta_nvt);
-          if (cvss > delta_cvss)
+          if (severity > delta_severity)
             return -1;
-          if (cvss < delta_cvss)
+          if (severity < delta_severity)
             return 1;
         }
 
@@ -19159,9 +19179,19 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Sorting by threat. */
+  /* Sorting by severity threat. */
 
-  tracef ("   delta: %s: threat first", __FUNCTION__);
+  tracef ("   delta: %s: severity first", __FUNCTION__);
+
+  tracef ("   delta: %s: severity: %e VS %e",
+          __FUNCTION__, severity, delta_severity);
+  if (severity >= 0 && delta_severity >= 0)
+    {
+      if (severity > delta_severity)
+        return 1;
+      if (severity < delta_severity)
+        return -1;
+    }
 
   ret = collate_message_type (NULL,
                               strlen (type), type,
@@ -19172,18 +19202,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   ret = strcmp (port, delta_port);
   if (ret)
     return ret;
-
-  tracef ("   delta: %s: cvss: %e VS %e",
-          __FUNCTION__, cvss, delta_cvss);
-  if (cvss >= 0 && delta_cvss >= 0)
-    {
-      tracef ("   delta: %s: (NVTs: %s AND %s)",
-              __FUNCTION__, nvt, delta_nvt);
-      if (cvss > delta_cvss)
-        return -1;
-      if (cvss < delta_cvss)
-        return 1;
-    }
 
   ret = strcmp (nvt, delta_nvt);
   tracef ("   delta: %s: NVT: %s VS %s (%i)",

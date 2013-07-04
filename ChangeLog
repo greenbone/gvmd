@@ -1,5 +1,13 @@
 2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_report_iterator): Replace cvss_base in ORDER BY
+	with severity and make it higher priority than message type.
+	(result_iterator_severity_double): New iterator function.
+	(result_cmp): Replace NVT cvss_base with severity and raise priority
+	above message type.
+
+2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_report_errors_iterator): Add columns
 	"nvt_version" and "severity".
 	(report_errors_iterator_scan_nvt_version)
