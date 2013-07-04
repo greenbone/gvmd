@@ -6856,6 +6856,38 @@ migrate_82_to_83 ()
 }
 
 /**
+ * @brief Migrate the database from version 83 to version 84.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_83_to_84 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 83. */
+
+  if (manage_db_version () != 83)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add columns "nvt_revision" and "severity" to results table */
+  sql ("ALTER TABLE results ADD COLUMN nvt_version;");
+  sql ("ALTER TABLE results ADD COLUMN severity REAL;");
+
+  /* Set the database version to 84. */
+
+  set_db_version (84);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -6943,6 +6975,7 @@ static migrator_t database_migrators[]
     {81, migrate_80_to_81},
     {82, migrate_81_to_82},
     {83, migrate_82_to_83},
+    {84, migrate_83_to_84},
     /* End marker. */
     {-1, NULL}};
 

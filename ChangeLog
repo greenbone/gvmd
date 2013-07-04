@@ -1,3 +1,29 @@
+2013-07-04  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Change to 84.
+
+	* src/manage.h (result_iterator_scan_nvt_version)
+	(result_iterator_original_severity, result_iterator_severity): New
+	function prototypes.
+
+	* src/manage_migrators.c (migrate_83_to_84): New migrator that adds
+	columns "nvt_version" and "severity" to results.
+	(database_migrators): Add migrate_83_to_84;
+
+	* src/manage_sql.c (create_tables): Add columns "nvt_version" and
+	"severity" to results.
+	(make_result): Add nvt_version and severity to results if possible.
+	(result_iterator_scan_nvt_version, result_iterator_original_severity)
+	(result_iterator_severity): New iterator functions.
+
+	* src/omp.c (buffer_results_xml): Add elements "scan_nvt_version",
+	"severity", "original_severity".
+
+	* src/schema_formats/XML/OMP.xml (get_results): Add elements
+	"scan_nvt_version", "severity", "original_severity" to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-07-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_port_xml): Send matching port cvss

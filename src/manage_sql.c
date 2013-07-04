@@ -4462,7 +4462,7 @@ create_tables ()
        "  override_lows, override_logs, override_fps);");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt,"
-       "  type, description, report)");
+       "  type, description, report, nvt_version, severity REAL)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
@@ -13349,13 +13349,51 @@ make_result (task_t task, const char* subnet, const char* host,
              const char* description)
 {
   result_t result;
+  gchar *nvt_revision, *severity;
   gchar *quoted_descr = sql_quote (description);
+
+  if (nvt && strcmp(nvt, ""))
+    {
+      nvt_revision = sql_string (0, 0,
+                                "SELECT version FROM nvts WHERE uuid = '%s';",
+                                nvt);
+
+      if (   (strcasecmp(type, "Security Note") == 0)
+          || (strcasecmp(type, "Security Warning") == 0)
+          || (strcasecmp(type, "Security Hole") == 0))
+        {
+          severity = sql_string (0, 0,
+                                "SELECT coalesce(cvss_base, 0.0)"
+                                " FROM nvts WHERE uuid = '%s';",
+                                nvt);
+
+          if (strcmp (severity, "") == 0)
+            {
+              g_free (severity);
+              severity = g_strdup ("0.0");
+            };
+        }
+      else
+        severity = g_strdup ("0.0");
+    }
+  else
+    {
+      nvt_revision = g_strdup ("");
+      severity = g_strdup ("NULL");
+    }
+
   sql ("INSERT into results"
-       " (task, subnet, host, port, nvt, type, description, uuid)"
+       " (task, subnet, host, port, nvt, nvt_version, severity, type,"
+       "  description, uuid)"
        " VALUES"
-       " (%llu, '%s', '%s', '%s', '%s', '%s', '%s', make_uuid ());",
-       task, subnet, host, port, nvt, type, quoted_descr);
+       " (%llu, '%s', '%s', '%s', '%s', '%s', %s, '%s',"
+       "  '%s', make_uuid ());",
+       task, subnet, host, port, nvt, nvt_revision, severity, type,
+       quoted_descr);
+
   g_free (quoted_descr);
+  g_free (nvt_revision);
+  g_free (severity);
   result = sqlite3_last_insert_rowid (task_db);
   return result;
 }
@@ -14856,7 +14894,7 @@ where_autofp (int autofp, report_t report)
  *                            NULL or "".
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
- * @param[in]  override       Whether to override the threat.
+ * @param[in]  override       Whether to override the threat and CVSS.
  */
 void
 init_result_iterator (iterator_t* iterator, report_t report, result_t result,
@@ -14866,6 +14904,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       int search_phrase_exact, const char* min_cvss_base,
                       int override)
 {
+  int current_nvt = 0; // TODO: replace with parameter
+
   GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
 
@@ -14875,7 +14915,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
   if (report)
     {
-      gchar *new_type_sql, *auto_type_sql;
+      gchar *new_type_sql, *auto_type_sql, *severity_sql, *new_severity_sql;
 
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgdf";
@@ -14883,6 +14923,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       levels_sql = where_levels_auto (levels);
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
+
+      if (current_nvt)
+        severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
+                                " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup("severity");
 
       if (override)
         {
@@ -14923,9 +14969,21 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
+
+          /* TODO: Add CVSS-based overrides */
+          ov = g_strdup_printf
+                ("NULL");
+
+          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
+                                              ov, severity_sql);
+
+          g_free (ov);
         }
       else
-        new_type_sql = g_strdup ("type");
+        {
+          new_type_sql = g_strdup ("type");
+          new_severity_sql = g_strdup (severity_sql);
+        }
 
       switch (autofp)
         {
@@ -15000,7 +15058,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " results.report,"
                              " (SELECT cvss_base FROM nvts"
                              "  WHERE nvts.oid = results.nvt)"
-                             " AS cvss_base"
+                             "  AS cvss_base,"
+                             " nvt_version,"
+                             " %s AS severity,"
+                             " %s AS new_severity"
                              " FROM results, report_results"
                              " WHERE report_results.report = %llu"
                              "%s"
@@ -15011,6 +15072,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " LIMIT %i OFFSET %i;",
                              new_type_sql,
                              auto_type_sql,
+                             severity_sql,
+                             new_severity_sql,
                              report,
                              levels_sql ? levels_sql->str : "",
                              phrase_sql ? phrase_sql->str : "",
@@ -15072,10 +15135,18 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       g_free (new_type_sql);
       g_free (auto_type_sql);
+      g_free (severity_sql);
+      g_free (new_severity_sql);
     }
   else if (result)
     {
-      gchar *new_type_sql, *auto_type_sql;
+      gchar *new_type_sql, *auto_type_sql, *severity_sql, *new_severity_sql;
+
+      if (current_nvt)
+        severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup("severity");
 
       if (override)
         {
@@ -15117,9 +15188,22 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
+
+          /* TODO: Add CVSS-based overrides,
+                   restructure to avoid querying override twice */
+          ov = g_strdup_printf
+                ("NULL");
+
+          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
+                                              ov, severity_sql);
+
+          g_free (ov);
         }
       else
-        new_type_sql = g_strdup ("type");
+        {
+          new_type_sql = g_strdup ("type");
+          new_severity_sql = g_strdup (severity_sql);
+        }
 
       switch (autofp)
         {
@@ -15195,20 +15279,29 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
                              " type, %s, %s, description,"
                              " results.task,"
-                             " results.report"
+                             " results.report,"
+                             " NULL,"
+                             " results.nvt_version,"
+                             " %s,"
+                             " %s"
                              " FROM results"
                              " WHERE ROWID = %llu;",
                              new_type_sql,
                              auto_type_sql,
+                             severity_sql,
+                             new_severity_sql,
                              result);
 
       g_free (new_type_sql);
       g_free (auto_type_sql);
+      g_free (severity_sql);
+      g_free (new_severity_sql);
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
                            " type, type, type, description,"
-                           " results.task, results.report"
+                           " results.task, results.report, NULL,"
+                           " nvt_version, severity, severity"
                            " FROM results, report_results, reports"
                            " WHERE results.ROWID = report_results.result"
                            " AND report_results.report = reports.ROWID"
@@ -15504,6 +15597,69 @@ result_iterator_nvt_cvss_base_double (iterator_t* iterator)
 {
   if (iterator->done) return -1;
   return sqlite3_column_double (iterator->stmt, 9);
+}
+
+/**
+ * @brief Get the NVT version used during the scan from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+const char*
+result_iterator_scan_nvt_version (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+
+  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the original severity from a result iterator.
+ *
+ * This is the original severity without overrides and autofp.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+const char*
+result_iterator_original_severity (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+
+  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the severity from a result iterator.
+ *
+ * This is the the autofp adjusted overridden severity.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+const char*
+result_iterator_severity (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+
+  /* auto_type */
+  if (sqlite3_column_int (iterator->stmt, 7))
+    return "0.0";
+
+  /* new_type */
+  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
+  return ret ? ret : "";
 }
 
 /**

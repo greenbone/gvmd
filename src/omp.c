@@ -10091,17 +10091,23 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "</cert>"
     "<xref>%s</xref>"
     "</nvt>"
+    "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
+    "<severity>%s</severity>"
     "<description>%s</description>",
     xref ? xref : "",
+    result_iterator_scan_nvt_version (results),
     manage_result_type_threat (result_iterator_type (results)),
+    result_iterator_severity (results),
     descr ? nl_descr : "");
 
   if (include_overrides)
     buffer_xml_append_printf (buffer,
-                              "<original_threat>%s</original_threat>",
+                              "<original_threat>%s</original_threat>"
+                              "<original_severity>%s</original_severity>",
                               manage_result_type_threat
-                               (result_iterator_original_type (results)));
+                               (result_iterator_original_type (results)),
+                              result_iterator_original_severity (results));
 
   free (uuid);
 

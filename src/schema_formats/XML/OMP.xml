@@ -10041,8 +10041,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>host</e>
             <e>port</e>
             <e>nvt</e>
+            <e>scan_nvt_version</e>
             <e>threat</e>
+            <e>severity</e>
             <e>description</e>
+            <o><e>original_severity</e></o>
             <o><e>notes</e></o>
             <o><e>overrides</e></o>
           </pattern>
@@ -10216,12 +10219,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
           </ele>
           <ele>
+            <name>scan_nvt_version</name>
+            <summary>Version of the NVT used in the scan</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
             <name>threat</name>
             <pattern><t>threat</t></pattern>
           </ele>
           <ele>
+            <name>severity</name>
+            <summary>Severity score of the result, with overrides if applicable</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
             <name>description</name>
             <summary>Description of the result</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>original_severity</name>
+            <summary>Severity score of the result without overrides</summary>
             <pattern>text</pattern>
           </ele>
           <ele>

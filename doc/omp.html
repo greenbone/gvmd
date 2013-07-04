@@ -16384,12 +16384,27 @@ get_report_formats_response_report_format_active
 </ul>
 </li>
 <li>
+              &lt;<b>scan_nvt_version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Version of the NVT used in the scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>threat</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity score of the result, with overrides if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               <div style="margin-left: 15px; display: inline;">Description of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>original_severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Severity score of the result without overrides.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -16448,8 +16463,11 @@ get_results_response_results_result
        &amp; get_results_response_results_result_host
        &amp; get_results_response_results_result_port
        &amp; get_results_response_results_result_nvt
+       &amp; get_results_response_results_result_scan_nvt_version
        &amp; get_results_response_results_result_threat
+       &amp; get_results_response_results_result_severity
        &amp; get_results_response_results_result_description
+       &amp; get_results_response_results_result_original_severity?
        &amp; get_results_response_results_result_notes?
        &amp; get_results_response_results_result_overrides?
      }
@@ -16600,14 +16618,32 @@ get_results_response_results_result_nvt_xref
        text
      }
 
+get_results_response_results_result_scan_nvt_version
+ = element scan_nvt_version
+     {
+       text
+     }
+
 get_results_response_results_result_threat
  = element threat
      {
        threat
      }
 
+get_results_response_results_result_severity
+ = element severity
+     {
+       text
+     }
+
 get_results_response_results_result_description
  = element description
+     {
+       text
+     }
+
+get_results_response_results_result_original_severity
+ = element original_severity
      {
        text
      }

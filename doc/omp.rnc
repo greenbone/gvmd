@@ -8698,8 +8698,11 @@ get_results_response_results_result
        & get_results_response_results_result_host
        & get_results_response_results_result_port
        & get_results_response_results_result_nvt
+       & get_results_response_results_result_scan_nvt_version
        & get_results_response_results_result_threat
+       & get_results_response_results_result_severity
        & get_results_response_results_result_description
+       & get_results_response_results_result_original_severity?
        & get_results_response_results_result_notes?
        & get_results_response_results_result_overrides?
      }
@@ -8874,15 +8877,36 @@ get_results_response_results_result_nvt_xref
        text
      }
 
+# Version of the NVT used in the scan.
+get_results_response_results_result_scan_nvt_version
+ = element scan_nvt_version
+     {
+       text
+     }
+
 get_results_response_results_result_threat
  = element threat
      {
        threat
      }
 
+# Severity score of the result, with overrides if applicable.
+get_results_response_results_result_severity
+ = element severity
+     {
+       text
+     }
+
 # Description of the result.
 get_results_response_results_result_description
  = element description
+     {
+       text
+     }
+
+# Severity score of the result without overrides.
+get_results_response_results_result_original_severity
+ = element original_severity
      {
        text
      }
