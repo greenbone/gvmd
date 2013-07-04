@@ -1,3 +1,10 @@
+2013-07-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport for r16224 slightly adapted. Patch by Hani Benhabiles.
+
+	* src/omp.c (send_nvt): Escape xrefs too as characters like
+	ampersand may be included in URLs.
+
 2012-08-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.
