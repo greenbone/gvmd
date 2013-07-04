@@ -15112,7 +15112,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       ? " ORDER BY port DESC,"
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
-                                        "  THEN new_severity ELSE auto_type END)"
+                                        "  THEN new_severity ELSE 0.0 END)"
                                         " DESC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"

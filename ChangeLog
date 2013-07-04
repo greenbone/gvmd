@@ -1,5 +1,10 @@
 2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Always use 0.0 severity
+	for automatic false positives in ORDER BY clause.
+
+2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (result_iterator_scan_nvt_version)
 	(result_iterator_severity, result_iterator_original_severity)
 	(result_cmp): Fix comments.
