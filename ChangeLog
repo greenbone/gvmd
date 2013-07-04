@@ -1,5 +1,11 @@
 2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (result_iterator_scan_nvt_version)
+	(result_iterator_severity, result_iterator_original_severity)
+	(result_cmp): Fix comments.
+
+2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_report_iterator): Replace cvss_base in ORDER BY
 	with severity and make it higher priority than message type.
 	(result_iterator_severity_double): New iterator function.

@@ -15607,8 +15607,8 @@ result_iterator_nvt_cvss_base_double (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The type of the result.  Caller must only use before calling
- *         cleanup_iterator.
+ * @return The version of NVT used by the scan that produced the result.
+ *         Caller must only use before calling cleanup_iterator.
  */
 const char*
 result_iterator_scan_nvt_version (iterator_t *iterator)
@@ -15627,8 +15627,8 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The type of the result.  Caller must only use before calling
- *         cleanup_iterator.
+ * @return The original severity of the result.  Caller must only use before
+ *         calling cleanup_iterator.
  */
 const char*
 result_iterator_original_severity (iterator_t *iterator)
@@ -15647,7 +15647,7 @@ result_iterator_original_severity (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The type of the result.  Caller must only use before calling
+ * @return The severity of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
 const char*
@@ -19179,7 +19179,7 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
       return 0;
     }
 
-  /* Sorting by severity threat. */
+  /* Sorting by severity */
 
   tracef ("   delta: %s: severity first", __FUNCTION__);
 
