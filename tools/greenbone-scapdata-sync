@@ -156,11 +156,102 @@ log_err () {
   $LOG_CMD -p daemon.err $1
 }
 
+is_feed_current () {
+  if [ -r $TIMESTAMP ]
+  then
+    FEED_VERSION=`cat $TIMESTAMP`
+  fi
+
+  if [ -z "$FEED_VERSION" ]
+  then
+    log_warning "Could not determine feed version."
+    FEED_CURRENT=0
+    return $FEED_CURRENT
+  fi
+
+  FEED_INFO_TEMP_DIR=`mktemp -d`
+
+  if [ -e $ACCESSKEY ]
+  then
+    read feeduser < $ACCESSKEY
+    custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+    if [ -z $feeduser ] || [ -z $custid ]
+    then
+      log_err "Could not determine credentials, aborting synchronization."
+      rm -rf $FEED_INFO_TEMP_DIR
+      exit -1
+    fi
+
+    # --protocol=29 is a workaround for a known bug in rsync 3.0.3
+    if [ -e /admin/ezcli.state ]
+    then
+      gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
+      PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+    fi
+    if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+    then
+      RSYNC_SSH_PROXY_CMD=""
+    else
+      if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
+        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
+      else
+        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+      fi
+    fi
+    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/scap-data/timestamp $FEED_INFO_TEMP_DIR
+    if [ $? -ne 0 ]
+    then
+      log_err "rsync failed, aborting synchronization."
+      rm -rf $FEED_INFO_TEMP_DIR
+      exit -1
+    fi
+  else
+    log_err "Could not find access key, aborting synchronization."
+    rm -rf $FEED_INFO_TEMP_DIR
+    exit -1
+  fi
+
+  FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
+
+  if [ -z "$FEED_VERSION_SERVER" ]
+  then
+    log_err "Could not determine server feed version."
+    rm -rf $FEED_INFO_TEMP_DIR
+    exit -1
+  fi
+
+  # Check against FEED_VERSION
+  if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
+    FEED_CURRENT=0
+  else
+    FEED_CURRENT=1
+  fi
+
+  # Cleanup
+  rm -rf $FEED_INFO_TEMP_DIR
+
+  return $FEED_CURRENT
+}
+
 if [ $ENABLED -ne 1 ]
 then
   log_notice "SCAP synchronization is disabled, exiting."
   exit 0
 fi
+
+is_db_broken () {
+  DB_BROKEN=0
+  if [ ! -e $SCAP_DB ]
+  then
+    return
+  fi
+  DB_INTEGRITY=`sqlite3 $SCAP_DB "PRAGMA integrity_check;"`
+  if [ "$DB_INTEGRITY" != "ok" ]
+  then
+    DB_BROKEN=1
+    log_warning "Database integrity check failed."
+  fi
+}
 
 reinit () {
   log_notice "Reinitialization of the database necessary."
@@ -812,8 +903,12 @@ while test $# -gt 0; do
           do_self_test
           exit $SELFTEST_FAIL
           ;;
- esac
- shift
+        --feedcurrent)
+          is_feed_current
+          exit $?
+          ;;
+      esac
+      shift
 done
 
 SELFTEST_FAIL=0
@@ -821,6 +916,20 @@ do_self_test
 if [ $SELFTEST_FAIL -ne 0 ]
 then
   exit 1
+fi
+
+is_db_broken
+if [ $DB_BROKEN -eq 1 ]
+then
+  log_notice "Purging corrupted database."
+  rm -f $SCAP_DB
+else
+  is_feed_current
+  if [ $FEED_CURRENT -eq 1 ] && [ $REFRESH_ONLY -ne 1 ]
+  then
+    log_notice "Feed is already current, skipping synchronization."
+    exit 0
+  fi
 fi
 sync_scapdata
 
