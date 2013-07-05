@@ -1,5 +1,11 @@
 2013-07-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Update version number to 4.0.3.
+
+2013-07-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* CHANGES: Add missing items.
 
 2013-07-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
