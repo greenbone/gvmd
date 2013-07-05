@@ -1,3 +1,20 @@
+openvas-manager 3.0.6 (2013-07-05)
+
+This is the sixth maintenance release of the openvas-manager 3.0 module for the
+Open Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes an issue which caused an error when getting nvts with details
+when one nvt had unescaped ampersand in the xref field.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles
+
+Main changes since 3.0.5:
+* Escape xrefs before sending xml for nvts.
+
+
 openvas-manager 3.0.5 (2012-12-20)
 
 This is the fifth maintenance release of the openvas-manager 3.0 module for the
