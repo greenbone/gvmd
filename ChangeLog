@@ -1,4 +1,9 @@
-2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+2013-07-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Cast severity to REAL in
+	ORDER BY to ensure that it is sorted by its numerical value.
+
+2013-07-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (setting_dynamic_severity, setting_dynamic_severity_int):
 	New function prototypes.
