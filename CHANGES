@@ -6,12 +6,18 @@ is the central management service between the actual security scanner and
 various user clients.
 
 This release fixes an issue which caused an error when getting nvts with details
-when one nvt had unescaped ampersand in the xref field.
+when one nvt had unescaped ampersand in the xref field. It also fixes result
+port value validation in notes/overrides, improve performance for get_notes and
+a null pointer dereference fix.
 
 Many thanks to everyone who has contributed to this release:
-Hani Benhabiles
+Hani Benhabiles, Timo Pollmeier, Matthew Mundell.
 
 Main changes since 4.0.2:
+* Improve GET_NOTES performance.
+* Apply report filtering on nvt tags and cve values too.
+* Check null pointer in create_config copy case.
+* Improve validation of results port in notes/overrides.
 * Escape xrefs before sending xml for nvts.
 
 
