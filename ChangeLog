@@ -1,5 +1,11 @@
 2012-07-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version number.
+
+2012-07-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	Preparing the openvas-manager 2.0.6 release.
 
 	* CHANGES: Updated.
