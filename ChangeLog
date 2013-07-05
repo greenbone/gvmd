@@ -1,5 +1,18 @@
 2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.h (setting_dynamic_severity, setting_dynamic_severity_int):
+	New function prototypes.
+
+	* src/manage_sql.c (init_manage_settings): Add new setting
+	"Dynamic Severity".
+	(init_result_iterator): Rename current_nvt to dynamic_severity
+	and get value from setting.
+	(setting_dynamic_severity, setting_dynamic_severity_int): New functions
+	for getting the "Dynamic Severity" setting.
+	(modify_setting): Accept UUID of "Dynamic Severity" setting.
+
+2013-07-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Always use 0.0 severity
 	for automatic false positives in ORDER BY clause.
 

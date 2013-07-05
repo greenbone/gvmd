@@ -2919,6 +2919,12 @@ setting_filter (const char *);
 char *
 setting_severity ();
 
+char *
+setting_dynamic_severity ();
+
+int
+setting_dynamic_severity_int ();
+
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
                        const char *);

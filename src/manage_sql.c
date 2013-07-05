@@ -10302,6 +10302,17 @@ init_manage_settings ()
          " ('f16bb236-a32d-4cd5-a880-e0fcf2599f59', NULL, 'Severity Class',"
          "  'Severity class used for severity bars.',"
          "  'nist');");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
+         "  'Whether to use dynamic severity scores by default.',"
+         "  '1');");
 }
 
 /**
@@ -14904,7 +14915,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       int search_phrase_exact, const char* min_cvss_base,
                       int override)
 {
-  int current_nvt = 0; // TODO: replace with parameter
+  int dynamic_severity = setting_dynamic_severity_int (); // TODO: Add parameter
 
   GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar* sql;
@@ -14924,7 +14935,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
 
-      if (current_nvt)
+      if (dynamic_severity)
         severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
                                 " WHERE nvts.oid = results.nvt)");
       else
@@ -15145,7 +15156,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
     {
       gchar *new_type_sql, *auto_type_sql, *severity_sql, *new_severity_sql;
 
-      if (current_nvt)
+      if (dynamic_severity)
         severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
                               " WHERE nvts.oid = results.nvt)");
       else
@@ -45581,6 +45592,45 @@ setting_severity ()
 }
 
 /**
+ * @brief Return the Dynamic Severity user setting.
+ *
+ * @return User Dynamic Severity in settings if it exists, "" otherwise.
+ */
+char *
+setting_dynamic_severity ()
+{
+  return sql_string (0, 0,
+                     "SELECT value FROM settings"
+                     " WHERE name = 'Dynamic Severity'"
+                     " AND ((owner IS NULL)"
+                     "      OR (owner ="
+                     "          (SELECT ROWID FROM users"
+                     "           WHERE users.uuid = '%s')))"
+                     " ORDER BY owner DESC LIMIT 0,1;",
+                     current_credentials.uuid);
+}
+
+/**
+ * @brief Return the Dynamic Severity user setting as an int.
+ *
+ * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
+ *         or does not exist.
+ */
+int
+setting_dynamic_severity_int ()
+{
+  return sql_int (0, 0,
+                  "SELECT value FROM settings"
+                  " WHERE name = 'Dynamic Severity'"
+                  " AND ((owner IS NULL)"
+                  "      OR (owner ="
+                  "          (SELECT ROWID FROM users"
+                  "           WHERE users.uuid = '%s')))"
+                  " ORDER BY owner DESC LIMIT 0,1;",
+                  current_credentials.uuid);
+}
+
+/**
  * @brief Initialise a setting iterator, including observed settings.
  *
  * @param[in]  iterator    Iterator.
@@ -45827,7 +45877,8 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
-               || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0))
+               || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0
+               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
