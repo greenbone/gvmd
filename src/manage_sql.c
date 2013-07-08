@@ -20417,7 +20417,6 @@ print_report_assets_xml (report_t report, FILE *out, const char *host,
 
   while (host || next (&hosts))
     {
-      iterator_t report_hosts;
       report_host_t report_host;
       const char *ip;
 
@@ -20433,6 +20432,7 @@ print_report_assets_xml (report_t report, FILE *out, const char *host,
 
       if (report_host)
         {
+          iterator_t report_hosts;
           init_host_iterator (&report_hosts, 0, NULL, report_host);
           if (next (&report_hosts))
             {
@@ -20620,11 +20620,11 @@ print_report_assets_xml (report_t report, FILE *out, const char *host,
                      "</detail>",
                      pos);
             }
+          cleanup_iterator (&report_hosts);
 
           PRINT (out,
                  "</host>");
         }
-      cleanup_iterator (&report_hosts);
 
       if (host)
         break;
