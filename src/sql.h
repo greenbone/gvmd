@@ -107,6 +107,9 @@ void
 sql_current_offset (sqlite3_context *, int, sqlite3_value **);
 
 void
+sql_severity (sqlite3_context *, int argc, sqlite3_value **);
+
+void
 sql_task_trend (sqlite3_context *, int argc, sqlite3_value **);
 
 void

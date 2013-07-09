@@ -1210,6 +1210,56 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Calculate the severity of a task.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  task_t task;
+  report_t last_report;
+  char *severity;
+  double severity_double;
+  unsigned int overrides;
+
+  assert (argc == 2);
+
+  task = sqlite3_value_int64 (argv[0]);
+  if (task == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  overrides = sqlite3_value_int (argv[1]);
+
+  severity = task_severity (task, overrides);
+  severity_double = severity ? g_strtod (severity, 0) : 0.0;
+  tracef ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
+  if (severity)
+    {
+      sqlite3_result_double (context, severity_double);
+      free (severity);
+      return;
+    }
+
+  task_last_report (task, &last_report);
+  if (last_report == 0)
+    {
+      sqlite3_result_double (context, 0.0);
+      return;
+    }
+
+  sqlite3_result_double (context, 0.0);
+  return;
+}
+
+/**
  * @brief Do a regexp match.  Implements SQL REGEXP.
  *
  * This is a callback for a scalar SQL function of two arguments.

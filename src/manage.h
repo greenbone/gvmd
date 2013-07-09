@@ -611,7 +611,7 @@ int
 task_last_report (task_t, report_t*);
 
 const char *
-task_trend_counts (task_t, int, int, int, int, int, int);
+task_trend_counts (task_t, int, int, int, double, int, int, int, double);
 
 const char *
 task_trend (task_t, int);
@@ -630,6 +630,9 @@ task_schedule_next_time_tz (task_t);
 
 void
 set_scan_attack_state (report_t, const char*, const char*);
+
+char *
+task_severity (task_t, int);
 
 int
 task_debugs_size (task_t);
@@ -907,10 +910,11 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           int, int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, int*, int, int);
+report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
+               int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, int*, int,
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*, int,
                   const char*, int);
 
 char*

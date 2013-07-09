@@ -2461,6 +2461,21 @@ result_overrides
 </ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>full</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the full report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the report after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>host_count</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Counts of hosts in the results.</div>
 <ul style="list-style: none">
@@ -2675,6 +2690,7 @@ report_report
            &amp; report_report_user_tags
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
+           &amp; report_report_severity
            &amp; report_report_host_count?
            &amp; report_report_task
            &amp; report_report_ports
@@ -3052,6 +3068,25 @@ report_report_result_count_warning_filtered
  = element filtered
      {
        integer
+     }
+
+report_report_severity
+ = element severity
+     {
+       report_report_severity_full
+       &amp; report_report_severity_filtered
+     }
+
+report_report_severity_full
+ = element full
+     {
+       text
+     }
+
+report_report_severity_filtered
+ = element filtered
+     {
+       text
      }
 
 report_report_host_count
@@ -19271,6 +19306,11 @@ get_targets_response_target_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the report.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -19313,6 +19353,11 @@ get_targets_response_target_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the report.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -19354,6 +19399,11 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the report.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li></ul>
@@ -19405,6 +19455,11 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum severity of the report.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li></ul>
@@ -19773,6 +19828,7 @@ get_tasks_response_task_first_report_report
        attribute id { uuid }
        &amp; get_tasks_response_task_first_report_report_timestamp
        &amp; get_tasks_response_task_first_report_report_result_count
+       &amp; get_tasks_response_task_first_report_report_severity
      }
 
 get_tasks_response_task_first_report_report_timestamp
@@ -19821,6 +19877,12 @@ get_tasks_response_task_first_report_report_result_count_hole
        integer
      }
 
+get_tasks_response_task_first_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_last_report
  = element last_report
      {
@@ -19833,6 +19895,7 @@ get_tasks_response_task_last_report_report
        attribute id { uuid }
        &amp; get_tasks_response_task_last_report_report_timestamp
        &amp; get_tasks_response_task_last_report_report_result_count
+       &amp; get_tasks_response_task_last_report_report_severity
      }
 
 get_tasks_response_task_last_report_report_timestamp
@@ -19881,6 +19944,12 @@ get_tasks_response_task_last_report_report_result_count_hole
        integer
      }
 
+get_tasks_response_task_last_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_second_last_report
  = element second_last_report
      {
@@ -19893,6 +19962,7 @@ get_tasks_response_task_second_last_report_report
        attribute id { uuid }
        &amp; get_tasks_response_task_second_last_report_report_timestamp
        &amp; get_tasks_response_task_second_last_report_report_result_count
+       &amp; get_tasks_response_task_second_last_report_report_severity
      }
 
 get_tasks_response_task_second_last_report_report_timestamp
@@ -19941,6 +20011,12 @@ get_tasks_response_task_second_last_report_report_result_count_hole
        integer
      }
 
+get_tasks_response_task_second_last_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_rcfile
  = element rcfile
      {
@@ -19960,6 +20036,7 @@ get_tasks_response_task_reports_report
        &amp; get_tasks_response_task_reports_report_timestamp
        &amp; get_tasks_response_task_reports_report_scan_run_status
        &amp; get_tasks_response_task_reports_report_result_count
+       &amp; get_tasks_response_task_reports_report_severity
      }
 
 get_tasks_response_task_reports_report_timestamp
@@ -20012,6 +20089,12 @@ get_tasks_response_task_reports_report_result_count_hole
  = element hole
      {
        integer
+     }
+
+get_tasks_response_task_reports_report_severity
+ = element severity
+     {
+       text
      }
 
 get_tasks_response_task_preferences
@@ -20098,6 +20181,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/first_report&gt;
      &lt;last_report&gt;
@@ -20110,6 +20194,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/last_report&gt;
      &lt;second_last_report&gt;
@@ -20122,6 +20207,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/second_last_report&gt;
      &lt;alert id=""&gt;
@@ -20204,6 +20290,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/first_report&gt;
      &lt;last_report&gt;
@@ -20216,6 +20303,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/last_report&gt;
      &lt;second_last_report&gt;
@@ -20228,6 +20316,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
      &lt;/second_last_report&gt;
      &lt;alert id=""&gt;
@@ -20255,6 +20344,7 @@ get_tasks_response_task_preferences_preference_value
            &lt;log&gt;0&lt;/log&gt;
            &lt;warning&gt;3&lt;/warning&gt;
          &lt;/result_count&gt;
+         &lt;severity&gt;5.0&lt;/severity&gt;
        &lt;/report&gt;
        &lt;preferences&gt;
          &lt;preference&gt;

@@ -971,6 +971,7 @@ report_report
            & report_report_user_tags
            & report_report_scan_run_status
            & report_report_result_count
+           & report_report_severity
            & report_report_host_count?
            & report_report_task
            & report_report_ports
@@ -1402,6 +1403,27 @@ report_report_result_count_warning_filtered
  = element filtered
      {
        integer
+     }
+
+report_report_severity
+ = element severity
+     {
+       report_report_severity_full
+       & report_report_severity_filtered
+     }
+
+# Maximum severity of the full report.
+report_report_severity_full
+ = element full
+     {
+       text
+     }
+
+# Maximum severity of the report after filtering.
+report_report_severity_filtered
+ = element filtered
+     {
+       text
      }
 
 # Counts of hosts in the results.
@@ -10250,6 +10272,7 @@ get_tasks_response_task_first_report_report
        attribute id { uuid }
        & get_tasks_response_task_first_report_report_timestamp
        & get_tasks_response_task_first_report_report_result_count
+       & get_tasks_response_task_first_report_report_severity
      }
 
 get_tasks_response_task_first_report_report_timestamp
@@ -10299,6 +10322,13 @@ get_tasks_response_task_first_report_report_result_count_hole
        integer
      }
 
+# Maximum severity of the report.
+get_tasks_response_task_first_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_last_report
  = element last_report
      {
@@ -10311,6 +10341,7 @@ get_tasks_response_task_last_report_report
        attribute id { uuid }
        & get_tasks_response_task_last_report_report_timestamp
        & get_tasks_response_task_last_report_report_result_count
+       & get_tasks_response_task_last_report_report_severity
      }
 
 get_tasks_response_task_last_report_report_timestamp
@@ -10360,6 +10391,13 @@ get_tasks_response_task_last_report_report_result_count_hole
        integer
      }
 
+# Maximum severity of the report.
+get_tasks_response_task_last_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_second_last_report
  = element second_last_report
      {
@@ -10372,6 +10410,7 @@ get_tasks_response_task_second_last_report_report
        attribute id { uuid }
        & get_tasks_response_task_second_last_report_report_timestamp
        & get_tasks_response_task_second_last_report_report_result_count
+       & get_tasks_response_task_second_last_report_report_severity
      }
 
 get_tasks_response_task_second_last_report_report_timestamp
@@ -10421,6 +10460,13 @@ get_tasks_response_task_second_last_report_report_result_count_hole
        integer
      }
 
+# Maximum severity of the report.
+get_tasks_response_task_second_last_report_report_severity
+ = element severity
+     {
+       text
+     }
+
 get_tasks_response_task_rcfile
  = element rcfile
      {
@@ -10440,6 +10486,7 @@ get_tasks_response_task_reports_report
        & get_tasks_response_task_reports_report_timestamp
        & get_tasks_response_task_reports_report_scan_run_status
        & get_tasks_response_task_reports_report_result_count
+       & get_tasks_response_task_reports_report_severity
      }
 
 get_tasks_response_task_reports_report_timestamp
@@ -10494,6 +10541,13 @@ get_tasks_response_task_reports_report_result_count_hole
  = element hole
      {
        integer
+     }
+
+# Maximum severity of the report.
+get_tasks_response_task_reports_report_severity
+ = element severity
+     {
+       text
      }
 
 get_tasks_response_task_preferences

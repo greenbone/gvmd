@@ -9087,12 +9087,13 @@ send_reports (task_t task, int apply_overrides,
     {
       gchar *uuid, *timestamp, *msg;
       int debugs, false_positives, holes, infos, logs, warnings, run_status;
+      double severity;
       char *scan_end;
 
       uuid = report_uuid (index);
 
       if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
-                         &false_positives, apply_overrides, 0))
+                         &false_positives, &severity, apply_overrides, 0))
         {
           free (uuid);
           return -5;
@@ -9121,6 +9122,7 @@ send_reports (task_t task, int apply_overrides,
                              "<warning>%i</warning>"
                              "<false_positive>%i</false_positive>"
                              "</result_count>"
+                             "<severity>%1.1f</severity>"
                              "</report>",
                              uuid,
                              timestamp,
@@ -9133,7 +9135,8 @@ send_reports (task_t task, int apply_overrides,
                              infos,
                              logs,
                              warnings,
-                             false_positives);
+                             false_positives,
+                             severity);
       free (scan_end);
       g_free (timestamp);
       if (send_to_client (msg, write_to_client, write_to_client_data))
@@ -15247,6 +15250,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes, infos, logs, warnings;
               int holes_2, infos_2, warnings_2;
               int false_positives;
+              double severity, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts;
@@ -15379,7 +15383,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (report_counts (first_report_id,
                                      &debugs, &holes_2, &infos_2, &logs,
                                      &warnings_2, &false_positives,
-                                     apply_overrides,
+                                     &severity_2, apply_overrides,
                                      0))
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
@@ -15406,6 +15410,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   "%i"
                                                   "</false_positive>"
                                                   "</result_count>"
+                                                  "<severity>%1.1f</severity>"
                                                   "</report>"
                                                   "</first_report>",
                                                   first_report_id,
@@ -15416,7 +15421,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   infos_2,
                                                   logs,
                                                   warnings_2,
-                                                  false_positives);
+                                                  false_positives,
+                                                  severity_2);
                   free (scan_end);
                   g_free (timestamp);
                 }
@@ -15436,7 +15442,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       && report_counts (second_last_report_id,
                                         &debugs, &holes_2, &infos_2,
                                         &logs, &warnings_2,
-                                        &false_positives,
+                                        &false_positives, &severity_2,
                                         apply_overrides,
                                         0))
                     /** @todo Either fail better or abort at SQL level. */
@@ -15462,6 +15468,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          "%i"
                                          "</false_positive>"
                                          "</result_count>"
+                                         "<severity>%1.1f</severity>"
                                          "</report>"
                                          "</second_last_report>",
                                          second_last_report_id,
@@ -15472,7 +15479,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          infos_2,
                                          logs,
                                          warnings_2,
-                                         false_positives);
+                                         false_positives,
+                                         severity_2);
                   free (scan_end);
                   g_free (timestamp);
                 }
@@ -15496,7 +15504,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       if (report_counts
                            (last_report_id,
                             &debugs, &holes, &infos, &logs,
-                            &warnings, &false_positives,
+                            &warnings, &false_positives, &severity,
                             apply_overrides,
                             0))
                         /** @todo Either fail better or abort at SQL level. */
@@ -15507,6 +15515,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       holes = holes_2;
                       infos = infos_2;
                       warnings = warnings_2;
+                      severity = severity_2;
                     }
 
                   if (report_timestamp (last_report_id, &timestamp))
@@ -15528,6 +15537,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  "%i"
                                                  "</false_positive>"
                                                  "</result_count>"
+                                                 "<severity>%1.1f</severity>"
                                                  "</report>"
                                                  "</last_report>",
                                                  last_report_id,
@@ -15538,7 +15548,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  infos,
                                                  logs,
                                                  warnings,
-                                                 false_positives);
+                                                 false_positives,
+                                                 severity);
                   free (scan_end);
                   g_free (timestamp);
                   g_free (last_report_id);
@@ -15632,8 +15643,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_report_count (index),
                            task_finished_report_count (index),
                            task_trend_counts
-                            (index, holes, warnings, infos,
-                             holes_2, warnings_2, infos_2),
+                            (index, holes, warnings, infos, severity,
+                             holes_2, warnings_2, infos_2, severity_2),
                            task_schedule_uuid,
                            task_schedule_name,
                            (next_time == 0

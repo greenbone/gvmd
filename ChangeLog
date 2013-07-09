@@ -1,3 +1,47 @@
+2013-07-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add severity to reports.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Change to 85.
+
+	* src/manage.h (task_trend_counts, report_counts, report_counts_id): Add
+	new parameters.
+	(task_severity): New function prototype.
+
+	* src/manage_migrators.c (migrate_84_to_85): New migrator function.
+	(database_migrators): Add migrate_84_to_85.
+
+	* src/manage_sql.c (create_tables): Add columns "severity",
+	"override_severity" to table "reports".
+	(TASK_ITERATOR_FILTER_COLUMNS, TASK_ITERATOR_COLUMNS): Add column
+	"severity".
+	(init_manage_process): Add creation of MySQL function "task_severity".
+	(task_severity): New function to get the maximum severity of a task.
+	(report_cache_counts): Add severity_parameter.
+	(report_severity, report_severity_filtered): New functions to get
+	the maximum severity of a report.
+	(report_counts, cache_report_counts, report_counts_id_filt,
+	report_counts_id): Add severity_parameter(s).
+	(print_report_assets_xml, print_report_port_xml): Adjust calls of
+	report_counts_id, report_counts_id_filt.
+	(print_report_xml): Add severity to response.
+	(task_trend_calc, task_trend_counts, task_trend): Take severity into
+	account when comparing levels.
+
+	* src/omp.c (send_reports)
+	(omp_xml_handle_end_element [CLIENT_GET_REPORTS]): Output maximum
+	severities of reports.
+
+	* src/sql.c (sql_severity): New SQLite function to get the severity
+	of a task.
+
+	* src/sql.h (sql_severity): New function prototype.
+
+	* src/schema_formats/XML/OMP.xml (get_reports): Add "severity" element
+	to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-07-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_assets_xml): Cleanup iterator in same
