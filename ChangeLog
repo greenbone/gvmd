@@ -1,3 +1,8 @@
+2013-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_filter, modify_filter): Clean filter term so
+	that default keywords are added to it.
+
 2013-07-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add severity to reports.
