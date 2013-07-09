@@ -1,5 +1,12 @@
 2013-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r16909.
+
+	* src/manage_sql.c (print_report_assets_xml): Cleanup iterator in same
+	block it was initialised in.
+
+2013-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r16646.
 
 	* src/manage_sql.c (MIGRATE_55_TO_56_RANGE): New macro.
