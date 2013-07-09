@@ -1,3 +1,12 @@
+2013-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r16646.
+
+	* src/manage_sql.c (MIGRATE_55_TO_56_RANGE): New macro.
+	(migrate_55_to_56_ensure_predefined_port_lists_exist): New function.
+	(migrate_55_to_56): Call dedicated port list function, as the normal one
+	has changed.
+
 2013-07-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Post release version bump.
