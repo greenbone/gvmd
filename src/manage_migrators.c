@@ -6985,7 +6985,7 @@ migrate_84_to_85 ()
 {
   sql ("BEGIN EXCLUSIVE;");
 
-  /* Ensure that the database is currently version 83. */
+  /* Ensure that the database is currently version 84. */
 
   if (manage_db_version () != 84)
     {
@@ -7002,7 +7002,7 @@ migrate_84_to_85 ()
   sql ("UPDATE reports SET highs = -1;");
   sql ("UPDATE reports SET override_highs = -1;");
 
-  /* Set the database version to 84. */
+  /* Set the database version to 85. */
 
   set_db_version (85);
 
