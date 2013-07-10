@@ -1849,8 +1849,8 @@ find_override (const char*, override_t*);
 
 int
 create_override (const char*, const char*, const char*, const char*,
-                 const char*, const char*, const char*, task_t, result_t,
-                 override_t*);
+                 const char*, const char*, const char*, const char*,
+                 task_t, result_t, override_t*);
 
 int
 override_uuid (override_t, char **);

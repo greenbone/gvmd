@@ -1044,6 +1044,7 @@ typedef struct
   char *copy;         ///< UUID of resource to copy.
   char *hosts;        ///< Hosts to which to limit override.
   char *new_threat;   ///< New threat value of overridden results.
+  char *new_severity; ///< New severity score of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
@@ -1064,6 +1065,7 @@ create_override_data_reset (create_override_data_t *data)
   free (data->copy);
   free (data->hosts);
   free (data->new_threat);
+  free (data->new_severity);
   free (data->nvt_oid);
   free (data->port);
   free (data->result_id);
@@ -4633,6 +4635,7 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_ACTIVE,
   CLIENT_CREATE_OVERRIDE_COPY,
   CLIENT_CREATE_OVERRIDE_HOSTS,
+  CLIENT_CREATE_OVERRIDE_NEW_SEVERITY,
   CLIENT_CREATE_OVERRIDE_NEW_THREAT,
   CLIENT_CREATE_OVERRIDE_NVT,
   CLIENT_CREATE_OVERRIDE_PORT,
@@ -8500,6 +8503,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_OVERRIDE_COPY);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_HOSTS);
+        else if (strcasecmp ("NEW_SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_NEW_SEVERITY);
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE_NEW_THREAT);
         else if (strcasecmp ("NVT", element_name) == 0)
@@ -17476,6 +17481,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         create_override_data->port,
                                         create_override_data->threat,
                                         create_override_data->new_threat,
+                                        create_override_data->new_severity,
                                         task,
                                         result,
                                         &new_override))
@@ -17495,6 +17501,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_override",
                                     "Error in port specification"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override could not be created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Error in new_severity specification"));
                 g_log ("event override", G_LOG_LEVEL_MESSAGE,
                        "Override could not be created");
                 break;
@@ -17520,6 +17533,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_OVERRIDE, ACTIVE);
       CLOSE (CLIENT_CREATE_OVERRIDE, COPY);
       CLOSE (CLIENT_CREATE_OVERRIDE, HOSTS);
+      CLOSE (CLIENT_CREATE_OVERRIDE, NEW_SEVERITY);
       CLOSE (CLIENT_CREATE_OVERRIDE, NEW_THREAT);
       CLOSE (CLIENT_CREATE_OVERRIDE, NVT);
       CLOSE (CLIENT_CREATE_OVERRIDE, PORT);
@@ -24200,6 +24214,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_HOSTS,
               &create_override_data->hosts);
+
+      APPEND (CLIENT_CREATE_OVERRIDE_NEW_SEVERITY,
+              &create_override_data->new_severity);
 
       APPEND (CLIENT_CREATE_OVERRIDE_NEW_THREAT,
               &create_override_data->new_threat);

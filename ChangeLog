@@ -1,3 +1,18 @@
+2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (create_override): Add parameter.
+
+	* src/manage_sql.c (create_override): Add parameter to set
+	"new_severity".
+	(copy_override): Add "new_severity" column.
+
+	* src/omp.c (create_override_data_t, create_override_data_reset): Add
+	"new_severity" component.
+	(client_state_t): Add CLIENT_CREATE_OVERRIDE_NEW_SEVERITY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new "new_severity" subelement of
+	create_override.
+
 2013-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_port_xml, print_report_xml): Line up

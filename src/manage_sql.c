@@ -36193,20 +36193,23 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  port        Port to apply override to, NULL for any port.
  * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
  * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  new_severity Severity score to override "Alarm" type results to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
  * @param[out] override    Created override.
  *
- * @return 0 success, 99 permission denied, 1 Invalid port, -1 error.
+ * @return 0 success, 99 permission denied, 1 Invalid port, 2 invalid severity,
+ *         -1 error.
  */
 int
 create_override (const char* active, const char* nvt, const char* text,
                  const char* hosts, const char* port, const char* threat,
-                 const char* new_threat, task_t task, result_t result,
-                 override_t* override)
+                 const char* new_threat, const char* new_severity,
+                 task_t task, result_t result, override_t* override)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
   gchar *quoted_new_threat;
+  double new_severity_dbl;
 
   if (user_may ("create_override") == 0)
     return 99;
@@ -36231,6 +36234,29 @@ create_override (const char* active, const char* nvt, const char* text,
       && strcmp (new_threat, ""))
     return -1;
 
+  new_severity_dbl = 0.0;
+  if (strcmp (new_threat, "Log") == 0)
+    new_severity_dbl = 0.0;
+  else if (strcmp (new_threat, "False Positive") == 0)
+    new_severity_dbl = -1.0;
+  else if (strcmp (new_threat, "Debug") == 0)
+    new_severity_dbl = -2.0;
+  else if (new_severity == NULL || strcmp (new_severity, "") == 0)
+    {
+      if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Medium") == 0)
+        new_severity_dbl = 5.0;
+      else if (strcmp (new_threat, "Low") == 0)
+        new_severity_dbl = 2.0;
+      else
+        return -1;
+    }
+  else if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
+           || new_severity_dbl < 0.0
+           || new_severity_dbl > 10.0)
+        return 2;
+
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
@@ -36241,10 +36267,10 @@ create_override (const char* active, const char* nvt, const char* text,
 
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, new_threat, task, result, end_time)"
+       "  port, threat, new_threat, new_severity, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %llu, %llu, %i);",
+       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %1.1f, %llu, %llu, %i);",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -36254,6 +36280,7 @@ create_override (const char* active, const char* nvt, const char* text,
        quoted_port,
        quoted_threat,
        quoted_new_threat,
+       new_severity_dbl,
        task,
        result,
        (active == NULL || (strcmp (active, "-1") == 0))
@@ -36307,7 +36334,7 @@ copy_override (const char *override_id, override_t* new_override)
 {
   return copy_resource ("override", NULL, NULL, override_id,
                         "nvt, text, hosts, port, threat, new_threat, task,"
-                        " result, end_time",
+                        " result, end_time, new_severity",
                         1, new_override);
 }
 
