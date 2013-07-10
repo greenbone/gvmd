@@ -1,5 +1,9 @@
 2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (OVERRIDE_ITERATOR_TRASH_COLUMNS): Add missing comma.
+
+2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage.h (create_override): Add parameter.
 
 	* src/manage_sql.c (create_override): Add parameter to set

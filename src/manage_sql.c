@@ -36580,7 +36580,7 @@ modify_override (override_t override, const char *active, const char* text,
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides_trash.task) AS task_id,"   \
-  " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name"  \
+  " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name," \
   " overrides_trash.new_severity"
 
 /**
