@@ -1,3 +1,8 @@
+2013-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_port_xml, print_report_xml): Line up
+	indentation.
+
 2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add CVSS-based severity to overrides table and get_overrides.

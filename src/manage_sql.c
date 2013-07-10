@@ -21671,14 +21671,14 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
         int port_len = strlen (item);
         int cvss_len = strlen (item + port_len + 1);
         PRINT (out,
-                 "<port>"
-                 "<host>%s</host>"
-                 "%s"
-                 "<cvss>%s</cvss>"
-                 "</port>",
-                 item + port_len + cvss_len + 2,
-                 item,
-                 item + port_len + 1);
+               "<port>"
+               "<host>%s</host>"
+               "%s"
+               "<cvss>%s</cvss>"
+               "</port>",
+               item + port_len + cvss_len + 2,
+               item,
+               item + port_len + 1);
         g_free (item);
       }
     g_array_free (ports, TRUE);
@@ -22027,15 +22027,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           while (next (&tags))
             {
               PRINT (out,
-                      "<tag id=\"%s\">"
-                      "<name>%s</name>"
-                      "<value>%s</value>"
-                      "<comment>%s</comment>"
-                      "</tag>",
-                      resource_tag_iterator_uuid (&tags),
-                      resource_tag_iterator_name (&tags),
-                      resource_tag_iterator_value (&tags),
-                      resource_tag_iterator_comment (&tags));
+                     "<tag id=\"%s\">"
+                     "<name>%s</name>"
+                     "<value>%s</value>"
+                     "<comment>%s</comment>"
+                     "</tag>",
+                     resource_tag_iterator_uuid (&tags),
+                     resource_tag_iterator_name (&tags),
+                     resource_tag_iterator_value (&tags),
+                     resource_tag_iterator_comment (&tags));
             }
 
           cleanup_iterator (&tags);
