@@ -1,5 +1,29 @@
 2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Add CVSS-based severity to overrides table and get_overrides.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Change to 86.
+
+	* src/manage_migrators.c (migrate_85_to_86): New migrator function.
+	(database_migrators): Add migrate_85_to_86.
+
+	* src/manage.h (override_iterator_new_severity): New function prototype.
+
+	* src/manage_sql.c (create_tables): Add column "new_severity" to
+	tables "overrides" and "overrides_trash".
+	(OVERRIDE_ITERATOR_FILTER_COLUMNS, OVERRIDE_ITERATOR_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Add "new_severity" column.
+	(override_iterator_new_severity): New iterator function.
+
+	* src/omp.c (buffer_overrides_xml): Add "new_severity" element.
+
+	* src/schema_formats/XML/OMP.xml (get_overrides): Add "new_severity"
+	element to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_migrators.c (migrate_84_to_85): Correct version numbers in
 	comments.
 

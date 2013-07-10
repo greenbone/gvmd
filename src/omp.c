@@ -9460,6 +9460,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<new_threat>%s</new_threat>"
+                                    "<new_severity>%1.1f</new_severity>"
                                     "<orphan>%i</orphan>"
                                     "<user_tags>"
                                     "<count>%i</count>"
@@ -9477,6 +9478,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
                                     override_iterator_new_threat (overrides),
+                                    override_iterator_new_severity (overrides),
                                     ((override_iterator_task (overrides)
                                       && (uuid_task == NULL))
                                      || (override_iterator_result (overrides)
@@ -9523,6 +9525,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<port>%s</port>"
             "<threat>%s</threat>"
             "<new_threat>%s</new_threat>"
+            "<new_severity>%1.1f</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_uuid (overrides),
@@ -9540,6 +9543,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             override_iterator_threat (overrides)
              ? override_iterator_threat (overrides) : "",
             override_iterator_new_threat (overrides),
+            override_iterator_new_severity (overrides),
             uuid_task ? uuid_task : "",
             name_task ? name_task : "",
             trash_task,

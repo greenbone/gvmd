@@ -14040,6 +14040,11 @@ get_nvt_feed_version_response_version
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>new_severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New severity score for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
 <ul style="list-style: none"></ul>
@@ -14331,6 +14336,7 @@ get_overrides_response_override
        &amp; get_overrides_response_override_text
        &amp; get_overrides_response_override_threat
        &amp; get_overrides_response_override_new_threat
+       &amp; get_overrides_response_override_new_severity
        &amp; get_overrides_response_override_orphan
        &amp; get_overrides_response_override_user_tags
        &amp; ( get_overrides_response_override_hosts
@@ -14395,6 +14401,12 @@ get_overrides_response_override_new_threat
  = element new_threat
      {
        threat
+     }
+
+get_overrides_response_override_new_severity
+ = element new_severity
+     {
+       text
      }
 
 get_overrides_response_override_orphan
@@ -14574,6 +14586,7 @@ get_overrides_response_override_result_description
      &lt;active&gt;1&lt;/active&gt;
      &lt;text excerpt="0"&gt;This is the full text of the override.&lt;/text&gt;
      &lt;new_threat&gt;Log&lt;/new_threat&gt;
+     &lt;new_severity&gt;0.0&lt;/new_severity&gt;
      &lt;orphan&gt;1&lt;/orphan&gt;
      &lt;user_tags&gt;
        &lt;count&gt;0&lt;/count&gt;
@@ -14605,6 +14618,7 @@ get_overrides_response_override_result_description
      &lt;port&gt;general/tcp&lt;/port&gt;
      &lt;threat&gt;Medium&lt;/threat&gt;
      &lt;new_threat&gt;Low&lt;/new_threat&gt;
+     &lt;new_severity&gt;2.0&lt;/new_severity&gt;
      &lt;task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"&gt;
        &lt;name&gt;test&lt;/name&gt;
      &lt;/task&gt;

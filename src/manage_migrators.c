@@ -7012,6 +7012,41 @@ migrate_84_to_85 ()
 }
 
 /**
+ * @brief Migrate the database from version 85 to version 86.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_85_to_86 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 85. */
+
+  if (manage_db_version () != 85)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add column "new_severity" to overrides and overrides_trash */
+  sql ("ALTER TABLE overrides ADD COLUMN new_severity REAL;");
+  sql ("ALTER TABLE overrides_trash ADD COLUMN new_severity REAL;");
+
+  /* Clear counts cache so the severity columns are updated */
+  sql ("UPDATE reports SET override_highs = -1;");
+
+  /* Set the database version to 86. */
+
+  set_db_version (86);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7101,6 +7136,7 @@ static migrator_t database_migrators[]
     {83, migrate_82_to_83},
     {84, migrate_83_to_84},
     {85, migrate_84_to_85},
+    {86, migrate_85_to_86},
     /* End marker. */
     {-1, NULL}};
 

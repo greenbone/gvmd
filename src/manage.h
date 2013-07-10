@@ -1914,6 +1914,9 @@ override_iterator_active (iterator_t*);
 const char*
 override_iterator_nvt_name (iterator_t *);
 
+double
+override_iterator_new_severity (iterator_t *);
+
 
 /* Scanner messaging. */
 

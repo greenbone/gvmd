@@ -4385,7 +4385,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
        "  creation_time, modification_time, text, hosts, port, threat,"
-       "  new_threat, task INTEGER, result INTEGER, end_time);");
+       "  new_threat, task INTEGER, result INTEGER, end_time,"
+       "  new_severity REAL);");
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
        "  creation_time, modification_time, text, hosts, port, threat,"
@@ -36508,7 +36509,7 @@ modify_override (override_t override, const char *active, const char* text,
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
    "task_name", "task_id", "hosts", "port", "threat", "new_threat", "result", \
-   NULL }
+   "new_severity", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -36529,7 +36530,8 @@ modify_override (override_t override, const char *active, const char* text,
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
-  " (SELECT name FROM tasks WHERE ROWID = overrides.task) AS task_name"
+  " (SELECT name FROM tasks WHERE ROWID = overrides.task) AS task_name,"       \
+  " overrides.new_severity"
 
 /**
  * @brief Override iterator columns for trash case.
@@ -36551,7 +36553,8 @@ modify_override (override_t override, const char *active, const char* text,
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides_trash.task) AS task_id,"   \
-  " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name"
+  " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name"  \
+  " overrides_trash.new_severity"
 
 /**
  * @brief Count number of overrides.
@@ -36938,6 +36941,23 @@ override_iterator_active (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (override_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get the new severity from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity score to override with, -99.0 on error.
+ */
+double
+override_iterator_new_severity (iterator_t* iterator)
+{
+  double ret;
+  if (iterator->done) return -99.0;
+  ret = sqlite3_column_double (iterator->stmt,
+                               GET_ITERATOR_COLUMN_COUNT + 14);
+  return ret;
+}
 
 
 /* Schedules. */

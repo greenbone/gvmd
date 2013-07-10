@@ -8537,6 +8537,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>text</e>
           <e>threat</e>
           <e>new_threat</e>
+          <e>new_severity</e>
           <e>orphan</e>
           <e>user_tags</e>
           <o>
@@ -8606,6 +8607,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>New threat for result</summary>
           <pattern>
             <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>new_severity</name>
+          <summary>New severity score for result</summary>
+          <pattern>
+            text
           </pattern>
         </ele>
         <ele>
@@ -8790,6 +8798,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <active>1</active>
             <text excerpt="0">This is the full text of the override.</text>
             <new_threat>Log</new_threat>
+            <new_severity>0.0</new_severity>
             <orphan>1</orphan>
             <user_tags>
               <count>0</count>
@@ -8822,6 +8831,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <port>general/tcp</port>
             <threat>Medium</threat>
             <new_threat>Low</new_threat>
+            <new_severity>2.0</new_severity>
             <task id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4">
               <name>test</name>
             </task>

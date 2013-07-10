@@ -7901,6 +7901,7 @@ get_overrides_response_override
        & get_overrides_response_override_text
        & get_overrides_response_override_threat
        & get_overrides_response_override_new_threat
+       & get_overrides_response_override_new_severity
        & get_overrides_response_override_orphan
        & get_overrides_response_override_user_tags
        & ( get_overrides_response_override_hosts
@@ -7968,6 +7969,13 @@ get_overrides_response_override_new_threat
  = element new_threat
      {
        threat
+     }
+
+# New severity score for result.
+get_overrides_response_override_new_severity
+ = element new_severity
+     {
+       text
      }
 
 # Whether the override is an orphan.
