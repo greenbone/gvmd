@@ -12609,7 +12609,8 @@ task_threat_level (task_t task, int overrides)
              "      OR overrides.threat = results.type)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC",
+             " COLLATE collate_message_type ASC,"
+             " overrides.creation_time DESC",
              current_credentials.uuid);
 
       new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
@@ -12720,7 +12721,8 @@ task_previous_threat_level (task_t task)
          "      OR overrides.threat = results.type)"
          " ORDER BY overrides.result DESC, overrides.task DESC,"
          " overrides.port DESC, overrides.threat"
-         " COLLATE collate_message_type ASC",
+         " COLLATE collate_message_type ASC,"
+         " overrides.creation_time DESC",
          current_credentials.uuid);
 
   new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
@@ -12907,9 +12909,8 @@ task_severity (task_t task, int overrides)
 
   if (overrides)
     {
-      // TODO: Add CVSS-based override
       ov = g_strdup_printf
-            ("SELECT overrides.new_threat"
+            ("SELECT overrides.new_severity"
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
              " AND ((overrides.owner IS NULL)"
@@ -12935,10 +12936,11 @@ task_severity (task_t task, int overrides)
              "      OR overrides.threat = results.type)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC",
+             " COLLATE collate_message_type ASC,"
+             " overrides.creation_time DESC",
              current_credentials.uuid);
 
-      new_severity_sql = g_strdup_printf ("coalesce (NULL, severity)");
+      new_severity_sql = g_strdup_printf ("coalesce ((%s), severity)", ov);
 
       g_free (ov);
     }
@@ -14985,16 +14987,44 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.threat = results.type)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
                  current_credentials.uuid);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
 
-          /* TODO: Add CVSS-based overrides */
           ov = g_strdup_printf
-                ("NULL");
+                ("SELECT overrides.new_severity"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
+                 " AND (overrides.task ="
+                 "      (SELECT reports.task FROM reports"
+                 "       WHERE report_results.report = reports.ROWID)"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
+                 current_credentials.uuid);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                               ov, severity_sql);
@@ -15211,17 +15241,45 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.threat = results.type)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
                  current_credentials.uuid);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
           g_free (ov);
 
-          /* TODO: Add CVSS-based overrides,
-                   restructure to avoid querying override twice */
           ov = g_strdup_printf
-                ("NULL");
+                ("SELECT overrides.new_severity"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = results.nvt"
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT ROWID FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= now ()))"
+                 " AND (overrides.task ="
+                 "      (SELECT reports.task FROM reports, report_results"
+                 "       WHERE report_results.result = results.ROWID"
+                 "       AND report_results.report = reports.ROWID)"
+                 "      OR overrides.task = 0)"
+                 " AND (overrides.result = results.ROWID"
+                 "      OR overrides.result = 0)"
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = \"\""
+                 "      OR hosts_contains (overrides.hosts, results.host))"
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = results.port)"
+                 " AND (overrides.threat is NULL"
+                 "      OR overrides.threat = \"\""
+                 "      OR overrides.threat = results.type)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.threat"
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
+                 current_credentials.uuid);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                               ov, severity_sql);
@@ -16175,7 +16233,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  "      OR overrides.threat = results.type)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
                  current_credentials.uuid);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
@@ -16838,7 +16897,8 @@ report_scan_result_count (report_t report, const char* levels,
              "      OR overrides.threat = results.type)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC",
+             " COLLATE collate_message_type ASC,"
+             " overrides.creation_time DESC",
              current_credentials.uuid);
 
       new_type_sql = g_strdup_printf (", coalesce ((%s), type) AS new_type", ov);
@@ -16967,7 +17027,8 @@ report_count (report_t report, const char *type, int override, const char *host)
                  "      OR overrides.threat = $type)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
 
@@ -17283,7 +17344,7 @@ report_severity (report_t report, int override, const char *host)
       report_task (report, &task);
 
       select = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = $nvt" // 1
                  " AND ((overrides.owner IS NULL)"
@@ -17307,7 +17368,8 @@ report_severity (report_t report, int override, const char *host)
                  "      OR overrides.threat = $type)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
 
@@ -17486,8 +17548,7 @@ report_severity (report_t report, int override, const char *host)
               if (ret == SQLITE_DONE)
                 new_severity = sqlite3_column_double (results.stmt, 2);
               else
-                // TODO: Get CVSS-based override
-                new_severity = sqlite3_column_double (results.stmt, 2);
+                new_severity = sqlite3_column_double (full_stmt, 0);
 
               if (new_severity > severity)
                 severity = new_severity;
@@ -17826,7 +17887,8 @@ report_count_filtered (report_t report, const char *type, int override,
                  "      OR overrides.threat = $type)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
 
@@ -18234,7 +18296,8 @@ report_severity_filtered (report_t report, int override,
                  "      OR overrides.threat = $type)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC;",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
 
@@ -18748,7 +18811,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           report_task (report, &task);
 
           select = g_strdup_printf
-                    ("SELECT overrides.new_threat"
+                    ("SELECT overrides.new_threat, overrides.new_severity"
                      " FROM overrides"
                      " WHERE overrides.nvt = $nvt" // 1
                      " AND ((overrides.owner IS NULL)"
@@ -18772,7 +18835,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                      "      OR overrides.threat = $type)" // 5
                      " ORDER BY overrides.result DESC, overrides.task DESC,"
                      " overrides.port DESC, overrides.threat"
-                     " COLLATE collate_message_type ASC;",
+                     " COLLATE collate_message_type ASC,"
+                     " overrides.modification_time DESC;",
                      current_credentials.uuid,
                      task);
 
@@ -19051,8 +19115,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                   else
                     {
                       new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-                      // TODO: Add CVSS-based overrides.
-                      new_severity = sqlite3_column_double (results.stmt, 7);
+                      new_severity = sqlite3_column_double (full_stmt, 1);
                     }
 
                   if (new_type)
@@ -20713,7 +20776,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  "      OR overrides.threat = results.type)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC",
+                 " COLLATE collate_message_type ASC,"
+                 " overrides.creation_time DESC",
                  current_credentials.uuid);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);

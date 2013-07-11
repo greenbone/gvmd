@@ -1,5 +1,13 @@
 2013-07-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (task_threat_level, task_previous_threat_level)
+	(init_asset_iterator, report_scan_result_count, report_count):
+	Sort overrides also by creation date.
+	(task_severity, init_result_iterator): Use new severity of overrides.
+	Additionally sort overrides by creation date.
+
+2013-07-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage.h (modify_override): Add parameter.
 
 	* src/manage_sql.c (modify_override): Add parameter to set
