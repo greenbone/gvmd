@@ -14943,6 +14943,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgdf";
+      if (strcmp (sort_field, "location") == 0) sort_field = "port";
 
       levels_sql = where_levels_auto (levels);
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);

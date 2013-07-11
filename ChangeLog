@@ -1,3 +1,8 @@
+2013-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Make "location" an alias for
+	"port" in the sort field.
+
 2013-07-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (task_threat_level, task_previous_threat_level)
