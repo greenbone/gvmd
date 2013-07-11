@@ -3457,6 +3457,7 @@ typedef struct
 {
   char *active;       ///< Whether the override is active.
   char *hosts;        ///< Hosts to which to limit override.
+  char *new_severity; ///< New severity score of overridden results.
   char *new_threat;   ///< New threat value of overridden results.
   char *nvt_oid;      ///< NVT to which to limit override.
   char *override_id;  ///< ID of override to modify.
@@ -3477,6 +3478,7 @@ modify_override_data_reset (modify_override_data_t *data)
 {
   free (data->active);
   free (data->hosts);
+  free (data->new_severity);
   free (data->new_threat);
   free (data->nvt_oid);
   free (data->override_id);
@@ -4953,6 +4955,7 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE,
   CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
+  CLIENT_MODIFY_OVERRIDE_NEW_SEVERITY,
   CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
   CLIENT_MODIFY_OVERRIDE_PORT,
   CLIENT_MODIFY_OVERRIDE_RESULT,
@@ -8866,6 +8869,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_OVERRIDE_ACTIVE);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_HOSTS);
+        else if (strcasecmp ("NEW_SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_NEW_SEVERITY);
         else if (strcasecmp ("NEW_THREAT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_OVERRIDE_NEW_THREAT);
         else if (strcasecmp ("PORT", element_name) == 0)
@@ -21244,6 +21249,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         modify_override_data->port,
                                         modify_override_data->threat,
                                         modify_override_data->new_threat,
+                                        modify_override_data->new_severity,
                                         task,
                                         result))
             {
@@ -21259,6 +21265,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_override",
                                     "Error in port specification"));
+                g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                       "Override could not be modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in severity specification"));
                 g_log ("event override", G_LOG_LEVEL_MESSAGE,
                        "Override could not be modified");
                 break;
@@ -21278,6 +21291,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_MODIFY_OVERRIDE, ACTIVE);
       CLOSE (CLIENT_MODIFY_OVERRIDE, HOSTS);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, NEW_SEVERITY);
       CLOSE (CLIENT_MODIFY_OVERRIDE, NEW_THREAT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, PORT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, RESULT);
@@ -24649,6 +24663,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_HOSTS,
               &modify_override_data->hosts);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_NEW_SEVERITY,
+              &modify_override_data->new_severity);
 
       APPEND (CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
               &modify_override_data->new_threat);

@@ -1,3 +1,17 @@
+2013-07-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (modify_override): Add parameter.
+
+	* src/manage_sql.c (modify_override): Add parameter to set
+	"new_severity".
+
+	* src/omp.c (modify_override_data_t, modify_override_data_reset): Add
+	"new_severity" component.
+	(client_state_t): Add CLIENT_MODIFY_OVERRIDE_NEW_SEVERITY.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new "new_severity" subelement of
+	modify_override.
+
 2013-07-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (OVERRIDE_ITERATOR_TRASH_COLUMNS): Add missing comma.
