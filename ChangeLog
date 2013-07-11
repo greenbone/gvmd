@@ -1,5 +1,12 @@
 2013-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (collate_location): New function.
+	(init_manage_process): Create collate_location.
+	(init_result_iterator): Collate ports with new collator, so that they
+	sort properly.
+
+2013-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Make "location" an alias for
 	"port" in the sort field.
 

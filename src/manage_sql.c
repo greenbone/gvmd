@@ -5098,6 +5098,73 @@ collate_ip (void* data,
   return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
 }
 
+/**
+ * @brief Collate two locations.
+ *
+ * For example, 22/tcp is less than 80/tcp.
+ *
+ * @param[in]  data     Dummy for callback.
+ * @param[in]  one_len  Length of first location (a string).
+ * @param[in]  arg_one  First string.
+ * @param[in]  two_len  Length of second location (a string).
+ * @param[in]  arg_two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+int
+collate_location (void* data,
+                  int one_len, const void* arg_one,
+                  int two_len, const void* arg_two)
+{
+  int ret, one_num, two_num;
+  char *buff;
+  const char *one, *two;
+
+  one = (const char*) arg_one;
+  two = (const char*) arg_two;
+
+  one_num = atoi (one);
+  if (one_num > 0)
+    {
+      two_num = atoi (two);
+      if (two_num > 0)
+        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
+
+      buff = g_newa (char, strlen (two));
+      if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
+        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
+
+      return 1;
+    }
+
+  buff = g_newa (char, strlen (one));
+  if (sscanf (one, "%s (%i/%s)", buff, &one_num, buff) == 3)
+    {
+      two_num = atoi (two);
+      if (two_num > 0)
+        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
+
+      buff = g_newa (char, strlen (two));
+      if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
+        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
+
+      return 1;
+    }
+
+  two_num = atoi (two);
+  if (two_num > 0)
+    return -1;
+
+  buff = g_newa (char, strlen (two));
+  if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
+    return -1;
+
+  /* One and two are either "general/xxx" or formatted weirdly. */
+
+  ret = strncmp (one, two, MIN (one_len, two_len));
+  return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
+}
+
 
 /* Access control. */
 
@@ -8883,6 +8950,17 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create collate_ip", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_location",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_location)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_location", __FUNCTION__);
       abort ();
     }
 
@@ -15135,7 +15213,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                               ? ((strcmp (sort_field, "ROWID") == 0)
                                   ? " ORDER BY results.ROWID"
                                   : ((strcmp (sort_field, "port") == 0)
-                                      ? " ORDER BY port,"
+                                      ? " ORDER BY"
+                                        " port COLLATE collate_location,"
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
@@ -15154,7 +15233,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
                                         " COLLATE collate_message_type ASC,"
-                                        " port,"
+                                        " port COLLATE collate_location,"
                                         " host COLLATE collate_ip,"
                                         " (CAST ((CASE WHEN cvss_base >= 0.0"
                                         "        THEN cvss_base ELSE 0.0 END)"
@@ -15164,7 +15243,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                               : ((strcmp (sort_field, "ROWID") == 0)
                                   ? " ORDER BY results.ROWID DESC"
                                   : ((strcmp (sort_field, "port") == 0)
-                                      ? " ORDER BY port DESC,"
+                                      ? " ORDER BY"
+                                        " port COLLATE collate_location DESC,"
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
@@ -15183,7 +15263,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
                                         " COLLATE collate_message_type DESC,"
-                                        " port,"
+                                        " port COLLATE collate_location,"
                                         " host COLLATE collate_ip,"
                                         " nvt,"
                                         " description")),
