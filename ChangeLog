@@ -1,3 +1,8 @@
+2013-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (delete_override, manage_restore): Add new_severity
+	column for moving overrides from/to trashcan.
+
 2013-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (collate_location): New function.

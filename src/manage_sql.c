@@ -36540,9 +36540,10 @@ delete_override (const char *override_id, int ultimate)
     {
       sql ("INSERT INTO overrides_trash"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, new_threat, task, result, end_time)"
+           "  port, threat, new_threat, new_severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, new_threat, task, result, end_time"
+           "        hosts, port, threat, new_threat, new_severity,task,"
+           "        result, end_time"
            " FROM overrides WHERE ROWID = %llu;",
            override);
     }
@@ -45931,9 +45932,10 @@ manage_restore (const char *id)
     {
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, new_threat, task, result, end_time)"
+           "  port, threat, new_threat, new_severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, new_threat, task, result, end_time"
+           "        hosts, port, threat, new_threat, new_severity, task,"
+           "        result, end_time"
            " FROM overrides_trash WHERE ROWID = %llu;",
            resource);
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
