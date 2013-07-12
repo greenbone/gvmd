@@ -192,7 +192,7 @@ is_feed_current () {
     then
       RSYNC_SSH_PROXY_CMD=""
     else
-      if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
+      if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
         RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
       else
         RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
@@ -807,7 +807,7 @@ sync_scapdata(){
       then
         RSYNC_SSH_PROXY_CMD=""
       else
-        if [ -r /admin/proxyauth -a `stat -c %s /admin/proxyauth` != 0 ]; then
+        if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
         else
           RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
