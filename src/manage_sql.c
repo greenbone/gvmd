@@ -45271,7 +45271,7 @@ int
 create_filter (const char *name, const char *comment, const char *type,
                const char *term, int make_name_unique, filter_t* filter)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_term;
+  gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
 
   assert (current_credentials.uuid);
 
@@ -45320,7 +45320,9 @@ create_filter (const char *name, const char *comment, const char *type,
         }
     }
 
-  quoted_term = sql_quote (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "");
+  quoted_term = sql_quote (clean_term);
+  g_free (clean_term);
 
   if (comment)
     {
@@ -45684,7 +45686,7 @@ int
 modify_filter (const char *filter_id, const char *name, const char *comment,
                const char *term, const char *type)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type;
+  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
   filter_t filter;
 
   if (filter_id == NULL)
@@ -45742,7 +45744,9 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   else
     quoted_name = sql_quote("");
 
-  quoted_term = sql_quote (term ? term : "");
+  clean_term = manage_clean_filter (term ? term : "");
+  quoted_term = sql_quote (clean_term);
+  g_free (clean_term);
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_type = sql_quote (type ? type : "");
 
