@@ -1228,6 +1228,8 @@ typedef struct
   char *result_host;              ///< Host for current result.
   char *result_nvt_oid;           ///< OID of NVT for current result.
   char *result_port;              ///< Port for current result.
+  char *result_scan_nvt_version;  ///< Version of NVT used in scan.
+  char *result_severity;          ///< Severity score for current result.
   char *result_subnet;            ///< Subnet for current result.
   char *result_threat;            ///< Message type for current result.
   array_t *results;               ///< All results.
@@ -1283,6 +1285,8 @@ create_report_data_reset (create_report_data_t *data)
               free (result->description);
               free (result->nvt_oid);
               free (result->port);
+              free (result->scan_nvt_version);
+              free (result->severity);
               free (result->subnet);
             }
         }
@@ -4718,9 +4722,12 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_CERT_CERT_REF,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULT_COUNT,
@@ -8365,6 +8372,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_report_data->result_nvt_oid);
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT);
           }
+        else if (strcasecmp ("ORIGINAL_SEVERITY", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY);
         else if (strcasecmp ("ORIGINAL_THREAT", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT);
@@ -8377,6 +8387,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
         else if (strcasecmp ("SUBNET", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET);
+        else if (strcasecmp ("SCAN_NVT_VERSION", element_name) == 0)
+          set_client_state
+           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION);
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY);
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT);
         ELSE_ERROR ("create_report");
@@ -18277,11 +18292,38 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (create_report_data->result_subnet);
           assert (create_report_data->result_threat);
 
+          if (create_report_data->result_scan_nvt_version == NULL)
+            create_report_data->result_scan_nvt_version = strdup ("");
+
+          if (create_report_data->result_severity == NULL)
+            {
+              if (strcasecmp (create_report_data->result_threat,
+                              "High") == 0)
+                create_report_data->result_severity = strdup ("10.0");
+              else if (strcasecmp (create_report_data->result_threat,
+                                   "Medium") == 0)
+                create_report_data->result_severity = strdup ("5.0");
+              else if (strcasecmp (create_report_data->result_threat,
+                                   "Low")  == 0)
+                create_report_data->result_severity = strdup ("2.0");
+              else if (strcasecmp (create_report_data->result_threat,
+                                   "Log")  == 0)
+                create_report_data->result_severity = strdup ("0.0");
+              else if (strcasecmp (create_report_data->result_threat,
+                                   "False Positive")  == 0)
+                create_report_data->result_severity = strdup ("-1.0");
+              else
+                create_report_data->result_severity = strdup ("");
+            }
+
           result = g_malloc (sizeof (create_report_result_t));
           result->description = create_report_data->result_description;
           result->host = create_report_data->result_host;
           result->nvt_oid = create_report_data->result_nvt_oid;
+          result->scan_nvt_version
+            = create_report_data->result_scan_nvt_version;
           result->port = create_report_data->result_port;
+          result->severity = create_report_data->result_severity;
           result->subnet = create_report_data->result_subnet;
           result->threat = create_report_data->result_threat;
 
@@ -18291,6 +18333,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           create_report_data->result_host = NULL;
           create_report_data->result_nvt_oid = NULL;
           create_report_data->result_port = NULL;
+          create_report_data->result_scan_nvt_version = NULL;
+          create_report_data->result_severity = NULL;
           create_report_data->result_subnet = NULL;
           create_report_data->result_threat = NULL;
 
@@ -18302,9 +18346,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NOTES);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NVT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_SEVERITY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_THREAT);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OVERRIDES);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SCAN_NVT_VERSION);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SEVERITY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SUBNET);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, THREAT);
 
@@ -24293,8 +24340,14 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
               &create_report_data->result_host);
 
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION,
+              &create_report_data->result_scan_nvt_version);
+
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
               &create_report_data->result_port);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
+              &create_report_data->result_severity);
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
               &create_report_data->result_subnet);

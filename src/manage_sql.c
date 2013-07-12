@@ -14260,7 +14260,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                                                                 index++)))
     {
       gchar *quoted_subnet, *quoted_host, *quoted_port, *quoted_nvt_oid;
-      gchar *quoted_description;
+      gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
 
       quoted_subnet = sql_quote (result->subnet ? result->subnet : "");
       quoted_host = sql_quote (result->host ? result->host : "");
@@ -14269,11 +14269,17 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       quoted_description = sql_quote (result->description
                                        ? result->description
                                        : "");
+      quoted_scan_nvt_version = sql_quote (result->scan_nvt_version
+                                       ? result->scan_nvt_version
+                                       : "");
+      quoted_severity =  sql_quote (result->severity ? result->severity : "");
 
       sql ("INSERT INTO results"
-           " (uuid, task, subnet, host, port, nvt, type, description)"
+           " (uuid, task, subnet, host, port, nvt, type, description,"
+           "  nvt_version, severity)"
            " VALUES"
-           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s', '%s');",
+           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s', '%s',"
+           "  '%s', '%s');",
            quoted_subnet,
            quoted_host,
            quoted_port,
@@ -14281,13 +14287,17 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            result->threat
             ? threat_message_type (result->threat)
             : "Log Message",
-           quoted_description);
+           quoted_description,
+           quoted_scan_nvt_version,
+           quoted_severity);
 
       g_free (quoted_host);
       g_free (quoted_subnet);
       g_free (quoted_port);
       g_free (quoted_nvt_oid);
       g_free (quoted_description);
+      g_free (quoted_scan_nvt_version);
+      g_free (quoted_severity);
 
       report_add_result (report, sqlite3_last_insert_rowid (task_db));
     }

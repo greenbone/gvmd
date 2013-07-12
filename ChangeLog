@@ -1,3 +1,21 @@
+2013-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (create_report_result_t): Add components
+	"scan_nvt_version" and "severity".
+
+	* src/manage_sql.c (create_report): Add scan time NVT version and
+	Severity to results.
+
+	* src/omp.c (create_report_data_t, create_report_data_reset): Add
+	components "scan_nvt_version" and "severity".
+	(client_state_t): Add components
+	"CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY",
+	"CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION",
+	"CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY"
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle "original_severity", "scan_nvt_version"
+	and "severity" subelements of report in create_report.
+
 2013-07-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (log_event): New function.

@@ -844,8 +844,10 @@ typedef struct
   char *description;       ///< Description of NVT.
   char *host;              ///< Host.
   char *nvt_oid;           ///< OID of NVT.
+  char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.
   char *subnet;            ///< Subnet.
+  char *severity;          ///< Severity score.
   char *threat;            ///< Threat.
 } create_report_result_t;
 
