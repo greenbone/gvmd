@@ -2635,6 +2635,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " COLLATE collate_threat"
                                         " ASC",
                                         keyword->string);
+              else if (strcmp (keyword->string, "severity") == 0)
+                g_string_append_printf (order,
+                                        " ORDER BY CASE %s"
+                                        " WHEN '' THEN NULL"
+                                        " ELSE CAST (%s AS REAL) END ASC",
+                                        keyword->string,
+                                        keyword->string);
               else if ((strcmp (type, "note")
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
@@ -2675,6 +2682,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " ORDER BY %s"
                                         " COLLATE collate_threat"
                                         " DESC",
+                                        keyword->string);
+              else if (strcmp (keyword->string, "severity") == 0)
+                g_string_append_printf (order,
+                                        " ORDER BY CASE %s"
+                                        " WHEN '' THEN NULL"
+                                        " ELSE CAST (%s AS REAL) END DESC",
+                                        keyword->string,
                                         keyword->string);
               else if ((strcmp (type, "note")
                         && strcmp (type, "override"))

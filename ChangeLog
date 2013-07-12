@@ -1,3 +1,8 @@
+2013-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Cast severity column to REAL to
+	ensure sorting by numerical value.
+
 2013-07-12  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync:
