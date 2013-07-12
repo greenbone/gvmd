@@ -1,3 +1,10 @@
+2013-07-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (log_event): New function.
+	(CASE_DELETE, omp_xml_handle_end_element): Replace g_log calls for
+	resources creation, modification and deletion with adequate log_event
+	calls.
+
 2013-07-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Cast severity column to REAL to
