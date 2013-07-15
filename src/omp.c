@@ -10622,9 +10622,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 case 1:    /* Delete requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("delete_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Deletion of task %s has been requested",
-                         delete_task_data->task_id);
+                  log_event ("task", "Task", delete_task_data->task_id,
+                             "requested for delete");
                   break;
                 case 2:    /* Hidden task. */
                   SEND_TO_CLIENT_OR_FAIL
@@ -22848,15 +22847,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Paused. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("pause_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been paused",
-                         pause_task_data->task_id);
+                  log_event ("task", "Task", pause_task_data->task_id,
+                             "paused");
                   break;
                 case 1:   /* Pause requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("pause_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been requested to pause",
-                         pause_task_data->task_id);
+                  log_event ("task", "Task", pause_task_data->task_id,
+                             "requested to pause");
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("pause_task",
@@ -22910,9 +22907,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("restore"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Resource %s has been restored",
-                         restore_data->id);
+                  log_event ("resource", "Resource", restore_data->id,
+                             "restored");
                   break;
                 case 1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -22991,9 +22987,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         g_free (msg);
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Task %s has been requested to start",
-                               resume_or_start_task_data->task_id);
+                        log_event ("task", "Task",
+                                   resume_or_start_task_data->task_id,
+                                   "requested to start");
                       }
                       forked = 1;
                       break;
@@ -23108,16 +23104,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Resumed. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("resume_paused_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been resumed",
-                         resume_paused_task_data->task_id);
+                  log_event ("task", "Task", resume_paused_task_data->task_id,
+                             "resumed");
                   break;
                 case 1:   /* Resume requested. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_OK_REQUESTED ("resume_paused_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been requested to resume",
-                         resume_paused_task_data->task_id);
+                  log_event ("task", "Task", resume_paused_task_data->task_id,
+                             "requested to resume");
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client
@@ -23201,9 +23195,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         g_free (msg);
                       }
                       forked = 1;
-                      g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                             "Task %s has been resumed",
-                             resume_stopped_task_data->task_id);
+                      log_event ("task", "Task",
+                                 resume_stopped_task_data->task_id,
+                                 "resumed");
                       break;
                     case 1:
                       SEND_TO_CLIENT_OR_FAIL
@@ -23499,9 +23493,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             return;
                           }
                         g_free (msg);
-                        g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                               "Task %s has been requested to start",
-                               start_task_data->task_id);
+                        log_event ("task", "Task", start_task_data->task_id,
+                                   "requested to start");
                       }
                       forked = 1;
                       break;
@@ -23609,15 +23602,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 case 0:   /* Stopped. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been stopped",
-                         stop_task_data->task_id);
+                  log_event ("task", "Task", stop_task_data->task_id,
+                             "stopped");
                   break;
                 case 1:   /* Stop requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
-                  g_log ("event task", G_LOG_LEVEL_MESSAGE,
-                         "Task %s has been requested to stop",
-                         stop_task_data->task_id);
+                  log_event ("task", "Task", stop_task_data->task_id,
+                             "requested to stop");
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task",
