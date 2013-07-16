@@ -127,6 +127,9 @@ sql_resource_name (sqlite3_context *, int, sqlite3_value **);
 void
 sql_resource_exists (sqlite3_context *, int, sqlite3_value **);
 
+void
+sql_severity_in_level (sqlite3_context *, int, sqlite3_value**);
+
 
 /* Iterators. */
 

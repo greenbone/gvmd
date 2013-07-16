@@ -7047,6 +7047,43 @@ migrate_85_to_86 ()
 }
 
 /**
+ * @brief Migrate the database from version 86 to version 87.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_86_to_87 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 86. */
+
+  if (manage_db_version () != 86)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The scanner message types "Security Hole", "Security Warning" and
+   * "Security Note" were merged into a single type, "Alarm". */
+
+  sql ("UPDATE results SET type = 'Alarm'"
+       " WHERE type = 'Security Hole'"
+       " OR type = 'Security Warning'"
+       " OR type = 'Security Note';");
+
+  /* Set the database version to 87. */
+
+  set_db_version (87);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7137,6 +7174,7 @@ static migrator_t database_migrators[]
     {84, migrate_83_to_84},
     {85, migrate_84_to_85},
     {86, migrate_85_to_86},
+    {87, migrate_86_to_87},
     /* End marker. */
     {-1, NULL}};
 

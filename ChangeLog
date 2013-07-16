@@ -1,3 +1,37 @@
+2013-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Switch to new Scanner type Alarm, which replaces Hole, Warning and Note.
+	Hence increase database version to 87.  Add database migration from
+	version 86 to 87.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 87.
+
+	* src/manage_migrators.c (migrate_86_to_87): New function.
+	(database_migrators): Add migrate_86_to_87.
+
+	* src/manage_sql.c (init_manage_process): Create severity_in_level.
+	(make_result): Switch to Alarm.
+	(where_levels, where_levels_auto, where_levels_type): Do comparisons
+	according to severity score.
+	(report_counts_id_filt): Switch to Alarm.  Use severity to determine
+	type.
+
+	* src/manage.c (threat_message_type): Switch to Alarm.
+	(message_type_threat): Add Alarm case.
+	(severity_in_level): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/otp.c (append_hole_message, append_info_message)
+	(append_note_message): Remove.
+	(append_alarm_messag): New function.
+	(scanner_state_t, process_otp_scanner_input): Remove Hole, Info and Note
+	cases.  Add Alarm case.
+
+	* src/sql.c (sql_severity_in_level): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2013-07-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (create_tables): Add new_severity column to

@@ -401,21 +401,9 @@ append_error_message (task_t task, message_t* message)
  * @param[in]  message      Message.
  */
 static void
-append_hole_message (task_t task, message_t* message)
+append_alarm_message (task_t task, message_t* message)
 {
-  write_message (task, message, "Security Hole");
-}
-
-/**
- * @brief Append an info message to a report.
- *
- * @param[in]  task         Task.
- * @param[in]  message      Message.
- */
-static void
-append_info_message (task_t task, message_t* message)
-{
-  write_message (task, message, "Security Warning");
+  write_message (task, message, "Alarm");
 }
 
 /**
@@ -450,18 +438,6 @@ append_log_message (task_t task, message_t* message)
     }
   else
     write_message (task, message, "Log Message");
-}
-
-/**
- * @brief Append a note message to a report.
- *
- * @param[in]  task         Task.
- * @param[in]  message      Message.
- */
-static void
-append_note_message (task_t task, message_t* message)
-{
-  write_message (task, message, "Security Note");
 }
 
 
@@ -659,22 +635,14 @@ typedef enum
   SCANNER_ERRMSG_NUMBER,
   SCANNER_ERRMSG_OID,
   SCANNER_ERROR,
-  SCANNER_HOLE_DESCRIPTION,
-  SCANNER_HOLE_HOST,
-  SCANNER_HOLE_NUMBER,
-  SCANNER_HOLE_OID,
-  SCANNER_INFO_DESCRIPTION,
-  SCANNER_INFO_HOST,
-  SCANNER_INFO_NUMBER,
-  SCANNER_INFO_OID,
+  SCANNER_ALARM_DESCRIPTION,
+  SCANNER_ALARM_HOST,
+  SCANNER_ALARM_NUMBER,
+  SCANNER_ALARM_OID,
   SCANNER_LOG_DESCRIPTION,
   SCANNER_LOG_HOST,
   SCANNER_LOG_NUMBER,
   SCANNER_LOG_OID,
-  SCANNER_NOTE_DESCRIPTION,
-  SCANNER_NOTE_HOST,
-  SCANNER_NOTE_NUMBER,
-  SCANNER_NOTE_OID,
   SCANNER_NVT_INFO,
   SCANNER_PLUGIN_LIST_BUGTRAQ_ID,
   SCANNER_PLUGIN_LIST_CATEGORY,
@@ -1679,7 +1647,7 @@ process_otp_scanner_input ()
               case SCANNER_ERROR:
                 assert (0);
                 break;
-              case SCANNER_HOLE_DESCRIPTION:
+              case SCANNER_ALARM_DESCRIPTION:
                 {
                   if (current_message)
                     {
@@ -1687,17 +1655,17 @@ process_otp_scanner_input ()
                       char* description = g_strdup (field);
                       set_message_description (current_message, description);
                     }
-                  set_scanner_state (SCANNER_HOLE_OID);
+                  set_scanner_state (SCANNER_ALARM_OID);
                   break;
                 }
-              case SCANNER_HOLE_HOST:
+              case SCANNER_ALARM_HOST:
                 {
                   assert (current_message == NULL);
                   current_message = make_message (field);
-                  set_scanner_state (SCANNER_HOLE_NUMBER);
+                  set_scanner_state (SCANNER_ALARM_NUMBER);
                   break;
                 }
-              case SCANNER_HOLE_NUMBER:
+              case SCANNER_ALARM_NUMBER:
                 {
                   /** @todo Field could be "general". */
                   int number;
@@ -1715,7 +1683,7 @@ process_otp_scanner_input ()
                       number = atoi (field);
                       protocol[0] = '\0';
                     }
-                  tracef ("   scanner got hole port, number: %i, protocol: %s\n",
+                  tracef ("   scanner got alarm port, number: %i, protocol: %s\n",
                           number, protocol);
 
                   set_message_port_number (current_message, number);
@@ -1726,10 +1694,10 @@ process_otp_scanner_input ()
                     formatted = g_strdup (field);
                   set_message_port_string (current_message, formatted);
 
-                  set_scanner_state (SCANNER_HOLE_DESCRIPTION);
+                  set_scanner_state (SCANNER_ALARM_DESCRIPTION);
                   break;
                 }
-              case SCANNER_HOLE_OID:
+              case SCANNER_ALARM_OID:
                 {
                   if (current_message != NULL
                       && current_scanner_task != (task_t) 0)
@@ -1737,80 +1705,7 @@ process_otp_scanner_input ()
                       char* oid = g_strdup (field);
                       set_message_oid (current_message, oid);
 
-                      append_hole_message (current_scanner_task, current_message);
-                      free_message (current_message);
-                      current_message = NULL;
-                    }
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
-              case SCANNER_INFO_DESCRIPTION:
-                {
-                  if (current_message)
-                    {
-                      /** @todo Replace "\n" with newline in description. */
-                      char* description = g_strdup (field);
-                      set_message_description (current_message, description);
-                    }
-                  set_scanner_state (SCANNER_INFO_OID);
-                  break;
-                }
-              case SCANNER_INFO_HOST:
-                {
-                  assert (current_message == NULL);
-                  current_message = make_message (field);
-                  set_scanner_state (SCANNER_INFO_NUMBER);
-                  break;
-                }
-              case SCANNER_INFO_NUMBER:
-                {
-                  /** @todo Field could be "general". */
-                  int number;
-                  char *protocol, *formatted;
-
-                  assert (current_message);
-
-                  protocol = g_newa (char, strlen (field));
-
-                  /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%i/%s",
-                              &number, protocol)
-                      != 2)
-                    {
-                      number = atoi (field);
-                      protocol[0] = '\0';
-                    }
-                  tracef ("   scanner got info port, number: %i, protocol: %s\n",
-                          number, protocol);
-
-                  set_message_port_number (current_message, number);
-                  set_message_port_protocol (current_message, protocol);
-
-                  formatted = port_name_formatted (field);
-                  if (formatted == NULL)
-                    formatted = g_strdup (field);
-                  set_message_port_string (current_message, formatted);
-
-                  set_scanner_state (SCANNER_INFO_DESCRIPTION);
-                  break;
-                }
-              case SCANNER_INFO_OID:
-                {
-                  if (current_message != NULL
-                      && current_scanner_task != (task_t) 0)
-                    {
-                      char* oid = g_strdup (field);
-                      set_message_oid (current_message, oid);
-
-                      append_info_message (current_scanner_task, current_message);
+                      append_alarm_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
@@ -1884,79 +1779,6 @@ process_otp_scanner_input ()
                       set_message_oid (current_message, oid);
 
                       append_log_message (current_scanner_task, current_message);
-                      free_message (current_message);
-                      current_message = NULL;
-                    }
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
-              case SCANNER_NOTE_DESCRIPTION:
-                {
-                  if (current_message)
-                    {
-                      /** @todo Replace "\n" with newline in description. */
-                      char* description = g_strdup (field);
-                      set_message_description (current_message, description);
-                    }
-                  set_scanner_state (SCANNER_NOTE_OID);
-                  break;
-                }
-              case SCANNER_NOTE_HOST:
-                {
-                  assert (current_message == NULL);
-                  current_message = make_message (field);
-                  set_scanner_state (SCANNER_NOTE_NUMBER);
-                  break;
-                }
-              case SCANNER_NOTE_NUMBER:
-                {
-                  /** @todo Field could be "general". */
-                  int number;
-                  char *protocol, *formatted;
-
-                  assert (current_message);
-
-                  protocol = g_newa (char, strlen (field));
-
-                  /* RATS: ignore, buffers are allocated to field length. */
-                  if (sscanf (field, "%i/%s",
-                              &number, protocol)
-                      != 2)
-                    {
-                      number = atoi (field);
-                      protocol[0] = '\0';
-                    }
-                  tracef ("   scanner got note port, number: %i, protocol: %s\n",
-                          number, protocol);
-
-                  set_message_port_number (current_message, number);
-                  set_message_port_protocol (current_message, protocol);
-
-                  formatted = port_name_formatted (field);
-                  if (formatted == NULL)
-                    formatted = g_strdup (field);
-                  set_message_port_string (current_message, formatted);
-
-                  set_scanner_state (SCANNER_NOTE_DESCRIPTION);
-                  break;
-                }
-              case SCANNER_NOTE_OID:
-                {
-                  if (current_message != NULL
-                      && current_scanner_task != (task_t) 0)
-                    {
-                      char* oid = g_strdup (field);
-                      set_message_oid (current_message, oid);
-
-                      append_note_message (current_scanner_task, current_message);
                       free_message (current_message);
                       current_message = NULL;
                     }
@@ -2254,14 +2076,10 @@ process_otp_scanner_input ()
                           goto return_need_more;
                       }
                   }
-                else if (strcasecmp ("HOLE", field) == 0)
-                  set_scanner_state (SCANNER_HOLE_HOST);
-                else if (strcasecmp ("INFO", field) == 0)
-                  set_scanner_state (SCANNER_INFO_HOST);
+                else if (strcasecmp ("ALARM", field) == 0)
+                  set_scanner_state (SCANNER_ALARM_HOST);
                 else if (strcasecmp ("LOG", field) == 0)
                   set_scanner_state (SCANNER_LOG_HOST);
-                else if (strcasecmp ("NOTE", field) == 0)
-                  set_scanner_state (SCANNER_NOTE_HOST);
                 else if (strcasecmp ("NVT_INFO", field) == 0)
                   set_scanner_state (SCANNER_NVT_INFO);
                 else if (strcasecmp ("PLUGIN_LIST", field) == 0)

@@ -158,11 +158,11 @@ const char *
 threat_message_type (const char *threat)
 {
   if (strcasecmp (threat, "High") == 0)
-    return "Security Hole";
+    return "Alarm";
   if (strcasecmp (threat, "Medium") == 0)
-    return "Security Warning";
+    return "Alarm";
   if (strcasecmp (threat, "Low") == 0)
-    return "Security Note";
+    return "Alarm";
   if (strcasecmp (threat, "Log") == 0)
     return "Log Message";
   if (strcasecmp (threat, "Debug") == 0)
@@ -182,6 +182,9 @@ threat_message_type (const char *threat)
 const char *
 message_type_threat (const char *type)
 {
+  if (strcasecmp (type, "Alarm") == 0)
+    // FIX
+    return "High";
   if (strcasecmp (type, "Security Hole") == 0)
     return "High";
   if (strcasecmp (type, "Security Warning") == 0)
@@ -195,6 +198,63 @@ message_type_threat (const char *type)
   if (strcasecmp (type, "False Positive") == 0)
     return "False Positive";
   return NULL;
+}
+
+/**
+ * @brief Check whether a severity falls within a threat level.
+ *
+ * @param[in]  severity  Severity.
+ * @param[in]  level     Threat level.
+ *
+ * @return 1 if in level, else 0.
+ */
+int
+severity_in_level (double severity, const char *level)
+{
+  gchar *class;
+
+  class = setting_severity ();
+  if (strcmp (class, "classic") == 0)
+    {
+      g_free (class);
+      if (strcmp (level, "high") == 0)
+        return severity > 8 && severity <= 10;
+      else if (strcmp (level, "high") == 0)
+        return severity > 5 && severity <= 8;
+      else if (strcmp (level, "medium") == 0)
+        return severity > 2 && severity <= 5;
+      else if (strcmp (level, "low") == 0)
+        return severity > 0 && severity <= 2;
+      else if (strcmp (level, "none") == 0)
+        return severity == 0;
+      else
+        return 0;
+    }
+  else if (strcmp (class, "pci-dss") == 0)
+    {
+      g_free (class);
+      if (strcmp (level, "high") == 0)
+        return severity >= 4.3;
+      else if (strcmp (level, "none") == 0)
+        return severity == 0;
+      else
+        return 0;
+    }
+  else
+    {
+      /* NIST/BSI. */
+      g_free (class);
+      if (strcmp (level, "high") == 0)
+        return severity >= 7 && severity <= 10;
+      else if (strcmp (level, "medium") == 0)
+        return severity >= 4 && severity < 7;
+      else if (strcmp (level, "low") == 0)
+        return severity > 0 && severity < 4;
+      else if (strcmp (level, "none") == 0)
+        return severity == 0;
+      else
+        return 0;
+    }
 }
 
 

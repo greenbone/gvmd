@@ -1506,6 +1506,37 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 
 }
 
+/**
+ * @brief Check whether a severity walls within a threat level.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  double severity;
+  const char *threat;
+
+  assert (argc == 2);
+
+  severity = sqlite3_value_double (argv[0]);
+
+  threat = (char*) sqlite3_value_text (argv[1]);
+  if (threat == NULL)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
+
+  sqlite3_result_int (context, severity_in_level (severity, threat));
+
+  return;
+}
+
 
 /* Iterators. */
 

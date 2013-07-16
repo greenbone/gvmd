@@ -752,6 +752,9 @@ config_task_iterator_uuid (iterator_t*);
 
 /* General task facilities. */
 
+int
+severity_in_level (double, const char *);
+
 const char*
 run_status_name (task_status_t);
 

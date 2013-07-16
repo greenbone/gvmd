@@ -9230,6 +9230,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       g_warning ("%s: failed to create resource_name", __FUNCTION__);
       abort ();
     }
+
+  if (sqlite3_create_function (task_db,
+                               "severity_in_level",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_in_level,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_in_level", __FUNCTION__);
+      abort ();
+    }
 }
 
 /**
@@ -13474,9 +13488,7 @@ make_result (task_t task, const char* subnet, const char* host,
                                 "SELECT version FROM nvts WHERE uuid = '%s';",
                                 nvt);
 
-      if (   (strcasecmp(type, "Security Note") == 0)
-          || (strcasecmp(type, "Security Warning") == 0)
-          || (strcasecmp(type, "Security Hole") == 0))
+      if (strcasecmp (type, "Alarm") == 0)
         {
           severity = sql_string (0, 0,
                                 "SELECT coalesce(cvss_base, 0.0)"
@@ -14554,17 +14566,18 @@ where_levels (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
-      levels_sql = g_string_new (" AND new_type IN ('Security Hole'");
+      // FIX handles dynamic "severity" in caller?
+      levels_sql = g_string_new (" AND (severity_in_level (severity, 'high')");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND new_type IN ('Security Warning'");
+        levels_sql = g_string_new (" AND (severity_in_level (severity, 'medium')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Security Warning'");
+                                      " OR severity_in_level (severity, 'medium')");
       count++;
     }
 
@@ -14572,10 +14585,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND new_type IN ('Security Note'");
+        levels_sql = g_string_new (" AND (severity_in_level (severity, 'low')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Security Note'");
+                                      " OR severity_in_level (severity, 'low')");
       count++;
     }
 
@@ -14583,10 +14596,12 @@ where_levels (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND new_type IN ('Log Message'");
+        levels_sql = g_string_new (" AND ((severity = 0.0"
+                                   "       AND new_type = 'Log Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Log Message'");
+                                      " OR (severity = 0.0"
+                                      "     AND new_type = 'Log Message')");
       count++;
     }
 
@@ -14594,10 +14609,12 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND new_type IN ('Debug Message'");
+        levels_sql = g_string_new (" AND ((severity = 0.0"
+                                   "       AND new_type = 'Debug Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Debug Message'");
+                                      " OR (severity = 0.0"
+                                      "     AND new_type = 'Debug Message')");
       count++;
     }
 
@@ -14608,7 +14625,7 @@ where_levels (const char* levels)
         levels_sql = g_string_new (" AND new_type IN ('False Positive')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'False Positive')");
+                                      " OR new_type IN ('False Positive'))");
       count++;
     }
   else if (count)
@@ -14652,17 +14669,18 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
-      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Hole'");
+      // FIX handles dynamic "severity" in caller?
+      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'high')");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Warning'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'medium')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Security Warning'");
+                                      " OR severity_in_level (severity, 'medium')");
       count++;
     }
 
@@ -14670,10 +14688,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Security Note'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'low')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Security Note'");
+                                      " OR severity_in_level (severity, 'low')");
       count++;
     }
 
@@ -14681,10 +14699,13 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Log Message'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
+                                   "       AND ((severity = 0.0"
+                                   "             AND new_type = 'Log Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Log Message'");
+                                      " OR (severity = 0.0"
+                                      "     AND new_type = 'Log Message')");
       count++;
     }
 
@@ -14692,10 +14713,13 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('Debug Message'");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
+                                   "       AND ((severity = 0.0"
+                                   "             AND new_type = 'Debug Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'Debug Message'");
+                                      " OR (severity = 0.0"
+                                      "     AND new_type = 'Debug Message')");
       count++;
     }
 
@@ -14706,7 +14730,7 @@ where_levels_auto (const char* levels)
         levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('False Positive')) OR auto_type = 1)");
       else
         levels_sql = g_string_append (levels_sql,
-                                      ", 'False Positive')) OR auto_type = 1)");
+                                      " OR new_type IN ('False Positive'))) OR auto_type = 1)");
       count++;
     }
   else if (count)
@@ -14723,7 +14747,7 @@ where_levels_auto (const char* levels)
 }
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT to levels by type column.
+ * @brief Return SQL WHERE for restricting a SELECT to levels.
  *
  * @param[in]  levels  String describing threat levels (message types)
  *                     to include in report (for example, "hmlgd" for
@@ -14750,17 +14774,18 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'h'))
     {
       count = 1;
-      levels_sql = g_string_new (" AND (type = 'Security Hole'");
+      // FIX handles dynamic "severity" in caller?
+      levels_sql = g_string_new (" AND (severity_in_level (severity, 'high')");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (type = 'Security Warning'");
+        levels_sql = g_string_new (" AND (severity_in_level (severity, 'medium')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR type = 'Security Warning'");
+                                      " OR severity_in_level (severity, 'medium')");
       count++;
     }
 
@@ -14768,10 +14793,10 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (type = 'Security Note'");
+        levels_sql = g_string_new (" AND (severity_in_level (severity, 'low')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR type = 'Security Note'");
+                                      " OR severity_in_level (severity, 'low')");
       count++;
     }
 
@@ -14779,10 +14804,12 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (type = 'Log Message'");
+        levels_sql = g_string_new (" AND ((severity = 0.0"
+                                   "       AND type = 'Log Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR type = 'Log Message'");
+                                      " OR (severity = 0.0"
+                                      "     AND type = 'Log Message')");
       count++;
     }
 
@@ -14790,10 +14817,12 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (type = 'Debug Message')");
+        levels_sql = g_string_new (" AND (severity = 0.0"
+                                   "      AND type = 'Debug Message')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR type = 'Debug Message')");
+                                      " OR (severity = 0.0"
+                                      "     AND type = 'Debug Message'))");
       count++;
     }
   else if (count)
@@ -18876,7 +18905,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           task_t task;
 
           sqlite3_stmt *stmt, *full_stmt;
-          gchar *select, *quoted_host;
+          gchar *select, *quoted_host, *severity_sql;
           int ret, status;
 
           /* Prepare quick inner statement. */
@@ -18982,19 +19011,30 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           if (filtered_severity) *filtered_severity = 0.0;
           if (host)
             quoted_host = sql_quote (host);
+          else
+            quoted_host = NULL;
+
+          if (setting_dynamic_severity_int ())
+            severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                     " WHERE nvts.oid = results.nvt)");
+          else
+            severity_sql = g_strdup ("severity");
+
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
                          " results.host, results.port, results.description,"
-                         " report_results.report, results.severity"
+                         " report_results.report, %s"
                          " FROM results, report_results"
                          " WHERE"
                          "%s%s%s"
                          " report_results.report = %llu"
                          " AND results.ROWID = report_results.result",
+                         severity_sql,
                          host ? " results.host = '" : "",
                          host ? quoted_host : "",
                          host ? "' AND" : "",
                          report);
+          g_free (severity_sql);
           if (host)
             g_free (quoted_host);
           while (next (&results))
@@ -19043,58 +19083,61 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                   new_type = (const char*) sqlite3_column_text (results.stmt, 2);
                   if (new_type)
                     {
-                      if (strcmp (new_type, "Security Hole") == 0)
+                      if (strcmp (new_type, "Alarm") == 0)
                         {
-                          (*holes)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_holes
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          if (severity_in_level (new_severity, "high"))
                             {
-                              (*filtered_holes)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*holes)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_holes
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_holes)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
-                        }
-                      else if (strcmp (new_type, "Security Warning") == 0)
-                        {
-                          (*warnings)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_warnings
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          else if (severity_in_level (new_severity, "medium"))
                             {
-                              (*filtered_warnings)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*warnings)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_warnings
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_warnings)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
-                        }
-                      else if (strcmp (new_type, "Security Note") == 0)
-                        {
-                          (*infos)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_infos
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          else if (severity_in_level (new_severity, "low"))
                             {
-                              (*filtered_infos)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*infos)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_infos
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_infos)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
                         }
                       else if (strcmp (new_type, "Log Message") == 0)
@@ -19226,58 +19269,61 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
                   if (new_type)
                     {
-                      if (strcmp (new_type, "Security Hole") == 0)
+                      if (strcmp (new_type, "Alarm") == 0)
                         {
-                          (*holes)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_holes
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          if (severity_in_level (new_severity, "high"))
                             {
-                              (*filtered_holes)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*holes)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_holes
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_holes)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
-                        }
-                      else if (strcmp (new_type, "Security Warning") == 0)
-                        {
-                          (*warnings)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_warnings
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          else if (severity_in_level (new_severity, "medium"))
                             {
-                              (*filtered_warnings)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*warnings)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_warnings
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_warnings)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
-                        }
-                      else if (strcmp (new_type, "Security Note") == 0)
-                        {
-                          (*infos)++;
-                          if (new_severity > *severity)
-                            *severity = new_severity;
-                          if (filtered_infos
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
+                          else if (severity_in_level (new_severity, "low"))
                             {
-                              (*filtered_infos)++;
-                              if (filtered_severity
-                                  && new_severity > *filtered_severity)
-                                *filtered_severity = new_severity;
+                              (*infos)++;
+                              if (new_severity > *severity)
+                                *severity = new_severity;
+                              if (filtered_infos
+                                  && report_counts_match (&results,
+                                                          search_phrase,
+                                                          search_phrase_exact,
+                                                          min_cvss_base,
+                                                          autofp))
+                                {
+                                  (*filtered_infos)++;
+                                  if (filtered_severity
+                                      && new_severity > *filtered_severity)
+                                    *filtered_severity = new_severity;
+                                }
                             }
                         }
                       else if (strcmp (new_type, "Log Message") == 0)
