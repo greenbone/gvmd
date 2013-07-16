@@ -7067,7 +7067,20 @@ migrate_86_to_87 ()
   /* Update the database. */
 
   /* The scanner message types "Security Hole", "Security Warning" and
-   * "Security Note" were merged into a single type, "Alarm". */
+   * "Security Note" were merged into a single type, "Alarm".
+   *
+   * Update the severity of old high, medium and low results at the same
+   * time, because the severity of these results can only be determined by
+   * their message type. */
+
+  sql ("UPDATE results"
+       " SET severity = (CASE type"
+       "                 WHEN 'Security Hole' THEN 10.0"
+       "                 WHEN 'Security Warning' THEN 5.0"
+       "                 WHEN 'Security Note' THEN 2.0"
+       "                 WHEN 'Log Message' THEN 0.0"
+       "                 ELSE NULL END)"
+       " WHERE severity IS NULL;");
 
   sql ("UPDATE results SET type = 'Alarm'"
        " WHERE type = 'Security Hole'"

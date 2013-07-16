@@ -1,5 +1,10 @@
 2013-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_86_to_87): Update severity of old
+	results before merging the types, otherwise this information is lost.
+
+2013-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Switch to new Scanner type Alarm, which replaces Hole, Warning and Note.
 	Hence increase database version to 87.  Add database migration from
 	version 86 to 87.
