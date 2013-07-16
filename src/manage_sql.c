@@ -10325,7 +10325,7 @@ init_manage_settings ()
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM settings"
-               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93'"
+               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
                " AND owner IS NULL;")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"

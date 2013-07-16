@@ -1,3 +1,8 @@
+2013-07-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (init_manage_settings): Fix existence check of
+	"Dynamic Severity" setting.
+
 2013-07-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use log_event instead of
