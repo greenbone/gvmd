@@ -1,5 +1,10 @@
 2013-07-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (create_tables): Add new_severity column to
+	overrides_trash.
+
+2013-07-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_manage_settings): Fix existence check of
 	"Dynamic Severity" setting.
 

@@ -4404,7 +4404,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
        "  creation_time, modification_time, text, hosts, port, threat,"
-       "  new_threat, task INTEGER, result INTEGER, end_time);");
+       "  new_threat, task INTEGER, result INTEGER, end_time,"
+       "  new_severity REAL);");
   sql ("CREATE TABLE IF NOT EXISTS permissions"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
