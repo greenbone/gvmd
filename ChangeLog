@@ -1,8 +1,14 @@
 2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (severity_matches_type): Space doc.  Remove parens from
+	returns and remove redundant else's, for readability.
+
+2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (severity_matches_type): Add new threat names.
-	(report_count, report_count_filtered): Remove special cases for new
-	names, as this is done in severity_matches_type now.
+
+	* src/manage_sql.c (report_count, report_count_filtered): Remove special
+	cases for new names, as this is done in severity_matches_type now.
 
 2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
