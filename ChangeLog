@@ -1,5 +1,11 @@
 2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (severity_matches_type): Add new threat names.
+	(report_count, report_count_filtered): Remove special cases for new
+	names, as this is done in severity_matches_type now.
+
+2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count): Switch old Alarm types to threat
 	names.  In these cases find the results by severity instead of type.
 	(report_count_filtered): Add special case for high, medium and low.
