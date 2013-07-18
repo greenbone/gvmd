@@ -752,8 +752,20 @@ config_task_iterator_uuid (iterator_t*);
 
 /* General task facilities. */
 
+// Log message severity constant
+#define SEVERITY_LOG 0.0
+// False positive severity constant
+#define SEVERITY_FP -1.0
+// Debug message severity constant
+#define SEVERITY_DEBUG -2.0
+// Error message severity constant
+#define SEVERITY_ERROR -3.0
+
 int
 severity_in_level (double, const char *);
+
+int
+severity_matches_type (double, const char *);
 
 const char*
 run_status_name (task_status_t);

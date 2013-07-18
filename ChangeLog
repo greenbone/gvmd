@@ -1,3 +1,25 @@
+2013-07-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (severity_matches_type): New function.
+
+	* src/manage.h (SEVERITY_LOG, SEVERITY_FP, SEVERITY_DEBUG)
+	(SEVERITY_ERROR): New constants for special severity values.
+	(severity_matches_type): New function prototype.
+
+	* src/manage_sql.c (init_manage_process): Add severity_matches_type SQL
+	function.
+	(task_threat_level, task_previous_threat_level, task_severity)
+	(init_result_iterator, init_asset_iterator, report_scan_result_count)
+	(report_count, report_severity, report_count_filtered)
+	(report_severity_filtered, report_counts_id_filt, filtered_host_count)
+	(note_count, init_note_iterator, override_count)
+	(init_override_iterator): Support dynamic severity and apply overrides
+	based on severity.
+
+	* src/sql.c (sql_severity_matches_type): New SQL wrapper function.
+
+	* src/sql.h (sql_severity_matches_type): New function prototype.
+
 2013-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_86_to_87): Update severity of old

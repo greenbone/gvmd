@@ -9176,6 +9176,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "severity_matches_type",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_matches_type,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_matches_type", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "run_status_name",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -12678,7 +12692,7 @@ const char*
 task_threat_level (task_t task, int overrides)
 {
   char *type;
-  gchar *ov, *new_type_sql;
+  gchar *severity_sql, *ov, *new_type_sql;
 
   if (current_credentials.uuid == NULL)
     return NULL;
@@ -12686,6 +12700,12 @@ task_threat_level (task_t task, int overrides)
   if (task_target (task) == 0)
     /* Container task. */
     return NULL;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
 
   if (overrides)
     {
@@ -12713,15 +12733,18 @@ task_threat_level (task_t task, int overrides)
              "      OR overrides.port = results.port)"
              " AND (overrides.threat is NULL"
              "      OR overrides.threat = \"\""
-             "      OR overrides.threat = results.type)"
+             "      OR severity_matches_type (%s,"
+             "                                overrides.threat))"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
              " COLLATE collate_message_type ASC,"
              " overrides.creation_time DESC",
-             current_credentials.uuid);
+             current_credentials.uuid,
+             severity_sql);
 
       new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
+      g_free (severity_sql);
       g_free (ov);
     }
   else
@@ -12797,9 +12820,15 @@ static const char*
 task_previous_threat_level (task_t task)
 {
   char *type;
-  gchar *ov, *new_type_sql;
+  gchar *severity_sql, *ov, *new_type_sql;
 
   assert (current_credentials.uuid);
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
 
   ov = g_strdup_printf
         ("SELECT overrides.new_threat"
@@ -12825,15 +12854,18 @@ task_previous_threat_level (task_t task)
          "      OR overrides.port = results.port)"
          " AND (overrides.threat is NULL"
          "      OR overrides.threat = \"\""
-         "      OR overrides.threat = results.type)"
+         "      OR severity_matches_type (%s,"
+         "                                overrides.threat))"
          " ORDER BY overrides.result DESC, overrides.task DESC,"
          " overrides.port DESC, overrides.threat"
          " COLLATE collate_message_type ASC,"
          " overrides.creation_time DESC",
-         current_credentials.uuid);
+         current_credentials.uuid,
+         severity_sql);
 
   new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
+  g_free (severity_sql);
   g_free (ov);
 
   type = sql_string (0, 0,
@@ -13005,7 +13037,7 @@ char *
 task_severity (task_t task, int overrides)
 {
   char* severity;
-  gchar *ov, *new_severity_sql;
+  gchar *severity_sql, *ov, *new_severity_sql;
 
   if (current_credentials.uuid == NULL)
     return NULL;
@@ -13013,6 +13045,12 @@ task_severity (task_t task, int overrides)
   if (task_target (task) == 0)
     /* Container task. */
     return NULL;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
 
   if (overrides)
     {
@@ -13040,19 +13078,24 @@ task_severity (task_t task, int overrides)
              "      OR overrides.port = results.port)"
              " AND (overrides.threat is NULL"
              "      OR overrides.threat = \"\""
-             "      OR overrides.threat = results.type)"
+             "      OR severity_matches_type (%s,"
+             "                                overrides.threat))"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
              " COLLATE collate_message_type ASC,"
              " overrides.creation_time DESC",
-             current_credentials.uuid);
+             current_credentials.uuid,
+             severity_sql);
 
-      new_severity_sql = g_strdup_printf ("coalesce ((%s), severity)", ov);
+      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
+                                          ov, severity_sql);
 
       g_free (ov);
     }
   else
-    new_severity_sql = g_strdup ("severity");
+    new_severity_sql = g_strdup (severity_sql);
+
+  g_free (severity_sql);
 
   severity = sql_string (0, 0,
                          " SELECT %s AS new_severity"
@@ -15063,15 +15106,21 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
   int dynamic_severity = setting_dynamic_severity_int (); // TODO: Add parameter
 
   GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar* sql;
+  gchar *severity_sql, *sql;
 
   assert ((report && result) == 0);
+
+  if (dynamic_severity)
+    severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
+                            " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup("results.severity");
 
   /* Allocate the query. */
 
   if (report)
     {
-      gchar *new_type_sql, *auto_type_sql, *severity_sql, *new_severity_sql;
+      gchar *new_type_sql, *auto_type_sql, *new_severity_sql;
 
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgdf";
@@ -15080,12 +15129,6 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       levels_sql = where_levels_auto (levels);
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
-
-      if (dynamic_severity)
-        severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
-                                " WHERE nvts.oid = results.nvt)");
-      else
-        severity_sql = g_strdup("severity");
 
       if (override)
         {
@@ -15117,12 +15160,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
@@ -15152,12 +15197,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                               ov, severity_sql);
@@ -15329,18 +15376,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       g_free (new_type_sql);
       g_free (auto_type_sql);
-      g_free (severity_sql);
       g_free (new_severity_sql);
     }
   else if (result)
     {
-      gchar *new_type_sql, *auto_type_sql, *severity_sql, *new_severity_sql;
-
-      if (dynamic_severity)
-        severity_sql = g_strdup("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-      else
-        severity_sql = g_strdup("severity");
+      gchar *new_type_sql, *auto_type_sql, *new_severity_sql;
 
       if (override)
         {
@@ -15373,12 +15413,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
@@ -15409,12 +15451,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                               ov, severity_sql);
@@ -15516,22 +15560,23 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       g_free (new_type_sql);
       g_free (auto_type_sql);
-      g_free (severity_sql);
       g_free (new_severity_sql);
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
                            " type, type, type, description,"
                            " results.task, results.report, NULL,"
-                           " nvt_version, severity, severity"
+                           " nvt_version, severity, %s"
                            " FROM results, report_results, reports"
                            " WHERE results.ROWID = report_results.result"
                            " AND report_results.report = reports.ROWID"
                            " AND reports.owner ="
                            " (SELECT ROWID FROM users WHERE uuid = '%s');",
+                           severity_sql,
                            current_credentials.uuid);
 
   init_iterator (iterator, sql);
+  g_free (severity_sql);
   g_free (sql);
 }
 
@@ -16331,7 +16376,13 @@ init_asset_iterator (iterator_t* iterator, int first_result,
   if (levels && strlen (levels))
     {
       GString *levels_sql;
-      gchar *new_type_sql;
+      gchar *severity_sql, *new_type_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                  " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup ("results.severity");
 
       if (apply_overrides)
         {
@@ -16365,15 +16416,18 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
+          g_free (severity_sql);
           g_free (ov);
         }
       else
@@ -16999,11 +17053,17 @@ report_scan_result_count (report_t report, const char* levels,
 
   if (override)
     {
-      gchar *ov;
+      gchar *severity_sql, *ov;
 
       assert (current_credentials.uuid);
 
       levels_sql = where_levels_auto (levels);
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                  " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup ("results.severity");
 
       ov = g_strdup_printf
             ("SELECT overrides.new_threat"
@@ -17029,15 +17089,18 @@ report_scan_result_count (report_t report, const char* levels,
              "      OR overrides.port = results.port)"
              " AND (overrides.threat is NULL"
              "      OR overrides.threat = \"\""
-             "      OR overrides.threat = results.type)"
+             "      OR severity_matches_type (%s,"
+             "                                overrides.threat))"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.threat"
              " COLLATE collate_message_type ASC,"
              " overrides.creation_time DESC",
-             current_credentials.uuid);
+             current_credentials.uuid,
+             severity_sql);
 
       new_type_sql = g_strdup_printf (", coalesce ((%s), type) AS new_type", ov);
 
+      g_free (severity_sql);
       g_free (ov);
     }
   else
@@ -17080,6 +17143,14 @@ report_scan_result_count (report_t report, const char* levels,
 int
 report_count (report_t report, const char *type, int override, const char *host)
 {
+  gchar *severity_sql;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
+
   if (override
       && sql_int (0, 0,
                   "SELECT count(*)"
@@ -17159,7 +17230,8 @@ report_count (report_t report, const char *type, int override, const char *host)
                  "      OR overrides.port = $port)" // 4
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
+                 "      OR severity_matches_type ($severity,"
+                 "                                overrides.threat))" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
@@ -17196,10 +17268,11 @@ report_count (report_t report, const char *type, int override, const char *host)
       count = 0;
       init_iterator (&results,
                      "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port"
+                     " results.host, results.port, %s"
                      " FROM results, report_results"
                      " WHERE report_results.report = %llu"
                      " AND results.ROWID = report_results.result",
+                     severity_sql,
                      report);
       while (next (&results))
         {
@@ -17306,10 +17379,9 @@ report_count (report_t report, const char *type, int override, const char *host)
 
               while (1)
                 {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
+                  double severity;
+                  severity = sqlite3_column_double (results.stmt, 5);
+                  ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -17382,6 +17454,7 @@ report_count (report_t report, const char *type, int override, const char *host)
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
       sqlite3_finalize (full_stmt);
+      g_free (severity_sql);
       return count;
     }
   else if (host)
@@ -17389,23 +17462,32 @@ report_count (report_t report, const char *type, int override, const char *host)
       gchar* quoted_host = sql_quote (host);
       int count = sql_int (0, 0,
                            "SELECT count(*) FROM results, report_results"
-                           " WHERE results.host = '%s' AND results.type = '%s'"
+                           " WHERE results.host = '%s'"
+                           " AND severity_matches_type (%s, '%s')"
                            " AND results.ROWID = report_results.result"
                            " AND report_results.report = %llu;",
                            quoted_host,
+                           severity_sql,
                            type,
                            report);
       g_free (quoted_host);
+      g_free (severity_sql);
       return count;
     }
   else
-    return sql_int (0, 0,
-                    "SELECT count(*) FROM results, report_results"
-                    " WHERE report_results.report = %llu"
-                    " AND report_results.result = results.ROWID"
-                    " AND results.type = '%s';",
-                    report,
-                    type);
+    {
+      int ret;
+      ret = sql_int (0, 0,
+                     "SELECT count(*) FROM results, report_results"
+                     " WHERE report_results.report = %llu"
+                     " AND report_results.result = results.ROWID"
+                     " AND severity_matches_type (%s, '%s');",
+                     report,
+                     severity_sql,
+                     type);
+      g_free (severity_sql);
+      return ret;
+    }
 }
 
 /**
@@ -17421,6 +17503,14 @@ report_count (report_t report, const char *type, int override, const char *host)
 double
 report_severity (report_t report, int override, const char *host)
 {
+  gchar *severity_sql;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
+
   if (override
       && sql_int (0, 0,
                   "SELECT count(*)"
@@ -17500,7 +17590,8 @@ report_severity (report_t report, int override, const char *host)
                  "      OR overrides.port = $port)" // 4
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
+                 "      OR severity_matches_type ($severity,"
+                 "                                overrides.threat))" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
@@ -17648,10 +17739,9 @@ report_severity (report_t report, int override, const char *host)
 
               while (1)
                 {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
+                  double severity;
+                  severity = sqlite3_column_double (results.stmt, 2);
+                  ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -17724,6 +17814,7 @@ report_severity (report_t report, int override, const char *host)
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
       sqlite3_finalize (full_stmt);
+      g_free (severity_sql);
       return severity;
     }
   else if (host)
@@ -17731,21 +17822,29 @@ report_severity (report_t report, int override, const char *host)
       gchar* quoted_host = sql_quote (host);
       double severity;
       severity = sql_double (0, 0,
-                             "SELECT max(severity) FROM results, report_results"
+                             "SELECT max(%s) FROM results, report_results"
                              " WHERE results.host = '%s'"
                              " AND results.ROWID = report_results.result"
                              " AND report_results.report = %llu;",
+                             severity_sql,
                              quoted_host,
                              report);
+      g_free (severity_sql);
       g_free (quoted_host);
       return severity;
     }
   else
-    return sql_double (0, 0,
-                       "SELECT max(severity) FROM results, report_results"
-                       " WHERE results.ROWID = report_results.result"
-                       " AND report_results.report = %llu;",
-                       report);
+    {
+      double ret;
+      ret = sql_double (0, 0,
+                        "SELECT max(%s) FROM results, report_results"
+                        " WHERE results.ROWID = report_results.result"
+                         " AND report_results.report = %llu;",
+                        severity_sql,
+                        report);
+      g_free (severity_sql);
+      return (ret);
+    }
 }
 
 /**
@@ -17934,11 +18033,19 @@ report_count_filtered (report_t report, const char *type, int override,
                        const char *search_phrase, int search_phrase_exact,
                        int autofp)
 {
+  gchar *severity_sql;
+
   if (search_phrase && strcmp (search_phrase, "") == 0)
     search_phrase = NULL;
 
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
 
   if (override
       && sql_int (0, 0,
@@ -18019,7 +18126,8 @@ report_count_filtered (report_t report, const char *type, int override,
                  "      OR overrides.port = $port)" // 4
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
+                 "      OR severity_matches_type ($severity,"
+                 "                                overrides.threat))" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
@@ -18057,10 +18165,11 @@ report_count_filtered (report_t report, const char *type, int override,
       init_iterator (&results,
                      "SELECT results.ROWID, results.nvt, results.type,"
                      " results.host, results.port, results.description"
-                     " report_results.report"
+                     " report_results.report, %s"
                      " FROM results, report_results"
                      " WHERE report_results.report = %llu"
                      " AND results.ROWID = report_results.result",
+                     severity_sql,
                      report);
       while (next (&results))
         {
@@ -18173,10 +18282,9 @@ report_count_filtered (report_t report, const char *type, int override,
 
               while (1)
                 {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
+                  double severity;
+                  severity = sqlite3_column_double (results.stmt, 7);
+                  ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -18258,6 +18366,7 @@ report_count_filtered (report_t report, const char *type, int override,
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
       sqlite3_finalize (full_stmt);
+      g_free (severity_sql);
       return count;
     }
   else if (strcmp (type, "False Positive") == 0)
@@ -18275,19 +18384,22 @@ report_count_filtered (report_t report, const char *type, int override,
                        " WHERE report_results.report = %llu"
                        " AND report_results.result = results.ROWID"
                        "%s%s%s"
-                       " AND (results.type = '%s' OR auto_type IS NOT NULL)"
+                       " AND (severity_matches_type (%s, '%s')"
+                       "      OR auto_type IS NOT NULL)"
                        "%s%s;",
                        auto_type_sql,
                        report,
                        host ? " AND results.host = '" : "",
                        host ? host : "",
                        host ? "' AND " : "",
+                       severity_sql,
                        type,
                        phrase_sql ? phrase_sql->str : "",
                        cvss_sql ? cvss_sql->str : "");
 
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (severity_sql);
       g_free (auto_type_sql);
       return count;
     }
@@ -18305,12 +18417,13 @@ report_count_filtered (report_t report, const char *type, int override,
                        " WHERE report_results.report = %llu"
                        " AND report_results.result = results.ROWID"
                        "%s%s%s"
-                       " AND results.type = '%s'"
+                       " AND severity_matches_type (%s, '%s')"
                        "%s%s%s;",
                        report,
                        host ? " AND results.host = '" : "",
                        host ? host : "",
                        host ? "' AND " : "",
+                       severity_sql,
                        type,
                        autofp_sql ? autofp_sql->str : "",
                        phrase_sql ? phrase_sql->str : "",
@@ -18318,6 +18431,7 @@ report_count_filtered (report_t report, const char *type, int override,
       if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (severity_sql);
       return count;
     }
 }
@@ -18343,11 +18457,19 @@ report_severity_filtered (report_t report, int override,
                           const char *search_phrase, int search_phrase_exact,
                           int autofp)
 {
+  gchar* severity_sql;
+
   if (search_phrase && strcmp (search_phrase, "") == 0)
     search_phrase = NULL;
 
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
 
   if (override
       && sql_int (0, 0,
@@ -18428,7 +18550,8 @@ report_severity_filtered (report_t report, int override,
                  "      OR overrides.port = $port)" // 4
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = $type)" // 5
+                 "      OR severity_matches_type ($severity,"
+                 "                                overrides.threat))" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
@@ -18466,10 +18589,11 @@ report_severity_filtered (report_t report, int override,
       init_iterator (&results,
                      "SELECT results.ROWID, results.nvt, results.type,"
                      " results.host, results.port, results.description"
-                     " report_results.report, results.severity"
+                     " report_results.report, %s"
                      " FROM results, report_results"
                      " WHERE report_results.report = %llu"
                      " AND results.ROWID = report_results.result",
+                     severity_sql,
                      report);
       while (next (&results))
         {
@@ -18582,10 +18706,9 @@ report_severity_filtered (report_t report, int override,
 
               while (1)
                 {
-                  const char *type;
-                  type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                           SQLITE_TRANSIENT);
+                  double severity;
+                  severity = sqlite3_column_double (results.stmt, 7);
+                  ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -18658,6 +18781,7 @@ report_severity_filtered (report_t report, int override,
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
       sqlite3_finalize (full_stmt);
+      g_free (severity_sql);
       return severity;
     }
   else
@@ -18670,11 +18794,12 @@ report_severity_filtered (report_t report, int override,
       cvss_sql = where_cvss_base (min_cvss_base);
 
       severity = sql_double (0, 0,
-                             "SELECT max(severity) FROM results, report_results"
+                             "SELECT max(%s) FROM results, report_results"
                              " WHERE report_results.report = %llu"
                              " AND report_results.result = results.ROWID"
                              "%s%s%s"
                              "%s%s%s;",
+                             severity_sql,
                              report,
                              host ? " AND results.host = '" : "",
                              host ? host : "",
@@ -18685,6 +18810,7 @@ report_severity_filtered (report_t report, int override,
       if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (severity_sql);
       return severity;
     }
 }
@@ -18967,7 +19093,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                      "      OR overrides.port = $port)" // 4
                      " AND (overrides.threat is NULL"
                      "      OR overrides.threat = \"\""
-                     "      OR overrides.threat = $type)" // 5
+                     "      OR severity_matches_type ($severity,"
+                     "                                overrides.threat))" // 5
                      " ORDER BY overrides.result DESC, overrides.task DESC,"
                      " overrides.port DESC, overrides.threat"
                      " COLLATE collate_message_type ASC,"
@@ -19018,7 +19145,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
             severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
                                      " WHERE nvts.oid = results.nvt)");
           else
-            severity_sql = g_strdup ("severity");
+            severity_sql = g_strdup ("results.severity");
 
           init_iterator (&results,
                          "SELECT results.ROWID, results.nvt, results.type,"
@@ -19224,10 +19351,9 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
                   while (1)
                     {
-                      const char *type;
-                      type = (const char*) sqlite3_column_text (results.stmt, 2);
-                      ret = sqlite3_bind_text (full_stmt, 5, type, -1,
-                                               SQLITE_TRANSIENT);
+                      double severity;
+                      severity = sqlite3_column_double (results.stmt, 7);
+                      ret = sqlite3_bind_double (full_stmt, 5, severity);
                       if (ret == SQLITE_BUSY) continue;
                       if (ret == SQLITE_OK) break;
                       g_warning ("%s: sqlite3_prepare failed: %s\n",
@@ -20896,9 +21022,15 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
       if (apply_overrides)
         {
-          gchar *ov;
+          gchar *severity_sql, *ov;
 
           assert (current_credentials.uuid);
+
+          if (setting_dynamic_severity_int ())
+            severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                      " WHERE nvts.oid = results.nvt)");
+          else
+            severity_sql = g_strdup ("results.severity");
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_threat"
@@ -20925,12 +21057,14 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  "      OR overrides.port = results.port)"
                  " AND (overrides.threat is NULL"
                  "      OR overrides.threat = \"\""
-                 "      OR overrides.threat = results.type)"
+                 "      OR severity_matches_type (%s,"
+                 "                                overrides.threat))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.threat"
                  " COLLATE collate_message_type ASC,"
                  " overrides.creation_time DESC",
-                 current_credentials.uuid);
+                 current_credentials.uuid,
+                 severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
 
@@ -36030,33 +36164,50 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     }
 
   if (result)
-    result_clause = g_strdup_printf (" AND"
-                                     " (result = %llu"
-                                     "  OR (result = 0 AND nvt ="
-                                     "      (SELECT results.nvt FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (hosts is NULL"
-                                     "      OR hosts = \"\""
-                                     "      OR hosts_contains (hosts,"
-                                     "      (SELECT results.host FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (port is NULL"
-                                     "      OR port = \"\""
-                                     "      OR port ="
-                                     "      (SELECT results.port FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (threat is NULL"
-                                     "      OR threat = \"\""
-                                     "      OR threat ="
-                                     "      (SELECT results.type FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (task = 0 OR task = %llu)",
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     task);
+    {
+      gchar *severity_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+                                        " FROM results, nvts"
+                                        " WHERE (nvts.oid = results.nvt)"
+                                        "   AND (results.ROWID = %llu))",
+                                        result);
+      else
+        severity_sql = g_strdup_printf ("(SELECT results.severity"
+                                        " FROM results"
+                                        " WHERE results.ROWID = %llu)",
+                                        result);
+
+      result_clause = g_strdup_printf (" AND"
+                                       " (result = %llu"
+                                       "  OR (result = 0 AND nvt ="
+                                       "      (SELECT results.nvt FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (hosts is NULL"
+                                       "      OR hosts = \"\""
+                                       "      OR hosts_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (port is NULL"
+                                       "      OR port = \"\""
+                                       "      OR port ="
+                                       "      (SELECT results.port FROM results"
+                                       "       WHERE results.ROWID = %llu))"
+                                       " AND (threat is NULL"
+                                       "      OR threat = \"\""
+                                       "      OR severity_matches_type ("
+                                       "       %s,"
+                                       "       threat))"
+                                       " AND (task = 0 OR task = %llu)",
+                                       result,
+                                       result,
+                                       result,
+                                       result,
+                                       severity_sql,
+                                       task);
+      g_free (severity_sql);
+    }
   else if (task)
     {
       result_clause = g_strdup_printf
@@ -36151,33 +36302,51 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     }
 
   if (result)
-    result_clause = g_strdup_printf (" AND"
-                                     " (result = %llu"
-                                     "  OR (result = 0 AND nvt ="
-                                     "      (SELECT results.nvt FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (hosts is NULL"
-                                     "      OR hosts = \"\""
-                                     "      OR hosts_contains (hosts,"
-                                     "      (SELECT results.host FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (port is NULL"
-                                     "      OR port = \"\""
-                                     "      OR port ="
-                                     "      (SELECT results.port FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (threat is NULL"
-                                     "      OR threat = \"\""
-                                     "      OR threat ="
-                                     "      (SELECT results.type FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (task = 0 OR task = %llu)",
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     task);
+    {
+      gchar *severity_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+                                        " FROM results, nvts"
+                                        " WHERE (nvts.oid = results.nvt)"
+                                        "   AND (results.ROWID = %llu))",
+                                        result);
+      else
+        severity_sql = g_strdup_printf ("(SELECT results.severity"
+                                        " FROM results"
+                                        " WHERE results.ROWID = %llu)",
+                                        result);
+
+      result_clause = g_strdup_printf (" AND"
+                                       " (result = %llu"
+                                       "  OR (result = 0 AND nvt ="
+                                       "      (SELECT results.nvt FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (hosts is NULL"
+                                       "      OR hosts = \"\""
+                                       "      OR hosts_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (port is NULL"
+                                       "      OR port = \"\""
+                                       "      OR port ="
+                                       "      (SELECT results.port FROM results"
+                                       "       WHERE results.ROWID = %llu))"
+                                       " AND (threat is NULL"
+                                       "      OR threat = \"\""
+                                       "      OR severity_matches_type ("
+                                       "       %s,"
+                                       "       threat))"
+                                       " AND (task = 0 OR task = %llu)",
+                                       result,
+                                       result,
+                                       result,
+                                       result,
+                                       severity_sql,
+                                       task);
+
+      g_free (severity_sql);
+    }
   else if (task)
     {
       result_clause = g_strdup_printf
@@ -36872,33 +37041,51 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     }
 
   if (result)
-    result_clause = g_strdup_printf (" AND"
-                                     " (result = %llu"
-                                     "  OR (result = 0 AND nvt ="
-                                     "      (SELECT results.nvt FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (hosts is NULL"
-                                     "      OR hosts = \"\""
-                                     "      OR hosts_contains (hosts,"
-                                     "      (SELECT results.host FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (port is NULL"
-                                     "      OR port = \"\""
-                                     "      OR port ="
-                                     "      (SELECT results.port FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (threat is NULL"
-                                     "      OR threat = \"\""
-                                     "      OR threat ="
-                                     "      (SELECT results.type FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (task = 0 OR task = %llu)",
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     task);
+    {
+      gchar *severity_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+                                        " FROM results, nvts"
+                                        " WHERE (nvts.oid = results.nvt)"
+                                        "   AND (results.ROWID = %llu))",
+                                        result);
+      else
+        severity_sql = g_strdup_printf ("(SELECT results.severity"
+                                        " FROM results"
+                                        " WHERE results.ROWID = %llu)",
+                                        result);
+
+      result_clause = g_strdup_printf (" AND"
+                                       " (result = %llu"
+                                       "  OR (result = 0 AND nvt ="
+                                       "      (SELECT results.nvt FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (hosts is NULL"
+                                       "      OR hosts = \"\""
+                                       "      OR hosts_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (port is NULL"
+                                       "      OR port = \"\""
+                                       "      OR port ="
+                                       "      (SELECT results.port FROM results"
+                                       "       WHERE results.ROWID = %llu))"
+                                       " AND (threat is NULL"
+                                       "      OR threat = \"\""
+                                       "      OR severity_matches_type ("
+                                       "       %s,"
+                                       "       threat))"
+                                       " AND (task = 0 OR task = %llu)",
+                                       result,
+                                       result,
+                                       result,
+                                       result,
+                                       severity_sql,
+                                       task);
+
+      g_free (severity_sql);
+    }
   else if (task)
     {
       result_clause = g_strdup_printf
@@ -36993,33 +37180,51 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     }
 
   if (result)
-    result_clause = g_strdup_printf (" AND"
-                                     " (result = %llu"
-                                     "  OR (result = 0 AND nvt ="
-                                     "      (SELECT results.nvt FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (hosts is NULL"
-                                     "      OR hosts = \"\""
-                                     "      OR hosts_contains (hosts,"
-                                     "      (SELECT results.host FROM results"
-                                     "       WHERE results.ROWID = %llu)))"
-                                     " AND (port is NULL"
-                                     "      OR port = \"\""
-                                     "      OR port ="
-                                     "      (SELECT results.port FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (threat is NULL"
-                                     "      OR threat = \"\""
-                                     "      OR threat ="
-                                     "      (SELECT results.type FROM results"
-                                     "       WHERE results.ROWID = %llu))"
-                                     " AND (task = 0 OR task = %llu)",
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     result,
-                                     task);
+    {
+      gchar *severity_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+                                        " FROM results, nvts"
+                                        " WHERE (nvts.oid = results.nvt)"
+                                        "   AND (results.ROWID = %llu))",
+                                        result);
+      else
+        severity_sql = g_strdup_printf ("(SELECT results.severity"
+                                        " FROM results"
+                                        " WHERE results.ROWID = %llu)",
+                                        result);
+
+      result_clause = g_strdup_printf (" AND"
+                                       " (result = %llu"
+                                       "  OR (result = 0 AND nvt ="
+                                       "      (SELECT results.nvt FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (hosts is NULL"
+                                       "      OR hosts = \"\""
+                                       "      OR hosts_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.ROWID = %llu)))"
+                                       " AND (port is NULL"
+                                       "      OR port = \"\""
+                                       "      OR port ="
+                                       "      (SELECT results.port FROM results"
+                                       "       WHERE results.ROWID = %llu))"
+                                       " AND (threat is NULL"
+                                       "      OR threat = \"\""
+                                       "      OR severity_matches_type ("
+                                       "       %s,"
+                                       "       threat))"
+                                       " AND (task = 0 OR task = %llu)",
+                                       result,
+                                       result,
+                                       result,
+                                       result,
+                                       severity_sql,
+                                       task);
+
+      g_free (severity_sql);
+    }
   else if (task)
     {
       result_clause = g_strdup_printf

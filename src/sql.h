@@ -110,6 +110,9 @@ void
 sql_severity (sqlite3_context *, int argc, sqlite3_value **);
 
 void
+sql_severity_matches_type (sqlite3_context *, int argc, sqlite3_value **);
+
+void
 sql_task_trend (sqlite3_context *, int argc, sqlite3_value **);
 
 void

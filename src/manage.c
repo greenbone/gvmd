@@ -257,6 +257,49 @@ severity_in_level (double severity, const char *level)
     }
 }
 
+/**
+ * @brief Check whether a severity matches a message type.
+ * @param[in] severity  severity score
+ * @param[in] type      message type
+ * @return the message type
+ */
+int
+severity_matches_type (double severity, const char *type)
+{
+  if (type == NULL)
+    {
+      g_warning ("%s: type is NULL", __FUNCTION__);
+      return (0);
+    }
+  else if (severity == SEVERITY_LOG)
+    return (strcmp ("Log Message", type) == 0);
+  else if (severity == SEVERITY_FP)
+    return (strcmp ("False Positive", type) == 0);
+  else if (severity == SEVERITY_DEBUG)
+    return (strcmp ("Debug Message", type) == 0);
+  else if (severity == SEVERITY_ERROR)
+    return (strcmp ("Error Message", type) == 0);
+  else if (severity > 0.0 && severity <= 10.0)
+    {
+      if (strcmp ("Alarm", type) == 0)
+        return (1);
+      else if (strcmp ("Security Hole", type) == 0)
+        return (severity_in_level (severity, "high"));
+      else if (strcmp ("Security Warning", type) == 0)
+        return (severity_in_level (severity, "medium"));
+      else if (strcmp ("Security Note", "type") == 0)
+        return (severity_in_level (severity, "low"));
+      else
+        return (0);
+    }
+  else
+    {
+      g_warning ("%s: Invalid severity score given: %f",
+                 __FUNCTION__, severity);
+      return (0);
+    }
+}
+
 
 /* Credentials. */
 
