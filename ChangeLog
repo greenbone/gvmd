@@ -1,3 +1,10 @@
+2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count): Switch old Alarm types to threat
+	names.  In these cases find the results by severity instead of type.
+	(report_count_filtered): Add special case for high, medium and low.
+	(report_counts_id_filt): Replace old Alarm types with threat names.
+
 2013-07-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (severity_matches_type): New function.

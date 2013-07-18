@@ -17457,6 +17457,25 @@ report_count (report_t report, const char *type, int override, const char *host)
       g_free (severity_sql);
       return count;
     }
+  else if (((strcmp (type, "high") == 0)
+            || (strcmp (type, "medium") == 0)
+            || (strcmp (type, "low") == 0))
+           && host)
+    {
+      gchar* quoted_host = sql_quote (host);
+      int count = sql_int (0, 0,
+                           "SELECT count(*) FROM results, report_results"
+                           " WHERE results.host = '%s'"
+                           " AND results.type = 'Alarm'"
+                           " AND severity_in_level (results.severity, '%s')"
+                           " AND results.ROWID = report_results.result"
+                           " AND report_results.report = %llu;",
+                           quoted_host,
+                           type,
+                           report);
+      g_free (quoted_host);
+      return count;
+    }
   else if (host)
     {
       gchar* quoted_host = sql_quote (host);
@@ -17472,6 +17491,20 @@ report_count (report_t report, const char *type, int override, const char *host)
                            report);
       g_free (quoted_host);
       g_free (severity_sql);
+      return count;
+    }
+  else if ((strcmp (type, "high") == 0)
+           || (strcmp (type, "medium") == 0)
+           || (strcmp (type, "low") == 0))
+    {
+      int count = sql_int (0, 0,
+                           "SELECT count(*) FROM results, report_results"
+                           " WHERE results.type = 'Alarm'"
+                           " AND severity_in_level (results.severity, '%s')"
+                           " AND results.ROWID = report_results.result"
+                           " AND report_results.report = %llu;",
+                           type,
+                           report);
       return count;
     }
   else
@@ -18412,22 +18445,41 @@ report_count_filtered (report_t report, const char *type, int override,
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
 
-      count = sql_int (0, 0,
-                       "SELECT count(*) FROM results, report_results"
-                       " WHERE report_results.report = %llu"
-                       " AND report_results.result = results.ROWID"
-                       "%s%s%s"
-                       " AND severity_matches_type (%s, '%s')"
-                       "%s%s%s;",
-                       report,
-                       host ? " AND results.host = '" : "",
-                       host ? host : "",
-                       host ? "' AND " : "",
-                       severity_sql,
-                       type,
-                       autofp_sql ? autofp_sql->str : "",
-                       phrase_sql ? phrase_sql->str : "",
-                       cvss_sql ? cvss_sql->str : "");
+      if ((strcmp (type, "high") == 0)
+          || (strcmp (type, "medium") == 0)
+          || (strcmp (type, "low") == 0))
+        count = sql_int (0, 0,
+                         "SELECT count(*) FROM results, report_results"
+                         " WHERE report_results.report = %llu"
+                         " AND report_results.result = results.ROWID"
+                         "%s%s%s"
+                         " AND severity_in_level (severity, '%s')"
+                         "%s%s%s;",
+                         report,
+                         host ? " AND results.host = '" : "",
+                         host ? host : "",
+                         host ? "' AND " : "",
+                         type,
+                         autofp_sql ? autofp_sql->str : "",
+                         phrase_sql ? phrase_sql->str : "",
+                         cvss_sql ? cvss_sql->str : "");
+      else
+        count = sql_int (0, 0,
+                         "SELECT count(*) FROM results, report_results"
+                         " WHERE report_results.report = %llu"
+                         " AND report_results.result = results.ROWID"
+                         "%s%s%s"
+                         " AND severity_matches_type (%s, '%s')"
+                         "%s%s%s;",
+                         report,
+                         host ? " AND results.host = '" : "",
+                         host ? host : "",
+                         host ? "' AND " : "",
+                         severity_sql,
+                         type,
+                         autofp_sql ? autofp_sql->str : "",
+                         phrase_sql ? phrase_sql->str : "",
+                         cvss_sql ? cvss_sql->str : "");
       if (autofp_sql) g_string_free (autofp_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
@@ -19525,11 +19577,11 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (false_positives)
     *false_positives = report_count (report, "False Positive", override, host);
-  if (holes) *holes = report_count (report, "Security Hole", override, host);
-  if (infos) *infos = report_count (report, "Security Note", override, host);
+  if (holes) *holes = report_count (report, "high", override, host);
+  if (infos) *infos = report_count (report, "low", override, host);
   if (logs) *logs = report_count (report, "Log Message", override, host);
   if (warnings)
-    *warnings = report_count (report, "Security Warning", override, host);
+    *warnings = report_count (report, "medium", override, host);
   if (severity) *severity = report_severity (report, override, host);
 
   if (holes && infos && logs && warnings && false_positives
@@ -19550,12 +19602,12 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                               autofp);
   if (filtered_holes)
     *filtered_holes
-     = report_count_filtered (report, "Security Hole", override, host,
+     = report_count_filtered (report, "high", override, host,
                               min_cvss_base, search_phrase, search_phrase_exact,
                               autofp);
   if (filtered_infos)
     *filtered_infos
-     = report_count_filtered (report, "Security Note", override, host,
+     = report_count_filtered (report, "low", override, host,
                               min_cvss_base, search_phrase, search_phrase_exact,
                               autofp);
   if (filtered_logs)
@@ -19565,7 +19617,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                               autofp);
   if (filtered_warnings)
     *filtered_warnings
-     = report_count_filtered (report, "Security Warning", override, host,
+     = report_count_filtered (report, "medium", override, host,
                               min_cvss_base, search_phrase, search_phrase_exact,
                               autofp);
 
