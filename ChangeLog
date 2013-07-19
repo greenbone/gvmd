@@ -1,3 +1,10 @@
+2013-07-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (log_event): Style fix.
+	(log_event_fail): New function.
+	(CASE_DELETE, omp_xml_handle_end_element): Update g_log calls to use
+	log_event_fail and log_event accordingly.
+
 2013-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (severity_matches_type): Space doc.  Remove parens from
