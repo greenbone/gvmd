@@ -9190,6 +9190,34 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "severity_to_level",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_to_level,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_to_level", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "severity_to_type",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_to_type,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_to_type", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "run_status_name",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -12691,120 +12719,16 @@ set_task_schedule (task_t task, schedule_t schedule)
 const char*
 task_threat_level (task_t task, int overrides)
 {
-  char *type;
-  gchar *severity_sql, *ov, *new_type_sql;
+  char* severity;
+  double severity_dbl;
+  severity = task_severity (task, 1, 0);
 
-  if (current_credentials.uuid == NULL)
+  if (severity == NULL
+      || sscanf (severity, "%lf", &severity_dbl) != 1)
     return NULL;
-
-  if (task_target (task) == 0)
-    /* Container task. */
-    return NULL;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
   else
-    severity_sql = g_strdup ("results.severity");
+    return severity_to_level (severity_dbl);
 
-  if (overrides)
-    {
-      ov = g_strdup_printf
-            ("SELECT overrides.new_threat"
-             " FROM overrides"
-             " WHERE overrides.nvt = results.nvt"
-             " AND ((overrides.owner IS NULL)"
-             " OR (overrides.owner ="
-             " (SELECT ROWID FROM users"
-             "  WHERE users.uuid = '%s')))"
-             " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= now ()))"
-             " AND (overrides.task ="
-             "      (SELECT reports.task FROM reports"
-             "       WHERE report_results.report = reports.ROWID)"
-             "      OR overrides.task = 0)"
-             " AND (overrides.result = results.ROWID"
-             "      OR overrides.result = 0)"
-             " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = \"\""
-             "      OR hosts_contains (overrides.hosts, results.host))"
-             " AND (overrides.port is NULL"
-             "      OR overrides.port = \"\""
-             "      OR overrides.port = results.port)"
-             " AND (overrides.threat is NULL"
-             "      OR overrides.threat = \"\""
-             "      OR severity_matches_type (%s,"
-             "                                overrides.threat))"
-             " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC,"
-             " overrides.creation_time DESC",
-             current_credentials.uuid,
-             severity_sql);
-
-      new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
-
-      g_free (severity_sql);
-      g_free (ov);
-    }
-  else
-    new_type_sql = g_strdup ("type");
-
-  type = sql_string (0, 0,
-                     " SELECT %s AS new_type FROM results, report_results"
-                     " WHERE report_results.report ="
-                     " (SELECT ROWID FROM reports WHERE reports.task = %llu"
-                     "  AND reports.scan_run_status = %u"
-                     "  ORDER BY reports.date DESC LIMIT 1)"
-                     " AND results.ROWID = report_results.result"
-                     " ORDER BY new_type COLLATE collate_message_type DESC"
-                     " LIMIT 1",
-                     new_type_sql,
-                     task,
-                     TASK_STATUS_DONE);
-
-  g_free (new_type_sql);
-
-  if (type == NULL)
-    return NULL;
-
-  if (strcmp (type, "Security Hole") == 0)
-    {
-      free (type);
-      return "High";
-    }
-
-  if (strcmp (type, "Security Warning") == 0)
-    {
-      free (type);
-      return "Medium";
-    }
-
-  if (strcmp (type, "Security Note") == 0)
-    {
-      free (type);
-      return "Low";
-    }
-
-  if (strcmp (type, "Log Message") == 0)
-    {
-      free (type);
-      return "Log";
-    }
-
-  if (strcmp (type, "Debug Message") == 0)
-    {
-      free (type);
-      return "Debug";
-    }
-
-  if (strcmp (type, "False Positive") == 0)
-    {
-      free (type);
-      return "False Positive";
-    }
-
-  free (type);
   return NULL;
 }
 
@@ -12819,110 +12743,16 @@ task_threat_level (task_t task, int overrides)
 static const char*
 task_previous_threat_level (task_t task)
 {
-  char *type;
-  gchar *severity_sql, *ov, *new_type_sql;
+  char* severity;
+  double severity_dbl;
+  severity = task_severity (task, 1, 1);
 
-  assert (current_credentials.uuid);
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  ov = g_strdup_printf
-        ("SELECT overrides.new_threat"
-         " FROM overrides"
-         " WHERE overrides.nvt = results.nvt"
-         " AND ((overrides.owner IS NULL)"
-         " OR (overrides.owner ="
-         " (SELECT ROWID FROM users"
-         "  WHERE users.uuid = '%s')))"
-         " AND ((overrides.end_time = 0)"
-         "      OR (overrides.end_time >= now ()))"
-         " AND (overrides.task ="
-         "      (SELECT reports.task FROM reports"
-         "       WHERE report_results.report = reports.ROWID)"
-         "      OR overrides.task = 0)"
-         " AND (overrides.result = results.ROWID"
-         "      OR overrides.result = 0)"
-         " AND (overrides.hosts is NULL"
-         "      OR overrides.hosts = \"\""
-         "      OR hosts_contains (overrides.hosts, results.host))"
-         " AND (overrides.port is NULL"
-         "      OR overrides.port = \"\""
-         "      OR overrides.port = results.port)"
-         " AND (overrides.threat is NULL"
-         "      OR overrides.threat = \"\""
-         "      OR severity_matches_type (%s,"
-         "                                overrides.threat))"
-         " ORDER BY overrides.result DESC, overrides.task DESC,"
-         " overrides.port DESC, overrides.threat"
-         " COLLATE collate_message_type ASC,"
-         " overrides.creation_time DESC",
-         current_credentials.uuid,
-         severity_sql);
-
-  new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
-
-  g_free (severity_sql);
-  g_free (ov);
-
-  type = sql_string (0, 0,
-                     " SELECT %s AS new_type FROM results, report_results"
-                     " WHERE report_results.report ="
-                     " (SELECT ROWID FROM reports WHERE reports.task = %llu"
-                     "  AND reports.scan_run_status = %u"
-                     "  ORDER BY reports.date DESC LIMIT 2 OFFSET 1)"
-                     " AND results.ROWID = report_results.result"
-                     " ORDER BY new_type COLLATE collate_message_type DESC"
-                     " LIMIT 1",
-                     new_type_sql,
-                     task,
-                     TASK_STATUS_DONE);
-
-  g_free (new_type_sql);
-
-  if (type == NULL)
+  if (severity == NULL
+      || sscanf (severity, "%lf", &severity_dbl) != 1)
     return NULL;
+  else
+    return severity_to_level (severity_dbl);
 
-  if (strcmp (type, "Security Hole") == 0)
-    {
-      free (type);
-      return "High";
-    }
-
-  if (strcmp (type, "Security Warning") == 0)
-    {
-      free (type);
-      return "Medium";
-    }
-
-  if (strcmp (type, "Security Note") == 0)
-    {
-      free (type);
-      return "Low";
-    }
-
-  if (strcmp (type, "Log Message") == 0)
-    {
-      free (type);
-      return "Log";
-    }
-
-  if (strcmp (type, "Debug Message") == 0)
-    {
-      free (type);
-      return "Debug";
-    }
-
-  if (strcmp (type, "False Positive") == 0)
-    {
-      free (type);
-      return "False Positive";
-    }
-
-  free (type);
   return NULL;
 }
 
@@ -13029,12 +12859,14 @@ set_task_schedule_next_time (task_t task, time_t time)
  *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  offset     Offset of report to get severity from:
+ *                        0 = use last report, 1 = use next to last report
  *
  * @return Severity score of last report on task if there is one, as a freshly
  *  allocated string, else NULL.
  */
 char *
-task_severity (task_t task, int overrides)
+task_severity (task_t task, int overrides, int offset)
 {
   char* severity;
   gchar *severity_sql, *ov, *new_severity_sql;
@@ -13103,14 +12935,15 @@ task_severity (task_t task, int overrides)
                          " WHERE report_results.report ="
                          " (SELECT ROWID FROM reports WHERE reports.task = %llu"
                          "  AND reports.scan_run_status = %u"
-                         "  ORDER BY reports.date DESC LIMIT 1)"
+                         "  ORDER BY reports.date DESC LIMIT 1 OFFSET %d)"
                          " AND results.ROWID = report_results.result"
                          " ORDER BY new_severity"
                          " COLLATE collate_message_type DESC"
                          " LIMIT 1",
                          new_severity_sql,
                          task,
-                         TASK_STATUS_DONE);
+                         TASK_STATUS_DONE,
+                         offset);
 
   g_free (new_severity_sql);
 
@@ -15120,7 +14953,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
   if (report)
     {
-      gchar *new_type_sql, *auto_type_sql, *new_severity_sql;
+      gchar *new_severity_sql, *auto_type_sql;
 
       if (sort_field == NULL) sort_field = "type";
       if (levels == NULL) levels = "hmlgdf";
@@ -15135,43 +14968,6 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
           gchar *ov;
 
           assert (current_credentials.uuid);
-
-          ov = g_strdup_printf
-                ("SELECT overrides.new_threat"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports"
-                 "       WHERE report_results.report = reports.ROWID)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.ROWID"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
-                 " overrides.creation_time DESC",
-                 current_credentials.uuid,
-                 severity_sql);
-
-          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
-
-          g_free (ov);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
@@ -15207,15 +15003,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  severity_sql);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                              ov, severity_sql);
-
+                                              ov,
+                                              severity_sql);
           g_free (ov);
         }
       else
-        {
-          new_type_sql = g_strdup ("type");
-          new_severity_sql = g_strdup (severity_sql);
-        }
+        new_severity_sql = g_strdup (severity_sql);
 
       switch (autofp)
         {
@@ -15284,7 +15077,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
          }
 
       sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
-                             " nvt, type, %s AS new_type, %s AS auto_type,"
+                             " nvt, severity_to_type (%s) AS type,"
+                             " severity_to_type (%s) AS new_type,"
+                             " %s AS auto_type,"
                              " results.description,"
                              " results.task,"
                              " results.report,"
@@ -15302,7 +15097,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " AND report_results.result = results.ROWID"
                              "%s"
                              " LIMIT %i OFFSET %i;",
-                             new_type_sql,
+                             severity_sql,
+                             new_severity_sql,
                              auto_type_sql,
                              severity_sql,
                              new_severity_sql,
@@ -15374,57 +15170,18 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      g_free (new_type_sql);
       g_free (auto_type_sql);
       g_free (new_severity_sql);
     }
   else if (result)
     {
-      gchar *new_type_sql, *auto_type_sql, *new_severity_sql;
+      gchar *new_severity_sql, *auto_type_sql;
 
       if (override)
         {
           gchar *ov;
 
           assert (current_credentials.uuid);
-
-          ov = g_strdup_printf
-                ("SELECT overrides.new_threat"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports, report_results"
-                 "       WHERE report_results.result = results.ROWID"
-                 "       AND report_results.report = reports.ROWID)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.ROWID"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
-                 " overrides.creation_time DESC",
-                 current_credentials.uuid,
-                 severity_sql);
-
-          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
-
-          g_free (ov);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
@@ -15466,10 +15223,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
           g_free (ov);
         }
       else
-        {
-          new_type_sql = g_strdup ("type");
-          new_severity_sql = g_strdup (severity_sql);
-        }
+        new_severity_sql = g_strdup (severity_sql);
 
       switch (autofp)
         {
@@ -15543,7 +15297,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
          }
 
       sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
-                             " type, %s, %s, description,"
+                             " severity_to_type (%s), severity_to_type (%s),"
+                             " %s, description,"
                              " results.task,"
                              " results.report,"
                              " NULL,"
@@ -15552,26 +15307,31 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " %s"
                              " FROM results"
                              " WHERE ROWID = %llu;",
-                             new_type_sql,
+                             severity_sql,
+                             new_severity_sql,
                              auto_type_sql,
                              severity_sql,
                              new_severity_sql,
                              result);
 
-      g_free (new_type_sql);
       g_free (auto_type_sql);
       g_free (new_severity_sql);
     }
   else
     sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
-                           " type, type, type, description,"
+                           " severity_to_type (%s), severity_to_type (%s),"
+                           " severity_to_type (%s), description,"
                            " results.task, results.report, NULL,"
-                           " nvt_version, severity, %s"
+                           " nvt_version, %s, %s"
                            " FROM results, report_results, reports"
                            " WHERE results.ROWID = report_results.result"
                            " AND report_results.report = reports.ROWID"
                            " AND reports.owner ="
                            " (SELECT ROWID FROM users WHERE uuid = '%s');",
+                           severity_sql,
+                           severity_sql,
+                           severity_sql,
+                           severity_sql,
                            severity_sql,
                            current_credentials.uuid);
 
@@ -15950,6 +15710,60 @@ result_iterator_severity_double (iterator_t *iterator)
     return 0.0;
 
   return sqlite3_column_double (iterator->stmt, 14);
+}
+
+/**
+ * @brief Get the original severity/threat level from a result iterator.
+ *
+ * This is the original level without overrides and autofp.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The original threat level of the result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_original_level (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+
+  if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
+    return NULL;
+
+  double severity = sqlite3_column_double (iterator->stmt, 13);
+
+  const char* ret = severity_to_level (severity);
+  return ret ? ret : "";
+}
+
+/**
+ * @brief Get the severity/threat level from a result iterator.
+ *
+ * This is the the autofp adjusted overridden level.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The threat level of the result.  Caller must only use before
+ *         calling cleanup_iterator.
+ */
+const char*
+result_iterator_level (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+
+  /* auto_type */
+  if (sqlite3_column_int (iterator->stmt, 7))
+    return "False Positive";
+
+  if (sqlite3_column_type (iterator->stmt, 14) == SQLITE_NULL)
+    return NULL;
+
+  double severity = sqlite3_column_double (iterator->stmt, 14);
+
+  const char* ret = severity_to_level (severity);
+  return ret ? ret : "";
 }
 
 /**
@@ -16391,7 +16205,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           assert (current_credentials.uuid);
 
           ov = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT severity_to_type (overrides.new_severity)"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND ((overrides.owner IS NULL)"
@@ -16425,13 +16239,17 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  current_credentials.uuid,
                  severity_sql);
 
-          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s),"
+                                          "severity_to_type (%s))",
+                                          ov,
+                                          severity_sql);
 
           g_free (severity_sql);
           g_free (ov);
         }
       else
-        new_type_sql = g_strdup ("type");
+        new_type_sql = g_strdup_printf ("severity_to_type (%s)",
+                                        severity_sql);
 
       levels_sql = where_levels (levels);
 
@@ -17066,7 +16884,7 @@ report_scan_result_count (report_t report, const char* levels,
         severity_sql = g_strdup ("results.severity");
 
       ov = g_strdup_printf
-            ("SELECT overrides.new_threat"
+            ("SELECT severity_to_type (overrides.new_severity)"
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
              " AND ((overrides.owner IS NULL)"
@@ -17098,7 +16916,11 @@ report_scan_result_count (report_t report, const char* levels,
              current_credentials.uuid,
              severity_sql);
 
-      new_type_sql = g_strdup_printf (", coalesce ((%s), type) AS new_type", ov);
+      new_type_sql = g_strdup_printf (", coalesce ((%s),"
+                                      " severity_to_type (%s))"
+                                      " AS new_type",
+                                      ov,
+                                      severity_sql);
 
       g_free (severity_sql);
       g_free (ov);
@@ -17209,7 +17031,7 @@ report_count (report_t report, const char *type, int override, const char *host)
       report_task (report, &task);
 
       select = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT severity_to_type (overrides.new_severity)"
                  " FROM overrides"
                  " WHERE overrides.nvt = $nvt" // 1
                  " AND ((overrides.owner IS NULL)"
@@ -18105,7 +17927,7 @@ report_count_filtered (report_t report, const char *type, int override,
       report_task (report, &task);
 
       select = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT severity_to_type (overrides.new_severity)"
                  " FROM overrides"
                  " WHERE overrides.nvt = $nvt" // 1
                  " AND ((overrides.owner IS NULL)"
@@ -18529,7 +18351,7 @@ report_severity_filtered (report_t report, int override,
       report_task (report, &task);
 
       select = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT severity_to_type (overrides.new_severity)"
                  " FROM overrides"
                  " WHERE overrides.nvt = $nvt" // 1
                  " AND ((overrides.owner IS NULL)"
@@ -19072,7 +18894,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
           report_task (report, &task);
 
           select = g_strdup_printf
-                    ("SELECT overrides.new_threat, overrides.new_severity"
+                    ("SELECT severity_to_type (overrides.new_severity),"
+                     "       overrides.new_severity"
                      " FROM overrides"
                      " WHERE overrides.nvt = $nvt" // 1
                      " AND ((overrides.owner IS NULL)"
@@ -21018,22 +20841,22 @@ filtered_host_count (const char *levels, const char *search_phrase,
     {
       int ret;
       GString *levels_sql;
-      gchar *new_type_sql;
+      gchar *severity_sql, *new_type_sql;
+
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                  " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup ("results.severity");
 
       if (apply_overrides)
         {
-          gchar *severity_sql, *ov;
+          gchar *ov;
 
           assert (current_credentials.uuid);
 
-          if (setting_dynamic_severity_int ())
-            severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                                      " WHERE nvts.oid = results.nvt)");
-          else
-            severity_sql = g_strdup ("results.severity");
-
           ov = g_strdup_printf
-                ("SELECT overrides.new_threat"
+                ("SELECT severity_to_type (overrides.new_severity)"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND ((overrides.owner IS NULL)"
@@ -21066,12 +20889,18 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  current_credentials.uuid,
                  severity_sql);
 
-          new_type_sql = g_strdup_printf ("coalesce ((%s), type)", ov);
+          new_type_sql = g_strdup_printf ("coalesce ((%s),"
+                                          "severity_to_type (%s))",
+                                          ov,
+                                          severity_sql);
 
           g_free (ov);
         }
       else
-        new_type_sql = g_strdup ("type");
+        new_type_sql = g_strdup_printf ("severity_to_type (%s)",
+                                        severity_sql);
+
+      g_free (severity_sql);
 
       levels_sql = where_levels (levels);
 
@@ -36968,7 +36797,8 @@ modify_override (override_t override, const char *active, const char* text,
   " (SELECT name FROM users WHERE users.ROWID = overrides.owner) AS _owner,"   \
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
-  " overrides.hosts, overrides.port, overrides.threat, overrides.new_threat,"  \
+  " overrides.hosts, overrides.port, overrides.threat,"                        \
+  " severity_to_type (overrides.new_severity) as new_type,"                    \
   " overrides.task, overrides.result, overrides.end_time,"                     \
   " (overrides.end_time = 0) OR (overrides.end_time >= now ()),"               \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
@@ -36991,8 +36821,8 @@ modify_override (override_t override, const char *active, const char* text,
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
   " overrides_trash.hosts, overrides_trash.port, overrides_trash.threat,"      \
-  " overrides_trash.new_threat, overrides_trash.task, overrides_trash.result," \
-  " overrides_trash.end_time,"                                                 \
+  " severity_to_type (overrides_trash.new_severity) as new_type,"              \
+  " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
   " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \

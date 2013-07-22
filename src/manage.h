@@ -632,7 +632,7 @@ void
 set_scan_attack_state (report_t, const char*, const char*);
 
 char *
-task_severity (task_t, int);
+task_severity (task_t, int, int);
 
 int
 task_debugs_size (task_t);
@@ -766,6 +766,12 @@ severity_in_level (double, const char *);
 
 int
 severity_matches_type (double, const char *);
+
+const char*
+severity_to_level (double severity);
+
+const char*
+severity_to_type (double severity);
 
 const char*
 run_status_name (task_status_t);
@@ -1052,6 +1058,13 @@ result_iterator_original_severity (iterator_t*);
 
 const char*
 result_iterator_severity (iterator_t*);
+
+const char*
+result_iterator_original_level (iterator_t*);
+
+const char*
+result_iterator_level (iterator_t*);
+
 
 void
 init_host_iterator (iterator_t*, report_t, const char *, report_host_t);

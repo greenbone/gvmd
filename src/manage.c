@@ -302,6 +302,69 @@ severity_matches_type (double severity, const char *type)
   return 0;
 }
 
+/**
+ * @brief Get the threat level matching a severity score.
+ * @param[in] severity  severity score
+ * @param[in] type      message type
+ * @return the message type as a static string
+ */
+const char*
+severity_to_level (double severity)
+{
+  if (severity == SEVERITY_LOG)
+    return "Log";
+  else if (severity == SEVERITY_FP)
+    return "False Positive";
+  else if (severity == SEVERITY_DEBUG)
+    return "Debug";
+  else if (severity == SEVERITY_ERROR)
+    return "Error";
+  else if (severity > 0.0 && severity <= 10.0)
+    {
+      if (severity_in_level (severity, "high"))
+        return ("High");
+      else if (severity_in_level (severity, "medium"))
+        return ("Medium");
+      else if (severity_in_level (severity, "low"))
+        return ("Low");
+      else
+        return ("Log");
+    }
+  else
+    {
+      g_warning ("%s: Invalid severity score given: %f",
+                 __FUNCTION__, severity);
+      return (NULL);
+    }
+}
+
+/**
+ * @brief Get the message type matching a severity score.
+ * @param[in] severity  severity score
+ * @param[in] type      message type
+ * @return the message type as a static string
+ */
+const char*
+severity_to_type (double severity)
+{
+  if (severity == SEVERITY_LOG)
+    return "Log Message";
+  else if (severity == SEVERITY_FP)
+    return "False Positive";
+  else if (severity == SEVERITY_DEBUG)
+    return "Debug Message";
+  else if (severity == SEVERITY_ERROR)
+    return "Error Message";
+  else if (severity > 0.0 && severity <= 10.0)
+    return "Alarm";
+  else
+    {
+      g_warning ("%s: Invalid severity score given: %f",
+                 __FUNCTION__, severity);
+      return (NULL);
+    }
+}
+
 
 /* Credentials. */
 

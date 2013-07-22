@@ -10168,7 +10168,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<description>%s</description>",
     xref ? xref : "",
     result_iterator_scan_nvt_version (results),
-    manage_result_type_threat (result_iterator_type (results)),
+    result_iterator_level (results),
     result_iterator_severity (results),
     descr ? nl_descr : "");
 
@@ -10176,8 +10176,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     buffer_xml_append_printf (buffer,
                               "<original_threat>%s</original_threat>"
                               "<original_severity>%s</original_severity>",
-                              manage_result_type_threat
-                               (result_iterator_original_type (results)),
+                              result_iterator_original_level (results),
                               result_iterator_original_severity (results));
 
   free (uuid);

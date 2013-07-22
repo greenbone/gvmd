@@ -1,3 +1,35 @@
+2013-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (severity_to_level, severity_to_type): New functions.
+
+	* src/manage.h (task_severity): Add parameter.
+	(severity_to_level, severity_to_type, result_iterator_original_level)
+	(result_iterator_level): New function prototypes.
+
+	* src/manage_sql.c (init_manage_process): Add SQLite functions
+	severity_to_level, severity_to_type,
+	(task_threat_level, task_previous_threat_level): Use task_severity
+	to get threat level based on severity score.
+	(task_severity): Add offset parameter to allow getting severity from
+	next to last report.
+	(init_result_iterator): Get only severity from database and calculate
+	message type.
+	(result_iterator_original_level, result_iterator_level): New iterator
+	functions.
+	(init_asset_iterator, report_scan_result_count, report_count)
+	(report_count_filtered, report_severity_filtered, report_counts_id_filt)
+	(filtered_host_count, OVERRIDE_ITERATOR_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Calculate message type from severity.
+
+	* src/omp.c (buffer_results_xml): Use result_iterator_level to get
+	threat level.
+
+	* src/sql.c (sql_severity): Add parameter for task_severity.
+	(sql_severity_to_level, sql_severity_to_type): New SQLite functions.
+
+	* src/sql.h (sql_severity_to_level, sql_severity_to_type): New function
+	prototypes.
+
 2013-07-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (log_event): Style fix.

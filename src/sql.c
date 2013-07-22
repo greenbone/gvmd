@@ -1238,7 +1238,7 @@ sql_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  severity = task_severity (task, overrides);
+  severity = task_severity (task, overrides, 0);
   severity_double = severity ? g_strtod (severity, 0) : 0.0;
   tracef ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
   if (severity)
@@ -1282,6 +1282,54 @@ sql_severity_matches_type (sqlite3_context *context, int argc,
 
   sqlite3_result_int (context,
                       severity_matches_type (severity, type));
+  return;
+}
+
+/**
+ * @brief Get the threat level matching a severity score.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_severity_to_level (sqlite3_context *context, int argc,
+                      sqlite3_value** argv)
+{
+  double severity;
+
+  assert (argc == 1);
+
+  severity = sqlite3_value_double (argv[0]);
+
+  sqlite3_result_text (context, severity_to_level (severity),
+                       -1, SQLITE_TRANSIENT);
+  return;
+}
+
+/**
+ * @brief Get the message type matching a severity score.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_severity_to_type (sqlite3_context *context, int argc,
+                      sqlite3_value** argv)
+{
+  double severity;
+
+  assert (argc == 1);
+
+  severity = sqlite3_value_double (argv[0]);
+
+  sqlite3_result_text (context, severity_to_type (severity),
+                       -1, SQLITE_TRANSIENT);
   return;
 }
 
