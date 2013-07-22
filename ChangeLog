@@ -1,5 +1,10 @@
 2013-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+        * src/manage_sql.c (task_threat_level): Pass overrides parameter to
+        task_severity.
+
+2013-07-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
         * src/manage_sql.c (make_result): Use special severity values for
         False Positives, Log, Debug and Error messages.
 

@@ -12721,7 +12721,7 @@ task_threat_level (task_t task, int overrides)
 {
   char* severity;
   double severity_dbl;
-  severity = task_severity (task, 1, 0);
+  severity = task_severity (task, overrides, 0);
 
   if (severity == NULL
       || sscanf (severity, "%lf", &severity_dbl) != 1)
