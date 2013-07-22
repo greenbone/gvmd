@@ -13377,8 +13377,16 @@ make_result (task_t task, const char* subnet, const char* host,
               severity = g_strdup ("0.0");
             };
         }
+      else if (strcasecmp (type, "Log Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+      else if (strcasecmp (type, "Debug Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
+      else if (strcasecmp (type, "Error Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+      else if (strcasecmp (type, "False Positive") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_FP));
       else
-        severity = g_strdup ("0.0");
+        severity = g_strdup ("NULL");
     }
   else
     {
