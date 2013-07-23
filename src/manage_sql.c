@@ -18705,13 +18705,13 @@ cache_report_counts (report_t report, int override, int holes, int warnings,
                 " override_severity = %f"
                 " WHERE ROWID = %llu;",
                 holes, warnings, infos, logs, false_positives,
-                report, severity);
+                severity, report);
   else
     sql_giveup ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
                 " logs = %i, fps = %i, severity = %f"
                 " WHERE ROWID = %llu;",
                 holes, warnings, infos, logs, false_positives,
-                report, severity);
+                severity, report);
 }
 
 /**

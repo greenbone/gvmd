@@ -1,5 +1,10 @@
 2013-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cache_report_counts): Put severity param in right
+	place.  This gets the caching working again, at least for startup.
+
+2013-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count): In SQL of general case use report in
 	result instead of report_results.
 
