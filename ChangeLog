@@ -1,3 +1,8 @@
+2013-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_count): In SQL of general case use report in
+	result instead of report_results.
+
 2013-07-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (setting_severity): Use quiet SQL interface, because

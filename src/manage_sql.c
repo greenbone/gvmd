@@ -17308,9 +17308,8 @@ report_count (report_t report, const char *type, int override, const char *host)
     {
       int ret;
       ret = sql_int (0, 0,
-                     "SELECT count(*) FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND report_results.result = results.ROWID"
+                     "SELECT count(*) FROM results"
+                     " WHERE results.report = %llu"
                      " AND severity_matches_type (%s, '%s');",
                      report,
                      severity_sql,
