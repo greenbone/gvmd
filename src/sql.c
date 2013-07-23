@@ -362,6 +362,7 @@ sql_quiet (char* sql, ...)
  *
  * @param[in]   col          Column.
  * @param[in]   row          Row.
+ * @param[in]   log          Whether to do tracef logging.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
  * @param[out]  stmt_return  Return from statement.
@@ -369,8 +370,8 @@ sql_quiet (char* sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
-       va_list args, sqlite3_stmt** stmt_return)
+sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
+                char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
   const char* tail;
   int ret;
@@ -381,7 +382,8 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
   formatted = g_strdup_vprintf (sql, args);
   //va_end (args);
 
-  tracef ("   sql_x: %s\n", formatted);
+  if (log)
+    tracef ("   sql_x: %s\n", formatted);
 
   /* Prepare statement. */
 
@@ -428,11 +430,53 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
         }
       if (row == 0) break;
       row--;
-      tracef ("   sql_x row %i\n", row);
+      if (log)
+        tracef ("   sql_x row %i\n", row);
     }
 
-  tracef ("   sql_x end\n");
+  if (log)
+    tracef ("   sql_x end\n");
   return 0;
+}
+
+/**
+ * @brief Get a particular cell from a SQL query.
+ *
+ * Do logging as usual.
+ *
+ * @param[in]   col          Column.
+ * @param[in]   row          Row.
+ * @param[in]   sql          Format string for SQL query.
+ * @param[in]   args         Arguments for format string.
+ * @param[out]  stmt_return  Return from statement.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
+sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
+       va_list args, sqlite3_stmt** stmt_return)
+{
+  return sql_x_internal (col, row, 1, sql, args, stmt_return);
+}
+
+/**
+ * @brief Get a particular cell from a SQL query.
+ *
+ * Skip any logging.
+ *
+ * @param[in]   col          Column.
+ * @param[in]   row          Row.
+ * @param[in]   sql          Format string for SQL query.
+ * @param[in]   args         Arguments for format string.
+ * @param[out]  stmt_return  Return from statement.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
+sql_x_quiet (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
+             va_list args, sqlite3_stmt** stmt_return)
+{
+  return sql_x_internal (col, row, 0, sql, args, stmt_return);
 }
 
 /**
@@ -530,6 +574,41 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
   va_list args;
   va_start (args, sql);
   sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  va_end (args);
+  if (sql_x_ret)
+    {
+      sqlite3_finalize (stmt);
+      return NULL;
+    }
+  ret2 = sqlite3_column_text (stmt, col);
+  ret = g_strdup ((char*) ret2);
+  sqlite3_finalize (stmt);
+  return ret;
+}
+
+/**
+ * @brief Get a particular cell from a SQL query, as an string.
+ *
+ * @param[in]  col    Column.
+ * @param[in]  row    Row.
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return Freshly allocated string containing the result, NULL otherwise.
+ *         NULL means that either the selected value was NULL or there were
+ *         fewer rows in the result than \p row.
+ */
+char*
+sql_string_quiet (unsigned int col, unsigned int row, char* sql, ...)
+{
+  sqlite3_stmt* stmt;
+  const unsigned char* ret2;
+  char* ret;
+  int sql_x_ret;
+
+  va_list args;
+  va_start (args, sql);
+  sql_x_ret = sql_x_quiet (col, row, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {

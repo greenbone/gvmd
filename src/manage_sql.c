@@ -46751,14 +46751,15 @@ setting_filter (const char *resource)
 char *
 setting_severity ()
 {
-  return sql_string (0, 0,
-                     "SELECT value FROM settings WHERE name = 'Severity Class'"
-                     " AND ((owner IS NULL)"
-                     "      OR (owner ="
-                     "          (SELECT ROWID FROM users"
-                     "           WHERE users.uuid = '%s')))"
-                     " ORDER BY owner DESC LIMIT 0,1;",
-                     current_credentials.uuid);
+  return sql_string_quiet (0, 0,
+                           "SELECT value FROM settings"
+                           " WHERE name = 'Severity Class'"
+                           " AND ((owner IS NULL)"
+                           "      OR (owner ="
+                           "          (SELECT ROWID FROM users"
+                           "           WHERE users.uuid = '%s')))"
+                           " ORDER BY owner DESC LIMIT 0,1;",
+                           current_credentials.uuid);
 }
 
 /**

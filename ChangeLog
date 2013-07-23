@@ -1,3 +1,14 @@
+2013-07-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (setting_severity): Use quiet SQL interface, because
+	this is called so often that the logs grow very quickly.
+
+	* src/sql.c (sql_x_internal): New function.  Body from sql_x.
+	(sql_x): Call sql_x_internal.
+	(sql_x_quiet, sql_string_quiet): New functions.
+
+	* src/sql.h: Add header accordingly.
+
 2013-07-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use log_event and
