@@ -4478,10 +4478,7 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, override_severity, highs, mediums, lows, logs, fps,"
        "  override_highs, override_mediums, override_lows, override_logs,"
-       "  override_fps,"
-       "  UNIQUE (report, user),"
-       "  FOREIGN KEY(report) REFERENCES reports(id),"
-       "  FOREIGN KEY(user) REFERENCES users(id));");
+       "  override_fps);");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL)");
@@ -18683,23 +18680,29 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 }
 
 /**
- * @brief Ensures a counts cache exists for a report and the current user.
+ * @brief Ensure a counts cache exists for a report and the current user.
  *
- * @return 0 if cache exists or was created successfully, 1 otherwise
+ * @return 0 if cache exists or was created successfully, 1 otherwise.
  */
 static int
 try_init_counts_cache (report_t report)
 {
-  sql_giveup ("INSERT OR IGNORE INTO report_counts (report, user)"
-              "VALUES (%llu,"
-              "        (SELECT ROWID FROM users WHERE users.uuid = '%s'));",
-              report, current_credentials.uuid);
+  if (sql_int(0, 0,
+              "SELECT EXISTS (SELECT * FROM report_counts"
+              " WHERE report = %llu"
+              "   AND user = (SELECT ROWID FROM users"
+              "               WHERE users.uuid = '%s'));",
+              report, current_credentials.uuid) == 0)
+    sql_giveup ("INSERT INTO report_counts (report, user)"
+                "VALUES (%llu,"
+                "        (SELECT ROWID FROM users WHERE users.uuid = '%s'));",
+                report, current_credentials.uuid);
   return (sql_int(0, 0,
                   "SELECT EXISTS (SELECT * FROM report_counts"
                   " WHERE report = %llu"
                   "   AND user = (SELECT ROWID FROM users"
                   "               WHERE users.uuid = '%s'));",
-                  report, current_credentials.uuid) <= 0);
+                  report, current_credentials.uuid) == 0);
 }
 
 /**

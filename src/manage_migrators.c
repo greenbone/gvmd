@@ -7118,28 +7118,25 @@ migrate_87_to_88 ()
 
   /* Rename reports table */
   sql ("ALTER TABLE reports RENAME TO reports_87;");
-  /* create a new one without severity and counts */
+  /* Create a new one without severity and counts. */
   sql ("CREATE TABLE IF NOT EXISTS reports"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid);");
-  /* create a new dedicated report_counts table */
+  /* Create a new dedicated report_counts table. */
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, override_severity, highs, mediums, lows, logs, fps,"
        "  override_highs, override_mediums, override_lows, override_logs,"
-       "  override_fps,"
-       "  UNIQUE (report, user),"
-       "  FOREIGN KEY(report) REFERENCES reports(id),"
-       "  FOREIGN KEY(user) REFERENCES users(id));");
-  /* copy old report data to new reports table */
+       "  override_fps);");
+  /* Copy old report data to new reports table. */
   sql ("INSERT INTO reports"
        " (id, uuid, owner, hidden, task, date, start_time, end_time,"
        "  nbefile, comment, scan_run_status, slave_progress, slave_task_uuid)"
        " SELECT id, uuid, owner, hidden, task, date, start_time, end_time,"
        "  nbefile, comment, scan_run_status, slave_progress, slave_task_uuid"
        " FROM reports_87;");
-  /* delete old results table */
+  /* Delete old results table. */
   sql ("DROP TABLE reports_87;");
 
   /* Set the database version to 88. */

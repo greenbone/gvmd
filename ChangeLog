@@ -1,5 +1,15 @@
 2013-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_migrators.c (migrate_87_to_88): Remove constraints from
+	report_counts table and neaten comments.
+
+	* src/manage_sql.c (create_tables): Remove constraints from
+	report_counts table.
+	(try_init_counts_cache): Replace OR IGNORE with explicit check and
+	use == comparison in existence checks. Neaten comments.
+
+2013-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Cache report counts and severity for each user and in a new table and
 	remove them from reports table.
 	Hence increase database version to 88.  Add database migration from
