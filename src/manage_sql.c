@@ -15646,10 +15646,13 @@ result_iterator_nvt_cvss_base_double (iterator_t* iterator)
 const char*
 result_iterator_scan_nvt_version (iterator_t *iterator)
 {
+  const char* ret;
+
   if (iterator->done)
     return NULL;
 
-  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
+  /* nvt_version */
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
   return ret ? ret : "";
 }
 
@@ -15666,10 +15669,13 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
 const char*
 result_iterator_original_severity (iterator_t *iterator)
 {
+  const char* ret;
+
   if (iterator->done)
     return NULL;
 
-  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
+  /* severity */
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
   return ret ? ret : "";
 }
 
@@ -15686,6 +15692,8 @@ result_iterator_original_severity (iterator_t *iterator)
 const char*
 result_iterator_severity (iterator_t *iterator)
 {
+  const char* ret;
+
   if (iterator->done)
     return NULL;
 
@@ -15693,8 +15701,8 @@ result_iterator_severity (iterator_t *iterator)
   if (sqlite3_column_int (iterator->stmt, 7))
     return "0.0";
 
-  /* new_type */
-  const char* ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
+  /* new_severity */
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
   return ret ? ret : "";
 }
 
@@ -15734,15 +15742,19 @@ result_iterator_severity_double (iterator_t *iterator)
 const char*
 result_iterator_original_level (iterator_t *iterator)
 {
+  double severity;
+  const char* ret;
+
   if (iterator->done)
     return NULL;
 
   if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
     return NULL;
 
-  double severity = sqlite3_column_double (iterator->stmt, 13);
+  /* severity */
+  severity = sqlite3_column_double (iterator->stmt, 13);
 
-  const char* ret = severity_to_level (severity);
+  ret = severity_to_level (severity);
   return ret ? ret : "";
 }
 
@@ -15759,6 +15771,9 @@ result_iterator_original_level (iterator_t *iterator)
 const char*
 result_iterator_level (iterator_t *iterator)
 {
+  double severity;
+  const char* ret;
+
   if (iterator->done)
     return NULL;
 
@@ -15766,12 +15781,13 @@ result_iterator_level (iterator_t *iterator)
   if (sqlite3_column_int (iterator->stmt, 7))
     return "False Positive";
 
+  /* new_severity */
   if (sqlite3_column_type (iterator->stmt, 14) == SQLITE_NULL)
     return NULL;
 
-  double severity = sqlite3_column_double (iterator->stmt, 14);
+  severity = sqlite3_column_double (iterator->stmt, 14);
 
-  const char* ret = severity_to_level (severity);
+  ret = severity_to_level (severity);
   return ret ? ret : "";
 }
 
@@ -16249,7 +16265,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s),"
-                                          "severity_to_type (%s))",
+                                          "          severity_to_type (%s))",
                                           ov,
                                           severity_sql);
 
@@ -16926,7 +16942,7 @@ report_scan_result_count (report_t report, const char* levels,
              severity_sql);
 
       new_type_sql = g_strdup_printf (", coalesce ((%s),"
-                                      " severity_to_type (%s))"
+                                      "            severity_to_type (%s))"
                                       " AS new_type",
                                       ov,
                                       severity_sql);
@@ -20972,7 +20988,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  severity_sql);
 
           new_type_sql = g_strdup_printf ("coalesce ((%s),"
-                                          "severity_to_type (%s))",
+                                          "          severity_to_type (%s))",
                                           ov,
                                           severity_sql);
 

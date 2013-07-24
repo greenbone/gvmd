@@ -1,3 +1,13 @@
+2013-07-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (result_iterator_scan_nvt_version)
+	(result_iterator_original_severity, result_iterator_severity)
+	(result_iterator_severity_double, result_iterator_original_severity)
+	(result_iterator_severity): Move variable declarations to top.
+	Add correct DB column comments.
+	(report_scan_result_count, filtered_host_count, init_asset_iterator):
+	Neaten indentation of SQL in new_type_sql assignment.
+
 2013-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_87_to_88): Remove constraints from
