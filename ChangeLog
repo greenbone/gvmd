@@ -1,3 +1,24 @@
+2013-07-23  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Cache report counts and severity for each user and in a new table and
+	remove them from reports table.
+	Hence increase database version to 88.  Add database migration from
+	version 87 to 88.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 88.
+
+	* src/manage_migrators.c (migrate_87_to_88): New function.
+	(database_migrators): Add migrate_87_to_88.
+
+	* src/manage_sql.c (create_tables): Remove counts and severity scores
+	from reports table and add new report_counts table.
+	(init_manage): Adjust sample data to new tables.
+	(reports_clear_count_cache, make_report, cache_report_counts)
+	(report_counts_id_filt, delete_report_internal): Do not use reports for
+	result counts and use report_counts instead.
+	(try_init_counts_cache): New function.
+	(task_trend): Get trend only for authenticated users.
+
 2013-07-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_report_counts): Put severity param in right

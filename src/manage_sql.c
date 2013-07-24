@@ -4473,10 +4473,15 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS reports"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
-       "  scan_run_status INTEGER, slave_progress, slave_task_uuid, highs,"
-       "  mediums, lows, logs, fps, override_highs, override_mediums,"
-       "  override_lows, override_logs, override_fps, severity,"
-       "  override_severity);");
+       "  scan_run_status INTEGER, slave_progress, slave_task_uuid);");
+  sql ("CREATE TABLE IF NOT EXISTS report_counts"
+       " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
+       "  severity, override_severity, highs, mediums, lows, logs, fps,"
+       "  override_highs, override_mediums, override_lows, override_logs,"
+       "  override_fps,"
+       "  UNIQUE (report, user),"
+       "  FOREIGN KEY(report) REFERENCES reports(id),"
+       "  FOREIGN KEY(user) REFERENCES users(id));");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL)");
@@ -10793,19 +10798,19 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
         {
           sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
                " start_time, end_time, scan_run_status, slave_progress,"
-               " slave_task_uuid, highs, override_highs)"
+               " slave_task_uuid)"
                " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
                " 'This is an example report for the help pages.',"
                " 1251236905, 1251237136,"
-               " %u, 0, '', -1, -1);",
+               " %u, 0, '');",
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
           sql ("INSERT into results (uuid, task, subnet, host, port, nvt, type,"
-               " description)"
+               " severity, description)"
                " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu, '',"
                " '127.0.0.1', 'telnet (23/tcp)',"
-               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note',"
+               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0"
                " 'A telnet server seems to be running on this port');",
                task);
           result = sqlite3_last_insert_rowid (task_db);
@@ -13916,9 +13921,9 @@ void
 reports_clear_count_cache (int override)
 {
   if (override)
-    sql ("UPDATE reports SET override_highs = -1;");
+    sql ("UPDATE report_counts SET override_highs = -1;");
   else
-    sql ("UPDATE reports SET highs = -1;");
+    sql ("UPDATE report_counts SET highs = -1;");
 }
 
 /**
@@ -13954,11 +13959,10 @@ make_report (task_t task, const char* uuid, task_status_t status)
   assert (current_credentials.uuid);
 
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
-       " scan_run_status, slave_progress, slave_task_uuid, highs,"
-       " override_highs)"
+       " scan_run_status, slave_progress, slave_task_uuid)"
        " VALUES ('%s',"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " 0, %llu, %i, '', '', %u, 0, '', -1, -1);",
+       " 0, %llu, %i, '', '', %u, 0, '');",
        uuid, current_credentials.uuid, task, time (NULL), status);
   report = sqlite3_last_insert_rowid (task_db);
   return report;
@@ -18679,6 +18683,26 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 }
 
 /**
+ * @brief Ensures a counts cache exists for a report and the current user.
+ *
+ * @return 0 if cache exists or was created successfully, 1 otherwise
+ */
+static int
+try_init_counts_cache (report_t report)
+{
+  sql_giveup ("INSERT OR IGNORE INTO report_counts (report, user)"
+              "VALUES (%llu,"
+              "        (SELECT ROWID FROM users WHERE users.uuid = '%s'));",
+              report, current_credentials.uuid);
+  return (sql_int(0, 0,
+                  "SELECT EXISTS (SELECT * FROM report_counts"
+                  " WHERE report = %llu"
+                  "   AND user = (SELECT ROWID FROM users"
+                  "               WHERE users.uuid = '%s'));",
+                  report, current_credentials.uuid) <= 0);
+}
+
+/**
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
@@ -18699,19 +18723,22 @@ cache_report_counts (report_t report, int override, int holes, int warnings,
    * tries to write to the database between the statement open and
    * cache_report_counts then they'll deadlock. */
   if (override)
-    sql_giveup ("UPDATE reports SET override_highs = %i,"
-                " override_mediums = %i, override_lows = %i,"
-                " override_logs = %i, override_fps = %i,"
-                " override_severity = %f"
-                " WHERE ROWID = %llu;",
-                holes, warnings, infos, logs, false_positives,
-                severity, report);
+    sql_giveup ("UPDATE report_counts SET override_severity = %1.1f,"
+                " override_highs = %i, override_mediums = %i,"
+                " override_lows = %i, override_logs = %i, override_fps = %i"
+                " WHERE report = %llu"
+                "   AND user = (SELECT ROWID FROM users"
+                "               WHERE users.uuid = '%s');",
+                severity, holes, warnings, infos, logs, false_positives,
+                report, current_credentials.uuid);
   else
-    sql_giveup ("UPDATE reports SET highs = %i, mediums = %i, lows = %i,"
-                " logs = %i, fps = %i, severity = %f"
-                " WHERE ROWID = %llu;",
-                holes, warnings, infos, logs, false_positives,
-                severity, report);
+    sql_giveup ("UPDATE report_counts SET severity = %1.1f,"
+                " highs = %i, mediums = %i, lows = %i, logs = %i, fps = %i"
+                " WHERE report = %llu"
+                "   AND user = (SELECT ROWID FROM users"
+                "               WHERE users.uuid = '%s');",
+                severity, holes, warnings, infos, logs, false_positives,
+                report, current_credentials.uuid);
 }
 
 /**
@@ -18755,6 +18782,14 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
 {
+  int cache_exists;
+
+  if (current_credentials.uuid == NULL
+      || strcmp (current_credentials.uuid, "") == 0)
+    g_warning ("%s: called by NULL or dummy user", __FUNCTION__);
+
+  cache_exists = (try_init_counts_cache (report) == 0);
+
   /* This adds time and is out of scope of OMP threat levels, so skip it */
   if (debugs)
     *debugs = 0;
@@ -18772,71 +18807,106 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
     {
       if (autofp == 0 && host == NULL && filtered_holes == NULL
           && filtered_infos == NULL && filtered_logs == NULL
-          && filtered_warnings == NULL && filtered_false_positives == NULL)
+          && filtered_warnings == NULL && filtered_false_positives == NULL
+          && cache_exists)
         {
           /* Try get from cache. */
 
           if (override)
             {
               *holes = sql_int (0, 0,
-                                "SELECT override_highs FROM reports"
-                                " WHERE ROWID = %llu",
-                                report);
+                                "SELECT coalesce (override_highs, -1)"
+                                " FROM report_counts"
+                                " WHERE report = %llu"
+                                " AND user = (SELECT ROWID FROM users"
+                                "             WHERE users.uuid = '%s');",
+                                report, current_credentials.uuid);
               if (*holes >= 0)
                 {
                   *warnings = sql_int (0, 0,
-                                       "SELECT override_mediums FROM reports"
-                                       " WHERE ROWID = %llu",
-                                       report);
+                                       "SELECT override_mediums"
+                                       " FROM report_counts"
+                                       " WHERE report = %llu"
+                                       " AND user = (SELECT ROWID FROM users"
+                                       "             WHERE users.uuid = '%s');",
+                                       report, current_credentials.uuid);
                   *infos = sql_int (0, 0,
-                                    "SELECT override_lows FROM reports"
-                                    " WHERE ROWID = %llu",
-                                    report);
+                                    "SELECT override_lows FROM report_counts"
+                                    " WHERE report = %llu"
+                                    " AND user = (SELECT ROWID FROM users"
+                                    "             WHERE users.uuid = '%s');",
+                                    report, current_credentials.uuid);
                   *logs = sql_int (0, 0,
-                                   "SELECT override_logs FROM reports"
-                                   " WHERE ROWID = %llu",
-                                   report);
+                                   "SELECT override_logs FROM report_counts"
+                                   " WHERE report = %llu"
+                                   " AND user = (SELECT ROWID FROM users"
+                                   "             WHERE users.uuid = '%s');",
+                                   report, current_credentials.uuid);
                   *false_positives = sql_int (0, 0,
-                                              "SELECT override_fps FROM reports"
-                                              " WHERE ROWID = %llu",
-                                              report);
+                                              "SELECT override_fps"
+                                              " FROM report_counts"
+                                              " WHERE report = %llu"
+                                              " AND user = (SELECT ROWID"
+                                              "              FROM users"
+                                              "              WHERE users.uuid"
+                                              "                    = '%s');",
+                                              report, current_credentials.uuid);
                   *severity = sql_double (0, 0,
                                           "SELECT override_severity"
-                                          " FROM reports"
-                                          " WHERE ROWID = %llu",
-                                          report);
+                                          " FROM report_counts"
+                                          " WHERE report = %llu"
+                                          " AND user = (SELECT ROWID FROM users"
+                                          "             WHERE users.uuid"
+                                          "                   = '%s');",
+                                          report, current_credentials.uuid);
                   return 0;
                 }
             }
           else
             {
               *holes = sql_int (0, 0,
-                                "SELECT highs FROM reports"
-                                " WHERE ROWID = %llu",
-                                report);
+                                "SELECT coalesce(highs, -1)"
+                                " FROM report_counts"
+                                " WHERE report = %llu"
+                                " AND user = (SELECT ROWID FROM users"
+                                "             WHERE users.uuid = '%s');",
+                                report, current_credentials.uuid);
               if (*holes >= 0)
                 {
                   *warnings = sql_int (0, 0,
-                                       "SELECT mediums FROM reports"
-                                       " WHERE ROWID = %llu",
-                                       report);
+                                       "SELECT mediums FROM report_counts"
+                                       " WHERE report = %llu"
+                                       " AND user = (SELECT ROWID FROM users"
+                                       "             WHERE users.uuid = '%s');",
+                                       report, current_credentials.uuid);
                   *infos = sql_int (0, 0,
-                                    "SELECT lows FROM reports"
-                                    " WHERE ROWID = %llu",
-                                    report);
+                                    "SELECT lows FROM report_counts"
+                                    " WHERE report = %llu"
+                                    " AND user = (SELECT ROWID FROM users"
+                                    "             WHERE users.uuid = '%s');",
+                                    report, current_credentials.uuid);
                   *logs = sql_int (0, 0,
-                                   "SELECT logs FROM reports"
-                                   " WHERE ROWID = %llu",
-                                   report);
+                                   "SELECT logs FROM report_counts"
+                                   " WHERE report = %llu"
+                                   " AND user = (SELECT ROWID FROM users"
+                                   "             WHERE users.uuid = '%s');",
+                                   report, current_credentials.uuid);
                   *false_positives = sql_int (0, 0,
-                                              "SELECT fps FROM reports"
-                                              " WHERE ROWID = %llu",
-                                              report);
+                                              "SELECT fps FROM report_counts"
+                                              " WHERE report = %llu"
+                                              " AND user = (SELECT ROWID"
+                                              "             FROM users"
+                                              "             WHERE users.uuid"
+                                              "                   = '%s');",
+                                              report, current_credentials.uuid);
                   *severity = sql_double (0, 0,
                                           "SELECT severity"
-                                          " FROM reports"
-                                          " WHERE ROWID = %llu",
-                                          report);
+                                          " FROM report_counts"
+                                          " WHERE report = %llu"
+                                          " AND user = (SELECT ROWID FROM users"
+                                          "             WHERE users.uuid"
+                                          "                   = '%s');",
+                                          report, current_credentials.uuid);
                   return 0;
                 }
             }
@@ -19345,7 +19415,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
           report_scan_run_status (report, &status);
 
-          if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE)
+          if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE
+              && cache_exists)
             cache_report_counts (report, override, *holes, *warnings, *infos,
                                  *logs, *false_positives, *severity);
 
@@ -19368,7 +19439,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
       int status;
 
       report_scan_run_status (report, &status);
-      if (status == TASK_STATUS_DONE)
+      if (status == TASK_STATUS_DONE && cache_exists)
         cache_report_counts (report, override, *holes, *warnings, *infos,
                              *logs, *false_positives, *severity);
     }
@@ -19505,6 +19576,7 @@ delete_report_internal (report_t report)
        report);
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
+  sql ("DELETE FROM report_counts WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
 
   /* Update the task state. */
@@ -24827,6 +24899,12 @@ task_trend (task_t task, int override)
   /* Ensure there are enough reports. */
 
   if (task_finished_report_count (task) <= 1)
+    return "";
+
+  /* Get trend only for authenticated users to avoid
+     caching result counts for dummy or NULL users   */
+  if (current_credentials.uuid == NULL
+      || strcmp (current_credentials.uuid, "") == 0)
     return "";
 
   /* Skip running and container tasks. */
