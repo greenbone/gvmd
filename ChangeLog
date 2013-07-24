@@ -1,3 +1,16 @@
+2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_schedule_iterator): Call BEGIN with
+	sql_giveup, in case there is a long operation running.  This prevents
+	the scheduling from waiting for long op and blocking the main process.
+
+	* src/manage.c (manage_schedule): Return if task iterator fails to get
+	lock.
+
+	* src/sql.c (sql_giveup): Add return so caller can tell when gave up.
+
+	* src/manage.h, src/sql.h: Update header accordingly.
+
 2013-07-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (result_iterator_scan_nvt_version)

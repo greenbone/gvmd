@@ -38060,11 +38060,14 @@ schedule_iterator_initial_offset (iterator_t* iterator)
  * Lock the database before initialising.
  *
  * @param[in]  iterator        Iterator.
+ *
+ * @return 0 success, 1 failed to get lock.
  */
-void
+int
 init_task_schedule_iterator (iterator_t* iterator)
 {
-  sql ("BEGIN EXCLUSIVE;");
+  if (sql_giveup ("BEGIN EXCLUSIVE;"))
+    return 1;
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
                  " schedules.ROWID, tasks.schedule_next_time,"
@@ -38077,6 +38080,7 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " WHERE tasks.schedule = schedules.ROWID"
                  " AND tasks.hidden = 0"
                  " AND tasks.owner = users.ROWID;");
+  return 0;
 }
 
 /**

@@ -49,7 +49,7 @@ sql (char * sql, ...);
 int
 sql_error (char* sql, ...);
 
-void
+int
 sql_giveup (char * sql, ...);
 
 void

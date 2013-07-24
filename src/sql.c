@@ -278,8 +278,10 @@ sql_error (char* sql, ...)
  *
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  ...    Arguments for format string.
+ *
+ * @return 0 success, 1 gave up, -1 error.
  */
-void
+int
 sql_giveup (char* sql, ...)
 {
   int ret;
@@ -292,6 +294,7 @@ sql_giveup (char* sql, ...)
                __FUNCTION__,
                sqlite3_errmsg (task_db));
   va_end (args);
+  return ret;
 }
 
 /**

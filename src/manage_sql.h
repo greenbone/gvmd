@@ -249,7 +249,7 @@ time_t add_months (time_t, int);
 
 time_t months_between (time_t, time_t);
 
-void init_task_schedule_iterator (iterator_t *);
+int init_task_schedule_iterator (iterator_t *);
 
 void cleanup_task_schedule_iterator (iterator_t *);
 

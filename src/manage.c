@@ -3917,7 +3917,7 @@ set_scheduled_user_uuid (gchar* user_uuid)
  *                              to the Manager.  Must return 0 in parent, PID
  *                              in child, or -1 on error.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
 manage_schedule (int (*fork_connection) (int *,
@@ -3933,7 +3933,8 @@ manage_schedule (int (*fork_connection) (int *,
   /* Assemble "starts" and "stops" list containing task uuid and owner name
    * for each (scheduled) task to start or stop. */
 
-  init_task_schedule_iterator (&schedules);
+  if (init_task_schedule_iterator (&schedules))
+    return 1;
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
