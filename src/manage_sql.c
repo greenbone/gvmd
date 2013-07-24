@@ -4396,6 +4396,10 @@ create_tables ()
        " ON nvts (name);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_family"
        " ON nvts (family);");
+  sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
+       " (nvt, oid, cve_name)");
+  sql ("CREATE INDEX nvt_cves_by_oid"
+       " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
        "  creation_time, modification_time, text, hosts, port, threat,"
@@ -10419,6 +10423,52 @@ add_role_permission (const gchar *role, const gchar *permission)
 }
 
 /**
+ * @brief Refresh nvt_cves table.
+ *
+ * Caller must organise transaction.
+ */
+void
+refresh_nvt_cves ()
+{
+  iterator_t nvts;
+
+  sql ("DELETE FROM nvt_cves;");
+
+  init_iterator (&nvts, "SELECT ROWID, oid, cve FROM nvts;");
+  while (next (&nvts))
+    {
+      gchar **split, **point;
+
+      split = g_strsplit_set (iterator_string (&nvts, 2), " ,", 0);
+
+      point = split;
+      while (*point)
+        {
+          g_strstrip (*point);
+          if (strlen (*point))
+            {
+              gchar *quoted_cve, *quoted_oid;
+
+              quoted_cve = sql_insert (*point);
+              quoted_oid = sql_insert (iterator_string (&nvts, 1));
+              sql ("INSERT INTO nvt_cves (nvt, oid, cve_name)"
+                   " VALUES (%llu, %s, %s);",
+                   iterator_int64 (&nvts, 0),
+                   quoted_oid,
+                   quoted_cve);
+              g_free (quoted_cve);
+              g_free (quoted_oid);
+            }
+          point++;
+        }
+      g_strfreev (split);
+    }
+  cleanup_iterator (&nvts);
+
+  sql ("REINDEX nvt_cves_by_oid;");
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -11221,7 +11271,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     }
 
   /* Ensure the default settings exist. */
+
   init_manage_settings ();
+
+  /* Ensure the NVT CVE table is filled. */
+
+  if (sql_int (0, 0, "SELECT count (*) FROM nvt_cves;") == 0)
+    {
+      sql ("BEGIN IMMEDIATE;");
+      refresh_nvt_cves ();
+      sql ("COMMIT;");
+    }
 
   if (nvt_cache_mode == 0)
     {
@@ -11299,6 +11359,10 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOP_WAITING);
     }
+
+  /* Run ANALYZE because there may have been big changes since create_tables. */
+
+  sql ("ANALYZE;");
 
   /* Load the NVT cache into memory. */
 
@@ -31347,7 +31411,11 @@ manage_complete_nvt_cache_update (int mode)
   cleanup_iterator (&configs);
 
   update_all_config_caches ();
+  refresh_nvt_cves ();
   if (mode == -2) sql ("COMMIT;");
+
+  /* Run ANALYZE because there may have been big changes during the update. */
+  sql ("ANALYZE;");
 }
 
 
@@ -48140,8 +48208,9 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                  "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
                  " FROM dfn_cert_advs"
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
-                 "              WHERE (SELECT cve FROM nvts WHERE oid='%s')"
-                 "                    LIKE ('%%' || cve_name || '%%'))"
+                 "              WHERE cve_name IN (SELECT cve_name"
+                 "                                 FROM nvt_cves"
+                 "                                 WHERE oid = '%s'))"
                  " ORDER BY %s %s;",
                  oid,
                  sort_field ? sort_field : "name",
