@@ -1,4 +1,13 @@
-2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r16560.
+
+	* src/manage_sql.c (init_manage_process): Keep going if SCAP or CERT db
+	fails to load.
+	(manage_scap_loaded, manage_cert_loaded): Run a test statement first to
+	prevent an abort when there's an problem with the database.
+
+2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16561.
 
@@ -8,7 +17,7 @@
 
 	* src/sql.h: Add header accordingly.
 
-2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r17112.
 

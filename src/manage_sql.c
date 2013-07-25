@@ -13709,8 +13709,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
               break;
           }
       else
-        sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
-             " AS scap;");
+        sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+                   " AS scap;");
 
       /* Attach the CERT database. */
 
@@ -13726,8 +13726,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
               break;
           }
       else
-        sql ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
-             " AS cert;");
+        sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
+                   " AS cert;");
     }
 
   /* Define functions for SQL. */
@@ -47541,6 +47541,11 @@ manage_scap_loaded ()
           return 0;
       }
 
+  if (sql_error ("SELECT count(*) FROM scap.sqlite_master"
+                 " WHERE type = 'table' AND name = 'cves';"))
+    /* There was an error, so probably the initial ATTACH failed. */
+    return 0;
+
   return !!sql_int (0, 0,
                     "SELECT count(*) FROM scap.sqlite_master"
                     " WHERE type = 'table' AND name = 'cves';");
@@ -47566,6 +47571,11 @@ manage_cert_loaded ()
                      strerror (errno));
           return 0;
       }
+
+  if (sql_error ("SELECT count(*) FROM cert.sqlite_master"
+                 " WHERE type = 'table' AND name = 'cves';"))
+    /* There was an error, so probably the initial ATTACH failed. */
+    return 0;
 
   return !!sql_int (0, 0,
                     "SELECT count(*) FROM cert.sqlite_master"
