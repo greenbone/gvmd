@@ -1,5 +1,15 @@
 2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r16561.
+
+	* src/sql.c (sqlv): Return on error instead of aborting.
+	(sql): Abort accordingly now that sqlv returns.
+	(sql_error): New function.  Like sql, but returns error state to caller.
+
+	* src/sql.h: Add header accordingly.
+
+2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r17112.
 
 	* src/manage_sql.c (create_tables): Add nvt_cves and nvt_cves_by_oid.

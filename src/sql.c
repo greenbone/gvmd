@@ -147,8 +147,10 @@ sql_insert (const char *string)
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
+ *
+ * @return 0 success, 1 gave up, -1 error.
  */
-static void
+static int
 sqlv (int retry, char* sql, va_list args)
 {
   const char* tail;
@@ -172,24 +174,16 @@ sqlv (int retry, char* sql, va_list args)
             continue;
           if (retries--)
             continue;
-          return;
+          return 1;
         }
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
           if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
+            return -1;
           break;
         }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
+      return -1;
     }
 
   /* Run statement. */
@@ -205,7 +199,7 @@ sqlv (int retry, char* sql, va_list args)
           if (retries--)
             continue;
           sqlite3_finalize (stmt);
-          return;
+          return 1;
         }
       if (ret == SQLITE_DONE) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
@@ -218,17 +212,16 @@ sqlv (int retry, char* sql, va_list args)
                   if (retry)
                     continue;
                   sqlite3_finalize (stmt);
-                  return;
+                  return 1;
                 }
             }
-          g_warning ("%s: sqlite3_step failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          abort ();
+          sqlite3_finalize (stmt);
+          return -1;
         }
     }
 
   sqlite3_finalize (stmt);
+  return 0;
 }
 
 /**
@@ -243,8 +236,41 @@ sql (char* sql, ...)
   va_list args;
 
   va_start (args, sql);
-  sqlv (1, sql, args);
+  if (sqlv (1, sql, args) == -2)
+    {
+      g_warning ("%s: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      abort ();
+    }
   va_end (args);
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * Return on error, instead of aborting.
+ *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_error (char* sql, ...)
+{
+  int ret;
+  va_list args;
+
+  va_start (args, sql);
+  ret = sqlv (1, sql, args);
+  if (ret == -1)
+    g_warning ("%s: %s\n",
+               __FUNCTION__,
+               sqlite3_errmsg (task_db));
+  va_end (args);
+
+  return ret;
 }
 
 /**
@@ -256,10 +282,15 @@ sql (char* sql, ...)
 void
 sql_giveup (char* sql, ...)
 {
+  int ret;
   va_list args;
 
   va_start (args, sql);
-  sqlv (0, sql, args);
+  ret = sqlv (0, sql, args);
+  if (ret == -1)
+    g_warning ("%s: %s\n",
+               __FUNCTION__,
+               sqlite3_errmsg (task_db));
   va_end (args);
 }
 

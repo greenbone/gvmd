@@ -46,6 +46,9 @@ sql_insert (const char *);
 void
 sql (char * sql, ...);
 
+int
+sql_error (char* sql, ...);
+
 void
 sql_giveup (char * sql, ...);
 
