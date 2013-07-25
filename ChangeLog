@@ -1,5 +1,10 @@
 2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (serve_and_schedule): Adjust manage_schedule test
+	for new sql_giveup return.  Forgotten file from r17111 yesterday.
+
+2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Add warnings on error.
 
 2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>

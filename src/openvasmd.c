@@ -1036,7 +1036,7 @@ serve_and_schedule ()
               fork_update_nvt_cache ();
             }
 
-          if (manage_schedule (fork_connection_for_schedular))
+          if (manage_schedule (fork_connection_for_schedular) < 0)
             exit (EXIT_FAILURE);
 
           last_schedule_time = time (NULL);
@@ -1076,7 +1076,7 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2);
         }
 
-      if (manage_schedule (fork_connection_for_schedular))
+      if (manage_schedule (fork_connection_for_schedular) < 0)
         exit (EXIT_FAILURE);
 
       if (sighup_update_nvt_cache)
