@@ -3927,14 +3927,16 @@ manage_schedule (int (*fork_connection) (int *,
 {
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
+  int ret;
 
   manage_update_nvti_cache ();
 
   /* Assemble "starts" and "stops" list containing task uuid and owner name
    * for each (scheduled) task to start or stop. */
 
-  if (init_task_schedule_iterator (&schedules))
-    return 1;
+  ret = init_task_schedule_iterator (&schedules);
+  if (ret)
+    return ret;
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))

@@ -1,3 +1,8 @@
+2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_schedule_iterator): Add error return.
+	(manage_schedule): Add error return.
+
 2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* INSTALL: Reorder PKG_CONFIG_PATH export, in case another openvas

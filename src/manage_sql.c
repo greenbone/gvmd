@@ -38129,13 +38129,15 @@ schedule_iterator_initial_offset (iterator_t* iterator)
  *
  * @param[in]  iterator        Iterator.
  *
- * @return 0 success, 1 failed to get lock.
+ * @return 0 success, 1 failed to get lock, -1 error.
  */
 int
 init_task_schedule_iterator (iterator_t* iterator)
 {
-  if (sql_giveup ("BEGIN EXCLUSIVE;"))
-    return 1;
+  int ret;
+  ret = sql_giveup ("BEGIN EXCLUSIVE;");
+  if (ret)
+    return ret;
   init_iterator (iterator,
                  "SELECT tasks.ROWID, tasks.uuid,"
                  " schedules.ROWID, tasks.schedule_next_time,"
