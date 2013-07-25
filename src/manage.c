@@ -3936,7 +3936,10 @@ manage_schedule (int (*fork_connection) (int *,
 
   ret = init_task_schedule_iterator (&schedules);
   if (ret)
-    return ret;
+    {
+      g_warning ("%s: iterator init failed\n", __FUNCTION__);
+      return ret;
+    }
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */
   while (next (&schedules))
     if (task_schedule_iterator_start_due (&schedules))
@@ -4091,6 +4094,7 @@ manage_schedule (int (*fork_connection) (int *,
                 g_free (starts->data);
                 starts = g_slist_delete_link (starts, starts);
               }
+            g_warning ("%s: start fork failed\n", __FUNCTION__);
             return -1;
             break;
 
@@ -4175,6 +4179,7 @@ manage_schedule (int (*fork_connection) (int *,
                 g_free (stops->data);
                 stops = g_slist_delete_link (stops, stops);
               }
+            g_warning ("%s: stop fork failed\n", __FUNCTION__);
             return -1;
             break;
 
