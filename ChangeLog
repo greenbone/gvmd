@@ -1,3 +1,13 @@
+2013-07-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r17112.
+
+	* src/manage_sql.c (create_tables): Add nvt_cves and nvt_cves_by_oid.
+	(refresh_nvt_cves): New function.
+	(init_manage): Ensure nvt_cves is initialised.  Run ANALYSE after.
+	(manage_complete_nvts_cache_update): Update nvt_cves.  Run ANALYSE.
+	(init_nvt_dfn_cert_adv_iterator): Use nvt_cves table for speed.
+
 2013-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16922.
