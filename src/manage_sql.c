@@ -48903,6 +48903,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
 
+  sql ("DELETE FROM report_counts WHERE user = %llu", user);
   sql ("DELETE FROM report_host_details"
        " WHERE report_host IN (SELECT ROWID FROM report_hosts"
        "                       WHERE report IN (SELECT ROWID FROM reports"

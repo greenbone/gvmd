@@ -1,3 +1,7 @@
+2013-07-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (delete_user): Delete user's report_counts rows.
+
 2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (serve_and_schedule): Adjust manage_schedule test
