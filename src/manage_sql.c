@@ -16935,7 +16935,7 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
  * @param[in]  task      Task.
  * @param[in]  schedule  Schedule.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -5 Scanner down.
  */
 int
 set_task_schedule (task_t task, schedule_t schedule)
@@ -16956,6 +16956,9 @@ set_task_schedule (task_t task, schedule_t schedule)
           assert (0);
         case -1:   /* Error. */
           return -1;
+          break;
+        case -5:   /* Scanner down. */
+          return -5;
           break;
       }
 
@@ -27960,7 +27963,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
  * @param[in]  task_pointer  A pointer to the task.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden,
- *         -1 if error.
+ *         -1 if error, -5 if scanner is down.
  */
 int
 request_delete_task (task_t* task_pointer)
@@ -27997,6 +28000,9 @@ request_delete_task (task_t* task_pointer)
       case -1:   /* Error. */
         return -1;
         break;
+      case -5:   /* Scanner down. */
+        return -5;
+        break;
     }
 
   return 0;
@@ -28014,7 +28020,7 @@ find_trash_task (const char*, task_t*);
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden, 3 failed
- *         to find task, -1 if error.
+ *         to find task, -1 if error, -5 if scanner is down.
  */
 int
 request_delete_task_uuid (const char *task_id, int ultimate)
@@ -28113,6 +28119,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       case -1:   /* Error. */
         sql ("ROLLBACK;");
         return -1;
+        break;
+      case -5:   /* Scanner down. */
+        sql ("ROLLBACK;");
+        return -5;
         break;
     }
 

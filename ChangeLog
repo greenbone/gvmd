@@ -1,3 +1,14 @@
+2013-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r17170.  Patch by Timo Pollmeier.
+
+	* src/manage_sql.c (set_task_schedule, request_delete_task)
+	(request_delete_task_uuid): handle "scanner down" return from
+	stop_task_internal.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_TASK
+	handle "scanner down" return from request_delete_task_uuid.
+
 2013-07-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16560.
