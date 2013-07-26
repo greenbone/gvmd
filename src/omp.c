@@ -463,7 +463,23 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
     {
       filter = filter_term (get->filt_id);
       if (filter == NULL)
-        return -1;
+        {
+          char *user_filter;
+
+          /* Probably the user deleted the filter, switch to default. */
+
+          g_free (get->filt_id);
+
+          user_filter = setting_filter (setting_name);
+          if (user_filter && strlen (user_filter))
+            {
+              get->filt_id = user_filter;
+              get->filter = filter_term (user_filter);
+              filter = filter_term (get->filt_id);
+            }
+          else
+            get->filt_id = g_strdup ("0");
+        }
     }
   else
     filter = NULL;
@@ -10468,7 +10484,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
                                 "Permission denied"));                   \
             break;                                                       \
           default:                                                       \
-            error_send_to_client (error);                                \
+            internal_error_send_to_client (error);                       \
             return;                                                      \
         }                                                                \
       get_ ## type ## s_data_reset (get_ ## type ## s_data);             \
@@ -11134,7 +11150,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         if (send_find_error_to_client
                              ("get_agents",
                               "filter",
-                              get_filters_data->get.filt_id,
+                              get_agents_data->get.filt_id,
                               write_to_client,
                               write_to_client_data))
                           {

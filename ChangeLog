@@ -1,3 +1,11 @@
+2013-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (init_get): If the filter_term is NULL use the default
+	filter, because most likely the user has requested a deleted filter.
+	(get_next): Make the default error an internal error instead of an
+	out of space error, because that's more likely the case.
+	(omp_xml_handle_end_element): Correct variable in CLIENT_GET_AGENTS.
+
 2013-07-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (set_task_schedule, request_delete_task)
