@@ -10680,6 +10680,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   tracef ("delete_task failed\n");
                   abort ();
                   break;
+                case -5:
+                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("delete_task"));
+                  log_event_fail ("task", "Task",
+                                  delete_task_data->task_id,
+                                  "deleted");
+                  break;
               }
           }
         else
