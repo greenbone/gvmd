@@ -3290,6 +3290,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
+         || (strcasecmp (type, "user") == 0)
          || (strcasecmp (type, "info") == 0);
 }
 

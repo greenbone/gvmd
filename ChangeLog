@@ -1,3 +1,7 @@
+2013-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (valid_type): Add "user".
+
 2013-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (init_get): If the filter_term is NULL use the default
