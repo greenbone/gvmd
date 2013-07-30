@@ -1,5 +1,12 @@
 2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Install pwpolicy.conf.  Add it to
+	CPACK_SOURCE_IGNORE_FILES too.
+
+	* src/pwpolicy.conf: New file.
+
+2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Warn if the password policy is missing.
 
 2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
