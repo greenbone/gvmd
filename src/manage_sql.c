@@ -48705,7 +48705,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
 {
   user_t user;
   int ret;
-  gchar *hash, *quoted_uuid;
+  gchar *quoted_uuid;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -48718,9 +48718,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
       return ret;
     }
 
-  hash = get_password_hashes (GCRY_MD_MD5, "changeme");
-  sql ("UPDATE users SET password = '%s' WHERE ROWID = %llu;", hash, user);
-  g_free (hash);
+  sql ("UPDATE users SET password = NULL WHERE ROWID = %llu;", user);
 
   quoted_uuid = sql_quote (user_id);
 
