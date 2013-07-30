@@ -1,3 +1,7 @@
+2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Warn if the password policy is missing.
+
 2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (buffer_overrides_xml): Output threat element not only when

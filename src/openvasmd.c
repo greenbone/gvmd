@@ -1243,6 +1243,18 @@ main (int argc, char** argv, char **envp)
 
   if (disable_password_policy)
     openvas_disable_password_policy ();
+  else
+    {
+      gchar *password_policy;
+      password_policy = g_build_filename (OPENVAS_SYSCONF_DIR,
+                                          "pwpolicy.conf",
+                                          NULL);
+      if (g_file_test (password_policy, G_FILE_TEST_EXISTS) == FALSE)
+        g_warning ("%s: password policy missing: %s\n",
+                   __FUNCTION__,
+                   password_policy);
+      g_free (password_policy);
+    }
 
   if (first_user)
     {
