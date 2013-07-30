@@ -1,5 +1,10 @@
 2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (send_get_end): Move filter check outside the printf,
+	otherwise the clean filter leaks.
+
+2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_user): Set password NULL instead of to
 	"changeme".  The admin can manually set the password later.
 

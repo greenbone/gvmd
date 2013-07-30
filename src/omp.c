@@ -5532,6 +5532,16 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   manage_filter_controls (filter ? filter : get->filter,
                           &first, &max, &sort_field, &sort_order);
 
+  if (filter || get->filter)
+    {
+      gchar *new_filter;
+      new_filter = manage_clean_filter (filter ? filter : get->filter);
+      g_free (filter);
+      filter = new_filter;
+    }
+  else
+    filter = g_strdup ("");
+
   type_many = g_string_new (type);
 
   if (strcmp (type, "info") != 0)
@@ -5551,11 +5561,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                  "</%s_count>"
                                  "</get_%s_response>",
                                  get->filt_id ? get->filt_id : "",
-                                 filter || get->filter
-                                  ? manage_clean_filter (filter
-                                                          ? filter
-                                                          : get->filter)
-                                  : "",
+                                 filter,
                                  sort_field,
                                  sort_order ? "ascending" : "descending",
                                  type_many->str,
