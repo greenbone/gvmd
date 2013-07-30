@@ -1,3 +1,14 @@
+2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (create_override): Use new_threat only if no
+	new_severity is given and no longer store it in the database.
+	(modify_override): Use new_threat only if no
+	new_severity is given and no longer store it in the database. Return
+	3 on error in severity.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_CREATE_OVERRIDE
+	do not fail if new_threat is missing but new_severity is available.
+
 2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_end): Move filter check outside the printf,

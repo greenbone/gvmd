@@ -36605,7 +36605,6 @@ create_override (const char* active, const char* nvt, const char* text,
                  task_t task, result_t result, override_t* override)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
-  gchar *quoted_new_threat;
   double new_severity_dbl;
 
   if (user_may ("create_override") == 0)
@@ -36632,26 +36631,29 @@ create_override (const char* active, const char* nvt, const char* text,
     return -1;
 
   new_severity_dbl = 0.0;
-  if (strcmp (new_threat, "Log") == 0)
+  if (new_severity == NULL && new_threat == NULL)
+    return -1;
+  else if (new_severity == NULL && strcmp (new_threat, "Log") == 0)
     new_severity_dbl = 0.0;
-  else if (strcmp (new_threat, "False Positive") == 0)
+  else if (new_severity == NULL && strcmp (new_threat, "False Positive") == 0)
     new_severity_dbl = -1.0;
-  else if (strcmp (new_threat, "Debug") == 0)
+  else if (new_severity == NULL && strcmp (new_threat, "Debug") == 0)
     new_severity_dbl = -2.0;
   else if (new_severity == NULL || strcmp (new_severity, "") == 0)
     {
-      if (strcmp (new_threat, "High") == 0)
+      if (new_threat && strcmp (new_threat, "High") == 0)
         new_severity_dbl = 10.0;
-      else if (strcmp (new_threat, "Medium") == 0)
+      else if (new_threat && strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
-      else if (strcmp (new_threat, "Low") == 0)
+      else if (new_threat && strcmp (new_threat, "Low") == 0)
         new_severity_dbl = 2.0;
       else
         return -1;
     }
   else if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
-           || new_severity_dbl < 0.0
-           || new_severity_dbl > 10.0)
+           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
+               && new_severity_dbl != SEVERITY_LOG
+               && new_severity_dbl != SEVERITY_FP))
         return 2;
 
   quoted_text = sql_insert (text);
@@ -36659,15 +36661,13 @@ create_override (const char* active, const char* nvt, const char* text,
   quoted_port = sql_insert (port);
   quoted_threat = sql_insert ((threat && strlen (threat))
                                 ? threat_message_type (threat) : NULL);
-  quoted_new_threat = sql_insert ((new_threat && strlen (new_threat))
-                                    ? threat_message_type (new_threat) : NULL);
 
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, new_threat, new_severity, task, result, end_time)"
+       "  port, threat, new_severity, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', %i, %i, %s, %s, %s,  %s, %s, %1.1f, %llu, %llu, %i);",
+       "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i);",
        current_credentials.uuid,
        nvt,
        time (NULL),
@@ -36676,7 +36676,6 @@ create_override (const char* active, const char* nvt, const char* text,
        quoted_hosts,
        quoted_port,
        quoted_threat,
-       quoted_new_threat,
        new_severity_dbl,
        task,
        result,
@@ -36690,7 +36689,6 @@ create_override (const char* active, const char* nvt, const char* text,
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_threat);
-  g_free (quoted_new_threat);
 
   if (override)
     *override = sqlite3_last_insert_rowid (task_db);
@@ -36833,7 +36831,6 @@ modify_override (override_t override, const char *active, const char* text,
                  task_t task, result_t result)
 {
   gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
-  gchar *quoted_new_threat;
   double new_severity_dbl;
 
   if (override == 0)
@@ -36857,35 +36854,36 @@ modify_override (override_t override, const char *active, const char* text,
     return -1;
 
   new_severity_dbl = 0.0;
-  if (strcmp (new_threat, "Log") == 0)
+  if (new_severity == NULL && new_threat == NULL)
+    return -1;
+  else if (new_severity == NULL && strcmp (new_threat, "Log") == 0)
     new_severity_dbl = 0.0;
-  else if (strcmp (new_threat, "False Positive") == 0)
+  else if (new_severity == NULL && strcmp (new_threat, "False Positive") == 0)
     new_severity_dbl = -1.0;
-  else if (strcmp (new_threat, "Debug") == 0)
+  else if (new_severity == NULL && strcmp (new_threat, "Debug") == 0)
     new_severity_dbl = -2.0;
   else if (new_severity == NULL || strcmp (new_severity, "") == 0)
     {
-      if (strcmp (new_threat, "High") == 0)
+      if (new_threat && strcmp (new_threat, "High") == 0)
         new_severity_dbl = 10.0;
-      else if (strcmp (new_threat, "Medium") == 0)
+      else if (new_threat && strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
-      else if (strcmp (new_threat, "Low") == 0)
+      else if (new_threat && strcmp (new_threat, "Low") == 0)
         new_severity_dbl = 2.0;
       else
         return -1;
     }
   else if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
-           || new_severity_dbl < 0.0
-           || new_severity_dbl > 10.0)
-        return 2;
+           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
+               && new_severity_dbl != SEVERITY_LOG
+               && new_severity_dbl != SEVERITY_FP))
+        return 3;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
   quoted_threat = sql_insert ((threat && strlen (threat))
                                 ? threat_message_type (threat) : NULL);
-  quoted_new_threat = sql_insert ((new_threat && strlen (new_threat))
-                                    ? threat_message_type (new_threat) : NULL);
 
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     sql ("UPDATE overrides SET"
@@ -36894,7 +36892,6 @@ modify_override (override_t override, const char *active, const char* text,
          " hosts = %s,"
          " port = %s,"
          " threat = %s,"
-         " new_threat = %s,"
          " new_severity = %f,"
          " task = %llu,"
          " result = %llu"
@@ -36904,7 +36901,6 @@ modify_override (override_t override, const char *active, const char* text,
          quoted_hosts,
          quoted_port,
          quoted_threat,
-         quoted_new_threat,
          new_severity_dbl,
          task,
          result,
@@ -36926,7 +36922,6 @@ modify_override (override_t override, const char *active, const char* text,
            " hosts = %s,"
            " port = %s,"
            " threat = %s,"
-           " new_threat = %s,"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -36941,7 +36936,6 @@ modify_override (override_t override, const char *active, const char* text,
            quoted_hosts,
            quoted_port,
            quoted_threat,
-           quoted_new_threat,
            new_severity_dbl,
            task,
            result,
@@ -36952,7 +36946,6 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_hosts);
   g_free (quoted_port);
   g_free (quoted_threat);
-  g_free (quoted_new_threat);
 
   reports_clear_count_cache (1);
 

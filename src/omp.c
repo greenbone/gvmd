@@ -17448,11 +17448,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_override",
                                 "Host specification exceeds"
                                 " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
-          else if (create_override_data->new_threat == NULL)
+          else if (create_override_data->new_threat == NULL
+                   && create_override_data->new_severity == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a NEW_THREAT"
-                                " entity"));
+                                " or NEW_SEVERITY entity"));
           else if (create_override_data->task_id
               && find_task_for_actions (create_override_data->task_id,
                                         &task,
