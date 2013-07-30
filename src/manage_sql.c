@@ -11361,6 +11361,17 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
            TASK_STATUS_STOP_WAITING);
     }
 
+  /* Clean up orphaned results */
+  sql ("DELETE FROM results"
+       " WHERE NOT EXISTS (SELECT * FROM report_results"
+       "                   WHERE report_results.result = results.id);");
+  if (sqlite3_changes (task_db) > 0)
+    {
+      g_debug ("%s: Removed %d orphaned result(s).",
+               __FUNCTION__, sqlite3_changes (task_db));
+      sql ("UPDATE report_counts SET highs = -1");
+    }
+
   /* Run ANALYZE because there may have been big changes since create_tables. */
 
   sql ("ANALYZE;");
@@ -19663,6 +19674,7 @@ delete_report_internal (report_t report)
        report);
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
+  sql ("DELETE FROM results WHERE report = %llu;", report);
   sql ("DELETE FROM report_counts WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
 

@@ -1,5 +1,11 @@
 2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Delete orphaned results and clear
+	report counts cache if needed.
+	(delete_report_internal): Delete results of report from results table.
+
+2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (create_override): Use new_threat only if no
 	new_severity is given and no longer store it in the database.
 	(modify_override): Use new_threat only if no
