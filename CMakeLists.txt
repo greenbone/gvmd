@@ -269,7 +269,7 @@ add_subdirectory (doc)
 install (CODE "file (MAKE_DIRECTORY \$ENV{DESTDIR}${OPENVAS_STATE_DIR}/openvasmd/report_formats)")
 
 install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
-               ${CMAKE_BINARY_DIR}/src/pwpolicy.conf
+               ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
 install (FILES src/report_formats/ARF/generate

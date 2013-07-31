@@ -1,3 +1,7 @@
+2013-07-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt: Install pwpolicy.conf directly from source directory.
+
 2013-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (request_delete_task_uuid): Add permission check.
