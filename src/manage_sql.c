@@ -25559,7 +25559,8 @@ find_trash_task (const char*, task_t*);
  * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
  *
  * @return 0 if deleted, 1 if delete requested, 2 if task is hidden, 3 failed
- *         to find task, -1 if error, -5 if scanner is down.
+ *         to find task, 99 permission denied, -1 if error, -5 if scanner is
+ *         down.
  */
 int
 request_delete_task_uuid (const char *task_id, int ultimate)
@@ -25576,6 +25577,12 @@ request_delete_task_uuid (const char *task_id, int ultimate)
   tracef ("   request delete task %s\n", task_id);
 
   sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_task") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   if (find_task (task_id, &task))
     {
