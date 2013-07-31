@@ -13137,33 +13137,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                ("<resource id=\"%s\">"
                 "<name>%s</name>"
                 "<type>%s</type>"
-                "<%s id=\"%s\"><name>%s</name></%s>"
                 // FIX in trash?
                 "</resource>"
                 "<subject id=\"%s\">"
                 "<name>%s</name>"
                 "<type>%s</type>"
-                "<%s id=\"%s\"><name>%s</name></%s>"
                 "</subject>",
                 permission_iterator_resource_uuid (&permissions),
                 resource_type && strcmp (resource_type, "")
                  ? permission_iterator_resource_name (&permissions)
                  : "",
                 permission_iterator_resource_type (&permissions),
-                resource_type && strcmp (resource_type, "")
-                 ? resource_type
-                 : "resource",
-                permission_iterator_resource_uuid (&permissions),
-                resource_type && strcmp (resource_type, "")
-                 ? permission_iterator_resource_name (&permissions)
-                 : "",
-                resource_type && strcmp (resource_type, "")
-                 ? resource_type
-                 : "resource",
-                permission_iterator_subject_uuid (&permissions),
-                permission_iterator_subject_name (&permissions),
-                permission_iterator_subject_type (&permissions),
-                permission_iterator_subject_type (&permissions),
                 permission_iterator_subject_uuid (&permissions),
                 permission_iterator_subject_name (&permissions),
                 permission_iterator_subject_type (&permissions));

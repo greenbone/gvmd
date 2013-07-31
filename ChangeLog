@@ -1,3 +1,10 @@
+2013-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_PERMISSIONS
+	remove the specific resource and subject elements under RESOURCE and
+	SUBJECT, to keep the response simpler.  All the info is available
+	directly under RESOURCE and SUBJECT anyway.
+
 2013-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt: Install pwpolicy.conf.  Add it to
