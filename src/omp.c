@@ -19923,65 +19923,65 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       &fail_role_id,
                       &errdesc))
               {
-              case 0:
-                SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_user"));
-                log_event ("user", "User", create_user_data->name, "created");
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("create_user",
-                      "group",
-                      fail_group_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("user", "User", NULL, "created");
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("create_user",
-                      "role",
-                      fail_role_id,
-                      write_to_client,
-                      write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("user", "User", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_user",
-                                    "Permission denied"));
-                log_event_fail ("user", "User", NULL, "created");
-                break;
-              case -2:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                        ("create_user", "User already exists"));
-                log_event_fail ("user", "User", NULL, "created");
-                break;
-              case -3:
-                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                        ("create_user", "Error in SOURCE"));
-                log_event_fail ("user", "User", NULL, "created");
-                break;
-              case -1:
-                if (errdesc)
-                  {
-                    char *buf = make_xml_error_syntax ("create_user", errdesc);
-                    SEND_TO_CLIENT_OR_FAIL (buf);
-                    g_free (buf);
-                    break;
-                  }
-                /* Fall through.  */
-              default:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_user"));
-                log_event_fail ("user", "User", NULL, "created");
-                break;
+                case 0:
+                  SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_user"));
+                  log_event ("user", "User", create_user_data->name, "created");
+                  break;
+                case 1:
+                  if (send_find_error_to_client
+                       ("create_user",
+                        "group",
+                        fail_group_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("create_user",
+                        "role",
+                        fail_role_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_user",
+                                      "Permission denied"));
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
+                case -2:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("create_user", "User already exists"));
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
+                case -3:
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                          ("create_user", "Error in SOURCE"));
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
+                case -1:
+                  if (errdesc)
+                    {
+                      char *buf = make_xml_error_syntax ("create_user", errdesc);
+                      SEND_TO_CLIENT_OR_FAIL (buf);
+                      g_free (buf);
+                      break;
+                    }
+                  /* Fall through.  */
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_user"));
+                  log_event_fail ("user", "User", NULL, "created");
+                  break;
               }
           create_user_data_reset (create_user_data);
           set_client_state (CLIENT_AUTHENTIC);
@@ -22632,82 +22632,82 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        modify_user_data->roles, &fail_role_id,
                        &errdesc))
                 {
-                case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  break;
-                case 1:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "group",
-                        fail_group_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "user",
-                        modify_user_data->user_id
-                         ? modify_user_data->user_id
-                         : modify_user_data->name,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 3:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  log_event ("user", "User", modify_user_data->name,
-                             "raised to Admin role");
-                  break;
-                case 4:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
-                  log_event ("user", "User", modify_user_data->name,
-                             "downgraded from Admin role");
-                  break;
-                case 5:
-                  if (send_find_error_to_client
-                       ("modify_user",
-                        "role",
-                        fail_role_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("modify_user",
-                                      "Permission denied"));
-                  break;
-                case -2:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                          ("modify_user", "Unknown role"));
-                  break;
-                case -3:
-                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
-                                          ("modify_user", "Error in SOURCES"));
-                  break;
-                case -1:
-                  if (errdesc)
-                    {
-                      char *buf = make_xml_error_syntax ("modify_user", errdesc);
-                      SEND_TO_CLIENT_OR_FAIL (buf);
-                      g_free (buf);
-                      break;
-                    }
-                /* Fall through.  */
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_user"));
-                  break;
+                  case 0:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                    break;
+                  case 1:
+                    if (send_find_error_to_client
+                         ("modify_user",
+                          "group",
+                          fail_group_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 2:
+                    if (send_find_error_to_client
+                         ("modify_user",
+                          "user",
+                          modify_user_data->user_id
+                           ? modify_user_data->user_id
+                           : modify_user_data->name,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 3:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                    log_event ("user", "User", modify_user_data->name,
+                               "raised to Admin role");
+                    break;
+                  case 4:
+                    SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_user"));
+                    log_event ("user", "User", modify_user_data->name,
+                               "downgraded from Admin role");
+                    break;
+                  case 5:
+                    if (send_find_error_to_client
+                         ("modify_user",
+                          "role",
+                          fail_role_id,
+                          write_to_client,
+                          write_to_client_data))
+                      {
+                        error_send_to_client (error);
+                        return;
+                      }
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_user",
+                                        "Permission denied"));
+                    break;
+                  case -2:
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                            ("modify_user", "Unknown role"));
+                    break;
+                  case -3:
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                            ("modify_user", "Error in SOURCES"));
+                    break;
+                  case -1:
+                    if (errdesc)
+                      {
+                        char *buf = make_xml_error_syntax ("modify_user", errdesc);
+                        SEND_TO_CLIENT_OR_FAIL (buf);
+                        g_free (buf);
+                        break;
+                      }
+                  /* Fall through.  */
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_user"));
+                    break;
                 }
               g_free (errdesc);
             }
