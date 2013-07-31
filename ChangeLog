@@ -1,3 +1,11 @@
+2013-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r17283.
+
+	* src/manage_sql.c (init_manage): Delete orphaned results and clear
+	report counts cache if needed.
+	(delete_report_internal): Delete results of report from results table.
+
 2013-07-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r17170.  Patch by Timo Pollmeier.
