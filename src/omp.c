@@ -5748,9 +5748,14 @@ log_event (const char *event, const char *resource, const char *id,
            const char *action)
 {
   gchar* domain = g_strdup_printf ("event %s", event);
-  g_log (domain, G_LOG_LEVEL_MESSAGE,
-         "%s %s has been %s by %s", resource, id ? id : "", action,
-         current_credentials.username);
+  if (id)
+    g_log (domain, G_LOG_LEVEL_MESSAGE,
+           "%s %s has been %s by %s", resource, id, action,
+           current_credentials.username);
+  else
+    g_log (domain, G_LOG_LEVEL_MESSAGE,
+           "%s has been %s by %s", resource, action,
+           current_credentials.username);
 
   g_free (domain);
 }
@@ -5768,9 +5773,14 @@ log_event_fail (const char *event, const char *resource, const char *id,
                 const char *action)
 {
   gchar* domain = g_strdup_printf ("event %s", event);
-  g_log (domain, G_LOG_LEVEL_MESSAGE,
-         "%s %s could not be %s by %s", resource, id ? id : "", action,
-         current_credentials.username);
+  if (id)
+    g_log (domain, G_LOG_LEVEL_MESSAGE,
+           "%s %s could not be %s by %s", resource, id, action,
+           current_credentials.username);
+  else
+    g_log (domain, G_LOG_LEVEL_MESSAGE,
+           "%s could not be %s by %s", resource, action,
+           current_credentials.username);
 
   g_free (domain);
 }
@@ -23277,7 +23287,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     g_free (msg);
-                    log_event ("task", "Wizard", NULL, "run");
+                    log_event ("wizard", "Wizard", run_wizard_data->name,
+                               "run");
                     break;
                   }
 
@@ -23322,7 +23333,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     g_free (msg);
-                    log_event_fail ("wizard", "Wizard", NULL, "run");
+                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
+                                    "run");
                     break;
                   }
 
@@ -23338,7 +23350,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   {
                     /* Internal error. */
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("run_wizard"));
-                    log_event_fail ("wizard", "Wizard", NULL, "run");
+                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
+                                    "run");
                     break;
                   }
 
@@ -23362,7 +23375,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         return;
                       }
                     g_free (msg);
-                    log_event_fail ("wizard", "Wizard", NULL,
+                    log_event_fail ("wizard", "Wizard", run_wizard_data->name,
                                     "run: to_scanner buffer full");
                     break;
                   }

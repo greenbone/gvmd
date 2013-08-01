@@ -1,3 +1,10 @@
+2013-08-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (log_event, log_event_fail): Fix spacing when no resource ID
+	is provided.
+	(omp_xml_handle_end_element): Fix event name for log_event wizard call.
+	Use wizard name as resource id for log_event and log_event_fail calls.
+
 2013-08-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
         * src/manage_sql.c (where_levels, where_levels_auto): Test new_severity
