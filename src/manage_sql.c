@@ -2628,7 +2628,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
+              if (strcmp (keyword->string, "role") == 0)
+                g_string_append_printf (order,
+                                        " ORDER BY role"
+                                        " COLLATE collate_role"
+                                        " ASC");
+              else if ((strcmp (type, "task") == 0)
                   && (strcmp (keyword->string, "threat") == 0))
                 g_string_append_printf (order,
                                         " ORDER BY %s"
@@ -2676,7 +2681,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
           if (first_order)
             {
-              if ((strcmp (type, "task") == 0)
+              if (strcmp (keyword->string, "role") == 0)
+                g_string_append_printf (order,
+                                        " ORDER BY role"
+                                        " COLLATE collate_role"
+                                        " DESC");
+              else if ((strcmp (type, "task") == 0)
                   && (strcmp (keyword->string, "threat") == 0))
                 g_string_append_printf (order,
                                         " ORDER BY %s"
@@ -5185,6 +5195,44 @@ collate_location (void* data,
 
   ret = strncmp (one, two, MIN (one_len, two_len));
   return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
+}
+
+/**
+ * @brief Collate two role names.
+ *
+ * Admin sorts first.
+ *
+ * @param[in]  data     Dummy for callback.
+ * @param[in]  one_len  Length of first role (a string).
+ * @param[in]  arg_one  First string.
+ * @param[in]  two_len  Length of second role (a string).
+ * @param[in]  arg_two  Second string.
+ *
+ * @return -1, 0 or 1 if first is less than, equal to or greater than second.
+ */
+int
+collate_role (void* data,
+              int one_len, const void* arg_one,
+              int two_len, const void* arg_two)
+{
+  int ret;
+  const char* one = (const char*) arg_one;
+  const char* two = (const char*) arg_two;
+
+  if ((one_len == 5) && (strncmp (one, "Admin", 5) == 0))
+    {
+      if ((two_len == 5) && (strncmp (two, "Admin", 5) == 0))
+        return 0;
+      return -1;
+    }
+
+  if ((two_len == 5) && (strncmp (two, "Admin", 5) == 0))
+    return 1;
+
+  ret = strncmp (one, two, MIN (one_len, two_len));
+  if (ret == 0)
+    return one_len < two_len ? -1 : 1;
+  return ret < 0 ? -1 : 1;
 }
 
 
@@ -8983,6 +9031,17 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create collate_location", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_role",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_role)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_role", __FUNCTION__);
       abort ();
     }
 
@@ -49315,13 +49374,18 @@ trash_user_writable (user_t user)
  * @brief User columns for user iterator.
  */
 #define USER_ITERATOR_FILTER_COLUMNS                        \
- { GET_ITERATOR_FILTER_COLUMNS, "method", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "method", "role", NULL }
 
 /**
  * @brief User iterator columns.
  */
-#define USER_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow"
+#define USER_ITERATOR_COLUMNS                                              \
+  GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow,"             \
+  " coalesce ((SELECT name FROM roles"                                     \
+  "            WHERE roles.ROWID = (SELECT role FROM role_users"           \
+  "                                 WHERE user = users.ROWID)),"           \
+  "           '')"                                                         \
+  " AS role"
 
 /**
  * @brief User iterator columns for trash case.

@@ -1,3 +1,13 @@
+2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	For sorting by role, make Admin come first, even if it should come
+	later alphabetically.
+
+	* src/manage_sql.c (filter_clause): Add special sorting case for role.
+	(collate_role): New collator.
+	(init_manage_process): Create collate_role.
+	(USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS): Add role.
+
 2013-08-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (log_event, log_event_fail): Fix spacing when no resource ID
