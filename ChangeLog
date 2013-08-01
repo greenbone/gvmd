@@ -1,5 +1,16 @@
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): Init MODIFY_TASK observer
+	groups in the MODIFY_TASK handler instead of in the OBSERVERS handler,
+	to ensure that groups is always initialised.
+	(omp_xml_handle_end_element): Remove the CLIENT_MODIFY_TASK "Too few
+	parameters" check because it is safe to run an empty command and this is
+	easier to maintain.  Also check the length of groups instead of groups,
+	otherwise the groups are cleared when they are left out.  The client
+	must pass a group with ID 0 to clear them, as with alerts.
+
+2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (client_state_t): Order alphabetically.
 
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>

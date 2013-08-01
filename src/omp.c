@@ -6970,6 +6970,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "task_id",
                               &modify_task_data->task_id);
             modify_task_data->alerts = make_array ();
+            modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK);
           }
         else if (strcasecmp ("MODIFY_USER", element_name) == 0)
@@ -7631,7 +7632,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
           {
             openvas_append_string (&modify_task_data->observers, "");
-            modify_task_data->groups = make_array ();
             set_client_state (CLIENT_MODIFY_TASK_OBSERVERS);
           }
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
@@ -22200,16 +22200,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
               }
-            else if ((modify_task_data->action
-                      || (modify_task_data->alerts->len > 1)
-                      || (modify_task_data->groups->len > 1)
-                      || modify_task_data->name
-                      || modify_task_data->comment
-                      || modify_task_data->rcfile)
-                     == 0)
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "Too few parameters"));
             else if (modify_task_data->action
                      && (modify_task_data->comment
                          || modify_task_data->alerts->len
@@ -22421,7 +22411,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
-                if (fail == 0 && modify_task_data->groups)
+                if (fail == 0 && modify_task_data->groups->len)
                   {
                     gchar *fail_group_id;
                     switch ((fail = set_task_groups (task,
