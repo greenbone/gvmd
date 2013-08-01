@@ -1,5 +1,12 @@
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r16788.
+
+	* src/manage_sql.c (omp_xml_handle_end_element): Add log for successful
+	creation in CREATE_NOTE and CREATE_OVERRIDE.
+
+2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r17315.
 
 	* src/manage_sql.c (create_note, modify_note): Neaten return doc.

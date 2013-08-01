@@ -13775,6 +13775,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   note_uuid (new_note, &uuid);
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_note"),
                                            uuid);
+                  g_log ("event note", G_LOG_LEVEL_MESSAGE,
+                         "Note %s has been created", uuid);
                   free (uuid);
                   break;
                 }
@@ -13951,6 +13953,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   override_uuid (new_override, &uuid);
                   SENDF_TO_CLIENT_OR_FAIL
                    (XML_OK_CREATED_ID ("create_override"), uuid);
+                  g_log ("event override", G_LOG_LEVEL_MESSAGE,
+                         "Override %s has been created", uuid);
                   free (uuid);
                   break;
                 }
