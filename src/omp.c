@@ -13955,6 +13955,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
               case 1:
+                if (send_find_error_to_client ("create_override",
+                                               "nvt",
+                                               create_override_data->nvt_oid,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_override",
                                     "Error in port specification"));
