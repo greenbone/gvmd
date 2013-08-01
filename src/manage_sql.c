@@ -35894,7 +35894,8 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  result      Result to apply note to, 0 for any result.
  * @param[out] note        Created note.
  *
- * @return 0 success, 1 failed to find NVT, 2 Invalid port, -1 error.
+ * @return 0 success, 1 failed to find NVT, 2 invalid port, 99 permission
+ *         denied, -1 error.
  */
 int
 create_note (const char* active, const char* nvt, const char* text,
@@ -36084,7 +36085,7 @@ note_uuid (note_t note, char ** id)
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port.
+ * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port.
  */
 int
 modify_note (note_t note, const char *active, const char* text,
@@ -36682,8 +36683,8 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  result      Result to apply override to, 0 for any result.
  * @param[out] override    Created override.
  *
- * @return 0 success, 99 permission denied, 1 Invalid port, 2 invalid severity,
- *         -1 error.
+ * @return 0 success, 1 failed to find NVT, 2 invalid port, 3 invalid severity,
+ *         99 permission denied, -1 error.
  */
 int
 create_override (const char* active, const char* nvt, const char* text,
@@ -36691,7 +36692,7 @@ create_override (const char* active, const char* nvt, const char* text,
                  const char* new_threat, const char* new_severity,
                  task_t task, result_t result, override_t* override)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat, *quoted_nvt;
   double new_severity_dbl;
 
   if (user_may ("create_override") == 0)
@@ -36703,8 +36704,18 @@ create_override (const char* active, const char* nvt, const char* text,
   if (text == NULL)
     return -1;
 
+  quoted_nvt = sql_quote (nvt);
+  if (strcmp (nvt, "0")
+      && (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+          == 0))
+    {
+      g_free (quoted_nvt);
+      return 1;
+    }
+  g_free (quoted_nvt);
+
   if (port && validate_results_port (port))
-    return 1;
+    return 2;
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
@@ -36741,7 +36752,7 @@ create_override (const char* active, const char* nvt, const char* text,
            || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
                && new_severity_dbl != SEVERITY_LOG
                && new_severity_dbl != SEVERITY_FP))
-        return 2;
+    return 3;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -36908,7 +36919,7 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active, 2 Invalid port,
+ * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
  *         3 invalid severity score.
  */
 int
