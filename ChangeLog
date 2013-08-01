@@ -1,5 +1,9 @@
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (client_state_t): Order alphabetically.
+
+2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	For sorting by role, make Admin come first, even if it should come
 	later alphabetically.
 
