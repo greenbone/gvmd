@@ -14531,17 +14531,17 @@ where_levels (const char* levels)
     {
       count = 1;
       // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new (" AND (severity_in_level (severity, 'high')");
+      levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'high')");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (severity, 'medium')");
+        levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'medium')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'medium')");
+                                      " OR severity_in_level (new_severity, 'medium')");
       count++;
     }
 
@@ -14549,10 +14549,10 @@ where_levels (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (severity, 'low')");
+        levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'low')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'low')");
+                                      " OR severity_in_level (new_severity, 'low')");
       count++;
     }
 
@@ -14560,12 +14560,12 @@ where_levels (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity = 0.0"
-                                   "       AND new_type = 'Log Message')");
+        levels_sql = g_string_new (" AND ((new_severity = "
+                                            G_STRINGIFY (SEVERITY_LOG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND new_type = 'Log Message')");
+                                      " OR (new_severity = "
+                                              G_STRINGIFY (SEVERITY_LOG) ")");
       count++;
     }
 
@@ -14573,12 +14573,12 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity = 0.0"
-                                   "       AND new_type = 'Debug Message')");
+        levels_sql = g_string_new (" AND ((new_severity = "
+                                            G_STRINGIFY (SEVERITY_DEBUG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND new_type = 'Debug Message')");
+                                      " OR (new_severity = "
+                                              G_STRINGIFY (SEVERITY_DEBUG) ")");
       count++;
     }
 
@@ -14586,10 +14586,12 @@ where_levels (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND new_type IN ('False Positive')");
+        levels_sql = g_string_new (" AND ((new_severity = "
+                                            G_STRINGIFY (SEVERITY_FP) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type IN ('False Positive'))");
+                                      " OR (new_severity = "
+                                              G_STRINGIFY (SEVERITY_FP) ")");
       count++;
     }
   else if (count)
@@ -14634,17 +14636,17 @@ where_levels_auto (const char* levels)
     {
       count = 1;
       // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'high')");
+      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'high')");
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'medium')");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'medium')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'medium')");
+                                      " OR severity_in_level (new_severity, 'medium')");
       count++;
     }
 
@@ -14652,10 +14654,10 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (severity, 'low')");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'low')");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (severity, 'low')");
+                                      " OR severity_in_level (new_severity, 'low')");
       count++;
     }
 
@@ -14664,12 +14666,14 @@ where_levels_auto (const char* levels)
     {
       if (count == 0)
         levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((severity = 0.0"
-                                   "             AND new_type = 'Log Message')");
+                                   "       AND ((new_severity = "
+                                                   G_STRINGIFY (SEVERITY_LOG)
+                                   "            )");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND new_type = 'Log Message')");
+                                      " OR (new_severity = "
+                                              G_STRINGIFY (SEVERITY_LOG)
+                                      "    )");
       count++;
     }
 
@@ -14678,12 +14682,14 @@ where_levels_auto (const char* levels)
     {
       if (count == 0)
         levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((severity = 0.0"
-                                   "             AND new_type = 'Debug Message')");
+                                   "       AND ((new_severity = "
+                                                   G_STRINGIFY (SEVERITY_DEBUG)
+                                   "            )");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND new_type = 'Debug Message')");
+                                      " OR (new_severity = "
+                                              G_STRINGIFY (SEVERITY_DEBUG)
+                                      "    )");
       count++;
     }
 
@@ -14691,10 +14697,15 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND new_type IN ('False Positive')) OR auto_type = 1)");
+        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
+                                   "       AND new_severity = "
+                                                 G_STRINGIFY (SEVERITY_FP)
+                                   "      ) OR auto_type = 1)");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_type IN ('False Positive'))) OR auto_type = 1)");
+                                      " OR new_severity = "
+                                             G_STRINGIFY (SEVERITY_FP)
+                                      " )) OR auto_type = 1)");
       count++;
     }
   else if (count)
@@ -14768,12 +14779,14 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity = 0.0"
-                                   "       AND type = 'Log Message')");
+        levels_sql = g_string_new (" AND ((severity = "
+                                             G_STRINGIFY (SEVERITY_LOG)
+                                   "      )");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND type = 'Log Message')");
+                                      " OR (severity = "
+                                              G_STRINGIFY (SEVERITY_LOG)
+                                      "    )");
       count++;
     }
 
@@ -14781,12 +14794,14 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (severity = 0.0"
-                                   "      AND type = 'Debug Message')");
+        levels_sql = g_string_new (" AND ((severity = "
+                                             G_STRINGIFY (SEVERITY_DEBUG)
+                                   "      )");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = 0.0"
-                                      "     AND type = 'Debug Message'))");
+                                      " OR (severity = "
+                                              G_STRINGIFY (SEVERITY_DEBUG)
+                                      "    )");
       count++;
     }
   else if (count)
@@ -16294,7 +16309,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
   if (levels && strlen (levels))
     {
       GString *levels_sql;
-      gchar *severity_sql, *new_type_sql;
+      gchar *severity_sql, *new_severity_sql;
 
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
@@ -16309,7 +16324,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           assert (current_credentials.uuid);
 
           ov = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity)"
+                ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND ((overrides.owner IS NULL)"
@@ -16343,17 +16358,15 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  current_credentials.uuid,
                  severity_sql);
 
-          new_type_sql = g_strdup_printf ("coalesce ((%s),"
-                                          "          severity_to_type (%s))",
-                                          ov,
-                                          severity_sql);
+          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
+                                              ov, severity_sql);
 
           g_free (severity_sql);
           g_free (ov);
         }
       else
-        new_type_sql = g_strdup_printf ("severity_to_type (%s)",
-                                        severity_sql);
+        new_severity_sql = g_strdup_printf ("%s",
+                                            severity_sql);
 
       levels_sql = where_levels (levels);
 
@@ -16408,7 +16421,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                          "         AND source_type = 'nvt'"
                          "         AND value LIKE '%%%s%%'))"
                          /* Filter levels. */
-                         " AND EXISTS (SELECT results.ROWID, %s AS new_type"
+                         " AND EXISTS (SELECT results.ROWID, %s AS new_severity"
                          "             FROM results"
                          "             WHERE results.report = last_report"
                          "             AND results.host = distinct_host"
@@ -16418,7 +16431,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                          TASK_STATUS_DONE,
                          quoted_search_phrase,
                          quoted_search_phrase,
-                         new_type_sql,
+                         new_severity_sql,
                          levels_sql ? levels_sql->str : "",
                          max_results,
                          first_result);
@@ -16455,7 +16468,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " FROM (SELECT DISTINCT host AS distinct_host"
                        "       FROM report_hosts"
                        "       ORDER BY host COLLATE collate_ip)"
-                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
+                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_severity"
                        "               FROM results"
                        "               WHERE results.report = last_report"
                        "               AND results.host = distinct_host"
@@ -16463,14 +16476,14 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " LIMIT %i OFFSET %i;",
                        current_credentials.uuid,
                        TASK_STATUS_DONE,
-                       new_type_sql,
+                       new_severity_sql,
                        levels_sql ? levels_sql->str : "",
                        max_results,
                        first_result);
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
-      g_free (new_type_sql);
+      g_free (new_severity_sql);
     }
   else if (search_phrase && strlen (search_phrase))
     {
@@ -16968,7 +16981,7 @@ report_scan_result_count (report_t report, const char* levels,
                           int* count)
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *new_type_sql = NULL, *auto_type_sql = NULL;
+  gchar *new_severity_sql = NULL, *auto_type_sql = NULL;
 
   phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
   cvss_sql = where_cvss_base (min_cvss_base);
@@ -16988,7 +17001,7 @@ report_scan_result_count (report_t report, const char* levels,
         severity_sql = g_strdup ("results.severity");
 
       ov = g_strdup_printf
-            ("SELECT severity_to_type (overrides.new_severity)"
+            ("SELECT overrides.new_severity"
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
              " AND ((overrides.owner IS NULL)"
@@ -17020,11 +17033,10 @@ report_scan_result_count (report_t report, const char* levels,
              current_credentials.uuid,
              severity_sql);
 
-      new_type_sql = g_strdup_printf (", coalesce ((%s),"
-                                      "            severity_to_type (%s))"
-                                      " AS new_type",
-                                      ov,
-                                      severity_sql);
+      new_severity_sql = g_strdup_printf (", coalesce ((%s), %s)"
+                                          " AS new_severity",
+                                          ov,
+                                          severity_sql);
 
       g_free (severity_sql);
       g_free (ov);
@@ -17040,7 +17052,7 @@ report_scan_result_count (report_t report, const char* levels,
                     " WHERE results.ROWID = report_results.result"
                     "%s%s%s"
                     " AND report_results.report = %llu;",
-                    new_type_sql ? new_type_sql : "",
+                    new_severity_sql ? new_severity_sql : "",
                     auto_type_sql ? auto_type_sql : "",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
@@ -17050,7 +17062,7 @@ report_scan_result_count (report_t report, const char* levels,
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
-  g_free (new_type_sql);
+  g_free (new_severity_sql);
   g_free (auto_type_sql);
 
   return 0;
@@ -21019,7 +21031,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
     {
       int ret;
       GString *levels_sql;
-      gchar *severity_sql, *new_type_sql;
+      gchar *severity_sql, *new_severity_sql;
 
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
@@ -21034,7 +21046,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
           assert (current_credentials.uuid);
 
           ov = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity)"
+                ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
                  " AND ((overrides.owner IS NULL)"
@@ -21067,16 +21079,13 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  current_credentials.uuid,
                  severity_sql);
 
-          new_type_sql = g_strdup_printf ("coalesce ((%s),"
-                                          "          severity_to_type (%s))",
-                                          ov,
-                                          severity_sql);
+          new_severity_sql = g_strdup_printf ("coalesce ((%s),%s)",
+                                              ov, severity_sql);
 
           g_free (ov);
         }
       else
-        new_type_sql = g_strdup_printf ("severity_to_type (%s)",
-                                        severity_sql);
+        new_severity_sql = g_strdup_printf ("%s", severity_sql);
 
       g_free (severity_sql);
 
@@ -21132,7 +21141,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          "              OR name = 'ports')"
                          "         AND source_type = 'nvt'"
                          "         AND value LIKE '%%%s%%'))"
-                         " AND EXISTS (SELECT results.ROWID, %s AS new_type"
+                         " AND EXISTS (SELECT results.ROWID, %s AS new_severity"
                          "             FROM results"
                          "             WHERE results.report = last_report"
                          "             AND results.host = distinct_host"
@@ -21141,7 +21150,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          TASK_STATUS_DONE,
                          quoted_search_phrase,
                          quoted_search_phrase,
-                         new_type_sql,
+                         new_severity_sql,
                          levels_sql ? levels_sql->str : "");
           g_free (quoted_search_phrase);
         }
@@ -21176,19 +21185,19 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "  AS last_report"
                        " FROM (SELECT DISTINCT host AS distinct_host"
                        "       FROM report_hosts)"
-                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_type"
+                       " WHERE EXISTS (SELECT results.ROWID, %s AS new_severity"
                        "               FROM results"
                        "               WHERE results.report = last_report"
                        "               AND results.host = distinct_host"
                        "               %s);",
                        current_credentials.uuid,
                        TASK_STATUS_DONE,
-                       new_type_sql,
+                       new_severity_sql,
                        levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
-      g_free (new_type_sql);
+      g_free (new_severity_sql);
 
       return ret;
     }
