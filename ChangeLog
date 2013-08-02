@@ -1,3 +1,12 @@
+2013-08-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.h: Remove some arg names.
+
+	* src/manage_sql.c (do_encrypt_all_credentials): Remove.  Now
+	encrypt_all_credentials.  "encrypt" is already a verb.
+	(encrypt_all_credentials): New function.  Was
+	do_encrypt_all_credentials.
+
 2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (where_levels, where_levels_auto, where_levels_type):

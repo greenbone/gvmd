@@ -4757,7 +4757,7 @@ set_db_version (int version)
  * @return 0 success, -1 error.
  */
 static int
-do_encrypt_all_credentials (gboolean decrypt_flag)
+encrypt_all_credentials (gboolean decrypt_flag)
 {
   iterator_t iterator;
   unsigned long ntotal, nencrypted, nreencrypted, ndecrypted;
@@ -4889,7 +4889,7 @@ manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_flag)
 
   init_manage_process (0, db);
 
-  ret = do_encrypt_all_credentials (decrypt_flag);
+  ret = encrypt_all_credentials (decrypt_flag);
 
   cleanup_manage_process (TRUE);
 
@@ -36656,7 +36656,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  port        Port to apply override to, NULL for any port.
  * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
  * @param[in]  new_threat  Threat to override result to.
- * @param[in]  
+ * @param[in]
  * @param[in]  new_severity Severity score to override "Alarm" type results to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
