@@ -1,5 +1,11 @@
 2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (where_levels, where_levels_auto, where_levels_type):
+	Reformat levels_sql g_string_new and gstring_append calls in
+	severity <= 0.0 cases.
+
+2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Replace the threat and new_threat columns with severity and new_severity
 	in overrides and overrides_trash tables.
 	Hence increase database version to 89.  Add database migration from

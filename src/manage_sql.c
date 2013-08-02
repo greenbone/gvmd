@@ -14626,12 +14626,14 @@ where_levels (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity = "
-                                            G_STRINGIFY (SEVERITY_LOG) ")");
+        levels_sql = g_string_new (" AND ((new_severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_LOG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity = "
-                                              G_STRINGIFY (SEVERITY_LOG) ")");
+                                      " OR (new_severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_LOG) ")");
       count++;
     }
 
@@ -14639,12 +14641,14 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity = "
-                                            G_STRINGIFY (SEVERITY_DEBUG) ")");
+        levels_sql = g_string_new (" AND ((new_severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_DEBUG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity = "
-                                              G_STRINGIFY (SEVERITY_DEBUG) ")");
+                                      " OR (new_severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_DEBUG) ")");
       count++;
     }
 
@@ -14652,12 +14656,14 @@ where_levels (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity = "
-                                            G_STRINGIFY (SEVERITY_FP) ")");
+        levels_sql = g_string_new (" AND ((new_severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_FP) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity = "
-                                              G_STRINGIFY (SEVERITY_FP) ")");
+                                      " OR (new_severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_FP) ")");
       count++;
     }
   else if (count)
@@ -14732,14 +14738,14 @@ where_levels_auto (const char* levels)
     {
       if (count == 0)
         levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((new_severity = "
-                                                   G_STRINGIFY (SEVERITY_LOG)
-                                   "            )");
+                                   "       AND ((new_severity"
+                                   "             = " G_STRINGIFY
+                                                      (SEVERITY_LOG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity = "
-                                              G_STRINGIFY (SEVERITY_LOG)
-                                      "    )");
+                                      " OR (new_severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_LOG) ")");
       count++;
     }
 
@@ -14748,14 +14754,14 @@ where_levels_auto (const char* levels)
     {
       if (count == 0)
         levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((new_severity = "
-                                                   G_STRINGIFY (SEVERITY_DEBUG)
-                                   "            )");
+                                   "       AND ((new_severity"
+                                   "             = " G_STRINGIFY
+                                                      (SEVERITY_DEBUG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity = "
-                                              G_STRINGIFY (SEVERITY_DEBUG)
-                                      "    )");
+                                      " OR (new_severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_DEBUG) ")");
       count++;
     }
 
@@ -14764,14 +14770,16 @@ where_levels_auto (const char* levels)
     {
       if (count == 0)
         levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND new_severity = "
-                                                 G_STRINGIFY (SEVERITY_FP)
-                                   "      ) OR auto_type = 1)");
+                                   "       AND new_severity"
+                                   "           = " G_STRINGIFY
+                                                    (SEVERITY_FP) ")"
+                                   "      OR auto_type = 1)");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR new_severity = "
-                                             G_STRINGIFY (SEVERITY_FP)
-                                      " )) OR auto_type = 1)");
+                                      " OR new_severity"
+                                      "    = " G_STRINGIFY
+                                                (SEVERITY_FP) "))"
+                                      " OR auto_type = 1)");
       count++;
     }
   else if (count)
@@ -14845,14 +14853,14 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity = "
-                                             G_STRINGIFY (SEVERITY_LOG)
-                                   "      )");
+        levels_sql = g_string_new (" AND ((severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_LOG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = "
-                                              G_STRINGIFY (SEVERITY_LOG)
-                                      "    )");
+                                      " OR (severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_LOG) ")");
       count++;
     }
 
@@ -14860,14 +14868,14 @@ where_levels_type (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((severity = "
-                                             G_STRINGIFY (SEVERITY_DEBUG)
-                                   "      )");
+        levels_sql = g_string_new (" AND ((severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_DEBUG) ")");
       else
         levels_sql = g_string_append (levels_sql,
-                                      " OR (severity = "
-                                              G_STRINGIFY (SEVERITY_DEBUG)
-                                      "    )");
+                                      " OR (severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_DEBUG) ")");
       count++;
     }
   else if (count)
