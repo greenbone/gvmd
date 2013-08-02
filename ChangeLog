@@ -1,3 +1,11 @@
+2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_severity_filtered, report_counts_id_filt):
+	Remove leftover COLLATE expressions.
+	(create_override): Add missing comment for severity parameter. Check
+	correct strings for threat and new_threat.
+	(override_iterator_threat): Move > 0.0 term to new line.
+
 2013-08-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h: Remove some arg names.

@@ -18533,8 +18533,7 @@ report_severity_filtered (report_t report, int override,
                  "      OR overrides.port = $port)" // 4
                  " AND severity_matches_ov ($severity, overrides.severity)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
@@ -19147,8 +19146,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                      " AND severity_matches_ov ($severity,"
                      "                          overrides.severity)" // 5
                      " ORDER BY overrides.result DESC, overrides.task DESC,"
-                     " overrides.port DESC, overrides.severity"
-                     " COLLATE collate_message_type ASC,"
+                     " overrides.port DESC, overrides.severity ASC,"
                      " overrides.modification_time DESC;",
                      current_credentials.uuid,
                      task);
@@ -36656,7 +36654,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  port        Port to apply override to, NULL for any port.
  * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
  * @param[in]  new_threat  Threat to override result to.
- * @param[in]
+ * @param[in]  severity    Severity to apply override to, "" or NULL for any.
  * @param[in]  new_severity Severity score to override "Alarm" type results to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
@@ -36700,7 +36698,7 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (new_threat, "Alarm")
+      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
       && strcmp (threat, ""))
     return -1;
 
@@ -36752,7 +36750,7 @@ create_override (const char* active, const char* nvt, const char* text,
               && new_severity_dbl != SEVERITY_DEBUG))
         return 2;
     }
-  else if (new_threat != NULL && strcmp (new_severity, ""))
+  else if (new_threat != NULL && strcmp (new_threat, ""))
     {
       if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
@@ -37480,7 +37478,8 @@ override_iterator_threat (iterator_t *iterator)
   if (ret == NULL) return NULL;
 
   if (sqlite3_column_double (iterator->stmt,
-                             GET_ITERATOR_COLUMN_COUNT + 14) > 0.0)
+                             GET_ITERATOR_COLUMN_COUNT + 14)
+      > 0.0)
     return "Alarm";
 
   return message_type_threat (ret);
