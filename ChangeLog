@@ -1,3 +1,7 @@
+2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* ChangeLog: Replace leading whitespaces with tabs in last own entry.
+
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_note, modify_note): Neaten return doc.
@@ -41,13 +45,13 @@
 
 2013-08-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
-        * src/manage_sql.c (where_levels, where_levels_auto): Test new_severity
-        instead of severity and new_threat. Test for special cases like log
-        messages by comparing only new_severity.
-        (where_levels_type): Test for special cases like log messages by
-        comparing only severity.
-        (init_asset_iterator, report_scan_result_count, filtered_host_count):
-        Adapt by getting new_severity for filtering instead of new_type.
+	* src/manage_sql.c (where_levels, where_levels_auto): Test new_severity
+	instead of severity and new_threat. Test for special cases like log
+	messages by comparing only new_severity.
+	(where_levels_type): Test for special cases like log messages by
+	comparing only severity.
+	(init_asset_iterator, report_scan_result_count, filtered_host_count):
+	Adapt by getting new_severity for filtering instead of new_type.
 
 2013-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
