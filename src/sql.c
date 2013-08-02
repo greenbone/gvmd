@@ -1368,6 +1368,48 @@ sql_severity_matches_type (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Test if a severity score matches an override's severity.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_severity_matches_ov (sqlite3_context *context, int argc,
+                         sqlite3_value** argv)
+{
+  double severity, ov_severity;
+
+  assert (argc == 2);
+
+  if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
+    {
+      sqlite3_result_error (context,
+                            "First parmeter of severity_matches_ov is NULL",
+                            -1);
+      return;
+    }
+
+  if (sqlite3_value_type (argv[1]) == SQLITE_NULL
+      || strcmp ((const char*)(sqlite3_value_text (argv[1])), "") == 0)
+    {
+      sqlite3_result_int (context, 1);
+      return;
+    }
+  else
+    {
+      severity = sqlite3_value_double (argv[0]);
+      ov_severity = sqlite3_value_double (argv[1]);
+
+      sqlite3_result_int (context,
+                          severity_matches_ov (severity, ov_severity));
+      return;
+    }
+}
+
+/**
  * @brief Get the threat level matching a severity score.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -1383,6 +1425,13 @@ sql_severity_to_level (sqlite3_context *context, int argc,
   double severity;
 
   assert (argc == 1);
+
+  if (sqlite3_value_type (argv[0]) == SQLITE_NULL
+      || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
 
   severity = sqlite3_value_double (argv[0]);
 
@@ -1407,6 +1456,13 @@ sql_severity_to_type (sqlite3_context *context, int argc,
   double severity;
 
   assert (argc == 1);
+
+  if (sqlite3_value_type (argv[0]) == SQLITE_NULL
+      || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
+    {
+      sqlite3_result_null (context);
+      return;
+    }
 
   severity = sqlite3_value_double (argv[0]);
 

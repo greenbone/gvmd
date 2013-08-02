@@ -4413,14 +4413,12 @@ create_tables ()
        " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
-       "  creation_time, modification_time, text, hosts, port, threat,"
-       "  new_threat, task INTEGER, result INTEGER, end_time,"
-       "  new_severity REAL);");
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  new_severity, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
-       "  creation_time, modification_time, text, hosts, port, threat,"
-       "  new_threat, task INTEGER, result INTEGER, end_time,"
-       "  new_severity REAL);");
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  new_severity, task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS permissions"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
@@ -9256,6 +9254,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "severity_matches_ov",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_matches_ov,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_matches_ov", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "severity_to_level",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -13048,13 +13060,9 @@ task_severity (task_t task, int overrides, int offset)
              " AND (overrides.port is NULL"
              "      OR overrides.port = \"\""
              "      OR overrides.port = results.port)"
-             " AND (overrides.threat is NULL"
-             "      OR overrides.threat = \"\""
-             "      OR severity_matches_type (%s,"
-             "                                overrides.threat))"
+             " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC,"
+             " overrides.port DESC, overrides.severity ASC,"
              " overrides.creation_time DESC",
              current_credentials.uuid,
              severity_sql);
@@ -13077,8 +13085,7 @@ task_severity (task_t task, int overrides, int offset)
                          "  AND reports.scan_run_status = %u"
                          "  ORDER BY reports.date DESC LIMIT 1 OFFSET %d)"
                          " AND results.ROWID = report_results.result"
-                         " ORDER BY new_severity"
-                         " COLLATE collate_message_type DESC"
+                         " ORDER BY new_severity DESC"
                          " LIMIT 1",
                          new_severity_sql,
                          task,
@@ -15153,13 +15160,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
+                 " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC",
                  current_credentials.uuid,
                  severity_sql);
@@ -15368,13 +15371,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
+                 " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC",
                  current_credentials.uuid,
                  severity_sql);
@@ -16406,13 +16405,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
+                 " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC",
                  current_credentials.uuid,
                  severity_sql);
@@ -17081,13 +17076,9 @@ report_scan_result_count (report_t report, const char* levels,
              " AND (overrides.port is NULL"
              "      OR overrides.port = \"\""
              "      OR overrides.port = results.port)"
-             " AND (overrides.threat is NULL"
-             "      OR overrides.threat = \"\""
-             "      OR severity_matches_type (%s,"
-             "                                overrides.threat))"
+             " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.threat"
-             " COLLATE collate_message_type ASC,"
+             " overrides.port DESC, overrides.severity ASC,"
              " overrides.creation_time DESC",
              current_credentials.uuid,
              severity_sql);
@@ -17225,13 +17216,9 @@ report_count (report_t report, const char *type, int override, const char *host)
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type ($severity,"
-                 "                                overrides.threat))" // 5
+                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
@@ -17584,13 +17571,9 @@ report_severity (report_t report, int override, const char *host)
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type ($severity,"
-                 "                                overrides.threat))" // 5
+                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
@@ -18120,13 +18103,9 @@ report_count_filtered (report_t report, const char *type, int override,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type ($severity,"
-                 "                                overrides.threat))" // 5
+                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
                  current_credentials.uuid,
                  task);
@@ -18544,12 +18523,9 @@ report_severity_filtered (report_t report, int override,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = $port)" // 4
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type ($severity,"
-                 "                                overrides.threat))" // 5
+                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
+                 " overrides.port DESC, overrides.severity"
                  " COLLATE collate_message_type ASC,"
                  " overrides.modification_time DESC;",
                  current_credentials.uuid,
@@ -19160,12 +19136,10 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                      " AND (overrides.port is NULL"
                      "      OR overrides.port = \"\""
                      "      OR overrides.port = $port)" // 4
-                     " AND (overrides.threat is NULL"
-                     "      OR overrides.threat = \"\""
-                     "      OR severity_matches_type ($severity,"
-                     "                                overrides.threat))" // 5
+                     " AND severity_matches_ov ($severity,"
+                     "                          overrides.severity)" // 5
                      " ORDER BY overrides.result DESC, overrides.task DESC,"
-                     " overrides.port DESC, overrides.threat"
+                     " overrides.port DESC, overrides.severity"
                      " COLLATE collate_message_type ASC,"
                      " overrides.modification_time DESC;",
                      current_credentials.uuid,
@@ -21127,13 +21101,9 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " AND (overrides.port is NULL"
                  "      OR overrides.port = \"\""
                  "      OR overrides.port = results.port)"
-                 " AND (overrides.threat is NULL"
-                 "      OR overrides.threat = \"\""
-                 "      OR severity_matches_type (%s,"
-                 "                                overrides.threat))"
+                 " AND (severity_matches_ov (%s, overrides.severity))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.threat"
-                 " COLLATE collate_message_type ASC,"
+                 " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC",
                  current_credentials.uuid,
                  severity_sql);
@@ -36678,6 +36648,7 @@ find_override (const char* uuid, override_t* override)
  * @param[in]  port        Port to apply override to, NULL for any port.
  * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
  * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  
  * @param[in]  new_severity Severity score to override "Alarm" type results to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
@@ -36689,11 +36660,13 @@ find_override (const char* uuid, override_t* override)
 int
 create_override (const char* active, const char* nvt, const char* text,
                  const char* hosts, const char* port, const char* threat,
-                 const char* new_threat, const char* new_severity,
-                 task_t task, result_t result, override_t* override)
+                 const char* new_threat, const char* severity,
+                 const char* new_severity, task_t task, result_t result,
+                 override_t* override)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat, *quoted_nvt;
-  double new_severity_dbl;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
+  gchar *quoted_nvt;
+  double severity_dbl, new_severity_dbl;
 
   if (user_may ("create_override") == 0)
     return 99;
@@ -36719,50 +36692,85 @@ create_override (const char* active, const char* nvt, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, ""))
+      && strcmp (threat, "Debug") && strcmp (new_threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
       && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, ""))
+      && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
-  new_severity_dbl = 0.0;
-  if (new_severity == NULL && new_threat == NULL)
-    return -1;
-  else if (new_severity == NULL && strcmp (new_threat, "Log") == 0)
-    new_severity_dbl = 0.0;
-  else if (new_severity == NULL && strcmp (new_threat, "False Positive") == 0)
-    new_severity_dbl = -1.0;
-  else if (new_severity == NULL && strcmp (new_threat, "Debug") == 0)
-    new_severity_dbl = -2.0;
-  else if (new_severity == NULL || strcmp (new_severity, "") == 0)
+  severity_dbl = 0.0;
+  if (severity != NULL && strcmp (severity, ""))
     {
-      if (new_threat && strcmp (new_threat, "High") == 0)
+      if (sscanf (severity, "%lf", &severity_dbl) != 1
+          || ((severity_dbl < 0.0 || severity_dbl > 10.0)
+              && severity_dbl != SEVERITY_LOG
+              && severity_dbl != SEVERITY_DEBUG))
+        return 3;
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else if (threat != NULL && strcmp (threat, ""))
+    {
+      if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "High") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Medium") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Low") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Log") == 0)
+        severity_dbl = SEVERITY_LOG;
+      else if (strcmp (threat, "Debug") == 0)
+        severity_dbl = SEVERITY_DEBUG;
+      else
+        return -1;
+
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else
+    quoted_severity = g_strdup ("NULL");
+
+  new_severity_dbl = 0.0;
+  if (new_severity != NULL && strcmp (new_severity, ""))
+    {
+      if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
+          || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
+              && new_severity_dbl != SEVERITY_LOG
+              && new_severity_dbl != SEVERITY_FP
+              && new_severity_dbl != SEVERITY_DEBUG))
+        return 2;
+    }
+  else if (new_threat != NULL && strcmp (new_severity, ""))
+    {
+      if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-      else if (new_threat && strcmp (new_threat, "Medium") == 0)
+      else if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
-      else if (new_threat && strcmp (new_threat, "Low") == 0)
+      else if (strcmp (new_threat, "Low") == 0)
         new_severity_dbl = 2.0;
+      else if (strcmp (new_threat, "Log") == 0)
+        new_severity_dbl = SEVERITY_LOG;
+      else if (strcmp (new_threat, "Debug") == 0)
+        new_severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
     }
-  else if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
-           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
-               && new_severity_dbl != SEVERITY_LOG
-               && new_severity_dbl != SEVERITY_FP))
-    return 3;
+  else
+    return -1;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_threat = sql_insert ((threat && strlen (threat))
-                                ? threat_message_type (threat) : NULL);
 
   sql ("INSERT INTO overrides"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, new_severity, task, result, end_time)"
+       "  port, severity, new_severity, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %s, %s, %s, %s, %1.1f, %llu, %llu, %i);",
@@ -36773,7 +36781,7 @@ create_override (const char* active, const char* nvt, const char* text,
        quoted_text,
        quoted_hosts,
        quoted_port,
-       quoted_threat,
+       quoted_severity,
        new_severity_dbl,
        task,
        result,
@@ -36786,7 +36794,7 @@ create_override (const char* active, const char* nvt, const char* text,
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
-  g_free (quoted_threat);
+  g_free (quoted_severity);
 
   if (override)
     *override = sqlite3_last_insert_rowid (task_db);
@@ -36826,8 +36834,8 @@ int
 copy_override (const char *override_id, override_t* new_override)
 {
   return copy_resource ("override", NULL, NULL, override_id,
-                        "nvt, text, hosts, port, threat, new_threat, task,"
-                        " result, end_time, new_severity",
+                        "nvt, text, hosts, port, severity, new_severity, task,"
+                        " result, end_time",
                         1, new_override);
 }
 
@@ -36888,9 +36896,9 @@ delete_override (const char *override_id, int ultimate)
     {
       sql ("INSERT INTO overrides_trash"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, new_threat, new_severity, task, result, end_time)"
+           "  port, severity, new_severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, new_threat, new_severity,task,"
+           "        hosts, port, severity, new_severity,task,"
            "        result, end_time"
            " FROM overrides WHERE ROWID = %llu;",
            override);
@@ -36915,6 +36923,7 @@ delete_override (const char *override_id, int ultimate)
  * @param[in]  port        Port to apply override to, NULL for any port.
  * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
  * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  severity    Severity to apply override to, "" or NULL for any threat.
  * @param[in]  new_severity Severity score to override "Alarm" type results to.
  * @param[in]  task        Task to apply override to, 0 for any task.
  * @param[in]  result      Result to apply override to, 0 for any result.
@@ -36925,11 +36934,11 @@ delete_override (const char *override_id, int ultimate)
 int
 modify_override (override_t override, const char *active, const char* text,
                  const char* hosts, const char* port, const char* threat,
-                 const char* new_threat, const char* new_severity,
-                 task_t task, result_t result)
+                 const char* new_threat, const char* severity,
+                 const char* new_severity, task_t task, result_t result)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
-  double new_severity_dbl;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
+  double severity_dbl, new_severity_dbl;
 
   if (override == 0)
     return -1;
@@ -36942,46 +36951,81 @@ modify_override (override_t override, const char *active, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, ""))
+      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
   if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
       && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
       && strcmp (new_threat, "Debug") && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, ""))
+      && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
     return -1;
 
-  new_severity_dbl = 0.0;
-  if (new_severity == NULL && new_threat == NULL)
-    return -1;
-  else if (new_severity == NULL && strcmp (new_threat, "Log") == 0)
-    new_severity_dbl = 0.0;
-  else if (new_severity == NULL && strcmp (new_threat, "False Positive") == 0)
-    new_severity_dbl = -1.0;
-  else if (new_severity == NULL && strcmp (new_threat, "Debug") == 0)
-    new_severity_dbl = -2.0;
-  else if (new_severity == NULL || strcmp (new_severity, "") == 0)
+  severity_dbl = 0.0;
+  if (severity != NULL && strcmp (severity, ""))
     {
-      if (new_threat && strcmp (new_threat, "High") == 0)
+      if (sscanf (severity, "%lf", &severity_dbl) != 1
+          || ((severity_dbl < 0.0 || severity_dbl > 10.0)
+              && severity_dbl != SEVERITY_LOG
+              && severity_dbl != SEVERITY_DEBUG))
+        return 3;
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else if (threat != NULL && strcmp (threat, ""))
+    {
+      if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "High") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Medium") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Low") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Log") == 0)
+        severity_dbl = SEVERITY_LOG;
+      else if (strcmp (threat, "Debug") == 0)
+        severity_dbl = SEVERITY_DEBUG;
+      else
+        return -1;
+
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else
+    quoted_severity = g_strdup ("NULL");
+
+  new_severity_dbl = 0.0;
+  if (new_severity != NULL && strcmp (new_severity, ""))
+    {
+      if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
+          || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
+              && new_severity_dbl != SEVERITY_LOG
+              && new_severity_dbl != SEVERITY_FP
+              && new_severity_dbl != SEVERITY_DEBUG))
+        return 3;
+    }
+  else if (new_threat != NULL && strcmp (new_threat, ""))
+    {
+      if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-      else if (new_threat && strcmp (new_threat, "Medium") == 0)
+      else if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
-      else if (new_threat && strcmp (new_threat, "Low") == 0)
+      else if (strcmp (new_threat, "Low") == 0)
         new_severity_dbl = 2.0;
+      else if (strcmp (new_threat, "Log") == 0)
+        new_severity_dbl = SEVERITY_LOG;
+      else if (strcmp (new_threat, "Debug") == 0)
+        new_severity_dbl = SEVERITY_DEBUG;
       else
         return -1;
     }
-  else if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
-           || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
-               && new_severity_dbl != SEVERITY_LOG
-               && new_severity_dbl != SEVERITY_FP))
-        return 3;
+  else
+    return -1;
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_threat = sql_insert ((threat && strlen (threat))
-                                ? threat_message_type (threat) : NULL);
 
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     sql ("UPDATE overrides SET"
@@ -36989,7 +37033,7 @@ modify_override (override_t override, const char *active, const char* text,
          " text = %s,"
          " hosts = %s,"
          " port = %s,"
-         " threat = %s,"
+         " severity = %s,"
          " new_severity = %f,"
          " task = %llu,"
          " result = %llu"
@@ -36998,7 +37042,7 @@ modify_override (override_t override, const char *active, const char* text,
          quoted_text,
          quoted_hosts,
          quoted_port,
-         quoted_threat,
+         quoted_severity,
          new_severity_dbl,
          task,
          result,
@@ -37019,7 +37063,7 @@ modify_override (override_t override, const char *active, const char* text,
            " text = %s,"
            " hosts = %s,"
            " port = %s,"
-           " threat = %s,"
+           " severity = %s,"
            " new_severity = %f,"
            " task = %llu,"
            " result = %llu"
@@ -37033,7 +37077,7 @@ modify_override (override_t override, const char *active, const char* text,
            quoted_text,
            quoted_hosts,
            quoted_port,
-           quoted_threat,
+           quoted_severity,
            new_severity_dbl,
            task,
            result,
@@ -37043,7 +37087,7 @@ modify_override (override_t override, const char *active, const char* text,
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
-  g_free (quoted_threat);
+  g_free (quoted_severity);
 
   reports_clear_count_cache (1);
 
@@ -37056,7 +37100,7 @@ modify_override (override_t override, const char *active, const char* text,
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
    "task_name", "task_id", "hosts", "port", "threat", "new_threat", "result", \
-   "new_severity", NULL }
+   "severity", "new_severity", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -37071,15 +37115,16 @@ modify_override (override_t override, const char *active, const char* text,
   " (SELECT name FROM users WHERE users.ROWID = overrides.owner) AS _owner,"   \
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
-  " overrides.hosts, overrides.port, overrides.threat,"                        \
-  " severity_to_type (overrides.new_severity) as new_type,"                    \
+  " overrides.hosts, overrides.port,"                                          \
+  " severity_to_type (overrides.severity) as threat,"                          \
+  " severity_to_type (overrides.new_severity) as new_threat,"                  \
   " overrides.task, overrides.result, overrides.end_time,"                     \
   " (overrides.end_time = 0) OR (overrides.end_time >= now ()),"               \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
   " (SELECT name FROM tasks WHERE ROWID = overrides.task) AS task_name,"       \
-  " overrides.new_severity"
+  " overrides.severity, overrides.new_severity"
 
 /**
  * @brief Override iterator columns for trash case.
@@ -37094,15 +37139,16 @@ modify_override (override_t override, const char *active, const char* text,
   " AS _owner,"                                                                \
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
-  " overrides_trash.hosts, overrides_trash.port, overrides_trash.threat,"      \
-  " severity_to_type (overrides_trash.new_severity) as new_type,"              \
+  " overrides_trash.hosts, overrides_trash.port,"                              \
+  " severity_to_type (overrides_trash.severity) as threat,"                    \
+  " severity_to_type (overrides_trash.new_severity) as new_threat,"            \
   " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
   " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides_trash.task) AS task_id,"   \
   " (SELECT name FROM tasks WHERE ROWID = overrides_trash.task) AS task_name," \
-  " overrides_trash.new_severity"
+  " overrides_trash.severity, overrides_trash.new_severity"
 
 /**
  * @brief Count number of overrides.
@@ -37175,11 +37221,8 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.ROWID = %llu))"
-                                       " AND (threat is NULL"
-                                       "      OR threat = \"\""
-                                       "      OR severity_matches_type ("
-                                       "       %s,"
-                                       "       threat))"
+                                       " AND (severity_matches_ov (%s,"
+                                       "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
                                        result,
                                        result,
@@ -37314,11 +37357,8 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.ROWID = %llu))"
-                                       " AND (threat is NULL"
-                                       "      OR threat = \"\""
-                                       "      OR severity_matches_type ("
-                                       "       %s,"
-                                       "       threat))"
+                                       " AND (severity_matches_ov (%s,"
+                                       "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
                                        result,
                                        result,
@@ -37430,6 +37470,11 @@ override_iterator_threat (iterator_t *iterator)
   ret = (const char*) sqlite3_column_text (iterator->stmt,
                                            GET_ITERATOR_COLUMN_COUNT + 4);
   if (ret == NULL) return NULL;
+
+  if (sqlite3_column_double (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT + 14) > 0.0)
+    return "Alarm";
+
   return message_type_threat (ret);
 }
 
@@ -37527,21 +37572,24 @@ override_iterator_active (iterator_t* iterator)
 DEF_ACCESS (override_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
+ * @brief Get the severity from an override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity score to which the override applies or NULL if
+ *         iteration is complete, Freed by cleanup_iterator.
+ */
+DEF_ACCESS (override_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 14);
+
+/**
  * @brief Get the new severity from an override iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The severity score to override with, -99.0 on error.
+ * @return The severity score to override to or NULL if
+ *         iteration is complete, Freed by cleanup_iterator.
  */
-double
-override_iterator_new_severity (iterator_t* iterator)
-{
-  double ret;
-  if (iterator->done) return -99.0;
-  ret = sqlite3_column_double (iterator->stmt,
-                               GET_ITERATOR_COLUMN_COUNT + 14);
-  return ret;
-}
+DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 
 
 /* Schedules. */
@@ -46318,9 +46366,9 @@ manage_restore (const char *id)
     {
       sql ("INSERT INTO overrides"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, new_threat, new_severity, task, result, end_time)"
+           "  port, severity, new_severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, new_threat, new_severity, task,"
+           "        hosts, port, severity, new_severity, task,"
            "        result, end_time"
            " FROM overrides_trash WHERE ROWID = %llu;",
            resource);

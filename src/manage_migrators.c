@@ -7149,6 +7149,116 @@ migrate_87_to_88 ()
 }
 
 /**
+ * @brief Migrate the database from version 88 to version 89.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_88_to_89 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 87. */
+
+  if (manage_db_version () != 88)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename overrides tables */
+  sql ("ALTER TABLE overrides RENAME TO overrides_88;");
+  sql ("ALTER TABLE overrides_trash RENAME TO overrides_trash_88;");
+
+  /* Create a new one without threat and new_threat. */
+  sql ("CREATE TABLE IF NOT EXISTS overrides"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  new_severity, task INTEGER, result INTEGER, end_time);");
+
+  sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  new_severity, task INTEGER, result INTEGER, end_time);");
+
+  /* Migrate old override data to new tables. */
+  sql ("INSERT INTO overrides"
+       " (id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "  hosts, port, severity, new_severity, task, result, end_time)"
+       " SELECT id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "   hosts, port,"
+       "   (CASE threat"
+       "    WHEN 'Security Hole' THEN 0.1"
+       "    WHEN 'Security Warning' THEN 0.1"
+       "    WHEN 'Security Note' THEN 0.1"
+       "    WHEN 'Alarm' THEN 0.1"
+       "    WHEN 'Log Message' THEN 0.0"
+       "    WHEN 'False Positive' THEN -1.0"
+       "    WHEN 'Debug Message' THEN -2.0"
+       "    WHEN 'Error Message' THEN -3.0"
+       "    ELSE NULL"
+       "    END),"
+       "   coalesce (new_severity,"
+       "             CASE new_threat"
+       "             WHEN 'Security Hole' THEN 10.0"
+       "             WHEN 'Security Warning' THEN 5.0"
+       "             WHEN 'Security Note' THEN 2.0"
+       "             WHEN 'Log Message' THEN 0.0"
+       "             WHEN 'False Positive' THEN -1.0"
+       "             WHEN 'Debug Message' THEN -2.0"
+       "             WHEN 'Error Message' THEN -3.0"
+       "             END),"
+       "   task, result, end_time"
+       " FROM overrides_88;");
+
+  sql ("INSERT INTO overrides_trash"
+       " (id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "  hosts, port, severity, new_severity, task, result, end_time)"
+       " SELECT id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "   hosts, port,"
+       "   (CASE threat"
+       "    WHEN 'Security Hole' THEN 0.1"
+       "    WHEN 'Security Warning' THEN 0.1"
+       "    WHEN 'Security Note' THEN 0.1"
+       "    WHEN 'Alarm' THEN 0.1"
+       "    WHEN 'Log Message' THEN 0.0"
+       "    WHEN 'False Positive' THEN -1.0"
+       "    WHEN 'Debug Message' THEN -2.0"
+       "    WHEN 'Error Message' THEN -3.0"
+       "    ELSE NULL"
+       "    END),"
+       "   coalesce (new_severity,"
+       "             CASE new_threat"
+       "             WHEN 'Security Hole' THEN 10.0"
+       "             WHEN 'Security Warning' THEN 5.0"
+       "             WHEN 'Security Note' THEN 2.0"
+       "             WHEN 'Log Message' THEN 0.0"
+       "             WHEN 'False Positive' THEN -1.0"
+       "             WHEN 'Debug Message' THEN -2.0"
+       "             WHEN 'Error Message' THEN -3.0"
+       "             END),"
+       "   task, result, end_time"
+       " FROM overrides_trash_88;");
+
+  /* Delete old overrides tables. */
+  sql ("DROP TABLE overrides_88;");
+  sql ("DROP TABLE overrides_trash_88;");
+
+  /* Clear overridden result counts cache */
+  sql ("UPDATE report_counts set override_highs = -1;");
+
+  /* Set the database version to 89. */
+
+  set_db_version (89);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7241,6 +7351,7 @@ static migrator_t database_migrators[]
     {86, migrate_85_to_86},
     {87, migrate_86_to_87},
     {88, migrate_87_to_88},
+    {89, migrate_88_to_89},
     /* End marker. */
     {-1, NULL}};
 

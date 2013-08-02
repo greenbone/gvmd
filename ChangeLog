@@ -1,5 +1,59 @@
 2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Replace the threat and new_threat columns with severity and new_severity
+	in overrides and overrides_trash tables.
+	Hence increase database version to 89.  Add database migration from
+	version 88 to 89.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 89.
+
+	* src/manage_migrators.c (migrate_88_to_89): New function.
+	(database_migrators): Add migrate_88_to_89.
+
+	* src/manage.c (severity_matches_ov): New function.
+
+	* src/manage.h (severity_matches_ov): New function prototype.
+	(create_override, modify_override): Add parameter.
+	(override_iterator_severity): New function prototype.
+	(override_iterator_new_severity): Change return type to const char*.
+
+	* src/manage_sql.c (create_tables): Replace the threat and new_threat
+	columns with severity and new_severity in overrides and overrides_trash
+	tables.
+	(init_manage_process): Create severity_matches_ov SQLite function.
+	(task_severity, init_result_iterator, init_asset_iterator)
+	(report_scan_result_count, report_count, report_severity)
+	(report_count_filtered, report_severity_filtered, report_counts_id_filt)
+	(filtered_host_count): Match results with overrides' severity and
+	replace threat level based sorting.
+	(create_override, modify_override): Adjust to use severity column
+	as replacement for threat. Use threat / new_threat only as fallback if
+	severity / new_severity is missing.
+	(copy_override, delete_override, OVERRIDE_ITERATOR_FILTER_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Use
+	severity column as replacement for threat.
+	(override_count, init_override_iterator): Match results with overrides'
+	severity.
+	(override_iterator_threat): Return "Alarm" for severity > 0.0.
+	(override_iterator_severity): New function.
+	(override_iterator_new_severity): Use DEF_ACCESS to return a string
+	and adjust column number.
+
+	* src/omp.c (create_override_data_t, create_override_data_reset)
+	(modify_override_data_t, modify_override_data_reset, client_state_t,
+	xml_handle_start_element, xml_handle_end_element, xml_handle_text):
+	Add handling of severity element in create_override, modify_override.
+	component.
+	(buffer_overrides_xml): Add severity to and adjust new_severity output.
+
+	* src/sql.c (sql_severity_matches_ov): New function.
+	(sql_severity_to_level, sql_severity_to_type): Return NULL if given
+	severity is NULL or an empty string.
+
+	* src/sql.h (sql_severity_matches_ov): New function prototype.
+
+2013-08-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* ChangeLog: Replace leading whitespaces with tabs in last own entry.
 
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>

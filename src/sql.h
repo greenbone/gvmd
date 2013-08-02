@@ -116,6 +116,9 @@ void
 sql_severity_matches_type (sqlite3_context *, int argc, sqlite3_value **);
 
 void
+sql_severity_matches_ov (sqlite3_context *, int argc, sqlite3_value **);
+
+void
 sql_severity_to_level (sqlite3_context *, int argc, sqlite3_value **);
 
 void

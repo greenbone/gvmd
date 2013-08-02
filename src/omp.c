@@ -1064,6 +1064,7 @@ typedef struct
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
+  char *severity;     ///< Severity score of results to override.
   char *task_id;      ///< ID of task to which to limit override.
   char *text;         ///< Text of override.
   char *threat;       ///< Threat to which to limit override.
@@ -1088,6 +1089,7 @@ create_override_data_reset (create_override_data_t *data)
   free (data->task_id);
   free (data->text);
   free (data->threat);
+  free (data->severity);
 
   memset (data, 0, sizeof (create_override_data_t));
 }
@@ -3483,6 +3485,7 @@ typedef struct
   char *override_id;  ///< ID of override to modify.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
+  char *severity;     ///< Severity score of results to override.
   char *task_id;      ///< ID of task to which to limit override.
   char *text;         ///< Text of override.
   char *threat;       ///< Threat to which to limit override.
@@ -3504,6 +3507,7 @@ modify_override_data_reset (modify_override_data_t *data)
   free (data->override_id);
   free (data->port);
   free (data->result_id);
+  free (data->severity);
   free (data->task_id);
   free (data->text);
   free (data->threat);
@@ -4662,6 +4666,7 @@ typedef enum
   CLIENT_CREATE_OVERRIDE_NVT,
   CLIENT_CREATE_OVERRIDE_PORT,
   CLIENT_CREATE_OVERRIDE_RESULT,
+  CLIENT_CREATE_OVERRIDE_SEVERITY,
   CLIENT_CREATE_OVERRIDE_TASK,
   CLIENT_CREATE_OVERRIDE_TEXT,
   CLIENT_CREATE_OVERRIDE_THREAT,
@@ -4971,6 +4976,7 @@ typedef enum
   CLIENT_MODIFY_OVERRIDE_NEW_THREAT,
   CLIENT_MODIFY_OVERRIDE_PORT,
   CLIENT_MODIFY_OVERRIDE_RESULT,
+  CLIENT_MODIFY_OVERRIDE_SEVERITY,
   CLIENT_MODIFY_OVERRIDE_TASK,
   CLIENT_MODIFY_OVERRIDE_TEXT,
   CLIENT_MODIFY_OVERRIDE_THREAT,
@@ -8614,6 +8620,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               }
             set_client_state (CLIENT_CREATE_OVERRIDE_RESULT);
           }
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_OVERRIDE_SEVERITY);
         else if (strcasecmp ("TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -8971,6 +8979,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               }
             set_client_state (CLIENT_MODIFY_OVERRIDE_RESULT);
           }
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_OVERRIDE_SEVERITY);
         else if (strcasecmp ("TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -9554,8 +9564,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<active>%i</active>"
                                     "<text excerpt=\"%i\">%s</text>"
                                     "<threat>%s</threat>"
+                                    "<severity>%s</severity>"
                                     "<new_threat>%s</new_threat>"
-                                    "<new_severity>%1.1f</new_severity>"
+                                    "<new_severity>%s</new_severity>"
                                     "<orphan>%i</orphan>"
                                     "<user_tags>"
                                     "<count>%i</count>"
@@ -9574,6 +9585,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     excerpt,
                                     override_iterator_threat (overrides)
                                       ? override_iterator_threat (overrides)
+                                      : "",
+                                    override_iterator_severity (overrides)
+                                      ? override_iterator_severity (overrides)
                                       : "",
                                     override_iterator_new_threat (overrides),
                                     override_iterator_new_severity (overrides),
@@ -9622,8 +9636,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<hosts>%s</hosts>"
             "<port>%s</port>"
             "<threat>%s</threat>"
+            "<severity>%s</severity>"
             "<new_threat>%s</new_threat>"
-            "<new_severity>%1.1f</new_severity>"
+            "<new_severity>%s</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_uuid (overrides),
@@ -9640,6 +9655,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              ? override_iterator_port (overrides) : "",
             override_iterator_threat (overrides)
              ? override_iterator_threat (overrides) : "",
+            override_iterator_severity (overrides)
+             ? override_iterator_severity (overrides) : "",
             override_iterator_new_threat (overrides),
             override_iterator_new_severity (overrides),
             uuid_task ? uuid_task : "",
@@ -17491,6 +17508,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         create_override_data->port,
                                         create_override_data->threat,
                                         create_override_data->new_threat,
+                                        create_override_data->severity,
                                         create_override_data->new_severity,
                                         task,
                                         result,
@@ -17555,6 +17573,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_OVERRIDE, NEW_THREAT);
       CLOSE (CLIENT_CREATE_OVERRIDE, NVT);
       CLOSE (CLIENT_CREATE_OVERRIDE, PORT);
+      CLOSE (CLIENT_CREATE_OVERRIDE, SEVERITY);
       CLOSE (CLIENT_CREATE_OVERRIDE, RESULT);
       CLOSE (CLIENT_CREATE_OVERRIDE, TASK);
       CLOSE (CLIENT_CREATE_OVERRIDE, TEXT);
@@ -21185,6 +21204,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         modify_override_data->port,
                                         modify_override_data->threat,
                                         modify_override_data->new_threat,
+                                        modify_override_data->severity,
                                         modify_override_data->new_severity,
                                         task,
                                         result))
@@ -21233,6 +21253,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_OVERRIDE, NEW_THREAT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, PORT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, RESULT);
+      CLOSE (CLIENT_MODIFY_OVERRIDE, SEVERITY);
       CLOSE (CLIENT_MODIFY_OVERRIDE, TASK);
       CLOSE (CLIENT_MODIFY_OVERRIDE, TEXT);
       CLOSE (CLIENT_MODIFY_OVERRIDE, THREAT);
@@ -24192,6 +24213,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_OVERRIDE_PORT,
               &create_override_data->port);
 
+      APPEND (CLIENT_CREATE_OVERRIDE_SEVERITY,
+              &create_override_data->severity);
+
       APPEND (CLIENT_CREATE_OVERRIDE_TEXT,
               &create_override_data->text);
 
@@ -24632,6 +24656,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_OVERRIDE_PORT,
               &modify_override_data->port);
+
+      APPEND (CLIENT_MODIFY_OVERRIDE_SEVERITY,
+              &modify_override_data->severity);
 
       APPEND (CLIENT_MODIFY_OVERRIDE_TEXT,
               &modify_override_data->text);

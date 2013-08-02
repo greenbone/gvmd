@@ -767,6 +767,9 @@ severity_in_level (double, const char *);
 int
 severity_matches_type (double, const char *);
 
+int
+severity_matches_ov (double, double);
+
 const char*
 severity_to_level (double severity);
 
@@ -1880,7 +1883,7 @@ find_override (const char*, override_t*);
 int
 create_override (const char*, const char*, const char*, const char*,
                  const char*, const char*, const char*, const char*,
-                 task_t, result_t, override_t*);
+                 const char*, task_t, result_t, override_t*);
 
 int
 override_uuid (override_t, char **);
@@ -1893,7 +1896,8 @@ delete_override (const char *, int);
 
 int
 modify_override (override_t, const char*, const char*, const char*, const char*,
-                 const char*, const char*, const char*, task_t, result_t);
+                 const char*, const char*, const char*, const char*, task_t,
+                 result_t);
 
 int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
@@ -1944,7 +1948,10 @@ override_iterator_active (iterator_t*);
 const char*
 override_iterator_nvt_name (iterator_t *);
 
-double
+const char*
+override_iterator_severity (iterator_t *);
+
+const char*
 override_iterator_new_severity (iterator_t *);
 
 

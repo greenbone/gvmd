@@ -303,6 +303,23 @@ severity_matches_type (double severity, const char *type)
 }
 
 /**
+ * @brief Check whether a severity matches an override's severity.
+ *
+ * @param[in] severity     severity score
+ * @param[in] ov_severity  override severity score to match
+ *
+ * @return 1 if matches, else 0.
+ */
+int
+severity_matches_ov (double severity, double ov_severity)
+{
+  if (ov_severity <= 0.0)
+    return severity == ov_severity;
+  else
+    return severity >= ov_severity;
+}
+
+/**
  * @brief Get the threat level matching a severity score.
  * @param[in] severity  severity score
  * @param[in] type      message type
