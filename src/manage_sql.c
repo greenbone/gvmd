@@ -25439,6 +25439,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
   if (sql_int (0, 0,
                "SELECT COUNT(*) FROM tasks"
                " WHERE uuid = '%s'"
+               " AND hidden = 0"
                " AND ((owner IS NULL) OR (owner = %llu))",
                quoted_uuid,
                owner)
