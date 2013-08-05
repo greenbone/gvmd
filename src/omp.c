@@ -18266,19 +18266,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("RESULT", element_name) == 0);
           assert (create_report_data->results);
-          assert (create_report_data->result_description);
-          assert (create_report_data->result_host);
-          assert (create_report_data->result_nvt_oid);
-          assert (create_report_data->result_port);
-          assert (create_report_data->result_subnet);
-          assert (create_report_data->result_threat);
 
           if (create_report_data->result_scan_nvt_version == NULL)
             create_report_data->result_scan_nvt_version = strdup ("");
 
           if (create_report_data->result_severity == NULL)
             {
-              if (strcasecmp (create_report_data->result_threat,
+              if (create_report_data->result_threat == NULL)
+                create_report_data->result_severity = strdup ("");
+              else if (strcasecmp (create_report_data->result_threat,
                               "High") == 0)
                 create_report_data->result_severity = strdup ("10.0");
               else if (strcasecmp (create_report_data->result_threat,

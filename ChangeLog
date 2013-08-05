@@ -1,5 +1,13 @@
 2013-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.x (omp_xml_handle_end_element): In
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT remove assertions on result
+	fields because these depend on the user input.  There are checks for
+	this in create_report in manage_sql.c, so it is safe.  Add NULL check
+	for threat case.
+
+2013-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_task): Fail to find hidden tasks, to match
 	other resource types.
 
