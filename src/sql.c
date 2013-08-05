@@ -775,7 +775,7 @@ sql_clean_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Make a name unique.
  *
- * This is a callback for a scalar SQL function of three argument.
+ * This is a callback for a scalar SQL function of four argument.
  *
  * It's up to the caller to ensure there is a read-only transaction.
  *
