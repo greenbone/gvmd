@@ -19375,6 +19375,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                &new_task);
               g_free (name);
               g_free (comment);
+              /* Remove the task that was created while parsing elements. */
               request_delete_task (&create_task_data->task);
               switch (ret)
                 {
