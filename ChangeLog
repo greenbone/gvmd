@@ -1,5 +1,10 @@
 2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (parse_keyword): Substitute special severity strings
+	with their numeric value.
+
+2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Cast cvss, cvss_base and max_cvss
 	as REAL when sorting like severity.
 

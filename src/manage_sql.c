@@ -1572,6 +1572,37 @@ parse_keyword (keyword_t* keyword)
       return;
     }
 
+  /* Special values to substitute */
+
+  if (strcasecmp (keyword->column, "severity") == 0
+      || strcasecmp (keyword->column, "new_severity") == 0)
+    {
+      if (strcasecmp (keyword->string, "Log") == 0)
+        {
+          keyword->double_value = SEVERITY_LOG;
+          keyword->type = KEYWORD_TYPE_DOUBLE;
+          return;
+        }
+      if (strcasecmp (keyword->string, "False Positive") == 0)
+        {
+          keyword->double_value = SEVERITY_FP;
+          keyword->type = KEYWORD_TYPE_DOUBLE;
+          return;
+        }
+      else if (strcasecmp (keyword->string, "Debug") == 0)
+        {
+          keyword->double_value = SEVERITY_DEBUG;
+          keyword->type = KEYWORD_TYPE_DOUBLE;
+          return;
+        }
+      else if (strcasecmp (keyword->string, "Error") == 0)
+        {
+          keyword->double_value = SEVERITY_ERROR;
+          keyword->type = KEYWORD_TYPE_DOUBLE;
+          return;
+        }
+    }
+
   /* The type. */
 
   string = keyword->string;
