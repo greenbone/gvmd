@@ -1493,7 +1493,8 @@ user_may (const char *operation)
  */
 typedef enum
 {
-  KEYWORD_TYPE_NUMBER,
+  KEYWORD_TYPE_INTEGER,
+  KEYWORD_TYPE_DOUBLE,
   KEYWORD_TYPE_STRING
 } keyword_type_t;
 
@@ -1517,7 +1518,8 @@ struct keyword
 {
   gchar *column;                 ///< The column prefix, or NULL.
   int equal;                     ///< Whether the keyword is like "=example".
-  int number;                    ///< The number, if the keyword is a number.
+  int integer_value;             ///< Integer value of the keyword.
+  double double_value;           ///< Floating point value of the keyword.
   int quoted;                    ///< Whether the keyword was quoted.
   gchar *string;                 ///< The keyword string, outer quotes removed.
   keyword_type_t type;           ///< Type of keyword.
@@ -1551,7 +1553,7 @@ parse_keyword (keyword_t* keyword)
 {
   gchar *string;
 
-  if (keyword->column == NULL)
+  if (keyword->column == NULL && keyword->equal == 0)
     {
       keyword->relation = KEYWORD_RELATION_APPROX;
       keyword->type = KEYWORD_TYPE_STRING;
@@ -1567,74 +1569,89 @@ parse_keyword (keyword_t* keyword)
     {
       struct tm date;
       gchar next;
+      int parsed_integer;
+      double parsed_double;
+      char dummy[2];
       memset (&date, 0, sizeof (date));
       next = *(string + 1);
       if (next == '\0' && *string == 's')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = now + atoi (keyword->string);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = now + atoi (keyword->string);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'm')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = now + (atoi (keyword->string) * 60);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = now + (atoi (keyword->string) * 60);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'h')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = now + (atoi (keyword->string) * 3600);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = now + (atoi (keyword->string) * 3600);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'd')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = now + (atoi (keyword->string) * 86400);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = now + (atoi (keyword->string) * 86400);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'w')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = now + atoi (keyword->string) * 604800;
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = now + atoi (keyword->string) * 604800;
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'M')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = add_months (now, atoi (keyword->string));
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = add_months (now, atoi (keyword->string));
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (next == '\0' && *string == 'y')
         {
           time_t now;
           now = time (NULL);
-          keyword->number = add_months (now, atoi (keyword->string) * 12);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = add_months (now,
+                                               atoi (keyword->string) * 12);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
         {
-          keyword->number = mktime (&date);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = mktime (&date);
+          keyword->type = KEYWORD_TYPE_INTEGER;
         }
       else if (strptime (keyword->string, "%Y-%m-%d", &date))
         {
-          keyword->number = mktime (&date);
-          keyword->type = KEYWORD_TYPE_NUMBER;
+          keyword->integer_value = mktime (&date);
+          keyword->type = KEYWORD_TYPE_INTEGER;
+        }
+      else if (sscanf (keyword->string, "%d%1s", &parsed_integer, dummy) == 1)
+        {
+          keyword->integer_value = parsed_integer;
+          keyword->type = KEYWORD_TYPE_INTEGER;
+        }
+      else if (sscanf (keyword->string, "%lf%1s", &parsed_double, dummy) == 1
+               && parsed_double <= DBL_MAX)
+        {
+          keyword->double_value = parsed_double;
+          keyword->type = KEYWORD_TYPE_DOUBLE;
         }
       else
         keyword->type = KEYWORD_TYPE_STRING;
     }
   else
     {
-      keyword->number = atoi (keyword->string);
-      keyword->type = KEYWORD_TYPE_NUMBER;
+      keyword->integer_value = atoi (keyword->string);
+      keyword->type = KEYWORD_TYPE_INTEGER;
     }
 }
 
@@ -2970,7 +2987,21 @@ filter_clause (const char* type, const char* filter, const char **columns,
               quoted_column = ret == 2
                                ? underscore_sql_quote (keyword->column)
                                : sql_quote (keyword->column);
-              if (strcmp (quoted_keyword, ""))
+              if (keyword->type == KEYWORD_TYPE_INTEGER)
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS NUMERIC) = %i",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        quoted_column,
+                                        keyword->integer_value);
+              else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+                g_string_append_printf (clause,
+                                        "%s(CAST (%s AS NUMERIC) = %f",
+                                        get_join (first_keyword, last_was_and,
+                                                  last_was_not),
+                                        quoted_column,
+                                        keyword->double_value);
+              else if (strcmp (quoted_keyword, ""))
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS TEXT) = '%s'",
                                         get_join (first_keyword, last_was_and,
@@ -3033,13 +3064,20 @@ filter_clause (const char* type, const char* filter, const char **columns,
           quoted_column = ret == 2
                            ? underscore_sql_quote (keyword->column)
                            : sql_quote (keyword->column);
-          if (keyword->type == KEYWORD_TYPE_NUMBER)
+          if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS INTEGER) > %i",
+                                    "%s(CAST (%s AS NUMERIC) > %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     quoted_column,
-                                    keyword->number);
+                                    keyword->integer_value);
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS NUMERIC) > %f",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    keyword->double_value);
           else
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS TEXT) > '%s'",
@@ -3065,16 +3103,23 @@ filter_clause (const char* type, const char* filter, const char **columns,
           quoted_column = ret == 2
                            ? underscore_sql_quote (keyword->column)
                            : sql_quote (keyword->column);
-          if (keyword->type == KEYWORD_TYPE_NUMBER)
+          if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS INTEGER) < %i",
+                                    "%s(CAST (%s AS NUMERIC) < %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     quoted_column,
-                                    keyword->number);
+                                    keyword->integer_value);
+          else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+            g_string_append_printf (clause,
+                                    "%s(CAST (%s AS NUMERIC) < %f",
+                                    get_join (first_keyword, last_was_and,
+                                              last_was_not),
+                                    quoted_column,
+                                    keyword->double_value);
           else
             g_string_append_printf (clause,
-                                    "%s(CAST (%s AS TEXT) > '%s'",
+                                    "%s(CAST (%s AS TEXT) < '%s'",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
                                     quoted_column,
@@ -3124,15 +3169,36 @@ filter_clause (const char* type, const char* filter, const char **columns,
                  index++)
               {
                 quoted_column = sql_quote (column);
-                g_string_append_printf (clause,
-                                        "%s"
-                                        "(%s IS NULL"
-                                        " OR CAST (%s AS TEXT)"
-                                        " != '%s')",
-                                        (index ? " AND " : ""),
-                                        quoted_column,
-                                        quoted_column,
-                                        quoted_keyword);
+                if (keyword->type == KEYWORD_TYPE_INTEGER)
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS NUMERIC)"
+                                          " != %i)",
+                                          (index ? " AND " : ""),
+                                          quoted_column,
+                                          quoted_column,
+                                          keyword->integer_value);
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS NUMERIC)"
+                                          " != %f)",
+                                          (index ? " AND " : ""),
+                                          quoted_column,
+                                          quoted_column,
+                                          keyword->double_value);
+                else
+                  g_string_append_printf (clause,
+                                          "%s"
+                                          "(%s IS NULL"
+                                          " OR CAST (%s AS TEXT)"
+                                          " != '%s')",
+                                          (index ? " AND " : ""),
+                                          quoted_column,
+                                          quoted_column,
+                                          quoted_keyword);
                 g_free (quoted_column);
               }
           else
@@ -3141,12 +3207,27 @@ filter_clause (const char* type, const char* filter, const char **columns,
                  index++)
               {
                 quoted_column = sql_quote (column);
-                g_string_append_printf (clause,
-                                        "%sCAST (%s AS TEXT)"
-                                        " = '%s'",
-                                        (index ? " OR " : ""),
-                                        quoted_column,
-                                        quoted_keyword);
+                if (keyword->type == KEYWORD_TYPE_INTEGER)
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS NUMERIC)"
+                                          " = %i",
+                                          (index ? " OR " : ""),
+                                          quoted_column,
+                                          keyword->integer_value);
+                else if (keyword->type == KEYWORD_TYPE_DOUBLE)
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS NUMERIC)"
+                                          " = %f",
+                                          (index ? " OR " : ""),
+                                          quoted_column,
+                                          keyword->double_value);
+                else
+                  g_string_append_printf (clause,
+                                          "%sCAST (%s AS TEXT)"
+                                          " = '%s'",
+                                          (index ? " OR " : ""),
+                                          quoted_column,
+                                          quoted_keyword);
                 g_free (quoted_column);
               }
         }

@@ -1,3 +1,13 @@
+2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (keyword_type_t): Replace KEYWORD_TYPE_NUMBER
+	with KEYWORD_TYPE_INTEGER and KEYWORD_TYPE_DOUBLE.
+	(keyword): Replace number component with integer_value and double_value.
+	(parse_keyword): Parse filters with no column name, use new integer type
+	for times and dates, add parsing of integers and floating point numbers.
+	(filter_clause): Cast integer and double keywords as NUMERIC in the
+	SQL queries.
+
 2013-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.x (omp_xml_handle_end_element): In
