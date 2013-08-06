@@ -1,3 +1,8 @@
+2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Cast cvss, cvss_base and max_cvss
+	as REAL when sorting like severity.
+
 2013-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add trash case to permission check when getting a single item, so that

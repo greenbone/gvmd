@@ -2669,7 +2669,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " COLLATE collate_threat"
                                         " ASC",
                                         keyword->string);
-              else if (strcmp (keyword->string, "severity") == 0)
+              else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "cvss") == 0
+                       || strcmp (keyword->string, "cvss_base") == 0
+                       || strcmp (keyword->string, "max_cvss") == 0)
                 g_string_append_printf (order,
                                         " ORDER BY CASE %s"
                                         " WHEN '' THEN NULL"
@@ -2722,7 +2725,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " COLLATE collate_threat"
                                         " DESC",
                                         keyword->string);
-              else if (strcmp (keyword->string, "severity") == 0)
+              else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "cvss") == 0
+                       || strcmp (keyword->string, "cvss_base") == 0
+                       || strcmp (keyword->string, "max_cvss") == 0)
                 g_string_append_printf (order,
                                         " ORDER BY CASE %s"
                                         " WHEN '' THEN NULL"
