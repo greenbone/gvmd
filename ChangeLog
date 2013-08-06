@@ -1,3 +1,14 @@
+2013-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add trash case to permission check when getting a single item, so that
+	GET_* of a single trash item works correctly.
+
+	* src/manage_sql.c (user_owns_uuid, user_has_access_uuid): Add trash
+	arg.  Update callers.
+	(find_resource): Add task special case, because task trash is in the
+	normal table.
+	(find_resource_for_actions): Add trash arg.  Update callers.
+
 2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (keyword_type_t): Replace KEYWORD_TYPE_NUMBER
@@ -10,7 +21,7 @@
 
 2013-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/omp.x (omp_xml_handle_end_element): In
+	* src/omp.c (omp_xml_handle_end_element): In
 	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT remove assertions on result
 	fields because these depend on the user input.  There are checks for
 	this in create_report in manage_sql.c, so it is safe.  Add NULL check

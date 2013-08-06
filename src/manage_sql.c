@@ -448,28 +448,34 @@ member (GPtrArray *array, const char *string)
 /**
  * @brief Test whether a user owns a resource.
  *
- * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  type  Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
+ * @param[in]  trash     Whether the resource is in the trash.
  *
  * @return 1 if user owns resource, else 0.
  */
 static int
-user_owns_uuid (const char *resource, const char *uuid)
+user_owns_uuid (const char *type, const char *uuid, int trash)
 {
   int ret;
 
   assert (current_credentials.uuid);
 
-  if (strcmp (resource, "result") == 0)
+  if (strcmp (type, "result") == 0)
     return user_owns_result (uuid);
 
   ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss"
+                 "SELECT count(*) FROM %ss%s"
                  " WHERE uuid = '%s'"
+                 "%s"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                 resource,
+                 type,
+                 (strcmp (type, "task") && trash) ? "_trash" : "",
                  uuid,
+                 (strcmp (type, "task")
+                   ? ""
+                   : (trash ? " AND hidden = 2" : " AND hidden < 2")),
                  current_credentials.uuid);
 
   return ret;
@@ -503,20 +509,26 @@ parse_actions (const char *actions_string)
  * @param[in]  uuid      UUID of resource.
  * @param[in]  actions_string   Actions.
  * @param[in]  permission       Permission.
+ * @param[in]  trash            Whether the resource is in the trash.
  *
  * @return 1 if user may access resource, else 0.
  */
 static int
 user_has_access_uuid (const char *resource, const char *uuid,
-                      const char *actions_string, const char *permission)
+                      const char *actions_string, const char *permission,
+                      int trash)
 {
   int ret, actions;
 
   assert (current_credentials.uuid);
 
-  ret = user_owns_uuid (resource, uuid);
+  ret = user_owns_uuid (resource, uuid, trash);
   if (ret)
     return ret;
+
+  if (trash)
+    /* For simplicity, trashcan items are visible only to their owners. */
+    return 0;
 
   if (type_has_permissions (resource))
     {
@@ -3560,7 +3572,7 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
 {
   gchar *quoted_uuid;
   quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid (type, quoted_uuid) == 0)
+  if (user_owns_uuid (type, quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3568,9 +3580,10 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
     }
   // TODO should really check type
   switch (sql_int64 (resource, 0, 0,
-                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
+                     "SELECT ROWID FROM %ss WHERE uuid = '%s'%s;",
                      type,
-                     quoted_uuid))
+                     quoted_uuid,
+                     strcmp (type, "task") ? "" : " AND hidden < 2"))
     {
       case 0:
         break;
@@ -3596,15 +3609,16 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
  * @param[in]   uuid       UUID of resource.
  * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
  * @param[in]   actions    Actions.
+ * @param[in]   trash      Whether to search in trash instead of regular table.
  *
  * @return FALSE on success (including if failed to find resource), TRUE on error.
  */
 gboolean
 find_resource_for_actions (const char* type, const char* uuid,
-                           resource_t* resource, const char *actions)
+                           resource_t* resource, const char *actions, int trash)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid (type, quoted_uuid, actions, NULL) == 0)
+  if (user_has_access_uuid (type, quoted_uuid, actions, NULL, trash) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3612,8 +3626,13 @@ find_resource_for_actions (const char* type, const char* uuid,
     }
   // TODO should really check type
   switch (sql_int64 (resource, 0, 0,
-                     "SELECT ROWID FROM %ss WHERE uuid = '%s';",
-                     type, quoted_uuid))
+                     "SELECT ROWID FROM %ss%s WHERE uuid = '%s'%s;",
+                     type,
+                     (strcmp (type, "task") && trash) ? "_trash" : "",
+                     quoted_uuid,
+                     strcmp (type, "task")
+                      ? ""
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2")))
     {
       case 0:
         break;
@@ -4183,7 +4202,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
     }
   else if (get->id && owned)
     {
-      if (find_resource_for_actions (type, get->id, &resource, get->actions))
+      if (find_resource_for_actions (type, get->id, &resource, get->actions,
+                                     get->trash))
         return -1;
       if (resource == 0)
         return 1;
@@ -5520,7 +5540,7 @@ gboolean
 find_alert (const char* uuid, alert_t* alert)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("alert", quoted_uuid) == 0)
+  if (user_owns_uuid ("alert", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *alert = 0;
@@ -8899,7 +8919,7 @@ task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, NULL, "modify") == 0)
+  if (user_has_access_uuid ("task", uuid, NULL, "modify", 0) == 0)
     {
       free (uuid);
       return 0;
@@ -8925,7 +8945,7 @@ trash_task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, NULL, "modify") == 0)
+  if (user_has_access_uuid ("task", uuid, NULL, "modify", 1) == 0)
     {
       free (uuid);
       return 0;
@@ -13540,7 +13560,7 @@ gboolean
 find_result_for_actions (const char *uuid, result_t *result,
                          const char *actions)
 {
-  if (user_has_access_uuid ("result", uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("result", uuid, actions, NULL, 0) == 0)
     {
       *result = 0;
       return FALSE;
@@ -25985,7 +26005,7 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
 gboolean
 find_task (const char* uuid, task_t* task)
 {
-  if (user_owns_uuid ("task", uuid) == 0)
+  if (user_owns_uuid ("task", uuid, 0) == 0)
     {
       *task = 0;
       return FALSE;
@@ -26022,7 +26042,7 @@ find_task (const char* uuid, task_t* task)
 gboolean
 find_task_for_actions (const char* uuid, task_t* task, const char *actions)
 {
-  if (user_has_access_uuid ("task", uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("task", uuid, actions, NULL, 0) == 0)
     {
       *task = 0;
       return FALSE;
@@ -26058,7 +26078,7 @@ find_task_for_actions (const char* uuid, task_t* task, const char *actions)
 static gboolean
 find_trash_task (const char* uuid, task_t* task)
 {
-  if (user_owns_uuid ("task", uuid) == 0)
+  if (user_owns_uuid ("task", uuid, 1) == 0)
     {
       *task = 0;
       return FALSE;
@@ -26094,7 +26114,7 @@ find_trash_task (const char* uuid, task_t* task)
 gboolean
 find_report (const char* uuid, report_t* report)
 {
-  if (user_owns_uuid ("report", uuid) == 0)
+  if (user_owns_uuid ("report", uuid, 0) == 0)
     {
       *report = 0;
       return FALSE;
@@ -26133,7 +26153,7 @@ find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission) == 0)
+  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *report = 0;
@@ -26173,7 +26193,7 @@ gboolean
 find_report_for_actions (const char* uuid, report_t* report,
                          const char *actions)
 {
-  if (user_has_access_uuid ("report", uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("report", uuid, actions, NULL, 0) == 0)
     {
       *report = 0;
       return FALSE;
@@ -26384,7 +26404,7 @@ find_target_for_actions (const char* uuid, target_t* target,
                          const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("target", quoted_uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("target", quoted_uuid, actions, NULL, 0) == 0)
     {
       g_free (quoted_uuid);
       *target = 0;
@@ -28680,7 +28700,7 @@ gboolean
 find_config (const char* uuid, config_t* config)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("config", quoted_uuid) == 0)
+  if (user_owns_uuid ("config", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *config = 0;
@@ -28720,7 +28740,7 @@ find_config_for_actions (const char* uuid, config_t* config,
                          const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("config", quoted_uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("config", quoted_uuid, actions, NULL, 0) == 0)
     {
       g_free (quoted_uuid);
       *config = 0;
@@ -33426,7 +33446,7 @@ gboolean
 find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("lsc_credential", quoted_uuid) == 0)
+  if (user_owns_uuid ("lsc_credential", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *lsc_credential = 0;
@@ -33470,7 +33490,7 @@ find_lsc_credential_for_actions (const char* uuid,
                                  const char *actions)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions, NULL) == 0)
+  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions, NULL, 0) == 0)
     {
       g_free (quoted_uuid);
       *lsc_credential = 0;
@@ -34647,7 +34667,7 @@ gboolean
 find_agent (const char* uuid, agent_t* agent)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("agent", quoted_uuid) == 0)
+  if (user_owns_uuid ("agent", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *agent = 0;
@@ -35912,7 +35932,7 @@ gboolean
 find_note (const char* uuid, note_t* note)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("note", quoted_uuid) == 0)
+  if (user_owns_uuid ("note", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *note = 0;
@@ -36699,7 +36719,7 @@ gboolean
 find_override (const char* uuid, override_t* override)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("override", quoted_uuid) == 0)
+  if (user_owns_uuid ("override", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *override = 0;
@@ -38912,7 +38932,7 @@ gboolean
 find_report_format (const char* uuid, report_format_t* report_format)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("report_format", quoted_uuid) == 0)
+  if (user_owns_uuid ("report_format", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *report_format = 0;
@@ -43074,7 +43094,7 @@ find_permission_with_permission (const char *uuid, permission_t *resource,
                                  const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("permission", quoted_uuid, NULL, permission) == 0)
+  if (user_has_access_uuid ("permission", quoted_uuid, NULL, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -43425,7 +43445,7 @@ gboolean
 find_port_list (const char* uuid, port_list_t* port_list)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("port_list", quoted_uuid) == 0)
+  if (user_owns_uuid ("port_list", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *port_list = 0;
@@ -45182,7 +45202,7 @@ gboolean
 find_filter_for_actions (const char* uuid, filter_t* filter,
                          const char *actions)
 {
-  return find_resource_for_actions ("filter", uuid, filter, actions);
+  return find_resource_for_actions ("filter", uuid, filter, actions, 0);
 }
 
 /**
