@@ -1,5 +1,12 @@
 2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r17363.
+
+	* src/manage_sql.c (filter_clause): Cast cvss, cvss_base and max_cvss
+	as REAL when sorting like severity.
+
+2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r16993.
 
 	* src/manage_sql.c (filter_clause): Cast severity column to REAL to
