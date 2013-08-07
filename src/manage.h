@@ -771,10 +771,10 @@ int
 severity_matches_ov (double, double);
 
 const char*
-severity_to_level (double severity);
+severity_to_level (double, int);
 
 const char*
-severity_to_type (double severity);
+severity_to_type (double);
 
 const char*
 run_status_name (task_status_t);

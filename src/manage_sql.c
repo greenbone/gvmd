@@ -9420,6 +9420,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "severity_to_level",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_severity_to_level,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create severity_to_level", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "severity_to_type",
                                1,               /* Number of args. */
                                SQLITE_UTF8,
@@ -13017,7 +13031,7 @@ task_threat_level (task_t task, int overrides)
       || sscanf (severity, "%lf", &severity_dbl) != 1)
     return NULL;
   else
-    return severity_to_level (severity_dbl);
+    return severity_to_level (severity_dbl, 0);
 
   return NULL;
 }
@@ -13041,7 +13055,7 @@ task_previous_threat_level (task_t task)
       || sscanf (severity, "%lf", &severity_dbl) != 1)
     return NULL;
   else
-    return severity_to_level (severity_dbl);
+    return severity_to_level (severity_dbl, 0);
 
   return NULL;
 }
@@ -16052,7 +16066,7 @@ result_iterator_original_level (iterator_t *iterator)
   /* severity */
   severity = sqlite3_column_double (iterator->stmt, 13);
 
-  ret = severity_to_level (severity);
+  ret = severity_to_level (severity, 0);
   return ret ? ret : "";
 }
 
@@ -16085,7 +16099,7 @@ result_iterator_level (iterator_t *iterator)
 
   severity = sqlite3_column_double (iterator->stmt, 14);
 
-  ret = severity_to_level (severity);
+  ret = severity_to_level (severity, 0);
   return ret ? ret : "";
 }
 
@@ -37261,8 +37275,8 @@ modify_override (override_t override, const char *active, const char* text,
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
   " overrides.hosts, overrides.port,"                                          \
-  " severity_to_type (overrides.severity) as threat,"                          \
-  " severity_to_type (overrides.new_severity) as new_threat,"                  \
+  " severity_to_level (overrides.severity, 1) as threat,"                      \
+  " severity_to_level (overrides.new_severity, 0) as new_threat,"              \
   " overrides.task, overrides.result, overrides.end_time,"                     \
   " (overrides.end_time = 0) OR (overrides.end_time >= now ()),"               \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
@@ -37285,8 +37299,8 @@ modify_override (override_t override, const char *active, const char* text,
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
   " overrides_trash.hosts, overrides_trash.port,"                              \
-  " severity_to_type (overrides_trash.severity) as threat,"                    \
-  " severity_to_type (overrides_trash.new_severity) as new_threat,"            \
+  " severity_to_level (overrides_trash.severity, 0) as threat,"                \
+  " severity_to_level (overrides_trash.new_severity, 1) as new_threat,"        \
   " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
   " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
@@ -37614,14 +37628,7 @@ override_iterator_threat (iterator_t *iterator)
   if (iterator->done) return NULL;
   ret = (const char*) sqlite3_column_text (iterator->stmt,
                                            GET_ITERATOR_COLUMN_COUNT + 4);
-  if (ret == NULL) return NULL;
-
-  if (sqlite3_column_double (iterator->stmt,
-                             GET_ITERATOR_COLUMN_COUNT + 14)
-      > 0.0)
-    return "Alarm";
-
-  return message_type_threat (ret);
+  return ret;
 }
 
 /**
@@ -37638,8 +37645,7 @@ override_iterator_new_threat (iterator_t *iterator)
   if (iterator->done) return NULL;
   ret = (const char*) sqlite3_column_text (iterator->stmt,
                                            GET_ITERATOR_COLUMN_COUNT + 5);
-  if (ret == NULL) return NULL;
-  return message_type_threat (ret);
+  return ret;
 }
 
 /**

@@ -1420,11 +1420,12 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
  */
 void
 sql_severity_to_level (sqlite3_context *context, int argc,
-                      sqlite3_value** argv)
+                       sqlite3_value** argv)
 {
   double severity;
+  int mode;
 
-  assert (argc == 1);
+  assert (argc == 1 || argc == 2);
 
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL
       || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
@@ -1433,9 +1434,12 @@ sql_severity_to_level (sqlite3_context *context, int argc,
       return;
     }
 
+  mode = (argc >= 2) ? sqlite3_value_int (argv[1])
+                     : 0;
+
   severity = sqlite3_value_double (argv[0]);
 
-  sqlite3_result_text (context, severity_to_level (severity),
+  sqlite3_result_text (context, severity_to_level (severity, mode),
                        -1, SQLITE_TRANSIENT);
   return;
 }

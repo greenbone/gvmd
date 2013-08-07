@@ -1,3 +1,25 @@
+2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (message_type_threat): Return "Alarm" for "Alarm" type.
+	(severity_to_level): Add mode parameter to return "Alarm" for
+	severity > 0.0.
+
+	* src/manage.h (severity_to_level): Add parameter and remove parameter
+	names.
+	(severity_to_type): Remove parameter name.
+
+	* src/manage_sql.c (init_manage_process): Add SQL function
+	severity_to_level with 2 arguments.
+	(task_previous_level, task_previous_threat_level)
+	(result_iterator_original_level, result_iterator_level): Add mode
+	parameter for severity_to_level.
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Use
+	severity_to_level instead of severity_to_type.
+	(override_iterator_threat, override_iterator_new_threat): Get threat
+	level directly from SQL column.
+
+	* src/sql.c (sql_severity_to_level): Add optional mode parameter.
+
 2013-08-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (parse_keyword): Substitute special severity strings

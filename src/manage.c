@@ -183,8 +183,7 @@ const char *
 message_type_threat (const char *type)
 {
   if (strcasecmp (type, "Alarm") == 0)
-    // FIX
-    return "High";
+    return "Alarm";
   if (strcasecmp (type, "Security Hole") == 0)
     return "High";
   if (strcasecmp (type, "Security Warning") == 0)
@@ -322,11 +321,11 @@ severity_matches_ov (double severity, double ov_severity)
 /**
  * @brief Get the threat level matching a severity score.
  * @param[in] severity  severity score
- * @param[in] type      message type
- * @return the message type as a static string
+ * @param[in] mode      0 for normal levels, 1 to use "Alarm" for severity > 0.0
+ * @return the level as a static string
  */
 const char*
-severity_to_level (double severity)
+severity_to_level (double severity, int mode)
 {
   if (severity == SEVERITY_LOG)
     return "Log";
@@ -338,7 +337,9 @@ severity_to_level (double severity)
     return "Error";
   else if (severity > 0.0 && severity <= 10.0)
     {
-      if (severity_in_level (severity, "high"))
+      if (mode == 1)
+        return ("Alarm");
+      else if (severity_in_level (severity, "high"))
         return ("High");
       else if (severity_in_level (severity, "medium"))
         return ("Medium");
