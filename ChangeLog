@@ -1,3 +1,9 @@
+2013-08-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (log_event, log_event_fail): New functions.
+	(omp_xml_handle_end_element): Replace g_log calls with adequate
+	log_event and log_event_fail calls.
+
 2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r17363.
