@@ -1,3 +1,15 @@
+2013-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (send_get_end): Also send filter broken down into XML
+	elements.
+
+	* src/manage_sql.c (keyword_type_t, keyword_relation_t, struct keyword)
+	(keyword_t): Move out to manage.h.
+	(keyword_relation_symbol): New function.
+	(filter_free, split_filter): Export.
+
+	* src/manage.h: Update headers accordingly.
+
 2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (message_type_threat): Return "Alarm" for "Alarm" type.

@@ -1501,47 +1501,26 @@ user_may (const char *operation)
 /* Filter utilities. */
 
 /**
- * @brief Keyword type.
+ * @brief Get the symbol of a keyword relation.
+ *
+ * @param[in]  relation  Relation.
+ *
+ * @return Relation symbol.
  */
-typedef enum
+const char *
+keyword_relation_symbol (keyword_relation_t relation)
 {
-  KEYWORD_TYPE_INTEGER,
-  KEYWORD_TYPE_DOUBLE,
-  KEYWORD_TYPE_STRING
-} keyword_type_t;
-
-/**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  KEYWORD_RELATION_APPROX,
-  KEYWORD_RELATION_COLUMN_ABOVE,
-  KEYWORD_RELATION_COLUMN_APPROX,
-  KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW,
-  KEYWORD_RELATION_COLUMN_REGEXP
-} keyword_relation_t;
-
-/**
- * @brief Keyword.
- */
-struct keyword
-{
-  gchar *column;                 ///< The column prefix, or NULL.
-  int equal;                     ///< Whether the keyword is like "=example".
-  int integer_value;             ///< Integer value of the keyword.
-  double double_value;           ///< Floating point value of the keyword.
-  int quoted;                    ///< Whether the keyword was quoted.
-  gchar *string;                 ///< The keyword string, outer quotes removed.
-  keyword_type_t type;           ///< Type of keyword.
-  keyword_relation_t relation;   ///< The relation.
-};
-
-/**
- * @brief Keyword type.
- */
-typedef struct keyword keyword_t;
+  switch (relation)
+    {
+      case KEYWORD_RELATION_APPROX:        return "~";
+      case KEYWORD_RELATION_COLUMN_ABOVE:  return ">";
+      case KEYWORD_RELATION_COLUMN_APPROX: return "~";
+      case KEYWORD_RELATION_COLUMN_EQUAL:  return "=";
+      case KEYWORD_RELATION_COLUMN_BELOW:  return "<";
+      case KEYWORD_RELATION_COLUMN_REGEXP: return ":";
+      default:                             return "";
+    }
+}
 
 /**
  * @brief Free a keyword.
@@ -1784,7 +1763,7 @@ keyword_applies (array_t *array, const keyword_t *keyword)
  *
  * @param[in]  split  Split filter.
  */
-static void
+void
 filter_free (array_t *split)
 {
   keyword_t **point;
@@ -1800,7 +1779,7 @@ filter_free (array_t *split)
  *
  * @return Array of strings, the parts.
  */
-static array_t *
+array_t *
 split_filter (const gchar* given_filter)
 {
   int in_quote, between;

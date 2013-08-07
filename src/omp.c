@@ -5520,9 +5520,11 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int full, int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
 {
-  gchar *msg, *sort_field, *filter;
+  gchar *sort_field, *filter;
   int first, max, sort_order;
-  GString *type_many;
+  GString *type_many, *msg;
+  keyword_t **point;
+  array_t *split;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -5551,42 +5553,68 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   if (strcmp (type, "info") != 0)
     g_string_append (type_many, "s");
 
-  msg = g_markup_printf_escaped ("<filters id=\"%s\">"
-                                 "<term>%s</term>"
-                                 "</filters>"
-                                 "<sort>"
-                                 "<field>%s<order>%s</order></field>"
-                                 "</sort>"
-                                 "<%s start=\"%i\" max=\"%i\"/>"
-                                 "<%s_count>"
-                                 "%i"
-                                 "<filtered>%i</filtered>"
-                                 "<page>%i</page>"
-                                 "</%s_count>"
-                                 "</get_%s_response>",
-                                 get->filt_id ? get->filt_id : "",
-                                 filter,
-                                 sort_field,
-                                 sort_order ? "ascending" : "descending",
-                                 type_many->str,
-                                 first,
-                                 max,
-                                 type,
-                                 full,
-                                 filtered,
-                                 count,
-                                 type,
-                                 type_many->str);
+  msg = g_string_new ("");
+
+  g_string_append_printf (msg,
+                          "<filters id=\"%s\">"
+                          "<term>%s</term>"
+                          "<keywords>",
+                          get->filt_id ? get->filt_id : "",
+                          filter);
+
+  split = split_filter (filter);
+  point = (keyword_t**) split->pdata;
+  while (*point)
+    {
+      keyword_t *keyword;
+      keyword = *point;
+      g_string_append_printf (msg,
+                              "<keyword>"
+                              "<column>%s</column>"
+                              "<relation>%s</relation>"
+                              "<value>%s</value>"
+                              "</keyword>",
+                              keyword->column ? keyword->column : "",
+                              keyword_relation_symbol (keyword->relation),
+                              keyword->string ? keyword->string : "");
+      point++;
+    }
+  filter_free (split);
+
+  g_string_append_printf (msg,
+                          "</keywords>"
+                          "</filters>"
+                          "<sort>"
+                          "<field>%s<order>%s</order></field>"
+                          "</sort>"
+                          "<%s start=\"%i\" max=\"%i\"/>"
+                          "<%s_count>"
+                          "%i"
+                          "<filtered>%i</filtered>"
+                          "<page>%i</page>"
+                          "</%s_count>"
+                          "</get_%s_response>",
+                          sort_field,
+                          sort_order ? "ascending" : "descending",
+                          type_many->str,
+                          first,
+                          max,
+                          type,
+                          full,
+                          filtered,
+                          count,
+                          type,
+                          type_many->str);
   g_string_free (type_many, TRUE);
   g_free (sort_field);
   g_free (filter);
 
-  if (send_to_client (msg, write_to_client, write_to_client_data))
+  if (send_to_client (msg->str, write_to_client, write_to_client_data))
     {
-      g_free (msg);
+      g_string_free (msg, TRUE);
       return 1;
     }
-  g_free (msg);
+  g_string_free (msg, TRUE);
   return 0;
 }
 
