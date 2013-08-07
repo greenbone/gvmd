@@ -1,3 +1,10 @@
+2013-08-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r16993.
+
+	* src/manage_sql.c (filter_clause): Cast severity column to REAL to
+	ensure sorting by numerical value.
+
 2013-08-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16788.
