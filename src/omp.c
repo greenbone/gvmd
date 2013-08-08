@@ -130,6 +130,11 @@
  */
 #define G_LOG_DOMAIN "md    omp"
 
+/**
+ * @brief GLib log domain.
+ */
+#define APPLY_OVERRIDES_DEFAULT 0
+
 
 /* Static headers. */
 
@@ -5543,6 +5548,15 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       gchar *new_filter;
       new_filter = manage_clean_filter (filter ? filter : get->filter);
       g_free (filter);
+      if ((strcmp (type, "task") == 0)
+          && (filter_term_value (new_filter, "apply_overrides") == NULL))
+        {
+          filter = new_filter;
+          new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                        APPLY_OVERRIDES_DEFAULT,
+                                        filter);
+          g_free (filter);
+        }
       filter = new_filter;
     }
   else
@@ -15351,7 +15365,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           clean_filter = manage_clean_filter (filter ? filter : get->filter);
           overrides = filter_term_value (clean_filter, "apply_overrides");
           g_free (clean_filter);
-          apply_overrides = overrides ? strcmp (overrides, "0") : 0;
+          apply_overrides = overrides
+                             ? strcmp (overrides, "0")
+                             : APPLY_OVERRIDES_DEFAULT;
           g_free (overrides);
           SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
                                    apply_overrides);

@@ -1,3 +1,11 @@
+2013-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (APPLY_OVERRIDES_DEFAULT): New define.
+	(send_get_end): Ensure the apply_overrides term is always present,
+	similar to first and rows.
+	(omp_xml_handle_end_element): Use APPLY_OVERRIDES_DEFAULT in
+	CLIENT_GET_TASKS, to keep it safe.
+
 2013-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_end): Also send filter broken down into XML
