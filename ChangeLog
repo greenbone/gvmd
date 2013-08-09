@@ -1,3 +1,12 @@
+2013-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r15862.  Patch by Timo Pollmeier.
+
+	* src/manage_sql.c (lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Change
+	creation of packages to use login instead of name, which caused
+	problems, for example when the credential name contained whitespaces.
+
 2013-08-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (log_event, log_event_fail): New functions.

@@ -36617,7 +36617,7 @@ lsc_credential_iterator_private_key (iterator_t* iterator)
 const char*
 lsc_credential_iterator_rpm (iterator_t *iterator)
 {
-  const char *public_key, *name;
+  const char *public_key, *login;
   void *rpm;
   gsize rpm_size;
   gchar *rpm64;
@@ -36625,8 +36625,8 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
   if (iterator->done) return NULL;
 
   public_key = lsc_credential_iterator_public_key (iterator);
-  name = lsc_credential_iterator_name (iterator);
-  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
+  login = lsc_credential_iterator_login (iterator);
+  if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     return NULL;
   rpm64 = (rpm && rpm_size)
           ? g_base64_encode (rpm, rpm_size)
@@ -36646,7 +36646,7 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
 const char*
 lsc_credential_iterator_deb (iterator_t *iterator)
 {
-  const char *name, *public_key;
+  const char *login, *public_key;
   void *deb, *rpm;
   gsize deb_size, rpm_size;
   gchar *deb64;
@@ -36654,11 +36654,11 @@ lsc_credential_iterator_deb (iterator_t *iterator)
   if (iterator->done) return NULL;
 
   public_key = lsc_credential_iterator_public_key (iterator);
-  name = lsc_credential_iterator_name (iterator);
-  if (lsc_user_rpm_recreate (name, public_key, &rpm, &rpm_size))
+  login = lsc_credential_iterator_login (iterator);
+  if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     return NULL;
 
-  if (lsc_user_deb_recreate (name, rpm, rpm_size, &deb, &deb_size))
+  if (lsc_user_deb_recreate (login, rpm, rpm_size, &deb, &deb_size))
     {
       free (rpm);
       return NULL;
@@ -36682,16 +36682,16 @@ lsc_credential_iterator_deb (iterator_t *iterator)
 const char*
 lsc_credential_iterator_exe (iterator_t *iterator)
 {
-  const char *name, *password;
+  const char *login, *password;
   void *exe;
   gsize exe_size;
   gchar *exe64;
 
   if (iterator->done) return NULL;
 
-  name = lsc_credential_iterator_name (iterator);
+  login = lsc_credential_iterator_login (iterator);
   password = lsc_credential_iterator_password (iterator);
-  if (lsc_user_exe_recreate (name, password, &exe, &exe_size))
+  if (lsc_user_exe_recreate (login, password, &exe, &exe_size))
     return NULL;
   exe64 = (exe && exe_size)
           ? g_base64_encode (exe, exe_size)
