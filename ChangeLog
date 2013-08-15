@@ -1,3 +1,17 @@
+2013-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make Groups, Roles and Users shared between all admins.  Hence increase
+	database version to 90.  Add database migration from version 89 to 90.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 90.
+
+	* src/manage_migrators.c (migrate_89_to_90): New function.
+	(database_migrators): Add migrate_89_to_90.
+
+	* src/manage_sql.c (copy_resource_lock): Ensure owner is always NULL for
+	groups, roles and users.
+	(create_group, create_user): Set owner to NULL.
+
 2013-08-14  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Updated reference system from Debian 6 to 7.

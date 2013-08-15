@@ -3687,8 +3687,8 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                     const char *resource_id, const char *columns,
                     int make_name_unique, resource_t* new_resource)
 {
-  gchar *quoted_name, *quoted_uuid, *uniquify, *command;
-  int named;
+  gchar *quoted_name, *quoted_uuid, *uniquify, *command, *owner_string;
+  int named, admin_type;
   user_t owner;
 
   if (resource_id == NULL)
@@ -3752,6 +3752,14 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                                 strcmp (type, "user") ? ' ' : '_');
   else
     uniquify = g_strdup ("name");
+  /* The special admin types are shared, so they always have NULL owner. */
+  admin_type = (strcmp (type, "group") == 0)
+               || (strcmp (type, "role") == 0)
+               || (strcmp (type, "user") == 0);
+  if (admin_type)
+    owner_string = g_strdup ("NULL");
+  else
+    owner_string = g_strdup_printf ("%llu", owner);
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -3759,13 +3767,15 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
       sql ("INSERT INTO %ss"
            " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
            " SELECT make_uuid (),"
-           " (SELECT ROWID FROM users where users.uuid = '%s'),"
+           " %s%s%s,"
            " %s%s%s, '%s', now (), now ()%s%s"
            " FROM %ss WHERE uuid = '%s';",
            type,
            columns ? ", " : "",
            columns ? columns : "",
-           current_credentials.uuid,
+           admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
+           admin_type ? "" : current_credentials.uuid,
+           admin_type ? "" : "')",
            quoted_name ? "'" : "",
            quoted_name ? quoted_name : uniquify,
            quoted_name ? "'" : "",
@@ -3779,12 +3789,12 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %llu, %s%s%s, comment, now (), now ()%s%s"
+         " SELECT make_uuid (), %s, %s%s%s, comment, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         owner,
+         owner_string,
          quoted_name ? "'" : "",
          quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
@@ -3795,21 +3805,21 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else
     sql ("INSERT INTO %ss"
          " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %llu, now (), now ()%s%s"
+         " SELECT make_uuid (), %s, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         owner,
+         owner_string,
          columns ? ", " : "",
          columns ? columns : "",
          type,
          quoted_uuid);
 
-
   if (new_resource)
     *new_resource = sqlite3_last_insert_rowid (task_db);
 
+  g_free (owner_string);
   g_free (quoted_uuid);
   g_free (quoted_name);
   g_free (uniquify);
@@ -42340,11 +42350,8 @@ create_group (const char *group_name, const char *comment, const char *users,
   sql ("INSERT INTO groups"
        " (uuid, name, owner, comment, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', now (), now ());",
+       " (make_uuid (), '%s', NULL, '%s', now (), now ());",
        quoted_group_name,
-       current_credentials.uuid,
        quoted_comment);
   g_free (quoted_comment);
   g_free (quoted_group_name);
@@ -48869,10 +48876,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
        " (uuid, owner, name, password, hosts, hosts_allow, method,"
        "  creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (),"
-       "  (SELECT ROWID FROM users WHERE uuid = '%s'),"
-       "  '%s', '%s', '%s', %i, '%s', now (), now ());",
-       current_credentials.uuid,
+       " (make_uuid (), NULL, '%s', '%s', '%s', %i, '%s', now (), now ());",
        quoted_name,
        hash,
        quoted_hosts,

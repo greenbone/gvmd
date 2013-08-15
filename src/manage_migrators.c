@@ -7259,6 +7259,41 @@ migrate_88_to_89 ()
 }
 
 /**
+ * @brief Migrate the database from version 89 to version 90.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_89_to_90 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 89. */
+
+  if (manage_db_version () != 89)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Groups, roles and users became owned by all admins. */
+
+  sql ("UPDATE groups SET owner = NULL;");
+  sql ("UPDATE roles SET owner = NULL;");
+  sql ("UPDATE users SET owner = NULL;");
+
+  /* Set the database version to 90. */
+
+  set_db_version (90);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7352,6 +7387,7 @@ static migrator_t database_migrators[]
     {87, migrate_86_to_87},
     {88, migrate_87_to_88},
     {89, migrate_88_to_89},
+    {90, migrate_89_to_90},
     /* End marker. */
     {-1, NULL}};
 
