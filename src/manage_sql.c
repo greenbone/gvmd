@@ -1585,6 +1585,11 @@ parse_keyword (keyword_t* keyword)
   /* The type. */
 
   string = keyword->string;
+  if (*string == '\0')
+    {
+      keyword->type = KEYWORD_TYPE_STRING;
+      return;
+    }
   if (*string && *string == '-' && strlen (string) > 1) string++;
   while (*string && isdigit (*string)) string++;
   if (*string)

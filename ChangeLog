@@ -1,3 +1,9 @@
+2013-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (parse_keyword): Make the keyword a string when
+	it is empty, instead of making it an integer.  This brings back the
+	NULL and empty string checks in the SQL for keywords like "type=".
+
 2013-08-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db.png: Update for version changes.
