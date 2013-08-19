@@ -5569,12 +5569,12 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 
   msg = g_string_new ("");
 
-  g_string_append_printf (msg,
-                          "<filters id=\"%s\">"
-                          "<term>%s</term>"
-                          "<keywords>",
-                          get->filt_id ? get->filt_id : "",
-                          filter);
+  buffer_xml_append_printf (msg,
+                            "<filters id=\"%s\">"
+                            "<term>%s</term>"
+                            "<keywords>",
+                            get->filt_id ? get->filt_id : "",
+                            filter);
 
   split = split_filter (filter);
   point = (keyword_t**) split->pdata;
@@ -5582,43 +5582,43 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
     {
       keyword_t *keyword;
       keyword = *point;
-      g_string_append_printf (msg,
-                              "<keyword>"
-                              "<column>%s</column>"
-                              "<relation>%s</relation>"
-                              "<value>%s</value>"
-                              "</keyword>",
-                              keyword->column ? keyword->column : "",
-                              keyword_relation_symbol (keyword->relation),
-                              keyword->string ? keyword->string : "");
+      buffer_xml_append_printf (msg,
+                                "<keyword>"
+                                "<column>%s</column>"
+                                "<relation>%s</relation>"
+                                "<value>%s</value>"
+                                "</keyword>",
+                                keyword->column ? keyword->column : "",
+                                keyword_relation_symbol (keyword->relation),
+                                keyword->string ? keyword->string : "");
       point++;
     }
   filter_free (split);
 
-  g_string_append_printf (msg,
-                          "</keywords>"
-                          "</filters>"
-                          "<sort>"
-                          "<field>%s<order>%s</order></field>"
-                          "</sort>"
-                          "<%s start=\"%i\" max=\"%i\"/>"
-                          "<%s_count>"
-                          "%i"
-                          "<filtered>%i</filtered>"
-                          "<page>%i</page>"
-                          "</%s_count>"
-                          "</get_%s_response>",
-                          sort_field,
-                          sort_order ? "ascending" : "descending",
-                          type_many->str,
-                          first,
-                          max,
-                          type,
-                          full,
-                          filtered,
-                          count,
-                          type,
-                          type_many->str);
+  buffer_xml_append_printf (msg,
+                            "</keywords>"
+                            "</filters>"
+                            "<sort>"
+                            "<field>%s<order>%s</order></field>"
+                            "</sort>"
+                            "<%s start=\"%i\" max=\"%i\"/>"
+                            "<%s_count>"
+                            "%i"
+                            "<filtered>%i</filtered>"
+                            "<page>%i</page>"
+                            "</%s_count>"
+                            "</get_%s_response>",
+                            sort_field,
+                            sort_order ? "ascending" : "descending",
+                            type_many->str,
+                            first,
+                            max,
+                            type,
+                            full,
+                            filtered,
+                            count,
+                            type,
+                            type_many->str);
   g_string_free (type_many, TRUE);
   g_free (sort_field);
   g_free (filter);
