@@ -1,5 +1,14 @@
 2013-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS): Add task_id.
+	(print_report_xml): Skip bulk of report when details flag is 0.
+	(manage_report): Set details flag now that it is checked.
+
+	* src/omp.c (omp_xml_handle_start_element): For GET_REPORTS reparse
+	the details flag, to keep the default value backward compatible.
+
+2013-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_prognostic_xml): New function.
 	(print_report_xml): Move prognostic case out to new function.
 

@@ -14631,7 +14631,7 @@ report_add_result (report_t report, result_t result)
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -23200,7 +23200,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Results. */
 
-  if (delta)
+  if (delta && get->details)
     {
       init_result_iterator (&results, report, 0,
                             0,
@@ -23226,7 +23226,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             min_cvss_base,
                             apply_overrides);
     }
-  else
+  else if (get->details)
     init_result_iterator (&results, report, 0,
                           first_result,
                           max_results,
@@ -23239,19 +23239,20 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           min_cvss_base,
                           apply_overrides);
 
-  PRINT (out,
-           "<results"
-           " start=\"%i\""
-           " max=\"%i\">",
-           /* Add 1 for 1 indexing. */
-           first_result + 1,
-           max_results);
-  if (result_hosts_only)
+  if (get->details)
+    PRINT (out,
+             "<results"
+             " start=\"%i\""
+             " max=\"%i\">",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results);
+  if (get->details && result_hosts_only)
     result_hosts = make_array ();
   else
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
-  if (delta)
+  if (delta && get->details)
     {
       gboolean done, delta_done;
       int changed, gone, new, same;
@@ -23897,7 +23898,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_tree_destroy (ports);
       PRINT (out, "</ports>");
     }
-  else
+  else if (get->details)
     {
       while (next (&results))
         {
@@ -23923,7 +23924,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       PRINT (out, "</results>");
     }
-  cleanup_iterator (&results);
+  if (get->details)
+    cleanup_iterator (&results);
 
   /* Print result counts and severity. */
 
@@ -23990,7 +23992,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           f_severity);
     }
 
-  if (result_hosts_only)
+  if (get->details && result_hosts_only)
     {
       gchar *host;
       int index = 0;
@@ -24046,7 +24048,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         }
       array_free (result_hosts);
     }
-  else
+  else if (get->details)
     {
       iterator_t hosts;
       init_host_iterator (&hosts, report, NULL, 0);
@@ -24190,6 +24192,7 @@ manage_report (report_t report, report_format_t report_format,
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
   get.filt_id = filt_id ? g_strdup (filt_id) : NULL;
+  get.details = 1;
   ret = print_report_xml (report, 0, task, xml_file, &get,
                           sort_order, sort_field,
                           result_hosts_only, min_cvss_base, report_format,

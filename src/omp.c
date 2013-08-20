@@ -6514,6 +6514,16 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
 
+            /* Special case details with default 1, for backward
+             * compatibility. */
+            if (find_attribute (attribute_names, attribute_values,
+                                "details", &attribute))
+              get_reports_data->report_get.details = strcmp (attribute, "0");
+            else
+              get_reports_data->report_get.details = 1;
+            get_reports_data->get.details
+             = get_reports_data->report_get.details;
+
             g_free (get_reports_data->report_get.filt_id);
             get_reports_data->report_get.filt_id = NULL;
             append_attribute (attribute_names, attribute_values,
