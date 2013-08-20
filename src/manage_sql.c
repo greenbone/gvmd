@@ -47824,7 +47824,9 @@ modify_setting (const gchar *uuid, const gchar *name,
   "                  'cpe' AS type, title as extra, max_cvss as severity"      \
   "           FROM cpes"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
-  "                  'nvt' AS type, summary as extra, cvss_base as severity"   \
+  "                  'nvt' AS type, CASE summary WHEN 'NOSUMMARY' THEN tag"    \
+  "                                  ELSE summary END AS extra,"               \
+  "                  cvss_base as severity"                                    \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
   "                  'dfn_cert_adv' AS type, title as extra,"                  \
