@@ -1,3 +1,26 @@
+2013-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Switch the report iterator to the new style.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add report_get.
+	(omp_xml_handle_start_element): Parse report_filter and report_filt_id
+	for GET_REPORTS.
+	(send_reports): Update function name.
+	(omp_xml_handle_end_element): Update to new style iterator.
+
+	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)
+	(REPORT_ITERATOR_COLUMNS): New defines.
+	(report_count): Convert to report counting, to match standard count
+	functions.
+	(init_report_iterator): Switch to new style.
+	(init_report_iterator_task): New function.  Old style for internal
+	calls.
+	(report_result_count): New function.  Was result_count.  Update callers.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/manage.c (delete_reports): Update function name.
+
 2013-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (send_get_end): Append to XML with escaping.

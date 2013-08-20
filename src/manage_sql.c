@@ -14628,35 +14628,75 @@ report_add_result (report_t report, result_t result)
 }
 
 /**
+ * @brief Filter columns for report iterator.
+ */
+#define REPORT_ITERATOR_FILTER_COLUMNS                                         \
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, NULL }
+
+/**
+ * @brief Report iterator columns.
+ */
+#define REPORT_ITERATOR_COLUMNS                                              \
+  "ROWID, uuid, iso_time (start_time) AS name, '',"                          \
+  " iso_time (start_time), iso_time (end_time),"                             \
+  " start_time AS created, end_time AS modified, ''"
+
+/**
+ * @brief Count number of reports.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of reports in filtered set.
+ */
+int
+report_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
+  return count ("report", get, REPORT_ITERATOR_COLUMNS, NULL, extra_columns,
+                0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Initialise a report iterator, including observed reports.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find report, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_report_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "report",
+                            get,
+                            /* Columns. */
+                            REPORT_ITERATOR_COLUMNS,
+                            /* Columns for trashcan. */
+                            NULL,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
  * @brief Initialise a report iterator.
  *
  * @param[in]  iterator  Iterator.
- * @param[in]  task      Task whose reports the iterator loops over.  0 for all.
- *                       Overridden by \arg report.
- * @param[in]  report    Single report to iterate over over.  0 for all.
+ * @param[in]  task      Task whose reports the iterator loops over.
  */
 void
-init_report_iterator (iterator_t* iterator, task_t task, report_t report)
+init_report_iterator_task (iterator_t* iterator, task_t task)
 {
-  if (report)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid FROM reports WHERE ROWID = %llu;",
-                   report);
-  else if (task)
-    init_iterator (iterator,
-                   "SELECT ROWID, uuid FROM reports WHERE task = %llu;",
-                   task);
-  else
-    {
-      assert (current_credentials.uuid);
-      init_iterator (iterator,
-                     "SELECT ROWID, uuid FROM reports"
-                     " WHERE ((owner IS NULL) OR owner ="
-                     " (SELECT ROWID FROM users"
-                     "  WHERE users.uuid = '%s'))"
-                     " AND hidden = 0;",
-                     current_credentials.uuid);
-    }
+  assert (task);
+  init_iterator (iterator,
+                 "SELECT ROWID, uuid FROM reports WHERE task = %llu;",
+                 task);
 }
 
 #if 0
@@ -17273,17 +17313,18 @@ report_scan_result_count (report_t report, const char* levels,
 }
 
 /**
- * @brief Get the message count for a report for a specific message type.
+ * @brief Get the result count for a report for a specific message type.
  *
  * @param[in]  report     Report.
  * @param[in]  type       Message type.
  * @param[in]  override   Whether to override the threat.
  * @param[in]  host       Host to which to limit the count.  NULL to allow all.
  *
- * @return Message count.
+ * @return Result count.
  */
 int
-report_count (report_t report, const char *type, int override, const char *host)
+report_result_count (report_t report, const char *type, int override,
+                     const char *host)
 {
   gchar *severity_sql;
 
@@ -19720,12 +19761,13 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
     }
 
   if (false_positives)
-    *false_positives = report_count (report, "False Positive", override, host);
-  if (holes) *holes = report_count (report, "high", override, host);
-  if (infos) *infos = report_count (report, "low", override, host);
-  if (logs) *logs = report_count (report, "Log Message", override, host);
+    *false_positives = report_result_count (report, "False Positive", override,
+                                            host);
+  if (holes) *holes = report_result_count (report, "high", override, host);
+  if (infos) *infos = report_result_count (report, "low", override, host);
+  if (logs) *logs = report_result_count (report, "Log Message", override, host);
   if (warnings)
-    *warnings = report_count (report, "medium", override, host);
+    *warnings = report_result_count (report, "medium", override, host);
   if (severity) *severity = report_severity (report, override, host);
 
   if (holes && infos && logs && warnings && false_positives

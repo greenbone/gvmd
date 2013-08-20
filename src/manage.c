@@ -409,7 +409,7 @@ delete_reports (task_t task)
 {
   report_t report;
   iterator_t iterator;
-  init_report_iterator (&iterator, task, 0);
+  init_report_iterator_task (&iterator, task);
   while (next_report (&iterator, &report))
     if (delete_report_internal (report))
       {

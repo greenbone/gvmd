@@ -2488,7 +2488,8 @@ get_preferences_data_reset (get_preferences_data_t *data)
  */
 typedef struct
 {
-  get_data_t get;        ///< Get args.
+  get_data_t get;        ///< Get args with result filtering.
+  get_data_t report_get; ///< Get args with report filtering.
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   char *delta_report_id; ///< ID of report to compare single report to.
   char *delta_states;    ///< Delta states (Changed Gone New Same) to include.
@@ -2526,6 +2527,7 @@ static void
 get_reports_data_reset (get_reports_data_t *data)
 {
   get_data_reset (&data->get);
+  get_data_reset (&data->report_get);
   free (data->delta_report_id);
   free (data->delta_states);
   free (data->format_id);
@@ -6508,6 +6510,22 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_names,
                                        attribute_values);
 
+            get_data_parse_attributes (&get_reports_data->report_get, "report",
+                                       attribute_names,
+                                       attribute_values);
+
+            g_free (get_reports_data->report_get.filt_id);
+            get_reports_data->report_get.filt_id = NULL;
+            append_attribute (attribute_names, attribute_values,
+                              "report_filt_id",
+                              &get_reports_data->report_get.filt_id);
+
+            g_free (get_reports_data->report_get.filter);
+            get_reports_data->report_get.filter = NULL;
+            append_attribute (attribute_names, attribute_values,
+                              "report_filter",
+                              &get_reports_data->report_get.filter);
+
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 
@@ -9228,7 +9246,7 @@ send_reports (task_t task, int apply_overrides,
   if (send_to_client ("<reports>", write_to_client, write_to_client_data))
     return -4;
 
-  init_report_iterator (&iterator, task, 0);
+  init_report_iterator_task (&iterator, task);
   while (next_report (&iterator, &index))
     {
       gchar *uuid, *timestamp, *msg;
@@ -13832,6 +13850,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         get = &get_reports_data->get;
         if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
           {
+            char *user_filter = setting_filter ("Results");
+
+            if (user_filter && strlen (user_filter))
+              {
+                get->filt_id = user_filter;
+                get->filter = filter_term (user_filter);
+              }
+            else
+              get->filt_id = g_strdup ("0");
+          }
+
+        get = &get_reports_data->report_get;
+        if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+          {
             char *user_filter = setting_filter ("Reports");
 
             if (user_filter && strlen (user_filter))
@@ -13840,10 +13872,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 get->filter = filter_term (user_filter);
               }
             else
-              get->filt_id = g_strdup("0");
+              get->filt_id = g_strdup ("0");
           }
 
-        init_report_iterator (&reports, 0, request_report);
+        init_report_iterator (&reports, &get_reports_data->report_get);
         while (next_report (&reports, &report))
           {
             gchar *extension, *content_type;

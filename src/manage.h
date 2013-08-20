@@ -985,8 +985,14 @@ modify_report (const char*, const char*);
 int
 delete_report (const char *, int);
 
+int
+report_count (const get_data_t *);
+
+int
+init_report_iterator (iterator_t*, const get_data_t *);
+
 void
-init_report_iterator (iterator_t*, task_t, report_t);
+init_report_iterator_task (iterator_t*, task_t);
 
 void
 init_report_errors_iterator (iterator_t*, report_t);
