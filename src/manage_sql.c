@@ -2205,6 +2205,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  autofp             Whether to apply auto FP filter.
  * @param[out]  notes              Whether to include notes.
  * @param[out]  overrides          Whether to include overrides.
+ * @param[out]  apply_overrides    Whether to apply overrides.
  */
 void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
@@ -2212,7 +2213,8 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                int *result_hosts_only, gchar **min_cvss_base,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
-                               int *autofp, int *notes, int *overrides)
+                               int *autofp, int *notes, int *overrides,
+                               int *apply_overrides)
 {
   keyword_t **point;
   array_t *split;
@@ -2364,6 +2366,16 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *overrides = 1;
       else
         *overrides = val;
+    }
+
+  if (apply_overrides)
+    {
+      if (filter_control_int ((keyword_t **) split->pdata,
+                              "apply_overrides",
+                              &val))
+        *apply_overrides = 1;
+      else
+        *apply_overrides = val;
     }
 
   if (delta_states)
@@ -22694,7 +22706,7 @@ print_report_prognostic_xml (report_t report, FILE *out, const char *host,
  * @param[in]  given_delta_states  String describing delta states to include in
  *                                 count (for example, "sngc" Same, New, Gone
  *                                 and Changed).  All levels if NULL.
- * @param[in]  apply_overrides    Whether to apply overrides.
+ * @param[in]  given_apply_overrides  Whether to apply overrides.
  * @param[in]  given_search_phrase  Phrase that results must include.  All
  *                                  results if NULL or "".
  * @param[in]  autofp             Whether to apply the auto FP filter.
@@ -22727,7 +22739,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int sort_order, const char *given_sort_field, int result_hosts_only,
                   const char *given_min_cvss_base, report_format_t report_format,
                   const char *given_levels, const char *given_delta_states,
-                  int apply_overrides, const char *given_search_phrase,
+                  int given_apply_overrides, const char *given_search_phrase,
                   int autofp, int notes, int notes_details, int overrides,
                   int overrides_details, int first_result, int max_results,
                   const char *type, const char *host, int pos,
@@ -22745,7 +22757,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int f_debugs, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_debugs, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact;
+  int search_phrase_exact, apply_overrides;
   double severity, f_severity;
 
   /* Init some vars to prevent warnings from older compilers. */
@@ -22801,7 +22813,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                      &sort_order, &result_hosts_only,
                                      &min_cvss_base, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
-                                     &autofp, &notes, &overrides);
+                                     &autofp, &notes, &overrides,
+                                     &apply_overrides);
     }
   else
     {
@@ -22811,6 +22824,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       search_phrase_exact = 0;
       min_cvss_base = g_strdup (given_min_cvss_base);
       delta_states = g_strdup (given_delta_states);
+      apply_overrides = given_apply_overrides;
 
       /* Build the filter term from the old style GET attributes. */
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
