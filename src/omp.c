@@ -6506,7 +6506,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             const gchar* attribute;
 
-            get_data_parse_attributes (&get_agents_data->get, "report",
+            get_data_parse_attributes (&get_reports_data->get, "report",
                                        attribute_names,
                                        attribute_values);
 
