@@ -298,7 +298,6 @@ ssh_pubkey_create (const char *comment,
 /**
  * @brief Create local security check (LSC) keys.
  *
- * @param[in]   name         User name.
  * @param[in]   password     Password.
  * @param[out]  public_key   Public key.
  * @param[out]  private_key  Private key.
@@ -306,8 +305,7 @@ ssh_pubkey_create (const char *comment,
  * @return 0 success, -1 error.
  */
 int
-lsc_user_keys_create (const gchar *name,
-                      const gchar *password,
+lsc_user_keys_create (const gchar *password,
                       gchar **public_key,
                       gchar **private_key)
 {

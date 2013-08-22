@@ -1,3 +1,26 @@
+2013-08-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/lsc_user.c (lsc_user_keys_create): Remove unused login parameter.
+
+	* src/lsc_user.h, src/manage.h: Adjust headers accordingly.
+
+	* src/manage.c (slave_setup): Adjust init_user_target_iterator call.
+	(run_slave_task): Remove unused report_id and from parameters.
+	(run_task): Adjust run_slave_task call.
+
+	* src/manage_sql.c (manage_cleanup_process_error): Use signal parameter
+	for debug logging.
+	(set_task_description): Use length parameter instead of calling strlen.
+	(prognostic_report_results_count): Remove unused logs parameter.
+	(print_report_assets_xml, print_report_prognostic_xml): Remove unused
+	report parameter.
+	(print_report_xml, create_lsc_credential): Adjust function calls.
+	(init_user_target_iterator): Remove unused first and max parameters.
+	(send_get_start, SEND_GET_START): Remove unused get parameter.
+	(omp_xml_handle_end_element): Adjust SEND_GET_START macro call.
+
+	* src/openvasmd.c (handle_sigabrt, handle_sigterm, handle_sighup)
+	(handle_sighup_update): Use signal parameter for debug logging.
 2013-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_result_iterator, result_iterator_severity)

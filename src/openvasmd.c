@@ -710,7 +710,7 @@ cleanup ()
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sigabrt (/*@unused@*/ int signal)
+handle_sigabrt (int signal)
 {
   static int in_sigabrt = 0;
 
@@ -743,8 +743,10 @@ handle_sigabrt (/*@unused@*/ int signal)
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sigterm (/*@unused@*/ int signal)
+handle_sigterm (int signal)
 {
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+         sys_siglist[signal]);
   cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }
@@ -755,8 +757,10 @@ handle_sigterm (/*@unused@*/ int signal)
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sighup (/*@unused@*/ int signal)
+handle_sighup (int signal)
 {
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+         sys_siglist[signal]);
   cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }
@@ -767,9 +771,11 @@ handle_sighup (/*@unused@*/ int signal)
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sighup_update (/*@unused@*/ int signal)
+handle_sighup_update (int signal)
 {
   /* Queue the update of the NVT cache. */
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+         sys_siglist[signal]);
   sighup_update_nvt_cache = 1;
 }
 
@@ -781,6 +787,8 @@ handle_sighup_update (/*@unused@*/ int signal)
 void
 handle_sigint (/*@unused@*/ int signal)
 {
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+         sys_siglist[signal]);
   cleanup_manage_process (TRUE);
   exit (EXIT_SUCCESS);
 }

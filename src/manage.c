@@ -1824,7 +1824,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       /* Create the target on the slave. */
 
-      init_user_target_iterator (&targets, target, 0, NULL, 0, -1);
+      init_user_target_iterator (&targets, target, 0, NULL);
       if (next (&targets))
         {
           const char *hosts;
@@ -2341,9 +2341,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @brief Start a task on a slave.
  *
  * @param[in]   task        The task.
- * @param[out]  report_id   The report ID.
- * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
- *                          continue if stopped else start from beginning.
  * @param[out]  target      Task target.
  * @param[out]  target_ssh_credential    Target SSH credential.
  * @param[out]  target_smb_credential    Target SMB credential.
@@ -2352,9 +2349,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  * @return 0 success, -1 error.
  */
 static int
-run_slave_task (task_t task, char **report_id, int from, target_t target,
-                lsc_credential_t target_ssh_credential,
-                lsc_credential_t target_smb_credential,
+run_slave_task (task_t task, target_t target, lsc_credential_t
+                target_ssh_credential, lsc_credential_t target_smb_credential,
                 report_t last_stopped_report)
 {
   slave_t slave;
@@ -2595,8 +2591,8 @@ run_task (const char *task_id, char **report_id, int from)
 
   if (task_slave (task))
     {
-      if (run_slave_task (task, report_id, from, target, ssh_credential,
-                          smb_credential, last_stopped_report))
+      if (run_slave_task (task, target, ssh_credential, smb_credential,
+                          last_stopped_report))
         {
           free (hosts);
           set_task_run_status (task, run_status);

@@ -5372,13 +5372,11 @@ make_xml_error_syntax (const char *tag, const char *text)
  * @brief Send start of GET response.
  *
  * @param[in]  type                  Type.
- * @param[in]  get                   GET data.
  * @param[in]  write_to_client       Function that sends to clients.
  * @param[in]  write_to_client_data  Data for write_to_client.
  */
 int
-send_get_start (const char *type, get_data_t *get,
-                int (*write_to_client) (const char*, void*),
+send_get_start (const char *type, int (*write_to_client) (const char*, void*),
                 void* write_to_client_data)
 {
   gchar *msg;
@@ -5640,10 +5638,10 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
  * @param[in]  type  Type of resource.
  * @param[in]  get   GET data.
  */
-#define SEND_GET_START(type, get)                                            \
+#define SEND_GET_START(type)                                                 \
   do                                                                         \
     {                                                                        \
-      if (send_get_start (type, get, write_to_client, write_to_client_data)) \
+      if (send_get_start (type, write_to_client, write_to_client_data))      \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -11273,7 +11271,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("agent", &get_agents_data->get);
+              SEND_GET_START ("agent");
               while (1)
                 {
                   ret = get_next (&agents, &get_agents_data->get, &first,
@@ -11398,7 +11396,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("alert", &get_alerts_data->get);
+          SEND_GET_START ("alert");
           while (1)
             {
               iterator_t data;
@@ -11572,7 +11570,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("config", &get_configs_data->get);
+          SEND_GET_START ("config");
           while (1)
             {
               int config_nvts_growing, config_families_growing;
@@ -11889,7 +11887,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("filter", &get_filters_data->get);
+          SEND_GET_START ("filter");
           while (1)
             {
               ret = get_next (&filters, &get_filters_data->get, &first, &count,
@@ -11990,7 +11988,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("group", &get_groups_data->get);
+          SEND_GET_START ("group");
           while (1)
             {
               gchar *users;
@@ -12113,7 +12111,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 get_info_data->name, &result);
               if (result)
                 {
-                  SEND_GET_START ("info", &get_info_data->get);
+                  SEND_GET_START ("info");
                   SEND_TO_CLIENT_OR_FAIL ("<info>");
                   SEND_TO_CLIENT_OR_FAIL (result);
                   SEND_TO_CLIENT_OR_FAIL ("</info>");
@@ -12250,7 +12248,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           count = 0;
           manage_filter_controls (get_info_data->get.filter, &first, NULL, NULL, NULL);
-          SEND_GET_START ("info", &get_info_data->get);
+          SEND_GET_START ("info");
           while (next (&info))
             {
               GString *result;
@@ -12575,7 +12573,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START("lsc_credential", &get_lsc_credentials_data->get);
+          SEND_GET_START("lsc_credential");
           while (1)
             {
               const char* public_key;
@@ -12761,7 +12759,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("note", &get_notes_data->get);
+              SEND_GET_START ("note");
 
               buffer = g_string_new ("");
 
@@ -13137,7 +13135,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("override", &get_overrides_data->get);
+              SEND_GET_START ("override");
 
               buffer = g_string_new ("");
 
@@ -13210,7 +13208,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("permission", &get_permissions_data->get);
+          SEND_GET_START ("permission");
           while (1)
             {
               const char *resource_type;
@@ -13309,7 +13307,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("port_list", &get_port_lists_data->get);
+          SEND_GET_START ("port_list");
           while (1)
             {
               ret = get_next (&port_lists, &get_port_lists_data->get, &first,
@@ -14124,7 +14122,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("report_format", &get_report_formats_data->get);
+              SEND_GET_START ("report_format");
               while (1)
                 {
                   time_t trust_time;
@@ -14468,7 +14466,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("role", &get_roles_data->get);
+          SEND_GET_START ("role");
           while (1)
             {
               gchar *users;
@@ -14557,7 +14555,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("schedule", &get_schedules_data->get);
+              SEND_GET_START ("schedule");
               while (1)
                 {
                   time_t first_time, next_time;
@@ -14842,7 +14840,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("slave", &get_slaves_data->get);
+              SEND_GET_START ("slave");
               while (1)
                 {
 
@@ -15055,7 +15053,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("tag", &get_tags_data->get);
+          SEND_GET_START ("tag");
           while (1)
             {
               ret = get_next (&tags, &get_tags_data->get, &first, &count,
@@ -15207,7 +15205,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   break;
                 }
 
-              SEND_GET_START ("target", &get_targets_data->get);
+              SEND_GET_START ("target");
               while (1)
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
@@ -15390,7 +15388,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("task", &get_tasks_data->get);
+          SEND_GET_START ("task");
 
           get = &get_tasks_data->get;
           if (get->filt_id && strcmp (get->filt_id, "0"))
@@ -16020,7 +16018,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          SEND_GET_START ("user", &get_users_data->get);
+          SEND_GET_START ("user");
           while (1)
             {
               iterator_t groups, roles;

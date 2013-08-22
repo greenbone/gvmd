@@ -30,7 +30,7 @@
 #include <glib.h>
 
 int
-lsc_user_keys_create (const gchar *, const gchar *, gchar **, gchar **);
+lsc_user_keys_create (const gchar *, gchar **, gchar **);
 
 int
 lsc_user_rpm_recreate (const gchar *, const gchar *,

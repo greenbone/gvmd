@@ -1176,7 +1176,7 @@ int
 target_count (const get_data_t *);
 
 void
-init_user_target_iterator (iterator_t*, target_t, int, const char*, int, int);
+init_user_target_iterator (iterator_t*, target_t, int, const char*);
 
 int
 init_target_iterator (iterator_t*, const get_data_t *);

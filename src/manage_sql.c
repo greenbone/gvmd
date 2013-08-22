@@ -11658,8 +11658,10 @@ cleanup_manage_process (gboolean cleanup)
  * @param[in]  signal  Dummy argument for use as signal handler.
  */
 void
-manage_cleanup_process_error (/*@unused@*/ int signal)
+manage_cleanup_process_error (int signal)
 {
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+         sys_siglist[signal]);
   if (task_db)
     {
       if (current_scanner_task)
@@ -12422,7 +12424,7 @@ task_description (task_t task)
 void
 set_task_description (task_t task, char* description, gsize length)
 {
-  gchar* quote = sql_nquote (description, strlen (description));
+  gchar* quote = sql_nquote (description, length);
   sql ("UPDATE tasks SET description = '%s', modification_time = now ()"
        " WHERE ROWID = %llu;",
        quote,
@@ -14113,15 +14115,13 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
  * @param[out]  all            Number of messages to increment.
  * @param[out]  holes          Number of hole messages to increment.
  * @param[out]  infos          Number of info messages to increment.
- * @param[out]  logs           Number of log messages to increment.
  * @param[out]  warnings       Number of warning messages to increment.
  */
 static void
 prognostic_report_result_count (report_host_t report_host,
                                 const char *search_phrase,
                                 const char *min_cvss_base, int *all,
-                                int *holes, int *infos, int *logs,
-                                int *warnings)
+                                int *holes, int *infos, int *warnings)
 {
   GString *phrase_sql, *cvss_sql;
   int host_holes, host_warnings, host_infos;
@@ -21852,7 +21852,6 @@ print_report_errors_xml (report_t report, FILE *stream)
 
 /**
  * @brief Print the XML for a report of type assets.
- * @param[in]  report           The report.
  * @param[in]  out              File stream to write to.
  * @param[in]  host             Host or NULL.
  * @param[in]  first_result     The result to start from. The results are 0
@@ -21868,10 +21867,10 @@ print_report_errors_xml (report_t report, FILE *stream)
  * @return 0 on success, -1 error.
  */
 static int
-print_report_assets_xml (report_t report, FILE *out, const char *host,
-                         int first_result, int max_results, gchar *levels,
-                         gchar *search_phrase, int pos, const get_data_t *get,
-                         int apply_overrides, int autofp)
+print_report_assets_xml (FILE *out, const char *host, int first_result, int
+                         max_results, gchar *levels, gchar *search_phrase,
+                         int pos, const get_data_t *get, int apply_overrides,
+                         int autofp)
 {
   iterator_t hosts;
 
@@ -22297,7 +22296,6 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
 /**
  * @brief Print the XML for a report of type assets.
  *
- * @param[in]  report           The report.
  * @param[in]  out              File stream to write to.
  * @param[in]  host             Host or NULL.
  * @param[in]  first_result     The result to start from. The results are 0
@@ -22325,9 +22323,9 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
  * @return 0 on success, -1 error.
  */
 static int
-print_report_prognostic_xml (report_t report, FILE *out, const char *host,
-                             int first_result, int max_results, gchar *levels,
-                             gchar *search_phrase, int pos, const get_data_t *get,
+print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
+                             max_results, gchar *levels, gchar *search_phrase,
+                             int pos, const get_data_t *get,
                              int apply_overrides, int autofp,
                              const char *host_search_phrase,
                              const char *host_levels, int host_first_result,
@@ -22393,8 +22391,7 @@ print_report_prognostic_xml (report_t report, FILE *out, const char *host,
           prognostic_report_result_count (report_host, search_phrase,
                                           min_cvss_base,
                                           &filtered, &f_holes,
-                                          &f_infos, &f_logs,
-                                          &f_warnings);
+                                          &f_infos, &f_warnings);
           filtered = (strchr (levels, 'h') ? f_holes : 0)
                       + (strchr (levels, 'l') ? f_infos : 0)
                       + (strchr (levels, 'g') ? f_logs : 0)
@@ -23120,7 +23117,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int ret;
 
-      ret = print_report_assets_xml (report, out, host, first_result,
+      ret = print_report_assets_xml (out, host, first_result,
                                      max_results, levels, search_phrase, pos,
                                      get, apply_overrides, autofp);
       g_free (sort_field);
@@ -23149,9 +23146,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       int ret;
 
-      ret = print_report_prognostic_xml (report, out, host, first_result,
-                                         max_results, levels, search_phrase,
-                                         pos, get, apply_overrides, autofp,
+      ret = print_report_prognostic_xml (out, host, first_result, max_results,
+                                         levels, search_phrase, pos, get,
+                                         apply_overrides, autofp,
                                          host_search_phrase, host_levels,
                                          host_first_result, host_max_results,
                                          min_cvss_base, result_hosts_only);
@@ -28219,12 +28216,10 @@ target_count (const get_data_t *get)
  * @param[in]  target      Target to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan targets.
  * @param[in]  filter      Filter term.
- * @param[in]  first       First target.
- * @param[in]  max         Maximum number of targets returned.
  */
 void
 init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           const char *filter, int first, int max)
+                           const char *filter)
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
   get_data_t get;
@@ -33903,8 +33898,7 @@ create_lsc_credential (const char* name, const char* comment,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (login,
-                            password,
+  if (lsc_user_keys_create (password,
                             &public_key,
                             &private_key))
     {
@@ -48710,6 +48704,7 @@ total_info_count (const get_data_t *get, int filtered)
  * @param[in]  iterator        Iterator.
  * @param[in]  get             GET data.
  * @param[in]  name            Name of the info
+ *
  *
  * @return 0 success, 1 failed to find info, 2 failed to find filter,
  *         -1 error.
