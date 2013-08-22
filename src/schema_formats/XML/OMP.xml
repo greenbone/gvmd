@@ -147,6 +147,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
   </type>
   <type>
+    <name>severity</name>
+    <summary>A severity score</summary>
+    <description>
+      A severity score is a decimal number between 0.0 and 10.0 (inclusive) with
+      one digit after the decimal point or a special negative value
+      (-1.0, -2.0 or -3.0).
+    </description>
+    <pattern>xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }</pattern>
+  </type>
+  <type>
     <name>sort_order</name>
     <summary>A string describing an order for sorting</summary>
     <description>
@@ -448,7 +458,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>nvt</e>
         <e>text</e>
         <e>threat</e>
+        <e>severity</e>
         <e>new_threat</e>
+        <e>new_severity</e>
         <e>orphan</e>
       </pattern>
       <ele>
@@ -481,16 +493,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
       <ele>
         <name>threat</name>
-        <summary>Threat level to which override applies</summary>
+        <summary>
+          Threat level to which override applies, derived from severity
+        </summary>
         <pattern>
           <t>threat</t>
         </pattern>
       </ele>
       <ele>
+        <name>severity</name>
+        <summary>
+          Severity score to which override applies</summary>
+        <pattern>
+          <t>severity</t>
+        </pattern>
+      </ele>
+      <ele>
         <name>new_threat</name>
-        <summary>New threat for result</summary>
+        <summary>New threat for result, derived from new_severity</summary>
         <pattern>
           <t>threat</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>new_severity</name>
+        <summary>New severity</summary>
+        <pattern>
+          <t>severity</t>
         </pattern>
       </ele>
       <ele>
@@ -517,7 +546,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>port</e>
       <e>nvt</e>
       <e>threat</e>
+      <e>severity</e>
       <o><e>original_threat</e></o>
+      <o><e>original_severity</e></o>
       <e>description</e>
       <o><e>delta</e></o>
       <e>details</e>
@@ -687,9 +718,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern><t>threat</t></pattern>
     </ele>
     <ele>
+      <name>severity</name>
+      <pattern><t>severity</t></pattern>
+    </ele>
+    <ele>
       <name>original_threat</name>
-      <summary>Threat when overridden</summary>
+      <summary>Original threat when overridden</summary>
       <pattern><t>threat</t></pattern>
+    </ele>
+    <ele>
+      <name>original_severity</name>
+      <summary>Original severity when overridden</summary>
+      <pattern><t>severity</t></pattern>
     </ele>
     <ele>
       <name>description</name>
@@ -1270,12 +1310,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </pattern>
         <ele>
           <name>full</name>
-          <pattern>text</pattern>
+          <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the full report</summary>
         </ele>
         <ele>
           <name>filtered</name>
-          <pattern>text</pattern>
+          <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the report after filtering</summary>
         </ele>
       </ele>
@@ -2588,9 +2628,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
+      <o><e>new_severity</e></o>
       <o><e>new_threat</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
+      <o><e>severity</e></o>
       <o><e>task</e></o>
       <o><e>threat</e></o>
     </pattern>
@@ -2639,8 +2681,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
+      <name>new_severity</name>
+      <summary>New severity for result</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
       <name>new_threat</name>
-      <summary>New threat level for result</summary>
+      <summary>
+        New threat level for result, will be converted to a new_severity
+      </summary>
       <pattern>
         <t>threat</t>
       </pattern>
@@ -2664,6 +2715,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
+      <name>severity</name>
+      <summary>Severity score to which override applies</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
       <name>task</name>
       <summary>Task to which override applies</summary>
       <pattern>
@@ -2676,7 +2734,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>threat</name>
-      <summary>Threat level to which override applies</summary>
+      <summary>
+        Threat level to which override applies, will be converted to severity
+      </summary>
       <pattern>
         <t>threat</t>
       </pattern>
@@ -6803,7 +6863,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>severity</name>
             <summary>Severity rating (CVSS score) of the entry.</summary>
             <pattern>
-              <t>text</t>
+              <t>severity</t>
             </pattern>
           </ele>
         </ele>
@@ -8597,9 +8657,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>threat</name>
-          <summary>Threat level to which override applies</summary>
+          <summary>
+            Threat level to which override applies, derived from severity
+          </summary>
           <pattern>
             <t>threat</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>Severity score to which override applies</summary>
+          <pattern>
+            <t>severity</t>
           </pattern>
         </ele>
         <ele>
@@ -8613,7 +8682,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>new_severity</name>
           <summary>New severity score for result</summary>
           <pattern>
-            text
+            <t>severity</t>
           </pattern>
         </ele>
         <ele>
@@ -8716,6 +8785,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>port</e>
             <e>nvt</e>
             <e>threat</e>
+            <e>severity</e>
             <e>description</e>
           </pattern>
           <ele>
@@ -8771,6 +8841,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>threat</name>
             <pattern>
               <t>threat</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <pattern>
+              <t>severity</t>
             </pattern>
           </ele>
           <ele>
@@ -10258,7 +10334,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>severity</name>
             <summary>Severity score of the result, with overrides if applicable</summary>
-            <pattern>text</pattern>
+            <pattern><t>severity</t></pattern>
           </ele>
           <ele>
             <name>description</name>
@@ -10268,7 +10344,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>original_severity</name>
             <summary>Severity score of the result without overrides</summary>
-            <pattern>text</pattern>
+            <pattern><t>severity</t></pattern>
           </ele>
           <ele>
             <name>notes</name>
@@ -12238,7 +12314,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>severity</name>
-              <pattern>text</pattern>
+              <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
@@ -12297,7 +12373,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>severity</name>
-              <pattern>text</pattern>
+              <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
@@ -12356,7 +12432,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>severity</name>
-              <pattern>text</pattern>
+              <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
@@ -12425,7 +12501,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>severity</name>
-              <pattern>text</pattern>
+              <pattern><t>severity</t></pattern>
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>

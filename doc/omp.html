@@ -74,6 +74,10 @@
 <td id="index"><div style="margin-left: 15px;">An Object Identifier (OID).</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#type_severity">severity</a></td>
+<td id="index"><div style="margin-left: 15px;">A severity score.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_sort_order">sort_order</a></td>
 <td id="index"><div style="margin-left: 15px;">A string describing an order for sorting.</div></td>
 </tr>
@@ -877,7 +881,21 @@ response
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">5.14
+<div><h3 id="type_severity">5.14
+        Data Type <tt>severity</tt>
+</h3></div>
+<p>In short: A severity score.</p>
+<p>
+      A severity score is a decimal number between 0.0 and 10.0 (inclusive) with
+      one digit after the decimal point or a special negative value
+      (-1.0, -2.0 or -3.0).
+    </p>
+<h4>5.14.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>severity = xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_sort_order">5.15
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -885,71 +903,71 @@ response
       The string "descending" denotes descending order, anything else means
       ascending.
     </p>
-<h4>5.14.1 RNC</h4>
+<h4>5.15.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">5.15
+<div><h3 id="type_status">5.16
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
-<h4>5.15.1 RNC</h4>
+<h4>5.16.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_status">5.16
+<div><h3 id="type_task_status">5.17
         Data Type <tt>task_status</tt>
 </h3></div>
 <p>In short: A task run status.</p>
-<h4>5.16.1 RNC</h4>
+<h4>5.17.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
 ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_trend">5.17
+<div><h3 id="type_task_trend">5.18
         Data Type <tt>task_trend</tt>
 </h3></div>
 <p>In short: The trend of results for a task.</p>
-<h4>5.17.1 RNC</h4>
+<h4>5.18.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_trend = xsd:token { pattern = "up|down|more|less|same" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">5.18
+<div><h3 id="type_threat">5.19
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
-<h4>5.18.1 RNC</h4>
+<h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">5.19
+<div><h3 id="type_time_unit">5.20
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
-<h4>5.19.1 RNC</h4>
+<h4>5.20.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.20
+<div><h3 id="type_uuid">5.21
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.20.1 RNC</h4>
+<h4>5.21.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.21
+<div><h3 id="type_uuid_or_empty">5.22
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.21.1 RNC</h4>
+<h4>5.22.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -1533,12 +1551,22 @@ result_notes_note_orphan
 </li>
 <li>
               &lt;<b>threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+              <div style="margin-left: 15px; display: inline;">Threat level to which override applies, derived from severity.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity score to which override applies.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>new_threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New threat for result.</div>
+              <div style="margin-left: 15px; display: inline;">New threat for result, derived from new_severity.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>new_severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">New severity.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -1561,7 +1589,9 @@ result_overrides_override
        result_overrides_override_nvt
        &amp; result_overrides_override_text
        &amp; result_overrides_override_threat
+       &amp; result_overrides_override_severity
        &amp; result_overrides_override_new_threat
+       &amp; result_overrides_override_new_severity
        &amp; result_overrides_override_orphan
      }
 
@@ -1591,10 +1621,22 @@ result_overrides_override_threat
        threat
      }
 
+result_overrides_override_severity
+ = element severity
+     {
+       severity
+     }
+
 result_overrides_override_new_threat
  = element new_threat
      {
        threat
+     }
+
+result_overrides_override_new_severity
+ = element new_severity
+     {
+       severity
      }
 
 result_overrides_override_orphan
@@ -1749,8 +1791,17 @@ result_overrides_override_orphan
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>original_threat</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Threat when overridden.</div>
+              ?<div style="margin-left: 15px; display: inline;">Original threat when overridden.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>original_severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Original severity when overridden.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -1840,7 +1891,9 @@ result_overrides_override_orphan
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_severity
        &amp; result_original_threat?
+       &amp; result_original_severity?
        &amp; result_description
        &amp; result_delta?
        &amp; result_details
@@ -2001,10 +2054,22 @@ result_threat
        threat
      }
 
+result_severity
+ = element severity
+     {
+       severity
+     }
+
 result_original_threat
  = element original_threat
      {
        threat
+     }
+
+result_original_severity
+ = element original_severity
+     {
+       severity
      }
 
 result_description
@@ -2035,7 +2100,9 @@ result_delta_result
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_severity
        &amp; result_original_threat?
+       &amp; result_original_severity?
        &amp; result_description
        &amp; result_delta?
        &amp; result_details
@@ -2104,7 +2171,9 @@ result_detection_result
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_severity
        &amp; result_original_threat?
+       &amp; result_original_severity?
        &amp; result_description
        &amp; result_delta?
        &amp; result_details
@@ -3080,13 +3149,13 @@ report_report_severity
 report_report_severity_full
  = element full
      {
-       text
+       severity
      }
 
 report_report_severity_filtered
  = element filtered
      {
-       text
+       severity
      }
 
 report_report_host_count
@@ -3183,7 +3252,9 @@ report_report_results_result
        &amp; result_port
        &amp; result_nvt
        &amp; result_threat
+       &amp; result_severity
        &amp; result_original_threat?
+       &amp; result_original_severity?
        &amp; result_description
        &amp; result_delta?
        &amp; result_details
@@ -5643,8 +5714,13 @@ create_note_threat
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>new_severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">New severity for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>new_threat</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">New threat level for result.</div>
+              ?<div style="margin-left: 15px; display: inline;">New threat level for result, will be converted to a new_severity.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -5661,6 +5737,11 @@ create_note_threat
           </li></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Severity score to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>task</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
 <ul style="list-style: none"><li>
@@ -5670,7 +5751,7 @@ create_note_threat
 </li>
 <li>
               &lt;<b>threat</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+              ?<div style="margin-left: 15px; display: inline;">Threat level to which override applies, will be converted to severity.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -5703,9 +5784,11 @@ create_note_threat
        &amp; create_override_comment?
        &amp; create_override_copy?
        &amp; create_override_hosts?
+       &amp; create_override_new_severity?
        &amp; create_override_new_threat?
        &amp; create_override_port?
        &amp; create_override_result?
+       &amp; create_override_severity?
        &amp; create_override_task?
        &amp; create_override_threat?
      }
@@ -5746,6 +5829,12 @@ create_override_hosts
        text
      }
 
+create_override_new_severity
+ = element new_severity
+     {
+       severity
+     }
+
 create_override_new_threat
  = element new_threat
      {
@@ -5762,6 +5851,12 @@ create_override_result
  = element result
      {
        attribute id { uuid }
+     }
+
+create_override_severity
+ = element severity
+     {
+       severity
      }
 
 create_override_task
@@ -11751,7 +11846,7 @@ get_info_response_info_allinfo_extra
 get_info_response_info_allinfo_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_info_response_filters
@@ -14031,7 +14126,7 @@ get_nvt_feed_version_response_version
 </li>
 <li>
               &lt;<b>threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
+              <div style="margin-left: 15px; display: inline;">Threat level to which override applies, derived from severity.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14169,6 +14264,10 @@ get_nvt_feed_version_response_version
 </li>
 <li>
               &lt;<b>threat</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14397,6 +14496,12 @@ get_overrides_response_override_threat
        threat
      }
 
+get_overrides_response_override_severity
+ = element severity
+     {
+       severity
+     }
+
 get_overrides_response_override_new_threat
  = element new_threat
      {
@@ -14406,7 +14511,7 @@ get_overrides_response_override_new_threat
 get_overrides_response_override_new_severity
  = element new_severity
      {
-       text
+       severity
      }
 
 get_overrides_response_override_orphan
@@ -14494,6 +14599,7 @@ get_overrides_response_override_result
        &amp; get_overrides_response_override_result_port
        &amp; get_overrides_response_override_result_nvt
        &amp; get_overrides_response_override_result_threat
+       &amp; get_overrides_response_override_result_severity
        &amp; get_overrides_response_override_result_description
      }
 
@@ -14560,6 +14666,12 @@ get_overrides_response_override_result_threat
  = element threat
      {
        threat
+     }
+
+get_overrides_response_override_result_severity
+ = element severity
+     {
+       severity
      }
 
 get_overrides_response_override_result_description
@@ -16682,7 +16794,7 @@ get_results_response_results_result_threat
 get_results_response_results_result_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_results_response_results_result_description
@@ -16694,7 +16806,7 @@ get_results_response_results_result_description
 get_results_response_results_result_original_severity
  = element original_severity
      {
-       text
+       severity
      }
 
 get_results_response_results_result_notes
@@ -19894,7 +20006,7 @@ get_tasks_response_task_first_report_report_result_count_hole
 get_tasks_response_task_first_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_last_report
@@ -19961,7 +20073,7 @@ get_tasks_response_task_last_report_report_result_count_hole
 get_tasks_response_task_last_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_second_last_report
@@ -20028,7 +20140,7 @@ get_tasks_response_task_second_last_report_report_result_count_hole
 get_tasks_response_task_second_last_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_rcfile
@@ -20108,7 +20220,7 @@ get_tasks_response_task_reports_report_result_count_hole
 get_tasks_response_task_reports_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_preferences

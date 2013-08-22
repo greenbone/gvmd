@@ -230,6 +230,8 @@ port = xsd:token { pattern = "[0-9]{1,5}" }
 user_list = text
 # An Object Identifier (OID).
 oid = xsd:token { pattern = "[0-9\.]{1,80}" }
+# A severity score.
+severity = xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }
 # A string describing an order for sorting.
 sort_order = text
 # The success or failure status of a command.
@@ -563,7 +565,9 @@ result_overrides_override
        result_overrides_override_nvt
        & result_overrides_override_text
        & result_overrides_override_threat
+       & result_overrides_override_severity
        & result_overrides_override_new_threat
+       & result_overrides_override_new_severity
        & result_overrides_override_orphan
      }
 
@@ -588,18 +592,32 @@ result_overrides_override_text
        & attribute excerpt { boolean }
      }
 
-# Threat level to which override applies.
+# Threat level to which override applies, derived from severity.
 result_overrides_override_threat
  = element threat
      {
        threat
      }
 
-# New threat for result.
+# Severity score to which override applies.
+result_overrides_override_severity
+ = element severity
+     {
+       severity
+     }
+
+# New threat for result, derived from new_severity.
 result_overrides_override_new_threat
  = element new_threat
      {
        threat
+     }
+
+# New severity.
+result_overrides_override_new_severity
+ = element new_severity
+     {
+       severity
      }
 
 # Whether the override is an orphan.
@@ -625,7 +643,9 @@ result
        & result_port
        & result_nvt
        & result_threat
+       & result_severity
        & result_original_threat?
+       & result_original_severity?
        & result_description
        & result_delta?
        & result_details
@@ -808,11 +828,24 @@ result_threat
        threat
      }
 
-# Threat when overridden.
+result_severity
+ = element severity
+     {
+       severity
+     }
+
+# Original threat when overridden.
 result_original_threat
  = element original_threat
      {
        threat
+     }
+
+# Original severity when overridden.
+result_original_severity
+ = element original_severity
+     {
+       severity
      }
 
 # Description of the result.
@@ -846,7 +879,9 @@ result_delta_result
        & result_port
        & result_nvt
        & result_threat
+       & result_severity
        & result_original_threat?
+       & result_original_severity?
        & result_description
        & result_delta?
        & result_details
@@ -922,7 +957,9 @@ result_detection_result
        & result_port
        & result_nvt
        & result_threat
+       & result_severity
        & result_original_threat?
+       & result_original_severity?
        & result_description
        & result_delta?
        & result_details
@@ -1416,14 +1453,14 @@ report_report_severity
 report_report_severity_full
  = element full
      {
-       text
+       severity
      }
 
 # Maximum severity of the report after filtering.
 report_report_severity_filtered
  = element filtered
      {
-       text
+       severity
      }
 
 # Counts of hosts in the results.
@@ -1526,7 +1563,9 @@ report_report_results_result
        & result_port
        & result_nvt
        & result_threat
+       & result_severity
        & result_original_threat?
+       & result_original_severity?
        & result_description
        & result_delta?
        & result_details
@@ -2234,9 +2273,11 @@ create_override
        & create_override_comment?
        & create_override_copy?
        & create_override_hosts?
+       & create_override_new_severity?
        & create_override_new_threat?
        & create_override_port?
        & create_override_result?
+       & create_override_severity?
        & create_override_task?
        & create_override_threat?
      }
@@ -2283,7 +2324,14 @@ create_override_hosts
        text
      }
 
-# New threat level for result.
+# New severity for result.
+create_override_new_severity
+ = element new_severity
+     {
+       severity
+     }
+
+# New threat level for result, will be converted to a new_severity.
 create_override_new_threat
  = element new_threat
      {
@@ -2304,6 +2352,13 @@ create_override_result
        attribute id { uuid }
      }
 
+# Severity score to which override applies.
+create_override_severity
+ = element severity
+     {
+       severity
+     }
+
 # Task to which override applies.
 create_override_task
  = element task
@@ -2311,7 +2366,7 @@ create_override_task
        attribute id { uuid }
      }
 
-# Threat level to which override applies.
+# Threat level to which override applies, will be converted to severity.
 create_override_threat
  = element threat
      {
@@ -6925,7 +6980,7 @@ get_info_response_info_allinfo_extra
 get_info_response_info_allinfo_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_info_response_filters
@@ -7957,11 +8012,18 @@ get_overrides_response_override_in_use
        boolean
      }
 
-# Threat level to which override applies.
+# Threat level to which override applies, derived from severity.
 get_overrides_response_override_threat
  = element threat
      {
        threat
+     }
+
+# Severity score to which override applies.
+get_overrides_response_override_severity
+ = element severity
+     {
+       severity
      }
 
 # New threat for result.
@@ -7975,7 +8037,7 @@ get_overrides_response_override_new_threat
 get_overrides_response_override_new_severity
  = element new_severity
      {
-       text
+       severity
      }
 
 # Whether the override is an orphan.
@@ -8077,6 +8139,7 @@ get_overrides_response_override_result
        & get_overrides_response_override_result_port
        & get_overrides_response_override_result_nvt
        & get_overrides_response_override_result_threat
+       & get_overrides_response_override_result_severity
        & get_overrides_response_override_result_description
      }
 
@@ -8145,6 +8208,12 @@ get_overrides_response_override_result_threat
  = element threat
      {
        threat
+     }
+
+get_overrides_response_override_result_severity
+ = element severity
+     {
+       severity
      }
 
 get_overrides_response_override_result_description
@@ -8924,7 +8993,7 @@ get_results_response_results_result_threat
 get_results_response_results_result_severity
  = element severity
      {
-       text
+       severity
      }
 
 # Description of the result.
@@ -8938,7 +9007,7 @@ get_results_response_results_result_description
 get_results_response_results_result_original_severity
  = element original_severity
      {
-       text
+       severity
      }
 
 get_results_response_results_result_notes
@@ -10334,7 +10403,7 @@ get_tasks_response_task_first_report_report_result_count_hole
 get_tasks_response_task_first_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_last_report
@@ -10403,7 +10472,7 @@ get_tasks_response_task_last_report_report_result_count_hole
 get_tasks_response_task_last_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_second_last_report
@@ -10472,7 +10541,7 @@ get_tasks_response_task_second_last_report_report_result_count_hole
 get_tasks_response_task_second_last_report_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_rcfile
@@ -10555,7 +10624,7 @@ get_tasks_response_task_reports_report_result_count_hole
 get_tasks_response_task_reports_report_severity
  = element severity
      {
-       text
+       severity
      }
 
 get_tasks_response_task_preferences

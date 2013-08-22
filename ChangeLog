@@ -1,3 +1,13 @@
+2013-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (protocol): Add severity type.
+	(result_overrides, result, create_override, create_override): Add
+	severity and related elements, update text for threat elements.
+	(report, get_info, get_results, get_tasks): Use new severity type
+	instead of text for severity and related elements.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report_filter_controls): Add apply_overrides.
