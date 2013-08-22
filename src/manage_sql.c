@@ -15486,7 +15486,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE 0.0 END)"
+                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                        "  END)"
                                         " DESC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
@@ -15496,7 +15497,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       : " ORDER BY "
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE 0.0 END)"
+                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                        "  END)"
                                         " ASC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
@@ -15516,7 +15518,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                         " host COLLATE collate_ip,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE 0.0 END)"
+                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                        "  END)"
                                         " DESC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
@@ -15526,7 +15529,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                       : " ORDER BY"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE 0.0 END)"
+                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                        "  END)"
                                         " DESC,"
                                         " (CASE WHEN auto_type IS NULL"
                                         "  THEN new_type ELSE auto_type END)"
@@ -16057,7 +16061,7 @@ result_iterator_severity (iterator_t *iterator)
 
   /* auto_type */
   if (sqlite3_column_int (iterator->stmt, 7))
-    return "0.0";
+    return G_STRINGIFY (SEVERITY_FP);
 
   /* new_severity */
   ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
@@ -16082,7 +16086,7 @@ result_iterator_severity_double (iterator_t *iterator)
 
   /* auto_type */
   if (sqlite3_column_int (iterator->stmt, 7))
-    return 0.0;
+    return SEVERITY_FP;
 
   return sqlite3_column_double (iterator->stmt, 14);
 }

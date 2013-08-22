@@ -1,5 +1,11 @@
 2013-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator, result_iterator_severity)
+	(result_iterator_severity_double): Use SEVERITY_FP (-1.0) as severity
+	value for automatic false positives.
+
+2013-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (protocol): Add severity type.
 	(result_overrides, result, create_override, create_override): Add
 	severity and related elements, update text for threat elements.
