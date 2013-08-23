@@ -458,6 +458,11 @@ static char* current_scanner_preference = NULL;
 /*@only@*/
 static nvti_t* current_plugin = NULL;
 
+/**
+ * @brief The full plugins list, during reading of scanner plugin list.
+ */
+GList* scanner_plugins_list = NULL;
+
 
 /* Scanner plugin dependencies. */
 
@@ -1067,9 +1072,11 @@ parse_scanner_plugin_list_tags (char** messages)
           g_free (tags);
           g_free (cvss_base);
           g_free (risk_factor);
-          make_nvt_from_nvti (current_plugin,
-                              scanner_init_state
-                              == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE);
+
+          /* Add the plugin to scanner_plugins_list which will be bulk-inserted
+           * in DB later by insert_plugins_list. */
+          scanner_plugins_list = g_list_prepend (scanner_plugins_list,
+                                                 current_plugin);
           current_plugin = NULL;
         }
       set_scanner_state (SCANNER_PLUGIN_LIST_OID);

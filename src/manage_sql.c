@@ -50615,3 +50615,35 @@ trash_tag_writable (tag_t tag)
 {
   return 0;
 }
+
+/*
+ * @brief Inserts a nvt from nvti structure.
+ *
+ * @param[in] nvti  nvti_t to insert in nvts table.
+ * @param[in] dummy dummy pointer to match GFunc prototype.
+ *
+ */
+static void
+insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
+{
+  if (nvti == NULL)
+    return;
+
+  make_nvt_from_nvti (nvti, 0);
+}
+
+/*
+ * @brief Inserts NVTs in DB from a list of nvti structures.
+ *
+ * @param[in] nvti_list     List of nvti's to be inserted.
+ */
+void
+insert_plugins_list (GList *nvti_list)
+{
+  if (nvti_list != NULL)
+    {
+      sql ("BEGIN");
+      g_list_foreach (nvti_list, insert_nvt_from_nvti, NULL);
+      sql ("END");
+    }
+}

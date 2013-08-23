@@ -1,3 +1,21 @@
+2013-08-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Make manager rebuilds way faster by grouping NVT inserts in a single
+	transactions instead of one transaction/insertion.
+
+	* src/manage_sql.c (insert_plugins_list, insert_nvt_from_nvti): New
+	functions.
+
+	* src/manage.h: Add insert_plugins_list prototype. Add
+	scanner_plugins_list declaration.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): insert scanner plugins
+	list before successful return.
+
+	* src/otp.c (scanner_plugins_list): New global variable.
+	(parse_scanner_plugin_list_tags): Don't insert nvti into DB, add to
+	scanner_plugins_list instead.
+
 2013-08-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/lsc_user.c (lsc_user_keys_create): Remove unused login parameter.
