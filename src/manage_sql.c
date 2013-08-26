@@ -14643,7 +14643,7 @@ report_add_result (report_t report, result_t result)
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", NULL }
 
 /**
  * @brief Report iterator columns.

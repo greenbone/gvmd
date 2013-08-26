@@ -13506,6 +13506,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         float min_cvss_base;
         iterator_t reports;
         get_data_t * get;
+        int count, filtered, ret, first;
 
         if (user_may ("get_reports") == 0)
           {
@@ -13849,12 +13850,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         /* The usual scan report. */
 
-        if (request_report == 0 && get_reports_data->alert_id == NULL)
-          SEND_TO_CLIENT_OR_FAIL
-           ("<get_reports_response"
-            " status=\"" STATUS_OK "\""
-            " status_text=\"" STATUS_OK_TEXT "\">");
-
         get = &get_reports_data->get;
         if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
           {
@@ -13883,7 +13878,48 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get->filt_id = g_strdup ("0");
           }
 
-        init_report_iterator (&reports, &get_reports_data->report_get);
+        INIT_GET (report, Report);
+
+        ret = init_report_iterator (&reports, &get_reports_data->report_get);
+        if (ret)
+          {
+            switch (ret)
+              {
+                case 1:
+                  if (send_find_error_to_client ("get_reports",
+                                                 "report",
+                                                 get_reports_data->get.id,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 2:
+                  if (send_find_error_to_client
+                       ("get_reports",
+                        "filter",
+                        get_reports_data->get.filt_id,
+                        write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("get_reports"));
+                  break;
+              }
+            get_reports_data_reset (get_reports_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
+        if (get_reports_data->alert_id == NULL)
+          SEND_GET_START ("report");
         while (next_report (&reports, &report))
           {
             gchar *extension, *content_type;
@@ -13893,12 +13929,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             prefix = g_string_new ("");
             content_type = report_format_content_type (report_format);
             extension = report_format_extension (report_format);
-
-            if (request_report && get_reports_data->alert_id == NULL)
-              g_string_append (prefix,
-                               "<get_reports_response"
-                               " status=\"" STATUS_OK "\""
-                               " status_text=\"" STATUS_OK_TEXT "\">");
 
             if (get_reports_data->alert_id == NULL)
               g_string_append_printf (prefix,
@@ -13915,6 +13945,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
             g_free (extension);
             g_free (content_type);
+
+            if (get_reports_data->alert_id == NULL)
+              /* Send the standard elements.  Should match send_get_common. */
+              buffer_xml_append_printf
+               (prefix,
+                "<owner><name>%s</name></owner>"
+                "<name>%s</name>"
+                "<comment>%s</comment>"
+                "<creation_time>%s</creation_time>"
+                "<modification_time>"
+                "%s"
+                "</modification_time>"
+                "<writable>0</writable>"
+                "<in_use>0</in_use>",
+                get_iterator_owner_name (&reports)
+                ? get_iterator_owner_name (&reports)
+                : "",
+                get_iterator_name (&reports)
+                ? get_iterator_name (&reports)
+                : "",
+                get_iterator_comment (&reports)
+                ? get_iterator_comment (&reports)
+                : "",
+                get_iterator_creation_time (&reports)
+                ? get_iterator_creation_time (&reports)
+                : "",
+                get_iterator_modification_time (&reports)
+                ? get_iterator_modification_time (&reports)
+                : "");
 
             /* If there's just one report then cleanup the iterator early.  This
              * closes the iterator transaction, allowing manage_schedule to lock
@@ -14051,6 +14110,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             if (get_reports_data->alert_id == NULL)
               SEND_TO_CLIENT_OR_FAIL ("</report>");
 
+            count++;
+
             if (request_report)
               /* Just to be safe, because iterator has been freed. */
               break;
@@ -14061,7 +14122,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (get_reports_data->alert_id)
           SEND_TO_CLIENT_OR_FAIL (XML_OK ("get_reports"));
         else
-          SEND_TO_CLIENT_OR_FAIL ("</get_reports_response>");
+          {
+            filtered = get_reports_data->get.id
+                        ? 1
+                        : report_count (&get_reports_data->report_get);
+            SEND_GET_END ("report", &get_reports_data->report_get, count,
+                          filtered);
+          }
 
         get_reports_data_reset (get_reports_data);
         set_client_state (CLIENT_AUTHENTIC);

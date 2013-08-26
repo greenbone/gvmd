@@ -1,3 +1,12 @@
+2013-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS): Add name for
+	sorting.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_REPORTS use the start
+	and end GET macros, check the init_report_iterator return, and send the
+	common GET XML for each report.
+
 2013-08-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* manage.h: Remove scanner_plugins_list and insert_plugins_list
