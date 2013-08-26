@@ -66,9 +66,6 @@ typedef struct
  */
 extern scanner_t scanner;
 
-/* Exported for openvasmd.c and otp.c */
-extern GList* scanner_plugins_list;
-
 int
 init_manage (GSList*, int, const gchar*);
 
@@ -1495,7 +1492,7 @@ int
 family_nvt_count (const char *);
 
 void
-manage_complete_nvt_cache_update (int);
+manage_complete_nvt_cache_update (GList *, int);
 
 
 /* NVT selectors. */
@@ -3291,8 +3288,5 @@ valid_db_resource_type (const char*);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
-
-void
-insert_plugins_list (GList *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

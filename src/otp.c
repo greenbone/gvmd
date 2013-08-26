@@ -1074,7 +1074,7 @@ parse_scanner_plugin_list_tags (char** messages)
           g_free (risk_factor);
 
           /* Add the plugin to scanner_plugins_list which will be bulk-inserted
-           * in DB later by insert_plugins_list. */
+           * in DB later in manage_complete_nvt_cache_update. */
           scanner_plugins_list = g_list_prepend (scanner_plugins_list,
                                                  current_plugin);
           current_plugin = NULL;
@@ -1998,7 +1998,8 @@ process_otp_scanner_input ()
                              == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
                         {
                           manage_complete_nvt_cache_update
-                           (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
+                           (scanner_plugins_list,
+                            scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
                             ? -2 : -1);
                           set_scanner_init_state (SCANNER_INIT_DONE);
                           manage_nvt_preferences_enable ();

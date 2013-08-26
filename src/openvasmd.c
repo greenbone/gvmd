@@ -934,10 +934,6 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
                  NULL))
     {
       case 0:
-        /* In the case of rebuild, nvti's are in scanner_plugins_list, insert
-         * them into DB.
-         */
-        insert_plugins_list (scanner_plugins_list);
         openvas_server_free (scanner_socket,
                              scanner_session,
                              scanner_credentials);

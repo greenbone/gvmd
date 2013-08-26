@@ -1,3 +1,21 @@
+2013-08-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* manage.h: Remove scanner_plugins_list and insert_plugins_list
+	declarations.
+	(manage_complete_nvt_cache_update): Adjust prototype.
+
+	* manage_sql.c (insert_nvt_from_nvti): Move up in file.
+	(insert_plugins_list): Rename to insert_nvts_list. Move up in file.
+	(manage_complete_nvt_cache_update): Add nvts_list parameter. Call
+	insert_nvts_list.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Remove
+	insert_plugins_list call.
+
+	* src/otp.c (parse_scanner_plug_list_tags): Update comment.
+	(process_otp_scanner_input): Adjust manage_complete_nvt_cache_update
+	call.
+
 2013-08-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Make manager rebuilds way faster by grouping NVT inserts in a single
