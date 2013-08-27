@@ -37395,8 +37395,8 @@ modify_override (override_t override, const char *active, const char* text,
  */
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
-   "task_name", "task_id", "hosts", "port", "threat", "new_threat", "result", \
-   "severity", "new_severity", NULL }
+   "task_name", "task_id", "hosts", "port", "threat", "new_threat", "active", \
+   "result", "severity", "new_severity", NULL }
 
 /**
  * @brief Override iterator columns.
@@ -37415,7 +37415,7 @@ modify_override (override_t override, const char *active, const char* text,
   " severity_to_level (overrides.severity, 1) as threat,"                      \
   " severity_to_level (overrides.new_severity, 0) as new_threat,"              \
   " overrides.task, overrides.result, overrides.end_time,"                     \
-  " (overrides.end_time = 0) OR (overrides.end_time >= now ()),"               \
+  " (overrides.end_time = 0) OR (overrides.end_time >= now ()) as active,"     \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
