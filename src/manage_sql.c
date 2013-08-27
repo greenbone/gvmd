@@ -23498,6 +23498,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (search_phrase);
               g_free (min_cvss_base);
               g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
               return -1;
             }
           PRINT_XML (out, buffer->str);
@@ -23797,6 +23799,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (search_phrase);
               g_free (min_cvss_base);
               g_free (delta_states);
+              cleanup_iterator (&results);
+              cleanup_iterator (&delta_results);
               return -1;
             }
 
@@ -23941,6 +23945,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     }
   if (get->details)
     cleanup_iterator (&results);
+  if (delta && get->details)
+    cleanup_iterator (&delta_results);
 
   /* Print result counts and severity. */
 
