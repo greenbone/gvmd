@@ -6534,6 +6534,23 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "report_filter",
                               &get_reports_data->report_get.filter);
 
+            if (get_reports_data->report_get.filter)
+              {
+                gchar *overrides;
+
+                /* For simplicity, use a fixed result filter when there's a
+                 * report filter. */
+
+                g_free (get_reports_data->get.filter);
+                overrides
+                 = filter_term_value (get_reports_data->report_get.filter,
+                                      "apply_overrides");
+                get_reports_data->get.filter
+                 = g_strdup_printf ("apply_overrides=%i",
+                                    overrides && strcmp (overrides, "0"));
+                g_free (overrides);
+              }
+
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 

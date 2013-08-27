@@ -1,3 +1,8 @@
+2013-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_start_element): For GET_REPORTS use a fixed
+	result filter when there's a report filter.
+
 2013-08-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (OVERRIDE_ITERATOR_FILTER_COLUMNS): Add column
