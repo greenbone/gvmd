@@ -1,3 +1,10 @@
+2013-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r17500.
+
+	* src/manage_sql.c (print_report_xml): Cleanup result iterators on error
+	return.  Cleanup delta result iterator before normal return.
+
 2013-08-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r15862.  Patch by Timo Pollmeier.
