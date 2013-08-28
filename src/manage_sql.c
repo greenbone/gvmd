@@ -3777,7 +3777,7 @@ backup_db (const gchar *database, gchar **backup_file)
   sql ("BEGIN EXCLUSIVE;");
 
   command = g_strdup_printf ("cp %s %s.bak > /dev/null 2>&1"
-                             "&& for f in `ls %s-* | grep --invert .\\*bak`;"
+                             "&& for f in `ls %s-* 2> /dev/null | grep --invert .\\*bak`;"
                              "   do cp $f $f.bak > /dev/null 2>&1;"
                              "   done",
                              database,
