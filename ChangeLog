@@ -1,5 +1,10 @@
 2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (backup_db): Silence ls errors, which occur when
+	there is no journal.
+
+2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (backup_db): Copy any journal style files, instead of
 	of expecting a single task.db-journal file.
 
