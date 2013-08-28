@@ -1,5 +1,9 @@
 2013-08-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_TRASH_COLUMNS): Add missing comma.
+
+2013-08-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Replace threat in notes with severity.  Hence increase database version
 	to 91. Add database migration from version 90 to 91.
 

@@ -36565,7 +36565,7 @@ modify_note (note_t note, const char *active, const char* text,
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
   " notes_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE ROWID = notes_trash.task) AS task_id,"   \
-  " (SELECT name FROM tasks WHERE ROWID = notes_trash.task) AS task_name"  \
+  " (SELECT name FROM tasks WHERE ROWID = notes_trash.task) AS task_name," \
   " notes_trash.severity"
 
 /**
