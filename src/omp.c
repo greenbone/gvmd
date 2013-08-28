@@ -13881,20 +13881,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get->filt_id = g_strdup ("0");
           }
 
-        get = &get_reports_data->report_get;
-        if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-          {
-            char *user_filter = setting_filter ("Reports");
-
-            if (user_filter && strlen (user_filter))
-              {
-                get->filt_id = user_filter;
-                get->filter = filter_term (user_filter);
-              }
-            else
-              get->filt_id = g_strdup ("0");
-          }
-
         INIT_GET (report, Report);
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);
