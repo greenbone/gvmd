@@ -1,3 +1,8 @@
+2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (backup_db): Copy any journal style files, instead of
+	of expecting a single task.db-journal file.
+
 2013-08-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_TRASH_COLUMNS): Add missing comma.
