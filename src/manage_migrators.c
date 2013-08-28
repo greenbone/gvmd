@@ -7294,6 +7294,93 @@ migrate_89_to_90 ()
 }
 
 /**
+ * @brief Migrate the database from version 90 to version 91.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_90_to_91 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 90. */
+
+  if (manage_db_version () != 90)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename notes tables */
+  sql ("ALTER TABLE notes RENAME TO notes_90;");
+  sql ("ALTER TABLE notes_trash RENAME TO notes_trash_90;");
+
+  /* Create new ones without threat and new_threat. */
+  sql ("CREATE TABLE IF NOT EXISTS notes"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  task INTEGER, result INTEGER, end_time);");
+  sql ("CREATE TABLE IF NOT EXISTS notes_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
+       "  task INTEGER, result INTEGER, end_time);");
+
+  /* Migrate old notes data to new tables. */
+  sql ("INSERT INTO notes"
+       " (id, uuid, owner , nvt, creation_time, modification_time, text,"
+       "  hosts, port, severity, task, result, end_time)"
+       " SELECT id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "   hosts, port,"
+       "   (CASE threat"
+       "    WHEN 'Security Hole' THEN 0.1"
+       "    WHEN 'Security Warning' THEN 0.1"
+       "    WHEN 'Security Note' THEN 0.1"
+       "    WHEN 'Alarm' THEN 0.1"
+       "    WHEN 'Log Message' THEN 0.0"
+       "    WHEN 'False Positive' THEN -1.0"
+       "    WHEN 'Debug Message' THEN -2.0"
+       "    WHEN 'Error Message' THEN -3.0"
+       "    ELSE NULL"
+       "    END),"
+       "   task, result, end_time"
+       " FROM notes_90;");
+
+  sql ("INSERT INTO notes_trash"
+       " (id, uuid, owner , nvt, creation_time, modification_time, text,"
+       "  hosts, port, severity, task, result, end_time)"
+       " SELECT id, uuid, owner, nvt, creation_time, modification_time, text,"
+       "   hosts, port,"
+       "   (CASE threat"
+       "    WHEN 'Security Hole' THEN 0.1"
+       "    WHEN 'Security Warning' THEN 0.1"
+       "    WHEN 'Security Note' THEN 0.1"
+       "    WHEN 'Alarm' THEN 0.1"
+       "    WHEN 'Log Message' THEN 0.0"
+       "    WHEN 'False Positive' THEN -1.0"
+       "    WHEN 'Debug Message' THEN -2.0"
+       "    WHEN 'Error Message' THEN -3.0"
+       "    ELSE NULL"
+       "    END),"
+       "   task, result, end_time"
+       " FROM notes_trash_90;");
+
+  /* Delete old overrides tables. */
+  sql ("DROP TABLE notes_90;");
+  sql ("DROP TABLE notes_trash_90;");
+
+  /* Set the database version 91. */
+
+  set_db_version (91);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7388,6 +7475,7 @@ static migrator_t database_migrators[]
     {88, migrate_87_to_88},
     {89, migrate_88_to_89},
     {90, migrate_89_to_90},
+    {91, migrate_90_to_91},
     /* End marker. */
     {-1, NULL}};
 

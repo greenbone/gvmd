@@ -4523,11 +4523,11 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
-       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
        "  task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS notes_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"
-       "  creation_time, modification_time, text, hosts, port, threat,"
+       "  creation_time, modification_time, text, hosts, port, severity,"
        "  task INTEGER, result INTEGER, end_time);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id INTEGER PRIMARY KEY, name, value);");
@@ -36161,7 +36161,9 @@ find_note (const char* uuid, note_t* note)
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
  * @param[in]  port        Port to apply note to, NULL for any port.
+ * @param[in]  severity    Severity to apply note to, "" or NULL for any.
  * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
+ *                         Only used if severity is "" or NULL.
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  * @param[out] note        Created note.
@@ -36171,10 +36173,12 @@ find_note (const char* uuid, note_t* note)
  */
 int
 create_note (const char* active, const char* nvt, const char* text,
-             const char* hosts, const char* port, const char* threat,
-             task_t task, result_t result, note_t *note)
+             const char* hosts, const char* port, const char* severity,
+             const char* threat, task_t task, result_t result, note_t *note)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat, *quoted_nvt;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
+  gchar *quoted_nvt;
+  double severity_dbl;
 
   if (user_may ("create_note") == 0)
     return 99;
@@ -36206,12 +36210,42 @@ create_note (const char* active, const char* nvt, const char* text,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_threat = sql_insert ((threat && strlen (threat))
-                                ? threat_message_type (threat) : NULL);
+
+  severity_dbl = 0.0;
+  if (severity != NULL && strcmp (severity, ""))
+    {
+      if (sscanf (severity, "%lf", &severity_dbl) != 1
+          || ((severity_dbl < 0.0 || severity_dbl > 10.0)
+              && severity_dbl != SEVERITY_LOG
+              && severity_dbl != SEVERITY_DEBUG))
+        return 3;
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else if (threat != NULL && strcmp (threat, ""))
+    {
+      if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "High") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Medium") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Low") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Log") == 0)
+        severity_dbl = SEVERITY_LOG;
+      else if (strcmp (threat, "Debug") == 0)
+        severity_dbl = SEVERITY_DEBUG;
+      else
+        return -1;
+
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else
+    quoted_severity = g_strdup ("NULL");
 
   sql ("INSERT INTO notes"
        " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-       "  port, threat, task, result, end_time)"
+       "  port, severity, task, result, end_time)"
        " VALUES"
        " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', %i, %i, %s, %s, %s, %s, %llu, %llu, %i);",
@@ -36222,7 +36256,7 @@ create_note (const char* active, const char* nvt, const char* text,
        quoted_text,
        quoted_hosts,
        quoted_port,
-       quoted_threat,
+       quoted_severity,
        task,
        result,
        (active == NULL || (strcmp (active, "-1") == 0))
@@ -36234,7 +36268,7 @@ create_note (const char* active, const char* nvt, const char* text,
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
-  g_free (quoted_threat);
+  g_free (quoted_severity);
 
   if (note)
     *note = sqlite3_last_insert_rowid (task_db);
@@ -36255,7 +36289,8 @@ int
 copy_note (const char *note_id, note_t* new_note)
 {
   return copy_resource ("note", NULL, NULL, note_id,
-                        "nvt, text, hosts, port, threat, task, result, end_time",
+                        "nvt, text, hosts, port, severity, task, result,"
+                        "end_time",
                         1, new_note);
 }
 
@@ -36314,9 +36349,9 @@ delete_note (const char *note_id, int ultimate)
     {
       sql ("INSERT INTO notes_trash"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, task, result, end_time)"
+           "  port, severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, task, result, end_time"
+           "        hosts, port, severity, task, result, end_time"
            " FROM notes WHERE ROWID = %llu;",
            note);
     }
@@ -36353,18 +36388,22 @@ note_uuid (note_t note, char ** id)
  * @param[in]  text        Note text.
  * @param[in]  hosts       Hosts to apply note to, NULL for any host.
  * @param[in]  port        Port to apply note to, NULL for any port.
+ * @param[in]  severity    Severity to apply note to, "" or NULL for any.
  * @param[in]  threat      Threat to apply note to, "" or NULL for any threat.
+ *                         Only used if severity is "" or NULL.
  * @param[in]  task        Task to apply note to, 0 for any task.
  * @param[in]  result      Result to apply note to, 0 for any result.
  *
- * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port.
+ * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
+ *         3 invalid severity.
  */
 int
 modify_note (note_t note, const char *active, const char* text,
-             const char* hosts, const char* port, const char* threat,
-             task_t task, result_t result)
+             const char* hosts, const char* port, const char* severity,
+             const char* threat, task_t task, result_t result)
 {
-  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_threat;
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
+  double severity_dbl;
 
   if (note == 0)
     return -1;
@@ -36374,7 +36413,8 @@ modify_note (note_t note, const char *active, const char* text,
 
   if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
       && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Debug") && strcmp (threat, ""))
+      && strcmp (threat, "Debug") && strcmp (threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
   if (port && validate_results_port (port))
@@ -36383,8 +36423,38 @@ modify_note (note_t note, const char *active, const char* text,
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
   quoted_port = sql_insert (port);
-  quoted_threat = sql_insert ((threat && strlen (threat))
-                                ? threat_message_type (threat) : NULL);
+
+  severity_dbl = 0.0;
+  if (severity != NULL && strcmp (severity, ""))
+    {
+      if (sscanf (severity, "%lf", &severity_dbl) != 1
+          || ((severity_dbl < 0.0 || severity_dbl > 10.0)
+              && severity_dbl != SEVERITY_LOG
+              && severity_dbl != SEVERITY_DEBUG))
+        return 3;
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else if (threat != NULL && strcmp (threat, ""))
+    {
+      if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "High") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Medium") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Low") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Log") == 0)
+        severity_dbl = SEVERITY_LOG;
+      else if (strcmp (threat, "Debug") == 0)
+        severity_dbl = SEVERITY_DEBUG;
+      else
+        return -1;
+
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else
+    quoted_severity = g_strdup ("NULL");
 
   if ((active == NULL) || (strcmp (active, "-2") == 0))
     sql ("UPDATE notes SET"
@@ -36392,7 +36462,7 @@ modify_note (note_t note, const char *active, const char* text,
          " text = %s,"
          " hosts = %s,"
          " port = %s,"
-         " threat = %s,"
+         " severity = %s,"
          " task = %llu,"
          " result = %llu"
          " WHERE ROWID = %llu;",
@@ -36400,7 +36470,7 @@ modify_note (note_t note, const char *active, const char* text,
          quoted_text,
          quoted_hosts,
          quoted_port,
-         quoted_threat,
+         quoted_severity,
          task,
          result,
          note);
@@ -36420,7 +36490,7 @@ modify_note (note_t note, const char *active, const char* text,
            " text = %s,"
            " hosts = %s,"
            " port = %s,"
-           " threat = %s,"
+           " severity = %s,"
            " task = %llu,"
            " result = %llu"
            " WHERE ROWID = %llu;",
@@ -36433,7 +36503,7 @@ modify_note (note_t note, const char *active, const char* text,
            quoted_text,
            quoted_hosts,
            quoted_port,
-           quoted_threat,
+           quoted_severity,
            task,
            result,
            note);
@@ -36442,7 +36512,7 @@ modify_note (note_t note, const char *active, const char* text,
   g_free (quoted_text);
   g_free (quoted_hosts);
   g_free (quoted_port);
-  g_free (quoted_threat);
+  g_free (quoted_severity);
 
   return 0;
 }
@@ -36452,7 +36522,7 @@ modify_note (note_t note, const char *active, const char* text,
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                          \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
-   "task_name", "task_id", "hosts", "port", "result", NULL }
+   "task_name", "task_id", "hosts", "port", "result", "severity", NULL }
 
 /**
  * @brief Note iterator columns.
@@ -36465,13 +36535,15 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.modification_time AS modified,"                                  \
   " (SELECT name FROM users WHERE users.ROWID = notes.owner) AS _owner,"   \
   /* Columns specific to notes. */                                         \
-  " notes.nvt AS oid, notes.text,"                                         \
-  " notes.hosts, notes.port, notes.threat, notes.task, notes.result,"      \
-  " notes.end_time, (notes.end_time = 0) OR (notes.end_time >= now ()),"   \
+  " notes.nvt AS oid, notes.text, notes.hosts, notes.port,"                \
+  " severity_to_level (notes.severity, 1) as threat,"                      \
+  " notes.task, notes.result, notes.end_time,"                             \
+  " (notes.end_time = 0) OR (notes.end_time >= now ()),"                   \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt,"                 \
   " notes.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = notes.task) AS task_id,"         \
-  " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name"
+  " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name,"       \
+  " notes.severity"
 
 /**
  * @brief Note iterator columns for trash case.
@@ -36485,15 +36557,16 @@ modify_note (note_t note, const char *active, const char* text,
   " (SELECT name FROM users WHERE users.ROWID = notes_trash.owner)"        \
   " AS _owner,"                                                            \
   /* Columns specific to notes_trash. */                                   \
-  " notes_trash.nvt AS oid, notes_trash.text,"                             \
-  " notes_trash.hosts, notes_trash.port, notes_trash.threat,"              \
-  " notes_trash.task, notes_trash.result,"                                 \
-  " notes_trash.end_time,"                                                 \
+  " notes_trash.nvt AS oid, notes_trash.text, notes_trash.hosts,"          \
+  " notes_trash.port,"                                                     \
+  " severity_to_level (notes_trash.severity, 1) as threat,"                \
+  " notes_trash.task, notes_trash.result, notes_trash.end_time,"           \
   " (notes_trash.end_time = 0) OR (notes_trash.end_time >= now ()),"       \
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
   " notes_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE ROWID = notes_trash.task) AS task_id,"   \
-  " (SELECT name FROM tasks WHERE ROWID = notes_trash.task) AS task_name"
+  " (SELECT name FROM tasks WHERE ROWID = notes_trash.task) AS task_name"  \
+  " notes_trash.severity"
 
 /**
  * @brief Count number of notes.
@@ -36566,11 +36639,8 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.ROWID = %llu))"
-                                       " AND (threat is NULL"
-                                       "      OR threat = \"\""
-                                       "      OR severity_matches_type ("
-                                       "       %s,"
-                                       "       threat))"
+                                       " AND (severity_matches_ov (%s,"
+                                       "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
                                        result,
                                        result,
@@ -36704,11 +36774,8 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.ROWID = %llu))"
-                                       " AND (threat is NULL"
-                                       "      OR threat = \"\""
-                                       "      OR severity_matches_type ("
-                                       "       %s,"
-                                       "       threat))"
+                                       " AND (severity_matches_ov (%s,"
+                                       "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
                                        result,
                                        result,
@@ -36897,6 +36964,16 @@ note_iterator_active (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 9);
+
+/**
+ * @brief Get the severity from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity to apply the note to, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 13);
 
 
 /* Overrides. */
@@ -46636,9 +46713,9 @@ manage_restore (const char *id)
     {
       sql ("INSERT INTO notes"
            " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
-           "  port, threat, task, result, end_time)"
+           "  port, severity, task, result, end_time)"
            " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
-           "        hosts, port, threat, task, result, end_time"
+           "        hosts, port, severity, task, result, end_time"
            " FROM notes_trash WHERE ROWID = %llu;",
            resource);
       sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", resource);

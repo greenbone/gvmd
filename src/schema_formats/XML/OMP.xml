@@ -2494,6 +2494,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>hosts</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
+      <o><e>severity</e></o>
       <o><e>task</e></o>
       <o><e>threat</e></o>
     </pattern>
@@ -2560,6 +2561,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </ele>
     <ele>
+      <name>severity</name>
+      <summary>Severity to which note applies</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
       <name>task</name>
       <summary>Task to which note applies</summary>
       <pattern>
@@ -2572,7 +2580,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>threat</name>
-      <summary>Threat level to which note applies</summary>
+      <summary>
+        Threat level to which note applies. Will be converted to severity.
+      </summary>
       <pattern>
         <t>threat</t>
       </pattern>
@@ -7607,6 +7617,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>modification_time</e>
               <e>hosts</e>
               <e>port</e>
+              <e>severity</e>
               <e>threat</e>
               <e>task</e>
               <e>active</e>
@@ -7717,6 +7728,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
+          <name>severity</name>
+          <summary>Severity to which note applies</summary>
+          <pattern>
+            <t>severity</t>
+          </pattern>
+        </ele>
+        <ele>
           <name>threat</name>
           <summary>Threat level to which note applies</summary>
           <pattern>
@@ -7757,6 +7775,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>host</e>
             <e>port</e>
             <e>nvt</e>
+            <e>severity</e>
             <e>threat</e>
             <e>description</e>
           </pattern>
@@ -7808,6 +7827,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>BID associated with the NVT</summary>
               <pattern><t>integer</t></pattern>
             </ele>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <pattern>
+              <t>severity</t>
+            </pattern>
           </ele>
           <ele>
             <name>threat</name>
@@ -13998,6 +14023,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>hosts</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
+      <o><e>severity</e></o>
       <o><e>task</e></o>
       <e>text</e>
       <o><e>threat</e></o>
@@ -14019,6 +14045,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Port to which note applies</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>severity</name>
+      <summary>Severity to which note applies</summary>
+      <pattern>
+        <t>severity</t>
       </pattern>
     </ele>
     <ele>

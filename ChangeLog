@@ -1,3 +1,43 @@
+2013-08-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Replace threat in notes with severity.  Hence increase database version
+	to 91. Add database migration from version 90 to 91.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 91.
+
+	* src/manage_migrators.c (migrate_89_to_90): New function.
+	(database_migrators): Add migrate_90_to_91.
+
+	* src/manage.h (create_note, modify_note): Add parameter.
+	(note_iterator_severity): New function prototype.
+
+	* src/manage_sql.c (create_tables): Replace threat with severity in
+	notes and notes_trash.
+	(create_note, modify_note): Use severity instead of threat column and
+	convert threat parameter to severity if there is no severity given.
+	(copy_note, delete_note): Use severity instead of threat column.
+	(NOTE_ITERATOR_FILTER_COLUMNS, NOTE_ITERATOR_COLUMNS)
+	(NOTE_ITERATOR_TRASH_COLUMNS): Add severity column and derive threat
+	from that.
+	(note_iterator_severity): New iterator function.
+	(manage_restore): Use severity instead of threat column for notes.
+
+	* src/omp.c (create_note_data_t, create_note_data_reset): Add severity
+	component.
+	(client_state_t): Add CLIENT_CREATE_NOTE_SEVERITY and
+	CLIENT_MODIFY_NOTE_SEVERITY
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add severity subelement to create_note
+	and modify_note.
+	(buffer_notes_xml): Add severity to detailed get_notes response.
+
+	* src/schema_formats/XML/OMP.xml (create_note, modify_note): Add
+	severity element to command.
+	(get_notes): Add severity element to note in response and to result in
+	the note subelement.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Remove GET_REPORTS init

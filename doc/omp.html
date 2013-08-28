@@ -5537,6 +5537,11 @@ create_lsc_credential_password
           </li></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Severity to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>task</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
 <ul style="list-style: none"><li>
@@ -5546,7 +5551,7 @@ create_lsc_credential_password
 </li>
 <li>
               &lt;<b>threat</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
+              ?<div style="margin-left: 15px; display: inline;">Threat level to which note applies. Will be converted to severity..</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -5581,6 +5586,7 @@ create_lsc_credential_password
        &amp; create_note_hosts?
        &amp; create_note_port?
        &amp; create_note_result?
+       &amp; create_note_severity?
        &amp; create_note_task?
        &amp; create_note_threat?
      }
@@ -5631,6 +5637,12 @@ create_note_result
  = element result
      {
        attribute id { uuid }
+     }
+
+create_note_severity
+ = element severity
+     {
+       severity
      }
 
 create_note_task
@@ -12649,6 +12661,11 @@ get_lsc_credentials_response_lsc_credential_package
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>threat</b>&gt;
               <div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
 <ul style="list-style: none"></ul>
@@ -12721,6 +12738,10 @@ get_lsc_credentials_response_lsc_credential_package
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>threat</b>&gt;
@@ -12891,6 +12912,7 @@ get_notes_response_note
            &amp; get_notes_response_note_modification_time
            &amp; get_notes_response_note_hosts
            &amp; get_notes_response_note_port
+           &amp; get_notes_response_note_severity
            &amp; get_notes_response_note_threat
            &amp; get_notes_response_note_task
            &amp; get_notes_response_note_active
@@ -12988,6 +13010,12 @@ get_notes_response_note_port
        text
      }
 
+get_notes_response_note_severity
+ = element severity
+     {
+       severity
+     }
+
 get_notes_response_note_threat
  = element threat
      {
@@ -13020,6 +13048,7 @@ get_notes_response_note_result
        &amp; get_notes_response_note_result_host
        &amp; get_notes_response_note_result_port
        &amp; get_notes_response_note_result_nvt
+       &amp; get_notes_response_note_result_severity
        &amp; get_notes_response_note_result_threat
        &amp; get_notes_response_note_result_description
      }
@@ -13081,6 +13110,12 @@ get_notes_response_note_result_nvt_bid
  = element bid
      {
        integer
+     }
+
+get_notes_response_note_result_severity
+ = element severity
+     {
+       severity
      }
 
 get_notes_response_note_result_threat
@@ -22187,6 +22222,11 @@ modify_lsc_credential_password
           </li></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Severity to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>task</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
 <ul style="list-style: none"><li>
@@ -22229,6 +22269,7 @@ modify_lsc_credential_password
        &amp; modify_note_hosts?
        &amp; modify_note_port?
        &amp; modify_note_result?
+       &amp; modify_note_severity?
        &amp; modify_note_task?
        &amp; modify_note_text
        &amp; modify_note_threat?
@@ -22250,6 +22291,12 @@ modify_note_port
  = element port
      {
        text
+     }
+
+modify_note_severity
+ = element severity
+     {
+       severity
      }
 
 modify_note_text

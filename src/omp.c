@@ -1030,6 +1030,7 @@ typedef struct
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
+  char *severity;     ///< Severity score to which to limit note.
   char *task_id;      ///< ID of task to which to limit override.
   char *text;         ///< Text of override.
   char *threat;       ///< Threat to which to limit override.
@@ -1049,6 +1050,7 @@ create_note_data_reset (create_note_data_t *data)
   free (data->nvt_oid);
   free (data->port);
   free (data->result_id);
+  free (data->severity);
   free (data->task_id);
   free (data->text);
   free (data->threat);
@@ -3453,6 +3455,7 @@ typedef struct
   char *nvt_oid;      ///< NVT to which to limit override.
   char *port;         ///< Port to which to limit override.
   char *result_id;    ///< ID of result to which to limit override.
+  char *severity;     ///< Severity score to which to limit note.
   char *task_id;      ///< ID of task to which to limit override.
   char *text;         ///< Text of override.
   char *threat;       ///< Threat to which to limit override.
@@ -3472,6 +3475,7 @@ modify_note_data_reset (modify_note_data_t *data)
   free (data->nvt_oid);
   free (data->port);
   free (data->result_id);
+  free (data->severity);
   free (data->task_id);
   free (data->text);
   free (data->threat);
@@ -4661,6 +4665,7 @@ typedef enum
   CLIENT_CREATE_NOTE_NVT,
   CLIENT_CREATE_NOTE_PORT,
   CLIENT_CREATE_NOTE_RESULT,
+  CLIENT_CREATE_NOTE_SEVERITY,
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
@@ -4973,6 +4978,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_HOSTS,
   CLIENT_MODIFY_NOTE_PORT,
   CLIENT_MODIFY_NOTE_RESULT,
+  CLIENT_MODIFY_NOTE_SEVERITY,
   CLIENT_MODIFY_NOTE_TASK,
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
@@ -8163,6 +8169,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               }
             set_client_state (CLIENT_CREATE_NOTE_RESULT);
           }
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_NOTE_SEVERITY);
         else if (strcasecmp ("TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -9023,6 +9031,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               }
             set_client_state (CLIENT_MODIFY_NOTE_RESULT);
           }
+        else if (strcasecmp ("SEVERITY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_NOTE_SEVERITY);
         else if (strcasecmp ("TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -9506,6 +9516,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<text>%s</text>"
             "<hosts>%s</hosts>"
             "<port>%s</port>"
+            "<severity>%s</severity>"
             "<threat>%s</threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
@@ -9524,6 +9535,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              ? note_iterator_hosts (notes) : "",
             note_iterator_port (notes)
              ? note_iterator_port (notes) : "",
+            note_iterator_severity (notes)
+             ? note_iterator_severity (notes) : "",
             note_iterator_threat (notes)
              ? note_iterator_threat (notes) : "",
             uuid_task ? uuid_task : "",
@@ -17483,6 +17496,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     create_note_data->text,
                                     create_note_data->hosts,
                                     create_note_data->port,
+                                    create_note_data->severity,
                                     create_note_data->threat,
                                     task,
                                     result,
@@ -17539,6 +17553,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_NOTE, HOSTS);
       CLOSE (CLIENT_CREATE_NOTE, NVT);
       CLOSE (CLIENT_CREATE_NOTE, PORT);
+      CLOSE (CLIENT_CREATE_NOTE, SEVERITY);
       CLOSE (CLIENT_CREATE_NOTE, RESULT);
       CLOSE (CLIENT_CREATE_NOTE, TASK);
       CLOSE (CLIENT_CREATE_NOTE, TEXT);
@@ -21238,6 +21253,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     modify_note_data->text,
                                     modify_note_data->hosts,
                                     modify_note_data->port,
+                                    modify_note_data->severity,
                                     modify_note_data->threat,
                                     task,
                                     result))
@@ -21256,6 +21272,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 log_event_fail ("note", "Note", modify_note_data->note_id,
                                 "modified");
                 break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in severity specification"));
+                log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
+                break;
               default:
                 assert (0);
                 SEND_TO_CLIENT_OR_FAIL
@@ -21270,6 +21293,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, HOSTS);
       CLOSE (CLIENT_MODIFY_NOTE, PORT);
       CLOSE (CLIENT_MODIFY_NOTE, RESULT);
+      CLOSE (CLIENT_MODIFY_NOTE, SEVERITY);
       CLOSE (CLIENT_MODIFY_NOTE, TASK);
       CLOSE (CLIENT_MODIFY_NOTE, TEXT);
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
@@ -24339,6 +24363,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_NOTE_PORT,
               &create_note_data->port);
 
+      APPEND (CLIENT_CREATE_NOTE_SEVERITY,
+              &create_note_data->severity);
+
       APPEND (CLIENT_CREATE_NOTE_TEXT,
               &create_note_data->text);
 
@@ -24785,6 +24812,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_NOTE_PORT,
               &modify_note_data->port);
+
+      APPEND (CLIENT_MODIFY_NOTE_SEVERITY,
+              &modify_note_data->severity);
 
       APPEND (CLIENT_MODIFY_NOTE_TEXT,
               &modify_note_data->text);
