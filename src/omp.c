@@ -13894,6 +13894,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get->filt_id = g_strdup ("0");
           }
 
+        get = &get_reports_data->report_get;
+
         INIT_GET (report, Report);
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);

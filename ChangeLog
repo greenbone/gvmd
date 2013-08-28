@@ -1,5 +1,10 @@
 2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add back init of get in
+	GET_REPORTS, otherwise the results one is used.
+
+2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (backup_db): Silence ls errors, which occur when
 	there is no journal.
 
