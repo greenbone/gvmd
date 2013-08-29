@@ -1890,7 +1890,7 @@ find_schedule (const char*, schedule_t*);
 
 int
 create_schedule (const char*, const char *, time_t, time_t, time_t,
-                 time_t, schedule_t *);
+                 time_t, const char*, schedule_t *);
 
 int
 copy_schedule (const char*, const char*, const char *, schedule_t *);

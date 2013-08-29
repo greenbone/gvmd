@@ -1,3 +1,16 @@
+2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r15953.
+
+	* src/manage.h, src/manage_sql.c (create_schedule): Add timezone
+	parameter.
+
+	* src/omp.c (create_schedule_data_t, create_schedule_data_reset): Add
+	timezone.
+	(client_state_t): New state CLIENT_CREATE_SCHEDULE_TIMEZONE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add timezone element to create_schedule.
+
 2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r17510.

@@ -39550,9 +39550,10 @@ find_schedule (const char* uuid, schedule_t* schedule)
 int
 create_schedule (const char* name, const char *comment, time_t first_time,
                  time_t period, time_t period_months, time_t duration,
-                 schedule_t *schedule)
+                 const char* timezone, schedule_t *schedule)
 {
   gchar *quoted_name = sql_quote (name);
+  gchar *insert_timezone;
   long offset;
 
   sql ("BEGIN IMMEDIATE;");
@@ -39572,10 +39573,32 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 1;
     }
 
-  offset = current_offset (sql_string (0, 0,
-                                       "SELECT timezone FROM users"
-                                       " WHERE users.uuid = '%s';",
-                                       current_credentials.uuid));
+  if (timezone && strcmp(timezone,"") != 0)
+    {
+      insert_timezone = g_strdup (timezone);
+    }
+  else
+    {
+      insert_timezone = sql_string (0, 0,
+                                    "SELECT timezone FROM users"
+                                    " WHERE users.uuid = '%s';",
+                                    current_credentials.uuid);
+    }
+
+  if (insert_timezone == NULL)
+    {
+      insert_timezone = g_strdup ("UTC");
+    }
+  else {
+    insert_timezone = g_strstrip(insert_timezone);
+    if (strcmp(insert_timezone, "") != 0)
+      {
+        g_free (insert_timezone);
+        insert_timezone = g_strdup ("UTC");
+      }
+  }
+
+  offset = current_offset (insert_timezone);
 
   if (comment)
     {
@@ -39588,10 +39611,10 @@ create_schedule (const char* name, const char *comment, time_t first_time,
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            "  '%s', %i, %i, %i, %i,"
-           "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
+           "  '%s',"
            "  %li, now(), now());",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, period_months, duration, current_credentials.uuid, offset);
+           period, period_months, duration, insert_timezone, offset);
       g_free (quoted_comment);
     }
   else
@@ -39603,15 +39626,16 @@ create_schedule (const char* name, const char *comment, time_t first_time,
          " (make_uuid (), '%s',"
          "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
          "  '', %i, %i, %i, %i,"
-         "  (SELECT timezone FROM users WHERE users.uuid = '%s'),"
+         "  '%s',"
          "  %li, now(), now());",
          quoted_name, current_credentials.uuid, first_time, period,
-         period_months, duration, current_credentials.uuid, offset);
+         period_months, duration, insert_timezone, offset);
 
   if (schedule)
     *schedule = sqlite3_last_insert_rowid (task_db);
 
   g_free (quoted_name);
+  g_free (insert_timezone);
 
   sql ("COMMIT;");
 
