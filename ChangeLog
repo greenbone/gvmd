@@ -1,5 +1,12 @@
 2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r15957.
+
+	* src/manage_sql.c (create_schedule): Fix timezone default overwriting
+	existing value. Remove superfluous "!= 0" and braces.
+
+2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r15955.
 
 	* src/html/XML/OMP.xml, doc/omp.html, doc/omp.rnc (create_schedule): Add
