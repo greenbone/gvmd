@@ -1,5 +1,12 @@
 2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r15958.
+
+	* src/manage_sql.c (create_schedule): Clean up spacing and
+	braces/indentation.
+
+2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r15957.
 
 	* src/manage_sql.c (create_schedule): Fix timezone default overwriting
