@@ -2284,9 +2284,10 @@ create_schedule
      {
        create_schedule_name
        & create_schedule_comment?
-       & create_schedule_first_time
-       & create_schedule_duration
-       & create_schedule_period
+       & create_schedule_first_time?
+       & create_schedule_duration?
+       & create_schedule_period?
+       & create_schedule_timezone?
      }
 
 # A name for the schedule.
@@ -2370,6 +2371,13 @@ create_schedule_period_unit
  = element unit
      {
        time_unit
+     }
+
+# The timezone the schedule will follow.
+create_schedule_timezone
+ = element timezone
+     {
+       text
      }
 
 ## Command create_slave

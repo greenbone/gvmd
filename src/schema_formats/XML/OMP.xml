@@ -2895,9 +2895,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
-      <e>first_time</e>
-      <e>duration</e>
-      <e>period</e>
+      <o><e>first_time</e></o>
+      <o><e>duration</e></o>
+      <o><e>period</e></o>
+      <o><e>timezone</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -2967,6 +2968,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Period time unit</summary>
         <pattern><t>time_unit</t></pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>timezone</name>
+      <summary>The timezone the schedule will follow</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
