@@ -57,7 +57,7 @@ typedef enum
 /** @todo Exported for ompd.c. */
 extern scanner_init_state_t scanner_init_state;
 
-/** @todo Exported for otpd.c and ompd.c. */
+/** @todo Exported for ompd.c. */
 void
 set_scanner_init_state (scanner_init_state_t state);
 

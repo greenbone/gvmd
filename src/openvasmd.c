@@ -51,10 +51,7 @@
  * \section Implementation
  *
  * The command line entry to the manager is defined in
- * src/\ref openvasmd.c.  The manager can run as an OTP port forwarder or an
- * OMP server.
- *
- * The OTP port forwarder is defined in src/\ref otpd.c.
+ * src/\ref openvasmd.c.  The manager is an OMP server.
  *
  * The OMP server is defined in src/\ref ompd.c.  It uses the OTP library
  * to handle the OTP server and the OMP library to handle the OMP client.
@@ -114,7 +111,6 @@
 #include "manage.h"
 #include "oxpd.h"
 #include "ompd.h"
-#include "otpd.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
 
@@ -265,11 +261,6 @@ static gchar *database = NULL;
 int is_parent = 1;
 
 /**
- * @brief Whether to serve OTP.
- */
-gboolean otp = FALSE;
-
-/**
  * @brief Flag for SIGHUP handler.
  */
 int sighup_update_nvt_cache = 0;
@@ -295,9 +286,9 @@ gboolean disable_encrypted_credentials;
 /**
  * @brief Serve the client.
  *
- * Connect to the openvassd scanner, then call either \ref serve_otp or \ref
- * serve_omp to serve the protocol, depending on the first message that
- * the client sends.  Read the first message with \ref read_protocol.
+ * Connect to the openvassd scanner, then call \ref serve_omp to serve
+ * the protocol, depending on the first message that the client sends.
+ * Read the first message with \ref read_protocol.
  *
  * In all cases, close client_socket before returning.
  *
@@ -384,15 +375,6 @@ serve_client (int server_socket, int client_socket)
   /** @todo Some of these are client errors, all EXIT_FAILURE. */
   switch (read_protocol (&client_session, client_socket))
     {
-      case PROTOCOL_OTP:
-        if (otp == FALSE)
-          goto fail;
-        /* It's up to serve_otp to openvas_server_free client_*. */
-        if (serve_otp (&client_session, &scanner_session,
-                       &client_credentials,
-                       client_socket, scanner_socket))
-          goto server_fail;
-        break;
       case PROTOCOL_OMP:
         /* It's up to serve_omp to openvas_server_free client_*. */
         if (serve_omp (&client_session, &scanner_session,
@@ -1165,7 +1147,6 @@ main (int argc, char** argv, char **envp)
         { "decrypt-all-credentials", '\0',
           G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
           &decrypt_all_credentials, NULL, NULL },
-        { "otp", '\0', 0, G_OPTION_ARG_NONE, &otp, "Serve OTP too.", NULL },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },

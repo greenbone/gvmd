@@ -1,3 +1,18 @@
+2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove OTP port forwarding mode, --otp.
+
+	* src/CMakeLists.txt: Remove otpd.c.
+
+	* src/openvasmd.c: Remove mention in mainpage doc.  Remove header.
+	(otp): Remove.
+	(serve_client): Remove read_protocol OTP case.
+	(main): Remove --otp.
+
+	* src/otp.h: Remove otpd.c reference.
+
+	* src/otpd.c, src/otpd.h: Remove.
+
 2013-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add back init of get in
