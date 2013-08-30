@@ -109,7 +109,6 @@
 
 #include "logf.h"
 #include "manage.h"
-#include "oxpd.h"
 #include "ompd.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
@@ -286,9 +285,7 @@ gboolean disable_encrypted_credentials;
 /**
  * @brief Serve the client.
  *
- * Connect to the openvassd scanner, then call \ref serve_omp to serve
- * the protocol, depending on the first message that the client sends.
- * Read the first message with \ref read_protocol.
+ * Connect to the openvassd scanner, then call \ref serve_omp to serve OMP.
  *
  * In all cases, close client_socket before returning.
  *
@@ -369,34 +366,14 @@ serve_client (int server_socket, int client_socket)
       goto fail;
     }
 
-  /* Read a message from the client, and call the appropriate protocol
-   * handler. */
+  /* Serve OMP. */
 
-  /** @todo Some of these are client errors, all EXIT_FAILURE. */
-  switch (read_protocol (&client_session, client_socket))
-    {
-      case PROTOCOL_OMP:
-        /* It's up to serve_omp to openvas_server_free client_*. */
-        if (serve_omp (&client_session, &scanner_session,
-                       &client_credentials, &scanner_credentials,
-                       client_socket, &scanner_socket,
-                       database, disabled_commands))
-          goto server_fail;
-        break;
-      case PROTOCOL_CLOSE:
-        g_log (G_LOG_DOMAIN,
-               G_LOG_LEVEL_INFO,
-               "   EOF while trying to read protocol\n");
-        goto fail;
-      case PROTOCOL_TIMEOUT:
-        openvas_server_free (client_socket,
-                             client_session,
-                             client_credentials);
-        break;
-      default:
-        g_warning ("%s: Failed to determine protocol\n", __FUNCTION__);
-        goto fail;
-    }
+  /* It's up to serve_omp to openvas_server_free client_*. */
+  if (serve_omp (&client_session, &scanner_session,
+                 &client_credentials, &scanner_credentials,
+                 client_socket, &scanner_socket,
+                 database, disabled_commands))
+    goto server_fail;
 
   openvas_server_free (scanner_socket,
                        scanner_session,

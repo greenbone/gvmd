@@ -38,7 +38,6 @@
  */
 
 #include "ompd.h"
-#include "oxpd.h"
 #include "logf.h"
 #include "omp.h"
 /** @todo For scanner_init_state. */
@@ -102,6 +101,52 @@ int socket(int domain, int type, int protocol);
  * @brief File descriptor set mask: selecting on scanner write.
  */
 #define FD_SCANNER_WRITE 8
+
+#ifndef S_SPLINT_S
+#if FROM_BUFFER_SIZE > SSIZE_MAX
+#error FROM_BUFFER_SIZE too big for "read"
+#endif
+#endif
+
+/**
+ * @brief Buffer of input from the client.
+ */
+char from_client[FROM_BUFFER_SIZE];
+
+/**
+ * @brief Buffer of input from the scanner.
+ */
+char from_scanner[FROM_BUFFER_SIZE];
+
+/**
+ * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
+ */
+buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
+
+/**
+ * @brief The start of the data in the \ref from_client buffer.
+ */
+buffer_size_t from_client_start = 0;
+
+/**
+ * @brief The start of the data in the \ref from_scanner buffer.
+ */
+buffer_size_t from_scanner_start = 0;
+
+/**
+ * @brief The end of the data in the \ref from_client buffer.
+ */
+buffer_size_t from_client_end = 0;
+
+/**
+ * @brief The end of the data in the \ref from_scanner buffer.
+ */
+buffer_size_t from_scanner_end = 0;
+
+/**
+ * @brief The IP address of openvassd, the "scanner".
+ */
+struct sockaddr_in scanner_address;
 
 /**
  * @brief Flag for running in NVT cache mode.

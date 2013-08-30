@@ -1,5 +1,22 @@
 2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove protocol check that was only need for --otp.  Merge the rest of
+	oxpd.c back into ompd.c.
+
+	* src/ompd.c: Remove oxpd.h.
+	(from_client, from_scanner, from_client_start, from_client_end)
+	(from_scanner_end, scanner_address): New variables.  From oxpd.c.
+
+	* src/ompd.h: Update headers accordingly.
+	(READ_PROTOCOL_TIMEOUT, FROM_BUFFER_SIZE): New defines.  From oxpd.h.
+
+	* src/openvasmd.c: Remove oxpd.h.
+	(serve_client): Just serve OMP, instead of doing a protocol check.
+
+	* src/oxpd.c, src/oxpd.h: Remove.
+
+2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove OTP port forwarding mode, --otp.
 
 	* src/CMakeLists.txt: Remove otpd.c.
