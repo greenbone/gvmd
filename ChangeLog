@@ -1,3 +1,7 @@
+2013-08-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/CMakeLists.txt: Remove handling of oxpd.c.
+
 2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Remove initial process_omp_client_input call,

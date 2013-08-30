@@ -47,7 +47,7 @@ set_target_properties (otp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CF
 
 ## Program
 
-add_executable (openvasmd openvasmd.c oxpd.c ompd.c)
+add_executable (openvasmd openvasmd.c ompd.c)
 target_link_libraries (openvasmd ovas-mngr-comm omp otp manage "${GNUTLS_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
@@ -145,7 +145,6 @@ add_dependencies (check splint rats flawfinder)
 ## Tag files
 
 set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/oxpd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ompd.c" "${CMAKE_CURRENT_SOURCE_DIR}/omp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_100.c"
