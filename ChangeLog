@@ -1,5 +1,10 @@
 2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/ompd.c (serve_omp): Remove initial process_omp_client_input call,
+	now that read_protocol is gone.
+
+2013-08-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove protocol check that was only need for --otp.  Merge the rest of
 	oxpd.c back into ompd.c.
 
