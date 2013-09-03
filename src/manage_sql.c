@@ -3012,17 +3012,37 @@ filter_clause (const char* type, const char* filter, const char **columns,
                 }
 
               quoted_keyword = sql_quote (keyword->string);
-              g_string_append_printf (clause,
-                                      "%s((SELECT ROWID FROM %ss"
-                                      "    WHERE %ss.uuid = '%s')"
-                                      "   = %ss.%s",
-                                      get_join (first_keyword, last_was_and,
-                                                last_was_not),
-                                      type_term,
-                                      type_term,
-                                      quoted_keyword,
-                                      type,
-                                      type_term);
+              if (strcmp (quoted_keyword, ""))
+                g_string_append_printf (clause,
+                                        "%s(((SELECT ROWID FROM %ss"
+                                        "     WHERE %ss.uuid = '%s')"
+                                        "     = %ss.%s"
+                                        "     OR %ss.%s IS NULL"
+                                        "     OR %ss.%s = 0)",
+                                        get_join (first_keyword,
+                                                  last_was_and,
+                                                  last_was_not),
+                                        type_term,
+                                        type_term,
+                                        quoted_keyword,
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term);
+              else
+                g_string_append_printf (clause,
+                                        "%s((%ss.%s IS NULL"
+                                        "   OR %ss.%s = 0)",
+                                        get_join (first_keyword,
+                                                  last_was_and,
+                                                  last_was_not),
+                                        type,
+                                        type_term,
+                                        type,
+                                        type_term);
+
               g_free (type_term);
             }
           else if (strcmp (keyword->column, "owner")

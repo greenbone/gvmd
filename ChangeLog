@@ -1,5 +1,11 @@
 2013-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Allow search for empty ..._id
+	(e.g. task_id) and include results with empty ..._id if a ..._id
+	filter term is given.
+
+2013-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (severity, threat): Add info on usage.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
