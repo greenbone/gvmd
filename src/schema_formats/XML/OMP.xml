@@ -153,6 +153,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       A severity score is a decimal number between 0.0 and 10.0 (inclusive) with
       one digit after the decimal point or a special negative value
       (-1.0, -2.0 or -3.0).
+      If a single severity score defines a constraint, e.g. on whether an
+      override applies, for values 0.0 and lower the severity must be equal
+      to match while for &gt; 0.0 the compared value must be greater or equal.
     </description>
     <pattern>xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }</pattern>
   </type>
@@ -187,7 +190,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <type>
     <name>threat</name>
     <summary>A threat level</summary>
-    <pattern>xsd:token { pattern = "High|Medium|Low|Log|Debug" }</pattern>
+    <description>
+      Threat levels are a textual classification of severity scores and mainly
+      provided for backward compatibility with clients designed for OpenVAS-6
+      and older. The use of these elements is deprecated as newer features of
+      OpenVAS Manager may only support severity elements, which should be used
+      instead.
+    </description>
+    <pattern>xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }</pattern>
   </type>
   <type>
     <name>time_unit</name>

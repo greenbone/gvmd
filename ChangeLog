@@ -1,3 +1,9 @@
+2013-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (severity, threat): Add info on usage.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-08-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/CMakeLists.txt: Remove handling of oxpd.c.

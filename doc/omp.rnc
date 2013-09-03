@@ -241,7 +241,7 @@ task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|P
 # The trend of results for a task.
 task_trend = xsd:token { pattern = "up|down|more|less|same" }
 # A threat level.
-threat = xsd:token { pattern = "High|Medium|Low|Log|Debug" }
+threat = xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }
 # A unit of time.
 time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 # A Universally Unique Identifier (UUID).
