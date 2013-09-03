@@ -944,11 +944,10 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </h3></div>
 <p>In short: A threat level.</p>
 <p>
-      Threat levels are a textual classification of severity scores and mainly
-      provided for backward compatibility with clients designed for OpenVAS-6
-      and older. The use of these elements is deprecated as newer features of
-      OpenVAS Manager may only support severity elements, which should be used
-      instead.
+      Threat levels are a textual classification of severity scores only
+      supported for importing reports from OpenVAS-6 and older.
+      The use of these elements is deprecated as they are otherwise replaced by
+      severity elements, which should be used instead.
     </p>
 <h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }
