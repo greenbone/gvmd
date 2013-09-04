@@ -5566,7 +5566,7 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       filter = new_filter;
     }
   else
-    filter = g_strdup ("");
+    filter = manage_clean_filter ("");
 
   type_many = g_string_new (type);
 

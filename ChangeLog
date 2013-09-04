@@ -1,3 +1,11 @@
+2013-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)
+	(REPORT_ITERATOR_COLUMNS): Add status.
+
+	* src/omp.c (send_get_end): Clean "" filter, so that the defaults are
+	applied.
+
 2013-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Use base/openvas_hosts api for hosts strings counting and validation.
