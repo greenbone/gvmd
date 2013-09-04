@@ -1,3 +1,12 @@
+2013-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Use base/openvas_hosts api for hosts strings counting and validation.
+
+	* manage_sql.c: Include base/openvas_hosts.h
+	(strbchr, contains_alpha, validate_host): Remove unused functions.
+	(manage_max_hosts): Remove old code. Replace with openvas_hosts_new and
+	openvas_hosts_count to return correct hosts count.
+
 2013-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (threat): Reduce backward
