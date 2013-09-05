@@ -47372,6 +47372,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("Reports Filter");
       else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
         filter_name = g_strdup ("Report Formats Filter");
+      else if (strcmp (uuid, "739ab810-163d-11e3-9af6-406186ea4fc5") == 0)
+        filter_name = g_strdup ("Results Filter");
       else if (strcmp (uuid, "f38e673a-bcd1-11e2-a19a-406186ea4fc5") == 0)
         filter_name = g_strdup ("Roles Filter");
       else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)

@@ -13894,9 +13894,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get->filt_id = g_strdup ("0");
           }
 
-        get = &get_reports_data->report_get;
-
-        INIT_GET (report, Report);
+        if (get->id)
+          {
+            /* Showing requested report, use Results Filter setting. */
+            INIT_GET (report, Result);
+            get = &get_reports_data->report_get;
+          }
+        else
+          {
+            /* Showing requested report, setup report filtering for INIT_GET. */
+            get = &get_reports_data->report_get;
+            INIT_GET (report, Report);
+          }
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);
         if (ret)

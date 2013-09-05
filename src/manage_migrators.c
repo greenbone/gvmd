@@ -7381,6 +7381,49 @@ migrate_90_to_91 ()
 }
 
 /**
+ * @brief Migrate the database from version 91 to version 92.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_91_to_92 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 91. */
+
+  if (manage_db_version () != 91)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The default setting Reports Filter was renamed to Results Filter.
+   * Report result filters are now of type "result".  Type "report" filters
+   * are for report filters. */
+
+  sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+       " SELECT '739ab810-163d-11e3-9af6-406186ea4fc5', owner,"
+       "        'Results Filter', comment, value"
+       " FROM settings"
+       " WHERE name = 'Reports Filter';");
+
+  sql ("DELETE FROM settings WHERE name = 'Reports Filter';");
+
+  sql ("UPDATE filters SET type = 'result' WHERE type = 'report';");
+
+  /* Set the database version 92. */
+
+  set_db_version (92);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7476,6 +7519,7 @@ static migrator_t database_migrators[]
     {89, migrate_88_to_89},
     {90, migrate_89_to_90},
     {91, migrate_90_to_91},
+    {92, migrate_91_to_92},
     /* End marker. */
     {-1, NULL}};
 
@@ -7600,4 +7644,3 @@ manage_migrate (GSList *log_config, const gchar *database)
   cleanup_manage_process (TRUE);
   return 0;
 }
-

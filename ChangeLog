@@ -1,3 +1,23 @@
+2013-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename the old report filtering type and setting, as they are for
+	results.  Hence increase database version to 92. Add database migration
+	from version 91 to 92.  Also make the GET_REPORTS returned filter depend
+	on the context.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 92.
+
+	* src/manage_migrators.c (migrate_91_to_92): New function.
+	(database_migrators): Add migrate_91_to_92.
+
+	* src/manage_sql.c (modify_setting): Add Results Filter.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_REPORTS, if a specific
+	report was requested, put the result filtering in the response,
+	otherwise put the report filtering.
+
+	* doc/db.png: Update for version changes.
+
 2013-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)
@@ -101,7 +121,7 @@
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 91.
 
-	* src/manage_migrators.c (migrate_89_to_90): New function.
+	* src/manage_migrators.c (migrate_90_to_91): New function.
 	(database_migrators): Add migrate_90_to_91.
 
 	* src/manage.h (create_note, modify_note): Add parameter.
