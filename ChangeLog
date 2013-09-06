@@ -1,5 +1,13 @@
 2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element): Remove setting of static
+	result filter for GET_REPORTS, now done in end handler.
+	(omp_xml_handle_end_element): In GET_REPORTS set the simple result
+	filter after INIT_GET, making sure to get the override value of the
+	report filter from the filt_id param if it's given.
+
+2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (INIT_GET): Doc arg.
 	(omp_xml_handle_end_element): In GET_REPORTS remove the explicit setup
 	of the get_reports_data->get filter because the first INIT_GET case does

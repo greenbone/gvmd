@@ -6540,23 +6540,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "report_filter",
                               &get_reports_data->report_get.filter);
 
-            if (get_reports_data->report_get.filter)
-              {
-                gchar *overrides;
-
-                /* For simplicity, use a fixed result filter when there's a
-                 * report filter. */
-
-                g_free (get_reports_data->get.filter);
-                overrides
-                 = filter_term_value (get_reports_data->report_get.filter,
-                                      "apply_overrides");
-                get_reports_data->get.filter
-                 = g_strdup_printf ("apply_overrides=%i",
-                                    overrides && strcmp (overrides, "0"));
-                g_free (overrides);
-              }
-
             append_attribute (attribute_names, attribute_values, "report_id",
                               &get_reports_data->report_id);
 
@@ -13536,7 +13519,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         iterator_t results;
         float min_cvss_base;
         iterator_t reports;
-        get_data_t * get;
         int count, filtered, ret, first;
 
         if (user_may ("get_reports") == 0)
@@ -13709,6 +13691,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             gchar *extension, *content_type;
             int ret, pos;
+            get_data_t * get;
 
             /* An asset report. */
 
@@ -13794,6 +13777,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             gchar *extension, *content_type;
             int ret, pos;
+            get_data_t * get;
 
             /* A prognostic report. */
 
@@ -13912,6 +13896,39 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 set_client_state (CLIENT_AUTHENTIC);
                 break;
               }
+          }
+
+        if (get_reports_data->report_get.id)
+          {
+            gchar *overrides, *filter;
+            get_data_t * get;
+
+            /* For simplicity, use a fixed result filter when filtering
+             * reports.  A given result filter is only applied when getting
+             * a single specified report. */
+
+            get = &get_reports_data->report_get;
+
+            /* Get overrides value from report filter. */
+            if (get->filt_id && strcmp (get->filt_id, "0"))
+              {
+                filter = filter_term (get->filt_id);
+                if (filter == NULL)
+                  assert (0);
+              }
+            else
+              filter = NULL;
+            g_free (get_reports_data->get.filter);
+            overrides
+             = filter_term_value (filter ? filter : get->filter,
+                                  "apply_overrides");
+            g_free (filter);
+
+            /* Setup result filter from overrides. */
+            get_reports_data->get.filter
+             = g_strdup_printf ("apply_overrides=%i",
+                                overrides && strcmp (overrides, "0"));
+            g_free (overrides);
           }
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);
