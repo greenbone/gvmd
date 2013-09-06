@@ -1,3 +1,11 @@
+2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (INIT_GET): Doc arg.
+	(omp_xml_handle_end_element): In GET_REPORTS remove the explicit setup
+	of the get_reports_data->get filter because the first INIT_GET case does
+	that already, and expand the INIT_GET in the second case in order to
+	pass in get_reports_data->report_get.
+
 2013-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Rename the old report filtering type and setting, as they are for

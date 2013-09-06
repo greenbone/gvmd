@@ -10599,7 +10599,8 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
 /**
  * @brief Call init_get for a GET end handler.
  *
- * @param[in]  type  Resource type.
+ * @param[in]  type     Resource type.
+ * @param[in]  capital  Resource type, capitalised.
  */
 #define INIT_GET(type, capital)                                          \
   count = 0;                                                             \
@@ -13880,31 +13881,37 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         /* The usual scan report. */
 
-        get = &get_reports_data->get;
-        if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-          {
-            char *user_filter = setting_filter ("Results");
-
-            if (user_filter && strlen (user_filter))
-              {
-                get->filt_id = user_filter;
-                get->filter = filter_term (user_filter);
-              }
-            else
-              get->filt_id = g_strdup ("0");
-          }
-
-        if (get->id)
+        if (get_reports_data->get.id)
           {
             /* Showing requested report, use Results Filter setting. */
             INIT_GET (report, Result);
-            get = &get_reports_data->report_get;
           }
         else
           {
-            /* Showing requested report, setup report filtering for INIT_GET. */
-            get = &get_reports_data->report_get;
-            INIT_GET (report, Report);
+            /* Showing multiple reports.  Use Report Filter setting.  Expand
+             * INIT_GET here to pass the get_reports_data->report_get to
+             * init_get. */
+            ret = init_get ("get_reports",
+                            &get_reports_data->report_get,
+                            "Reports",
+                            &first);
+            if (ret)
+              {
+                switch (ret)
+                  {
+                    case 99:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("get_reports",
+                                          "Permission denied"));
+                      break;
+                    default:
+                      internal_error_send_to_client (error);
+                      return;
+                  }
+                get_reports_data_reset (get_reports_data);
+                set_client_state (CLIENT_AUTHENTIC);
+                break;
+              }
           }
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);
