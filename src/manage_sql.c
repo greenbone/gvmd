@@ -9620,33 +9620,6 @@ setup_full_config_prefs (config_t config, int safe_checks,
        " VALUES (%i, 'SERVER_PREFS', 'unscanned_closed', 'yes');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'save_knowledge_base', 'yes');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'only_test_hosts_whose_kb_we_dont_have', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'only_test_hosts_whose_kb_we_have', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_restore', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_scanners', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_info_gathering', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_attacks', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_dont_replay_denials', 'no');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'kb_max_age', '864000');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'log_whole_attack', 'no');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
@@ -9660,9 +9633,6 @@ setup_full_config_prefs (config_t config, int safe_checks,
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'plugins_timeout', '320');",
-       config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'slice_network_addresses', 'no');",
        config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'nasl_no_signature_check', 'yes');",
