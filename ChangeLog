@@ -1,3 +1,21 @@
+2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add filter_replace param to GET_REPORTS, so that the client can specify
+	the task_id to be used in the filter.
+
+	* src/omp.c (init_get): Add a keyword from the "filter" param to the
+	filter when the "filter_replace" param is given.  Free filter.
+	(get_data_reset, get_data_parse_attributes): Add replace fields.
+	(send_get_end): Use the replacement filter if there is one.
+
+	* src/manage_sql.c (manage_clean_filter_remove): New function.  Based
+	on manage_clean_filter, but also removes a given keyword.
+	(manage_clean_filter): Call manage_clean_filter_remove to do the work.
+	(init_get_iterator): Use replacement filter if there is one.
+	(REPORT_ITERATOR_COLUMNS): Add missing task_id.
+
+	* src/manage.h: Update headers accordingly.
+
 2013-09-07  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c (setup_full_config_prefs): Removed handling
@@ -5,7 +23,7 @@
 	"kb_dont_replay_denials", "kb_dont_replay_info_gathering",
 	"kb_dont_replay_attacks", "kb_max_age", "save_knowledge_base",
 	"kb_restore", "only_test_hosts_whose_kb_we_dont_have" and
-        "only_test_hosts_whose_kb_we_have".
+	"only_test_hosts_whose_kb_we_have".
 	All of these settings were removed from the Scanner.
 
 2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>

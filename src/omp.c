@@ -442,10 +442,18 @@ int
 init_get (gchar *command, get_data_t * get, const gchar *setting_name,
           int *first)
 {
-  const gchar *filter;
+  gchar *filter, *replacement;
 
   if (user_may (command) == 0)
     return 99;
+
+  /* Get any replacement out of get->filter, before it changes.  Used to add
+   * task_id to the filter for GET_REPORTS. */
+
+  if (get->filter_replace && strlen (get->filter_replace) && get->filter)
+    replacement = filter_term_value (get->filter, get->filter_replace);
+  else
+    replacement = NULL;
 
   /* Switch to the default filter from the setting, if required. */
 
@@ -489,6 +497,42 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
   else
     filter = NULL;
 
+  if (replacement)
+    {
+      const gchar *term;
+
+      /* Replace the term in filter.  Used to add task_id to the filter
+       * for GET_REPORTS. */
+
+      term = filter ? filter : get->filter;
+
+      if (term)
+        {
+          gchar *new_filter, *clean;
+
+          clean = manage_clean_filter_remove (term, get->filter_replace);
+          new_filter = g_strdup_printf
+                        ("%s=%s %s",
+                         get->filter_replace,
+                         replacement,
+                         clean);
+          g_free (clean);
+          if (get->filter)
+            {
+              g_free (get->filter);
+              get->filter = new_filter;
+            }
+          else
+            {
+              g_free (filter);
+              filter = new_filter;
+            }
+          get->filter_replacement = g_strdup (new_filter);
+        }
+
+      g_free (replacement);
+    }
+
   /* Get the value of "first" from the filter string.
    *
    * This is used by get_next when the result set is empty, to determine if
@@ -496,6 +540,8 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
    */
   manage_filter_controls (filter ? filter : get->filter, first, NULL, NULL,
                           NULL);
+
+  g_free (filter);
 
   return 0;
 }
@@ -2077,8 +2123,10 @@ get_data_reset (get_data_t *data)
 {
   free (data->actions);
   free (data->id);
-  free (data->filter);
   free (data->filt_id);
+  free (data->filter);
+  free (data->filter_replace);
+  free (data->filter_replacement);
   free (data->subtype);
   free (data->type);
 
@@ -2130,6 +2178,9 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
     data->details = strcmp (attribute, "0");
   else
     data->details = 0;
+
+  append_attribute (attribute_names, attribute_values, "filter_replace",
+                    &data->filter_replace);
 }
 
 /**
@@ -5539,7 +5590,10 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
-      filter = filter_term (get->filt_id);
+      if (get->filter_replacement)
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
       if (filter == NULL)
         return 2;
     }

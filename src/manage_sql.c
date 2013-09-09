@@ -2450,14 +2450,15 @@ append_relation (GString *clean, keyword_t *keyword, const char relation)
 }
 
 /**
- * @brief Clean a filter.
+ * @brief Clean a filter, removing a keyword in the process.
  *
  * @param[in]  filter  Filter.
+ * @param[in]  column  Keyword to remove, or NULL.
  *
  * @return Cleaned filter.
  */
 gchar *
-manage_clean_filter (const gchar *filter)
+manage_clean_filter_remove (const gchar *filter, const gchar *column)
 {
   GString *clean;
   keyword_t **point;
@@ -2474,7 +2475,15 @@ manage_clean_filter (const gchar *filter)
       keyword_t *keyword;
 
       keyword = *point;
-      if (keyword->column)
+      if (keyword->column
+          && column
+          && ((strcasecmp (keyword->column, column) == 0)
+              || (keyword->column[0] == '_'
+                  && strcasecmp (keyword->column + 1, column) == 0)))
+        {
+          /* Remove this keyword. */;
+        }
+      else if (keyword->column)
         switch (keyword->relation)
           {
             case KEYWORD_RELATION_COLUMN_EQUAL:
@@ -2513,6 +2522,19 @@ manage_clean_filter (const gchar *filter)
     }
   filter_free (split);
   return g_strstrip (g_string_free (clean, FALSE));
+}
+
+/**
+ * @brief Clean a filter.
+ *
+ * @param[in]  filter  Filter.
+ *
+ * @return Cleaned filter.
+ */
+gchar *
+manage_clean_filter (const gchar *filter)
+{
+  return manage_clean_filter_remove (filter, NULL);
 }
 
 /**
@@ -4275,7 +4297,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
-      filter = filter_term (get->filt_id);
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
       if (filter == NULL)
         return 2;
     }
@@ -14644,7 +14672,8 @@ report_add_result (report_t report, result_t result)
   "ROWID, uuid, iso_time (start_time) AS name, '',"                          \
   " iso_time (start_time), iso_time (end_time),"                             \
   " start_time AS created, end_time AS modified, '',"                        \
-  " run_status_name (scan_run_status) AS status"
+  " run_status_name (scan_run_status) AS status,"                            \
+  " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id"
 
 /**
  * @brief Count number of reports.

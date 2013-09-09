@@ -256,6 +256,8 @@ typedef struct
   int details;         ///< Boolean.  Whether to include full details.
   char *filt_id;       ///< Filter ID.  Overrides "filter".
   char *filter;        ///< Filter term.
+  char *filter_replace; ///< Column to replace in filter.
+  char *filter_replacement; ///< Filter term to replace the one in filt_id.
   int first;           ///< Skip over items before this number.
   char *id;            ///< ID of single item to get.
   int max;             ///< Maximum number of items returned.
@@ -1146,6 +1148,9 @@ manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
 
 gchar *
 manage_clean_filter (const gchar *);
+
+gchar *
+manage_clean_filter_remove (const gchar *, const gchar *);
 
 int
 manage_max_hosts (const char *);
