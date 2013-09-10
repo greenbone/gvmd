@@ -1,4 +1,12 @@
-2013-09-06  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_clean_filter_remove): Check length of column
+	too, just to be safe.
+
+	* src/omp.c (omp_xml_handle_end_element): Correct the check to see if a
+	single result was requested.
+
+2013-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add filter_replace param to GET_REPORTS, so that the client can specify
 	the task_id to be used in the filter.

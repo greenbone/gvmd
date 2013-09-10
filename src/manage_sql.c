@@ -2477,6 +2477,7 @@ manage_clean_filter_remove (const gchar *filter, const gchar *column)
       keyword = *point;
       if (keyword->column
           && column
+          && strlen (column)
           && ((strcasecmp (keyword->column, column) == 0)
               || (keyword->column[0] == '_'
                   && strcasecmp (keyword->column + 1, column) == 0)))

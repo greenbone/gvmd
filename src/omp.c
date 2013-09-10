@@ -13952,7 +13952,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               }
           }
 
-        if (get_reports_data->report_get.id)
+        if ((get_reports_data->report_get.id == NULL)
+            || (strlen (get_reports_data->report_get.id) == 0))
           {
             gchar *overrides, *filter;
             get_data_t * get;
