@@ -578,7 +578,7 @@ maybe_free_scanner_rules ()
   if (scanner.rules)
     {
       g_ptr_array_foreach (scanner.rules, free_rule, NULL);
-      (void) g_ptr_array_free (scanner.rules, TRUE);
+      g_ptr_array_free (scanner.rules, TRUE);
       scanner.rules_size = 0;
     }
 }

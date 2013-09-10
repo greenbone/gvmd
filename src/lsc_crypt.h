@@ -35,10 +35,10 @@ extern int disable_encrypted_credentials;
 struct lsc_crypt_ctx_s;
 typedef struct lsc_crypt_ctx_s *lsc_crypt_ctx_t;
 
-lsc_crypt_ctx_t lsc_crypt_new (void);
+lsc_crypt_ctx_t lsc_crypt_new ();
 void lsc_crypt_release (lsc_crypt_ctx_t);
 
-int lsc_crypt_create_key (void);
+int lsc_crypt_create_key ();
 
 void lsc_crypt_flush (lsc_crypt_ctx_t);
 

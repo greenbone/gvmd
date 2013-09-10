@@ -3015,7 +3015,7 @@ run_task (const char *task_id, char **report_id, int from)
 
 #if 0
   /** @todo This is what the file based tasks did. */
-  if (task->open_ports) (void) g_array_free (task->open_ports, TRUE);
+  if (task->open_ports) g_array_free (task->open_ports, TRUE);
   task->open_ports = g_array_new (FALSE, FALSE, (guint) sizeof (port_t));
   task->open_ports_size = 0;
 #endif

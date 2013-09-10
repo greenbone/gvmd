@@ -34475,7 +34475,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
  * @return Static name of the Sysconf GnuPG home directory.
  */
 static const char *
-get_sysconf_gpghome (void)
+get_sysconf_gpghome ()
 {
   static char *name;
 
@@ -34498,7 +34498,7 @@ get_sysconf_gpghome (void)
  * @return Static file name.
  */
 static const char *
-get_trustedkeys_name (void)
+get_trustedkeys_name ()
 {
   static char *name;
 

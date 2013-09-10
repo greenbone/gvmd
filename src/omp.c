@@ -16088,10 +16088,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    * buffer errors.  Both should probably just lead to aborts
                    * at the SQL or buffer output level.
                    */
-                  (void) send_reports (index,
-                                       apply_overrides,
-                                       write_to_client,
-                                       write_to_client_data);
+                  send_reports (index,
+                                apply_overrides,
+                                write_to_client,
+                                write_to_client_data);
                 }
 
               in_assets = task_preference_value (index, "in_assets");

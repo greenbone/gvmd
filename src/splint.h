@@ -107,7 +107,7 @@ g_dir_read_name (GDir *dir);
 g_dir_close (/*@only@*/ /*@out@*/ GDir *dir);
 
 /*@only@*/ GRand*
-g_rand_new (void);
+g_rand_new ();
 
 void
 g_rand_free (/*@only@*/ /*@out@*/ GRand *);

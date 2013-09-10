@@ -508,7 +508,7 @@ do_decrypt (lsc_crypt_ctx_t ctx, const char *cipherstring,
  *         lsc_crypt_release.
  */
 lsc_crypt_ctx_t
-lsc_crypt_new (void)
+lsc_crypt_new ()
 {
   lsc_crypt_ctx_t ctx;
 
@@ -550,7 +550,7 @@ lsc_crypt_release (lsc_crypt_ctx_t ctx)
  * errors.
  */
 int
-lsc_crypt_create_key (void)
+lsc_crypt_create_key ()
 {
   int res = -1;
   lsc_crypt_ctx_t ctx;

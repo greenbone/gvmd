@@ -1,5 +1,25 @@
 2013-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/lsc_crypt.c (lsc_crypt_new, lsc_crypt_create_key): Remove void for
+	consistency.
+
+	* src/lsc_crypt.h: Update headers accordingly.
+
+	* src/manage.c (run_task): Remove void cast that was for splint.
+
+	* src/manage_sql.c (get_sysconf_gpghome, get_trustedkeys_name): Remove
+	void for consistency.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove void cast that was for
+	splint.
+
+	* src/otp.c (maybe_free_scanner_rules): Remove void cast that was for
+	splint.
+
+	* src/splint.h (g_rand_new): Remove void for consistency.
+
+2013-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_clean_filter_remove): Check length of column
 	too, just to be safe.
 
