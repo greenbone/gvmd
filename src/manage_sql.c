@@ -14664,7 +14664,8 @@ report_add_result (report_t report, result_t result)
  * @brief Filter columns for report iterator.
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
- { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "status", NULL }
+ { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
+   NULL }
 
 /**
  * @brief Report iterator columns.
@@ -14674,7 +14675,8 @@ report_add_result (report_t report, result_t result)
   " iso_time (start_time), iso_time (end_time),"                             \
   " start_time AS created, end_time AS modified, '',"                        \
   " run_status_name (scan_run_status) AS status,"                            \
-  " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id"
+  " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id,"           \
+  " iso_time (start_time) AS date"
 
 /**
  * @brief Count number of reports.

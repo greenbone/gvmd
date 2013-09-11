@@ -1,3 +1,8 @@
+2013-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)
+	(REPORT_ITERATOR_COLUMNS): Add date.
+
 2013-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/lsc_crypt.c (lsc_crypt_new, lsc_crypt_create_key): Remove void for
