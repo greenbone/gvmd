@@ -7424,6 +7424,41 @@ migrate_91_to_92 ()
 }
 
 /**
+ * @brief Migrate the database from version 92 to version 93.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_92_to_93 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 92. */
+
+  if (manage_db_version () != 92)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The scanner preference host_expansion was removed. */
+
+  sql ("DELETE FROM config_preferences WHERE name = 'host_expansion';");
+  sql ("DELETE FROM config_preferences_trash WHERE name = 'host_expansion';");
+  sql ("DELETE FROM config_preferences_trash WHERE name = 'host_expansion';");
+
+  /* Set the database version 93. */
+
+  set_db_version (93);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7520,6 +7555,7 @@ static migrator_t database_migrators[]
     {90, migrate_89_to_90},
     {91, migrate_90_to_91},
     {92, migrate_91_to_92},
+    {93, migrate_92_to_93},
     /* End marker. */
     {-1, NULL}};
 
