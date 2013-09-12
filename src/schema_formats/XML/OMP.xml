@@ -15665,4 +15665,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>THREAT removed from PORT in response</summary>
+    <version>4.0</version>
+    <description>
+      <p>
+        In the response to GET_REPORTS the element THREAT in REPORTS/PORTS/PORT
+        has been replaced with the element CVSS.
+      </p>
+    </description>
+  </change>
 </protocol>

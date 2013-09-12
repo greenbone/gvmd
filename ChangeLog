@@ -1,3 +1,13 @@
+2013-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Add first CHANGE element, about a
+	compatibility change in GET_REPORTS.
+
+	* src/schema_formats/HTML/HTML.xsl (change, changes): New templates.
+	(protocol): Add Compatibility Changes section.
+
+	* doc/omp.html: Update from source.
+
 2013-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (REPORT_ITERATOR_FILTER_COLUMNS)
