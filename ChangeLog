@@ -1,3 +1,7 @@
+2013-09-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_92_to_93): Remove duplicate SQL.
+
 2013-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove config preference host_expansion.  Hence increase database

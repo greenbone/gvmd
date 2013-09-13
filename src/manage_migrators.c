@@ -7447,7 +7447,6 @@ migrate_92_to_93 ()
 
   sql ("DELETE FROM config_preferences WHERE name = 'host_expansion';");
   sql ("DELETE FROM config_preferences_trash WHERE name = 'host_expansion';");
-  sql ("DELETE FROM config_preferences_trash WHERE name = 'host_expansion';");
 
   /* Set the database version 93. */
 
