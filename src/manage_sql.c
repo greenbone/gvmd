@@ -15222,83 +15222,6 @@ where_search_phrase (const char* search_phrase, int exact)
   " 'Privilege escalation'"
 
 /**
- * @brief Return SQL WHERE for restricting a SELECT for auto FP filter.
- *
- * @param[in] autofp  Whether to apply the auto FP filter.
- * @param[in] report  Report.
- *
- * @return WHERE clause for autofp if desired, else NULL.
- */
-static GString *
-where_autofp (int autofp, report_t report)
-{
-  GString *autofp_sql;
-  switch (autofp)
-    {
-      case 1:
-        autofp_sql = g_string_new ("");
-        g_string_append_printf
-         (autofp_sql,
-          " AND"
-          " (((SELECT family FROM nvts WHERE oid = results.nvt)"
-          "   IN (" LSC_FAMILY_LIST "))"
-          "  OR results.nvt == '0'"
-          "  OR"
-          "  (SELECT ROWID FROM nvts"
-          "   WHERE oid = results.nvt"
-          "   AND"
-          "   (cve == 'NOCVE'"
-          "    OR cve NOT IN (SELECT cve FROM nvts"
-          "                   WHERE oid IN (SELECT source_name"
-          "                                 FROM report_host_details"
-          "                                 WHERE report_host"
-          "                                 = (SELECT id"
-          "                                    FROM report_hosts"
-          "                                    WHERE report = %llu"
-          "                                    AND host = results.host)"
-          "                                 AND name = 'EXIT_CODE'"
-          "                                 AND value = 'EXIT_NOTVULN')"
-          "                   AND family IN (" LSC_FAMILY_LIST ")))))",
-          report);
-        break;
-      case 2:
-        autofp_sql = g_string_new ("");
-        g_string_append_printf
-         (autofp_sql,
-          " AND"
-          " (((SELECT family FROM nvts WHERE oid = results.nvt)"
-          "   IN (" LSC_FAMILY_LIST "))"
-          "  OR results.nvt == '0'"
-          "  OR"
-          "  (SELECT ROWID FROM nvts AS outer_nvts"
-          "   WHERE oid = results.nvt"
-          "   AND"
-          "   (cve == 'NOCVE'"
-          "    OR NOT EXISTS"
-          "       (SELECT cve FROM nvts"
-          "        WHERE oid IN (SELECT source_name"
-          "                      FROM report_host_details"
-          "                      WHERE report_host"
-          "                      = (SELECT id"
-          "                         FROM report_hosts"
-          "                         WHERE report = %llu"
-          "                         AND host = results.host)"
-          "                      AND name = 'EXIT_CODE'"
-          "                      AND value = 'EXIT_NOTVULN')"
-          "        AND family IN (" LSC_FAMILY_LIST ")"
-          /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
-           * NVT that has registered the "closed" host detail is nvts.cve.
-           * Either can be a list of CVEs. */
-          "        AND common_cve (nvts.cve, outer_nvts.cve)))))",
-          report);
-        break;
-      default:
-        return NULL;
-    }
-  return autofp_sql;
-}
-
-/**
  * @brief Initialise a result iterator.
  *
  * The results are ordered by host, then port and type (severity) according
@@ -17351,715 +17274,6 @@ report_scan_result_count (report_t report, const char* levels,
 }
 
 /**
- * @brief Get the result count for a report for a specific message type.
- *
- * @param[in]  report     Report.
- * @param[in]  type       Message type.
- * @param[in]  override   Whether to override the threat.
- * @param[in]  host       Host to which to limit the count.  NULL to allow all.
- *
- * @return Result count.
- */
-int
-report_result_count (report_t report, const char *type, int override,
-                     const char *host)
-{
-  gchar *severity_sql;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
-                  " FROM overrides"
-                  " WHERE ((overrides.owner IS NULL)"
-                  "        OR (overrides.owner ="
-                  "            (SELECT ROWID FROM users"
-                  "             WHERE users.uuid = '%s')))"
-                  " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))",
-                  current_credentials.uuid))
-    {
-      int count;
-      iterator_t results;
-      task_t task;
-
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
-
-      /* Prepare quick inner statement. */
-
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                                " AND ((overrides.end_time = 0)"
-                                "      OR (overrides.end_time >= now ()))",
-                                current_credentials.uuid);
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Prepare full inner statement. */
-
-      report_task (report, &task);
-
-      select = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity)"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.modification_time DESC;",
-                 current_credentials.uuid,
-                 task);
-
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Loop through all results. */
-
-      count = 0;
-      init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port, %s"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     severity_sql,
-                     report);
-      while (next (&results))
-        {
-          const char *nvt, *new_type;
-
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-          /* Bind the current result values into the quick statement. */
-
-          while (1)
-            {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-
-          /* Run the quick inner statement to check for overrides. */
-
-          while (1)
-            {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-
-          /* Check the result. */
-
-          if (ret == SQLITE_DONE)
-            {
-              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              if (new_type && (strcmp (new_type, type) == 0))
-                count++;
-            }
-          else
-            {
-              /* There is an override on this NVT, get the new threat value. */
-
-              /* Bind the current result values into the full statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  double severity;
-                  severity = sqlite3_column_double (results.stmt, 5);
-                  ret = sqlite3_bind_double (full_stmt, 5, severity);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              else
-                new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-
-              if (new_type && (strcmp (new_type, type) == 0))
-                count++;
-
-              /* Reset the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-
-          /* Reset the quick inner statement. */
-
-          while (1)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-            }
-        }
-      cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
-      sqlite3_finalize (full_stmt);
-      g_free (severity_sql);
-      return count;
-    }
-  else if (host)
-    {
-      gchar* quoted_host = sql_quote (host);
-      int count = sql_int (0, 0,
-                           "SELECT count(*) FROM results, report_results"
-                           " WHERE results.host = '%s'"
-                           " AND severity_matches_type (%s, '%s')"
-                           " AND results.ROWID = report_results.result"
-                           " AND report_results.report = %llu;",
-                           quoted_host,
-                           severity_sql,
-                           type,
-                           report);
-      g_free (quoted_host);
-      g_free (severity_sql);
-      return count;
-    }
-  else
-    {
-      int ret;
-      ret = sql_int (0, 0,
-                     "SELECT count(*) FROM results"
-                     " WHERE results.report = %llu"
-                     " AND severity_matches_type (%s, '%s');",
-                     report,
-                     severity_sql,
-                     type);
-      g_free (severity_sql);
-      return ret;
-    }
-}
-
-/**
- * @brief Get the maximum severity for a report.
- *
- * @param[in]  report     Report.
- * @param[in]  type       Message type.
- * @param[in]  override   Whether to override the threat.
- * @param[in]  host       Host to which to limit the count.  NULL to allow all.
- *
- * @return Message count.
- */
-double
-report_severity (report_t report, int override, const char *host)
-{
-  gchar *severity_sql;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
-                  " FROM overrides"
-                  " WHERE ((overrides.owner IS NULL)"
-                  "        OR (overrides.owner ="
-                  "            (SELECT ROWID FROM users"
-                  "             WHERE users.uuid = '%s')))"
-                  " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))",
-                  current_credentials.uuid))
-    {
-      double severity;
-      iterator_t results;
-      task_t task;
-
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
-
-      /* Prepare quick inner statement. */
-
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                                " AND ((overrides.end_time = 0)"
-                                "      OR (overrides.end_time >= now ()))",
-                                current_credentials.uuid);
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Prepare full inner statement. */
-
-      report_task (report, &task);
-
-      select = g_strdup_printf
-                ("SELECT overrides.new_severity"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.modification_time DESC;",
-                 current_credentials.uuid,
-                 task);
-
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Loop through all results. */
-
-      severity = 0.0;
-      init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.severity,"
-                     " results.host, results.port"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     report);
-      while (next (&results))
-        {
-          const char *nvt;
-          double new_severity;
-
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-          /* Bind the current result values into the quick statement. */
-
-          while (1)
-            {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-
-          /* Run the quick inner statement to check for overrides. */
-
-          while (1)
-            {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-
-          /* Check the result. */
-
-          if (ret == SQLITE_DONE)
-            {
-              new_severity = sqlite3_column_double (results.stmt, 2);
-              if (new_severity > severity)
-                severity = new_severity;
-            }
-          else
-            {
-              /* There is an override on this NVT, get the new threat value. */
-
-              /* Bind the current result values into the full statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  double severity;
-                  severity = sqlite3_column_double (results.stmt, 2);
-                  ret = sqlite3_bind_double (full_stmt, 5, severity);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                new_severity = sqlite3_column_double (results.stmt, 2);
-              else
-                new_severity = sqlite3_column_double (full_stmt, 0);
-
-              if (new_severity > severity)
-                severity = new_severity;
-
-              /* Reset the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-
-          /* Reset the quick inner statement. */
-
-          while (1)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-            }
-        }
-      cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
-      sqlite3_finalize (full_stmt);
-      g_free (severity_sql);
-      return severity;
-    }
-  else if (host)
-    {
-      gchar* quoted_host = sql_quote (host);
-      double severity;
-      severity = sql_double (0, 0,
-                             "SELECT max(%s) FROM results, report_results"
-                             " WHERE results.host = '%s'"
-                             " AND results.ROWID = report_results.result"
-                             " AND report_results.report = %llu;",
-                             severity_sql,
-                             quoted_host,
-                             report);
-      g_free (severity_sql);
-      g_free (quoted_host);
-      return severity;
-    }
-  else
-    {
-      double ret;
-      ret = sql_double (0, 0,
-                        "SELECT max(%s) FROM results, report_results"
-                        " WHERE results.ROWID = report_results.result"
-                         " AND report_results.report = %llu;",
-                        severity_sql,
-                        report);
-      g_free (severity_sql);
-      return (ret);
-    }
-}
-
-/**
  * @brief Check if a result matches the autofp filter criteria.
  *
  * @param[in]  results        Result iterator.
@@ -18224,10 +17438,9 @@ report_counts_match (iterator_t *results, const char *search_phrase,
 }
 
 /**
- * @brief Get the message count for a report for a specific message type.
+ * @brief Get the result severity counts for a report.
  *
  * @param[in]  report     Report.
- * @param[in]  type       Message type.
  * @param[in]  override   Whether to override the threat.
  * @param[in]  host       Host to which to limit the count.  NULL to allow all.
  * @param[in]  min_cvss_base  Minimum CVSS base of filtered results.  All
@@ -18236,28 +17449,24 @@ report_counts_match (iterator_t *results, const char *search_phrase,
  *                            if NULL or "".
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  autofp         Whether to apply the auto FP filter.
- *
- * @return Message count.
+ * @param[out] severity_data  
  */
-int
-report_count_filtered (report_t report, const char *type, int override,
-                       const char *host, const char *min_cvss_base,
-                       const char *search_phrase, int search_phrase_exact,
-                       int autofp)
+void
+report_severity_data (report_t report, int override,
+                      const char *host, const char *min_cvss_base,
+                      const char *search_phrase, int search_phrase_exact,
+                      int autofp,
+                      severity_data_t* severity_data,
+                      severity_data_t* filtered_severity_data)
 {
-  gchar *severity_sql;
+  iterator_t results;
+  task_t task;
 
-  if (search_phrase && strcmp (search_phrase, "") == 0)
-    search_phrase = NULL;
+  sqlite3_stmt *stmt, *full_stmt;
+  gchar *select, *quoted_host, *severity_sql;
+  int ret;
 
-  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
-    min_cvss_base = NULL;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
+  /* Prepare quick inner statement. */
 
   if (override
       && sql_int (0, 0,
@@ -18271,16 +17480,6 @@ report_count_filtered (report_t report, const char *type, int override,
                   "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
     {
-      int count;
-      iterator_t results;
-      task_t task;
-
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
-
-      /* Prepare quick inner statement. */
-
       select = g_strdup_printf ("SELECT 1 FROM overrides"
                                 " WHERE (overrides.nvt = $nvt)"
                                 " AND ((overrides.owner IS NULL) OR (overrides.owner ="
@@ -18299,15 +17498,15 @@ report_count_filtered (report_t report, const char *type, int override,
               if (stmt == NULL)
                 {
                   g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
             }
           g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+                      __FUNCTION__,
+                      sqlite3_errmsg (task_db));
           /** @todo ROLLBACK if in transaction. */
           abort ();
         }
@@ -18317,31 +17516,33 @@ report_count_filtered (report_t report, const char *type, int override,
       report_task (report, &task);
 
       select = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity)"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.modification_time DESC;",
-                 current_credentials.uuid,
-                 task);
+                ("SELECT severity_to_type (overrides.new_severity),"
+                  "       overrides.new_severity"
+                  " FROM overrides"
+                  " WHERE overrides.nvt = $nvt" // 1
+                  " AND ((overrides.owner IS NULL)"
+                  " OR (overrides.owner ="
+                  " (SELECT users.ROWID FROM users"
+                  "  WHERE users.uuid = '%s')))"
+                  " AND ((overrides.end_time = 0)"
+                  "      OR (overrides.end_time >= now ()))"
+                  " AND (overrides.task = 0"
+                  "      OR overrides.task = %llu)"
+                  " AND (overrides.result = 0"
+                  "      OR overrides.result = $result)" // 2
+                  " AND (overrides.hosts is NULL"
+                  "      OR overrides.hosts = \"\""
+                  "      OR hosts_contains (overrides.hosts, $host))" // 3
+                  " AND (overrides.port is NULL"
+                  "      OR overrides.port = \"\""
+                  "      OR overrides.port = $port)" // 4
+                  " AND severity_matches_ov ($severity,"
+                  "                          overrides.severity)" // 5
+                  " ORDER BY overrides.result DESC, overrides.task DESC,"
+                  " overrides.port DESC, overrides.severity ASC,"
+                  " overrides.modification_time DESC;",
+                  current_credentials.uuid,
+                  task);
 
       while (1)
         {
@@ -18354,454 +17555,51 @@ report_count_filtered (report_t report, const char *type, int override,
               if (full_stmt == NULL)
                 {
                   g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
             }
           g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+                      __FUNCTION__,
+                      sqlite3_errmsg (task_db));
           /** @todo ROLLBACK if in transaction. */
           abort ();
         }
 
       /* Loop through all results. */
+      if (host)
+        quoted_host = sql_quote (host);
+      else
+        quoted_host = NULL;
 
-      count = 0;
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                  " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup ("results.severity");
+
       init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port, results.description"
-                     " report_results.report, %s"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     severity_sql,
-                     report);
+                      "SELECT results.ROWID, results.nvt, results.type,"
+                      " results.host, results.port, results.description,"
+                      " report_results.report, %s"
+                      " FROM results, report_results"
+                      " WHERE"
+                      "%s%s%s"
+                      " report_results.report = %llu"
+                      " AND results.ROWID = report_results.result",
+                      severity_sql,
+                      host ? " results.host = '" : "",
+                      host ? quoted_host : "",
+                      host ? "' AND" : "",
+                      report);
+      g_free (severity_sql);
+      if (host)
+        g_free (quoted_host);
       while (next (&results))
         {
           const char *nvt, *new_type;
-
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-          /* Bind the current result values into the quick statement. */
-
-          while (1)
-            {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-
-          /* Run the quick inner statement to check for overrides. */
-
-          while (1)
-            {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-
-          /* Check the result. */
-
-          if (ret == SQLITE_DONE)
-            {
-              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              if (new_type
-                  && (strcmp (new_type, type) == 0)
-                  && report_counts_match (&results,
-                                          search_phrase,
-                                          search_phrase_exact,
-                                          min_cvss_base,
-                                          autofp))
-                count++;
-            }
-          else
-            {
-              /* There is an override on this NVT, get the new threat value. */
-
-              /* Bind the current result values into the full statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              while (1)
-                {
-                  double severity;
-                  severity = sqlite3_column_double (results.stmt, 7);
-                  ret = sqlite3_bind_double (full_stmt, 5, severity);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-              else
-                new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-
-              if (new_type
-                  && (strcmp (new_type, type) == 0)
-                  && report_counts_match (&results,
-                                          search_phrase,
-                                          search_phrase_exact,
-                                          min_cvss_base,
-                                          (strcmp (new_type, "False Positive")
-                                           && strcmp (new_type, "Log Message"))
-                                            ? autofp
-                                            : 0))
-                count++;
-
-              /* Reset the full inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-
-          /* Reset the quick inner statement. */
-
-          while (1)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-            }
-        }
-      cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
-      sqlite3_finalize (full_stmt);
-      g_free (severity_sql);
-      return count;
-    }
-  else if (strcmp (type, "False Positive") == 0)
-    {
-      int count;
-      GString *phrase_sql, *cvss_sql;
-      gchar *auto_type_sql;
-
-      phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
-      cvss_sql = where_cvss_base (min_cvss_base);
-      auto_type_sql = column_auto_type (report, autofp);
-
-      count = sql_int (0, 0,
-                       "SELECT count(*)%s FROM results, report_results"
-                       " WHERE report_results.report = %llu"
-                       " AND report_results.result = results.ROWID"
-                       "%s%s%s"
-                       " AND (severity_matches_type (%s, '%s')"
-                       "      OR auto_type IS NOT NULL)"
-                       "%s%s;",
-                       auto_type_sql,
-                       report,
-                       host ? " AND results.host = '" : "",
-                       host ? host : "",
-                       host ? "' AND " : "",
-                       severity_sql,
-                       type,
-                       phrase_sql ? phrase_sql->str : "",
-                       cvss_sql ? cvss_sql->str : "");
-
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      g_free (severity_sql);
-      g_free (auto_type_sql);
-      return count;
-    }
-  else
-    {
-      int count;
-      GString *autofp_sql, *phrase_sql, *cvss_sql;
-
-      autofp_sql = where_autofp (autofp, report);
-      phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
-      cvss_sql = where_cvss_base (min_cvss_base);
-
-      count = sql_int (0, 0,
-                       "SELECT count(*) FROM results, report_results"
-                       " WHERE report_results.report = %llu"
-                       " AND report_results.result = results.ROWID"
-                       "%s%s%s"
-                       " AND severity_matches_type (%s, '%s')"
-                       "%s%s%s;",
-                       report,
-                       host ? " AND results.host = '" : "",
-                       host ? host : "",
-                       host ? "' AND " : "",
-                       severity_sql,
-                       type,
-                       autofp_sql ? autofp_sql->str : "",
-                       phrase_sql ? phrase_sql->str : "",
-                       cvss_sql ? cvss_sql->str : "");
-      if (autofp_sql) g_string_free (autofp_sql, TRUE);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
-      g_free (severity_sql);
-      return count;
-    }
-}
-
-/**
- * @brief Get the maximum severity for a report.
- *
- * @param[in]  report     Report.
- * @param[in]  override   Whether to override the threat.
- * @param[in]  host       Host to which to limit the count.  NULL to allow all.
- * @param[in]  min_cvss_base  Minimum CVSS base of filtered results.  All
- *                            results if NULL.
- * @param[in]  search_phrase  Phrase that filtered results must include.  All results
- *                            if NULL or "".
- * @param[in]  search_phrase_exact  Whether search phrase is exact.
- * @param[in]  autofp         Whether to apply the auto FP filter.
- *
- * @return Maximum severity.
- */
-double
-report_severity_filtered (report_t report, int override,
-                          const char *host, const char *min_cvss_base,
-                          const char *search_phrase, int search_phrase_exact,
-                          int autofp)
-{
-  gchar* severity_sql;
-
-  if (search_phrase && strcmp (search_phrase, "") == 0)
-    search_phrase = NULL;
-
-  if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
-    min_cvss_base = NULL;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
-                  " FROM overrides"
-                  " WHERE ((overrides.owner IS NULL)"
-                  "        OR (overrides.owner ="
-                  "            (SELECT ROWID FROM users"
-                  "             WHERE users.uuid = '%s')))"
-                  " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))",
-                  current_credentials.uuid))
-    {
-      double severity;
-      iterator_t results;
-      task_t task;
-
-      sqlite3_stmt *stmt, *full_stmt;
-      gchar *select;
-      int ret;
-
-      /* Prepare quick inner statement. */
-
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                                " AND ((overrides.end_time = 0)"
-                                "      OR (overrides.end_time >= now ()))",
-                                current_credentials.uuid);
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Prepare full inner statement. */
-
-      report_task (report, &task);
-
-      select = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity)"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = $nvt" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.ROWID FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
-                 " AND (overrides.task = 0"
-                 "      OR overrides.task = %llu)"
-                 " AND (overrides.result = 0"
-                 "      OR overrides.result = $result)" // 2
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
-                 "      OR hosts_contains (overrides.hosts, $host))" // 3
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
-                 "      OR overrides.port = $port)" // 4
-                 " AND severity_matches_ov ($severity, overrides.severity)" // 5
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.modification_time DESC;",
-                 current_credentials.uuid,
-                 task);
-
-      while (1)
-        {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
-          abort ();
-        }
-
-      /* Loop through all results. */
-
-      severity = 0.0;
-      init_iterator (&results,
-                     "SELECT results.ROWID, results.nvt, results.type,"
-                     " results.host, results.port, results.description"
-                     " report_results.report, %s"
-                     " FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND results.ROWID = report_results.result",
-                     severity_sql,
-                     report);
-      while (next (&results))
-        {
-          const char *nvt;
           double new_severity;
 
           nvt = (const char*) sqlite3_column_text (results.stmt, 1);
@@ -18814,8 +17612,8 @@ report_severity_filtered (report_t report, int override,
               if (ret == SQLITE_BUSY) continue;
               if (ret == SQLITE_OK) break;
               g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
+                          __FUNCTION__,
+                          sqlite3_errmsg (task_db));
               abort ();
             }
 
@@ -18830,8 +17628,8 @@ report_severity_filtered (report_t report, int override,
                 {
                   if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
                   g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
@@ -18842,13 +17640,31 @@ report_severity_filtered (report_t report, int override,
           if (ret == SQLITE_DONE)
             {
               new_severity = sqlite3_column_double (results.stmt, 7);
-              if (new_severity > severity
-                  && report_counts_match (&results,
-                                          search_phrase,
-                                          search_phrase_exact,
-                                          min_cvss_base,
-                                          autofp))
-                severity = new_severity;
+              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+
+              if (new_type)
+                {
+                  if (autofp == 0
+                      || report_counts_autofp_match (&results, autofp)
+                      || new_severity == SEVERITY_LOG)
+                    severity_data_add (severity_data, new_severity);
+                  else
+                    severity_data_add (severity_data, SEVERITY_FP);
+
+                  if (filtered_severity_data)
+                    {
+                      if (report_counts_match (&results, search_phrase,
+                                                search_phrase_exact,
+                                                min_cvss_base, autofp))
+                        severity_data_add (filtered_severity_data,
+                                           new_severity);
+                      else if (report_counts_match (&results, search_phrase,
+                                                    search_phrase_exact,
+                                                    min_cvss_base, 0))
+                          severity_data_add (filtered_severity_data,
+                                             SEVERITY_FP);
+                    }
+                }
             }
           else
             {
@@ -18862,8 +17678,8 @@ report_severity_filtered (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -18875,8 +17691,8 @@ report_severity_filtered (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -18885,12 +17701,12 @@ report_severity_filtered (report_t report, int override,
                   const char *host;
                   host = (const char*) sqlite3_column_text (results.stmt, 3);
                   ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                           SQLITE_TRANSIENT);
+                                            SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -18899,12 +17715,12 @@ report_severity_filtered (report_t report, int override,
                   const char *port;
                   port = (const char*) sqlite3_column_text (results.stmt, 4);
                   ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                           SQLITE_TRANSIENT);
+                                            SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -18916,8 +17732,8 @@ report_severity_filtered (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -18932,8 +17748,8 @@ report_severity_filtered (report_t report, int override,
                     {
                       if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
                       g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
+                                  __FUNCTION__,
+                                  sqlite3_errmsg (task_db));
                       abort ();
                     }
                   break;
@@ -18942,12 +17758,39 @@ report_severity_filtered (report_t report, int override,
               /* Check the result. */
 
               if (ret == SQLITE_DONE)
-                new_severity = sqlite3_column_double (results.stmt, 7);
+                {
+                  new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+                  new_severity = sqlite3_column_double (results.stmt, 7);
+                }
               else
-                new_severity = sqlite3_column_double (results.stmt, 7);
+                {
+                  new_type = (const char*) sqlite3_column_text (full_stmt, 0);
+                  new_severity = sqlite3_column_double (full_stmt, 1);
+                }
 
-              if (new_severity > severity)
-                severity = new_severity;
+              if (new_type)
+                {
+                  if (autofp == 0
+                      || report_counts_autofp_match (&results, autofp)
+                      || new_severity == SEVERITY_LOG)
+                    severity_data_add (severity_data, new_severity);
+                  else
+                    severity_data_add (severity_data, SEVERITY_FP);
+
+                  if (filtered_severity_data)
+                    {
+                      if (report_counts_match (&results, search_phrase,
+                                                search_phrase_exact,
+                                                min_cvss_base, autofp))
+                        severity_data_add (filtered_severity_data,
+                                           new_severity);
+                      else if (report_counts_match (&results, search_phrase,
+                                                    search_phrase_exact,
+                                                    min_cvss_base, 0))
+                        severity_data_add (filtered_severity_data,
+                                           SEVERITY_FP);
+                    }
+                }
 
               /* Reset the full inner statement. */
 
@@ -18959,8 +17802,8 @@ report_severity_filtered (report_t report, int override,
                   if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
                     {
                       g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
+                                  __FUNCTION__,
+                                  sqlite3_errmsg (task_db));
                       abort ();
                     }
                 }
@@ -18976,8 +17819,8 @@ report_severity_filtered (report_t report, int override,
               if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
                 {
                   g_warning ("%s: sqlite3_reset failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                              __FUNCTION__,
+                              sqlite3_errmsg (task_db));
                   abort ();
                 }
             }
@@ -18985,37 +17828,74 @@ report_severity_filtered (report_t report, int override,
       cleanup_iterator (&results);
       sqlite3_finalize (stmt);
       sqlite3_finalize (full_stmt);
-      g_free (severity_sql);
-      return severity;
     }
   else
     {
-      double severity;
-      GString *autofp_sql, *phrase_sql, *cvss_sql;
+      /* Loop through all results. */
+      if (host)
+        quoted_host = sql_quote (host);
+      else
+        quoted_host = NULL;
 
-      autofp_sql = where_autofp (autofp, report);
-      phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
-      cvss_sql = where_cvss_base (min_cvss_base);
+      if (setting_dynamic_severity_int ())
+        severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                                  " WHERE nvts.oid = results.nvt)");
+      else
+        severity_sql = g_strdup ("results.severity");
 
-      severity = sql_double (0, 0,
-                             "SELECT max(%s) FROM results, report_results"
-                             " WHERE report_results.report = %llu"
-                             " AND report_results.result = results.ROWID"
-                             "%s%s%s"
-                             "%s%s%s;",
-                             severity_sql,
-                             report,
-                             host ? " AND results.host = '" : "",
-                             host ? host : "",
-                             host ? "' AND " : "",
-                             autofp_sql ? autofp_sql->str : "",
-                             phrase_sql ? phrase_sql->str : "",
-                             cvss_sql ? cvss_sql->str : "");
-      if (autofp_sql) g_string_free (autofp_sql, TRUE);
-      if (phrase_sql) g_string_free (phrase_sql, TRUE);
-      if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      init_iterator (&results,
+                      "SELECT results.ROWID, results.nvt, results.type,"
+                      " results.host, results.port, results.description,"
+                      " report_results.report, %s"
+                      " FROM results, report_results"
+                      " WHERE"
+                      "%s%s%s"
+                      " report_results.report = %llu"
+                      " AND results.ROWID = report_results.result",
+                      severity_sql,
+                      host ? " results.host = '" : "",
+                      host ? quoted_host : "",
+                      host ? "' AND" : "",
+                      report);
       g_free (severity_sql);
-      return severity;
+      if (host)
+        g_free (quoted_host);
+
+      while (next (&results))
+        {
+          const char *nvt, *new_type;
+          double new_severity;
+
+          /* Check the result. */
+          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
+          new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+          new_severity = sqlite3_column_double (results.stmt, 7);
+
+          if (new_type)
+            {
+              if (autofp == 0
+                  || report_counts_autofp_match (&results, autofp)
+                  || new_severity == SEVERITY_LOG)
+                severity_data_add (severity_data, new_severity);
+              else
+                severity_data_add (severity_data, SEVERITY_FP);
+
+              if (filtered_severity_data)
+                {
+                  if (report_counts_match (&results, search_phrase,
+                                            search_phrase_exact,
+                                            min_cvss_base, autofp))
+                    severity_data_add (filtered_severity_data,
+                                       new_severity);
+                  else if (report_counts_match (&results, search_phrase,
+                                                search_phrase_exact,
+                                                min_cvss_base, 0))
+                    severity_data_add (filtered_severity_data,
+                                          SEVERITY_FP);
+                }
+            }
+        }
+      cleanup_iterator (&results);
     }
 }
 
@@ -19159,7 +18039,14 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
 {
-  int cache_exists;
+  int filtered_requested, cache_exists, status;
+  char *severity_class;
+  severity_data_t severity_data, filtered_severity_data;
+
+  filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
+                        || filtered_logs || filtered_false_positives
+                        || filtered_severity);
+  severity_class = setting_severity ();
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -19180,676 +18067,158 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
 
-  if (holes && infos && logs && warnings && false_positives)
+  if (autofp == 0 && host == NULL && filtered_requested == 0 && cache_exists && 0) // FIXME
     {
-      if (autofp == 0 && host == NULL && filtered_holes == NULL
-          && filtered_infos == NULL && filtered_logs == NULL
-          && filtered_warnings == NULL && filtered_false_positives == NULL
-          && cache_exists)
-        {
-          /* Try get from cache. */
+      /* Try get from cache. */
 
-          if (override)
+      if (override)
+        {
+          if (holes)
+            *holes = sql_int (0, 0,
+                              "SELECT coalesce (override_highs, -1)"
+                              " FROM report_counts"
+                              " WHERE report = %llu"
+                              " AND user = (SELECT ROWID FROM users"
+                              "             WHERE users.uuid = '%s');",
+                              report, current_credentials.uuid);
+          if (holes && *holes >= 0)
             {
-              *holes = sql_int (0, 0,
-                                "SELECT coalesce (override_highs, -1)"
-                                " FROM report_counts"
-                                " WHERE report = %llu"
-                                " AND user = (SELECT ROWID FROM users"
-                                "             WHERE users.uuid = '%s');",
-                                report, current_credentials.uuid);
-              if (*holes >= 0)
-                {
-                  *warnings = sql_int (0, 0,
-                                       "SELECT override_mediums"
-                                       " FROM report_counts"
-                                       " WHERE report = %llu"
-                                       " AND user = (SELECT ROWID FROM users"
-                                       "             WHERE users.uuid = '%s');",
-                                       report, current_credentials.uuid);
-                  *infos = sql_int (0, 0,
-                                    "SELECT override_lows FROM report_counts"
-                                    " WHERE report = %llu"
-                                    " AND user = (SELECT ROWID FROM users"
-                                    "             WHERE users.uuid = '%s');",
-                                    report, current_credentials.uuid);
-                  *logs = sql_int (0, 0,
-                                   "SELECT override_logs FROM report_counts"
-                                   " WHERE report = %llu"
-                                   " AND user = (SELECT ROWID FROM users"
-                                   "             WHERE users.uuid = '%s');",
-                                   report, current_credentials.uuid);
-                  *false_positives = sql_int (0, 0,
-                                              "SELECT override_fps"
-                                              " FROM report_counts"
-                                              " WHERE report = %llu"
-                                              " AND user = (SELECT ROWID"
-                                              "              FROM users"
-                                              "              WHERE users.uuid"
-                                              "                    = '%s');",
-                                              report, current_credentials.uuid);
-                  *severity = sql_double (0, 0,
-                                          "SELECT override_severity"
-                                          " FROM report_counts"
-                                          " WHERE report = %llu"
-                                          " AND user = (SELECT ROWID FROM users"
-                                          "             WHERE users.uuid"
-                                          "                   = '%s');",
-                                          report, current_credentials.uuid);
-                  return 0;
-                }
-            }
-          else
-            {
-              *holes = sql_int (0, 0,
-                                "SELECT coalesce(highs, -1)"
-                                " FROM report_counts"
-                                " WHERE report = %llu"
-                                " AND user = (SELECT ROWID FROM users"
-                                "             WHERE users.uuid = '%s');",
-                                report, current_credentials.uuid);
-              if (*holes >= 0)
-                {
-                  *warnings = sql_int (0, 0,
-                                       "SELECT mediums FROM report_counts"
-                                       " WHERE report = %llu"
-                                       " AND user = (SELECT ROWID FROM users"
-                                       "             WHERE users.uuid = '%s');",
-                                       report, current_credentials.uuid);
-                  *infos = sql_int (0, 0,
-                                    "SELECT lows FROM report_counts"
-                                    " WHERE report = %llu"
-                                    " AND user = (SELECT ROWID FROM users"
-                                    "             WHERE users.uuid = '%s');",
-                                    report, current_credentials.uuid);
-                  *logs = sql_int (0, 0,
-                                   "SELECT logs FROM report_counts"
-                                   " WHERE report = %llu"
-                                   " AND user = (SELECT ROWID FROM users"
-                                   "             WHERE users.uuid = '%s');",
-                                   report, current_credentials.uuid);
-                  *false_positives = sql_int (0, 0,
-                                              "SELECT fps FROM report_counts"
-                                              " WHERE report = %llu"
-                                              " AND user = (SELECT ROWID"
-                                              "             FROM users"
-                                              "             WHERE users.uuid"
-                                              "                   = '%s');",
-                                              report, current_credentials.uuid);
-                  *severity = sql_double (0, 0,
-                                          "SELECT severity"
-                                          " FROM report_counts"
-                                          " WHERE report = %llu"
-                                          " AND user = (SELECT ROWID FROM users"
-                                          "             WHERE users.uuid"
-                                          "                   = '%s');",
-                                          report, current_credentials.uuid);
-                  return 0;
-                }
+              if (warnings)
+                *warnings = sql_int (0, 0,
+                                     "SELECT override_mediums"
+                                     " FROM report_counts"
+                                     " WHERE report = %llu"
+                                     " AND user = (SELECT ROWID FROM users"
+                                     "             WHERE users.uuid = '%s');",
+                                     report, current_credentials.uuid);
+              if (infos)
+                *infos = sql_int (0, 0,
+                                  "SELECT override_lows FROM report_counts"
+                                  " WHERE report = %llu"
+                                  " AND user = (SELECT ROWID FROM users"
+                                  "             WHERE users.uuid = '%s');",
+                                  report, current_credentials.uuid);
+              if (logs)
+                *logs = sql_int (0, 0,
+                                  "SELECT override_logs FROM report_counts"
+                                  " WHERE report = %llu"
+                                  " AND user = (SELECT ROWID FROM users"
+                                  "             WHERE users.uuid = '%s');",
+                                  report, current_credentials.uuid);
+              if (false_positives)
+                *false_positives = sql_int (0, 0,
+                                            "SELECT override_fps"
+                                            " FROM report_counts"
+                                            " WHERE report = %llu"
+                                            " AND user = (SELECT ROWID"
+                                            "              FROM users"
+                                            "              WHERE users.uuid"
+                                            "                    = '%s');",
+                                            report, current_credentials.uuid);
+              if (severity)
+                *severity = sql_double (0, 0,
+                                        "SELECT override_severity"
+                                        " FROM report_counts"
+                                        " WHERE report = %llu"
+                                        " AND user = (SELECT ROWID FROM users"
+                                        "             WHERE users.uuid"
+                                        "                   = '%s');",
+                                        report, current_credentials.uuid);
+              return 0;
             }
         }
-
-      /* Recalculate. */
-
-      if (override
-          && sql_int (0, 0,
-                      "SELECT count(*)"
-                      " FROM overrides"
-                      " WHERE ((overrides.owner IS NULL)"
-                      "        OR (overrides.owner ="
-                      "            (SELECT ROWID FROM users"
-                      "             WHERE users.uuid = '%s')))"
-                      " AND ((overrides.end_time = 0)"
-                      "      OR (overrides.end_time >= now ()))",
-                      current_credentials.uuid))
+      else
         {
-          iterator_t results;
-          task_t task;
-
-          sqlite3_stmt *stmt, *full_stmt;
-          gchar *select, *quoted_host, *severity_sql;
-          int ret, status;
-
-          /* Prepare quick inner statement. */
-
-          select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                    " WHERE (overrides.nvt = $nvt)"
-                                    " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                    " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                                    " AND ((overrides.end_time = 0)"
-                                    "      OR (overrides.end_time >= now ()))",
-                                    current_credentials.uuid);
-          while (1)
+          if (holes)
+            *holes = sql_int (0, 0,
+                              "SELECT coalesce(highs, -1)"
+                              " FROM report_counts"
+                              " WHERE report = %llu"
+                              " AND user = (SELECT ROWID FROM users"
+                              "             WHERE users.uuid = '%s');",
+                              report, current_credentials.uuid);
+          if (holes && *holes >= 0)
             {
-              const char* tail;
-              ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-              if (ret == SQLITE_BUSY) continue;
-              g_free (select);
-              if (ret == SQLITE_OK)
-                {
-                  if (stmt == NULL)
-                    {
-                      g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              /** @todo ROLLBACK if in transaction. */
-              abort ();
+              if (warnings)
+                *warnings = sql_int (0, 0,
+                                     "SELECT mediums FROM report_counts"
+                                     " WHERE report = %llu"
+                                     " AND user = (SELECT ROWID FROM users"
+                                     "             WHERE users.uuid = '%s');",
+                                     report, current_credentials.uuid);
+              if (infos)
+                *infos = sql_int (0, 0,
+                                  "SELECT lows FROM report_counts"
+                                  " WHERE report = %llu"
+                                  " AND user = (SELECT ROWID FROM users"
+                                  "             WHERE users.uuid = '%s');",
+                                  report, current_credentials.uuid);
+              if (logs)
+                *logs = sql_int (0, 0,
+                                 "SELECT logs FROM report_counts"
+                                 " WHERE report = %llu"
+                                 " AND user = (SELECT ROWID FROM users"
+                                 "             WHERE users.uuid = '%s');",
+                                 report, current_credentials.uuid);
+              if (false_positives)
+                *false_positives = sql_int (0, 0,
+                                            "SELECT fps FROM report_counts"
+                                            " WHERE report = %llu"
+                                            " AND user = (SELECT ROWID"
+                                            "             FROM users"
+                                            "             WHERE users.uuid"
+                                            "                   = '%s');",
+                                            report, current_credentials.uuid);
+              if (severity)
+                *severity = sql_double (0, 0,
+                                        "SELECT severity"
+                                        " FROM report_counts"
+                                        " WHERE report = %llu"
+                                        " AND user = (SELECT ROWID FROM users"
+                                        "             WHERE users.uuid"
+                                        "                   = '%s');",
+                                        report, current_credentials.uuid);
+              return 0;
             }
-
-          /* Prepare full inner statement. */
-
-          report_task (report, &task);
-
-          select = g_strdup_printf
-                    ("SELECT severity_to_type (overrides.new_severity),"
-                     "       overrides.new_severity"
-                     " FROM overrides"
-                     " WHERE overrides.nvt = $nvt" // 1
-                     " AND ((overrides.owner IS NULL)"
-                     " OR (overrides.owner ="
-                     " (SELECT users.ROWID FROM users"
-                     "  WHERE users.uuid = '%s')))"
-                     " AND ((overrides.end_time = 0)"
-                     "      OR (overrides.end_time >= now ()))"
-                     " AND (overrides.task = 0"
-                     "      OR overrides.task = %llu)"
-                     " AND (overrides.result = 0"
-                     "      OR overrides.result = $result)" // 2
-                     " AND (overrides.hosts is NULL"
-                     "      OR overrides.hosts = \"\""
-                     "      OR hosts_contains (overrides.hosts, $host))" // 3
-                     " AND (overrides.port is NULL"
-                     "      OR overrides.port = \"\""
-                     "      OR overrides.port = $port)" // 4
-                     " AND severity_matches_ov ($severity,"
-                     "                          overrides.severity)" // 5
-                     " ORDER BY overrides.result DESC, overrides.task DESC,"
-                     " overrides.port DESC, overrides.severity ASC,"
-                     " overrides.modification_time DESC;",
-                     current_credentials.uuid,
-                     task);
-
-          while (1)
-            {
-              const char* tail;
-              ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-              if (ret == SQLITE_BUSY) continue;
-              g_free (select);
-              if (ret == SQLITE_OK)
-                {
-                  if (full_stmt == NULL)
-                    {
-                      g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              /** @todo ROLLBACK if in transaction. */
-              abort ();
-            }
-
-          /* Loop through all results. */
-
-          *holes = *infos = *logs = *warnings = *false_positives = 0;
-          if (filtered_holes) *filtered_holes = 0;
-          if (filtered_infos) *filtered_infos = 0;
-          if (filtered_logs) *filtered_logs = 0;
-          if (filtered_warnings) *filtered_warnings = 0;
-          if (filtered_false_positives) *filtered_false_positives = 0;
-          *severity = 0.0;
-          if (filtered_severity) *filtered_severity = 0.0;
-          if (host)
-            quoted_host = sql_quote (host);
-          else
-            quoted_host = NULL;
-
-          if (setting_dynamic_severity_int ())
-            severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                                     " WHERE nvts.oid = results.nvt)");
-          else
-            severity_sql = g_strdup ("results.severity");
-
-          init_iterator (&results,
-                         "SELECT results.ROWID, results.nvt, results.type,"
-                         " results.host, results.port, results.description,"
-                         " report_results.report, %s"
-                         " FROM results, report_results"
-                         " WHERE"
-                         "%s%s%s"
-                         " report_results.report = %llu"
-                         " AND results.ROWID = report_results.result",
-                         severity_sql,
-                         host ? " results.host = '" : "",
-                         host ? quoted_host : "",
-                         host ? "' AND" : "",
-                         report);
-          g_free (severity_sql);
-          if (host)
-            g_free (quoted_host);
-          while (next (&results))
-            {
-              const char *nvt, *new_type;
-              double new_severity;
-
-              nvt = (const char*) sqlite3_column_text (results.stmt, 1);
-
-              /* Bind the current result values into the quick statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-
-              /* Run the quick inner statement to check for overrides. */
-
-              while (1)
-                {
-                  ret = sqlite3_step (stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
-                }
-
-              /* Check the result. */
-
-              if (ret == SQLITE_DONE)
-                {
-                  new_severity = sqlite3_column_double (results.stmt, 7);
-                  new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  if (new_type)
-                    {
-                      if (strcmp (new_type, "Alarm") == 0)
-                        {
-                          if (severity_in_level (new_severity, "high"))
-                            {
-                              (*holes)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_holes
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_holes)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                          else if (severity_in_level (new_severity, "medium"))
-                            {
-                              (*warnings)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_warnings
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_warnings)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                          else if (severity_in_level (new_severity, "low"))
-                            {
-                              (*infos)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_infos
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_infos)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                        }
-                      else if (strcmp (new_type, "Log Message") == 0)
-                        {
-                          (*logs)++;
-                          if (filtered_logs
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
-                            (*filtered_logs)++;
-                        }
-                      else if (strcmp (new_type, "False Positive") == 0)
-                        {
-                          (*false_positives)++;
-                          if (filtered_false_positives
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      autofp))
-                            (*filtered_false_positives)++;
-                        }
-                    }
-                }
-              else
-                {
-                  /* There is an override on this NVT, get the new threat value. */
-
-                  /* Bind the current result values into the full statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      result_t result;
-                      result = (result_t) sqlite3_column_int64 (results.stmt, 0);
-                      ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      const char *host;
-                      host = (const char*) sqlite3_column_text (results.stmt, 3);
-                      ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                               SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      const char *port;
-                      port = (const char*) sqlite3_column_text (results.stmt, 4);
-                      ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                               SQLITE_TRANSIENT);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  while (1)
-                    {
-                      double severity;
-                      severity = sqlite3_column_double (results.stmt, 7);
-                      ret = sqlite3_bind_double (full_stmt, 5, severity);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_OK) break;
-                      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-
-                  /* Run the full inner statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_step (full_stmt);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_DONE) break;
-                      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                        {
-                          if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                          g_warning ("%s: sqlite3_step failed: %s\n",
-                                     __FUNCTION__,
-                                     sqlite3_errmsg (task_db));
-                          abort ();
-                        }
-                      break;
-                    }
-
-                  /* Check the result. */
-
-                  if (ret == SQLITE_DONE)
-                    {
-                      new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-                      new_severity = sqlite3_column_double (results.stmt, 7);
-                    }
-                  else
-                    {
-                      new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-                      new_severity = sqlite3_column_double (full_stmt, 1);
-                    }
-
-                  if (new_type)
-                    {
-                      if (strcmp (new_type, "Alarm") == 0)
-                        {
-                          if (severity_in_level (new_severity, "high"))
-                            {
-                              (*holes)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_holes
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_holes)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                          else if (severity_in_level (new_severity, "medium"))
-                            {
-                              (*warnings)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_warnings
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_warnings)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                          else if (severity_in_level (new_severity, "low"))
-                            {
-                              (*infos)++;
-                              if (new_severity > *severity)
-                                *severity = new_severity;
-                              if (filtered_infos
-                                  && report_counts_match (&results,
-                                                          search_phrase,
-                                                          search_phrase_exact,
-                                                          min_cvss_base,
-                                                          autofp))
-                                {
-                                  (*filtered_infos)++;
-                                  if (filtered_severity
-                                      && new_severity > *filtered_severity)
-                                    *filtered_severity = new_severity;
-                                }
-                            }
-                        }
-                      else if (strcmp (new_type, "Log Message") == 0)
-                        {
-                          (*logs)++;
-                          if (filtered_logs
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      0))
-                            (*filtered_logs)++;
-                        }
-                      else if (strcmp (new_type, "False Positive") == 0)
-                        {
-                          (*false_positives)++;
-                          if (filtered_false_positives
-                              && report_counts_match (&results,
-                                                      search_phrase,
-                                                      search_phrase_exact,
-                                                      min_cvss_base,
-                                                      0))
-                            (*filtered_false_positives)++;
-                        }
-                    }
-
-                  /* Reset the full inner statement. */
-
-                  while (1)
-                    {
-                      ret = sqlite3_reset (full_stmt);
-                      if (ret == SQLITE_BUSY) continue;
-                      if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                        {
-                          g_warning ("%s: sqlite3_reset failed: %s\n",
-                                     __FUNCTION__,
-                                     sqlite3_errmsg (task_db));
-                          abort ();
-                        }
-                    }
-                }
-
-              /* Reset the quick inner statement. */
-
-              while (1)
-                {
-                  ret = sqlite3_reset (stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                }
-            }
-          cleanup_iterator (&results);
-          sqlite3_finalize (stmt);
-          sqlite3_finalize (full_stmt);
-
-          report_scan_run_status (report, &status);
-
-          if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE
-              && cache_exists)
-            cache_report_counts (report, override, *holes, *warnings, *infos,
-                                 *logs, *false_positives, *severity);
-
-          return 0;
         }
     }
 
-  if (false_positives)
-    *false_positives = report_result_count (report, "False Positive", override,
-                                            host);
-  if (holes) *holes = report_result_count (report, "high", override, host);
-  if (infos) *infos = report_result_count (report, "low", override, host);
-  if (logs) *logs = report_result_count (report, "Log Message", override, host);
-  if (warnings)
-    *warnings = report_result_count (report, "medium", override, host);
-  if (severity) *severity = report_severity (report, override, host);
 
-  if (holes && infos && logs && warnings && false_positives
-      && host == NULL)
-    {
-      int status;
+  /* Recalculate. */
+  init_severity_data (&severity_data);
+  init_severity_data (&filtered_severity_data);
 
-      report_scan_run_status (report, &status);
-      if (status == TASK_STATUS_DONE && cache_exists)
-        cache_report_counts (report, override, *holes, *warnings, *infos,
-                             *logs, *false_positives, *severity);
-    }
+  if (filtered_requested)
+    report_severity_data (report, override, host, min_cvss_base,
+                          search_phrase, search_phrase_exact,
+                          autofp, &severity_data, &filtered_severity_data);
+  else
+    report_severity_data (report, override, host, min_cvss_base,
+                          search_phrase, search_phrase_exact,
+                          autofp, &severity_data, NULL);
 
-  if (filtered_false_positives)
-    *filtered_false_positives
-     = report_count_filtered (report, "False Positive", override, host,
-                              min_cvss_base, search_phrase, search_phrase_exact,
-                              autofp);
-  if (filtered_holes)
-    *filtered_holes
-     = report_count_filtered (report, "high", override, host,
-                              min_cvss_base, search_phrase, search_phrase_exact,
-                              autofp);
-  if (filtered_infos)
-    *filtered_infos
-     = report_count_filtered (report, "low", override, host,
-                              min_cvss_base, search_phrase, search_phrase_exact,
-                              autofp);
-  if (filtered_logs)
-    *filtered_logs
-     = report_count_filtered (report, "Log Message", override, host,
-                              min_cvss_base, search_phrase, search_phrase_exact,
-                              autofp);
-  if (filtered_warnings)
-    *filtered_warnings
-     = report_count_filtered (report, "medium", override, host,
-                              min_cvss_base, search_phrase, search_phrase_exact,
-                              autofp);
+  severity_data_level_counts (&severity_data, severity_class,
+                              NULL, NULL, false_positives,
+                              logs, infos, warnings, holes);
+  severity_data_level_counts (&filtered_severity_data, severity_class,
+                              NULL, NULL, filtered_false_positives,
+                              filtered_logs, filtered_infos,
+                              filtered_warnings, filtered_holes);
 
-  if (filtered_severity)
-    *filtered_severity
-     = report_severity_filtered (report, override, host,
-                                 min_cvss_base, search_phrase,
-                                 search_phrase_exact, autofp);
+  if (severity)
+    *severity = severity_data.max;
+  if (filtered_severity && filtered_requested)
+    *filtered_severity = filtered_severity_data.max;
+
+  report_scan_run_status (report, &status);
+
+  if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE
+      && cache_exists)
+    cache_report_counts (report, override, *holes, *warnings, *infos,
+                          *logs, *false_positives, *severity);
+
+  cleanup_severity_data (&severity_data);
+  free (severity_class);
 
   return 0;
 }

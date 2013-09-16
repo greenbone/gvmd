@@ -752,7 +752,7 @@ const char*
 config_task_iterator_uuid (iterator_t*);
 
 
-/* General task facilities. */
+/* General severity related facilities. */
 
 // Log message severity constant
 #define SEVERITY_LOG 0.0
@@ -762,9 +762,23 @@ config_task_iterator_uuid (iterator_t*);
 #define SEVERITY_DEBUG -2.0
 // Error message severity constant
 #define SEVERITY_ERROR -3.0
+// Constant for missing or invalid severity
+#define SEVERITY_MISSING -99.0
+// Constant for undefined severity (for ranges)
+#define SEVERITY_UNDEFINED -98.0
+// Maximum possible severity
+#define SEVERITY_MAX 10.0
+// Number of subdivisions for 1 severity point (10 => step size 0.1)
+#define SEVERITY_SUBDIVISIONS 10
 
 int
 severity_in_level (double, const char *);
+
+double
+level_min_severity (const char*, const gchar*);
+
+double
+level_max_severity (const char*, const gchar*);
 
 int
 severity_matches_type (double, const char *);
@@ -777,6 +791,35 @@ severity_to_level (double, int);
 
 const char*
 severity_to_type (double);
+
+typedef struct
+{
+  int* counts;
+  int total;
+  double max;
+} severity_data_t;
+
+void
+init_severity_data (severity_data_t*);
+
+void
+cleanup_severity_data (severity_data_t*);
+
+void
+severity_data_add (severity_data_t*, double);
+
+int
+severity_data_count (const severity_data_t*, double);
+
+int
+severity_data_range_count (const severity_data_t*, double, double);
+
+void
+severity_data_level_counts (const severity_data_t*, const gchar*,
+                            int*, int*, int*, int*, int*, int*, int*);
+
+
+/* General task facilities. */
 
 const char*
 run_status_name (task_status_t);

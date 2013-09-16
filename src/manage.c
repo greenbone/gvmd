@@ -145,7 +145,7 @@
 scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
 
 
-/* Threats. */
+/* Severity related functions. */
 
 /**
  * @brief Get the message type of a threat.
@@ -253,6 +253,108 @@ severity_in_level (double severity, const char *level)
         return severity == 0;
       else
         return 0;
+    }
+}
+
+/**
+ * @brief Get the minimum severity for a severity level and class.
+ *
+ * @param[in] level  The name of the severity level.
+ * @param[in] class  The severity class, NULL to get from current user setting.
+ *
+ * @return The minimum severity.
+ */
+double
+level_min_severity (const char *level, const gchar *class)
+{
+  if (strcmp (level, "Log") == 0)
+    return SEVERITY_LOG;
+  else if (strcmp (level, "False Positive") == 0)
+    return SEVERITY_FP;
+  else if (strcmp (level, "Debug") == 0)
+    return SEVERITY_DEBUG;
+  else if (strcmp (level, "Error") == 0)
+    return SEVERITY_ERROR;
+  else if (strcmp (class, "classic") == 0)
+    {
+      if (strcmp (level, "high") == 0)
+        return 5.1;
+      else if (strcmp (level, "medium") == 0)
+        return 2.1;
+      else if (strcmp (level, "low") == 0)
+        return 0.1;
+      else
+        return SEVERITY_UNDEFINED;
+    }
+  else if (strcmp (class, "pci-dss") == 0)
+    {
+      if (strcmp (level, "high") == 0)
+        return 4.3;
+      else
+        return SEVERITY_UNDEFINED;
+    }
+  else
+    {
+      /* NIST/BSI. */
+      if (strcmp (level, "high") == 0)
+        return 7.0;
+      else if (strcmp (level, "medium") == 0)
+        return 4.0;
+      else if (strcmp (level, "low") == 0)
+        return 0.1;
+      else
+        return SEVERITY_UNDEFINED;
+    }
+}
+
+/**
+ * @brief Get the minimum severity for a severity level and class.
+ *
+ * @param[in] level  The name of the severity level.
+ * @param[in] class  The severity class.
+ *
+ * @return The minimum severity.
+ */
+double
+level_max_severity (const char *level, const gchar *class)
+{
+  if (strcmp (level, "Log") == 0)
+    return SEVERITY_LOG;
+  else if (strcmp (level, "False Positive") == 0)
+    return SEVERITY_FP;
+  else if (strcmp (level, "Debug") == 0)
+    return SEVERITY_DEBUG;
+  else if (strcmp (level, "Error") == 0)
+    return SEVERITY_ERROR;
+  else if (strcmp (class, "classic") == 0)
+    {
+      if (strcmp (level, "high") == 0)
+        return 10.0;
+      else if (strcmp (level, "medium") == 0)
+        return 5.0;
+      else if (strcmp (level, "low") == 0)
+        return 2.0;
+      else
+        return SEVERITY_UNDEFINED;
+    }
+  else if (strcmp (class, "pci-dss") == 0)
+    {
+      if (strcmp (level, "high") == 0)
+        return 10.0;
+      else
+        return SEVERITY_UNDEFINED;
+    }
+  else
+    {
+      /* NIST/BSI. */
+      if (strcmp (level, "high") == 0)
+        return 10.0;
+      else if (strcmp (level, "medium") == 0)
+        return 6.9;
+      else if (strcmp (level, "low") == 0)
+        return 3.9;
+      else
+        return SEVERITY_UNDEFINED;
     }
 }
 
@@ -439,6 +541,173 @@ manage_result_type_threat (const char* type)
   if (strcasecmp (type, "False Positive") == 0)
     return "False Positive";
   return "Log";
+}
+
+
+/* Array index of severity 0.0 in the severity_data_t.counts array */
+#define ZERO_SEVERITY_INDEX 4
+
+/**
+ * @brief Convert a severity value into an index in the counts array.
+ *
+ * @param[in]   severity        Struct containing severity data.
+ * @return      The index, 0 for invalid severity scores.
+ */
+static int
+severity_data_index (double severity)
+{
+  int ret;
+  if (severity >= 0.0)
+    ret = (int)(severity * SEVERITY_SUBDIVISIONS) + ZERO_SEVERITY_INDEX;
+  else if (severity == SEVERITY_FP || severity == SEVERITY_DEBUG
+           || SEVERITY_ERROR)
+    ret = (int)(severity) + ZERO_SEVERITY_INDEX;
+  else
+    ret = 0;
+
+  return ret;
+}
+
+/**
+ * @brief Initialize a severity data structure.
+ *
+ * @param[in] data  The data structure to initialize.
+ */
+void
+init_severity_data (severity_data_t* data)
+{
+  int max_i, i;
+  max_i = ZERO_SEVERITY_INDEX + (SEVERITY_SUBDIVISIONS * SEVERITY_MAX);
+
+  data->counts = malloc(sizeof(int) * (max_i + 1));
+  for (i = 0; i <= max_i; i++)
+    (data->counts)[i] = 0;
+
+  data->total = 0;
+  data->max = SEVERITY_MISSING;
+}
+
+/**
+ * @brief Clean up a severity data structure.
+ *
+ * @param[in] data  The data structure to initialize.
+ */
+void
+cleanup_severity_data (severity_data_t* data)
+{
+  free (data->counts);
+}
+
+/**
+ * @brief Add a severity occurence to the counts of a severity_data_t.
+ *
+ * @param[in]   severity_data   The severity count struct to add to.
+ * @param[in]   severity        The severity to add.
+ */
+void
+severity_data_add (severity_data_t* severity_data, double severity)
+{
+  (severity_data->counts)[severity_data_index (severity)]++;
+
+  if (severity_data->total == 0 || severity_data->max <= severity)
+    severity_data->max = severity;
+
+  (severity_data->total)++;
+}
+
+/**
+ * @brief Get a severity count from severity_data_t.
+ *
+ * @param[in]   severity_data   The severity count struct get count from.
+ * @param[in]   severity        The severity to get.
+ */
+int
+severity_data_count (const severity_data_t* severity_data, double severity)
+{
+  return (severity_data->counts)[severity_data_index (severity)];
+}
+
+/**
+ * @brief Calculate the total of severity counts in a range.
+ *
+ * @param[in]  severity_data   The severity data struct to get counts from.
+ * @param[in]  min_severity    The minimum severity included in the range.
+ * @param[in]  max_severity    The maximum severity included in the range.
+ *
+ * @return     The total of severity counts in the specified range.
+ */
+int
+severity_data_range_count (const severity_data_t* severity_data,
+                           double min_severity, double max_severity)
+{
+  int i, i_max, count;
+
+  i_max = severity_data_index (max_severity);
+  count = 0;
+
+  for (i = severity_data_index (min_severity);
+       i <= i_max;
+       i++)
+    {
+      count += (severity_data->counts)[i];
+    }
+  return count;
+}
+
+/**
+ * @brief Get the number of results for a severity level.
+ */
+#define LEVEL_COUNT(level, class, data)                          \
+  severity_data_range_count (data,                               \
+                             level_min_severity (level, class),  \
+                             level_max_severity (level, class))
+
+/**
+ * @brief Count the occurrences of severities in the levels.
+ *
+ * @param[in] severity_data    The severity counts data to evaluate.
+ * @param[in] severity_class   The severity class setting to use.
+ * @param[out] errors          The number of error messages.
+ * @param[out] debugs          The number of debug messages.
+ * @param[out] false_positives The number of False Positives.
+ * @param[out] logs            The number of Log messages.
+ * @param[out] lows            The number of Low severity results.
+ * @param[out] mediums         The number of Medium severity results.
+ * @param[out] highs           The number of High severity results.
+ */
+void
+severity_data_level_counts (const severity_data_t *severity_data,
+                            const gchar *severity_class,
+                            int *errors, int *debugs, int *false_positives,
+                            int *logs, int *lows, int *mediums, int *highs)
+{
+  if (errors)
+    *errors
+      = LEVEL_COUNT("Error", severity_class, severity_data);
+
+  if (debugs)
+    *debugs
+      = LEVEL_COUNT("Debug", severity_class, severity_data);
+
+  if (false_positives)
+    *false_positives
+      = LEVEL_COUNT("False Positive", severity_class, severity_data);
+
+  if (logs)
+    *logs
+      = LEVEL_COUNT("Log", severity_class, severity_data);
+
+  if (lows)
+    *lows
+      = LEVEL_COUNT("low", severity_class, severity_data);
+
+  if (mediums)
+    *mediums
+      = LEVEL_COUNT("medium", severity_class, severity_data);
+
+  if (highs)
+    *highs
+      = LEVEL_COUNT("high", severity_class, severity_data);
 }
 
 
