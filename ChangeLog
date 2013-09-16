@@ -1,3 +1,36 @@
+2013-09-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add targets exclude_hosts. Migrate DB to version 94.
+
+	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 94.
+
+	* src/manage.h: Add and adjust headers accordingly.
+
+	* src/manage_migrators.c (migrate_93_to_94): New function.
+	(database_migrators): Add migrator pointer.
+
+	* src/manage_sql.c (create_tables): Add exclude_hosts column to targets
+	and targets_trash tables.
+	(init_manage_process): Set max_hosts number of arguments to 2.
+	(manage_max_hosts): Rename to manage_count_hosts. Add 2nd argument for
+	excluded hosts string.
+	(create_target, copy_target, delete_target, modify_target)
+	(manage_restore): Handle targets exclude_hosts value.
+	(TARGET_ITERATOR_COLUMNS, TARGET_ITERATOR_TRASH_COLUMNS): Iterate over
+	exclude_hosts column too.
+	(target_iterator_exclude_hosts, target_exclude_hosts)
+	(trash_target_exclude_hosts): New functions.
+	(create_target_data_reset, modify_target_data_reset): Free
+	exclude_hosts.
+	(create_target_data_t, modify_target_data_t): Add exclude_hosts element.
+	(client_state_t): Add CLIENT_CREATE_TARGET_EXCLUDE_HOSTS and
+	CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS state.
+	(omp_xml_handle_start_element, omp_xml_handle_text): Handle new states.
+	(omp_xml_handle_end_element): Send exclude_hosts in CLIENT_GET_TARGETS
+	case. Adjust total target IPs counting.
+
+	* src/sql.c (sql_max_hosts): Adjust for manage_max_hosts change.
+
 2013-09-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_severity_data): Add missing spaces.

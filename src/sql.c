@@ -43,9 +43,6 @@ clean_hosts (const char *, int *);
 char *
 iso_time (time_t *);
 
-int
-manage_max_hosts (const char *);
-
 long
 current_offset (const char *);
 
@@ -1058,10 +1055,10 @@ sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  const unsigned char *hosts;
+  const unsigned char *hosts, *exclude_hosts;
   gchar *max;
 
-  assert (argc == 1);
+  assert (argc == 2);
 
   hosts = sqlite3_value_text (argv[0]);
   if (hosts == NULL)
@@ -1070,8 +1067,10 @@ sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
       sqlite3_result_text (context, "0", -1, SQLITE_TRANSIENT);
       return;
     }
+  exclude_hosts = sqlite3_value_text (argv[1]);
 
-  max = g_strdup_printf ("%i", manage_max_hosts ((gchar*) hosts));
+  max = g_strdup_printf ("%i", manage_count_hosts ((gchar*) hosts,
+                                                   (gchar *) exclude_hosts));
   sqlite3_result_text (context, max, -1, SQLITE_TRANSIENT);
   g_free (max);
 }

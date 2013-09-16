@@ -1196,7 +1196,7 @@ gchar *
 manage_clean_filter_remove (const gchar *, const gchar *);
 
 int
-manage_max_hosts (const char *);
+manage_count_hosts (const char *, const char *);
 
 gboolean
 find_target (const char*, target_t*);
@@ -1205,16 +1205,16 @@ gboolean
 find_target_for_actions (const char*, target_t*, const char *);
 
 int
-create_target (const char*, const char*, const char*, const char*, const char*,
-               lsc_credential_t, const char*, lsc_credential_t, const char*,
-               const char*, const char*, int, target_t*);
+create_target (const char*, const char*, const char*, const char*, const char *,
+               const char*, lsc_credential_t, const char*, lsc_credential_t,
+               const char*, const char*, const char*, int, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
 
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
-               const char*, const char*, const char*, const char*,
+               const char*, const char*, const char*, const char*, const char*,
                const char*, const char*);
 
 int
@@ -1240,6 +1240,9 @@ target_iterator_name (iterator_t*);
 
 const char*
 target_iterator_hosts (iterator_t*);
+
+const char*
+target_iterator_exclude_hosts (iterator_t*);
 
 const char*
 target_iterator_comment (iterator_t*);
@@ -1284,6 +1287,9 @@ char*
 target_hosts (target_t);
 
 char*
+target_exclude_hosts (target_t);
+
+char*
 target_port_range (target_t);
 
 char*
@@ -1291,6 +1297,9 @@ target_ssh_port (target_t);
 
 char*
 trash_target_hosts (target_t);
+
+char*
+trash_target_exclude_hosts (target_t);
 
 int
 target_in_use (target_t);

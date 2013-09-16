@@ -7458,6 +7458,38 @@ migrate_92_to_93 ()
 }
 
 /**
+ * @brief Migrate the database from version 93 to version 94.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_93_to_94 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 93. */
+
+  if (manage_db_version () != 93)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add column "exclude_hosts" to targets and targets_trash */
+  sql ("ALTER TABLE targets ADD COLUMN exclude_hosts;");
+  sql ("ALTER TABLE targets_trash ADD COLUMN exclude_hosts;");
+
+  /* Set the database version to 94. */
+
+  set_db_version (94);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7555,6 +7587,7 @@ static migrator_t database_migrators[]
     {91, migrate_90_to_91},
     {92, migrate_91_to_92},
     {93, migrate_92_to_93},
+    {94, migrate_93_to_94},
     /* End marker. */
     {-1, NULL}};
 

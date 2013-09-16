@@ -4736,12 +4736,12 @@ create_tables ()
    * column rename is lots of work. */
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  comment, lsc_credential INTEGER, ssh_port,"
+       "  exclude_hosts, comment, lsc_credential INTEGER, ssh_port,"
        "  smb_lsc_credential INTEGER, port_range, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  comment, lsc_credential INTEGER, ssh_port,"
+       "  exclude_hosts, comment, lsc_credential INTEGER, ssh_port,"
        "  smb_lsc_credential INTEGER, port_range, ssh_location INTEGER,"
        "  smb_location INTEGER, port_list_location INTEGER, creation_time,"
        "  modification_time);");
@@ -9352,7 +9352,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (sqlite3_create_function (task_db,
                                "max_hosts",
-                               1,               /* Number of args. */
+                               2,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_max_hosts,
@@ -24988,12 +24988,13 @@ find_target_for_actions (const char* uuid, target_t* target,
 /**
  * @brief Return number of hosts described by a hosts string.
  *
- * @param[in]  given_hosts  String describing hosts.
+ * @param[in]  given_hosts      String describing hosts.
+ * @param[in]  exclude_hosts    String describing hosts excluded from given set.
  *
  * @return Number of hosts, or -1 on error.
  */
 int
-manage_max_hosts (const char *given_hosts)
+manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
 {
   int count;
   openvas_hosts_t *hosts;
@@ -25001,6 +25002,9 @@ manage_max_hosts (const char *given_hosts)
   hosts = openvas_hosts_new (given_hosts);
   if (hosts == NULL)
     return -1;
+
+  if (exclude_hosts)
+    openvas_hosts_exclude (hosts, exclude_hosts);
 
   count = openvas_hosts_count (hosts);
   openvas_hosts_free (hosts);
@@ -25369,15 +25373,15 @@ validate_port_range (const char* port_range)
  *         target locator failed or response was empty.
  */
 int
-create_target (const char* name, const char* hosts, const char* comment,
-               const char* port_list_id, const char* port_range,
-               lsc_credential_t ssh_lsc_credential, const char* ssh_port,
-               lsc_credential_t smb_lsc_credential, const char* target_locator,
-               const char* username, const char* password,
-               int make_name_unique, target_t* target)
+create_target (const char* name, const char* hosts, const char* exclude_hosts,
+               const char* comment, const char* port_list_id,
+               const char* port_range, lsc_credential_t ssh_lsc_credential,
+               const char* ssh_port, lsc_credential_t smb_lsc_credential,
+               const char* target_locator, const char* username,
+               const char* password, int make_name_unique, target_t* target)
 {
-  gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
-  gchar *port_list_comment;
+  gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
+  gchar *port_list_comment, *quoted_ssh_port;
   port_list_t port_list;
   int ret;
 
@@ -25439,6 +25443,8 @@ create_target (const char* name, const char* hosts, const char* comment,
         }
     }
 
+  quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
+                                       : g_strdup ("");
   /* Import targets from target locator. */
   if (target_locator != NULL)
     {
@@ -25460,9 +25466,10 @@ create_target (const char* name, const char* hosts, const char* comment,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
-      max = manage_max_hosts (import_hosts);
+      max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
       if (max <= 0)
         {
+          g_free (quoted_exclude_hosts);
           g_free (import_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -25471,6 +25478,7 @@ create_target (const char* name, const char* hosts, const char* comment,
       clean = clean_hosts (import_hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
+          g_free (quoted_exclude_hosts);
           g_free (import_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -25487,9 +25495,10 @@ create_target (const char* name, const char* hosts, const char* comment,
 
       /* User provided hosts. */
 
-      max = manage_max_hosts (hosts);
+      max = manage_count_hosts (hosts, quoted_exclude_hosts);
       if (max <= 0)
         {
+          g_free (quoted_exclude_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
@@ -25497,6 +25506,7 @@ create_target (const char* name, const char* hosts, const char* comment,
       clean = clean_hosts (hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
+          g_free (quoted_exclude_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return 3;
@@ -25537,34 +25547,35 @@ create_target (const char* name, const char* hosts, const char* comment,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
-           " (uuid, name, owner, hosts, comment, lsc_credential,"
+           " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
            "  ssh_port, smb_lsc_credential, port_range, creation_time,"
            "  modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', %llu, %s, %llu, %llu, now (), now ());",
-           quoted_name, current_credentials.uuid, quoted_hosts, quoted_comment,
-           ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
-           port_list);
+           " '%s', '%s', '%s', %llu, %s, %llu, %llu, now (), now ());",
+           quoted_name, current_credentials.uuid, quoted_hosts,
+           quoted_exclude_hosts, quoted_comment, ssh_lsc_credential,
+           quoted_ssh_port, smb_lsc_credential, port_list);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
-         " (uuid, name, owner, hosts, comment, lsc_credential,"
+         " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
          "  ssh_port, smb_lsc_credential, port_range, creation_time,"
          "  modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', %llu, %s, %llu, %llu, now (), now ());",
+         " '%s', '%s', '', %llu, %s, %llu, %llu, now (), now ());",
          quoted_name, current_credentials.uuid, quoted_hosts,
-         ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential,
-         port_list);
+         quoted_exclude_hosts, quoted_exclude_hosts, ssh_lsc_credential,
+         quoted_ssh_port, smb_lsc_credential, port_list);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
+  g_free (quoted_exclude_hosts);
   g_free (quoted_ssh_port);
 
   sql ("COMMIT;");
@@ -25650,11 +25661,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
       gchar *quoted_comment;
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
-           "  smb_lsc_credential, port_range, creation_time,"
+           " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
+           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
            "  modification_time)"
-           " SELECT make_uuid (), %llu, %s%s%s, '%s', hosts, lsc_credential,"
-           " ssh_port, smb_lsc_credential, port_range, now (), now ()"
+           " SELECT make_uuid (), %llu, %s%s%s, '%s', hosts, exclude_hosts,"
+           "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
+           "        now (), now ()"
            " FROM targets WHERE uuid = '%s';",
            owner,
            quoted_name ? "'" : "",
@@ -25668,11 +25680,12 @@ copy_target (const char* name, const char* comment, const char *target_id,
     }
   else
     sql ("INSERT INTO targets"
-         " (uuid, owner, name, comment, hosts, lsc_credential, ssh_port,"
-         "  smb_lsc_credential, port_range, creation_time,"
+         " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
+         "  ssh_port, smb_lsc_credential, port_range, creation_time,"
          "  modification_time)"
-         " SELECT make_uuid (), %llu, %s%s%s, comment, hosts, lsc_credential,"
-         " ssh_port, smb_lsc_credential, port_range, now (), now ()"
+         " SELECT make_uuid (), %llu, %s%s%s, comment, hosts, exclude_hosts,"
+         "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
+         "        now (), now ()"
          " FROM targets WHERE uuid = '%s';",
          owner,
          quoted_name ? "'" : "",
@@ -25770,11 +25783,12 @@ delete_target (const char *target_id, int ultimate)
         }
 
       sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "  smb_lsc_credential, port_range, ssh_location, smb_location,"
-           "  port_list_location, creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "        smb_lsc_credential, port_range, "
+           " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
+           "  ssh_port, smb_lsc_credential, port_range, ssh_location,"
+           "  smb_location, port_list_location, creation_time, "
+           "  modification_time)"
+           " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
+           "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
@@ -25835,13 +25849,14 @@ delete_target (const char *target_id, int ultimate)
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
-               const char *comment, const char *port_list_id,
-               const char *ssh_lsc_credential_id, const char *ssh_port,
-               const char *smb_lsc_credential_id,
+               const char *exclude_hosts, const char *comment,
+               const char *port_list_id, const char *ssh_lsc_credential_id,
+               const char *ssh_port, const char *smb_lsc_credential_id,
                const char *target_locator, const char *username,
                const char *password)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
+  gchar *quoted_exclude_hosts;
   port_list_t port_list;
   target_t target;
   lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
@@ -25936,6 +25951,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 1;
     }
 
+  quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
+                                       : g_strdup ("");
   /* Import targets from target locator. */
   if (target_locator != NULL)
     {
@@ -25957,9 +25974,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
-      max = manage_max_hosts (import_hosts);
+      max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
       if (max <= 0)
         {
+          g_free (quoted_exclude_hosts);
           g_free (import_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -25968,6 +25986,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       clean = clean_hosts (import_hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
+          g_free (quoted_exclude_hosts);
           g_free (import_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -25984,9 +26003,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       /* User provided hosts. */
 
-      max = manage_max_hosts (hosts);
+      max = manage_count_hosts (hosts, quoted_exclude_hosts);
       if (max <= 0)
         {
+          g_free (quoted_exclude_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
@@ -25994,6 +26014,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       clean = clean_hosts (hosts, &max);
       if (max > MANAGE_MAX_HOSTS)
         {
+          g_free (quoted_exclude_hosts);
           g_free (quoted_name);
           sql ("ROLLBACK;");
           return 3;
@@ -26013,6 +26034,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       sql ("UPDATE targets SET"
            " name = '%s',"
            " hosts = '%s',"
+           " exclude_hosts = '%s',"
            " comment = '%s',"
            " lsc_credential = %llu,"
            " ssh_port = %s,"
@@ -26020,25 +26042,28 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            " port_range = %llu,"
            " modification_time = now ()"
            " WHERE ROWID = %llu;",
-           quoted_name, quoted_hosts, quoted_comment, ssh_lsc_credential,
-           quoted_ssh_port, smb_lsc_credential, port_list, target);
+           quoted_name, quoted_hosts, quoted_exclude_hosts, quoted_comment,
+           ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential, port_list,
+           target);
       g_free (quoted_comment);
     }
   else
     sql ("UPDATE targets SET"
          " name = '%s',"
          " hosts = '%s',"
+         " exclude_hosts = '%s',"
          " lsc_credential = %llu,"
          " ssh_port = %s,"
          " smb_lsc_credential = %llu,"
          " port_range = %llu,"
          " modification_time = now ()"
          " WHERE ROWID = %llu;",
-         quoted_name, quoted_hosts, ssh_lsc_credential, quoted_ssh_port,
-         smb_lsc_credential, port_list, target);
+         quoted_name, quoted_hosts, quoted_exclude_hosts, ssh_lsc_credential,
+         quoted_ssh_port, smb_lsc_credential, port_list, target);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
+  g_free (quoted_exclude_hosts);
   g_free (quoted_ssh_port);
 
   sql ("COMMIT;");
@@ -26065,6 +26090,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   "  WHERE port_lists.ROWID = port_range)"                  \
   " AS port_list,"                                          \
   " 0,"                                                     \
+  " exclude_hosts,"                                         \
   " (SELECT name FROM lsc_credentials"                      \
   "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
   " AS ssh_credential,"                                     \
@@ -26072,7 +26098,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   "  WHERE lsc_credentials.ROWID = smb_lsc_credential)"     \
   " AS smb_credential,"                                     \
   " hosts,"                                                 \
-  " max_hosts (hosts) AS ips"
+  " max_hosts (hosts, exclude_hosts) AS ips"
 
 /**
  * @brief Target iterator columns for trash case.
@@ -26095,7 +26121,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   "  ELSE (SELECT name FROM port_lists"                           \
   "        WHERE port_lists.ROWID = port_range)"                  \
   "  END),"                                                       \
-  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)
+  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)           \
+  " , exclude_hosts"
 
 /**
  * @brief Count number of targets.
@@ -26331,6 +26358,15 @@ target_iterator_port_list_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the excluded hosts of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Excluded hosts of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_exclude_hosts, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
  * @brief Return the UUID of a tag.
  *
  * @param[in]  tag  Tag.
@@ -26422,6 +26458,22 @@ target_hosts (target_t target)
 }
 
 /**
+ * @brief Return the excluded hosts associated with a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated comma separated list of excluded hosts if available,
+ *         else NULL.
+ */
+char*
+target_exclude_hosts (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT exclude_hosts FROM targets WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
  * @brief Return the hosts associated with a trashcan target.
  *
  * @param[in]  target  Target.
@@ -26434,6 +26486,23 @@ trash_target_hosts (target_t target)
 {
   return sql_string (0, 0,
                      "SELECT hosts FROM targets_trash WHERE ROWID = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the excluded hosts associated with a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated comma separated list of excluded hosts if available,
+ *         else NULL.
+ */
+char*
+trash_target_exclude_hosts (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT exclude_hosts FROM targets_trash"
+                     " WHERE ROWID = %llu;",
                      target);
 }
 
@@ -45025,11 +45094,12 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "  smb_lsc_credential, port_range, creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, comment, lsc_credential, ssh_port,"
-           "        smb_lsc_credential, port_range, creation_time,"
-           "        modification_time"
+           " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
+           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, hosts, exclude_hosts, comment, "
+           "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
+           "        creation_time, modification_time"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);
 

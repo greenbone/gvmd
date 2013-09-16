@@ -1531,6 +1531,7 @@ create_slave_data_reset (create_slave_data_t *data)
 typedef struct
 {
   char *comment;                 ///< Comment.
+  char *exclude_hosts;           ///< Hosts to exclude from set.
   char *copy;                    ///< UUID of resource to copy.
   char *hosts;                   ///< Hosts for new target.
   char *port_list_id;            ///< Port list for new target.
@@ -1554,6 +1555,7 @@ static void
 create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
+  free (data->exclude_hosts);
   free (data->copy);
   free (data->hosts);
   free (data->port_list_id);
@@ -3396,6 +3398,7 @@ modify_setting_data_reset (modify_setting_data_t *data)
 typedef struct
 {
   char *comment;                 ///< Comment.
+  char *exclude_hosts;           ///< Hosts to exclude from set.
   char *hosts;                   ///< Hosts for target.
   char *name;                    ///< Name of target.
   char *port_list_id;            ///< Port list for target.
@@ -3416,6 +3419,7 @@ typedef struct
 static void
 modify_target_data_reset (modify_target_data_t *data)
 {
+  free (data->exclude_hosts);
   free (data->comment);
   free (data->hosts);
   free (data->name);
@@ -4880,6 +4884,7 @@ typedef enum
   CLIENT_CREATE_TAG_NAME,
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
+  CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_COPY,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -5097,6 +5102,7 @@ typedef enum
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_HOSTS,
+  CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
   CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
@@ -7701,7 +7707,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_tag");
 
       case CLIENT_MODIFY_TARGET:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_HOSTS);
@@ -8834,7 +8842,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_tag");
 
       case CLIENT_CREATE_TARGET:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COPY);
@@ -15384,7 +15394,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
                   lsc_credential_t ssh_credential, smb_credential;
-                  int port_list_trash;
+                  int port_list_trash, max_hosts;
                   char *port_range;
 
                   ret = get_next (&targets, &get_targets_data->get, &first,
@@ -15430,7 +15440,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_GET_COMMON (target, &get_targets_data->get, &targets);
 
+                  max_hosts = manage_count_hosts (target_iterator_hosts
+                                                  (&targets),
+                                                  target_iterator_exclude_hosts
+                                                   (&targets));
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
+                                           "<exclude_hosts>%s</exclude_hosts>"
                                            "<max_hosts>%i</max_hosts>"
                                            "<port_range>%s</port_range>"
                                            "<port_list id=\"%s\">"
@@ -15447,8 +15462,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>",
                                            target_iterator_hosts (&targets),
-                                           manage_max_hosts
-                                            (target_iterator_hosts (&targets)),
+                                           target_iterator_exclude_hosts
+                                            (&targets),
+                                           max_hosts,
                                            port_range,
                                            port_list_uuid ? port_list_uuid : "",
                                            port_list_name ? port_list_name : "",
@@ -15593,7 +15609,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_t target;
               slave_t slave;
               char *config, *config_uuid;
-              char *task_target_uuid, *task_target_name, *hosts;
+              char *task_target_uuid, *task_target_name, *hosts, *exclude_hosts;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
               gchar *first_report_id, *first_report;
@@ -15629,11 +15645,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_in_trash = task_target_in_trash (index);
               if (target_in_trash)
-                hosts = target ? trash_target_hosts (target) : NULL;
+                {
+                  hosts = target ? trash_target_hosts (target) : NULL;
+                  exclude_hosts = target ? trash_target_exclude_hosts
+                                            (target) : NULL;
+                }
               else
-                hosts = target ? target_hosts (target) : NULL;
-              maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
-
+                {
+                  hosts = target ? target_hosts (target) : NULL;
+                  exclude_hosts = target ? target_exclude_hosts (target) : NULL;
+                }
+              maximum_hosts = hosts ? manage_count_hosts (hosts, exclude_hosts)
+                                    : 0;
+              g_free (hosts);
+              g_free (exclude_hosts);
               running_report = task_current_report (index);
               if ((target == 0)
                   && (task_run_status (index) == TASK_STATUS_RUNNING))
@@ -17537,7 +17562,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
           else if (create_note_data->hosts
-                   && ((max = manage_max_hosts (create_note_data->hosts))
+                   && ((max = manage_count_hosts (create_note_data->hosts, NULL))
                        == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
@@ -17710,7 +17735,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
           else if (create_override_data->hosts
-                   && ((max = manage_max_hosts (create_override_data->hosts))
+                   && ((max = manage_count_hosts (create_override_data->hosts,
+                                                  NULL))
                        == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -19489,6 +19515,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (create_target
                         (create_target_data->name,
                          create_target_data->hosts,
+                         create_target_data->exclude_hosts,
                          create_target_data->comment,
                          create_target_data->port_list_id,
                          create_target_data->port_range,
@@ -19576,6 +19603,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_TARGET, COMMENT);
+      CLOSE (CLIENT_CREATE_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
@@ -19959,8 +19987,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
-              if (create_target (target_name, hosts, NULL, NULL, NULL, 0, NULL,
-                                 0, NULL, NULL, NULL, 0, &target))
+              if (create_target (target_name, hosts, NULL, NULL, NULL, NULL, 0,
+                                 NULL, 0, NULL, NULL, NULL, 0, &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -22315,6 +22343,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         (modify_target_data->target_id,
                          modify_target_data->name,
                          modify_target_data->hosts,
+                         modify_target_data->exclude_hosts,
                          modify_target_data->comment,
                          modify_target_data->port_list_id,
                          modify_target_data->ssh_lsc_credential_id,
@@ -22454,6 +22483,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_MODIFY_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
@@ -24753,6 +24783,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
               &create_tag_data->value);
 
 
+      APPEND (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
+              &create_target_data->exclude_hosts);
+
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
 
@@ -25029,6 +25062,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TAG_VALUE,
               &modify_tag_data->value);
 
+
+      APPEND (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
+              &modify_target_data->exclude_hosts);
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);
