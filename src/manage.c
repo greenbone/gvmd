@@ -579,7 +579,7 @@ init_severity_data (severity_data_t* data)
   int max_i;
   max_i = ZERO_SEVERITY_INDEX + (SEVERITY_SUBDIVISIONS * SEVERITY_MAX);
 
-  data->counts = g_malloc0(sizeof(int) * (max_i + 1));
+  data->counts = g_malloc0 (sizeof (int) * (max_i + 1));
 
   data->total = 0;
   data->max = SEVERITY_MISSING;

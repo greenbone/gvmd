@@ -1,5 +1,9 @@
 2013-09-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (init_severity_data): Add missing spaces.
+
+2013-09-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* ChangeLog: Fix function name report_count_filtered.
 
 	* src/manage.c (severity_data_index): Fix check for SEVERITY_ERROR.
