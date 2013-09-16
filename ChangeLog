@@ -1,5 +1,20 @@
 2013-09-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* ChangeLog: Fix function name report_count_filtered.
+
+	* src/manage.c (severity_data_index): Fix check for SEVERITY_ERROR.
+	(init_severity_data, cleanup_severity_data): Use g_malloc0 and g_free
+	instead of malloc and free.
+	(LEVEL_COUNT): Remove.
+	(severity_data_level_counts): Use severity_data_range_count directly
+	instead of LEVEL_COUNT macro.
+
+	* src/manage_sql.c (report_severity_data): Add missing parameter
+	documentation. Remove unused nvt variable. Fix indentation.
+	(report_counts_id_filt): Enable results cache again.
+
+2013-09-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add severity_data type for internal handling of severity counts and use
 	it for counting results.
 
@@ -23,7 +38,7 @@
 
 	* src/manage_sql.c (where_autofp, report_severity)
 	(report_severity_filtered, report_result_count)
-	(report_result_count_filtered): Remove. Replaced with
+	(report_count_filtered): Remove. Replaced with
 	report_severity_data.
 	(report_severity_data): New function to gather severity counts and
 	maximum severity.

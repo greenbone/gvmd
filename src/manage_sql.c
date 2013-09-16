@@ -17449,7 +17449,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
  *                            if NULL or "".
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  autofp         Whether to apply the auto FP filter.
- * @param[out] severity_data  
+ * @param[out]  severity_data The severity data struct to store counts in.
  */
 void
 report_severity_data (report_t report, int override,
@@ -17498,15 +17498,15 @@ report_severity_data (report_t report, int override,
               if (stmt == NULL)
                 {
                   g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
             }
           g_warning ("%s: sqlite3_prepare failed: %s\n",
-                      __FUNCTION__,
-                      sqlite3_errmsg (task_db));
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           /** @todo ROLLBACK if in transaction. */
           abort ();
         }
@@ -17555,15 +17555,15 @@ report_severity_data (report_t report, int override,
               if (full_stmt == NULL)
                 {
                   g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
             }
           g_warning ("%s: sqlite3_prepare failed: %s\n",
-                      __FUNCTION__,
-                      sqlite3_errmsg (task_db));
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           /** @todo ROLLBACK if in transaction. */
           abort ();
         }
@@ -17612,8 +17612,8 @@ report_severity_data (report_t report, int override,
               if (ret == SQLITE_BUSY) continue;
               if (ret == SQLITE_OK) break;
               g_warning ("%s: sqlite3_prepare failed: %s\n",
-                          __FUNCTION__,
-                          sqlite3_errmsg (task_db));
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
               abort ();
             }
 
@@ -17628,8 +17628,8 @@ report_severity_data (report_t report, int override,
                 {
                   if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
                   g_warning ("%s: sqlite3_step failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
               break;
@@ -17678,8 +17678,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -17691,8 +17691,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -17705,8 +17705,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -17719,8 +17719,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -17732,8 +17732,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
                   g_warning ("%s: sqlite3_prepare failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
                   abort ();
                 }
 
@@ -17748,8 +17748,8 @@ report_severity_data (report_t report, int override,
                     {
                       if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
                       g_warning ("%s: sqlite3_step failed: %s\n",
-                                  __FUNCTION__,
-                                  sqlite3_errmsg (task_db));
+                                 __FUNCTION__,
+                                 sqlite3_errmsg (task_db));
                       abort ();
                     }
                   break;
@@ -17802,8 +17802,8 @@ report_severity_data (report_t report, int override,
                   if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
                     {
                       g_warning ("%s: sqlite3_reset failed: %s\n",
-                                  __FUNCTION__,
-                                  sqlite3_errmsg (task_db));
+                                 __FUNCTION__,
+                                 sqlite3_errmsg (task_db));
                       abort ();
                     }
                 }
@@ -17863,11 +17863,10 @@ report_severity_data (report_t report, int override,
 
       while (next (&results))
         {
-          const char *nvt, *new_type;
+          const char *new_type;
           double new_severity;
 
           /* Check the result. */
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
           new_type = (const char*) sqlite3_column_text (results.stmt, 2);
           new_severity = sqlite3_column_double (results.stmt, 7);
 
@@ -17891,7 +17890,7 @@ report_severity_data (report_t report, int override,
                                                 search_phrase_exact,
                                                 min_cvss_base, 0))
                     severity_data_add (filtered_severity_data,
-                                          SEVERITY_FP);
+                                       SEVERITY_FP);
                 }
             }
         }
@@ -18067,7 +18066,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
 
-  if (autofp == 0 && host == NULL && filtered_requested == 0 && cache_exists && 0) // FIXME
+  if (autofp == 0 && host == NULL && filtered_requested == 0 && cache_exists)
     {
       /* Try get from cache. */
 

@@ -560,7 +560,7 @@ severity_data_index (double severity)
   if (severity >= 0.0)
     ret = (int)(severity * SEVERITY_SUBDIVISIONS) + ZERO_SEVERITY_INDEX;
   else if (severity == SEVERITY_FP || severity == SEVERITY_DEBUG
-           || SEVERITY_ERROR)
+           || severity == SEVERITY_ERROR)
     ret = (int)(severity) + ZERO_SEVERITY_INDEX;
   else
     ret = 0;
@@ -576,12 +576,10 @@ severity_data_index (double severity)
 void
 init_severity_data (severity_data_t* data)
 {
-  int max_i, i;
+  int max_i;
   max_i = ZERO_SEVERITY_INDEX + (SEVERITY_SUBDIVISIONS * SEVERITY_MAX);
 
-  data->counts = malloc(sizeof(int) * (max_i + 1));
-  for (i = 0; i <= max_i; i++)
-    (data->counts)[i] = 0;
+  data->counts = g_malloc0(sizeof(int) * (max_i + 1));
 
   data->total = 0;
   data->max = SEVERITY_MISSING;
@@ -595,7 +593,7 @@ init_severity_data (severity_data_t* data)
 void
 cleanup_severity_data (severity_data_t* data)
 {
-  free (data->counts);
+  g_free (data->counts);
 }
 
 /**
@@ -655,14 +653,6 @@ severity_data_range_count (const severity_data_t* severity_data,
 }
 
 /**
- * @brief Get the number of results for a severity level.
- */
-#define LEVEL_COUNT(level, class, data)                          \
-  severity_data_range_count (data,                               \
-                             level_min_severity (level, class),  \
-                             level_max_severity (level, class))
-
-/**
  * @brief Count the occurrences of severities in the levels.
  *
  * @param[in] severity_data    The severity counts data to evaluate.
@@ -683,31 +673,59 @@ severity_data_level_counts (const severity_data_t *severity_data,
 {
   if (errors)
     *errors
-      = LEVEL_COUNT("Error", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("Error",
+                                                       severity_class),
+                                   level_max_severity ("Error",
+                                                       severity_class));
 
   if (debugs)
     *debugs
-      = LEVEL_COUNT("Debug", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("Debug",
+                                                       severity_class),
+                                   level_max_severity ("Debug",
+                                                       severity_class));
 
   if (false_positives)
     *false_positives
-      = LEVEL_COUNT("False Positive", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("False Positive",
+                                                       severity_class),
+                                   level_max_severity ("False Positive",
+                                                       severity_class));
 
   if (logs)
     *logs
-      = LEVEL_COUNT("Log", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("False Positive",
+                                                       severity_class),
+                                   level_max_severity ("False Positive",
+                                                       severity_class));
 
   if (lows)
     *lows
-      = LEVEL_COUNT("low", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("low",
+                                                       severity_class),
+                                   level_max_severity ("low",
+                                                       severity_class));
 
   if (mediums)
     *mediums
-      = LEVEL_COUNT("medium", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("medium",
+                                                       severity_class),
+                                   level_max_severity ("medium",
+                                                       severity_class));
 
   if (highs)
     *highs
-      = LEVEL_COUNT("high", severity_class, severity_data);
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("high",
+                                                       severity_class),
+                                   level_max_severity ("high",
+                                                       severity_class));
 }
 
 
