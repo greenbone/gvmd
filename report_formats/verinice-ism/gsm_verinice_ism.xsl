@@ -335,6 +335,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </value>
       </syncAttribute>
       <syncAttribute>
+        <name>control_implemented</name>
+        <value>control_implemented_no</value>
+      </syncAttribute>
+      <syncAttribute>
         <name>gsm_ism_control_description</name>
         <value>
           <xsl:value-of select="$description"/>
@@ -612,6 +616,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <!-- Control / Note on a vulnerability -->
       <ns2:mapObjectType intId="control" extId="gsm_ism_control">
        <ns2:mapAttributeType intId="control_name" extId="gsm_ism_control_name"/>
+       <ns2:mapAttributeType intId="control_implemented" extId="control_implemented"/>
        <ns2:mapAttributeType intId="gsm_ism_control_description" extId="gsm_ism_control_description"/>
        <ns2:mapAttributeType intId="gsm_ism_control_cpe" extId="gsm_ism_control_cpe"/>
        <ns2:mapAttributeType intId="gsm_ism_control_tag" extId="gsm_ism_control_tag"/>
