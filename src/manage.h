@@ -907,6 +907,9 @@ manage_result_type_threat (const char*);
 void
 reports_clear_count_cache (int);
 
+char *
+report_severity (report_t, int);
+
 gboolean
 find_report (const char*, report_t*);
 

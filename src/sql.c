@@ -1291,6 +1291,48 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Calculate the severity of a report.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  report_t report;
+  char *severity;
+  double severity_double;
+  unsigned int overrides;
+
+  assert (argc == 2);
+
+  report = sqlite3_value_int64 (argv[0]);
+  if (report == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  overrides = sqlite3_value_int (argv[1]);
+
+  severity = report_severity (report, overrides);
+  severity_double = severity ? g_strtod (severity, 0) : 0.0;
+  tracef ("   %s: %llu: %s\n", __FUNCTION__, report, severity);
+  if (severity)
+    {
+      sqlite3_result_double (context, severity_double);
+      free (severity);
+      return;
+    }
+
+  sqlite3_result_double (context, SEVERITY_MISSING);
+  return;
+}
+
+/**
  * @brief Calculate the severity of a task.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -1300,7 +1342,7 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
  * @param[in]  argv     Argument array.
  */
 void
-sql_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   task_t task;
   report_t last_report;
@@ -1332,11 +1374,11 @@ sql_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
   task_last_report (task, &last_report);
   if (last_report == 0)
     {
-      sqlite3_result_double (context, 0.0);
+      sqlite3_result_double (context, SEVERITY_MISSING);
       return;
     }
 
-  sqlite3_result_double (context, 0.0);
+  sqlite3_result_double (context, SEVERITY_MISSING);
   return;
 }
 

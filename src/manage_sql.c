@@ -9419,11 +9419,25 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "report_severity",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_report_severity,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create report_severity", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "task_severity",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
-                               sql_severity,
+                               sql_task_severity,
                                NULL,            /* xStep. */
                                NULL)            /* xFinal. */
       != SQLITE_OK)
@@ -14659,18 +14673,20 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
-   NULL }
+   "task", "severity", NULL }
 
 /**
  * @brief Report iterator columns.
  */
-#define REPORT_ITERATOR_COLUMNS                                              \
+#define REPORT_ITERATOR_COLUMNS(overrides)                                   \
   "ROWID, uuid, iso_time (start_time) AS name, '',"                          \
   " iso_time (start_time), iso_time (end_time),"                             \
   " start_time AS created, end_time AS modified, '',"                        \
   " run_status_name (scan_run_status) AS status,"                            \
   " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id,"           \
-  " iso_time (start_time) AS date"
+  " iso_time (start_time) AS date,"                                          \
+  " (SELECT name FROM tasks WHERE tasks.ROWID = task) AS task,"              \
+  " report_severity (ROWID, " overrides ") as severity"
 
 /**
  * @brief Count number of reports.
@@ -14683,8 +14699,8 @@ int
 report_count (const get_data_t *get)
 {
   static const char *extra_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
-  return count ("report", get, REPORT_ITERATOR_COLUMNS, NULL, extra_columns,
-                0, 0, 0, TRUE);
+  return count ("report", get, REPORT_ITERATOR_COLUMNS ("0"), NULL,
+                extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -14700,12 +14716,29 @@ int
 init_report_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
+  char *filter;
+  gchar *value;
+  int overrides;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+  value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  free (filter);
+  overrides = value && strcmp (value, "0");
+  g_free (value);
 
   return init_get_iterator (iterator,
                             "report",
                             get,
                             /* Columns. */
-                            REPORT_ITERATOR_COLUMNS,
+                            overrides ? REPORT_ITERATOR_COLUMNS ("1")
+                                      : REPORT_ITERATOR_COLUMNS ("0"),
                             /* Columns for trashcan. */
                             NULL,
                             filter_columns,
@@ -18201,6 +18234,88 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                                 NULL, NULL, 0, autofp, NULL, NULL, NULL, NULL,
                                 NULL, NULL, NULL);
 
+}
+
+/**
+ * @brief Get the maximum severity of a report.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  offset     Offset of report to get severity from:
+ *                        0 = use last report, 1 = use next to last report
+ *
+ * @return Severity score of last report on task if there is one, as a freshly
+ *  allocated string, else NULL.
+ */
+char*
+report_severity (report_t report, int overrides)
+{
+  char* severity;
+  gchar *severity_sql, *ov, *new_severity_sql;
+
+  if (current_credentials.uuid == NULL)
+    return NULL;
+
+  if (setting_dynamic_severity_int ())
+    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
+                              " WHERE nvts.oid = results.nvt)");
+  else
+    severity_sql = g_strdup ("results.severity");
+
+  if (overrides)
+    {
+      ov = g_strdup_printf
+            ("SELECT overrides.new_severity"
+             " FROM overrides"
+             " WHERE overrides.nvt = results.nvt"
+             " AND ((overrides.owner IS NULL)"
+             " OR (overrides.owner ="
+             " (SELECT ROWID FROM users"
+             "  WHERE users.uuid = '%s')))"
+             " AND ((overrides.end_time = 0)"
+             "      OR (overrides.end_time >= now ()))"
+             " AND (overrides.task ="
+             "      (SELECT reports.task FROM reports"
+             "       WHERE report_results.report = reports.ROWID)"
+             "      OR overrides.task = 0)"
+             " AND (overrides.result = results.ROWID"
+             "      OR overrides.result = 0)"
+             " AND (overrides.hosts is NULL"
+             "      OR overrides.hosts = \"\""
+             "      OR hosts_contains (overrides.hosts, results.host))"
+             " AND (overrides.port is NULL"
+             "      OR overrides.port = \"\""
+             "      OR overrides.port = results.port)"
+             " AND severity_matches_ov (%s, overrides.severity)"
+             " ORDER BY overrides.result DESC, overrides.task DESC,"
+             " overrides.port DESC, overrides.severity ASC,"
+             " overrides.creation_time DESC",
+             current_credentials.uuid,
+             severity_sql);
+
+      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
+                                          ov, severity_sql);
+
+      g_free (ov);
+    }
+  else
+    new_severity_sql = g_strdup (severity_sql);
+
+  g_free (severity_sql);
+
+  severity = sql_string (0, 0,
+                         " SELECT %s AS new_severity"
+                         " FROM results, report_results"
+                         " WHERE report_results.report = %llu"
+                         " AND results.ROWID = report_results.result"
+                         " ORDER BY new_severity DESC"
+                         " LIMIT 1",
+                         new_severity_sql,
+                         report);
+
+  g_free (new_severity_sql);
+
+  return severity;
 }
 
 /**

@@ -1,3 +1,26 @@
+2013-09-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Make reports sortable by task name and severity.
+
+	* src/manage.h (report_severity): New function prototype.
+
+	* src/manage_sql.c (init_manage_process): Add SQL function
+	report_severity, rename sql_severity to sql_task_severity.
+	(REPORT_ITERATOR_FILTER_COLUMNS): Add columns task and severity.
+	(REPORT_ITERATOR_COLUMNS) Add overridesparameter. Add columns task and
+	severity.
+	(report_count, init_report_iterator): Add overrides parameter.
+	(report_severity): New function.
+
+	* src/sql.c (sql_report_severity): New function.
+	(sql_severity): Remove. Renamed to sql_task_severity.
+	(sql_task_severity): New function. Renamed sql_severity to this. Return
+	SEVERITY_MISSING instead of 0.0 in case severity is missing.
+
+	* src/sql.h (sql_report_severity): New function prototype.
+	(sql_severity): Remove. Renamed to sql_task_severity.
+	(sql_task_severity): New function proto. Renamed sql_severity to this.
+
 2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add targets reverse_lookup_only and reverse_lookup_unify. Migrate DB to
