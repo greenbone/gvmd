@@ -2735,7 +2735,7 @@ run_task (const char *task_id, char **report_id, int from)
 {
   task_t task;
   target_t target;
-  char *hosts, *port_range, *port;
+  char *hosts, *port_range, *port, *exclude_hosts;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -2771,14 +2771,6 @@ run_task (const char *task_id, char **report_id, int from)
       tracef ("   task target is 0.\n");
       set_task_run_status (task, run_status);
       return -2;
-    }
-
-  hosts = target_hosts (target);
-  if (hosts == NULL)
-    {
-      tracef ("   target hosts is NULL.\n");
-      set_task_run_status (task, run_status);
-      return -4;
     }
 
   ssh_credential = target_ssh_lsc_credential (target);
@@ -2822,7 +2814,6 @@ run_task (const char *task_id, char **report_id, int from)
 
       if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
         {
-          free (hosts);
           set_task_run_status (task, run_status);
           return -3;
         }
@@ -2832,6 +2823,14 @@ run_task (const char *task_id, char **report_id, int from)
       /* "from" must be 0, 1 or 2. */
       assert (0);
       return -1;
+    }
+
+  hosts = target_hosts (target);
+  if (hosts == NULL)
+    {
+      tracef ("   target hosts is NULL.\n");
+      set_task_run_status (task, run_status);
+      return -4;
     }
 
   /* Fork a child to start and handle the task while the parent responds to
@@ -3060,6 +3059,26 @@ run_task (const char *task_id, char **report_id, int from)
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
       return -10;
+    }
+
+  /* Send exclude_hosts preference. */
+
+  exclude_hosts = target_exclude_hosts (target);
+  if (exclude_hosts)
+    {
+      if (sendf_to_server ("exclude_hosts <|> %s\n", exclude_hosts))
+        {
+          free (hosts);
+          free (exclude_hosts);
+          g_ptr_array_add (preference_files, NULL);
+          array_free (preference_files);
+          slist_free (files);
+          set_task_run_status (task, run_status);
+          set_report_scan_run_status (current_report, run_status);
+          current_report = (report_t) 0;
+          return -10;
+        }
+      free (exclude_hosts);
     }
 
   /* Send credential preferences if there are credentials linked to target. */

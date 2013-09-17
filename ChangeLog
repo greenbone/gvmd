@@ -1,3 +1,8 @@
+2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_task): Send target exclude_hosts when available as a
+	preference to the scanner.
+
 2013-09-17  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Add control
