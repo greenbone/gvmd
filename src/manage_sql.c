@@ -25330,7 +25330,9 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
                const char* port_range, lsc_credential_t ssh_lsc_credential,
                const char* ssh_port, lsc_credential_t smb_lsc_credential,
                const char* target_locator, const char* username,
-               const char* password, int make_name_unique, target_t* target)
+               const char* password, const char *reverse_lookup_only,
+               const char *reverse_lookup_unify, int make_name_unique,
+               target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
   gchar *port_list_comment, *quoted_ssh_port;
@@ -25495,32 +25497,39 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   else
     quoted_ssh_port = g_strdup ("NULL");
 
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+    reverse_lookup_only = "0";
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+    reverse_lookup_unify = "0";
+
   if (comment)
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
-           "  modification_time)"
+           "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
+           "  reverse_lookup_unify, creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
-           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', %llu, %s, %llu, %llu, now (), now ());",
+           " (SELECT ROWID FROM users WHERE users.uuid = '%s'), '%s',"
+           " '%s', '%s', %llu, %s, %llu, %llu, '%s', '%s', now (), now ());",
            quoted_name, current_credentials.uuid, quoted_hosts,
            quoted_exclude_hosts, quoted_comment, ssh_lsc_credential,
-           quoted_ssh_port, smb_lsc_credential, port_list);
+           quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
+           reverse_lookup_unify);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
-         "  ssh_port, smb_lsc_credential, port_range, creation_time,"
-         "  modification_time)"
+         "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
+         "  reverse_lookup_unify, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '', %llu, %s, %llu, %llu, now (), now ());",
+         " '%s', '%s', '', %llu, %s, %llu, %llu, '%s', '%s', now (), now ());",
          quoted_name, current_credentials.uuid, quoted_hosts,
          quoted_exclude_hosts, quoted_exclude_hosts, ssh_lsc_credential,
-         quoted_ssh_port, smb_lsc_credential, port_list);
+         quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
+         reverse_lookup_unify);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
@@ -25614,11 +25623,11 @@ copy_target (const char* name, const char* comment, const char *target_id,
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO targets"
            " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
-           "  modification_time)"
+           "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
+           "  reverse_lookup_unify, creation_time, modification_time)"
            " SELECT make_uuid (), %llu, %s%s%s, '%s', hosts, exclude_hosts,"
            "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-           "        now (), now ()"
+           "        reverse_lookup_only, reverse_lookup_unify, now (), now ()"
            " FROM targets WHERE uuid = '%s';",
            owner,
            quoted_name ? "'" : "",
@@ -25633,11 +25642,11 @@ copy_target (const char* name, const char* comment, const char *target_id,
   else
     sql ("INSERT INTO targets"
          " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
-         "  ssh_port, smb_lsc_credential, port_range, creation_time,"
-         "  modification_time)"
+         "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
+         "  reverse_lookup_unify, creation_time, modification_time)"
          " SELECT make_uuid (), %llu, %s%s%s, comment, hosts, exclude_hosts,"
          "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-         "        now (), now ()"
+         "        reverse_lookup_only, reverse_lookup_unify, now (), now ()"
          " FROM targets WHERE uuid = '%s';",
          owner,
          quoted_name ? "'" : "",
@@ -25737,14 +25746,15 @@ delete_target (const char *target_id, int ultimate)
       sql ("INSERT INTO targets_trash"
            " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
            "  ssh_port, smb_lsc_credential, port_range, ssh_location,"
-           "  smb_location, port_list_location, creation_time, "
-           "  modification_time)"
+           "  smb_location, port_list_location, reverse_lookup_only,"
+           "  reverse_lookup_unify, creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
-           "      creation_time, modification_time"
+           "        reverse_lookup_only, reverse_lookup_unify,"
+           "        creation_time, modification_time"
            " FROM targets WHERE ROWID = %llu;",
            target);
 
@@ -25805,7 +25815,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *port_list_id, const char *ssh_lsc_credential_id,
                const char *ssh_port, const char *smb_lsc_credential_id,
                const char *target_locator, const char *username,
-               const char *password)
+               const char *password, const char *reverse_lookup_only,
+               const char *reverse_lookup_unify)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
   gchar *quoted_exclude_hosts;
@@ -25980,6 +25991,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   else
     quoted_ssh_port = g_strdup ("NULL");
 
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+    reverse_lookup_only = "0";
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+    reverse_lookup_unify = "0";
+
   if (comment)
     {
       quoted_comment = sql_quote (comment);
@@ -26004,14 +26020,17 @@ modify_target (const char *target_id, const char *name, const char *hosts,
          " name = '%s',"
          " hosts = '%s',"
          " exclude_hosts = '%s',"
+         " reverse_lookup_only = '%s',"
+         " reverse_lookup_unify = '%s',"
          " lsc_credential = %llu,"
          " ssh_port = %s,"
          " smb_lsc_credential = %llu,"
          " port_range = %llu,"
          " modification_time = now ()"
          " WHERE ROWID = %llu;",
-         quoted_name, quoted_hosts, quoted_exclude_hosts, ssh_lsc_credential,
-         quoted_ssh_port, smb_lsc_credential, port_list, target);
+         quoted_name, quoted_hosts, quoted_exclude_hosts, reverse_lookup_only,
+         reverse_lookup_unify, ssh_lsc_credential, quoted_ssh_port,
+         smb_lsc_credential, port_list, target);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
@@ -26027,8 +26046,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  * @brief Filter columns for target iterator.
  */
 #define TARGET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "hosts", "ips", "port_list", "ssh_credential", \
-   "smb_credential", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "hosts", "exclude_hosts", "ips", "port_list",  \
+   "ssh_credential", "smb_credential", NULL }
 
 /**
  * @brief Target iterator columns.
@@ -26043,6 +26062,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   " AS port_list,"                                          \
   " 0,"                                                     \
   " exclude_hosts,"                                         \
+  " reverse_lookup_only, reverse_lookup_unify,"             \
   " (SELECT name FROM lsc_credentials"                      \
   "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
   " AS ssh_credential,"                                     \
@@ -26319,6 +26339,26 @@ target_iterator_port_list_trash (iterator_t* iterator)
 DEF_ACCESS (target_iterator_exclude_hosts, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
+ * @brief Get the reverse lookup only value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reverse lookup only of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_reverse_lookup_only, GET_ITERATOR_COLUMN_COUNT
+            + 11);
+
+/**
+ * @brief Get the reverse lookup unify value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reverse lookup unify of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_reverse_lookup_unify, GET_ITERATOR_COLUMN_COUNT
+            + 12);
+
+/**
  * @brief Return the UUID of a tag.
  *
  * @param[in]  tag  Tag.
@@ -26423,6 +26463,36 @@ target_exclude_hosts (target_t target)
   return sql_string (0, 0,
                      "SELECT exclude_hosts FROM targets WHERE ROWID = %llu;",
                      target);
+}
+
+/**
+ * @brief Return the reverse_lookup_only value of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Reverse lookup only value if available, else NULL.
+ */
+char*
+target_reverse_lookup_only (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT reverse_lookup_only FROM targets"
+                     " WHERE ROWID = %llu;", target);
+}
+
+/**
+ * @brief Return the reverse_lookup_unify value of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Reverse lookup unify value if available, else NULL.
+ */
+char*
+target_reverse_lookup_unify (target_t target)
+{
+  return sql_string (0, 0,
+                     "SELECT reverse_lookup_unify FROM targets"
+                     " WHERE ROWID = %llu;", target);
 }
 
 /**
@@ -45047,11 +45117,12 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range, creation_time,"
-           "  modification_time)"
+           "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
+           "  reverse_lookup_unify, creation_time, modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment, "
            "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-           "        creation_time, modification_time"
+           "        reverse_lookup_only, reverse_lookup_unify, creation_time,"
+           "        modification_time"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);
 

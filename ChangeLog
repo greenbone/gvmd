@@ -1,3 +1,36 @@
+2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add targets reverse_lookup_only and reverse_lookup_unify. Migrate DB to
+	version 96.
+
+	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 96.
+
+	* src/manage.h: Add and adjust prototypes.
+
+	* src/manage_migrators.c (migrate_95_to_96): New function.
+	(database_migrators): Add migrate_95_to_96.
+
+	* src/manage_sql.c (create_target, modify_target, copy_target)
+	(delete_target, manage_restore): Handle target reverse lookup options.
+	(TARGET_ITERATOR_FILTER_COLUMNS): Add exclude_hosts column.
+	(TARGET_ITERATOR_COLUMNS): Add target reverse lookup columns.
+	(target_iterator_reverse_lookup_only)
+	(target_iterator_reverse_lookup_unify): New functions.
+	(target_reverse_lookup_only, target_reverse_lookup_unify): New
+	functions.
+
+	* src/manage.c (run_task): Send reverse_lookup_only and
+	reverse_lookup_unify preferences.
+
+	* src/omp.c (create_target_data_t, modify_target_data_t): Add target
+	reverse lookup elements.
+	(create_target_data_reset, modify_target_data_reset): Free target
+	reverse lookup elements.
+	(client_state_t): Add target reverse lookup states.
+	(omp_xml_handle_start_element, omp_xml_handle_start_element)
+	(omp_xml_handle_text): Handle new target creation and modification
+	states.
+
 2013-09-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Change report_counts schema to cache result counts by severity value

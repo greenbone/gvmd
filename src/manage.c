@@ -2776,6 +2776,7 @@ run_task (const char *task_id, char **report_id, int from)
   task_t task;
   target_t target;
   char *hosts, *port_range, *port, *exclude_hosts;
+  char *reverse_lookup_only, *reverse_lookup_unify;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -3120,6 +3121,44 @@ run_task (const char *task_id, char **report_id, int from)
         }
       free (exclude_hosts);
     }
+
+  /* Send reverse_lookup_only preference. */
+  reverse_lookup_only = target_reverse_lookup_only (target);
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+    reverse_lookup_only = g_strdup ("no");
+  else
+    reverse_lookup_only = g_strdup ("yes");
+  if (sendf_to_server ("reverse_lookup_only <|> %s\n", reverse_lookup_only))
+    {
+      free (hosts);
+      g_ptr_array_add (preference_files, NULL);
+      array_free (preference_files);
+      slist_free (files);
+      set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+  g_free (reverse_lookup_only);
+
+  /* Send reverse_lookup_unify preference. */
+  reverse_lookup_unify = target_reverse_lookup_unify (target);
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+    reverse_lookup_unify = g_strdup ("no");
+  else
+    reverse_lookup_unify = g_strdup ("yes");
+  if (sendf_to_server ("reverse_lookup_unify <|> %s\n", reverse_lookup_unify))
+    {
+      free (hosts);
+      g_ptr_array_add (preference_files, NULL);
+      array_free (preference_files);
+      slist_free (files);
+      set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
+  g_free (reverse_lookup_unify);
 
   /* Send credential preferences if there are credentials linked to target. */
 

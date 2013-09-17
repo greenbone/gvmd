@@ -1532,6 +1532,8 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
+  char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
+  char *reverse_lookup_unify;    ///< Boolean. Whether to unify based on reverse lookup.
   char *copy;                    ///< UUID of resource to copy.
   char *hosts;                   ///< Hosts for new target.
   char *port_list_id;            ///< Port list for new target.
@@ -1556,6 +1558,8 @@ create_target_data_reset (create_target_data_t *data)
 {
   free (data->comment);
   free (data->exclude_hosts);
+  free (data->reverse_lookup_only);
+  free (data->reverse_lookup_unify);
   free (data->copy);
   free (data->hosts);
   free (data->port_list_id);
@@ -3399,6 +3403,8 @@ typedef struct
 {
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
+  char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
+  char *reverse_lookup_unify;    ///< Boolean. Whether to unify based on reverse lookup.
   char *hosts;                   ///< Hosts for target.
   char *name;                    ///< Name of target.
   char *port_list_id;            ///< Port list for target.
@@ -3420,6 +3426,8 @@ static void
 modify_target_data_reset (modify_target_data_t *data)
 {
   free (data->exclude_hosts);
+  free (data->reverse_lookup_only);
+  free (data->reverse_lookup_unify);
   free (data->comment);
   free (data->hosts);
   free (data->name);
@@ -4885,6 +4893,8 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
+  CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
+  CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_COPY,
   CLIENT_CREATE_TARGET_HOSTS,
@@ -5103,6 +5113,8 @@ typedef enum
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_HOSTS,
   CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
+  CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY,
+  CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
   CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
@@ -7709,6 +7721,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_MODIFY_TARGET:
         if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS);
+        else if (strcasecmp ("REVERSE_LOOKUP_ONLY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY);
+        else if (strcasecmp ("REVERSE_LOOKUP_UNIFY", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
@@ -8844,6 +8860,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET:
         if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS);
+        else if (strcasecmp ("REVERSE_LOOKUP_ONLY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY);
+        else if (strcasecmp ("REVERSE_LOOKUP_UNIFY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
@@ -15393,7 +15413,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
-                  const char *hosts, *exclude_hosts;
+                  const char *hosts, *exclude_hosts, *reverse_lookup_only;
+                  const char *reverse_lookup_unify;
                   lsc_credential_t ssh_credential, smb_credential;
                   int port_list_trash, max_hosts;
                   char *port_range;
@@ -15444,6 +15465,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   hosts = target_iterator_hosts (&targets);
                   exclude_hosts = target_iterator_exclude_hosts (&targets);
                   max_hosts = manage_count_hosts (hosts, exclude_hosts);
+                  reverse_lookup_only = target_iterator_reverse_lookup_only
+                                         (&targets);
+                  reverse_lookup_unify = target_iterator_reverse_lookup_unify
+                                         (&targets);
 
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<exclude_hosts>%s</exclude_hosts>"
@@ -15461,7 +15486,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<smb_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
-                                           "</smb_lsc_credential>",
+                                           "</smb_lsc_credential>"
+                                           "<reverse_lookup_only>%s"
+                                           "</reverse_lookup_only>"
+                                           "<reverse_lookup_unify>%s"
+                                           "</reverse_lookup_unify>",
                                            hosts,
                                            exclude_hosts ? exclude_hosts : "",
                                            max_hosts,
@@ -15479,7 +15508,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            smb_lsc_name ? smb_lsc_name : "",
                                            (get_targets_data->get.trash
                                              && target_iterator_smb_trash
-                                                 (&targets)));
+                                                 (&targets)),
+                                           reverse_lookup_only,
+                                           reverse_lookup_unify);
+
 
                   if (get_targets_data->tasks)
                     {
@@ -19525,6 +19557,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_target_data->target_locator,
                          create_target_data->target_locator_username,
                          create_target_data->target_locator_password,
+                         create_target_data->reverse_lookup_only,
+                         create_target_data->reverse_lookup_unify,
                          (create_target_data->make_name_unique
                           && strcmp (create_target_data->make_name_unique, "0"))
                            ? 1 : 0,
@@ -19604,6 +19638,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_TARGET, COMMENT);
       CLOSE (CLIENT_CREATE_TARGET, EXCLUDE_HOSTS);
+      CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
+      CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
@@ -19988,7 +20024,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
               if (create_target (target_name, hosts, NULL, NULL, NULL, NULL, 0,
-                                 NULL, 0, NULL, NULL, NULL, 0, &target))
+                                 NULL, 0, NULL, NULL, NULL, "0", "0", 0,
+                                 &target))
                 {
                   request_delete_task (&create_task_data->task);
                   g_free (target_name);
@@ -22351,7 +22388,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          modify_target_data->smb_lsc_credential_id,
                          modify_target_data->target_locator,
                          modify_target_data->target_locator_username,
-                         modify_target_data->target_locator_password))
+                         modify_target_data->target_locator_password,
+                         modify_target_data->reverse_lookup_only,
+                         modify_target_data->reverse_lookup_unify))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -22484,6 +22523,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_MODIFY_TARGET, EXCLUDE_HOSTS);
+      CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
+      CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
@@ -24786,6 +24827,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
               &create_target_data->exclude_hosts);
 
+      APPEND (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
+              &create_target_data->reverse_lookup_only);
+
+      APPEND (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
+              &create_target_data->reverse_lookup_unify);
+
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);
 
@@ -25065,6 +25112,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
               &modify_target_data->exclude_hosts);
+
+      APPEND (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY,
+              &modify_target_data->reverse_lookup_only);
+
+      APPEND (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
+              &modify_target_data->reverse_lookup_unify);
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);

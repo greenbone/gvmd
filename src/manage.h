@@ -1219,7 +1219,8 @@ find_target_for_actions (const char*, target_t*, const char *);
 int
 create_target (const char*, const char*, const char*, const char*, const char *,
                const char*, lsc_credential_t, const char*, lsc_credential_t,
-               const char*, const char*, const char*, int, target_t*);
+               const char*, const char*, const char*, const char *,
+               const char *, int, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1227,7 +1228,7 @@ copy_target (const char*, const char*, const char *, target_t*);
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*, const char*);
+               const char*, const char*, const char *, const char *);
 
 int
 delete_target (const char*, int);
@@ -1255,6 +1256,12 @@ target_iterator_hosts (iterator_t*);
 
 const char*
 target_iterator_exclude_hosts (iterator_t*);
+
+const char*
+target_iterator_reverse_lookup_only (iterator_t*);
+
+const char*
+target_iterator_reverse_lookup_unify (iterator_t*);
 
 const char*
 target_iterator_comment (iterator_t*);
@@ -1300,6 +1307,12 @@ target_hosts (target_t);
 
 char*
 target_exclude_hosts (target_t);
+
+char*
+target_reverse_lookup_only (target_t);
+
+char*
+target_reverse_lookup_unify (target_t);
 
 char*
 target_port_range (target_t);

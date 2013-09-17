@@ -7524,6 +7524,44 @@ migrate_94_to_95 ()
 }
 
 /**
+ * @brief Migrate the database from version 95 to version 96.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_95_to_96 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 95. */
+
+  if (manage_db_version () != 95)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add column reverse lookup columns to targets and targets_trash */
+  sql ("ALTER TABLE targets ADD COLUMN reverse_lookup_only;");
+  sql ("ALTER TABLE targets ADD COLUMN reverse_lookup_unify;");
+  sql ("UPDATE targets SET reverse_lookup_only = 0, reverse_lookup_unify = 0;");
+
+  sql ("ALTER TABLE targets_trash ADD COLUMN reverse_lookup_only;");
+  sql ("ALTER TABLE targets_trash ADD COLUMN reverse_lookup_unify;");
+  sql ("UPDATE targets_trash SET reverse_lookup_only = 0, "
+       "                         reverse_lookup_unify = 0;");
+
+  /* Set the database version to 96. */
+
+  set_db_version (96);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7623,6 +7661,7 @@ static migrator_t database_migrators[]
     {93, migrate_92_to_93},
     {94, migrate_93_to_94},
     {95, migrate_94_to_95},
+    {96, migrate_95_to_96},
     /* End marker. */
     {-1, NULL}};
 
