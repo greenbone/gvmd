@@ -7490,6 +7490,40 @@ migrate_93_to_94 ()
 }
 
 /**
+ * @brief Migrate the database from version 94 to version 95.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_94_to_95 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 94. */
+
+  if (manage_db_version () != 94)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Drop and replace the report_counts table */
+  sql ("DROP TABLE report_counts;");
+  sql ("CREATE TABLE IF NOT EXISTS report_counts"
+       " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
+       "  severity, count, override);");
+
+  /* Set the database version to 95. */
+
+  set_db_version (95);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7588,6 +7622,7 @@ static migrator_t database_migrators[]
     {92, migrate_91_to_92},
     {93, migrate_92_to_93},
     {94, migrate_93_to_94},
+    {95, migrate_94_to_95},
     /* End marker. */
     {-1, NULL}};
 

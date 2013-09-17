@@ -799,6 +799,12 @@ typedef struct
   double max;
 } severity_data_t;
 
+int
+severity_data_index (double);
+
+double
+severity_data_value (int);
+
 void
 init_severity_data (severity_data_t*);
 
@@ -807,6 +813,9 @@ cleanup_severity_data (severity_data_t*);
 
 void
 severity_data_add (severity_data_t*, double);
+
+void
+severity_data_add_count (severity_data_t*, double, int);
 
 int
 severity_data_count (const severity_data_t*, double);
@@ -894,6 +903,9 @@ manage_result_type_threat (const char*);
 
 /** @todo How is this documented? */
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
+
+void
+reports_clear_count_cache (int);
 
 gboolean
 find_report (const char*, report_t*);

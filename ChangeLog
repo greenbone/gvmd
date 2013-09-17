@@ -1,3 +1,32 @@
+2013-09-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Change report_counts schema to cache result counts by severity value
+	not per threat level. Hence increase database version to 95.
+	Add database migration from version 94 to 95.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 95.
+
+	* src/manage_migrators.c (migrate_94_to_95): New function.
+	(database_migrators): Add migrate_94_to_95.
+
+	* src/manage.c (severity_data_index): Make non-static. Fix param doc.
+	(severity_data_value, severity_data_add_count): New functions.
+
+	* src/manage.h (severity_data_index, severity_data_value)
+	(severity_data_add_count, reports_clear_count_cache): New function
+	prototypes.
+
+	* src/manage_sql.c (create_tables): Change report_counts schema to cache
+	result counts by severity value not per threat level.
+	(init_manage): Clear cache with reports_clear_count_cache.
+	(reports_clear_count_cache): Adapt to new cache schema.
+	(report_severity_data): Handle NULL severity_data parameter.
+	(try_init_counts_cache): Remove. Obsolete with new caching.
+	(report_counts_cache_exists, report_counts_from_cache): New functions.
+	(cache_report_counts): Cache using severity_data_t and new schema.
+	(report_counts_id_filt): Adapt to new caching and also use cache when
+	filter parameters are NULL.
+
 2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Clean code for

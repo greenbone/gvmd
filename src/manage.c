@@ -550,10 +550,10 @@ manage_result_type_threat (const char* type)
 /**
  * @brief Convert a severity value into an index in the counts array.
  *
- * @param[in]   severity        Struct containing severity data.
+ * @param[in]   severity        Severity value.
  * @return      The index, 0 for invalid severity scores.
  */
-static int
+int
 severity_data_index (double severity)
 {
   int ret;
@@ -564,6 +564,27 @@ severity_data_index (double severity)
     ret = (int)(severity) + ZERO_SEVERITY_INDEX;
   else
     ret = 0;
+
+  return ret;
+}
+
+/**
+ * @brief Convert an index in the counts array to a severity value.
+ *
+ * @param[in]   index   Index in the counts array.
+ * @return      The corresponding severity value.
+ */
+double
+severity_data_value (int index)
+{
+  double ret;
+  if (index <= ZERO_SEVERITY_INDEX && index > 0)
+    ret = ((double) index) - ZERO_SEVERITY_INDEX;
+  else if (index <= (ZERO_SEVERITY_INDEX
+                     + (SEVERITY_SUBDIVISIONS * SEVERITY_MAX)))
+    ret = (((double) (index - ZERO_SEVERITY_INDEX)) / SEVERITY_SUBDIVISIONS);
+  else
+    ret = SEVERITY_MISSING;
 
   return ret;
 }
@@ -611,6 +632,25 @@ severity_data_add (severity_data_t* severity_data, double severity)
     severity_data->max = severity;
 
   (severity_data->total)++;
+}
+
+/**
+ * @brief Add a multiple severity occurences to the counts of a severity_data_t.
+ *
+ * @param[in]   severity_data   The severity count struct to add to.
+ * @param[in]   severity        The severity to add.
+ * @param[in]   count           The number of occurences to add.
+ */
+void
+severity_data_add_count (severity_data_t* severity_data, double severity,
+                         int count)
+{
+  (severity_data->counts)[severity_data_index (severity)] += count;
+
+  if (severity_data->total == 0 || severity_data->max <= severity)
+    severity_data->max = severity;
+
+  (severity_data->total) += count;
 }
 
 /**
