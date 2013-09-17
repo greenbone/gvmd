@@ -1,5 +1,11 @@
 2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Clean code for
+	CLIENT_GET_TARGETS case. Send empty string when target has no
+	exclude_hosts value.
+
+2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (run_task): Send target exclude_hosts when available as a
 	preference to the scanner.
 

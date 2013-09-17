@@ -15393,6 +15393,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
+                  const char *hosts, *exclude_hosts;
                   lsc_credential_t ssh_credential, smb_credential;
                   int port_list_trash, max_hosts;
                   char *port_range;
@@ -15440,10 +15441,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_GET_COMMON (target, &get_targets_data->get, &targets);
 
-                  max_hosts = manage_count_hosts (target_iterator_hosts
-                                                  (&targets),
-                                                  target_iterator_exclude_hosts
-                                                   (&targets));
+                  hosts = target_iterator_hosts (&targets);
+                  exclude_hosts = target_iterator_exclude_hosts (&targets);
+                  max_hosts = manage_count_hosts (hosts, exclude_hosts);
+
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<exclude_hosts>%s</exclude_hosts>"
                                            "<max_hosts>%i</max_hosts>"
@@ -15461,9 +15462,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>",
-                                           target_iterator_hosts (&targets),
-                                           target_iterator_exclude_hosts
-                                            (&targets),
+                                           hosts,
+                                           exclude_hosts ? exclude_hosts : "",
                                            max_hosts,
                                            port_range,
                                            port_list_uuid ? port_list_uuid : "",
