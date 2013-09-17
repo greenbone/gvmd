@@ -21144,6 +21144,109 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 }
 
 /**
+ * @brief Make the XML progress string for a report.
+ *
+ * @param[in]  report         Report.
+ * @param[in]  maximum_hosts  Maximum number of hosts in target.
+ * @param[in]  include_hosts  Whether to include hosts.
+ *
+ * @return Progress XML.
+ */
+gchar *
+report_progress_xml (report_t report, int maximum_hosts, int include_hosts)
+{
+  long total = 0;
+  int num_hosts = 0, total_progress;
+  iterator_t hosts;
+  GString *string;
+
+  string = g_string_new ("");
+
+  init_host_iterator (&hosts, report, NULL, 0);
+  while (next (&hosts))
+    {
+      unsigned int max_port, current_port;
+      long progress;
+
+      max_port = host_iterator_max_port (&hosts);
+      current_port = host_iterator_current_port (&hosts);
+      if (max_port)
+        {
+          progress = (current_port * 100) / max_port;
+          if (progress < 0) progress = 0;
+          else if (progress > 100) progress = 100;
+        }
+      else
+        progress = current_port ? 100 : 0;
+
+#if 0
+      tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
+      tracef ("   current_port: %u\n", current_port);
+      tracef ("   max_port: %u\n", max_port);
+      tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
+      tracef ("   total now: %li\n", total);
+#endif
+      total += progress;
+      num_hosts++;
+
+      if (include_hosts)
+        g_string_append_printf (string,
+                                "<host_progress>"
+                                "<host>%s</host>"
+                                "%li"
+                                "</host_progress>",
+                                host_iterator_host (&hosts),
+                                progress);
+    }
+  cleanup_iterator (&hosts);
+
+  total_progress = maximum_hosts
+                   ? (total / maximum_hosts) : 0;
+
+#if 1
+  tracef ("   total: %li\n", total);
+  tracef ("   num_hosts: %i\n", num_hosts);
+  tracef ("   maximum_hosts: %i\n", maximum_hosts);
+  tracef ("   total_progress: %i\n", total_progress);
+#endif
+
+  if (total_progress == 0) total_progress = 1;
+  else if (total_progress == 100) total_progress = 99;
+
+  g_string_append_printf (string,
+                          "%i",
+                          total_progress);
+
+  return g_string_free (string, FALSE);
+}
+
+/**
+ * @brief Check whether the scan of a report is active.
+ *
+ * @param[in]  report         Report.
+ *
+ * @return 1 if active, else 0.
+ */
+static int
+report_active (report_t report)
+{
+  int run_status;
+  report_scan_run_status (report, &run_status);
+  if (run_status == TASK_STATUS_REQUESTED
+      || run_status == TASK_STATUS_RUNNING
+      || run_status == TASK_STATUS_DELETE_REQUESTED
+      || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
+      || run_status == TASK_STATUS_STOP_REQUESTED
+      || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
+      || run_status == TASK_STATUS_STOPPED
+      || run_status == TASK_STATUS_PAUSE_REQUESTED
+      || run_status == TASK_STATUS_PAUSED
+      || run_status == TASK_STATUS_RESUME_REQUESTED)
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -21541,6 +21644,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       char *tsk_name, *task_target_uuid, *comment;
       target_t target;
+      gchar *progress_xml, *hosts, *exclude_hosts;
+      int maximum_hosts;
 
       tsk_name = task_name (task);
 
@@ -21548,9 +21653,33 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
       target = task_target (task);
       if (task_target_in_trash (task))
-        task_target_uuid = trash_target_uuid (target);
+        {
+          hosts = target ? trash_target_hosts (target) : NULL;
+          exclude_hosts = target ? trash_target_exclude_hosts
+                                    (target) : NULL;
+          task_target_uuid = trash_target_uuid (target);
+        }
       else
-        task_target_uuid = target_uuid (target);
+        {
+          hosts = target ? target_hosts (target) : NULL;
+          exclude_hosts = target ? target_exclude_hosts (target) : NULL;
+          task_target_uuid = target_uuid (target);
+        }
+      maximum_hosts = hosts ? manage_count_hosts (hosts, exclude_hosts) : 0;
+      g_free (hosts);
+      g_free (exclude_hosts);
+
+      if ((target == 0)
+          && (task_run_status (task) == TASK_STATUS_RUNNING))
+        progress_xml = g_strdup_printf
+                        ("%i",
+                         task_upload_progress (task));
+      else if (report_slave_task_uuid (report))
+        progress_xml = g_strdup_printf ("%i", report_slave_progress (report));
+      else if (report_active (report))
+        progress_xml = report_progress_xml (report, maximum_hosts, 0);
+      else
+        progress_xml = g_strdup ("-1");
 
       PRINT (out,
              "<task id=\"%s\">"
@@ -21559,12 +21688,15 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              "<target id=\"%s\">"
              "<trash>%i</trash>"
              "</target>"
+             "<progress>%s</progress>"
              "</task>",
              tsk_uuid,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
-             task_target_in_trash (task));
+             task_target_in_trash (task),
+             progress_xml);
+      g_free (progress_xml);
       free (comment);
       free (tsk_name);
       free (tsk_uuid);

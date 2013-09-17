@@ -1166,6 +1166,9 @@ void
 trim_partial_report (report_t);
 
 gchar *
+report_progress_xml (report_t, int, int);
+
+gchar *
 manage_report (report_t, report_format_t, const char *, int, const char*, int,
                const char *, const char *, int, const char *, int, int, int,
                int, int, int, int, const char *, gsize *, gchar **, gchar **);

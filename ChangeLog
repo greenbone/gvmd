@@ -1,3 +1,15 @@
+2013-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_progress_xml): New function.  Body from
+	omp.c.
+	(report_active): New function.
+	(print_report_xml): Include progress with task.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_REPORTS call
+	report_progress_xml to get the progress.
+
 2013-09-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Make reports sortable by task name and severity.

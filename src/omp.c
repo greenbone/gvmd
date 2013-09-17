@@ -15703,67 +15703,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 report_slave_progress
                                                  (running_report));
               else if (running_report)
-                {
-                  long total = 0;
-                  int num_hosts = 0, total_progress;
-                  iterator_t hosts;
-                  GString *string = g_string_new ("");
-
-                  init_host_iterator (&hosts, running_report, NULL, 0);
-                  while (next (&hosts))
-                    {
-                      unsigned int max_port, current_port;
-                      long progress;
-
-                      max_port = host_iterator_max_port (&hosts);
-                      current_port = host_iterator_current_port (&hosts);
-                      if (max_port)
-                        {
-                          progress = (current_port * 100) / max_port;
-                          if (progress < 0) progress = 0;
-                          else if (progress > 100) progress = 100;
-                        }
-                      else
-                        progress = current_port ? 100 : 0;
-
-#if 0
-                      tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
-                      tracef ("   current_port: %u\n", current_port);
-                      tracef ("   max_port: %u\n", max_port);
-                      tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
-                      tracef ("   total now: %li\n", total);
-#endif
-                      total += progress;
-                      num_hosts++;
-
-                      g_string_append_printf (string,
-                                              "<host_progress>"
-                                              "<host>%s</host>"
-                                              "%li"
-                                              "</host_progress>",
-                                              host_iterator_host (&hosts),
-                                              progress);
-                    }
-                  cleanup_iterator (&hosts);
-
-                  total_progress = maximum_hosts
-                                   ? (total / maximum_hosts) : 0;
-
-#if 1
-                  tracef ("   total: %li\n", total);
-                  tracef ("   num_hosts: %i\n", num_hosts);
-                  tracef ("   maximum_hosts: %i\n", maximum_hosts);
-                  tracef ("   total_progress: %i\n", total_progress);
-#endif
-
-                  if (total_progress == 0) total_progress = 1;
-                  else if (total_progress == 100) total_progress = 99;
-
-                  g_string_append_printf (string,
-                                          "%i",
-                                          total_progress);
-                  progress_xml = g_string_free (string, FALSE);
-                }
+                progress_xml = report_progress_xml (report, maximum_hosts, 0);
               else
                 progress_xml = g_strdup ("-1");
 
