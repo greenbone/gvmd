@@ -14700,7 +14700,15 @@ report_count (const get_data_t *get)
 {
   static const char *extra_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
   return count ("report", get, REPORT_ITERATOR_COLUMNS ("0"), NULL,
-                extra_columns, 0, 0, 0, TRUE);
+                extra_columns, 0, 0,
+                get->trash
+                 ? " AND (SELECT hidden FROM tasks"
+                   "      WHERE tasks.ROWID = task)"
+                   "     = 2"
+                 : " AND (SELECT hidden FROM tasks"
+                   "      WHERE tasks.ROWID = task)"
+                   "     = 0",
+                TRUE);
 }
 
 /**

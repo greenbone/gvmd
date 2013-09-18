@@ -1,5 +1,10 @@
 2013-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_count): Add SQL for trash check, to match
+	init_report_iterator.
+
+2013-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (REPORT_ITERATOR_COLUMNS): Use the date column
 	instead of the start_time for filtering by date, because that is what
 	GSA displays.
