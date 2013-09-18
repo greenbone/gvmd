@@ -15487,9 +15487,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>"
-                                           "<reverse_lookup_only>%s"
+                                           "<reverse_lookup_only>"
+                                           "%s"
                                            "</reverse_lookup_only>"
-                                           "<reverse_lookup_unify>%s"
+                                           "<reverse_lookup_unify>"
+                                           "%s"
                                            "</reverse_lookup_unify>",
                                            hosts,
                                            exclude_hosts ? exclude_hosts : "",

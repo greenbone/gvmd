@@ -1,5 +1,10 @@
 2013-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS, make
+	XML string symmetrical for consistency.
+
+2013-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_count): Add SQL for trash check, to match
 	init_report_iterator.
 
