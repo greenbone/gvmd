@@ -25203,7 +25203,8 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
     return -1;
 
   if (exclude_hosts)
-    openvas_hosts_exclude (hosts, exclude_hosts);
+    /* Don't resolve hostnames in excluded hosts. */
+    openvas_hosts_exclude (hosts, exclude_hosts, 0);
 
   count = openvas_hosts_count (hosts);
   openvas_hosts_free (hosts);

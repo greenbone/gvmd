@@ -1,3 +1,8 @@
+2013-09-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_count_hosts): Adjust openvas_hosts_exclude
+	call.
+
 2013-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_progress_xml): New function.  Body from
