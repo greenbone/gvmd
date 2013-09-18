@@ -14684,7 +14684,7 @@ report_add_result (report_t report, result_t result)
   " start_time AS created, end_time AS modified, '',"                        \
   " run_status_name (scan_run_status) AS status,"                            \
   " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id,"           \
-  " iso_time (start_time) AS date,"                                          \
+  " date,"                                                                   \
   " (SELECT name FROM tasks WHERE tasks.ROWID = task) AS task,"              \
   " report_severity (ROWID, " overrides ") as severity"
 
