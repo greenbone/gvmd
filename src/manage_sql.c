@@ -14744,7 +14744,13 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
+                            get->trash
+                             ? " AND (SELECT hidden FROM tasks"
+                               "      WHERE tasks.ROWID = task)"
+                               "     = 2"
+                             : " AND (SELECT hidden FROM tasks"
+                               "      WHERE tasks.ROWID = task)"
+                               "     = 0",
                             TRUE);
 }
 
