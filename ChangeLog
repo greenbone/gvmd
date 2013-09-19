@@ -1,5 +1,23 @@
 2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Combine the two instances of calculating the report progress into one
+	common function, in preparation for having the progress in the report
+	iterator.
+
+	* src/manage_sql.c (report_active): Move up in file.
+	(report_progress_xml): Remove.
+	(report_progress_active): New function.  Mostly does what
+	report_progress_xml did.
+	(report_progress): New function.  Does common progress calc.
+	(print_report_xml): Call report_progress to get progress.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Call report_progress to get
+	the progress.
+
+2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Order by status_text when sorting by
 	status, because status_text has more detail.
 	(REPORT_ITERATOR_COLUMNS): Add status_text column, with container check.

@@ -15647,20 +15647,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           while (1)
             {
-              int maximum_hosts;
               task_t index;
               gchar *progress_xml;
               target_t target;
               slave_t slave;
               char *config, *config_uuid;
-              char *task_target_uuid, *task_target_name, *hosts, *exclude_hosts;
+              char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
               gchar *first_report_id, *first_report;
               char *description, *hosts_ordering;
               gchar *description64, *last_report_id, *last_report;
               gchar *second_last_report_id, *second_last_report;
-              report_t running_report;
               schedule_t schedule;
               time_t next_time;
               char *owner, *observers;
@@ -15688,36 +15686,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               slave = task_slave (index);
 
               target_in_trash = task_target_in_trash (index);
-              if (target_in_trash)
-                {
-                  hosts = target ? trash_target_hosts (target) : NULL;
-                  exclude_hosts = target ? trash_target_exclude_hosts
-                                            (target) : NULL;
-                }
-              else
-                {
-                  hosts = target ? target_hosts (target) : NULL;
-                  exclude_hosts = target ? target_exclude_hosts (target) : NULL;
-                }
-              maximum_hosts = hosts ? manage_count_hosts (hosts, exclude_hosts)
-                                    : 0;
-              g_free (hosts);
-              g_free (exclude_hosts);
-              running_report = task_current_report (index);
               if ((target == 0)
                   && (task_run_status (index) == TASK_STATUS_RUNNING))
                 progress_xml = g_strdup_printf
                                 ("%i",
                                  task_upload_progress (index));
-              else if (running_report
-                       && report_slave_task_uuid (running_report))
-                progress_xml = g_strdup_printf ("%i",
-                                                report_slave_progress
-                                                 (running_report));
-              else if (running_report)
-                progress_xml = report_progress_xml (report, maximum_hosts, 1);
               else
-                progress_xml = g_strdup ("-1");
+                {
+                  int progress;
+                  gchar *host_xml;
+                  report_t running_report;
+
+                  running_report = task_current_report (index);
+                  progress = report_progress (running_report, index, &host_xml);
+                  progress_xml = g_strdup_printf ("%i%s", progress, host_xml);
+                  g_free (host_xml);
+                }
 
               if (get_tasks_data->rcfile)
                 {

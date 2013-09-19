@@ -1171,8 +1171,8 @@ collate_message_type (void* data, int, const void*, int, const void*);
 void
 trim_partial_report (report_t);
 
-gchar *
-report_progress_xml (report_t, int, int);
+int
+report_progress (report_t, task_t, gchar **);
 
 gchar *
 manage_report (report_t, report_format_t, const char *, int, const char*, int,
