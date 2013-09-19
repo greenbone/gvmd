@@ -1,5 +1,11 @@
 2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Order by status_text when sorting by
+	status, because status_text has more detail.
+	(REPORT_ITERATOR_COLUMNS): Add status_text column, with container check.
+
+2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Include progress of hosts, as
 	was the case before using report_progress_xml.
 

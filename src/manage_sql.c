@@ -2713,6 +2713,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " ORDER BY role"
                                         " COLLATE collate_role"
                                         " ASC");
+              else if (((strcmp (type, "task") == 0)
+                        || (strcmp (type, "report") == 0))
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY status_text"
+                                        " ASC");
               else if ((strcmp (type, "task") == 0)
                   && (strcmp (keyword->string, "threat") == 0))
                 g_string_append_printf (order,
@@ -2768,6 +2774,12 @@ filter_clause (const char* type, const char* filter, const char **columns,
                 g_string_append_printf (order,
                                         " ORDER BY role"
                                         " COLLATE collate_role"
+                                        " DESC");
+              else if (((strcmp (type, "task") == 0)
+                        || (strcmp (type, "report") == 0))
+                       && (strcmp (keyword->string, "status") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY status_text"
                                         " DESC");
               else if ((strcmp (type, "task") == 0)
                   && (strcmp (keyword->string, "threat") == 0))
@@ -14716,7 +14728,12 @@ report_add_result (report_t report, result_t result)
   " (SELECT uuid FROM tasks WHERE tasks.ROWID = task) AS task_id,"           \
   " date,"                                                                   \
   " (SELECT name FROM tasks WHERE tasks.ROWID = task) AS task,"              \
-  " report_severity (ROWID, " overrides ") as severity"
+  " report_severity (ROWID, " overrides ") as severity,"                     \
+  " (CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.ROWID = task)"  \
+  "  THEN 'Container'"                                                       \
+  "  ELSE run_status_name (scan_run_status)"                                 \
+  "  END)"                                                                   \
+  " AS status_text"
 
 /**
  * @brief Count number of reports.
