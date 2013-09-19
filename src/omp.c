@@ -15715,7 +15715,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 report_slave_progress
                                                  (running_report));
               else if (running_report)
-                progress_xml = report_progress_xml (report, maximum_hosts, 0);
+                progress_xml = report_progress_xml (report, maximum_hosts, 1);
               else
                 progress_xml = g_strdup ("-1");
 

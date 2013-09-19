@@ -1,3 +1,8 @@
+2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Include progress of hosts, as
+	was the case before using report_progress_xml.
+
 2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_task): Send task hosts ordering preference.
