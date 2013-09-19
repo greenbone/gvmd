@@ -1,5 +1,17 @@
 2013-09-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.h (report_severity): Change return type to double.
+
+	* src/manage_sql.c (report_cache_counts): Cache overridden counts.
+	(cache_report_counts): Use exclusive transaction.
+	(report_severity): Change return type to double. Get severity from
+	cache or report_counts_id.
+
+	* src/sql.c (sql_report_severity): Adapt to report_severity returning
+	a double value.
+
+2013-09-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage.c (severity_to_level, severity_to_type)
 	(severity_data_index, severity_data_value): Add missing blank lines in
 	documentation before parameters and return.

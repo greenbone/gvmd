@@ -1303,8 +1303,7 @@ void
 sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   report_t report;
-  char *severity;
-  double severity_double;
+  double severity;
   unsigned int overrides;
 
   assert (argc == 2);
@@ -1319,16 +1318,8 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
   overrides = sqlite3_value_int (argv[1]);
 
   severity = report_severity (report, overrides);
-  severity_double = severity ? g_strtod (severity, 0) : 0.0;
-  tracef ("   %s: %llu: %s\n", __FUNCTION__, report, severity);
-  if (severity)
-    {
-      sqlite3_result_double (context, severity_double);
-      free (severity);
-      return;
-    }
 
-  sqlite3_result_double (context, SEVERITY_MISSING);
+  sqlite3_result_double (context, severity);
   return;
 }
 

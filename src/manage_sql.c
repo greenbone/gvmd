@@ -14268,7 +14268,7 @@ report_cache_counts (report_t report)
   report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
                     &false_positives, &severity, 0, NULL, 0);
   report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                    &false_positives, &severity, 0, NULL, 0);
+                    &false_positives, &severity, 1, NULL, 0);
 }
 
 /**
@@ -18050,7 +18050,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   int i, ret;
   double severity;
 
-  ret = sql_giveup ("BEGIN TRANSACTION;");
+  ret = sql_giveup ("BEGIN EXCLUSIVE;");
   if (ret)
     return ret;
 
@@ -18256,77 +18256,33 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  * @param[in]  report     Report.
  * @param[in]  overrides  Whether to apply overrides.
  *
- * @return Severity score of the report, as a freshly allocated string,
- *         else NULL.
+ * @return Severity score of the report.
  */
-char*
+double
 report_severity (report_t report, int overrides)
 {
-  char* severity;
-  gchar *severity_sql, *ov, *new_severity_sql;
+  double severity;
+  iterator_t iterator;
 
-  if (current_credentials.uuid == NULL)
-    return NULL;
-
-  if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT cvss_base FROM nvts"
-                              " WHERE nvts.oid = results.nvt)");
-  else
-    severity_sql = g_strdup ("results.severity");
-
-  if (overrides)
+  init_iterator (&iterator,
+                 "SELECT max(severity)"
+                 " FROM report_counts"
+                 " WHERE report = %llu"
+                 " AND override = %d;",
+                 report, overrides);
+  if (next (&iterator)
+      && sqlite3_column_type (iterator.stmt, 0) != SQLITE_NULL)
     {
-      ov = g_strdup_printf
-            ("SELECT overrides.new_severity"
-             " FROM overrides"
-             " WHERE overrides.nvt = results.nvt"
-             " AND ((overrides.owner IS NULL)"
-             " OR (overrides.owner ="
-             " (SELECT ROWID FROM users"
-             "  WHERE users.uuid = '%s')))"
-             " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= now ()))"
-             " AND (overrides.task ="
-             "      (SELECT reports.task FROM reports"
-             "       WHERE report_results.report = reports.ROWID)"
-             "      OR overrides.task = 0)"
-             " AND (overrides.result = results.ROWID"
-             "      OR overrides.result = 0)"
-             " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = \"\""
-             "      OR hosts_contains (overrides.hosts, results.host))"
-             " AND (overrides.port is NULL"
-             "      OR overrides.port = \"\""
-             "      OR overrides.port = results.port)"
-             " AND severity_matches_ov (%s, overrides.severity)"
-             " ORDER BY overrides.result DESC, overrides.task DESC,"
-             " overrides.port DESC, overrides.severity ASC,"
-             " overrides.creation_time DESC",
-             current_credentials.uuid,
-             severity_sql);
-
-      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                          ov, severity_sql);
-
-      g_free (ov);
+      g_debug ("%s: max(severity)=%s", __FUNCTION__,
+               sqlite3_column_text (iterator.stmt, 0));
+      severity = sqlite3_column_double (iterator.stmt, 0);
     }
   else
-    new_severity_sql = g_strdup (severity_sql);
-
-  g_free (severity_sql);
-
-  severity = sql_string (0, 0,
-                         " SELECT %s AS new_severity"
-                         " FROM results, report_results"
-                         " WHERE report_results.report = %llu"
-                         " AND results.ROWID = report_results.result"
-                         " ORDER BY new_severity DESC"
-                         " LIMIT 1",
-                         new_severity_sql,
-                         report);
-
-  g_free (new_severity_sql);
-
+    {
+      g_debug ("%s: could not get max from cache", __FUNCTION__);
+      report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
+                        NULL, &severity, overrides, NULL, 0);
+    }
   return severity;
 }
 
