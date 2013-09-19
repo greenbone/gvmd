@@ -21278,8 +21278,19 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
   char *hosts, *exclude_hosts;
   int maximum_hosts;
 
+  if (report == 0)
+    {
+      if (hosts_xml)
+        *hosts_xml = g_strdup ("");
+      return -1;
+    }
+
   if (report_slave_task_uuid (report))
-    return report_slave_progress (report);
+    {
+      if (hosts_xml)
+        *hosts_xml = g_strdup ("");
+      return report_slave_progress (report);
+    }
 
   target = task_target (task);
   if (task_target_in_trash (task))
@@ -21299,6 +21310,9 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
 
   if (report_active (report))
     return report_progress_active (report, maximum_hosts, hosts_xml);
+
+  if (hosts_xml)
+    *hosts_xml = g_strdup ("");
 
   return -1;
 }

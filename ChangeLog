@@ -1,5 +1,10 @@
 2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_progress): Check if a report was given.
+	Always init hosts_xml if given.
+
+2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Combine the two instances of calculating the report progress into one
 	common function, in preparation for having the progress in the report
 	iterator.
