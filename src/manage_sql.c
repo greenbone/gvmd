@@ -18253,13 +18253,11 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
 /**
  * @brief Get the maximum severity of a report.
  *
- * @param[in]  task       Task.
+ * @param[in]  report     Report.
  * @param[in]  overrides  Whether to apply overrides.
- * @param[in]  offset     Offset of report to get severity from:
- *                        0 = use last report, 1 = use next to last report
  *
- * @return Severity score of last report on task if there is one, as a freshly
- *  allocated string, else NULL.
+ * @return Severity score of the report, as a freshly allocated string,
+ *         else NULL.
  */
 char*
 report_severity (report_t report, int overrides)

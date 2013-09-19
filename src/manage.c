@@ -422,8 +422,10 @@ severity_matches_ov (double severity, double ov_severity)
 
 /**
  * @brief Get the threat level matching a severity score.
+ *
  * @param[in] severity  severity score
  * @param[in] mode      0 for normal levels, 1 to use "Alarm" for severity > 0.0
+ *
  * @return the level as a static string
  */
 const char*
@@ -460,8 +462,10 @@ severity_to_level (double severity, int mode)
 
 /**
  * @brief Get the message type matching a severity score.
+ *
  * @param[in] severity  severity score
  * @param[in] type      message type
+ *
  * @return the message type as a static string
  */
 const char*
@@ -551,6 +555,7 @@ manage_result_type_threat (const char* type)
  * @brief Convert a severity value into an index in the counts array.
  *
  * @param[in]   severity        Severity value.
+ *
  * @return      The index, 0 for invalid severity scores.
  */
 int
@@ -572,6 +577,7 @@ severity_data_index (double severity)
  * @brief Convert an index in the counts array to a severity value.
  *
  * @param[in]   index   Index in the counts array.
+ *
  * @return      The corresponding severity value.
  */
 double
