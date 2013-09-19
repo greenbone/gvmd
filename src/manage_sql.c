@@ -9431,6 +9431,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "report_progress",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_report_progress,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create report_progress", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "report_severity",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -14732,6 +14746,7 @@ report_add_result (report_t report, result_t result)
   " (CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.ROWID = task)"  \
   "  THEN 'Container'"                                                       \
   "  ELSE run_status_name (scan_run_status)"                                 \
+  "       || substr ('000' || report_progress (ROWID), -3, 3)"               \
   "  END)"                                                                   \
   " AS status_text"
 

@@ -1291,6 +1291,40 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Calculate the progress of a report.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_report_progress (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  report_t report;
+  task_t task;
+
+  assert (argc == 1);
+
+  report = sqlite3_value_int64 (argv[0]);
+  if (report == 0)
+    {
+      sqlite3_result_int (context, -1);
+      return;
+    }
+
+  if (report_task (report, &task))
+    {
+      sqlite3_result_int (context, -1);
+      return;
+    }
+
+  sqlite3_result_int (context, report_progress (report, task, NULL));
+  return;
+}
+
+/**
  * @brief Calculate the severity of a report.
  *
  * This is a callback for a scalar SQL function of one argument.

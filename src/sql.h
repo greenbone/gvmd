@@ -110,6 +110,9 @@ void
 sql_current_offset (sqlite3_context *, int, sqlite3_value **);
 
 void
+sql_report_progress (sqlite3_context *, int, sqlite3_value**);
+
+void
 sql_report_severity (sqlite3_context *, int, sqlite3_value**);
 
 void
