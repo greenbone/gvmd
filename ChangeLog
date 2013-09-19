@@ -1,3 +1,10 @@
+2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_task): Send task hosts ordering preference.
+
+	* ChangeLog: Update style for previous entries containing database
+	migration to match common style.
+
 2013-09-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.h (report_severity): Change return type to double.
@@ -20,14 +27,15 @@
 
 2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
-	Add tasks hosts ordering. Migrate DB to version 97.
+	Add tasks hosts ordering. Hence increase database version to 97.
+	Add database migration from version 96 to 97.
 
-	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 97.
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 97.
+
+	* src/manage_migrators.c (migrate_96_to_97): New function.
+	(database_migrators): Add migrate_96_to_97.
 
 	* src/manage.h: Add prototypes.
-
-	* src/manage_migrators.c (migrate_96_to_97): New function. Add it to
-	database_migrators array.
 
 	* src/manage_sql.c (task_hosts_ordering, set_task_hosts_ordering): New
 	function.
@@ -111,15 +119,15 @@
 
 2013-09-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
-	Add targets reverse_lookup_only and reverse_lookup_unify. Migrate DB to
-	version 96.
+	Add targets reverse_lookup_only and reverse_lookup_unify. Hence increase
+	database version to 96. Add database migration from version 95 to 96.
 
-	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 96.
-
-	* src/manage.h: Add and adjust prototypes.
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 96.
 
 	* src/manage_migrators.c (migrate_95_to_96): New function.
 	(database_migrators): Add migrate_95_to_96.
+
+	* src/manage.h: Add and adjust prototypes.
 
 	* src/manage_sql.c (create_target, modify_target, copy_target)
 	(delete_target, manage_restore): Handle target reverse lookup options.
@@ -189,14 +197,15 @@
 
 2013-09-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
-	Add targets exclude_hosts. Migrate DB to version 94.
+	Add targets exclude_hosts. Hence increase database version to 94. Add
+	database migration from version 93 to 94.
 
-	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 94.
-
-	* src/manage.h: Add and adjust headers accordingly.
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 94.
 
 	* src/manage_migrators.c (migrate_93_to_94): New function.
-	(database_migrators): Add migrator pointer.
+	(database_migrators): Add migrate_93_to_94.
+
+	* src/manage.h: Add and adjust headers accordingly.
 
 	* src/manage_sql.c (create_tables): Add exclude_hosts column to targets
 	and targets_trash tables.

@@ -2781,7 +2781,7 @@ run_task (const char *task_id, char **report_id, int from)
 {
   task_t task;
   target_t target;
-  char *hosts, *port_range, *port, *exclude_hosts;
+  char *hosts, *port_range, *port, *exclude_hosts, *hosts_ordering;
   char *reverse_lookup_only, *reverse_lookup_unify;
   gchar *plugins;
   int fail, pid;
@@ -3126,6 +3126,25 @@ run_task (const char *task_id, char **report_id, int from)
           return -10;
         }
       free (exclude_hosts);
+    }
+
+  /* Send hosts_ordering preference. */
+  hosts_ordering = task_hosts_ordering (task);
+  if (hosts_ordering)
+    {
+      if (sendf_to_server ("hosts_ordering <|> %s\n", hosts_ordering))
+        {
+          free (hosts);
+          free (hosts_ordering);
+          g_ptr_array_add (preference_files, NULL);
+          array_free (preference_files);
+          slist_free (files);
+          set_task_run_status (task, run_status);
+          set_report_scan_run_status (current_report, run_status);
+          current_report = (report_t) 0;
+          return -10;
+        }
+      free (hosts_ordering);
     }
 
   /* Send reverse_lookup_only preference. */
