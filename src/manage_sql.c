@@ -25759,10 +25759,14 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   else
     quoted_ssh_port = g_strdup ("NULL");
 
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
     reverse_lookup_only = "0";
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+  else
+    reverse_lookup_only = "1";
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
     reverse_lookup_unify = "0";
+  else
+    reverse_lookup_unify = "1";
 
   if (comment)
     {
@@ -26253,10 +26257,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   else
     quoted_ssh_port = g_strdup ("NULL");
 
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
     reverse_lookup_only = "0";
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+  else
+    reverse_lookup_only = "1";
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
     reverse_lookup_unify = "0";
+  else
+    reverse_lookup_unify = "1";
 
   if (comment)
     {

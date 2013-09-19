@@ -3124,7 +3124,7 @@ run_task (const char *task_id, char **report_id, int from)
 
   /* Send reverse_lookup_only preference. */
   reverse_lookup_only = target_reverse_lookup_only (target);
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "1"))
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
     reverse_lookup_only = g_strdup ("no");
   else
     reverse_lookup_only = g_strdup ("yes");
@@ -3143,7 +3143,7 @@ run_task (const char *task_id, char **report_id, int from)
 
   /* Send reverse_lookup_unify preference. */
   reverse_lookup_unify = target_reverse_lookup_unify (target);
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "1"))
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
     reverse_lookup_unify = g_strdup ("no");
   else
     reverse_lookup_unify = g_strdup ("yes");

@@ -1,3 +1,11 @@
+2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_target, modify_target): Interpret non-zero
+	reverse lookup options values as 1.
+
+	* src/manage.c (run_task): Interpret non-zero reverse lookup options
+	values as yes.
+
 2013-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_TARGETS, make
