@@ -12185,6 +12185,21 @@ task_comment (task_t task)
 }
 
 /**
+ * @brief Return the hosts ordering of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Hosts ordering of task.
+ */
+char*
+task_hosts_ordering (task_t task)
+{
+  return sql_string (0, 0,
+                     "SELECT hosts_ordering FROM tasks WHERE ROWID = %llu;",
+                     task);
+}
+
+/**
  * @brief Return the observers of a task.
  *
  * @param[in]  task  Task.
@@ -12352,6 +12367,21 @@ set_task_target (task_t task, target_t target)
   sql ("UPDATE tasks SET target = %llu, modification_time = now ()"
        " WHERE ROWID = %llu;",
        target,
+       task);
+}
+
+/**
+ * @brief Set the hosts ordering of a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  ordering     Hosts ordering.
+ */
+void
+set_task_hosts_ordering (task_t task, const char *ordering)
+{
+  sql ("UPDATE tasks SET hosts_ordering = '%s', modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       ordering,
        task);
 }
 
@@ -24284,11 +24314,11 @@ copy_task (const char* name, const char* comment, const char *task_id,
            " (uuid, owner, name, hidden, time, comment, config, target,"
            "  schedule, schedule_next_time, slave, config_location,"
            "  target_location, schedule_location, slave_location,"
-           "  creation_time, modification_time)"
+           "  hosts_ordering, creation_time, modification_time)"
            " SELECT make_uuid (), %llu, %s%s%s, 0, time, '%s', config, target,"
            " schedule, schedule_next_time, slave, config_location,"
            " target_location, schedule_location, slave_location,"
-           " now (), now ()"
+           " hosts_ordering, now (), now ()"
            " FROM tasks WHERE uuid = '%s';",
            owner,
            quoted_name ? "'" : "",
@@ -24302,11 +24332,11 @@ copy_task (const char* name, const char* comment, const char *task_id,
     sql ("INSERT into tasks"
          " (uuid, owner, name, hidden, time, comment, config, target,"
          "  schedule, schedule_next_time, slave, config_location,"
-         "  target_location, schedule_location, slave_location,"
+         "  target_location, schedule_location, slave_location, hosts_ordering,"
          "  creation_time, modification_time)"
          " SELECT make_uuid (), %llu, %s%s%s, 0, time, comment, config,"
          " target, schedule, schedule_next_time, slave, config_location,"
-         " target_location, schedule_location, slave_location,"
+         " target_location, schedule_location, slave_location, hosts_ordering,"
          " now (), now ()"
          " FROM tasks WHERE uuid = '%s';",
          owner,

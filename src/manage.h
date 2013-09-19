@@ -522,6 +522,9 @@ task_name (task_t);
 char*
 task_comment (task_t);
 
+char*
+task_hosts_ordering (task_t);
+
 config_t
 task_config (task_t);
 
@@ -545,6 +548,9 @@ task_target_in_trash (task_t);
 
 void
 set_task_target (task_t, target_t);
+
+void
+set_task_hosts_ordering (task_t, const char *);
 
 target_t
 task_slave (task_t);

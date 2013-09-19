@@ -20,6 +20,29 @@
 
 2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Add tasks hosts ordering. Migrate DB to version 97.
+
+	* CMakeLists.txt: Set OPENVASMD_DATABASE_VERSION to 97.
+
+	* src/manage.h: Add prototypes.
+
+	* src/manage_migrators.c (migrate_96_to_97): New function. Add it to
+	database_migrators array.
+
+	* src/manage_sql.c (task_hosts_ordering, set_task_hosts_ordering): New
+	function.
+	(copy_task): Handle hosts_ordering column too.
+
+	* src/omp.c (create_task_data_t, modify_task_data_t): Add new element
+	hosts_ordering.
+	(create_task_data_reset, modify_task_data_reset): Free hosts_ordering.
+	(client_state_t): Add new create and modify task states for
+	hosts_ordering element.
+	(omp_xml_handle_start_element, omp_xml_handle_text): Handle new states.
+	(omp_xml_handle_end_element): Send hosts ordering for GET_TASKS.
+
+2013-09-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_target, modify_target): Interpret non-zero
 	reverse lookup options values as 1.
 

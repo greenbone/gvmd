@@ -7562,6 +7562,38 @@ migrate_95_to_96 ()
 }
 
 /**
+ * @brief Migrate the database from version 96 to version 97.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_96_to_97 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 96. */
+
+  if (manage_db_version () != 96)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add column hosts_ordering to tasks */
+  sql ("ALTER TABLE tasks ADD COLUMN hosts_ordering;");
+  sql ("UPDATE tasks SET hosts_ordering = 'sequential';");
+
+  /* Set the database version to 97. */
+
+  set_db_version (97);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7662,6 +7694,7 @@ static migrator_t database_migrators[]
     {94, migrate_93_to_94},
     {95, migrate_94_to_95},
     {96, migrate_95_to_96},
+    {97, migrate_96_to_97},
     /* End marker. */
     {-1, NULL}};
 

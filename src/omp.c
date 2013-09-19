@@ -1615,6 +1615,7 @@ create_tag_data_reset (create_tag_data_t *data)
 typedef struct
 {
   char *config_id;      ///< ID of task config.
+  char *hosts_ordering; ///< Order for scanning target hosts.
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
   array_t *groups;      ///< IDs of groups.
@@ -1636,6 +1637,7 @@ static void
 create_task_data_reset (create_task_data_t *data)
 {
   free (data->config_id);
+  free (data->hosts_ordering);
   free (data->copy);
   array_free (data->alerts);
   array_free (data->groups);
@@ -3450,6 +3452,7 @@ typedef struct
 {
   char *action;        ///< What to do to file: "update" or "remove".
   char *comment;       ///< Comment.
+  char *hosts_ordering; ///< Order for scanning of target hosts.
   char *config_id;     ///< ID of new config for task.
   array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
@@ -3478,6 +3481,7 @@ modify_task_data_reset (modify_task_data_t *data)
   array_free (data->alerts);
   array_free (data->groups);
   free (data->comment);
+  free (data->hosts_ordering);
   free (data->config_id);
   free (data->file);
   free (data->file_name);
@@ -4911,6 +4915,7 @@ typedef enum
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_COMMENT,
+  CLIENT_CREATE_TASK_HOSTS_ORDERING,
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_COPY,
   CLIENT_CREATE_TASK_NAME,
@@ -5139,6 +5144,7 @@ typedef enum
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_TASK_TARGET,
+  CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
@@ -7771,6 +7777,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_task_data->comment, "");
             set_client_state (CLIENT_MODIFY_TASK_COMMENT);
           }
+        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -8938,6 +8946,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
+        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -15647,7 +15657,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
               gchar *first_report_id, *first_report;
-              char *description;
+              char *description, *hosts_ordering;
               gchar *description64, *last_report_id, *last_report;
               gchar *second_last_report_id, *second_last_report;
               report_t running_report;
@@ -15957,6 +15967,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   schedule_in_trash = 0;
                 }
               next_time = task_schedule_next_time_tz (index);
+              hosts_ordering = task_hosts_ordering (index);
 
               response = g_strdup_printf
                           ("<config id=\"%s\">"
@@ -15967,6 +15978,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<name>%s</name>"
                            "<trash>%i</trash>"
                            "</target>"
+                           "<hosts_ordering>%s</hosts_ordering>"
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
@@ -15990,6 +16002,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_target_uuid ? task_target_uuid : "",
                            task_target_name ? task_target_name : "",
                            target_in_trash,
+                           hosts_ordering,
                            task_slave_uuid ? task_slave_uuid : "",
                            task_slave_name ? task_slave_name : "",
                            task_slave_in_trash (index),
@@ -16014,6 +16027,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (config);
               free (task_target_name);
               free (task_target_uuid);
+              free (hosts_ordering);
               g_free (progress_xml);
               g_free (first_report);
               g_free (last_report);
@@ -20067,6 +20081,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_config (create_task_data->task, config);
               set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
+              set_task_hosts_ordering (create_task_data->task,
+                                       create_task_data->hosts_ordering);
               if (create_task_data->preferences)
                 set_task_preferences (create_task_data->task,
                                       create_task_data->preferences);
@@ -20098,6 +20114,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
+      CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
       CLOSE (CLIENT_CREATE_TASK, COPY);
       CLOSE (CLIENT_CREATE_TASK, ALERT);
@@ -22864,6 +22881,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   set_task_preferences (task,
                                         modify_task_data->preferences);
 
+                if (fail == 0 && modify_task_data->hosts_ordering)
+                  set_task_hosts_ordering (task,
+                                           modify_task_data->hosts_ordering);
+
+
                 if (fail == 0)
                   {
                     log_event ("task", "Task", modify_task_data->task_id,
@@ -22880,6 +22902,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
       CLOSE (CLIENT_MODIFY_TASK, ALERT);
       CLOSE (CLIENT_MODIFY_TASK, NAME);
@@ -24254,6 +24277,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TASK_COMMENT,
               &modify_task_data->comment);
 
+      APPEND (CLIENT_MODIFY_TASK_HOSTS_ORDERING,
+              &modify_task_data->hosts_ordering);
+
       APPEND (CLIENT_MODIFY_TASK_NAME,
               &modify_task_data->name);
 
@@ -24809,6 +24835,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);
         break;
+
+      APPEND (CLIENT_CREATE_TASK_HOSTS_ORDERING,
+              &create_task_data->hosts_ordering);
 
       APPEND (CLIENT_CREATE_TASK_COPY,
               &create_task_data->copy);
