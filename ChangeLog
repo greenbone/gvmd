@@ -1,5 +1,10 @@
 2013-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/ompd.c (serve_omp): Format comments more consistently.  Remove
+	redundant test.
+
+2013-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/ompd.c (serve_omp): Exit if the Scanner goes down when it should
 	be up.
 

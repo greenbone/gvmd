@@ -790,21 +790,18 @@ serve_omp (gnutls_session_t* client_session,
               (fd_info & FD_SCANNER_WRITE)? " write-scanner":"");
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
-         we test for pending records first and emulate a select call
-         in that case.  Note, that GNUTLS guarantees that writes are
-         not buffered.  Note also that GNUTLS versions < 3 did not
-         exhibit a problem in OpenVAS due to a different buffering
-         strategy.  */
+       * we test for pending records first and emulate a select call
+       * in that case.  Note, that GNUTLS guarantees that writes are
+       * not buffered.  Note also that GNUTLS versions < 3 did not
+       * exhibit a problem in OpenVAS due to a different buffering
+       * strategy.  */
       ret = 0;
       if ((fd_info & FD_CLIENT_READ)
           && gnutls_record_check_pending (*client_session))
         {
-          if (!ret)
-            {
-              FD_ZERO (&exceptfds);
-              FD_ZERO (&readfds);
-              FD_ZERO (&writefds);
-            }
+          FD_ZERO (&exceptfds);
+          FD_ZERO (&readfds);
+          FD_ZERO (&writefds);
           ret++;
           FD_SET (client_socket, &readfds);
         }
@@ -834,7 +831,7 @@ serve_omp (gnutls_session_t* client_session,
       if (!ret)
         {
           /* Timeout periodically, so that process_omp_change runs
-             periodically. */
+           * periodically. */
           struct timeval timeout;
 
           timeout.tv_usec = 0;
@@ -897,7 +894,7 @@ serve_omp (gnutls_session_t* client_session,
           continue;
         }
 
-      /* Check for exceptions on the client socket.  */
+      /* Check for exceptions on the client socket. */
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
           char ch;
@@ -918,7 +915,7 @@ serve_omp (gnutls_session_t* client_session,
                      ch);
         }
 
-      /* Check for exceptions on the scanner socket.  */
+      /* Check for exceptions on the scanner socket. */
       if (scanner_is_up () && FD_ISSET (scanner_socket, &exceptfds))
         {
           char ch;
@@ -939,7 +936,7 @@ serve_omp (gnutls_session_t* client_session,
                      ch);
         }
 
-      /* Read data from the client.  */
+      /* Read any data from the client. */
       if ((fd_info & FD_CLIENT_READ) == FD_CLIENT_READ
           && FD_ISSET (client_socket, &readfds))
         {
@@ -1092,7 +1089,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      /* Read data from the scanner.  */
+      /* Read any data from the scanner. */
       if (scanner_is_up ()
           && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
           && FD_ISSET (scanner_socket, &readfds))
@@ -1216,7 +1213,7 @@ serve_omp (gnutls_session_t* client_session,
             assert (0);
         }
 
-      /* Write data to the scanner.  */
+      /* Write any data to the scanner. */
       if (scanner_is_up ()
           && ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
           && FD_ISSET (scanner_socket, &writefds))
@@ -1244,7 +1241,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      /* Write data to the client.  */
+      /* Write any data to the client. */
       if ((fd_info & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
           && FD_ISSET (client_socket, &writefds))
         {
