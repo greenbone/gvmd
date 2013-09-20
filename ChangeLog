@@ -1,3 +1,8 @@
+2013-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ompd.c (serve_omp): Exit if the Scanner goes down when it should
+	be up.
+
 2013-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_process): Create SQL function
