@@ -1,3 +1,8 @@
+2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_severity): Remove syntax error that was making
+	last commit look much faster than it is.
+
 2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_severity): Align SQL better.  Use max instead

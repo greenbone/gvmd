@@ -13323,7 +13323,7 @@ task_severity (task_t task, int overrides, int offset)
   g_free (severity_sql);
 
   severity = sql_string (0, 0,
-                         "SELECT max (%s AS new_severity),"
+                         "SELECT max (%s),"
                          "       (SELECT ROWID FROM reports"
                          "        WHERE reports.task = %llu"
                          "        AND reports.scan_run_status = %u"
