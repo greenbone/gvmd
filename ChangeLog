@@ -1,3 +1,10 @@
+2013-09-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r17732. Patch by Matthew Mundell.
+
+	* src/ompd.c (serve_omp): Exit if the Scanner goes down when it should
+	be up.
+
 2013-08-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r15958.
