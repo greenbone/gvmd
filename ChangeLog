@@ -1,3 +1,9 @@
+2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_severity): Remove use of report_results to
+	speed up query slightly, as it is the slowest part of GET_TASKS with a
+	large db.  Move the report query to a column, so that the index is used.
+
 2013-09-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Format comments more consistently.  Remove
