@@ -1,5 +1,17 @@
 2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Cache the task severity so that it is shared between the task_threat and
+	task_severity SQL functions when initialising a task iterator.  This
+	roughly halves the load time of the Tasks page.
+
+	* src/sql.c (sql_severity_t): New type.
+	(cached_task_severity): New function.
+	(sql_threat_level): Inline task_threat_level, in order to use
+	cached_task_severity.
+	(sql_task_severity): Use cached_task_severity.
+
+2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_severity): Remove use of report_results to
 	speed up query slightly, as it is the slowest part of GET_TASKS with a
 	large db.  Move the report query to a column, so that the index is used.

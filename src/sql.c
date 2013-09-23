@@ -1244,6 +1244,101 @@ sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Severity.
+ */
+typedef struct
+{
+  task_t task;                ///< Task.
+  gchar *severity;            ///< Severity.
+  task_t overrides_task;      ///< Task.
+  gchar *overrides_severity;  ///< Severity.
+} sql_severity_t;
+
+/**
+ * @brief Get task severity, looking in cache.
+ *
+ * @param[in]  cache_arg  Cache.
+ */
+static void
+clear_cache (void *cache_arg)
+{
+  sql_severity_t *cache;
+
+  cache = (sql_severity_t*) cache_arg;
+  tracef ("   %s: %llu, %llu\n", __FUNCTION__, cache->task, cache->overrides_task);
+  cache->task = 0;
+  cache->overrides_task = 0;
+  free (cache->severity);
+  cache->severity = NULL;
+  free (cache->overrides_severity);
+  cache->overrides_severity = NULL;
+}
+
+/**
+ * @brief Get task severity, looking in cache.
+ *
+ * Cache a single severity value because task_threat and task_severity both
+ * do the same expensive severity calculation for each row in the task
+ * iterator.  Use auxdata on the overrides arg to pass the cache between
+ * calls with a single statement.
+ *
+ * @param[in]  context    SQL context.
+ * @param[in]  task       Task.
+ * @param[in]  overrides  Overrides flag.
+ *
+ * @return Severity.
+ */
+static char *
+cached_task_severity (sqlite3_context *context, task_t task, int overrides)
+{
+  static sql_severity_t static_cache = { .task = 0, .severity = NULL,
+                                         .overrides_task = 0,
+                                         .overrides_severity = NULL };
+  sql_severity_t *cache;
+  char *severity;
+
+  cache = sqlite3_get_auxdata (context, 1);
+  if (cache)
+    {
+      if (overrides)
+        {
+          if (cache->overrides_task == task)
+            return cache->overrides_severity;
+          /* Replace the cached severity. */
+          cache->overrides_task = task;
+          free (cache->overrides_severity);
+          cache->overrides_severity = task_severity (task, 1, 0);
+          return cache->severity;
+        }
+      else
+        {
+          if (cache->task == task)
+            return cache->severity;
+          /* Replace the cached severity. */
+          cache->task = task;
+          free (cache->severity);
+          cache->severity = task_severity (task, 0, 0);
+          return cache->severity;
+        }
+    }
+  severity = task_severity (task, overrides, 0);
+  /* Setup the cached severity. */
+  cache = &static_cache;
+  if (overrides)
+    {
+      cache->overrides_task = task;
+      cache->overrides_severity = severity;
+    }
+  else
+    {
+      cache->task = task;
+      cache->severity = severity;
+    }
+  sqlite3_set_auxdata (context, 1, cache, clear_cache);
+  return severity;
+}
+
+/**
  * @brief Calculate the threat level of a task.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -1259,6 +1354,8 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   report_t last_report;
   const char *threat;
   unsigned int overrides;
+  char* severity;
+  double severity_dbl;
 
   assert (argc == 2);
 
@@ -1271,7 +1368,14 @@ sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  threat = task_threat_level (task, overrides);
+  severity = cached_task_severity (context, task, overrides);
+
+  if (severity == NULL
+      || sscanf (severity, "%lf", &severity_dbl) != 1)
+    threat = NULL;
+  else
+    threat = severity_to_level (severity_dbl, 0);
+
   tracef ("   %s: %llu: %s\n", __FUNCTION__, task, threat);
   if (threat)
     {
@@ -1386,13 +1490,12 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  severity = task_severity (task, overrides, 0);
+  severity = cached_task_severity (context, task, overrides);
   severity_double = severity ? g_strtod (severity, 0) : 0.0;
   tracef ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
   if (severity)
     {
       sqlite3_result_double (context, severity_double);
-      free (severity);
       return;
     }
 
