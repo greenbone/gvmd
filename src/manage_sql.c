@@ -13290,9 +13290,9 @@ task_severity (task_t task, int overrides, int offset)
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
              " AND ((overrides.owner IS NULL)"
-             " OR (overrides.owner ="
-             " (SELECT ROWID FROM users"
-             "  WHERE users.uuid = '%s')))"
+             "      OR (overrides.owner ="
+             "          (SELECT ROWID FROM users"
+             "           WHERE users.uuid = '%s')))"
              " AND ((overrides.end_time = 0)"
              "      OR (overrides.end_time >= now ()))"
              " AND (overrides.task = results.task"
@@ -13323,16 +13323,14 @@ task_severity (task_t task, int overrides, int offset)
   g_free (severity_sql);
 
   severity = sql_string (0, 0,
-                         "SELECT %s AS new_severity,"
+                         "SELECT max (%s AS new_severity),"
                          "       (SELECT ROWID FROM reports"
                          "        WHERE reports.task = %llu"
                          "        AND reports.scan_run_status = %u"
                          "        ORDER BY reports.date DESC LIMIT 1 OFFSET %d)"
-                         "        AS report_id"
+                         "       AS report_id"
                          " FROM results"
-                         " WHERE results.report = report_id"
-                         " ORDER BY new_severity DESC"
-                         " LIMIT 1",
+                         " WHERE results.report = report_id;",
                          new_severity_sql,
                          task,
                          TASK_STATUS_DONE,

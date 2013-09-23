@@ -1,5 +1,11 @@
 2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_severity): Align SQL better.  Use max instead
+	of ORDER BY to get max, which brings the Task page back to interactive
+	speed with a big db.
+
+2013-09-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Cache the task severity so that it is shared between the task_threat and
 	task_severity SQL functions when initialising a task iterator.  This
 	roughly halves the load time of the Tasks page.
