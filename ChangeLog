@@ -1,3 +1,13 @@
+2013-09-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Update NBE report format plugin to improve compatibility with third
+	party tools.
+
+	* src/report_formats/NBE/NBE.xsl: Put host_start timestamp before the
+	results of a host instead of after. Use integer IDs instead of OIDs.
+	Ensure Risk Factor, CVSS score and references are in the expected
+	places.
+
 2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_severity): Remove syntax error that was making

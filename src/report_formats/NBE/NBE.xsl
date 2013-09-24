@@ -62,19 +62,42 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </xsl:template>
 
+<xsl:template match="nvt/tags">
+  <xsl:value-of select="substring-after('.', 'cvss_base_vector=')"/>
+</xsl:template>
+
 <xsl:template match="result">
-results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="nvt/@oid"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>
+  <xsl:variable name="cve_ref">
+    <xsl:if test="nvt/cve != '' and nvt/cve != 'NOCVE'">
+      <xsl:value-of select="nvt/cve/text()"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="bid_ref">
+    <xsl:if test="nvt/bid != '' and nvt/bid != 'NOBID'">
+      <xsl:value-of select="nvt/bid/text()"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="xref">
+    <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
+      <xsl:value-of select="nvt/xref/text()"/>
+    </xsl:if>
+  </xsl:variable>
+  <xsl:variable name="cvss_base_vector">
+    <xsl:for-each select="str:split (nvt/tags, '|')">
+      <xsl:if test="'cvss_base_vector' = substring-before (., '=')">
+        <xsl:value-of select="substring-after (., '=')"/>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:variable>
+results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="str:replace(nvt/@oid, '1.3.6.1.4.1.25623.1.0.', '')"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>\n<xsl:if test="nvt/cvss_base != ''">Risk factor :\n\n<xsl:value-of select="nvt/risk_factor"/> / CVSS Base Score : <xsl:value-of select="nvt/cvss_base"/>\n(CVSS2#:<xsl:value-of select="$cvss_base_vector"/>)\n<xsl:if test="$cve_ref != ''">\nCVE : <xsl:value-of select="$cve_ref"/>\n</xsl:if><xsl:if test="$bid_ref != ''">\nBID : <xsl:value-of select="$bid_ref"/>\n</xsl:if><xsl:if test="$xref != ''">\nOther references : <xsl:value-of select="$xref"/>\n</xsl:if></xsl:if>
 </xsl:template>
 
 <xsl:template match="report">
 <xsl:apply-templates select="scan_start"/>
-<xsl:apply-templates select="results/result"/>
-<xsl:for-each select="host_start" >
-timestamps||<xsl:value-of select="host/text()"/>|host_start|<xsl:call-template name="ctime"/>|
-</xsl:for-each>
+<xsl:for-each select="host_start"><xsl:variable name="host"><xsl:value-of select="host/text()"/></xsl:variable>
+timestamps||<xsl:value-of select="$host"/>|host_start|<xsl:call-template name="ctime"/>|<xsl:apply-templates select="../results/result[host/text()=$host]"/>
+timestamps||<xsl:value-of select="$host"/>|host_end|<xsl:call-template name="ctime" select="../host_end[host/text()=$host]/text()"/>|</xsl:for-each>
 <!-- TODO Was start, end, start, end... in 1.0. -->
-<xsl:for-each select="host_end" >timestamps||<xsl:value-of select="host/text()"/>|host_end|<xsl:call-template name="ctime"/>|
-</xsl:for-each>
 <xsl:apply-templates select="scan_end"/>
 <xsl:call-template name="newline"/>
 </xsl:template>
