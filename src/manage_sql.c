@@ -17707,12 +17707,11 @@ report_severity_data (report_t report, int override,
       init_iterator (&results,
                       "SELECT results.ROWID, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
-                      " report_results.report, %s"
-                      " FROM results, report_results"
+                      " results.report, %s"
+                      " FROM results"
                       " WHERE"
                       "%s%s%s"
-                      " report_results.report = %llu"
-                      " AND results.ROWID = report_results.result",
+                      " results.report = %llu;",
                       severity_sql,
                       host ? " results.host = '" : "",
                       host ? quoted_host : "",
@@ -17976,12 +17975,11 @@ report_severity_data (report_t report, int override,
       init_iterator (&results,
                       "SELECT results.ROWID, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
-                      " report_results.report, %s"
-                      " FROM results, report_results"
+                      " results.report, %s"
+                      " FROM results"
                       " WHERE"
                       "%s%s%s"
-                      " report_results.report = %llu"
-                      " AND results.ROWID = report_results.result",
+                      " results.report = %llu;",
                       severity_sql,
                       host ? " results.host = '" : "",
                       host ? quoted_host : "",
@@ -21875,7 +21873,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   /* Port summary. */
 
-  if (delta == 0)
+  if (get->details && (delta == 0))
     {
       if (print_report_port_xml (report, out, first_result, max_results,
                                  sort_order, sort_field, levels, autofp,

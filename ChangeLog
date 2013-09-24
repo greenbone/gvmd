@@ -1,3 +1,11 @@
+2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_severity_data): Skip report_results in results
+	SELECT.
+	(print_report_xml): Only send port summary when details are requested,
+	because the port summary needs to iterate over the results, which can be
+	slow.
+
 2013-09-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* manage_sql.c (init_manage_process): Add SQL function
