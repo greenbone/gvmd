@@ -1,3 +1,14 @@
+2013-09-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* manage_sql.c (init_manage_process): Add SQL function
+	report_severity_count.
+	(REPORT_ITERATOR_FILTER_COLUMNS, REPORT_ITERATOR_COLUMNS): Add columns
+	false_positive, log, low, medium, high.
+
+	sql.c (report_severity_count, sql_report_severity_count): New functions.
+
+	sql.h (report_severity_count_sql): New function prototype.
+
 2013-09-24  Werner Koch  <wk@gnupg.org>
 
 	* src/manage_sql.c (create_lsc_credential): Encrypt the random

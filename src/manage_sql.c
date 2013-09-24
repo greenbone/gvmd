@@ -9459,6 +9459,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "report_severity_count",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_report_severity_count,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create report_severity_count", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "task_severity",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -14726,7 +14740,8 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
-   "task", "severity", NULL }
+   "task", "severity", "false_positive", "log", "low", "medium", "high",      \
+   NULL }
 
 /**
  * @brief Report iterator columns.
@@ -14745,7 +14760,13 @@ report_add_result (report_t report, result_t result)
   "  ELSE run_status_name (scan_run_status)"                                 \
   "       || substr ('000' || report_progress (ROWID), -3, 3)"               \
   "  END)"                                                                   \
-  " AS status_text"
+  " AS status_text,"                                                         \
+  " report_severity_count (ROWID, " overrides ", 'False Positive')"          \
+  " AS false_positive,"                                                      \
+  " report_severity_count (ROWID, " overrides ", 'Log') AS log,"             \
+  " report_severity_count (ROWID, " overrides ", 'Low') AS low,"             \
+  " report_severity_count (ROWID, " overrides ", 'Medium') AS medium,"       \
+  " report_severity_count (ROWID, " overrides ", 'High') AS high"
 
 /**
  * @brief Count number of reports.

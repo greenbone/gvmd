@@ -1462,6 +1462,82 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Get the number of results of a given severity level in a report.
+ *
+ * @param[in] report     The report to count the results of.
+ * @param[in] overrides  Whether to apply overrides.
+ * @param[in] level      Severity level of which to count results.
+ *
+ * @return    The number of results.
+ */
+static int
+report_severity_count (report_t report, int overrides,
+                       char *level)
+{
+  int debugs, false_positives, logs, lows, mediums, highs;
+
+  report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
+                    &false_positives, NULL, overrides, NULL, 0);
+
+  if (strcasecmp (level, "Debug") == 0)
+    return debugs;
+  if (strcasecmp (level, "False Positive") == 0)
+    return false_positives;
+  else if (strcasecmp (level, "Log") == 0)
+    return logs;
+  else if (strcasecmp (level, "Low") == 0)
+    return lows;
+  else if (strcasecmp (level, "Medium") == 0)
+    return mediums;
+  else if (strcasecmp (level, "High") == 0)
+    return highs;
+  else
+    return 0;
+}
+
+/**
+ * @brief Get the number of results of a given severity level in a report.
+ *
+ * This is a callback for a scalar SQL function of four arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_report_severity_count (sqlite3_context *context, int argc,
+                           sqlite3_value** argv)
+{
+  report_t report;
+  unsigned int overrides;
+  char* level;
+  int count;
+
+  assert (argc == 3);
+
+  report = sqlite3_value_int64 (argv[0]);
+  if (report == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  overrides = sqlite3_value_int (argv[1]);
+
+  level = (char*) sqlite3_value_text (argv[2]);
+  if (level == 0)
+    {
+      sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
+      return;
+    }
+
+  count = report_severity_count (report, overrides, level);
+
+  sqlite3_result_int (context, count);
+  return;
+}
+
+/**
  * @brief Calculate the severity of a task.
  *
  * This is a callback for a scalar SQL function of one argument.

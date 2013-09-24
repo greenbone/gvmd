@@ -116,6 +116,9 @@ void
 sql_report_severity (sqlite3_context *, int, sqlite3_value**);
 
 void
+sql_report_severity_count (sqlite3_context *, int, sqlite3_value**);
+
+void
 sql_task_severity (sqlite3_context *, int argc, sqlite3_value **);
 
 void
