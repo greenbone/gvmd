@@ -18112,6 +18112,33 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
 /**
  * @brief Cache the message counts for a report.
  *
+ * @param[in]   data      Severity data struct containing the message counts.
+ *
+ * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
+ */
+static int
+cache_will_insert (severity_data_t* data)
+{
+  int i;
+  double severity;
+
+  i = 0;
+  severity = severity_data_value (i);
+  while (severity <= data->max && severity != SEVERITY_MISSING)
+    {
+      if (data->counts[i] > 0)
+        {
+          return 1;
+        }
+      i++;
+      severity = severity_data_value (i);
+    }
+  return 0;
+}
+
+/**
+ * @brief Cache the message counts for a report.
+ *
  * @param[in]   report    Report.
  * @param[in]   override  Whether overrides were applied to the results.
  * @param[in]   data      Severity data struct containing the message counts.
@@ -18288,8 +18315,8 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   report_scan_run_status (report, &status);
 
   if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE
-      && cache_exists == 0 && min_cvss_base == NULL
-      && search_phrase == NULL)
+      && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL
+      && cache_will_insert (&severity_data))
     cache_report_counts (report, override, &severity_data);
 
   cleanup_severity_data (&severity_data);

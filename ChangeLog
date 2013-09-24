@@ -1,3 +1,10 @@
+2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (cache_will_insert): New function.
+	(report_counts_id_filt): Check if cache_report_counts will do any
+	inserts before calling it, otherwise it runs a transaction just to do
+	the delete, which is costly only large reports.
+
 2013-09-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TARGETS, don't send
