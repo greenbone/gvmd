@@ -1,3 +1,11 @@
+2013-09-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TARGETS, don't send
+	port range value when details attribute is not set.
+
+	* doc/omp.html: Add entry for GET_TARGETS change in compatibility
+	section.
+
 2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_severity_data): Skip report_results in results

@@ -15427,7 +15427,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   const char *reverse_lookup_unify;
                   lsc_credential_t ssh_credential, smb_credential;
                   int port_list_trash, max_hosts;
-                  char *port_range;
 
                   ret = get_next (&targets, &get_targets_data->get, &first,
                                   &count, init_target_iterator);
@@ -15467,8 +15466,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   port_list_name = target_iterator_port_list_name (&targets);
                   port_list_trash = target_iterator_port_list_trash (&targets);
                   ssh_port = target_iterator_ssh_port (&targets);
-                  port_range = target_port_range (target_iterator_target
-                                                    (&targets));
+
 
                   SEND_GET_COMMON (target, &get_targets_data->get, &targets);
 
@@ -15483,7 +15481,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
                                            "<exclude_hosts>%s</exclude_hosts>"
                                            "<max_hosts>%i</max_hosts>"
-                                           "<port_range>%s</port_range>"
                                            "<port_list id=\"%s\">"
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
@@ -15506,7 +15503,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            hosts,
                                            exclude_hosts ? exclude_hosts : "",
                                            max_hosts,
-                                           port_range,
                                            port_list_uuid ? port_list_uuid : "",
                                            port_list_name ? port_list_name : "",
                                            port_list_trash,
@@ -15524,6 +15520,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            reverse_lookup_only,
                                            reverse_lookup_unify);
 
+                  if (get_targets_data->get.details)
+                    SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
+                                             target_port_range
+                                              (target_iterator_target
+                                                (&targets)));
 
                   if (get_targets_data->tasks)
                     {
@@ -15549,7 +15550,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   free (ssh_lsc_uuid);
                   free (smb_lsc_name);
                   free (smb_lsc_uuid);
-                  free (port_range);
                 }
               cleanup_iterator (&targets);
               filtered = get_targets_data->get.id
