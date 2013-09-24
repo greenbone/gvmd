@@ -1,3 +1,8 @@
+2013-09-24  Werner Koch  <wk@gnupg.org>
+
+	* src/manage_sql.c (create_lsc_credential): Encrypt the random
+	password and not the unrelated given_password.
+
 2013-09-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Update NBE report format plugin to improve compatibility with third
