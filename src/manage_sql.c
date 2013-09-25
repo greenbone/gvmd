@@ -18153,7 +18153,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                         "         (SELECT ROWID FROM users"
                         "          WHERE users.uuid = '%s'),"
                         "         %d, " G_STRINGIFY (SEVERITY_MISSING) ", 0);",
-                        report, current_credentials.uuid, override, 0.0);
+                        report, current_credentials.uuid, override);
       if (ret)
         {
           sql ("ROLLBACK;");

@@ -1,5 +1,9 @@
 2013-09-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cache_report_counts): Remove extra arg.
+
+2013-09-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_scan_result_count): Skip report_results in
 	SQL.
 	(cache_report_counts): Use a dummy severity.
