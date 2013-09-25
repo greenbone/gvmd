@@ -1,3 +1,8 @@
+2013-09-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (severity_data_level_counts): Fix count output to logs
+	parameter.
+
 2013-09-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_will_insert): New function.

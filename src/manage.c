@@ -744,9 +744,9 @@ severity_data_level_counts (const severity_data_t *severity_data,
   if (logs)
     *logs
       = severity_data_range_count (severity_data,
-                                   level_min_severity ("False Positive",
+                                   level_min_severity ("Log",
                                                        severity_class),
-                                   level_max_severity ("False Positive",
+                                   level_max_severity ("Log",
                                                        severity_class));
 
   if (lows)
