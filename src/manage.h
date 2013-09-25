@@ -716,6 +716,9 @@ int
 delete_task_lock (task_t, int);
 
 void
+clear_task_results_cache (task_t);
+
+void
 append_to_task_comment (task_t, const char*, int);
 
 void

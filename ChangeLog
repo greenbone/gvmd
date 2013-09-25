@@ -1,3 +1,15 @@
+2013-09-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (clear_task_results_cache): New function prototype.
+
+	* src/manage_sql.c (set_task_run_status): Clear cache of last report.
+	(reports_clear_count_cache): Clarify documentation.
+	(cache_will_insert): Removed. Obsoleted by caching of empty reports.
+	(cache_report_counts): Add cache entries for empty reports.
+	(report_counts_id_filt): Use cache for reports with status "New",
+	"Paused", "Stopped" and "Internal Error" in addition to "Done".
+	(clear_task_results_cache): New function.
+
 2013-09-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (serve_omp): Check for retry errors from recv.  Check if

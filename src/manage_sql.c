@@ -12568,6 +12568,8 @@ set_task_run_status (task_t task, task_status_t status)
        status,
        task);
 
+  clear_task_results_cache (task);
+
   task_uuid (task, &uuid);
   name = task_name (task);
   g_log ("event task", G_LOG_LEVEL_MESSAGE,
@@ -14311,7 +14313,7 @@ prognostic_report_result_total (report_host_t report_host, int *total)
 /* Reports. */
 
 /**
- * @brief Clear cached report count.
+ * @brief Clear all cached report result counts.
  *
  * @param[in]  override  Flag for override or regular case.
  */
@@ -18112,33 +18114,6 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
 /**
  * @brief Cache the message counts for a report.
  *
- * @param[in]   data      Severity data struct containing the message counts.
- *
- * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
- */
-static int
-cache_will_insert (severity_data_t* data)
-{
-  int i;
-  double severity;
-
-  i = 0;
-  severity = severity_data_value (i);
-  while (severity <= data->max && severity != SEVERITY_MISSING)
-    {
-      if (data->counts[i] > 0)
-        {
-          return 1;
-        }
-      i++;
-      severity = severity_data_value (i);
-    }
-  return 0;
-}
-
-/**
- * @brief Cache the message counts for a report.
- *
  * @param[in]   report    Report.
  * @param[in]   override  Whether overrides were applied to the results.
  * @param[in]   data      Severity data struct containing the message counts.
@@ -18171,31 +18146,51 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
       return ret;
     }
 
-  i = 0;
-  severity = severity_data_value (i);
-  while (severity <= data->max && severity != SEVERITY_MISSING)
+  if (data->total == 0)
     {
-      if (data->counts[i] > 0)
+      /* Create dummy entry for empty reports */
+      ret = sql_giveup ("INSERT INTO"
+                        " report_counts (report, user, override,"
+                        "                severity, count)"
+                        " VALUES (%llu,"
+                        "         (SELECT ROWID FROM users"
+                        "          WHERE users.uuid = '%s'),"
+                        "         %d, " G_STRINGIFY (SEVERITY_MISSING) ", 0);",
+                        report, current_credentials.uuid, override,
+                        severity);
+      if (ret)
         {
-          ret = sql_giveup ("INSERT INTO"
-                            " report_counts (report, user, override,"
-                            "                severity, count)"
-                            " VALUES (%llu,"
-                            "         (SELECT ROWID FROM users"
-                            "          WHERE users.uuid = '%s'),"
-                            "         %d, %1.1f, %d);",
-                            report, current_credentials.uuid, override,
-                            severity, data->counts[i]);
-          if (ret)
-            {
-              sql ("ROLLBACK;");
-              return ret;
-            }
+          sql ("ROLLBACK;");
+          return ret;
         }
-      i++;
-      severity = severity_data_value (i);
     }
-
+  else
+    {
+      i = 0;
+      severity = severity_data_value (i);
+      while (severity <= data->max && severity != SEVERITY_MISSING)
+        {
+          if (data->counts[i] > 0)
+            {
+              ret = sql_giveup ("INSERT INTO"
+                                " report_counts (report, user, override,"
+                                "                severity, count)"
+                                " VALUES (%llu,"
+                                "         (SELECT ROWID FROM users"
+                                "          WHERE users.uuid = '%s'),"
+                                "         %d, %1.1f, %d);",
+                                report, current_credentials.uuid, override,
+                                severity, data->counts[i]);
+              if (ret)
+                {
+                  sql ("ROLLBACK;");
+                  return ret;
+                }
+            }
+          i++;
+          severity = severity_data_value (i);
+        }
+    }
   ret = sql_giveup ("COMMIT;");
   if (ret)
     {
@@ -18314,9 +18309,11 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   report_scan_run_status (report, &status);
 
-  if (autofp == 0 && host == NULL && status == TASK_STATUS_DONE
-      && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL
-      && cache_will_insert (&severity_data))
+  if (autofp == 0 && host == NULL
+      && (status == TASK_STATUS_DONE || status == TASK_STATUS_NEW
+          || status == TASK_STATUS_PAUSED || status == TASK_STATUS_STOPPED
+          || status == TASK_STATUS_INTERNAL_ERROR)
+      && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL)
     cache_report_counts (report, override, &severity_data);
 
   cleanup_severity_data (&severity_data);
@@ -24804,6 +24801,29 @@ delete_trash_tasks ()
   cleanup_iterator (&tasks);
 
   return 0;
+}
+
+/**
+ * @brief Clear cached result counts for the last report of a specific task.
+ *
+ * @param[in]   task  Task to clear cache of.
+ *
+ * @return      0 if successful, -1 on error.
+ */
+void
+clear_task_results_cache (task_t task)
+{
+  report_t report;
+
+  /* Get the last report ignoring the run status. */
+  sql_int64 (&report, 0, 0,
+             "SELECT ROWID FROM reports WHERE task = %llu"
+             " ORDER BY date DESC LIMIT 1;",
+             task);
+
+  if (report)
+    sql ("DELETE FROM report_counts WHERE report = %llu;",
+         report);
 }
 
 /**
