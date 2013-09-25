@@ -17345,9 +17345,7 @@ report_scan_result_count (report_t report, const char* levels,
              "  WHERE users.uuid = '%s')))"
              " AND ((overrides.end_time = 0)"
              "      OR (overrides.end_time >= now ()))"
-             " AND (overrides.task ="
-             "      (SELECT reports.task FROM reports"
-             "       WHERE report_results.report = reports.ROWID)"
+             " AND (overrides.task = results.task"
              "      OR overrides.task = 0)"
              " AND (overrides.result = results.ROWID"
              "      OR overrides.result = 0)"
@@ -17379,16 +17377,15 @@ report_scan_result_count (report_t report, const char* levels,
 
   *count = sql_int (0, 0,
                     "SELECT count(results.ROWID)%s%s"
-                    " FROM results, report_results"
-                    " WHERE results.ROWID = report_results.result"
-                    "%s%s%s"
-                    " AND report_results.report = %llu;",
+                    " FROM results"
+                    " WHERE results.report = %llu"
+                    "%s%s%s;",
                     new_severity_sql ? new_severity_sql : "",
                     auto_type_sql ? auto_type_sql : "",
+                    report,
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
-                    cvss_sql ? cvss_sql->str : "",
-                    report);
+                    cvss_sql ? cvss_sql->str : "");
 
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
@@ -18156,8 +18153,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                         "         (SELECT ROWID FROM users"
                         "          WHERE users.uuid = '%s'),"
                         "         %d, " G_STRINGIFY (SEVERITY_MISSING) ", 0);",
-                        report, current_credentials.uuid, override,
-                        severity);
+                        report, current_credentials.uuid, override, 0.0);
       if (ret)
         {
           sql ("ROLLBACK;");
