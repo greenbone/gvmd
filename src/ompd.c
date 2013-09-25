@@ -898,9 +898,10 @@ serve_omp (gnutls_session_t* client_session,
       if (client_active && FD_ISSET (client_socket, &exceptfds))
         {
           char ch;
-          if (recv (client_socket, &ch, 1, MSG_OOB) < 1)
+          while (recv (client_socket, &ch, 1, MSG_OOB) < 1)
             {
-              /* FIXME: Check for EINTR.  */
+              if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+                continue;
               g_warning ("%s: after exception on client in child select:"
                          " recv failed\n",
                          __FUNCTION__);
@@ -919,15 +920,17 @@ serve_omp (gnutls_session_t* client_session,
       if (scanner_is_up () && FD_ISSET (scanner_socket, &exceptfds))
         {
           char ch;
-          if (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
+          while (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
             {
-              /* FIXME: Check for EINTR.  */
+              if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+                continue;
               g_warning ("%s: after exception on scanner in child select:"
                          " recv failed\n",
                          __FUNCTION__);
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
+              if (client_active)
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
               return -1;
             }
           g_warning ("%s: after exception on scanner in child select:"
