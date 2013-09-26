@@ -1,3 +1,8 @@
+2013-09-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_counts_cache_exists): New function prototype.
+	(report_scan_result_count): Get count from cache if possible.
+
 2013-09-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_report_counts): Remove extra arg.

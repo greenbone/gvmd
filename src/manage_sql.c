@@ -165,6 +165,9 @@ task_threat_level (task_t, int);
 static const char*
 task_previous_threat_level (task_t);
 
+static int
+report_counts_cache_exists (report_t, int);
+
 static char*
 task_owner_uuid (task_t);
 
@@ -17320,6 +17323,20 @@ report_scan_result_count (report_t report, const char* levels,
 
   phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
   cvss_sql = where_cvss_base (min_cvss_base);
+
+  if (report_counts_cache_exists (report, override)
+      && autofp == 0 && min_cvss_base == NULL && search_phrase == NULL)
+    {
+      *count = sql_int (0, 0,
+                        "SELECT sum (count)"
+                        " FROM report_counts"
+                        " WHERE report = %llu"
+                        "   AND override = %d"
+                        "   AND user = (SELECT ROWID FROM users"
+                        "               WHERE users.uuid = '%s');",
+                        report, override, current_credentials.uuid);
+      return 0;
+    }
 
   if (override)
     {
