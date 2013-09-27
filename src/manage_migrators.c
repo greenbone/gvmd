@@ -7594,6 +7594,39 @@ migrate_96_to_97 ()
 }
 
 /**
+ * @brief Migrate the database from version 97 to version 98.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_97_to_98 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 97. */
+
+  if (manage_db_version () != 97)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Set default value for Dynamic Severity to 0 (disabled) */
+  sql ("UPDATE settings SET value = 0"
+       " WHERE name = 'Dynamic Severity'"
+       " AND owner IS NULL;");
+
+  /* Set the database version to 98. */
+
+  set_db_version (98);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7695,6 +7728,7 @@ static migrator_t database_migrators[]
     {95, migrate_94_to_95},
     {96, migrate_95_to_96},
     {97, migrate_96_to_97},
+    {98, migrate_97_to_98},
     /* End marker. */
     {-1, NULL}};
 

@@ -10698,7 +10698,7 @@ init_manage_settings ()
          " VALUES"
          " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
          "  'Whether to use dynamic severity scores by default.',"
-         "  '1');");
+         "  '0');");
 }
 
 /**

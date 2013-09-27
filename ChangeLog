@@ -1,3 +1,16 @@
+2013-09-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Change default "Dynamic Severity" setting to disabled. Hence increase
+	database version to 98. Add database migration from version 97 to 98.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 98.
+
+	* src/manage_migrators.c (migrate_97_to_98): New function.
+	(database_migrators): Add migrate_97_to_98.
+
+	* src/manage_sql.c (init_manage_settings): Disable "Dynamic Severity"
+	by default.
+
 2013-09-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_counts_cache_exists): New function prototype.
