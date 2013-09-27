@@ -1,5 +1,12 @@
 2013-09-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Backport r17759. Patch by Werner Koch.
+
+	* src/manage_sql.c (create_lsc_credential): Encrypt the random
+	password and not the unrelated given_password.
+
+2013-09-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r17757.
 
 	Update NBE report format plugin to improve compatibility with third

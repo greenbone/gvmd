@@ -36020,7 +36020,7 @@ create_lsc_credential (const char* name, const char* comment,
       {
         crypt_ctx = lsc_crypt_new ();
         quoted_password = lsc_crypt_encrypt (crypt_ctx,
-                                             "password", given_password,
+                                             "password", password,
                                              "private_key", private_key, NULL);
         if (!quoted_password)
           {
