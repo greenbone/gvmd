@@ -1,3 +1,8 @@
+2013-09-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Check for results with empty
+	descriptions and set them to adequate values.
+
 2013-09-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r17759. Patch by Werner Koch.
