@@ -1,3 +1,9 @@
+2013-09-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 5.0+beta2 release.
+
+	* CHANGES: Updated.
+
 2013-09-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Remove slice_network_addresses and reverse_lookup config preferences.
