@@ -148,6 +148,19 @@ to run the migration:
 
 $ openvasmd --migrate
 
+Various fixes for the Database
+------------------------------
+
+In the case where you have results with empty description, you could fix that by
+running the following SQL queries on your Database:
+
+$ sqlite3 /path/to/tasks.db
+
+sqlite> UPDATE results SET description =
+   ...>  (SELECT nvts.description FROM nvts WHERE nvts.oid = results.nvt)
+   ...>  WHERE description = '';
+sqlite> UPDATE results SET description = 'Vulnerability detected.'
+   ...>  WHERE description = 'NODESC';
 
 Encrypted Credentials
 ---------------------

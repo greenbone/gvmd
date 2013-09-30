@@ -15864,19 +15864,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("UPDATE reports SET highs = -1");
     }
 
-  /* Ensure all results have valid description text. */
-
-  if (sql_int (0, 0,
-               "SELECT count(ROWID) FROM results WHERE description = '';")
-      > 0)
-    {
-      sql ("UPDATE results SET description ="
-           " (SELECT nvts.description FROM nvts WHERE nvts.oid = results.nvt)"
-           " WHERE description = '';");
-      sql ("UPDATE results SET description = 'Vulnerability detected.'"
-           " WHERE description = 'NODESC';");
-    }
-
   /* Run ANALYZE because there may have been big changes since create_tables. */
 
   sql ("ANALYZE;");

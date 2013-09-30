@@ -1,3 +1,10 @@
+2013-09-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Revert previous change.
+
+	* INSTALL: Add section on how to manually fix results with empty
+	descriptions.
+
 2013-09-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Check for results with empty
