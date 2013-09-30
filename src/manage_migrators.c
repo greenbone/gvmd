@@ -7627,6 +7627,45 @@ migrate_97_to_98 ()
 }
 
 /**
+ * @brief Migrate the database from version 98 to version 99.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_98_to_99 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 98. */
+
+  if (manage_db_version () != 98)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Remove reverse_lookup and slice_network_addresses scanner preferences. */
+
+  sql ("DELETE FROM config_preferences WHERE name = 'reverse_lookup';");
+  sql ("DELETE FROM config_preferences"
+       " WHERE name = 'slice_network_addresses';");
+  sql ("DELETE FROM config_preferences_trash WHERE name = 'reverse_lookup';");
+  sql ("DELETE FROM config_preferences_trash"
+       " WHERE name = 'slice_network_addresses';");
+
+
+  /* Set the database version 99. */
+
+  set_db_version (99);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7729,6 +7768,7 @@ static migrator_t database_migrators[]
     {96, migrate_95_to_96},
     {97, migrate_96_to_97},
     {98, migrate_97_to_98},
+    {99, migrate_98_to_99},
     /* End marker. */
     {-1, NULL}};
 

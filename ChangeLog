@@ -1,3 +1,22 @@
+2013-09-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove slice_network_addresses and reverse_lookup config preferences.
+	Hence increase database version to 99.  Add database migration from
+	version 98 to 99.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 99.
+
+	* src/manage_migrators.c (migrate_98_to_99): New function.
+	(database_migrators): Add migrate_98_to_99.
+
+	* src/manage_sql.c (setup_full_config_prefs): Remove reverse_lookup
+	config preference.
+
+	* doc/db.png: Update for version changes.
+
+	* doc/db_postgres.sql (tasks, targets, targets_trash): Update for
+	previously added columns.
+
 2013-09-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Change default "Dynamic Severity" setting to disabled. Hence increase

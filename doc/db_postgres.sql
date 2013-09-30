@@ -189,6 +189,9 @@ CREATE TABLE targets (
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
     hosts text,
+    exclude_hosts text,
+    reverse_lookup_only integer,
+    reverse_lookup_unify integer,
     comment text,
     lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
     ssh_port text,
@@ -203,6 +206,9 @@ CREATE TABLE targets_trash (
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
     hosts text,
+    exclude_hosts text,
+    reverse_lookup_only integer,
+    reverse_lookup_unify integer,
     comment text,
     lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
     smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
@@ -274,6 +280,7 @@ CREATE TABLE tasks (
     schedule_location integer,
     slave_location integer,
     upload_result_count integer,
+    hosts_ordering text,
     creation_time date,
     modification_time date);
 

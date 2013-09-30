@@ -9675,9 +9675,6 @@ setup_full_config_prefs (config_t config, int safe_checks,
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'auto_enable_dependencies', 'yes');",
        config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'reverse_lookup', 'no');",
-       config);
   if (optimize_test)
     sql ("INSERT into config_preferences (config, type, name, value)"
          " VALUES (%i, 'SERVER_PREFS', 'optimize_test', 'yes');",
