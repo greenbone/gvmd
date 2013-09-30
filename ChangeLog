@@ -1,3 +1,11 @@
+2013-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_severity, init_result_iterator)
+	(init_asset_iterator, report_scan_result_count, report_severity_data)
+	(filtered_host_count): Cast cvss_base to real for severity SQL,
+	otherwise it is text and the comparison with the result severity fails
+	even if they're the same.
+
 2013-09-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
