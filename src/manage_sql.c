@@ -18690,22 +18690,14 @@ trim_report (report_t report)
   /* Remove results for all hosts. */
 
   sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
-       "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host);",
-       report,
+       " (SELECT results.ROWID FROM results"
+       "  WHERE results.report = %llu);",
        report,
        report);
 
   sql ("DELETE FROM results WHERE ROWID IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
-       "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host);",
-       report,
+       " (SELECT results.ROWID FROM results"
+       "  WHERE results.report = %llu);",
        report);
 
   /* Remove all hosts and host details. */
@@ -18729,9 +18721,8 @@ trim_partial_report (report_t report)
   /* Remove results for partial hosts. */
 
   sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
+       " (SELECT results.ROWID FROM results, report_hosts"
+       "  WHERE results.report = %llu"
        "  AND report_hosts.report = %llu"
        "  AND results.host = report_hosts.host"
        "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
@@ -18740,9 +18731,8 @@ trim_partial_report (report_t report)
        report);
 
   sql ("DELETE FROM results WHERE ROWID IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
+       " (SELECT results.ROWID FROM results, report_hosts"
+       "  WHERE results.report = %llu"
        "  AND report_hosts.report = %llu"
        "  AND results.host = report_hosts.host"
        "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
@@ -18752,13 +18742,9 @@ trim_partial_report (report_t report)
   /* Remove partial hosts and host details. */
 
   sql ("DELETE FROM report_host_details WHERE report_host IN"
-       " (SELECT results.ROWID FROM report_results, results, report_hosts"
-       "  WHERE report_results.report = %llu"
-       "  AND report_results.result = results.ROWID"
+       " (SELECT report_hosts.ROWID FROM report_hosts"
        "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host"
        "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
-       report,
        report);
 
   sql ("DELETE FROM report_hosts"

@@ -1,3 +1,10 @@
+2013-10-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (trim_report): Skip report_results and do not
+	check for host in SQL.
+	(trim_report): Skip report_results and delete result_host_details
+	using result_hosts in SQL.
+
 2013-09-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_severity, init_result_iterator)
