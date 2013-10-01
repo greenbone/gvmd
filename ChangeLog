@@ -1,3 +1,7 @@
+2013-10-01  Andre Heinecke <andre.heinecke@greenbone.net>
+
+	* report_formats/verinice-ism: Bump Version to 1.1.9
+
 2013-10-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (trim_report): Skip report_results and do not

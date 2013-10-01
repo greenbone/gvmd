@@ -2,8 +2,8 @@ NAME="Verinice ISM"
 UUID=`uuid`
 EXTENSION=vna
 CONTENT_TYPE="application/zip"
-SUMMARY="Greenbone Verinice ISM Report, v1.1.8"
-DESCRIPTION="Information Security Management Report for Verinice import, version 1.1.8"
+SUMMARY="Greenbone Verinice ISM Report, v1.1.9"
+DESCRIPTION="Information Security Management Report for Verinice import, version 1.1.9"
 # Names must be in alphabetical order.
 FNAME1=classification.xsl
 FILE1=`base64 -w 0 classification.xsl`
