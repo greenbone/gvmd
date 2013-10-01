@@ -8847,7 +8847,13 @@ append_to_task_string (task_t task, const char* field, const char* value)
   "  AND scan_run_status = 1"                              \
   "  ORDER BY date DESC LIMIT 1)"                          \
   " AS last,"                                              \
-  " task_severity (ROWID, " overrides ") AS severity"      \
+  " task_severity (ROWID, " overrides ") AS severity,"     \
+  " (CASE WHEN target IS NULL"                             \
+  "  THEN 'Container'"                                     \
+  "  ELSE run_status_name (run_status)"                    \
+  "  END)"                                                 \
+  " AS status_text"
+
 
 /**
  * @brief Task iterator columns for trash case.
@@ -8874,7 +8880,12 @@ append_to_task_string (task_t task, const char* field, const char* value)
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
   "  ORDER BY date DESC LIMIT 1)"                          \
-  " AS last"
+  " AS last,"                                              \
+  " (CASE WHEN target IS NULL"                             \
+  "  THEN 'Container'"                                     \
+  "  ELSE run_status_name (run_status)"                    \
+  "  END)"                                                 \
+  " AS status_text"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
