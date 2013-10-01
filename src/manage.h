@@ -916,6 +916,9 @@ manage_result_type_threat (const char*);
 void
 reports_clear_count_cache (int);
 
+void
+report_cache_counts (report_t);
+
 double
 report_severity (report_t, int);
 

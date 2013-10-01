@@ -12568,8 +12568,6 @@ set_task_run_status (task_t task, task_status_t status)
        status,
        task);
 
-  clear_task_results_cache (task);
-
   task_uuid (task, &uuid);
   name = task_name (task);
   g_log ("event task", G_LOG_LEVEL_MESSAGE,
@@ -14730,11 +14728,97 @@ report_task (report_t report, task_t *task)
 void
 report_add_result (report_t report, result_t result)
 {
+  char *ov_severity_str;
+  double severity, ov_severity;
+  rowid_t rowid;
+
   sql ("INSERT into report_results (report, result)"
        " VALUES (%llu, %llu);",
        report, result);
   sql ("UPDATE results SET report = %llu WHERE ROWID = %llu;",
        report, result);
+
+  severity = sql_double (0, 0,
+                         "SELECT severity FROM results WHERE ROWID=%llu;",
+                         result);
+
+  rowid = 0;
+  sql_int64 (&rowid, 0, 0,
+             "SELECT ROWID FROM report_counts"
+             " WHERE report = %llu"
+             " AND user = (SELECT ROWID FROM users WHERE users.uuid = '%s')"
+             " AND override = 0"
+             " AND severity = %1.1f;",
+             report, current_credentials.uuid, severity);
+  if (rowid)
+    sql ("UPDATE report_counts SET count = count + 1"
+         " WHERE ROWID = %llu;", rowid);
+  else
+    sql ("INSERT OR IGNORE"
+        " INTO report_counts (report, user, override, severity, count)"
+        " VALUES (%llu,"
+        "         (SELECT ROWID FROM users WHERE uuid='%s'),"
+        "         0, %1.1f, 1);",
+        report, current_credentials.uuid, severity);
+
+  ov_severity_str
+    = sql_string (0, 0,
+                  "SELECT coalesce (overrides.new_severity, %1.1f)"
+                  " FROM overrides, results"
+                  " WHERE results.ROWID = %llu"
+                  " AND overrides.nvt = results.nvt"
+                  " AND ((overrides.owner IS NULL)"
+                  "      OR (overrides.owner ="
+                  "            (SELECT ROWID FROM users"
+                  "             WHERE users.uuid = '%s')))"
+                  " AND ((overrides.end_time = 0)"
+                  "      OR (overrides.end_time >= now ()))"
+                  " AND (overrides.task ="
+                  "      (SELECT reports.task FROM reports"
+                  "       WHERE reports.ROWID = %llu)"
+                  "      OR overrides.task = 0)"
+                  " AND (overrides.result = results.ROWID"
+                  "      OR overrides.result = 0)"
+                  " AND (overrides.hosts is NULL"
+                  "      OR overrides.hosts = \"\""
+                  "      OR hosts_contains (overrides.hosts, results.host))"
+                  " AND (overrides.port is NULL"
+                  "      OR overrides.port = \"\""
+                  "      OR overrides.port = results.port)"
+                  " AND severity_matches_ov (%1.1f, overrides.severity)"
+                  " ORDER BY overrides.result DESC, overrides.task DESC,"
+                  " overrides.port DESC, overrides.severity ASC,"
+                  " overrides.creation_time DESC;",
+                  severity,
+                  result,
+                  current_credentials.uuid,
+                  report,
+                  severity
+                  );
+
+  if (ov_severity_str == NULL
+      || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
+    ov_severity = severity;
+
+  rowid = 0;
+  sql_int64 (&rowid, 0, 0,
+             "SELECT ROWID FROM report_counts"
+             " WHERE report = %llu"
+             " AND user = (SELECT ROWID FROM users WHERE users.uuid = '%s')"
+             " AND override = 1"
+             " AND severity = %1.1f;",
+             report, current_credentials.uuid, ov_severity);
+  if (rowid)
+    sql ("UPDATE report_counts SET count = count + 1"
+         " WHERE ROWID = %llu;", rowid);
+  else
+    sql ("INSERT OR IGNORE"
+        " INTO report_counts (report, user, override, severity, count)"
+        " VALUES (%llu,"
+        "         (SELECT ROWID FROM users WHERE uuid='%s'),"
+        "         1, %1.1f, 1);",
+        report, current_credentials.uuid, ov_severity);
+
 }
 
 /**
@@ -18252,7 +18336,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        int* filtered_warnings, int* filtered_false_positives,
                        double* filtered_severity)
 {
-  int filtered_requested, cache_exists, status;
+  int filtered_requested, cache_exists;
   char *severity_class;
   severity_data_t severity_data, filtered_severity_data;
 
@@ -18317,12 +18401,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (filtered_severity && filtered_requested)
     *filtered_severity = filtered_severity_data.max;
 
-  report_scan_run_status (report, &status);
-
   if (autofp == 0 && host == NULL
-      && (status == TASK_STATUS_DONE || status == TASK_STATUS_NEW
-          || status == TASK_STATUS_PAUSED || status == TASK_STATUS_STOPPED
-          || status == TASK_STATUS_INTERNAL_ERROR)
       && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL)
     cache_report_counts (report, override, &severity_data);
 
@@ -18708,6 +18787,15 @@ trim_report (report_t report)
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu;",
        report);
+
+  /* Clear and rebuild counts cache */
+
+  sql ("BEGIN IMMEDIATE;");
+  sql ("DELETE FROM report_counts WHERE report = %llu;",
+       current_report);
+  report_cache_counts (current_report);
+  sql ("COMMIT;");
+
 }
 
 /**
@@ -18751,6 +18839,14 @@ trim_partial_report (report_t report)
        " WHERE report = %llu"
        " AND (end_time is NULL OR end_time = '');",
        report);
+
+  /* Clear and rebuild counts cache */
+
+  sql ("BEGIN IMMEDIATE;");
+  sql ("DELETE FROM report_counts WHERE report = %llu;",
+       report);
+  report_cache_counts (report);
+  sql ("COMMIT;");
 }
 
 /**

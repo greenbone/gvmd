@@ -1,3 +1,14 @@
+2013-10-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.h (report_cache_counts): New function prototype.
+
+	* src/manage_sql.c (set_task_run_status): Do not clear result counts
+	cache.
+	(report_add_result): Increment cached result counts when adding results.
+	(report_counts_id_filt): Cache results regardless of task run status.
+	(trim_report, trim_partial_report): Clear and rebuild result counts
+	cache for report.
+
 2013-10-01  Andre Heinecke <andre.heinecke@greenbone.net>
 
 	* report_formats/verinice-ism: Bump Version to 1.1.9
