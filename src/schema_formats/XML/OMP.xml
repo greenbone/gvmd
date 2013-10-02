@@ -15676,4 +15676,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
   </change>
+  <change>
+    <command>GET_TARGETS</command>
+    <summary>PORT_RANGE not always returned within TARGET</summary>
+    <version>4.0</version>
+    <description>
+      <p>
+        In the response to GET_TARGETS the element PORT_RANGE in TARGETS
+        is only included when details attribute is set in REQUEST.
+      </p>
+    </description>
+  </change>
 </protocol>

@@ -24603,11 +24603,15 @@ run_wizard_params_param_value
         has been replaced with the element CVSS.
       </p>
 </div>
+<div>
 <div><h3>8.2
           Change in <tt>GET_TARGETS</tt>
 </h3></div>
-<p>In short: PORT_RANGE removed from TARGET in response when details attribute
-             is not set.</p>
+<p>In short: PORT_RANGE not always returned within TARGET.</p>
+<p>
+        In the response to GET_TARGETS the element PORT_RANGE in TARGETS
+        is only included when details attribute is set in REQUEST.
+      </p>
 </div>
 <div style="text-align: center; padding: 5px;">
                   This file was automatically generated.
