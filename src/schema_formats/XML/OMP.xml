@@ -8630,6 +8630,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>text</e>
           <e>threat</e>
+          <e>severity</e>
           <e>new_threat</e>
           <e>new_severity</e>
           <e>orphan</e>
@@ -14149,11 +14150,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <o><e>active</e></o>
       <o><e>hosts</e></o>
+      <o><e>new_severity</e></o>
       <o><e>new_threat</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
       <o><e>task</e></o>
       <e>text</e>
+      <o><e>severity</e></o>
       <o><e>threat</e></o>
     </pattern>
     <ele>
@@ -14166,6 +14169,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A textual list of hosts</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>new_severity</name>
+      <summary>New severity score for result</summary>
+      <pattern>
+        <t>severity</t>
       </pattern>
     </ele>
     <ele>
@@ -14187,6 +14197,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Text describing the override</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>severity</name>
+      <summary>Severity score to which override applies</summary>
+      <pattern>
+        <t>severity</t>
       </pattern>
     </ele>
     <ele>

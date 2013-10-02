@@ -1,3 +1,10 @@
+2013-10-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (get_overrides, modify_override): Add
+	missing severity and new_severity elements.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2013-10-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* doc/omp.html, src/schema_formats/XML/OMP.xml: Update documentation for

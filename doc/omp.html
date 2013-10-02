@@ -14177,6 +14177,11 @@ get_nvt_feed_version_response_version
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity score to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>new_threat</b>&gt;
               <div style="margin-left: 15px; display: inline;">New threat for result.</div>
 <ul style="list-style: none"></ul>
@@ -14481,6 +14486,7 @@ get_overrides_response_override
        &amp; get_overrides_response_override_in_use
        &amp; get_overrides_response_override_text
        &amp; get_overrides_response_override_threat
+       &amp; get_overrides_response_override_severity
        &amp; get_overrides_response_override_new_threat
        &amp; get_overrides_response_override_new_severity
        &amp; get_overrides_response_override_orphan
@@ -22388,6 +22394,11 @@ modify_note_result
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>new_severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">New severity score for result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>new_threat</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">New threat level for result.</div>
 <ul style="list-style: none"></ul>
@@ -22419,6 +22430,11 @@ modify_note_result
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Severity score to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>threat</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Threat level to which override applies.</div>
 <ul style="list-style: none"></ul>
@@ -22446,11 +22462,13 @@ modify_note_result
        attribute override_id { uuid }
        &amp; modify_override_active?
        &amp; modify_override_hosts?
+       &amp; modify_override_new_severity?
        &amp; modify_override_new_threat?
        &amp; modify_override_port?
        &amp; modify_override_result?
        &amp; modify_override_task?
        &amp; modify_override_text
+       &amp; modify_override_severity?
        &amp; modify_override_threat?
      }
 
@@ -22464,6 +22482,12 @@ modify_override_hosts
  = element hosts
      {
        text
+     }
+
+modify_override_new_severity
+ = element new_severity
+     {
+       severity
      }
 
 modify_override_new_threat
@@ -22482,6 +22506,12 @@ modify_override_text
  = element text
      {
        text
+     }
+
+modify_override_severity
+ = element severity
+     {
+       severity
      }
 
 modify_override_threat

@@ -4240,11 +4240,13 @@ modify_override
        attribute override_id { uuid }
        & modify_override_active?
        & modify_override_hosts?
+       & modify_override_new_severity?
        & modify_override_new_threat?
        & modify_override_port?
        & modify_override_result?
        & modify_override_task?
        & modify_override_text
+       & modify_override_severity?
        & modify_override_threat?
      }
 
@@ -4260,6 +4262,13 @@ modify_override_hosts
  = element hosts
      {
        text
+     }
+
+# New severity score for result.
+modify_override_new_severity
+ = element new_severity
+     {
+       severity
      }
 
 # New threat level for result.
@@ -4281,6 +4290,13 @@ modify_override_text
  = element text
      {
        text
+     }
+
+# Severity score to which override applies.
+modify_override_severity
+ = element severity
+     {
+       severity
      }
 
 # Threat level to which override applies.
@@ -7986,6 +8002,7 @@ get_overrides_response_override
        & get_overrides_response_override_in_use
        & get_overrides_response_override_text
        & get_overrides_response_override_threat
+       & get_overrides_response_override_severity
        & get_overrides_response_override_new_threat
        & get_overrides_response_override_new_severity
        & get_overrides_response_override_orphan
