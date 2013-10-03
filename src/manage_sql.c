@@ -4700,7 +4700,7 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, count, override);");
   sql ("CREATE TABLE IF NOT EXISTS results"
-       " (id INTEGER PRIMARY KEY, uuid, task INTEGER, subnet, host, port, nvt,"
+       " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
@@ -15607,7 +15607,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
              break;
          }
 
-      sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port,"
+      sql = g_strdup_printf ("SELECT results.ROWID, host, port,"
                              " nvt, severity_to_type (%s) AS type,"
                              " severity_to_type (%s) AS new_type,"
                              " %s AS auto_type,"
@@ -15827,7 +15827,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
              break;
          }
 
-      sql = g_strdup_printf ("SELECT ROWID, subnet, host, port, nvt,"
+      sql = g_strdup_printf ("SELECT ROWID, host, port, nvt,"
                              " severity_to_type (%s), severity_to_type (%s),"
                              " %s, description,"
                              " results.task,"
@@ -15849,7 +15849,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       g_free (new_severity_sql);
     }
   else
-    sql = g_strdup_printf ("SELECT results.ROWID, subnet, host, port, nvt,"
+    sql = g_strdup_printf ("SELECT results.ROWID, host, port, nvt,"
                            " severity_to_type (%s), severity_to_type (%s),"
                            " severity_to_type (%s), description,"
                            " results.task, results.report, NULL,"
@@ -15885,35 +15885,6 @@ result_iterator_result (iterator_t* iterator)
   return (result_t) sqlite3_column_int64 (iterator->stmt, 0);
 }
 
-#if 0
-/**
- * @brief Get the subnet from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The subnet of the result as a newly allocated string, or NULL on
- *         error.
- */
-char*
-result_iterator_subnet (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  return ret ? g_strdup (ret) : NULL;
-}
-#endif
-
-/**
- * @brief Get the subnet from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The subnet of the result.  Caller must only use before calling
- *         cleanup_iterator.
- */
-DEF_ACCESS (result_iterator_subnet, 1);
-
 /**
  * @brief Get the host from a result iterator.
  *
@@ -15922,7 +15893,7 @@ DEF_ACCESS (result_iterator_subnet, 1);
  * @return The host of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_host, 2);
+DEF_ACCESS (result_iterator_host, 1);
 
 /**
  * @brief Get the port from a result iterator.
@@ -15932,7 +15903,7 @@ DEF_ACCESS (result_iterator_host, 2);
  * @return The port of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_port, 3);
+DEF_ACCESS (result_iterator_port, 2);
 
 /**
  * @brief Get the NVT OID from a result iterator.
@@ -15942,7 +15913,7 @@ DEF_ACCESS (result_iterator_port, 3);
  * @return The NVT OID of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_nvt_oid, 4);
+DEF_ACCESS (result_iterator_nvt_oid, 3);
 
 /**
  * @brief Get the NVT name from a result iterator.
@@ -16080,7 +16051,7 @@ result_iterator_nvt_tag (iterator_t *iterator)
  * @return The original type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_original_type, 5);
+DEF_ACCESS (result_iterator_original_type, 4);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -16097,10 +16068,10 @@ result_iterator_type (iterator_t *iterator)
 {
   if (iterator->done) return NULL;
   /* auto_type */
-  if (sqlite3_column_int (iterator->stmt, 7))
+  if (sqlite3_column_int (iterator->stmt, 6))
     return "False Positive";
   /* new_type */
-  return (const char*) sqlite3_column_text (iterator->stmt, 6);
+  return (const char*) sqlite3_column_text (iterator->stmt, 5);
 }
 
 /**
@@ -16111,7 +16082,7 @@ result_iterator_type (iterator_t *iterator)
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_descr, 8);
+DEF_ACCESS (result_iterator_descr, 7);
 
 /**
  * @brief Get the task from a result iterator.
@@ -16125,7 +16096,7 @@ result_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        9);
+                                        8);
 }
 
 /**
@@ -16140,7 +16111,7 @@ result_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        10);
+                                        9);
 }
 
 /**
@@ -16154,7 +16125,7 @@ double
 result_iterator_nvt_cvss_base_double (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sqlite3_column_double (iterator->stmt, 9);
+  return sqlite3_column_double (iterator->stmt, 8);
 }
 
 /**
@@ -16174,7 +16145,7 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
     return NULL;
 
   /* nvt_version */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 11);
   return ret ? ret : "";
 }
 
@@ -16197,7 +16168,7 @@ result_iterator_original_severity (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
   return ret ? ret : "";
 }
 
@@ -16220,11 +16191,11 @@ result_iterator_severity (iterator_t *iterator)
     return NULL;
 
   /* auto_type */
-  if (sqlite3_column_int (iterator->stmt, 7))
+  if (sqlite3_column_int (iterator->stmt, 6))
     return G_STRINGIFY (SEVERITY_FP);
 
   /* new_severity */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 14);
+  ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
   return ret ? ret : "";
 }
 
@@ -16245,10 +16216,10 @@ result_iterator_severity_double (iterator_t *iterator)
     return 0.0;
 
   /* auto_type */
-  if (sqlite3_column_int (iterator->stmt, 7))
+  if (sqlite3_column_int (iterator->stmt, 6))
     return SEVERITY_FP;
 
-  return sqlite3_column_double (iterator->stmt, 14);
+  return sqlite3_column_double (iterator->stmt, 13);
 }
 
 /**
@@ -16270,11 +16241,11 @@ result_iterator_original_level (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
+  if (sqlite3_column_type (iterator->stmt, 12) == SQLITE_NULL)
     return NULL;
 
   /* severity */
-  severity = sqlite3_column_double (iterator->stmt, 13);
+  severity = sqlite3_column_double (iterator->stmt, 12);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -16300,14 +16271,14 @@ result_iterator_level (iterator_t *iterator)
     return NULL;
 
   /* auto_type */
-  if (sqlite3_column_int (iterator->stmt, 7))
+  if (sqlite3_column_int (iterator->stmt, 6))
     return "False Positive";
 
   /* new_severity */
-  if (sqlite3_column_type (iterator->stmt, 14) == SQLITE_NULL)
+  if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
     return NULL;
 
-  severity = sqlite3_column_double (iterator->stmt, 14);
+  severity = sqlite3_column_double (iterator->stmt, 13);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -21070,7 +21041,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
                    PRINT (out,
                           "<result>"
-                          "<subnet/>"
                           "<host>%s</host>"
                           "<port>0</port>"
                           "<nvt oid=\"0\">"

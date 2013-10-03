@@ -7666,6 +7666,54 @@ migrate_98_to_99 ()
 }
 
 /**
+ * @brief Migrate the database from version 99 to version 100.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_99_to_100 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 99. */
+
+  if (manage_db_version () != 99)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename results tables */
+  sql ("ALTER TABLE results RENAME TO results_99;");
+
+  /* Create new one without subnet. */
+  sql ("CREATE TABLE IF NOT EXISTS results"
+       " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
+       "  type, description, report, nvt_version, severity REAL)");
+
+  /* Migrate old results data to new table. */
+  sql ("INSERT INTO results"
+       " (id, uuid, task, host, port, nvt, type,"
+       "  description, report, nvt_version, severity)"
+       " SELECT id, uuid, task, host, port, nvt, type, description, report,"
+       "  nvt_version, severity FROM results_99");
+
+  /* Delete old results table. */
+  sql ("DROP TABLE results_99;");
+
+  /* Set the database version 100. */
+
+  set_db_version (100);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7769,6 +7817,7 @@ static migrator_t database_migrators[]
     {97, migrate_96_to_97},
     {98, migrate_97_to_98},
     {99, migrate_98_to_99},
+    {100, migrate_99_to_100},
     /* End marker. */
     {-1, NULL}};
 

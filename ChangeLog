@@ -1,5 +1,30 @@
 2013-10-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove subnet from report results. Hence increase database version to
+	100.  Add database migration from version 99 to 100.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 100.
+
+	* src/manage_migrators.c (migrate_99_to_100): New function.
+	(database_migrators): Add migrate_99_to_100.
+
+	* src/manage.h: Remove result_iterator_subnet prototype.
+
+	* src/manage_sql.c (create_tables): Adjust results table creation.
+	(init_result_iterator): Don't query subnet column value.
+	(result_iterator_subnet): Delete function.
+	(result_iterator_host, result_iterator_port, result_iterator_nvt_oid)
+	(result_iterator_original_type, result_iterator_type)
+	(result_iterator_descr, result_iterator_task, result_iterator_report)
+	(result_iterator_nvt_cvss_base_double, result_iterator_scan_nvt_version)
+	(result_iterator_original_severity, result_iterator_severity)
+	(result_iterator_severity_double, result_iterator_original_level)
+	(result_iterator_level): Adjust column numbers for subnet removal from
+	iterator.
+	(print_report_prognostic_xml): Remove subnet tag.
+
+2013-10-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (update_from_slave): Remove result subnet handling.
 
 	* src/manage.h: Update make_result prototype.

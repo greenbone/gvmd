@@ -1082,9 +1082,6 @@ result_t
 result_iterator_result (iterator_t*);
 
 const char*
-result_iterator_subnet (iterator_t*);
-
-const char*
 result_iterator_host (iterator_t*);
 
 const char*
