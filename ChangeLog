@@ -1,3 +1,9 @@
+2013-10-03  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/manage_sql.c: Fix malformed SQL statement which caused
+	initialisation of new databases either to abort or to cause issues with
+	results inserted later on.
+
 2013-10-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Remove subnet from report results. Hence increase database version to

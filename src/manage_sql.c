@@ -11168,7 +11168,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                " severity, description)"
                " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
                " '127.0.0.1', 'telnet (23/tcp)',"
-               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0"
+               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
                " 'A telnet server seems to be running on this port');",
                task);
           result = sqlite3_last_insert_rowid (task_db);
