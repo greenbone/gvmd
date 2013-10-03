@@ -1822,12 +1822,8 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
     {
       if (strcmp (entity_name (entity), "result") == 0)
         {
-          entity_t subnet, host, port, nvt, threat, description;
+          entity_t host, port, nvt, threat, description;
           const char *oid;
-
-          subnet = entity_child (entity, "subnet");
-          if (subnet == NULL)
-            return -1;
 
           host = entity_child (entity, "host");
           if (host == NULL)
@@ -1856,7 +1852,6 @@ update_from_slave (task_t task, entity_t get_report, entity_t *report,
             result_t result;
 
             result = make_result (task,
-                                  entity_text (subnet),
                                   entity_text (host),
                                   entity_text (port),
                                   oid,

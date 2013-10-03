@@ -166,7 +166,6 @@ typedef struct
  */
 typedef struct
 {
-  char* subnet;         ///< Subnet message describes.
   char* host;           ///< Host message describes.
   port_t port;          ///< The port.
   char* description;    ///< Description of the message.
@@ -929,7 +928,7 @@ gboolean
 find_report_for_actions (const char*, report_t*, const char *);
 
 result_t
-make_result (task_t, const char*, const char*, const char*, const char*,
+make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);
 
 /**
@@ -942,7 +941,6 @@ typedef struct
   char *nvt_oid;           ///< OID of NVT.
   char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.
-  char *subnet;            ///< Subnet.
   char *severity;          ///< Severity score.
   char *threat;            ///< Threat.
 } create_report_result_t;

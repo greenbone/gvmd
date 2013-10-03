@@ -1301,7 +1301,6 @@ typedef struct
   char *result_port;              ///< Port for current result.
   char *result_scan_nvt_version;  ///< Version of NVT used in scan.
   char *result_severity;          ///< Severity score for current result.
-  char *result_subnet;            ///< Subnet for current result.
   char *result_threat;            ///< Message type for current result.
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
@@ -1340,7 +1339,6 @@ create_report_data_reset (create_report_data_t *data)
   free (data->result_host);
   free (data->result_nvt_oid);
   free (data->result_port);
-  free (data->result_subnet);
   free (data->result_threat);
   if (data->results)
     {
@@ -1358,7 +1356,6 @@ create_report_data_reset (create_report_data_t *data)
               free (result->port);
               free (result->scan_nvt_version);
               free (result->severity);
-              free (result->subnet);
             }
         }
       array_free (data->results);
@@ -4852,7 +4849,6 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
-  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULT_COUNT,
   CLIENT_CREATE_REPORT_RR_SCAN_END,
@@ -8603,8 +8599,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
-        else if (strcasecmp ("SUBNET", element_name) == 0)
-          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET);
         else if (strcasecmp ("SCAN_NVT_VERSION", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION);
@@ -10343,7 +10337,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   buffer_xml_append_printf
    (buffer,
-    "<subnet>%s</subnet>"
     "<host>%s</host>"
     "<port>%s</port>"
     "<nvt oid=\"%s\">"
@@ -10354,7 +10347,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<bid>%s</bid>"
     "<tags>%s</tags>"
     "<cert>",
-    result_iterator_subnet (results),
     result_iterator_host (results),
     result_iterator_port (results),
     result_iterator_nvt_oid (results),
@@ -18558,7 +18550,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             = create_report_data->result_scan_nvt_version;
           result->port = create_report_data->result_port;
           result->severity = create_report_data->result_severity;
-          result->subnet = create_report_data->result_subnet;
           result->threat = create_report_data->result_threat;
 
           array_add (create_report_data->results, result);
@@ -18569,7 +18560,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           create_report_data->result_port = NULL;
           create_report_data->result_scan_nvt_version = NULL;
           create_report_data->result_severity = NULL;
-          create_report_data->result_subnet = NULL;
           create_report_data->result_threat = NULL;
 
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
@@ -18586,7 +18576,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SCAN_NVT_VERSION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SEVERITY);
-      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SUBNET);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, THREAT);
 
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT, BID);
@@ -24606,9 +24595,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
               &create_report_data->result_severity);
-
-      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SUBNET,
-              &create_report_data->result_subnet);
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
               &create_report_data->result_threat);

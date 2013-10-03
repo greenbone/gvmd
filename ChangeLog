@@ -1,5 +1,26 @@
 2013-10-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (update_from_slave): Remove result subnet handling.
+
+	* src/manage.h: Update make_result prototype.
+	(message_t, create_report_result_t): Remove subnet member.
+
+	* src/manage_sql.c (init_manage): Don't insert empty result subnet value.
+	(make_result): Remove subnet parameter. Adjust sql insertion query
+	accordingly.
+	(create_report): Remove result subnet value insertion.
+
+	* src/omp.c (create_report_data_t): Remove subnet member.
+	(create_report_data_reset): Adjust for subnet member removal.
+	(client_state_t, omp_xml_handle_start_element)
+	(omp_xml_handle_end_element, omp_xml_handle_text): Remove result subnet
+	client state in create report and its handling.
+	(buffer_results_xml): Don't print subnet value.
+
+	* src/otp.c (make_message, free_message): Adjust for result subnet removal.
+
+2013-10-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_report_errors_iterator): Iterate over error
 	messages that has no associated nvt's too.
 

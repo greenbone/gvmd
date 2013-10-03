@@ -210,21 +210,6 @@ print_port (FILE* stream, port_t* port)
 
 /* Messages. */
 
-/** @todo Currently in manage.c. */
-#if 0
-/**
- * @brief The record of a message.
- */
-typedef struct
-{
-  char* subnet;         ///< Subnet message describes.
-  char* host;           ///< Host message describes.
-  port_t port;          ///< The port.
-  char* description;    ///< Description of the message.
-  char* oid;            ///< NVT identifier.
-} message_t;
-#endif
-
 /**
  * @brief Current message during OTP SERVER message commands.
  */
@@ -253,8 +238,6 @@ make_message (const char* host)
   message = (message_t*) g_malloc (sizeof (message_t));
 
   message->host = g_strdup (host);
-  /** @todo Calc subnet (__host2subnet in openvas-client/nessus/parser.c). */
-  message->subnet = g_strdup (host);
   message->description = NULL;
   message->oid = NULL;
   message->port.number = 0;
@@ -273,7 +256,6 @@ static void
 free_message (/*@out@*/ /*@only@*/ message_t* message)
 {
   if (message->host) free (message->host);
-  if (message->subnet) free (message->subnet);
   if (message->description) free (message->description);
   if (message->oid) free (message->oid);
   if (message->port.string) free (message->port.string);
@@ -376,9 +358,8 @@ write_message (task_t task, message_t* message, char* type)
   assert (current_report);
 
   manage_transaction_start ();
-  result = make_result (task, message->subnet, message->host,
-                        message->port.string, message->oid, type,
-                        message->description);
+  result = make_result (task, message->host, message->port.string, message->oid,
+                        type, message->description);
   if (current_report) report_add_result (current_report, result);
 }
 

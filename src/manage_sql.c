@@ -11164,9 +11164,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
                task,
                TASK_STATUS_DONE);
           report = sqlite3_last_insert_rowid (task_db);
-          sql ("INSERT into results (uuid, task, subnet, host, port, nvt, type,"
+          sql ("INSERT into results (uuid, task, host, port, nvt, type,"
                " severity, description)"
-               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu, '',"
+               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
                " '127.0.0.1', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0"
                " 'A telnet server seems to be running on this port');",
@@ -13756,7 +13756,6 @@ find_result_for_actions (const char *uuid, result_t *result,
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
- * @param[in]  subnet       Subnet.
  * @param[in]  host         Host.
  * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
@@ -13766,9 +13765,8 @@ find_result_for_actions (const char *uuid, result_t *result,
  * @return A result descriptor for the new result.
  */
 result_t
-make_result (task_t task, const char* subnet, const char* host,
-             const char* port, const char* nvt, const char* type,
-             const char* description)
+make_result (task_t task, const char* host, const char* port, const char* nvt,
+             const char* type, const char* description)
 {
   result_t result;
   gchar *nvt_revision, *severity;
@@ -13811,13 +13809,12 @@ make_result (task_t task, const char* subnet, const char* host,
     }
 
   sql ("INSERT into results"
-       " (task, subnet, host, port, nvt, nvt_version, severity, type,"
+       " (task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid)"
        " VALUES"
-       " (%llu, '%s', '%s', '%s', '%s', '%s', %s, '%s',"
+       " (%llu, '%s', '%s', '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid ());",
-       task, subnet, host, port, nvt, nvt_revision, severity, type,
-       quoted_descr);
+       task, host, port, nvt, nvt_revision, severity, type, quoted_descr);
 
   g_free (quoted_descr);
   g_free (nvt_revision);
@@ -14567,10 +14564,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
     {
-      gchar *quoted_subnet, *quoted_host, *quoted_port, *quoted_nvt_oid;
+      gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
 
-      quoted_subnet = sql_quote (result->subnet ? result->subnet : "");
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_port = sql_quote (result->port ? result->port : "");
       quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
@@ -14583,12 +14579,11 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       quoted_severity =  sql_quote (result->severity ? result->severity : "");
 
       sql ("INSERT INTO results"
-           " (uuid, task, subnet, host, port, nvt, type, description,"
+           " (uuid, task, host, port, nvt, type, description,"
            "  nvt_version, severity)"
            " VALUES"
-           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s', '%s',"
+           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s',"
            "  '%s', '%s');",
-           quoted_subnet,
            quoted_host,
            quoted_port,
            quoted_nvt_oid,
@@ -14600,7 +14595,6 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            quoted_severity);
 
       g_free (quoted_host);
-      g_free (quoted_subnet);
       g_free (quoted_port);
       g_free (quoted_nvt_oid);
       g_free (quoted_description);
