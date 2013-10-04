@@ -4749,14 +4749,15 @@ create_tables ()
    * column rename is lots of work. */
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  exclude_hosts, comment, lsc_credential INTEGER, ssh_port,"
-       "  smb_lsc_credential INTEGER, port_range, creation_time,"
-       "  modification_time);");
+       "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify, comment,"
+       "  lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER,"
+       "  port_range, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
-       "  exclude_hosts, comment, lsc_credential INTEGER, ssh_port,"
-       "  smb_lsc_credential INTEGER, port_range, ssh_location INTEGER,"
-       "  smb_location INTEGER, port_list_location INTEGER, creation_time,"
+       "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify,"
+       "  comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential"
+       "  INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER,"
+       "  port_list_location INTEGER, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
@@ -4770,8 +4771,9 @@ create_tables ()
        "  time, comment, description, run_status INTEGER, start_time, end_time,"
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
        "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
-       "  schedule_location INTEGER, slave_location INTEGER, "
-       "  upload_result_count INTEGER, creation_time, modification_time);");
+       "  schedule_location INTEGER, slave_location INTEGER,"
+       "  upload_result_count INTEGER, hosts_ordering, creation_time, "
+       "  modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
   sql ("CREATE TABLE IF NOT EXISTS users"
