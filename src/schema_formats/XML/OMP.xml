@@ -550,7 +550,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>user_tags</e></o>
       <o><e>report</e></o>
       <o><e>task</e></o>
-      <e>subnet</e>
       <e>host</e>
       <e>port</e>
       <e>nvt</e>
@@ -644,10 +643,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern>text</pattern>
         <summary>Name of the task the result applies to</summary>
       </ele>
-    </ele>
-    <ele>
-      <name>subnet</name>
-      <pattern>text</pattern>
     </ele>
     <ele>
       <name>host</name>
@@ -7780,7 +7775,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <type>uuid</type>
               <required>1</required>
             </attrib>
-            <e>subnet</e>
             <e>host</e>
             <e>port</e>
             <e>nvt</e>
@@ -7788,10 +7782,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>threat</e>
             <e>description</e>
           </pattern>
-          <ele>
-            <name>subnet</name>
-            <pattern>text</pattern>
-          </ele>
           <ele>
             <name>host</name>
             <pattern>text</pattern>
@@ -7912,7 +7902,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <count>0</count>
             </user_tags>
             <result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de">
-              <subnet>127.0.0.1</subnet>
               <host>127.0.0.1</host>
               <port>general/tcp</port>
               <nvt oid="1.3.6.1.4.1.25623.1.0.77">
@@ -8815,7 +8804,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <type>uuid</type>
               <required>1</required>
             </attrib>
-            <e>subnet</e>
             <e>host</e>
             <e>port</e>
             <e>nvt</e>
@@ -8823,10 +8811,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>severity</e>
             <e>description</e>
           </pattern>
-          <ele>
-            <name>subnet</name>
-            <pattern>text</pattern>
-          </ele>
           <ele>
             <name>host</name>
             <pattern>text</pattern>
@@ -9689,7 +9673,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </ports>
               <results start="1" max="-1">
                 <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
-                  <subnet>127.0.1.1</subnet>
                   <host>127.0.1.1</host>
                   <port>general/tcp</port>
                   <nvt oid="1.3.6.1.4.1.25623.1.0.74">
@@ -10176,7 +10159,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>user_tags</e>
             <o><e>report</e></o>
             <o><e>task</e></o>
-            <e>subnet</e>
             <e>host</e>
             <e>port</e>
             <e>nvt</e>
@@ -10267,10 +10249,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>text</pattern>
               <summary>Name of the task the result applies to</summary>
             </ele>
-          </ele>
-          <ele>
-            <name>subnet</name>
-            <pattern>text</pattern>
           </ele>
           <ele>
             <name>host</name>
@@ -10404,7 +10382,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <user_tags>
                 <count>0</count>
               </user_tags>
-              <subnet>127.0.1.1</subnet>
               <host>127.0.1.1</host>
               <port>general/tcp</port>
               <nvt oid="1.3.6.1.4.1.25623.1.0.74">
@@ -10441,7 +10418,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <user_tags>
                 <count>0</count>
               </user_tags>
-              <subnet>127.0.0.1</subnet>
               <host>127.0.0.1</host>
               <port>general/tcp</port>
               <nvt oid="1.3.6.1.4.1.25623.1.0.75">

@@ -638,7 +638,6 @@ result
        & result_user_tags?
        & result_report?
        & result_task?
-       & result_subnet
        & result_host
        & result_port
        & result_nvt
@@ -721,12 +720,6 @@ result_task
 # Name of the task the result applies to.
 result_task_name
  = element name
-     {
-       text
-     }
-
-result_subnet
- = element subnet
      {
        text
      }
@@ -874,7 +867,6 @@ result_delta_result
        & result_user_tags?
        & result_report?
        & result_task?
-       & result_subnet
        & result_host
        & result_port
        & result_nvt
@@ -952,7 +944,6 @@ result_detection_result
        & result_user_tags?
        & result_report?
        & result_task?
-       & result_subnet
        & result_host
        & result_port
        & result_nvt
@@ -1558,7 +1549,6 @@ report_report_results_result
        & result_user_tags?
        & result_report?
        & result_task?
-       & result_subnet
        & result_host
        & result_port
        & result_nvt
@@ -7487,19 +7477,12 @@ get_notes_response_note_result
  = element result
      {
        attribute id { uuid }
-       & get_notes_response_note_result_subnet
        & get_notes_response_note_result_host
        & get_notes_response_note_result_port
        & get_notes_response_note_result_nvt
        & get_notes_response_note_result_severity
        & get_notes_response_note_result_threat
        & get_notes_response_note_result_description
-     }
-
-get_notes_response_note_result_subnet
- = element subnet
-     {
-       text
      }
 
 get_notes_response_note_result_host
@@ -8182,19 +8165,12 @@ get_overrides_response_override_result
  = element result
      {
        attribute id { uuid }
-       & get_overrides_response_override_result_subnet
        & get_overrides_response_override_result_host
        & get_overrides_response_override_result_port
        & get_overrides_response_override_result_nvt
        & get_overrides_response_override_result_threat
        & get_overrides_response_override_result_severity
        & get_overrides_response_override_result_description
-     }
-
-get_overrides_response_override_result_subnet
- = element subnet
-     {
-       text
      }
 
 get_overrides_response_override_result_host
@@ -8841,7 +8817,6 @@ get_results_response_results_result
        & get_results_response_results_result_user_tags
        & get_results_response_results_result_report?
        & get_results_response_results_result_task?
-       & get_results_response_results_result_subnet
        & get_results_response_results_result_host
        & get_results_response_results_result_port
        & get_results_response_results_result_nvt
@@ -8921,12 +8896,6 @@ get_results_response_results_result_task
 # Name of the task the result applies to.
 get_results_response_results_result_task_name
  = element name
-     {
-       text
-     }
-
-get_results_response_results_result_subnet
- = element subnet
      {
        text
      }

@@ -1732,10 +1732,6 @@ result_overrides_override_orphan
 </ul>
 </li>
 <li>
-              &lt;<b>subnet</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>host</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -1898,7 +1894,6 @@ result_overrides_override_orphan
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
-       &amp; result_subnet
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
@@ -1969,12 +1964,6 @@ result_task
 
 result_task_name
  = element name
-     {
-       text
-     }
-
-result_subnet
- = element subnet
      {
        text
      }
@@ -2107,7 +2096,6 @@ result_delta_result
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
-       &amp; result_subnet
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
@@ -2178,7 +2166,6 @@ result_detection_result
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
-       &amp; result_subnet
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
@@ -3259,7 +3246,6 @@ report_report_results_result
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
-       &amp; result_subnet
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
@@ -12709,10 +12695,6 @@ get_lsc_credentials_response_lsc_credential_package
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
-              &lt;<b>subnet</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>host</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -13056,19 +13038,12 @@ get_notes_response_note_result
  = element result
      {
        attribute id { uuid }
-       &amp; get_notes_response_note_result_subnet
        &amp; get_notes_response_note_result_host
        &amp; get_notes_response_note_result_port
        &amp; get_notes_response_note_result_nvt
        &amp; get_notes_response_note_result_severity
        &amp; get_notes_response_note_result_threat
        &amp; get_notes_response_note_result_description
-     }
-
-get_notes_response_note_result_subnet
- = element subnet
-     {
-       text
      }
 
 get_notes_response_note_result_host
@@ -13198,7 +13173,6 @@ get_notes_response_note_result_description
        &lt;count&gt;0&lt;/count&gt;
      &lt;/user_tags&gt;
      &lt;result id="0c95e6b3-1100-4dfd-88f1-4bed1fad29de"&gt;
-       &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
        &lt;host&gt;127.0.0.1&lt;/host&gt;
        &lt;port&gt;general/tcp&lt;/port&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.77"&gt;
@@ -14272,10 +14246,6 @@ get_nvt_feed_version_response_version
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
-              &lt;<b>subnet</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>host</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -14647,19 +14617,12 @@ get_overrides_response_override_result
  = element result
      {
        attribute id { uuid }
-       &amp; get_overrides_response_override_result_subnet
        &amp; get_overrides_response_override_result_host
        &amp; get_overrides_response_override_result_port
        &amp; get_overrides_response_override_result_nvt
        &amp; get_overrides_response_override_result_threat
        &amp; get_overrides_response_override_result_severity
        &amp; get_overrides_response_override_result_description
-     }
-
-get_overrides_response_override_result_subnet
- = element subnet
-     {
-       text
      }
 
 get_overrides_response_override_result_host
@@ -15779,7 +15742,6 @@ get_reports_response_report
        &lt;results start="1"
                 max="-1"&gt;
          &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
-           &lt;subnet&gt;127.0.1.1&lt;/subnet&gt;
            &lt;host&gt;127.0.1.1&lt;/host&gt;
            &lt;port&gt;general/tcp&lt;/port&gt;
            &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
@@ -16521,10 +16483,6 @@ get_report_formats_response_report_format_active
 </ul>
 </li>
 <li>
-              &lt;<b>subnet</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>host</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -16673,7 +16631,6 @@ get_results_response_results_result
        &amp; get_results_response_results_result_user_tags
        &amp; get_results_response_results_result_report?
        &amp; get_results_response_results_result_task?
-       &amp; get_results_response_results_result_subnet
        &amp; get_results_response_results_result_host
        &amp; get_results_response_results_result_port
        &amp; get_results_response_results_result_nvt
@@ -16741,12 +16698,6 @@ get_results_response_results_result_task
 
 get_results_response_results_result_task_name
  = element name
-     {
-       text
-     }
-
-get_results_response_results_result_subnet
- = element subnet
      {
        text
      }
@@ -16886,7 +16837,6 @@ get_results_response_results_result_overrides
        &lt;user_tags&gt;
          &lt;count&gt;0&lt;/count&gt;
        &lt;/user_tags&gt;
-       &lt;subnet&gt;127.0.1.1&lt;/subnet&gt;
        &lt;host&gt;127.0.1.1&lt;/host&gt;
        &lt;port&gt;general/tcp&lt;/port&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
@@ -16921,7 +16871,6 @@ get_results_response_results_result_overrides
        &lt;user_tags&gt;
          &lt;count&gt;0&lt;/count&gt;
        &lt;/user_tags&gt;
-       &lt;subnet&gt;127.0.0.1&lt;/subnet&gt;
        &lt;host&gt;127.0.0.1&lt;/host&gt;
        &lt;port&gt;general/tcp&lt;/port&gt;
        &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;

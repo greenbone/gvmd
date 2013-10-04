@@ -1112,7 +1112,7 @@ main (int argc, char** argv, char **envp)
         {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
          &disable_password_policy, "Do not restrict passwords to the policy.",
          NULL},
-        { "first-user", '\0', 0, G_OPTION_ARG_STRING, &first_user, "Create admin user <username>.", "<username>" },
+        { "first-user", '\0', 0, G_OPTION_ARG_STRING, &first_user, "Create admin user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },

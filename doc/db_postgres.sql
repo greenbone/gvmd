@@ -311,7 +311,6 @@ CREATE TABLE results (
     id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-    subnet text,
     host text,
     port text,
     nvt text,  -- OID of NVT

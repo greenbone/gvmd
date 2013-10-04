@@ -1,5 +1,14 @@
 2013-10-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/db_postgres.sql (results): Remove subnet column.
+
+	* src/openvasmd.c: Update first user option help.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/db.png, doc/omp.rnc,
+	src/report_formats/NBE/NBE.xsl: Update for results subnet value removal.
+
+2013-10-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_tables): Add missing columns when creating
 	targets and tasks tables.
 

@@ -89,7 +89,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </xsl:for-each>
   </xsl:variable>
-results|<xsl:value-of select="subnet"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="str:replace(nvt/@oid, '1.3.6.1.4.1.25623.1.0.', '')"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>\n<xsl:if test="nvt/cvss_base != ''">Risk factor :\n\n<xsl:value-of select="nvt/risk_factor"/> / CVSS Base Score : <xsl:value-of select="nvt/cvss_base"/>\n(CVSS2#:<xsl:value-of select="$cvss_base_vector"/>)\n<xsl:if test="$cve_ref != ''">\nCVE : <xsl:value-of select="$cve_ref"/>\n</xsl:if><xsl:if test="$bid_ref != ''">\nBID : <xsl:value-of select="$bid_ref"/>\n</xsl:if><xsl:if test="$xref != ''">\nOther references : <xsl:value-of select="$xref"/>\n</xsl:if></xsl:if>
+results|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="str:replace(nvt/@oid, '1.3.6.1.4.1.25623.1.0.', '')"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>\n<xsl:if test="nvt/cvss_base != ''">Risk factor :\n\n<xsl:value-of select="nvt/risk_factor"/> / CVSS Base Score : <xsl:value-of select="nvt/cvss_base"/>\n(CVSS2#:<xsl:value-of select="$cvss_base_vector"/>)\n<xsl:if test="$cve_ref != ''">\nCVE : <xsl:value-of select="$cve_ref"/>\n</xsl:if><xsl:if test="$bid_ref != ''">\nBID : <xsl:value-of select="$bid_ref"/>\n</xsl:if><xsl:if test="$xref != ''">\nOther references : <xsl:value-of select="$xref"/>\n</xsl:if></xsl:if>
 </xsl:template>
 
 <xsl:template match="report">
