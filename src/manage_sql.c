@@ -2377,7 +2377,14 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
       if (filter_control_int ((keyword_t **) split->pdata,
                               "apply_overrides",
                               &val))
-        *apply_overrides = 1;
+        {
+          if (filter_control_int ((keyword_t **) split->pdata,
+                                  "overrides",
+                                  &val))
+            *apply_overrides = 1;
+          else
+            *apply_overrides = val;
+        }
       else
         *apply_overrides = val;
     }

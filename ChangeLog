@@ -1,3 +1,8 @@
+2013-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report_filter_controls): If the filter has no
+	apply_overrides keyword, set it from the overrides keyword.
+
 2013-10-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* doc/db_postgres.sql (results): Remove subnet column.
