@@ -21518,7 +21518,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int host_first_result, int host_max_results)
 {
   FILE *out;
-  gchar *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
+  gchar *clean, *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
   gchar *delta_states, *timestamp;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
@@ -21712,6 +21712,12 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       report_scan_run_status (report, &run_status);
     }
 
+  clean = manage_clean_filter (term
+                                ? term
+                                : (get && get->filter ? get->filter : ""));
+  g_free (term);
+  term = clean;
+
   PRINT
    (out,
     "<sort><field>%s<order>%s</order></field></sort>"
@@ -21728,7 +21734,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
     get && get->filt_id ? get->filt_id : "0",
-    term ? term : (get && get->filter ? get->filter : ""),
+    term,
     levels,
     search_phrase ? search_phrase : "",
     autofp,

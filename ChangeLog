@@ -1,5 +1,11 @@
 2013-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Clean the filter like the other
+	GET commands do, so that duplicate columns like apply_overrides are
+	removed.
+
+2013-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_report_filter_controls): If the filter has no
 	apply_overrides keyword, set it from the overrides keyword.
 
