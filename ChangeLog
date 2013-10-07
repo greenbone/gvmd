@@ -1,3 +1,8 @@
+2013-10-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/report_formats/NBE/NBE.xsl: Duplicate host value in result output
+	in place of subnet to keep the same old format of results.
+
 2013-10-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml): Clean the filter like the other
