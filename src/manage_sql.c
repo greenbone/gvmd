@@ -47406,7 +47406,7 @@ manage_first_user (const gchar *database, const gchar *name)
   sql ("DELETE FROM meta WHERE name = 'admin';");
   sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
   switch (create_user (name, uuid, NULL, 0, NULL, NULL, NULL, roles, NULL,
-                       NULL))
+                       NULL, NULL))
     {
       case 0:
         printf ("User created with password '%s'.\n", uuid);
@@ -47496,6 +47496,7 @@ find_user_by_name (const char* name, user_t *user)
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
+ * @param[out] user         Created user.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find role, 99 permission denied, -1 on error, -2 if
@@ -47505,7 +47506,7 @@ int
 create_user (const gchar * name, const gchar * password, const gchar * hosts,
              int hosts_allow, const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
-             gchar **r_errdesc)
+             gchar **r_errdesc, user_t *new_user)
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_method, *quoted_name, *hash;
@@ -47665,6 +47666,9 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
       index++;
     }
+
+  if (new_user)
+    *new_user = user;
 
   sql ("COMMIT;");
   return 0;

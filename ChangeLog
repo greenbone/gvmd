@@ -1,3 +1,12 @@
+2013-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Add ID to success case of
+	CREATE_USER response.
+
+	* src/manage_sql.c (create_user): Add new_user arg.  Update caller.
+
+	* src/manage.h: Update header accordingly.
+
 2013-10-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/report_formats/NBE/NBE.xsl: Duplicate host value in result output
@@ -219,7 +228,7 @@
 	* src/manage_sql.c (cache_will_insert): New function.
 	(report_counts_id_filt): Check if cache_report_counts will do any
 	inserts before calling it, otherwise it runs a transaction just to do
-	the delete, which is costly only large reports.
+	the delete, which is costly on large reports.
 
 2013-09-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 

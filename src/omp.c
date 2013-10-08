@@ -20212,12 +20212,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       &fail_group_id,
                       create_user_data->roles,
                       &fail_role_id,
-                      &errdesc))
+                      &errdesc,
+                      &new_user))
               {
                 case 0:
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK_CREATED ("create_user"));
-                  log_event ("user", "User", create_user_data->name, "created");
-                  break;
+                  {
+                    char *uuid;
+                    uuid = user_uuid (new_user);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_user"),
+                                             uuid);
+                    log_event ("user", "User", create_user_data->name, "created");
+                    free (uuid);
+                    break;
+                  }
                 case 1:
                   if (send_find_error_to_client
                        ("create_user",
