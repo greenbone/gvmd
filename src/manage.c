@@ -819,10 +819,10 @@ alert_condition_name (alert_condition_t condition)
     {
       case ALERT_CONDITION_ALWAYS:
         return "Always";
-      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
-        return "Threat level at least";
-      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
-        return "Threat level changed";
+      case ALERT_CONDITION_SEVERITY_AT_LEAST:
+        return "Severity at least";
+      case ALERT_CONDITION_SEVERITY_CHANGED:
+        return "Severity changed";
       default:
         return "Internal Error";
     }
@@ -861,20 +861,20 @@ alert_condition_description (alert_condition_t condition,
     {
       case ALERT_CONDITION_ALWAYS:
         return g_strdup ("Always");
-      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
+      case ALERT_CONDITION_SEVERITY_AT_LEAST:
         {
-          char *level = alert_data (alert, "condition", "level");
-          gchar *ret = g_strdup_printf ("Task threat level is at least '%s'",
+          char *level = alert_data (alert, "condition", "severity");
+          gchar *ret = g_strdup_printf ("Task severity is at least '%s'",
                                         level);
           free (level);
           return ret;
           break;
         }
-      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
+      case ALERT_CONDITION_SEVERITY_CHANGED:
         {
           char *direction;
           direction = alert_data (alert, "condition", "direction");
-          gchar *ret = g_strdup_printf ("Task threat level %s", direction);
+          gchar *ret = g_strdup_printf ("Task severity %s", direction);
           free (direction);
           return ret;
           break;
@@ -945,10 +945,10 @@ alert_condition_from_name (const char* name)
 {
   if (strcasecmp (name, "Always") == 0)
     return ALERT_CONDITION_ALWAYS;
-  if (strcasecmp (name, "Threat level at least") == 0)
-    return ALERT_CONDITION_THREAT_LEVEL_AT_LEAST;
-  if (strcasecmp (name, "Threat level changed") == 0)
-    return ALERT_CONDITION_THREAT_LEVEL_CHANGED;
+  if (strcasecmp (name, "Severity at least") == 0)
+    return ALERT_CONDITION_SEVERITY_AT_LEAST;
+  if (strcasecmp (name, "Severity changed") == 0)
+    return ALERT_CONDITION_SEVERITY_CHANGED;
   return ALERT_CONDITION_ERROR;
 }
 

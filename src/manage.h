@@ -327,8 +327,8 @@ typedef enum
 {
   ALERT_CONDITION_ERROR,
   ALERT_CONDITION_ALWAYS,
-  ALERT_CONDITION_THREAT_LEVEL_AT_LEAST,
-  ALERT_CONDITION_THREAT_LEVEL_CHANGED
+  ALERT_CONDITION_SEVERITY_AT_LEAST,
+  ALERT_CONDITION_SEVERITY_CHANGED
 } alert_condition_t;
 
 int
@@ -640,6 +640,9 @@ set_scan_attack_state (report_t, const char*, const char*);
 
 char *
 task_severity (task_t, int, int);
+
+double
+task_severity_double (task_t, int, int);
 
 int
 task_debugs_size (task_t);

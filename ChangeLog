@@ -1,3 +1,36 @@
+2013-10-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Change level to severity in alert_condition_data. Hence increase
+	database version to 101. Add database migration from version 100 to 101.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 101.
+
+	* src/manage_migrators.c (migrate_100_to_101): New function.
+	(database_migrators): Add migrate_100_to_101.
+
+	* src/manage.c (alert_condition_name, alert_condition_description)
+	(alert_condition_from_name): Replace (threat) level with severity.
+
+	* src/manage.h (alert_condition_t): Replace threat level with severity.
+	(task_severity_double): New function prototype.
+
+	* src/manage_sql.c (validate_alert_condition_data): New function.
+	(create_alert, modify_alert): Replace threat level with severity and
+	add verification of condition data.
+	(condition_met): Replace threat level with severity.
+	(task_previous_threat_level): Removed.
+	(task_severity_double): New function.
+
+	* src/omp.c (xml_handle_end_element): In cases for CLIENT_CREATE_ALERT
+	and CLIENT_MODIFY_ALERT handle new error codes of create_alert and
+	modify_alert.
+
+	* src/schema_formats/XML/OMP.xml (create_alert): Use new condition
+	"Severity at least" in example.
+	(protocol): Add change documentation of new alert conditions.
+
+	* doc/omp.html: Update from source.
+
 2013-10-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add ID to success case of

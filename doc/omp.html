@@ -5147,10 +5147,10 @@ create_alert_filter
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_alert&gt;
    &lt;name&gt;emergency&lt;/name&gt;
    &lt;condition&gt;
-     Threat level at least
+     Severity at least
      &lt;data&gt;
-       High
-       &lt;name&gt;level&lt;/name&gt;
+       5.5
+       &lt;name&gt;severity&lt;/name&gt;
      &lt;/data&gt;
    &lt;/condition&gt;
    &lt;event&gt;
@@ -24574,6 +24574,16 @@ run_wizard_params_param_value
       4.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>CREATE_ALERT, GET_ALERTS, MODIFY_ALERT</tt>
+</h3></div>
+<p>In short: "Threat level" replaced with "Severity" in alert conditions.</p>
+<p>
+        The alert conditions "Threat level changed" and "Threat level at least"
+        have been replaced with "Severity changed" and "Severity at least"
+        respectively.</p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: THREAT removed from PORT in response.</p>
@@ -24583,7 +24593,7 @@ run_wizard_params_param_value
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>GET_TARGETS</tt>
 </h3></div>
 <p>In short: PORT_RANGE not always returned within TARGET.</p>

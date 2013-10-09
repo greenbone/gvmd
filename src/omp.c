@@ -16984,6 +16984,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         " specified"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
+                  case 5:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Invalid or unexpected condition data"
+                                        " name"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
+                  case 6:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_alert",
+                                        "Syntax error in condition data"));
+                    log_event_fail ("alert", "Alert", NULL, "created");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
@@ -20498,6 +20511,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Validation of email address failed"));
                 log_event_fail ("alert", "Alert", modify_alert_data->alert_id,
                                 "modified");
+                break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Invalid or unexpected condition data"
+                                    " name"));
+                log_event_fail ("alert", "Alert", NULL, "created");
+                break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_alert",
+                                    "Syntax error in condition data"));
+                log_event_fail ("alert", "Alert", NULL, "created");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

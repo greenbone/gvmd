@@ -7714,6 +7714,61 @@ migrate_99_to_100 ()
 }
 
 /**
+ * @brief Migrate the database from version 100 to version 101.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_100_to_101 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 100. */
+
+  if (manage_db_version () != 100)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Migrate level alert condition data to severity */
+  sql ("UPDATE alert_condition_data SET"
+       " name = 'severity',"
+       " data = CASE data"
+       "        WHEN 'High' THEN 5.1"
+       "        WHEN 'Medium' THEN 2.1"
+       "        WHEN 'Meduim' THEN 2.1" // Fix for typo in GSA
+       "        WHEN 'Low' THEN 0.1"
+       "        WHEN 'Log' THEN 0.0"
+       "        WHEN 'False Positive' THEN -1.0"
+       "        ELSE data END"
+       " WHERE name = 'level';");
+
+  sql ("UPDATE alert_condition_data_trash SET"
+       " name = 'severity',"
+       " data = CASE data"
+       "        WHEN 'High' THEN 5.1"
+       "        WHEN 'Medium' THEN 2.1"
+       "        WHEN 'Meduim' THEN 2.1" // Fix for typo in GSA
+       "        WHEN 'Low' THEN 0.1"
+       "        WHEN 'Log' THEN 0.0"
+       "        WHEN 'False Positive' THEN -1.0"
+       "        ELSE data END"
+       " WHERE name = 'level';");
+
+  /* Set the database version 101. */
+
+  set_db_version (101);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7818,6 +7873,7 @@ static migrator_t database_migrators[]
     {98, migrate_97_to_98},
     {99, migrate_98_to_99},
     {100, migrate_99_to_100},
+    {101, migrate_100_to_101},
     /* End marker. */
     {-1, NULL}};
 

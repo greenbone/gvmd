@@ -162,9 +162,6 @@ family_count ();
 const char*
 task_threat_level (task_t, int);
 
-static const char*
-task_previous_threat_level (task_t);
-
 static int
 report_counts_cache_exists (report_t, int);
 
@@ -5743,6 +5740,51 @@ validate_email (const char* address)
 }
 
 /**
+ * @brief Validate condition data for an alert.
+ *
+ * @param
+ * @param[in]  data      Data to validate.
+ * @param[in]  condition The condition.
+ *
+ * @return 0 on success, 1 unexpected data name, 2 syntax error in data,
+ *         -1 internal error.
+ */
+static int
+validate_alert_condition_data (gchar *name, gchar* data,
+                               alert_condition_t condition)
+{
+  if (condition == ALERT_CONDITION_ALWAYS)
+    return 1;
+  if (condition == ALERT_CONDITION_SEVERITY_AT_LEAST)
+    {
+      if (strcmp (name, "severity"))
+        return 1;
+
+      if (g_regex_match_simple ("^(-1(\\.0)?|[0-9](\\.[0-9])?|10(\\.0))$",
+                                data ? data : "",
+                                0,
+                                0)
+          == 0)
+        return 2;
+    }
+  else if (condition == ALERT_CONDITION_SEVERITY_CHANGED)
+    {
+      if (strcmp (name, "direction"))
+        return 1;
+
+      if (g_regex_match_simple ("^(increased|decreased|changed)$",
+                                data ? data : "",
+                                0,
+                                0)
+          == 0)
+        return 2;
+    }
+
+
+  return 0;
+}
+
+/**
  * @brief Create an alert.
  *
  * @param[in]  name            Name of alert.
@@ -5758,6 +5800,7 @@ validate_email (const char* address)
  *
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
  *         3 failed to find filter, 4 type must be "report" if specified,
+ *         5 unexpected condition data name, 6 syntax error in condition data,
  *         99 permission denied, -1 error.
  */
 int
@@ -5850,8 +5893,29 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
     {
+      int validation_result;
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
+
+      validation_result = validate_alert_condition_data (name, data, condition);
+
+      if (validation_result)
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+
+          switch (validation_result)
+            {
+              case 1:
+                return 5;
+              case 2:
+                return 6;
+              default:
+                return -1;
+            }
+        }
+
       sql ("INSERT INTO alert_condition_data (alert, name, data)"
            " VALUES (%llu, '%s', '%s');",
            *alert,
@@ -6057,6 +6121,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
  *         3 alert_id required, 4 failed to find filter, 5 filter type must be
  *         report if specified, 6 Provided email address not valid,
+ *         7 unexpected condition data name, 8 syntax error in condition data,
  *         99 permission denied, -1 internal error.
  */
 int
@@ -6196,8 +6261,30 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       index = 0;
       while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
         {
+          int validation_result;
           gchar *name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
+
+          validation_result = validate_alert_condition_data (name, data,
+                                                             condition);
+
+          if (validation_result)
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+
+              switch (validation_result)
+                {
+                  case 1:
+                    return 7;
+                  case 2:
+                    return 8;
+                  default:
+                    return -1;
+                }
+            }
+
           sql ("INSERT INTO alert_condition_data (alert, name, data)"
                " VALUES (%llu, '%s', '%s');",
                alert,
@@ -8613,56 +8700,53 @@ condition_met (task_t task, alert_t alert,
       case ALERT_CONDITION_ALWAYS:
         return 1;
         break;
-      case ALERT_CONDITION_THREAT_LEVEL_AT_LEAST:
+      case ALERT_CONDITION_SEVERITY_AT_LEAST:
         {
-          char *condition_level;
-          const char *report_level;
+          char *condition_severity_str;
 
           /* True if the threat level of the last finished report is at
            * least the given level. */
 
-          condition_level = alert_data (alert, "condition", "level");
-          report_level = task_threat_level (task, 1);
-          if (condition_level
-              && report_level
-              && (collate_threat (NULL,
-                                  strlen (report_level),
-                                  report_level,
-                                  strlen (condition_level),
-                                  condition_level)
-                  > -1))
+          condition_severity_str = alert_data (alert, "condition", "severity");
+
+          if (condition_severity_str)
             {
-              free (condition_level);
-              return 1;
+              double condition_severity_dbl, task_severity_dbl;
+
+              condition_severity_dbl = g_ascii_strtod (condition_severity_str,
+                                                       0);
+              task_severity_dbl = task_severity_double (task, 1, 0);
+
+              if (task_severity_dbl >= condition_severity_dbl)
+                {
+                  free (condition_severity_str);
+                  return 1;
+                }
             }
-          free (condition_level);
+          free (condition_severity_str);
           break;
         }
-      case ALERT_CONDITION_THREAT_LEVEL_CHANGED:
+      case ALERT_CONDITION_SEVERITY_CHANGED:
         {
           char *direction;
-          const char *last_level, *second_last_level;
+          double last_severity, second_last_severity;
 
           /* True if the threat level of the last finished report changed
            * in the given direction with respect to the second last finished
            * report. */
 
           direction = alert_data (alert, "condition", "direction");
-          last_level = task_threat_level (task, 1);
-          second_last_level = task_previous_threat_level (task);
+          last_severity = task_severity_double (task, 1, 0);
+          second_last_severity = task_severity_double (task, 1, 1);
           if (direction
-              && last_level
-              && second_last_level)
+              && last_severity > SEVERITY_MISSING
+              && second_last_severity > SEVERITY_MISSING)
             {
-              int cmp = collate_threat (NULL,
-                                        strlen (last_level),
-                                        last_level,
-                                        strlen (second_last_level),
-                                        second_last_level);
-              tracef ("cmp: %i\n", cmp);
+              double cmp = last_severity - second_last_severity;
+              tracef ("cmp: %f\n", cmp);
               tracef ("direction: %s\n", direction);
-              tracef ("last_level: %s\n", last_level);
-              tracef ("second_last_level: %s\n", second_last_level);
+              tracef ("last_level: %1.1f\n", last_severity);
+              tracef ("second_last_level: %1.1f\n", second_last_severity);
               if (((strcasecmp (direction, "changed") == 0) && cmp)
                   || ((strcasecmp (direction, "increased") == 0) && (cmp > 0))
                   || ((strcasecmp (direction, "decreased") == 0) && (cmp < 0)))
@@ -8672,10 +8756,10 @@ condition_met (task_t task, alert_t alert,
                 }
             }
           else if (direction
-                   && last_level)
+                   && last_severity > SEVERITY_MISSING)
             {
               tracef ("direction: %s\n", direction);
-              tracef ("last_level: %s\n", last_level);
+              tracef ("last_level: %1.1f\n", last_severity);
               tracef ("second_last_level NULL\n");
               if ((strcasecmp (direction, "changed") == 0)
                   || (strcasecmp (direction, "increased") == 0))
@@ -13166,30 +13250,6 @@ task_threat_level (task_t task, int overrides)
 }
 
 /**
- * @brief Return the previous threat level of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Threat level of the second last report on task if there is one, as a
- *         static string, else NULL.
- */
-static const char*
-task_previous_threat_level (task_t task)
-{
-  char* severity;
-  double severity_dbl;
-  severity = task_severity (task, 1, 1);
-
-  if (severity == NULL
-      || sscanf (severity, "%lf", &severity_dbl) != 1)
-    return NULL;
-  else
-    return severity_to_level (severity_dbl, 0);
-
-  return NULL;
-}
-
-/**
  * @brief Return the schedule of a task.
  *
  * @param[in]  task  Task.
@@ -13373,6 +13433,36 @@ task_severity (task_t task, int overrides, int offset)
   g_free (new_severity_sql);
 
   return severity;
+}
+
+/**
+ * @brief Return the severity score of a task, taking overrides into account.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  offset     Offset of report to get severity from:
+ *                        0 = use last report, 1 = use next to last report
+ *
+ * @return Severity score of last report on task as a double if there is one,
+ *         else SEVERITY_MISSING.
+ */
+double
+task_severity_double (task_t task, int overrides, int offset)
+{
+  char* severity;
+  double severity_dbl;
+  severity = task_severity (task, overrides, offset);
+
+  if (severity == NULL || sscanf (severity, "%lf", &severity_dbl) != 1)
+    {
+      free (severity);
+      return SEVERITY_MISSING;
+    }
+  else
+    {
+      free (severity);
+      return severity_dbl;
+    }
 }
 
 /**

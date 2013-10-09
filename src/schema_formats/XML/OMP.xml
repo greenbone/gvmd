@@ -2239,10 +2239,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <create_alert>
           <name>emergency</name>
           <condition>
-            Threat level at least
+            Severity at least
             <data>
-              <name>level</name>
-              High
+              <name>severity</name>
+              5.5
             </data>
           </condition>
           <event>
@@ -15658,6 +15658,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>CREATE_ALERT, GET_ALERTS, MODIFY_ALERT</command>
+    <summary>"Threat level" replaced with "Severity" in alert conditions</summary>
+    <description>
+      <p>
+        The alert conditions "Threat level changed" and "Threat level at least"
+        have been replaced with "Severity changed" and "Severity at least"
+        respectively.<br/>
+        The latter now expects a data entity named "severity"
+        instead of "level". Both conditions now use a numeric severity value
+        instead of the old threat levels like "High", "Medium" etc.
+      </p>
+    </description>
+    <version>4.0</version>
+  </change>
   <change>
     <command>GET_REPORTS</command>
     <summary>THREAT removed from PORT in response</summary>
