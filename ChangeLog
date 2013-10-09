@@ -1,3 +1,10 @@
+2013-10-09  Timo Pollmeier  <timo.pollmeier@greenbone.net>
+
+	Backport r17990
+
+	* src/manage_sql.c (delete_alert): Copy correct rows from data tables
+	(alert_condition_data, alert_event_data, alert_method_data).
+
 2013-09-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Revert previous change.
