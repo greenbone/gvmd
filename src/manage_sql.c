@@ -6430,20 +6430,23 @@ delete_alert (const char *alert_id, int ultimate)
       sql ("INSERT INTO alert_condition_data_trash"
            " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM alert_condition_data WHERE ROWID = %llu;",
-           trash_alert);
+           " FROM alert_condition_data WHERE alert = %llu;",
+           trash_alert,
+           alert);
 
       sql ("INSERT INTO alert_event_data_trash"
            " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM alert_event_data WHERE ROWID = %llu;",
-           trash_alert);
+           " FROM alert_event_data WHERE alert = %llu;",
+           trash_alert,
+           alert);
 
       sql ("INSERT INTO alert_method_data_trash"
            " (alert, name, data)"
            " SELECT %llu, name, data"
-           " FROM alert_method_data WHERE ROWID = %llu;",
-           trash_alert);
+           " FROM alert_method_data WHERE alert = %llu;",
+           trash_alert,
+           alert);
 
       /* Update the location of the alert in any trashcan tasks. */
       sql ("UPDATE task_alerts"
