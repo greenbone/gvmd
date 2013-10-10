@@ -17500,7 +17500,8 @@ report_scan_result_count (report_t report, const char* levels,
                         " WHERE report = %llu"
                         "   AND override = %d"
                         "   AND user = (SELECT ROWID FROM users"
-                        "               WHERE users.uuid = '%s');",
+                        "               WHERE users.uuid = '%s')"
+                        "   AND severity >= " G_STRINGIFY (SEVERITY_FP) ";",
                         report, override, current_credentials.uuid);
       return 0;
     }
@@ -17563,10 +17564,13 @@ report_scan_result_count (report_t report, const char* levels,
                     "SELECT count(results.ROWID)%s%s"
                     " FROM results"
                     " WHERE results.report = %llu"
+                    " AND (CAST (%s AS NUMBER)"
+                    "       >= " G_STRINGIFY (SEVERITY_FP) ")"
                     "%s%s%s;",
                     new_severity_sql ? new_severity_sql : "",
                     auto_type_sql ? auto_type_sql : "",
                     report,
+                    new_severity_sql ? "new_severity" : "severity",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "");

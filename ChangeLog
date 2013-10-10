@@ -1,3 +1,8 @@
+2013-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_scan_result_count): Exclude results with
+	severity lower than false positive (like error messages) from count.
+
 2013-10-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (delete_alert): Copy correct rows from data tables
