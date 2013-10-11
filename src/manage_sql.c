@@ -15143,7 +15143,7 @@ where_levels (const char* levels)
   /* Generate SQL for constraints on message type, according to levels. */
 
   if (levels == NULL || strlen (levels) == 0)
-    return NULL;
+    return g_string_new (" AND new_severity != " G_STRINGIFY (SEVERITY_ERROR));
 
   levels_sql = NULL;
   count = 0;
@@ -15254,7 +15254,7 @@ where_levels_auto (const char* levels)
   /* Generate SQL for constraints on message type, according to levels. */
 
   if (levels == NULL || strlen (levels) == 0)
-    return NULL;
+    return g_string_new (" AND new_severity != " G_STRINGIFY (SEVERITY_ERROR));
 
   levels_sql = NULL;
   count = 0;
@@ -15370,7 +15370,7 @@ where_levels_type (const char* levels)
   /* Generate SQL for constraints on message type, according to levels. */
 
   if (levels == NULL || strlen (levels) == 0)
-    return NULL;
+    return g_string_new (" AND severity != " G_STRINGIFY (SEVERITY_ERROR));
 
   levels_sql = NULL;
   count = 0;
@@ -15687,6 +15687,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                "                                  AND value = 'EXIT_NOTVULN')"
                "                    AND family IN (" LSC_FAMILY_LIST ")))))"
                " THEN NULL"
+               " WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
                " ELSE 1 END)",
                report);
             break;
@@ -15719,6 +15720,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                 * Either can be a list of CVEs. */
                "         AND common_cve (nvts.cve, outer_nvts.cve)))))"
                " THEN NULL"
+               " WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
                " ELSE 1 END)",
                report);
              break;

@@ -1,3 +1,10 @@
+2013-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (where_levels, where_levels_auto)
+	(where_levels_type): Exclude error results if levels string is empty or
+	null.
+	(init_result_iterator): Don't apply autofp to error messages.
+
 2013-10-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_nvti_xml): Don't print nvti xml.
