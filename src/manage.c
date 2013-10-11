@@ -5374,7 +5374,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
 #ifndef S_SPLINT_S
       DEF (copyright);
-      DEF (description);
       DEF (summary);
       DEF (family);
       DEF (version);
@@ -5447,7 +5446,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<user_tags>%s</user_tags>"
                              "<category>%s</category>"
                              "<copyright>%s</copyright>"
-                             "<description>%s</description>"
                              "<summary>%s</summary>"
                              "<family>%s</family>"
                              "<version>%s</version>"
@@ -5476,7 +5474,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              tags_str->str,
                              category_name (nvt_iterator_category (nvts)),
                              copyright_text,
-                             description_text,
                              summary_text,
                              family_text,
                              version_text,
@@ -5493,7 +5490,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              timeout ? timeout : "",
                              close_tag ? "</nvt>" : "");
       g_free (copyright_text);
-      g_free (description_text);
       g_free (summary_text);
       g_free (family_text);
       g_free (version_text);

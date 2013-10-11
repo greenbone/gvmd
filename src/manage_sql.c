@@ -29731,7 +29731,7 @@ nvt_t
 make_nvt_from_nvti (const nvti_t *nvti, int remove)
 {
   /** @todo Freeing string literals. */
-  gchar *quoted_version, *quoted_name, *quoted_summary, *quoted_description;
+  gchar *quoted_version, *quoted_name, *quoted_summary;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_sign_key_ids;
   gchar *quoted_family, *quoted_original_tag;
@@ -29745,9 +29745,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_version = sql_quote (nvti_version (nvti));
   quoted_name = sql_quote (nvti_name (nvti) ? nvti_name (nvti) : "");
   quoted_summary = sql_quote (nvti_summary (nvti) ? nvti_summary (nvti) : "");
-  quoted_description = sql_quote (nvti_description (nvti)
-                                  ? nvti_description (nvti)
-                                  : "");
   quoted_copyright = sql_quote (nvti_copyright (nvti)
                                 ? nvti_copyright (nvti)
                                 : "");
@@ -29818,17 +29815,16 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
                                    : "");
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
-  sql ("INSERT into nvts (oid, version, name, summary, description, copyright,"
+  sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
        " creation_time, modification_time, uuid)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
        " parse_time (tag ('%s', 'last_modification')), '%s');",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
        quoted_summary,
-       quoted_description,
        quoted_copyright,
        quoted_cve,
        quoted_bid,
@@ -29848,7 +29844,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_version);
   g_free (quoted_name);
   g_free (quoted_summary);
-  g_free (quoted_description);
   g_free (quoted_copyright);
   g_free (quoted_cve);
   g_free (quoted_bid);
