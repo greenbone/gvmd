@@ -1,3 +1,10 @@
+2013-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (make_result): Set severity value for error messages
+	and other non-Alarm results with no NVT. Do not create results with
+	invalid types or Alarm results with no NVTs and log a warning.
+	Do not allow creation of False Positive results here.
+
 2013-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_scan_result_count): Exclude results with

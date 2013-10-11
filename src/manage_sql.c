@@ -13899,15 +13899,34 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
         severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
       else if (strcasecmp (type, "Error Message") == 0)
         severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
-      else if (strcasecmp (type, "False Positive") == 0)
-        severity = g_strdup (G_STRINGIFY (SEVERITY_FP));
       else
-        severity = g_strdup ("NULL");
+        {
+          g_free (quoted_descr);
+          g_free (nvt_revision);
+          g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
+          return 0;
+        }
     }
   else
     {
       nvt_revision = g_strdup ("");
-      severity = g_strdup ("NULL");
+      if (strcasecmp (type, "Log Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+      else if (strcasecmp (type, "Debug Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_DEBUG));
+      else if (strcasecmp (type, "Error Message") == 0)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+      else
+        {
+          g_free (quoted_descr);
+          g_free (nvt_revision);
+          if (strcasecmp (type, "Alarm") == 0)
+            g_warning ("%s: Message type requires an NVT: '%s'",
+                       __FUNCTION__, type);
+          else
+            g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
+          return 0;
+        }
     }
 
   sql ("INSERT into results"
