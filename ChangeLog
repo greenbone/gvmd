@@ -1,3 +1,9 @@
+2013-10-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (where_levels, where_levels_auto)
+	(where_levels_type): Exclude error messages if all levels are selected.
+	(report_vuln_count): Exclude error message results.
+
 2013-10-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (where_levels, where_levels_auto)

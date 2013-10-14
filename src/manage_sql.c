@@ -15229,7 +15229,8 @@ where_levels (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = NULL;
+      levels_sql = g_string_new (" AND new_severity != "
+                                 G_STRINGIFY (SEVERITY_ERROR));
     }
 
   return levels_sql;
@@ -15345,7 +15346,8 @@ where_levels_auto (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = NULL;
+      levels_sql = g_string_new (" AND new_severity != "
+                                 G_STRINGIFY (SEVERITY_ERROR));
     }
 
   return levels_sql;
@@ -15441,7 +15443,8 @@ where_levels_type (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = NULL;
+      levels_sql = g_string_new (" AND new_severity != "
+                                 G_STRINGIFY (SEVERITY_ERROR));
     }
 
   return levels_sql;
@@ -20406,7 +20409,8 @@ report_vuln_count (report_t report)
 {
   return sql_int (0, 0,
                   "SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu and nvt != '0';",
+                  " WHERE report = %llu AND nvt != '0'"
+                  " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
 }
 
