@@ -7822,6 +7822,51 @@ migrate_101_to_102 ()
 }
 
 /**
+ * @brief Migrate the database from version 102 to version 103.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_102_to_103 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 102. */
+
+  if (manage_db_version () != 102)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Clear cache for affected reports */
+  sql ("DELETE FROM report_counts WHERE report IN"
+       " (SELECT report FROM results"
+       "  WHERE severity = 'NULL' OR severity = '' OR severity IS NULL);");
+
+  /* Add missing severity values */
+  sql ("UPDATE results SET"
+       " severity = CASE type"
+       "            WHEN 'Error Message' THEN -3.0"
+       "            WHEN 'Debug Message' THEN -2.0"
+       "            WHEN 'False Positive' THEN -1.0"
+       "            WHEN 'Log Message' THEN 0.0"
+       "            ELSE NULL END"
+       " WHERE severity = 'NULL' OR severity = '' OR severity IS NULL;");
+
+  /* Set the database version 103. */
+
+  set_db_version (103);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7928,6 +7973,7 @@ static migrator_t database_migrators[]
     {100, migrate_99_to_100},
     {101, migrate_100_to_101},
     {102, migrate_101_to_102},
+    {103, migrate_102_to_103},
     /* End marker. */
     {-1, NULL}};
 

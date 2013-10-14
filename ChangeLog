@@ -1,3 +1,14 @@
+2013-10-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add severity values to log, debug and error messages where they are
+	missing like ones without an NVT. Hence increase database version to
+	103. Add database migration from version 102 to 103.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 103.
+
+	* src/manage_migrators.c (migrate_102_to_103): New function.
+	(database_migrators): Add migrate_102_to_103.
+
 2013-10-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Remove nvts description from DB. Hence increase database version to 102.
