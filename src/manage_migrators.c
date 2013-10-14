@@ -7769,6 +7769,59 @@ migrate_100_to_101 ()
 }
 
 /**
+ * @brief Migrate the database from version 101 to version 102.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_101_to_102 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 101. */
+
+  if (manage_db_version () != 101)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename nvts tables. */
+  sql ("ALTER TABLE nvts RENAME TO nvts_101;");
+
+  /* Create new one without description column. */
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  category INTEGER, family, cvss_base, creation_time,"
+       "  modification_time);");
+
+  /* Migrate old nvts data to new table. */
+  sql ("INSERT INTO nvts"
+       " (id, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  category, family, cvss_base, creation_time, modification_time)"
+       " SELECT id, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  category, family, cvss_base, creation_time, modification_time"
+       "  FROM nvts_101;");
+
+  /* Delete old nvts table. */
+  sql ("DROP TABLE nvts_101;");
+
+  /* Set the database version 102. */
+
+  set_db_version (102);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -7874,6 +7927,7 @@ static migrator_t database_migrators[]
     {99, migrate_98_to_99},
     {100, migrate_99_to_100},
     {101, migrate_100_to_101},
+    {102, migrate_101_to_102},
     /* End marker. */
     {-1, NULL}};
 

@@ -443,7 +443,6 @@ CREATE TABLE nvts (
     name text,
     comment text,
     summary text,
-    description text,
     copyright text,
     cve text,
     bid text,

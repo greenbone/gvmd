@@ -1,5 +1,17 @@
 2013-10-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove nvts description from DB. Hence increase database version to 102.
+	Add database migration from version 101 to 102.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 101.
+
+	* src/manage_migrators.c (migrate_101_to_102): New function.
+	(database_migrators): Add migrate_101_to_102.
+
+	* doc/db_postgres.sql (nvts): Remove description column.
+
+2013-10-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_tables, NVT_ITERATOR_COLUMNS)
 	(NVT_ITERATOR_COLUMNS_NVTS): Remove nvts description column.
 	(nvt_iterator_description): Delete unused function.
