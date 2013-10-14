@@ -3636,6 +3636,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>alterable</e></o>
       <e>config</e>
       <e>target</e>
       <any><e>alert</e></any>
@@ -3656,6 +3657,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>alterable</name>
+      <summary>Whether the task is alterable</summary>
+      <pattern><t>boolean</t></pattern>
     </ele>
     <ele>
       <name>config</name>
@@ -12006,6 +12012,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>owner</e>
           <e>status</e>
           <e>progress</e>
+          <e>alterable</e>
           <e>config</e>
           <e>target</e>
           <e>alert</e>
@@ -12133,6 +12140,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the owner</summary>
             <pattern><t>name</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>alterable</name>
+          <summary>Whether the task is an Alterable Task</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>config</name>
@@ -12569,6 +12581,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>admin</name>
             </owner>
             <observers/>
+            <alterable>0</alterable>
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>
@@ -12676,6 +12689,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>admin</name>
             </owner>
             <observers/>
+            <alterable>1</alterable>
             <config id="daba56c8-73ec-11df-a475-002264764cea">
               <name>Full and fast</name>
             </config>

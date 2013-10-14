@@ -2866,6 +2866,7 @@ create_task
      {
        create_task_name
        & create_task_comment?
+       & create_task_alterable?
        & create_task_config
        & create_task_target
        & create_task_alert*
@@ -2888,6 +2889,13 @@ create_task_comment
  = element comment
      {
        text
+     }
+
+# Whether the task is alterable.
+create_task_alterable
+ = element alterable
+     {
+       boolean
      }
 
 # The scan configuration used by the task.
@@ -10063,6 +10071,7 @@ get_tasks_response_task
        & get_tasks_response_task_owner
        & get_tasks_response_task_status
        & get_tasks_response_task_progress
+       & get_tasks_response_task_alterable
        & get_tasks_response_task_config
        & get_tasks_response_task_target
        & get_tasks_response_task_alert
@@ -10209,6 +10218,13 @@ get_tasks_response_task_owner_name
  = element name
      {
        name
+     }
+
+# Whether the task is an Alterable Task.
+get_tasks_response_task_alterable
+ = element alterable
+     {
+       boolean
      }
 
 # The scan configuration used by the task.

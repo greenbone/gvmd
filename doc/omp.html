@@ -7137,6 +7137,11 @@ create_target_port_list
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>alterable</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Whether the task is alterable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>config</b>&gt;
               <div style="margin-left: 15px; display: inline;">The scan configuration used by the task.</div>
 <ul style="list-style: none"><li>
@@ -7229,6 +7234,7 @@ create_target_port_list
      {
        create_task_name
        &amp; create_task_comment?
+       &amp; create_task_alterable?
        &amp; create_task_config
        &amp; create_task_target
        &amp; create_task_alert*
@@ -7249,6 +7255,12 @@ create_task_comment
  = element comment
      {
        text
+     }
+
+create_task_alterable
+ = element alterable
+     {
+       boolean
      }
 
 create_task_config
@@ -19278,6 +19290,11 @@ get_targets_response_target_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>alterable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the task is an Alterable Task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>config</b>&gt;
               <div style="margin-left: 15px; display: inline;">The scan configuration used by the task.</div>
 <ul style="list-style: none">
@@ -19689,6 +19706,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_owner
        &amp; get_tasks_response_task_status
        &amp; get_tasks_response_task_progress
+       &amp; get_tasks_response_task_alterable
        &amp; get_tasks_response_task_config
        &amp; get_tasks_response_task_target
        &amp; get_tasks_response_task_alert
@@ -19817,6 +19835,12 @@ get_tasks_response_task_owner_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_alterable
+ = element alterable
+     {
+       boolean
      }
 
 get_tasks_response_task_config
@@ -20279,6 +20303,7 @@ get_tasks_response_task_preferences_preference_value
        &lt;name&gt;admin&lt;/name&gt;
      &lt;/owner&gt;
      &lt;observers/&gt;
+     &lt;alterable&gt;0&lt;/alterable&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
@@ -20388,6 +20413,7 @@ get_tasks_response_task_preferences_preference_value
        &lt;name&gt;admin&lt;/name&gt;
      &lt;/owner&gt;
      &lt;observers/&gt;
+     &lt;alterable&gt;1&lt;/alterable&gt;
      &lt;config id="daba56c8-73ec-11df-a475-002264764cea"&gt;
        &lt;name&gt;Full and fast&lt;/name&gt;
      &lt;/config&gt;
