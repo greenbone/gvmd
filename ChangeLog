@@ -1,5 +1,14 @@
 2013-10-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (create_tables, NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS): Remove nvts description column.
+	(nvt_iterator_description): Delete unused function.
+	(nvt_iterator_copyright, nvt_iterator_cve, nvt_iterator_bid)
+	(nvt_iterator_tag, nvt_iterator_xref, nvt_iterator_sign_key_ids)
+	(nvt_iterator_family, nvt_iterator_cvss_base): Adjust column number.
+
+2013-10-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/otp.c (scanner_state_t): Remove PLUGIN_LIST_DESCRIPTION state.
 	(process_otp_scanner_input): Don't handle PLUGIN_LIST_DESCRIPTION state.
 	Set Summary state handling after copyright state.

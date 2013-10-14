@@ -4611,7 +4611,7 @@ create_tables ()
        " ON nvt_selectors (type, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
-       "  description, copyright, cve, bid, xref, tag, sign_key_ids,"
+       "  copyright, cve, bid, xref, tag, sign_key_ids,"
        "  category INTEGER, family, cvss_base, creation_time,"
        "  modification_time);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
@@ -29875,7 +29875,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS                                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
-  " summary, description, copyright, cve, bid, xref, tag, sign_key_ids,"    \
+  " summary, copyright, cve, bid, xref, tag, sign_key_ids,"    \
   " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
@@ -29883,7 +29883,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
-  " nvts.name, summary, description, copyright, cve, bid, xref, tag,"         \
+  " nvts.name, summary, copyright, cve, bid, xref, tag,"         \
   " sign_key_ids, category, nvts.family, cvss_base, cvss_base AS severity,"   \
   " cvss_base AS cvss"
 
@@ -30096,16 +30096,6 @@ DEF_ACCESS (nvt_iterator_name, GET_ITERATOR_COLUMN_COUNT + 2);
 DEF_ACCESS (nvt_iterator_summary, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the description from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Description, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
  * @brief Get the copyright from an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -30113,7 +30103,7 @@ DEF_ACCESS (nvt_iterator_description, GET_ITERATOR_COLUMN_COUNT + 4);
  * @return Copyright, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the cve from an NVT iterator.
@@ -30123,7 +30113,7 @@ DEF_ACCESS (nvt_iterator_copyright, GET_ITERATOR_COLUMN_COUNT + 5);
  * @return Cve, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the bid from an NVT iterator.
@@ -30133,7 +30123,7 @@ DEF_ACCESS (nvt_iterator_cve, GET_ITERATOR_COLUMN_COUNT + 6);
  * @return Bid, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 7);
+DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the xref from an NVT iterator.
@@ -30143,7 +30133,7 @@ DEF_ACCESS (nvt_iterator_bid, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Xref, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 8);
+DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Get the tag from an NVT iterator.
@@ -30153,7 +30143,7 @@ DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 8);
  * @return Tag, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 9);
+DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
  * @brief Get the sign_key_ids from an NVT iterator.
@@ -30163,7 +30153,7 @@ DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 9);
  * @return Sign_key_ids, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_sign_key_ids, GET_ITERATOR_COLUMN_COUNT + 10);
+DEF_ACCESS (nvt_iterator_sign_key_ids, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
  * @brief Get the category from an NVT iterator.
@@ -30178,7 +30168,7 @@ nvt_iterator_category (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt,
-                                  GET_ITERATOR_COLUMN_COUNT + 11);
+                                  GET_ITERATOR_COLUMN_COUNT + 10);
   return ret;
 }
 
@@ -30190,7 +30180,7 @@ nvt_iterator_category (iterator_t* iterator)
  * @return Family, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 12);
+DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
  * @brief Get the cvss_base from an NVT iterator.
@@ -30200,7 +30190,7 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 12);
  * @return Cvss_base, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 13);
+DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 12);
 
 /**
  * @brief Get the number of NVTs in one or all families.
