@@ -1,5 +1,16 @@
 2013-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Add entry for last commit.
+
+2013-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (create_task, get_tasks): Add
+	ALTERABLE.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2013-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add Alterable Tasks.  Hence increase database version to 104.  Add
 	database migration from version 103 to 104.
 
