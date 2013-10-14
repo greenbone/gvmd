@@ -1611,6 +1611,7 @@ create_tag_data_reset (create_tag_data_t *data)
  */
 typedef struct
 {
+  char *alterable;      ///< Boolean.  Whether task is alterable.
   char *config_id;      ///< ID of task config.
   char *hosts_ordering; ///< Order for scanning target hosts.
   array_t *alerts;      ///< IDs of alerts.
@@ -1633,6 +1634,7 @@ typedef struct
 static void
 create_task_data_reset (create_task_data_t *data)
 {
+  free (data->alterable);
   free (data->config_id);
   free (data->hosts_ordering);
   free (data->copy);
@@ -4910,6 +4912,7 @@ typedef enum
   CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_ALERT,
+  CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_HOSTS_ORDERING,
   CLIENT_CREATE_TASK_CONFIG,
@@ -8922,7 +8925,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TASK:
-        if (strcasecmp ("COPY", element_name) == 0)
+        if (strcasecmp ("ALTERABLE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_ALTERABLE);
+        else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COPY);
         else if (strcasecmp ("RCFILE", element_name) == 0)
           {
@@ -15946,7 +15951,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               hosts_ordering = task_hosts_ordering (index);
 
               response = g_strdup_printf
-                          ("<config id=\"%s\">"
+                          ("<alterable>%i</alterable>"
+                           "<config id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
                            "</config>"
@@ -15972,6 +15978,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "</schedule>"
                            "%s%s%s",
+                           get_tasks_data->get.trash
+                            ? 0
+                            : task_alterable (index),
                            config_uuid ? config_uuid : "",
                            config ? config : "",
                            task_config_in_trash (index),
@@ -19633,6 +19642,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               ret = copy_task (name,
                                comment,
                                create_task_data->copy,
+                               (create_task_data->alterable
+                                && strcmp (create_task_data->alterable, "0"))
+                                ? 1
+                                : 0,
                                &new_task);
               g_free (name);
               g_free (comment);
@@ -20099,6 +20112,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_CREATE_TASK, ALTERABLE);
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
@@ -22654,8 +22668,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         /* Leave it as it is. */
                       }
-                    else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW)))
+                    else if ((fail = ((task_run_status (task)
+                                       != TASK_STATUS_NEW)
+                                      && (task_alterable (task) == 0))))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("modify_task",
                                           "Status must be New to edit Config"));
@@ -22856,7 +22871,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         /* Leave it as it is. */
                       }
                     else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW)))
+                                      != TASK_STATUS_NEW
+                                      && (task_alterable (task) == 0))))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("modify_task",
                                           "Status must be New to edit Target"));
@@ -24834,6 +24850,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &create_target_data->ssh_port);
 
+
+      APPEND (CLIENT_CREATE_TASK_ALTERABLE,
+              &create_task_data->alterable);
 
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);

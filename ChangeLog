@@ -1,3 +1,39 @@
+2013-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add Alterable Tasks.  Hence increase database version to 104.  Add
+	database migration from version 103 to 104.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 104.
+
+	* src/manage_migrators.c (migrate_103_to_104): New function.
+	(database_migrators): Add migrate_103_to_104.
+
+	* src/manage_sql.c (create_tables): Add alterable to tasks.
+	(task_alterable): New function.
+	(init_manage): Set alterable column in example task.
+	(delete_report_internal): Clear alterable if it was the last report.
+	(make_task): Set alterable column.
+	(copy_task): Add alterable arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset)
+	(client_state_t): Add alterable field.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	ALTERABLE to GET_TASKS and CREATE_TASK.  In MODIFY_TASK allow
+	modification of target and config if alterable.
+
+	* doc/db_postgres.sql (tasks): Add alterable.
+
+2013-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Add ID to success case of
+	CREATE_USER response.
+
+	* src/manage_sql.c (create_user): Add new_user arg.  Update caller.
+
+	* src/manage.h: Update header accordingly.
+
 2013-10-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add severity values to log, debug and error messages where they are

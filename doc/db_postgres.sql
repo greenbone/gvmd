@@ -281,6 +281,7 @@ CREATE TABLE tasks (
     slave_location integer,
     upload_result_count integer,
     hosts_ordering text,
+    alterable integer,
     creation_time date,
     modification_time date);
 

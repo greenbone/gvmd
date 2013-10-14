@@ -7710,7 +7710,6 @@ migrate_99_to_100 ()
   sql ("COMMIT;");
 
   return 0;
-
 }
 
 /**
@@ -7765,7 +7764,6 @@ migrate_100_to_101 ()
   sql ("COMMIT;");
 
   return 0;
-
 }
 
 /**
@@ -7818,7 +7816,6 @@ migrate_101_to_102 ()
   sql ("COMMIT;");
 
   return 0;
-
 }
 
 /**
@@ -7863,7 +7860,39 @@ migrate_102_to_103 ()
   sql ("COMMIT;");
 
   return 0;
+}
 
+/**
+ * @brief Migrate the database from version 103 to version 104.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_103_to_104 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 103. */
+
+  if (manage_db_version () != 103)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Tasks got an alterable flag. */
+  sql ("ALTER TABLE tasks ADD column alterable;");
+  sql ("UPDATE tasks SET alterable = 0;");
+
+  /* Set the database version 104. */
+
+  set_db_version (104);
+
+  sql ("COMMIT;");
+
+  return 0;
 }
 
 /**
@@ -7974,6 +8003,7 @@ static migrator_t database_migrators[]
     {101, migrate_100_to_101},
     {102, migrate_101_to_102},
     {103, migrate_102_to_103},
+    {104, migrate_103_to_104},
     /* End marker. */
     {-1, NULL}};
 

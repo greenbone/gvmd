@@ -510,6 +510,9 @@ int
 task_writable (task_t);
 
 int
+task_alterable (task_t);
+
+int
 trash_task_writable (task_t);
 
 char*
@@ -675,7 +678,7 @@ void
 make_task_complete (const char *);
 
 int
-copy_task (const char*, const char*, const char *, task_t*);
+copy_task (const char*, const char*, const char *, int, task_t*);
 
 int
 load_tasks ();

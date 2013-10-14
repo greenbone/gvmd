@@ -4776,8 +4776,8 @@ create_tables ()
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
        "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
        "  schedule_location INTEGER, slave_location INTEGER,"
-       "  upload_result_count INTEGER, hosts_ordering, creation_time, "
-       "  modification_time);");
+       "  upload_result_count INTEGER, hosts_ordering, alterable,"
+       "  creation_time, modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
   sql ("CREATE TABLE IF NOT EXISTS users"
@@ -9121,6 +9121,32 @@ trash_task_in_use (task_t task)
 }
 
 /**
+ * @brief Return whether a task is an Alterable Task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if Alterable, else 0.
+ */
+int
+task_alterable (task_t task)
+{
+  char *uuid;
+
+  task_uuid (task, &uuid);
+  if (user_has_access_uuid ("task", uuid, NULL, "modify", 0) == 0)
+    {
+      free (uuid);
+      return 0;
+    }
+  free (uuid);
+
+  return sql_int (0, 0,
+                  "SELECT alterable FROM tasks"
+                  " WHERE ROWID = %llu",
+                  task);
+}
+
+/**
  * @brief Return whether a task is writable.
  *
  * @param[in]  task  Task.
@@ -11222,13 +11248,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
            " run_status, start_time, end_time, config, target, slave,"
-           " creation_time, modification_time)"
+           " alterable, creation_time, modification_time)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 1251236905, 1251237136,"
            " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
            " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-           " 0, now (), now ());",
+           " 0, 0, now (), now ());",
            TASK_STATUS_DONE);
     }
 
@@ -18693,6 +18719,15 @@ delete_report_internal (report_t report)
         break;
     }
 
+  if ((sql_int (0, 0,
+                "SELECT count (*) FROM reports WHERE task = %llu",
+                task)
+       == 0)
+      && sql_int (0, 0,
+                  "SELECT alterable FROM tasks WHERE ROWID = %llu",
+                  task))
+    sql ("UPDATE tasks SET alterable = 0 WHERE ROWID = %llu;", task);
+
   return 0;
 }
 
@@ -24318,9 +24353,10 @@ make_task (char* name, unsigned int time, char* comment)
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, time, comment, schedule,"
        "  schedule_next_time, slave, config_location, target_location,"
-       "  schedule_location, slave_location, creation_time, modification_time)"
+       "  schedule_location, slave_location, alterable, creation_time,"
+       "  modification_time)"
        " VALUES ((SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, now (),"
+       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, 0, now (),"
        "         now ());",
        current_credentials.uuid,
        uuid,
@@ -24576,6 +24612,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  * @param[in]  name        Name of new task.  NULL to copy from existing.
  * @param[in]  comment     Comment on new task.  NULL to copy from existing.
  * @param[in]  task_id     UUID of existing task.
+ * @param[in]  alterable   Whether the new task will be alterable.
  * @param[out] new_task    New task.
  *
  * @return 0 success, 2 failed to find existing task, 99 permission denied,
@@ -24583,7 +24620,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
  */
 int
 copy_task (const char* name, const char* comment, const char *task_id,
-           task_t* new_task)
+           int alterable, task_t* new_task)
 {
   task_t task;
   gchar *quoted_name, *quoted_uuid, *uniquify;
@@ -24641,17 +24678,18 @@ copy_task (const char* name, const char* comment, const char *task_id,
            " (uuid, owner, name, hidden, time, comment, config, target,"
            "  schedule, schedule_next_time, slave, config_location,"
            "  target_location, schedule_location, slave_location,"
-           "  hosts_ordering, creation_time, modification_time)"
+           "  hosts_ordering, alterable, creation_time, modification_time)"
            " SELECT make_uuid (), %llu, %s%s%s, 0, time, '%s', config, target,"
            " schedule, schedule_next_time, slave, config_location,"
            " target_location, schedule_location, slave_location,"
-           " hosts_ordering, now (), now ()"
+           " hosts_ordering, %i, now (), now ()"
            " FROM tasks WHERE uuid = '%s';",
            owner,
            quoted_name ? "'" : "",
            quoted_name ? quoted_name : uniquify,
            quoted_name ? "'" : "",
            quoted_comment ? quoted_comment : "",
+           alterable,
            quoted_uuid);
       g_free (quoted_comment);
     }
@@ -24660,11 +24698,11 @@ copy_task (const char* name, const char* comment, const char *task_id,
          " (uuid, owner, name, hidden, time, comment, config, target,"
          "  schedule, schedule_next_time, slave, config_location,"
          "  target_location, schedule_location, slave_location, hosts_ordering,"
-         "  creation_time, modification_time)"
+         "  alterable, creation_time, modification_time)"
          " SELECT make_uuid (), %llu, %s%s%s, 0, time, comment, config,"
          " target, schedule, schedule_next_time, slave, config_location,"
          " target_location, schedule_location, slave_location, hosts_ordering,"
-         " now (), now ()"
+         " %i, now (), now ()"
          " FROM tasks WHERE uuid = '%s';",
          owner,
          quoted_name ? "'" : "",
@@ -24672,6 +24710,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
           ? quoted_name
           : "uniquify ('task', name, owner, ' Clone')",
          quoted_name ? "'" : "",
+         alterable,
          quoted_uuid);
 
   task = sqlite3_last_insert_rowid (task_db);
