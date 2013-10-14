@@ -634,7 +634,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_CATEGORY,
   SCANNER_PLUGIN_LIST_COPYRIGHT,
   SCANNER_PLUGIN_LIST_CVE_ID,
-  SCANNER_PLUGIN_LIST_DESCRIPTION,
   SCANNER_PLUGIN_LIST_FAMILY,
   SCANNER_PLUGIN_LIST_FPRS,
   SCANNER_PLUGIN_LIST_NAME,
@@ -1870,20 +1869,6 @@ process_otp_scanner_input ()
               case SCANNER_PLUGIN_LIST_COPYRIGHT:
                 {
                   nvti_set_copyright (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_DESCRIPTION);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_DESCRIPTION:
-                {
-                  /* Un"escape" description (replace ';' by '\n'). */
-                  if (field != NULL)
-                    {
-                      char* pos = field;
-                      while ((pos = strchr (pos, ';')))
-                        pos[0] = '\n';
-                    }
-
-                  nvti_set_description (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_SUMMARY);
                   break;
                 }
