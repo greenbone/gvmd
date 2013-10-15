@@ -2814,7 +2814,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, %ss%s.text COLLATE NOCASE ASC",
+                                        " ORDER BY nvt DESC, %ss%s.text COLLATE NOCASE DESC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -48435,18 +48435,25 @@ trash_user_writable (user_t user)
  * @brief User columns for user iterator.
  */
 #define USER_ITERATOR_FILTER_COLUMNS                        \
- { GET_ITERATOR_FILTER_COLUMNS, "method", "role", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", NULL }
 
 /**
  * @brief User iterator columns.
  */
 #define USER_ITERATOR_COLUMNS                                              \
   GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow,"             \
-  " coalesce ((SELECT name FROM roles"                                     \
-  "            WHERE roles.ROWID = (SELECT role FROM role_users"           \
-  "                                 WHERE user = users.ROWID)),"           \
+  " coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"     \
+  "            JOIN roles ON role = roles.ROWID"                           \
+  "            WHERE user = users.ROWID"                                   \
+  "            ORDER BY name ASC),"                                        \
   "           '')"                                                         \
-  " AS role"
+  " AS roles,"                                                              \
+  " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
+  "            JOIN groups ON `group` = groups.ROWID"                      \
+  "            WHERE user = users.ROWID"                                   \
+  "            ORDER BY groups.name ASC),"                                 \
+  "           '')"                                                         \
+  " AS groups"
 
 /**
  * @brief User iterator columns for trash case.

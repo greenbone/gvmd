@@ -1,3 +1,11 @@
+2013-10-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Sort NVTs of notes and overrides in
+	descending order in sort-reverse case.
+	(USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS): Change column
+	"role" to "roles" and add "groups". Get comma-separated lists of
+	the roles and groups of the user for these.
+
 2013-10-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/NBE/NBE.xsl: Generate truncated "subnet" element
