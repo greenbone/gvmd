@@ -1,3 +1,11 @@
+2013-10-15  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r18052.
+
+	* src/report_formats/NBE/NBE.xsl: Generate truncated "subnet" element
+	for improved compatibility. Put newline before scan_end for
+	consistency.
+
 2013-10-09  Timo Pollmeier  <timo.pollmeier@greenbone.net>
 
 	Backport r17990
