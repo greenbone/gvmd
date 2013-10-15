@@ -49,6 +49,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template name="substring-before-last">
+    <xsl:param name="string"/>
+    <xsl:param name="delimiter"/>
+
+    <xsl:if test="$string != '' and $delimiter != ''">
+      <xsl:variable name="head" select="substring-before($string, $delimiter)"/>
+      <xsl:variable name="tail" select="substring-after($string, $delimiter)"/>
+      <xsl:value-of select="$head"/>
+      <xsl:if test="contains($tail, $delimiter)">
+        <xsl:value-of select="$delimiter"/>
+        <xsl:call-template name="substring-before-last">
+          <xsl:with-param name="string" select="$tail"/>
+          <xsl:with-param name="delimiter" select="$delimiter"/>
+        </xsl:call-template>
+      </xsl:if>
+    </xsl:if>
+  </xsl:template>
+
 <xsl:template match="scan_start">timestamps|||scan_start|<xsl:call-template name="ctime"/>|</xsl:template>
 
 <xsl:template match="scan_end">timestamps|||scan_end|<xsl:call-template name="ctime"/>|</xsl:template>
@@ -89,7 +107,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:if>
     </xsl:for-each>
   </xsl:variable>
-results|<xsl:value-of select="host"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="str:replace(nvt/@oid, '1.3.6.1.4.1.25623.1.0.', '')"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>\n<xsl:if test="nvt/cvss_base != ''">Risk factor :\n\n<xsl:value-of select="nvt/risk_factor"/> / CVSS Base Score : <xsl:value-of select="nvt/cvss_base"/>\n(CVSS2#:<xsl:value-of select="$cvss_base_vector"/>)\n<xsl:if test="$cve_ref != ''">\nCVE : <xsl:value-of select="$cve_ref"/>\n</xsl:if><xsl:if test="$bid_ref != ''">\nBID : <xsl:value-of select="$bid_ref"/>\n</xsl:if><xsl:if test="$xref != ''">\nOther references : <xsl:value-of select="$xref"/>\n</xsl:if></xsl:if>
+  <xsl:variable name="netmask">
+    <xsl:call-template name="substring-before-last">
+      <xsl:with-param name="string" select="host"/>
+      <xsl:with-param name="delimiter" select="'.'"/>
+    </xsl:call-template>
+  </xsl:variable>
+results|<xsl:value-of select="$netmask"/>|<xsl:value-of select="host"/>|<xsl:value-of select="port"/>|<xsl:value-of select="str:replace(nvt/@oid, '1.3.6.1.4.1.25623.1.0.', '')"/>|<xsl:apply-templates select="threat"/>|<xsl:value-of select="str:replace(description, '&#10;', '\n')"/>\n<xsl:if test="nvt/cvss_base != ''">Risk factor :\n\n<xsl:value-of select="nvt/risk_factor"/> / CVSS Base Score : <xsl:value-of select="nvt/cvss_base"/>\n(CVSS2#:<xsl:value-of select="$cvss_base_vector"/>)\n<xsl:if test="$cve_ref != ''">\nCVE : <xsl:value-of select="$cve_ref"/>\n</xsl:if><xsl:if test="$bid_ref != ''">\nBID : <xsl:value-of select="$bid_ref"/>\n</xsl:if><xsl:if test="$xref != ''">\nOther references : <xsl:value-of select="$xref"/>\n</xsl:if></xsl:if>
 </xsl:template>
 
 <xsl:template match="report">
@@ -98,6 +122,7 @@ results|<xsl:value-of select="host"/>|<xsl:value-of select="host"/>|<xsl:value-o
 timestamps||<xsl:value-of select="$host"/>|host_start|<xsl:call-template name="ctime"/>|<xsl:apply-templates select="../results/result[host/text()=$host]"/>
 timestamps||<xsl:value-of select="$host"/>|host_end|<xsl:call-template name="ctime" select="../host_end[host/text()=$host]/text()"/>|</xsl:for-each>
 <!-- TODO Was start, end, start, end... in 1.0. -->
+<xsl:call-template name="newline"/>
 <xsl:apply-templates select="scan_end"/>
 <xsl:call-template name="newline"/>
 </xsl:template>
