@@ -92,6 +92,9 @@ void
 sql_parse_time (sqlite3_context *, int argc, sqlite3_value **);
 
 void
+sql_next_time (sqlite3_context *, int, sqlite3_value **);
+
+void
 sql_now (sqlite3_context *, int argc, sqlite3_value **);
 
 void

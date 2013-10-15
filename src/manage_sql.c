@@ -9483,6 +9483,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
+                               "next_time",
+                               3,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_next_time,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create next_time", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
                                "now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
@@ -37037,14 +37051,16 @@ schedule_name (schedule_t schedule)
  */
 #define SCHEDULE_ITERATOR_FILTER_COLUMNS                                      \
  { GET_ITERATOR_FILTER_COLUMNS, "first_time", "period", "period_months",      \
-   "duration", "timezone", "initial_offset", NULL }
+   "duration", "timezone", "initial_offset", "first_run", "next_run", NULL }
 
 /**
  * @brief Schedule iterator columns.
  */
 #define SCHEDULE_ITERATOR_COLUMNS                                          \
   GET_ITERATOR_COLUMNS (schedules) ", first_time, period, period_months,"  \
-  " duration, timezone, initial_offset"
+  " duration, timezone, initial_offset,"                                   \
+  " next_time (first_time, period, period_months) as next_run,"            \
+  " first_time as first_run"
 
 /**
  * @brief Schedule iterator columns for trash case.
@@ -37167,18 +37183,11 @@ schedule_iterator_first_time (iterator_t* iterator)
 time_t
 schedule_iterator_next_time (iterator_t* iterator)
 {
-  time_t period = schedule_iterator_period (iterator);
-  time_t first = schedule_iterator_first_time (iterator);
-  time_t now = time (NULL);
-  if (first >= now)
-    {
-      return first;
-    }
-  else if (period > 0)
-    {
-      return first + ((((now - first) / period) + 1) * period);
-    }
-  return 0;
+  int ret;
+  if (iterator->done) return -1;
+  ret = (time_t) sqlite3_column_int (iterator->stmt,
+                                     GET_ITERATOR_COLUMN_COUNT + 6);
+  return ret;
 }
 
 /**

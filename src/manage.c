@@ -4297,6 +4297,41 @@ int authenticate_allow_all = 0;
 gchar* schedule_user_uuid = 0;
 
 /**
+ * @brief Calculate the next time from now given a start time and a period.
+ *
+ * @param[in] first         The first time.
+ * @param[in] period        The period in seconds.
+ * @param[in] period_months The period in months.
+ *
+ * @return  the next time a schedule with the given times is due.
+ */
+time_t
+next_time (time_t first, int period, int period_months)
+{
+  int periods_diff;
+  time_t now = time (NULL);
+
+  if (first >= now)
+    {
+      return first;
+    }
+  else if (period > 0)
+    {
+      return first + ((((now - first) / period) + 1) * period);
+    }
+  else if (period_months > 0)
+    {
+      periods_diff = months_between (first, now) / period_months;
+      if (add_months (first, (periods_diff + 1) * period_months)
+          >= now)
+        return add_months (first, (periods_diff + 1) * period_months);
+      else
+        return add_months (first, periods_diff * period_months);
+    }
+  return 0;
+}
+
+/**
  * @brief Ensure that any subsequent authentications succeed.
  */
 void

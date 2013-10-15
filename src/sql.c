@@ -973,6 +973,31 @@ sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Calculate the next time from now given a start time and a period.
+ *
+ * This is a callback for a scalar SQL function of three arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_next_time (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  time_t first;
+  time_t period;
+  int period_months;
+
+  assert (argc == 3);
+
+  first = sqlite3_value_int (argv[0]);
+  period = sqlite3_value_int (argv[1]);
+  period_months = sqlite3_value_int (argv[2]);
+
+  sqlite3_result_int (context, next_time (first, period, period_months));
+}
+
+/**
  * @brief Get the current time as an epoch integer.
  *
  * This is a callback for a scalar SQL function of zero arguments.

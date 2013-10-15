@@ -2119,6 +2119,9 @@ time_offset (const char *, time_t);
 long
 current_offset (const char *);
 
+time_t
+next_time (time_t, int, int);
+
 gboolean
 find_schedule (const char*, schedule_t*);
 
