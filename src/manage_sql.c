@@ -43346,7 +43346,7 @@ delete_port_list (const char *port_list_id, int ultimate)
  * @param[in]  port_range_id  UUID of port_range.
  * @param[in]  dummy          Dummy arg to match other delete functions.
  *
- * @return 0 success, 1 failed to find port range, 2 port range is part of
+ * @return 0 success, 2 failed to find port range, 3 port range is part of
  *         predefined port list, 99 permission denied, -1 error.
  */
 int
@@ -43371,7 +43371,7 @@ delete_port_range (const char *port_range_id, int dummy)
   if (port_range == 0)
     {
       sql ("ROLLBACK;");
-      return 1;
+      return 2;
     }
 
   if (sql_int
@@ -43390,7 +43390,7 @@ delete_port_range (const char *port_range_id, int dummy)
         "  OR uuid"
         "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");",
         port_range))
-    return 2;
+    return 3;
 
   sql ("DELETE FROM port_ranges WHERE ROWID = %llu;", port_range);
 

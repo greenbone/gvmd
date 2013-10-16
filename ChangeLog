@@ -1,5 +1,10 @@
 2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_port_range): Match return to standard delete
+	functions.
+
+2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (modify_task_data_t, modify_task_data_reset)
 	(client_state_t): Add alterable field.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
