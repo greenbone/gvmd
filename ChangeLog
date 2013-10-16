@@ -1,5 +1,12 @@
 2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (modify_task_data_t, modify_task_data_reset)
+	(client_state_t): Add alterable field.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add ALTERABLE to MODIFY_TASK.
+
+2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_task_alterable): New function.
 
 	* src/manage.h: Add header accordingly.

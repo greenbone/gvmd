@@ -3450,6 +3450,7 @@ modify_target_data_reset (modify_target_data_t *data)
 typedef struct
 {
   char *action;        ///< What to do to file: "update" or "remove".
+  char *alterable;     ///< Boolean. Whether the task is alterable.
   char *comment;       ///< Comment.
   char *hosts_ordering; ///< Order for scanning of target hosts.
   char *config_id;     ///< ID of new config for task.
@@ -3477,6 +3478,7 @@ static void
 modify_task_data_reset (modify_task_data_t *data)
 {
   free (data->action);
+  free (data->alterable);
   array_free (data->alerts);
   array_free (data->groups);
   free (data->comment);
@@ -5129,6 +5131,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_ALERT,
+  CLIENT_MODIFY_TASK_ALTERABLE,
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_CONFIG,
   CLIENT_MODIFY_TASK_FILE,
@@ -7771,7 +7774,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_target");
 
       case CLIENT_MODIFY_TASK:
-        if (strcasecmp ("COMMENT", element_name) == 0)
+        if (strcasecmp ("ALTERABLE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_ALTERABLE);
+        else if (strcasecmp ("COMMENT", element_name) == 0)
           {
             openvas_append_string (&modify_task_data->comment, "");
             set_client_state (CLIENT_MODIFY_TASK_COMMENT);
@@ -22765,6 +22770,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                   }
 
+                if (fail == 0 && modify_task_data->alterable)
+                  {
+                    if (task_run_status (task) != TASK_STATUS_NEW)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_ERROR_SYNTAX ("modify_task",
+                                             "Task must be New to modify"
+                                             " Alterable state"));
+                        fail = 1;
+                      }
+                    else
+                      set_task_alterable (task,
+                                          strcmp (modify_task_data->alterable,
+                                                  "0"));
+                  }
+
                 if (fail == 0 && modify_task_data->groups->len)
                   {
                     gchar *fail_group_id;
@@ -22929,6 +22950,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         modify_task_data_reset (modify_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+      CLOSE (CLIENT_MODIFY_TASK, ALTERABLE);
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
       CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
@@ -24301,6 +24323,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_SETTING_VALUE,
               &modify_setting_data->value);
 
+
+      APPEND (CLIENT_MODIFY_TASK_ALTERABLE,
+              &modify_task_data->alterable);
 
       APPEND (CLIENT_MODIFY_TASK_COMMENT,
               &modify_task_data->comment);
