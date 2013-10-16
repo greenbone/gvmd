@@ -1,3 +1,12 @@
+2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (set_task_alterable): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Also respect ALTERABLE in the
+	regular CREATE_TASK case.
+
 2013-10-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Sort NVTs of notes and overrides in

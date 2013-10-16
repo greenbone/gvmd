@@ -19788,6 +19788,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (fail)
             break;
 
+          /* Set alterable state. */
+
+          if (create_task_data->alterable
+              && strcmp (create_task_data->alterable, "0"))
+            set_task_alterable (create_task_data->task, 1);
+
           /* Set any schedule. */
 
           if (create_task_data->schedule_id)

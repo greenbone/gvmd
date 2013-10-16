@@ -13155,6 +13155,20 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
 }
 
 /**
+ * @brief Set the alterable state of a task.
+ *
+ * @param[in]  task       Task.
+ * @param[in]  alterable  Whether task is alterable.
+ */
+void
+set_task_alterable (task_t task, int alterable)
+{
+  sql ("UPDATE tasks SET alterable = %i WHERE ROWID = %llu;",
+       alterable,
+       task);
+}
+
+/**
  * @brief Set observer groups on a task, removing any previous groups.
  *
  * @param[in]  task    Task.

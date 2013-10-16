@@ -605,6 +605,9 @@ add_task_alert (task_t, alert_t);
 int
 set_task_alerts (task_t, array_t*, gchar**);
 
+void
+set_task_alterable (task_t, int);
+
 int
 set_task_groups (task_t, array_t*, gchar**);
 
