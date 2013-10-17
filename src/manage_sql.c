@@ -2624,7 +2624,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 {
   GString *clause, *order;
   keyword_t **point;
-  int first_keyword, first_order, last_was_and, last_was_not, last_was_re;
+  int first_keyword, first_order, last_was_and, last_was_not, last_was_re, skip;
   array_t *split;
 
   if (filter == NULL)
@@ -2657,6 +2657,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
       gchar *quoted_keyword, *quoted_column;
       int index;
       keyword_t *keyword;
+
+      skip = 0;
 
       keyword = *point;
 
@@ -3131,10 +3133,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
           else
             {
-              /* Add placeholder.  Owner filtering is done via where_owned. */
-              g_string_append_printf (clause,
-                                      "%s (1",
-                                      first_keyword ? "" : "AND");
+              /* Skip term.  Owner filtering is done via where_owned. */
+              skip = 1;
               if (owner_filter && (*owner_filter == NULL))
                 *owner_filter = g_strdup (keyword->string);
             }
@@ -3396,13 +3396,16 @@ filter_clause (const char* type, const char* filter, const char **columns,
               }
         }
 
-      g_string_append (clause, ")");
+      if (skip == 0)
+        {
+          g_string_append (clause, ")");
+          first_keyword = 0;
+          last_was_and = 0;
+          last_was_not = 0;
+          last_was_re = 0;
+        }
       g_free (quoted_keyword);
-      first_keyword = 0;
 
-      last_was_and = 0;
-      last_was_not = 0;
-      last_was_re = 0;
       point++;
     }
   filter_free (split);

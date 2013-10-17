@@ -1,5 +1,11 @@
 2013-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Skip the SQL in the owner case,
+	instead of putting in a placeholder, because the placeholder was acting
+	like an OR term.
+
+2013-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause): Add owner_filter arg.  For owner=
 	keywords append an SQL placeholder, and return the owner to the callers.
 	Update callers.
