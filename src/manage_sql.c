@@ -2613,13 +2613,14 @@ underscore_sql_quote (const char *string)
  * @param[out] first_return  If given then first row.
  * @param[out] max_return    If given then max rows.
  * @param[out] permissions   When given then permissions string vector.
+ * @param[out] owner_filter  When given then value of owner keyword.
  *
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
 filter_clause (const char* type, const char* filter, const char **columns,
                int trash, gchar **order_return, int *first_return,
-               int *max_return, array_t **permissions)
+               int *max_return, array_t **permissions, gchar **owner_filter)
 {
   GString *clause, *order;
   keyword_t **point;
@@ -2633,6 +2634,9 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
   if (permissions)
     *permissions = make_array ();
+
+  if (owner_filter)
+    *owner_filter = NULL;
 
   /* Add SQL to the clause for each keyword or phrase. */
 
@@ -3088,8 +3092,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
               g_free (type_term);
             }
-          else if (strcmp (keyword->column, "owner")
-                   || strcmp (keyword->string, "any"))
+          else if (strcmp (keyword->column, "owner"))
             {
               quoted_keyword = sql_quote (keyword->string);
               quoted_column = ret == 2
@@ -3127,10 +3130,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
               g_free (quoted_column);
             }
           else
-            g_string_append_printf (clause,
-                                    "%s (%i",
-                                    first_keyword ? "" : "AND",
-                                    last_was_not ? 0 : 1);
+            {
+              /* Add placeholder.  Owner filtering is done via where_owned. */
+              g_string_append_printf (clause,
+                                      "%s (1",
+                                      first_keyword ? "" : "AND");
+              if (owner_filter && (*owner_filter == NULL))
+                *owner_filter = g_strdup (keyword->string);
+            }
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
@@ -3989,7 +3996,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
   // FIX owner,permissions?
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max, NULL);
+                          get->trash, &order, &first, &max, NULL, NULL);
 
   g_free (filter);
 
@@ -4272,9 +4279,10 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    const char *extra_where, int owned)
 {
   int first, max;
-  gchar *clause, *order, *filter, *owned_clause;
+  gchar *clause, *order, *filter, *owned_clause, *filter_owned_clause;
   array_t *permissions;
   resource_t resource = 0;
+  gchar *owner_filter;
 
   assert (get);
 
@@ -4331,11 +4339,36 @@ init_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max, &permissions);
+                          get->trash, &order, &first, &max, &permissions,
+                          &owner_filter);
 
   g_free (filter);
 
   owned_clause = where_owned (type, get, owned, resource, permissions);
+
+  if (owner_filter && (strcmp (owner_filter, "any") == 0))
+    filter_owned_clause = g_strdup_printf ("%s",
+                                           owned_clause);
+  else if (owner_filter)
+    {
+      gchar *quoted;
+      quoted = sql_quote (owner_filter);
+      filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
+                                             "          WHERE name = '%s')"
+                                             " AND %s)",
+                                             quoted,
+                                             owned_clause);
+      g_free (quoted);
+    }
+  else
+    filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
+                                           "          WHERE uuid = '%s')"
+                                           " AND %s)",
+                                           current_credentials.uuid,
+                                           owned_clause);
+
+  g_free (owned_clause);
+  g_free (owner_filter);
 
   array_free (permissions);
 
@@ -4350,7 +4383,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    resource,
-                   owned_clause,
+                   filter_owned_clause,
                    order);
   else if (get->trash)
     init_iterator (iterator,
@@ -4363,7 +4396,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    trash_columns ? trash_columns : columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
-                   owned_clause,
+                   filter_owned_clause,
                    extra_where ? extra_where : "",
                    order);
   else if (resource)
@@ -4376,7 +4409,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    columns,
                    type,
                    resource,
-                   owned_clause,
+                   filter_owned_clause,
                    order);
   else
     {
@@ -4391,7 +4424,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    columns,
                    type,
                    extra_tables ? extra_tables : "",
-                   owned_clause,
+                   filter_owned_clause,
                    clause ? " AND (" : "",
                    clause ? clause : "",
                    clause ? ")" : "",
@@ -4401,7 +4434,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    first);
     }
 
-  g_free (owned_clause);
+  g_free (filter_owned_clause);
   g_free (order);
   g_free (clause);
   return 0;
@@ -4430,7 +4463,7 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
        const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
-  gchar *clause, *owned_clause;
+  gchar *clause, *owned_clause, *filter_owned_clause, *owner_filter;
   gchar *filter;
   array_t *permissions;
 
@@ -4447,12 +4480,35 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
-                          get->trash, NULL, NULL, NULL, &permissions);
+                          get->trash, NULL, NULL, NULL, &permissions,
+                          &owner_filter);
 
   g_free (filter);
 
   owned_clause = where_owned (type, get, owned, 0, permissions);
 
+  if (owner_filter && (strcmp (owner_filter, "any") == 0))
+    filter_owned_clause = g_strdup_printf ("%s",
+                                           owned_clause);
+  else if (owner_filter)
+    {
+      gchar *quoted;
+      quoted = sql_quote (owner_filter);
+      filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
+                                             "          WHERE name = '%s')"
+                                             " AND %s)",
+                                             quoted,
+                                             owned_clause);
+      g_free (quoted);
+    }
+  else
+    filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
+                                           "          WHERE uuid = '%s')"
+                                           " AND %s)",
+                                           current_credentials.uuid,
+                                           owned_clause);
+
+  g_free (owned_clause);
   array_free (permissions);
 
   if (get->actions)
@@ -4472,11 +4528,11 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
                  type,
                  get->trash && strcmp (type, "task") ? "_trash" : "",
                  extra_tables ? extra_tables : "",
-                 owned_clause,
+                 filter_owned_clause,
                  clause ? " AND " : "",
                  clause ? clause : "",
                  extra_where ? extra_where : "");
-  g_free (owned_clause);
+  g_free (filter_owned_clause);
   g_free (clause);
   return ret;
 }
@@ -12159,15 +12215,16 @@ authenticate (credentials_t* credentials)
 int
 resource_count (const char *type, const get_data_t *get)
 {
+  static const char *extra_columns[] = { "owner", NULL };
   get_data_t count_get;
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
-  count_get.filter = "rows=-1 first=1 permission=any";
+  count_get.filter = "rows=-1 first=1 permission=any owner=any";
   count_get.actions = "g";
 
   return count (get->subtype ? get->subtype : type,
-                &count_get, "1", "1", NULL, 0, NULL,
+                &count_get, "owner", "owner", extra_columns, 0, NULL,
                 strcmp (type, "task")
                  ? NULL
                  : (get->id
@@ -46030,7 +46087,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL, NULL);
+                          NULL, NULL, NULL);
 
   ret = sql_int (0, 0,
                  "SELECT count (*)"
@@ -46158,7 +46215,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL, NULL);
+                          NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
 
@@ -47443,7 +47500,7 @@ total_info_count (const get_data_t *get, int filtered)
 
       clause = filter_clause ("allinfo", filter ? filter : get->filter,
                               filter_columns, get->trash, NULL, NULL, NULL,
-                              NULL);
+                              NULL, NULL);
       if (clause)
         return sql_int (0, 0,
                         "SELECT count (ROWID) FROM"
@@ -47488,7 +47545,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   clause = filter_clause ("allinfo", filter ? filter : get->filter,
                           filter_columns, get->trash,
-                          &order, &first, &max, NULL);
+                          &order, &first, &max, NULL, NULL);
 
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, comment, iso_time (created),"

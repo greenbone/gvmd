@@ -1,3 +1,15 @@
+2013-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Add owner_filter arg.  For owner=
+	keywords append an SQL placeholder, and return the owner to the callers.
+	Update callers.
+	(init_get_iterator, count): Use the owner= value from filter_clause to
+	filter according to the owner in the "owned" clause.  This makes the
+	owner= keyword a special filter that is always ANDed with the others,
+	similar to permissions.
+	(resouce_count): Add owner=any to the filter string, so that the count
+	is the maximum possible.
+
 2013-10-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_port_range): Match return to standard delete
