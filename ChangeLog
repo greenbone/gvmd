@@ -1,5 +1,10 @@
 2013-10-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (compare_ports_severity)
+	(compare_ports_severity_desc): Use correct variables for comparison.
+
+2013-10-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Change sorting and XML output of hosts to use severity instead of
 	threat or cvss_base and output both numeric severity and threat level.
 

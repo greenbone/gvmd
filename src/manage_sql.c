@@ -19895,9 +19895,9 @@ compare_ports_severity (gconstpointer one, gconstpointer two)
   gpointer *port_threat_one, *port_threat_two;
   port_threat_one = *((gpointer**) one);
   port_threat_two = *((gpointer**) two);
-  if (*((double*) port_threat_one[1]) > *((double*) port_threat_one[1]))
+  if (*((double*) port_threat_one[1]) > *((double*) port_threat_two[1]))
     return 1;
-  else if (*((double*) port_threat_one[1]) < *((double*) port_threat_one[1]))
+  else if (*((double*) port_threat_one[1]) < *((double*) port_threat_two[1]))
     return -1;
   else
     return 0;
@@ -19915,9 +19915,9 @@ compare_ports_severity_desc (gconstpointer one, gconstpointer two)
   gpointer *port_threat_one, *port_threat_two;
   port_threat_one = *((gpointer**) one);
   port_threat_two = *((gpointer**) two);
-  if (*((double*) port_threat_one[1]) < *((double*) port_threat_one[1]))
+  if (*((double*) port_threat_one[1]) < *((double*) port_threat_two[1]))
     return 1;
-  else if (*((double*) port_threat_one[1]) > *((double*) port_threat_one[1]))
+  else if (*((double*) port_threat_one[1]) > *((double*) port_threat_two[1]))
     return -1;
   else
     return 0;
