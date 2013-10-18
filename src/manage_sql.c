@@ -4364,8 +4364,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
       g_free (quoted);
     }
   else
-    filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
-                                           "          WHERE uuid = '%s')"
+    filter_owned_clause = g_strdup_printf ("((owner = (SELECT ROWID FROM users"
+                                           "           WHERE uuid = '%s')"
+                                           "  OR owner IS NULL)"
                                            " AND %s)",
                                            current_credentials.uuid,
                                            owned_clause);

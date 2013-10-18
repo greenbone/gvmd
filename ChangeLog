@@ -1,3 +1,8 @@
+2013-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator): Add "owner IS NULL" to default
+	case in the owner= filtering, to include global rows.
+
 2013-10-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (compare_ports_severity)
