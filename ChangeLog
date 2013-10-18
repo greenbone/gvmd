@@ -1,3 +1,10 @@
+2013-10-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r16401.
+
+	* tools/greenbone-scapdata-sync, tools/openvas-scapdata-sync.in
+	(list_oval_files_sortable): Add character class brackets to egrep regex.
+
 2013-10-15  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r18052.
