@@ -1,3 +1,30 @@
+2013-10-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Change sorting and XML output of hosts to use severity instead of
+	threat or cvss_base and output both numeric severity and threat level.
+
+	* src/manage_sql.c (compare_message_types_desc)
+	(compare_message_types_asc, compare_port_threat): Removed. Renamed to
+	compare_severity_desc, compare_severity_asc, compare_port_severity.
+	(compare_severity_desc, compare_severity_asc, compare_port_severity):
+	New functions. Renamed from compare_message_types_desc,
+	compare_message_types_asc, compare_port_threat and adjusted to sort by
+	severity instead of threat level.
+	(add_port, print_host_port, print_host_ports_desc): Use severity
+	instead of threat level string.
+	(compare_ports_threat, compare_ports_threat_desc)
+	(print_host_ports_by_type, print_host_ports_by_type_desc): Removed.
+	Renamed to compare_ports_severity, compare_ports_severity_desc,
+	print_host_ports_by_severity, print_host_ports_by_severity_desc.
+	(compare_ports_severity, compare_ports_severity_desc)
+	(print_host_ports_by_severity, print_host_ports_by_severity_desc): New
+	functions. Renamed from compare_ports_threat, compare_ports_threat_desc,
+	print_host_ports_by_type, print_host_ports_by_type_desc and adjusted
+	to sort by severity.
+	(print_report_port_xml, print_report_xml): Adjust to sort ports by
+	severity instead of threat and output severity and threat elements for
+	ports.
+
 2013-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Skip the SQL in the owner case,

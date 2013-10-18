@@ -19087,94 +19087,91 @@ trim_partial_report (report_t report)
 }
 
 /**
- * @brief Compares two textual threat level representations, sorting
- * @brief descending.
+ * @brief Compares two textual port representations, sorting descending
+ * @brief by severity
  *
  * @param[in]  arg_one  First threat level.
  * @param[in]  arg_two  Second threat level.
  *
- * @return 1, 0 or -1 if first given threat is less than, equal to or greater
+ * @return 1, 0 or -1 if first given severity is less than, equal to or greater
  *         than second.
  */
 static gint
-compare_message_types_desc (gconstpointer arg_one, gconstpointer arg_two)
+compare_severity_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
-  gchar *one_type, *two_type;
+  double one_severity, two_severity;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
   gint host;
 
   one += strlen (one) + 1;
   two += strlen (two) + 1;
-  one_type = one;
-  two_type = two;
+  one_severity = g_strtod (one, NULL);
+  two_severity = g_strtod (two, NULL);
 
   one += strlen (one) + 1;
   two += strlen (two) + 1;
   host = strcmp (one, two);
   if (host == 0)
     {
-      gint type;
-      type = collate_message_type (NULL,
-                                   strlen (two_type), two_type,
-                                   strlen (one_type), one_type);
-      if (type == 0)
-        {
-          one = *((gchar**) arg_one);
-          two = *((gchar**) arg_two);
-          return strcmp (one, two);
-        }
-
-      return type;
-    }
-  return host;
-}
-
-/**
- * @brief Compares two textual threat level representations, sorting ascending.
- *
- * @param[in]  arg_one  First threat level.
- * @param[in]  arg_two  Second threat level.
- *
- * @return -1, 0 or 1 if first given threat is less than, equal to or greater
- *         than second.
- */
-static gint
-compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
-{
-  gchar *one_type, *two_type;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
-  gint host;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  one_type = one;
-  two_type = two;
-
-  one += strlen (one) + 1;
-  two += strlen (two) + 1;
-  host = strcmp (one, two);
-  if (host == 0)
-    {
-      gint type;
-      type = collate_message_type (NULL,
-                                   strlen (one_type), one_type,
-                                   strlen (two_type), two_type);
-      if (type == 0)
+      if (one_severity > two_severity)
+        return -1;
+      else if (one_severity < two_severity)
+        return 1;
+      else
         {
           one = *((gchar**) arg_one);
           two = *((gchar**) arg_two);
           return strcmp (two, one);
         }
-
-      return type;
     }
   return host;
 }
 
 /**
- * @brief Compares two buffered results, sorting by port then threat.
+ * @brief Compares two textual port representations, sorting descending
+ * @brief by severity
+ *
+ * @param[in]  arg_one  First port.
+ * @param[in]  arg_two  Second port.
+ *
+ * @return -1, 0 or 1 if first given severity is less than, equal to or greater
+ *         than second.
+ */
+static gint
+compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
+{
+  double one_severity, two_severity;
+  gchar *one = *((gchar**) arg_one);
+  gchar *two = *((gchar**) arg_two);
+  gint host;
+
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  one_severity = g_strtod (one, NULL);
+  two_severity = g_strtod (two, NULL);
+
+  one += strlen (one) + 1;
+  two += strlen (two) + 1;
+  host = strcmp (one, two);
+  if (host == 0)
+    {
+      if (one_severity < two_severity)
+        return -1;
+      else if (one_severity > two_severity)
+        return 1;
+      else
+        {
+          one = *((gchar**) arg_one);
+          two = *((gchar**) arg_two);
+          return strcmp (one, two);
+        }
+    }
+  return host;
+}
+
+/**
+ * @brief Compares two buffered results, sorting by port then severity.
  *
  * @param[in]  arg_one  First result.
  * @param[in]  arg_two  Second result.
@@ -19183,24 +19180,29 @@ compare_message_types_asc (gconstpointer arg_one, gconstpointer arg_two)
  *         than second.
  */
 static gint
-compare_port_threat (gconstpointer arg_one, gconstpointer arg_two)
+compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
 {
   int host;
   gchar *one = *((gchar**) arg_one);
   gchar *two = *((gchar**) arg_two);
-  gchar *one_threat = one + strlen (one) + 1;
-  gchar *two_threat = two + strlen (two) + 1;
+  gchar *one_severity = one + strlen (one) + 1;
+  gchar *two_severity = two + strlen (two) + 1;
+  double severity_cmp = (g_strtod (two_severity, NULL)
+                         - g_strtod (one_severity, NULL));
 
-  host = strcmp (one_threat + strlen (one_threat) + 1,
-                 two_threat + strlen (two_threat) + 1);
+  host = strcmp (one_severity + strlen (one_severity) + 1,
+                 two_severity + strlen (two_severity) + 1);
   if (host == 0)
     {
       int port = strcmp (one, two);
-      if (port == 0)
-        return collate_message_type (NULL,
-                                     strlen (two_threat), two_threat,
-                                     strlen (one_threat), one_threat);
-      return port;
+      if (port != 0)
+        return port;
+      else if (severity_cmp > 0)
+        return 1;
+      else if (severity_cmp < 0)
+        return -1;
+      else
+        return 0;
     }
   return host;
 }
@@ -19739,7 +19741,8 @@ dump (GArray *ports)
 static void
 add_port (GTree *ports, iterator_t *results)
 {
-  const char *old_type, *type, *port, *host;
+  const char *port, *host;
+  double *old_severity, *severity;
   GTree *host_ports;
 
   /* Ensure there's an inner tree for the host. */
@@ -19756,17 +19759,19 @@ add_port (GTree *ports, iterator_t *results)
   /* Ensure the highest threat is recorded for the port in the inner tree. */
 
   port = result_iterator_port (results);
-  type = result_iterator_type (results);
-  old_type = g_tree_lookup (host_ports, port);
-  tracef ("   delta: %s: adding %s threat %s on host %s", __FUNCTION__,
-          port, type, host);
-  if (old_type == NULL)
-    g_tree_insert (host_ports, g_strdup (port), g_strdup (type));
-  else if (collate_message_type (NULL,
-                                 strlen (type), type,
-                                 strlen (old_type), old_type)
-           > 0)
-    g_tree_replace (host_ports, g_strdup (port), g_strdup (type));
+  severity = g_malloc (sizeof (double));
+  *severity = result_iterator_severity_double (results);
+
+  old_severity = g_tree_lookup (host_ports, port);
+  tracef ("   delta: %s: adding %s severity %1.1f on host %s", __FUNCTION__,
+          port, *severity, host);
+  if (old_severity == NULL)
+    g_tree_insert (host_ports, g_strdup (port), severity);
+  else if (severity > old_severity)
+    {
+      *old_severity = *severity;
+      g_free (severity);
+    }
 }
 
 /**
@@ -19787,11 +19792,13 @@ print_host_port (gpointer key, gpointer value, gpointer data)
            "<port>"
            "<host>%s</host>"
            "%s"
+           "<severity>%1.1f</severity>"
            "<threat>%s</threat>"
            "</port>",
            (gchar*) host_and_stream[0],
            (gchar*) key,
-           manage_result_type_threat ((gchar*) value));
+           *((double*) value),
+           severity_to_level (*((double*) value), 0));
   return FALSE;
 }
 
@@ -19862,11 +19869,13 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
                "<port>"
                "<host>%s</host>"
                "%s"
+               "<severity>%1.1f</severity>"
                "<threat>%s</threat>"
                "</port>",
                (gchar*) key,
                (gchar*) port_threat[0],
-               manage_result_type_threat ((gchar*) port_threat[1]));
+               *((double*) port_threat[1]),
+               severity_to_level (*((double*) port_threat[1]), 0));
     }
 
   array_free (ports);
@@ -19875,41 +19884,47 @@ print_host_ports_desc (gpointer key, gpointer value, gpointer stream)
 }
 
 /**
- * @brief Compare port threats, ascending.
+ * @brief Compare port severities, ascending.
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
  */
 static gint
-compare_ports_threat (gconstpointer one, gconstpointer two)
+compare_ports_severity (gconstpointer one, gconstpointer two)
 {
   gpointer *port_threat_one, *port_threat_two;
   port_threat_one = *((gpointer**) one);
   port_threat_two = *((gpointer**) two);
-  return collate_message_type (NULL,
-                               strlen (port_threat_one[1]), port_threat_one[1],
-                               strlen (port_threat_two[1]), port_threat_two[1]);
+  if (*((double*) port_threat_one[1]) > *((double*) port_threat_one[1]))
+    return 1;
+  else if (*((double*) port_threat_one[1]) < *((double*) port_threat_one[1]))
+    return -1;
+  else
+    return 0;
 }
 
 /**
- * @brief Compare port threats, descending.
+ * @brief Compare port severities, descending.
  *
  * @param[in]  one  First.
  * @param[in]  two  Second.
  */
 static gint
-compare_ports_threat_desc (gconstpointer one, gconstpointer two)
+compare_ports_severity_desc (gconstpointer one, gconstpointer two)
 {
   gpointer *port_threat_one, *port_threat_two;
   port_threat_one = *((gpointer**) one);
   port_threat_two = *((gpointer**) two);
-  return - collate_message_type (NULL,
-                                 strlen (port_threat_one[1]), port_threat_one[1],
-                                 strlen (port_threat_two[1]), port_threat_two[1]);
+  if (*((double*) port_threat_one[1]) < *((double*) port_threat_one[1]))
+    return 1;
+  else if (*((double*) port_threat_one[1]) > *((double*) port_threat_one[1]))
+    return -1;
+  else
+    return 0;
 }
 
 /**
- * @brief Print delta ports, ordering by threat.
+ * @brief Print delta ports, ordering by severity.
  *
  * @param[in]  key        Host.
  * @param[in]  value      Port tree.
@@ -19917,8 +19932,8 @@ compare_ports_threat_desc (gconstpointer one, gconstpointer two)
  * @param[in]  ascending  Ascending or descending.
  */
 static gboolean
-print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
-                          int ascending)
+print_host_ports_by_severity (gpointer key, gpointer value, gpointer stream,
+                              int ascending)
 {
   guint index, len;
   array_t *ports;
@@ -19933,9 +19948,9 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
   /* Sort the array. */
 
   if (ascending)
-    g_ptr_array_sort (ports, compare_ports_threat);
+    g_ptr_array_sort (ports, compare_ports_severity);
   else
-    g_ptr_array_sort (ports, compare_ports_threat_desc);
+    g_ptr_array_sort (ports, compare_ports_severity_desc);
 
   /* Print the sorted array. */
 
@@ -19949,11 +19964,13 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
                "<port>"
                "<host>%s</host>"
                "%s"
+               "<severity>%1.1f</severity>"
                "<threat>%s</threat>"
                "</port>",
                (gchar*) key,
                (gchar*) port_threat[0],
-               manage_result_type_threat ((gchar*) port_threat[1]));
+               *((double*) port_threat[1]),
+               severity_to_level (*((double*) port_threat[1]), 0));
       index++;
     }
 
@@ -19963,29 +19980,31 @@ print_host_ports_by_type (gpointer key, gpointer value, gpointer stream,
 }
 
 /**
- * @brief Print delta ports, ordering by threat descending.
+ * @brief Print delta ports, ordering by severity descending.
  *
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
  */
 static gboolean
-print_host_ports_by_type_desc (gpointer key, gpointer value, gpointer stream)
+print_host_ports_by_severity_desc (gpointer key, gpointer value,
+                                   gpointer stream)
 {
-  return print_host_ports_by_type (key, value, stream, 0);
+  return print_host_ports_by_severity (key, value, stream, 0);
 }
 
 /**
- * @brief Print delta ports, ordering by threat ascending.
+ * @brief Print delta ports, ordering by severity ascending.
  *
  * @param[in]  key     Host.
  * @param[in]  value   Port tree.
  * @param[in]  stream  Stream.
  */
 static gboolean
-print_host_ports_by_type_asc (gpointer key, gpointer value, gpointer stream)
+print_host_ports_by_severity_asc (gpointer key, gpointer value,
+                                  gpointer stream)
 {
-  return print_host_ports_by_type (key, value, stream, 1);
+  return print_host_ports_by_severity (key, value, stream, 1);
 }
 
 /**
@@ -21049,7 +21068,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
           g_free (last_host);
           last_host = g_strdup (host);
 
-          cvss = result_iterator_nvt_cvss_base (&results);
+          cvss = result_iterator_severity (&results);
           if (cvss == NULL)
             cvss = "0.0";
           port_len = strlen (port);
@@ -21076,9 +21095,9 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
 
       /** @todo Sort by ROWID if was requested. */
 
-      /* Sort by port then threat. */
+      /* Sort by port then severity. */
 
-      g_array_sort (ports, compare_port_threat);
+      g_array_sort (ports, compare_port_severity);
 
       /* Remove duplicates. */
 
@@ -21104,12 +21123,12 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
             }
         }
 
-      /* Sort by threat. */
+      /* Sort by severity. */
 
       if (sort_order)
-        g_array_sort (ports, compare_message_types_asc);
+        g_array_sort (ports, compare_severity_asc);
       else
-        g_array_sort (ports, compare_message_types_desc);
+        g_array_sort (ports, compare_severity_desc);
     }
 
   /* Write to file from the buffer. */
@@ -21135,11 +21154,13 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                "<port>"
                "<host>%s</host>"
                "%s"
-               "<cvss>%s</cvss>"
+               "<severity>%s</severity>"
+               "<threat>%s</threat>"
                "</port>",
                item + port_len + cvss_len + 2,
                item,
-               item + port_len + 1);
+               item + port_len + 1,
+               severity_to_level (g_strtod (item + port_len + 1, NULL), 0));
         g_free (item);
       }
     g_array_free (ports, TRUE);
@@ -22943,9 +22964,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       if (sort_field == NULL || strcmp (sort_field, "port"))
         {
           if (sort_order)
-            g_tree_foreach (ports, print_host_ports_by_type_asc, out);
+            g_tree_foreach (ports, print_host_ports_by_severity_asc, out);
           else
-            g_tree_foreach (ports, print_host_ports_by_type_desc, out);
+            g_tree_foreach (ports, print_host_ports_by_severity_desc, out);
         }
       else if (sort_order)
         g_tree_foreach (ports, print_host_ports, out);
