@@ -4349,7 +4349,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   owned_clause = where_owned (type, get, owned, resource, permissions);
 
-  if (owner_filter && (strcmp (owner_filter, "any") == 0))
+  if (owned == 0)
+    filter_owned_clause = g_strdup (" 1");
+  else if (owner_filter && (strcmp (owner_filter, "any") == 0))
     filter_owned_clause = g_strdup_printf ("%s",
                                            owned_clause);
   else if (owner_filter)
@@ -4491,7 +4493,9 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 
   owned_clause = where_owned (type, get, owned, 0, permissions);
 
-  if (owner_filter && (strcmp (owner_filter, "any") == 0))
+  if (owned == 0)
+    filter_owned_clause = g_strdup (" 1");
+  else if (owner_filter && (strcmp (owner_filter, "any") == 0))
     filter_owned_clause = g_strdup_printf ("%s",
                                            owned_clause);
   else if (owner_filter)
@@ -12224,11 +12228,18 @@ resource_count (const char *type, const get_data_t *get)
 
   memset (&count_get, '\0', sizeof (count_get));
   count_get.trash = get->trash;
-  count_get.filter = "rows=-1 first=1 permission=any owner=any";
+  if (type_owned (type))
+    count_get.filter = "rows=-1 first=1 permission=any owner=any";
+  else
+    count_get.filter = "rows=-1 first=1 permission=any";
   count_get.actions = "g";
 
   return count (get->subtype ? get->subtype : type,
-                &count_get, "owner", "owner", extra_columns, 0, NULL,
+                &count_get,
+                type_owned (type) ? "owner" : NULL,
+                type_owned (type) ? "owner" : NULL,
+                type_owned (type) ? extra_columns : NULL,
+                0, NULL,
                 strcmp (type, "task")
                  ? NULL
                  : (get->id

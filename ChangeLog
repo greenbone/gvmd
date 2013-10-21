@@ -1,3 +1,9 @@
+2013-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator, count): Add "owned" check to the
+	filtering on the owner clause.
+	(resource_count): Send owner args only when the type has owners.
+
 2013-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (where_levels_type): Get severity field in case
