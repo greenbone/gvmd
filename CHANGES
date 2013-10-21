@@ -1,3 +1,39 @@
+openvas-manager 4.0.3 (2013-10-21)
+
+This is the third maintenance release of the openvas-manager 4.0 module for the
+Open Vulnerability Assessment System release 6 (OpenVAS-6). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a number of varius problems, among these also some size and
+performance improvements.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Werner Koch, Timo Pollmeier, Matthew Mundell.
+
+Main changes since 4.0.2:
+* Bugfix for DB-Migration from v55 to v56 for port lists.
+* In GET_REPORT_FORMATS send TRUST and ACTIVE in details case too.  Details cases
+  should always include everything from the simple case.
+* In case of problems with SCAP or CERT database, Manager will still start up.
+* Delete orphaned results and clear report counts cache if needed. This
+  could significantly reduce size of the database.
+* Delete results of report from results table always upon deleting a report.
+* Overrides XML: Output threat element not only when details flag is set.
+* Make Manager more robust on absent Scanner when deleting a task.
+* Add timezone element for schedules.
+* Bug fixes for numerical sorting (CVSS values).
+* Bug fix for LSC credentials that had whitesapces in their name.
+* Bugfix for database backup to consider all of the journal files.
+* Add log for successful creation in CREATE_NOTE and CREATE_OVERRIDE.
+* Update NBE report format plugin to improve compatibility with third
+  party tools.
+* For creation of Credentials. encrypt the random password and not the
+  unrelated given_password.
+* Performance improvements.
+* Various little bugfixes.
+
+
 openvas-manager 4.0.2 (2013-07-05)
 
 This is the second maintenance release of the openvas-manager 4.0 module for the
@@ -13,7 +49,7 @@ a null pointer dereference fix.
 Many thanks to everyone who has contributed to this release:
 Hani Benhabiles, Timo Pollmeier, Matthew Mundell.
 
-Main changes since 4.0.2:
+Main changes since 4.0.1:
 * Improve GET_NOTES performance.
 * Apply report filtering on nvt tags and cve values too.
 * Check null pointer in create_config copy case.
