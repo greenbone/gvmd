@@ -15566,10 +15566,25 @@ where_levels_type (const char* levels)
                                                  (SEVERITY_DEBUG) ")");
       count++;
     }
+
+  /* False Positive. */
+  if (strchr (levels, 'f'))
+    {
+      if (count == 0)
+        levels_sql = g_string_new (" AND ((severity"
+                                   "       = " G_STRINGIFY
+                                                (SEVERITY_FP) "))");
+      else
+        levels_sql = g_string_append (levels_sql,
+                                      " OR (severity"
+                                      "     = " G_STRINGIFY
+                                                 (SEVERITY_FP) "))");
+      count++;
+    }
   else if (count)
     levels_sql = g_string_append (levels_sql, ")");
 
-  if (count == 5)
+  if (count == 6)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);

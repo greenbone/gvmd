@@ -1,5 +1,11 @@
 2013-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (where_levels_type): Handle false positive results
+	so counts will be accurate when FPs occur without overrides (e.g. in
+	imported reports).
+
+2013-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (task_severity, init_result_iterator)
 	(init_asset_iterator, report_scan_result_count, report_severity_data)
 	(filtered_host_count, note_count, init_note_iterator, override_count)
