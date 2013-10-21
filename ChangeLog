@@ -1,3 +1,11 @@
+2013-10-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (send_task_preferences): Send source_iface task
+	preference.
+
+	* src/omp.c (omp_xml_handle_end_element): Output Network Source
+	Interface task preference in GET_TASKS case.
+
 2013-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator, count): Add "owned" check to the

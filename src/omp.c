@@ -15671,7 +15671,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               double severity, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
-              gchar *in_assets, *max_checks, *max_hosts;
+              gchar *in_assets, *max_checks, *max_hosts, *source_iface;
 
               ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                               init_task_iterator);
@@ -16100,6 +16100,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               in_assets = task_preference_value (index, "in_assets");
               max_checks = task_preference_value (index, "max_checks");
               max_hosts = task_preference_value (index, "max_hosts");
+              source_iface = task_preference_value (index, "source_iface");
 
               SENDF_TO_CLIENT_OR_FAIL
                ("<preferences>"
@@ -16119,6 +16120,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "</preference>"
                 "<preference>"
                 "<name>"
+                "Network Source Interface"
+                "</name>"
+                "<scanner_name>source_iface</scanner_name>"
+                "<value>%s</value>"
+                "</preference>"
+                "<preference>"
+                "<name>"
                 "Add results to Asset Management"
                 "</name>"
                 "<scanner_name>in_assets</scanner_name>"
@@ -16128,6 +16136,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "</task>",
                 max_checks ? max_checks : "4",
                 max_hosts ? max_hosts : "20",
+                source_iface ? source_iface : "",
                 in_assets ? in_assets : "yes");
 
               g_free (in_assets);

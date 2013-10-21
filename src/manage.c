@@ -1439,6 +1439,14 @@ send_task_preferences (task_t task)
     }
   g_free (value);
 
+  value = task_preference_value (task, "source_iface");
+  if (value && sendf_to_server ("source_iface <|> %s\n", value))
+    {
+      g_free (value);
+      return -1;
+    }
+  g_free (value);
+
   return 0;
 }
 
