@@ -13501,8 +13501,12 @@ task_severity (task_t task, int overrides, int offset)
     return NULL;
 
   if (setting_dynamic_severity_int ())
-    severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                             " WHERE nvts.oid = results.nvt)");
+    severity_sql = g_strdup("CASE WHEN results.severity"
+                            "          > " G_STRINGIFY (SEVERITY_LOG)
+                            " THEN (SELECT CAST (cvss_base AS REAL)"
+                            "       FROM nvts"
+                            "       WHERE nvts.oid = results.nvt)"
+                            " ELSE results.severity END");
   else
     severity_sql = g_strdup ("results.severity");
 
@@ -15729,8 +15733,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
   assert ((report && result) == 0);
 
   if (dynamic_severity)
-    severity_sql = g_strdup("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                            " WHERE nvts.oid = results.nvt)");
+    severity_sql = g_strdup("CASE WHEN results.severity"
+                            "          > " G_STRINGIFY (SEVERITY_LOG)
+                            " THEN (SELECT CAST (cvss_base AS REAL)"
+                            "       FROM nvts"
+                            "       WHERE nvts.oid = results.nvt)"
+                            " ELSE results.severity END");
   else
     severity_sql = g_strdup("results.severity");
 
@@ -16971,8 +16979,12 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       gchar *severity_sql, *new_severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                                 " WHERE nvts.oid = results.nvt)");
+        severity_sql = g_strdup("CASE WHEN results.severity"
+                                "          > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
 
@@ -17665,8 +17677,12 @@ report_scan_result_count (report_t report, const char* levels,
       levels_sql = where_levels_auto (levels);
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                                 " WHERE nvts.oid = results.nvt)");
+        severity_sql = g_strdup("CASE WHEN results.severity"
+                                "          > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
 
@@ -18036,8 +18052,12 @@ report_severity_data (report_t report, int override,
         quoted_host = NULL;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                                 " WHERE nvts.oid = results.nvt)");
+        severity_sql = g_strdup("CASE WHEN results.severity"
+                                "          > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
 
@@ -18304,8 +18324,12 @@ report_severity_data (report_t report, int override,
         quoted_host = NULL;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                                 " WHERE nvts.oid = results.nvt)");
+        severity_sql = g_strdup("CASE WHEN results.severity"
+                                "          > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
 
@@ -18410,13 +18434,16 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 static int
 report_counts_cache_exists (report_t report, int override)
 {
-  return sql_int (0, 0,
-                  "SELECT EXISTS (SELECT * FROM report_counts"
-                  " WHERE report = %llu"
-                  "   AND override = %d"
-                  "   AND user = (SELECT ROWID FROM users"
-                  "               WHERE users.uuid = '%s'));",
-                  report, override, current_credentials.uuid);
+  if (setting_dynamic_severity_int ())
+    return 0;
+  else
+    return sql_int (0, 0,
+                    "SELECT EXISTS (SELECT * FROM report_counts"
+                    " WHERE report = %llu"
+                    "   AND override = %d"
+                    "   AND user = (SELECT ROWID FROM users"
+                    "               WHERE users.uuid = '%s'));",
+                    report, override, current_credentials.uuid);
 }
 
 /**
@@ -18464,6 +18491,10 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
    * cache_report_counts then they'll deadlock. */
   int i, ret;
   double severity;
+
+  // Do not cache results when using dynamic severity.
+  if (setting_dynamic_severity_int ())
+    return 0;
 
   ret = sql_giveup ("BEGIN EXCLUSIVE;");
   if (ret)
@@ -20164,8 +20195,12 @@ filtered_host_count (const char *levels, const char *search_phrase,
       gchar *severity_sql, *new_severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup ("(SELECT CAST (cvss_base AS REAL) FROM nvts"
-                                 " WHERE nvts.oid = results.nvt)");
+        severity_sql = g_strdup("CASE WHEN results.severity"
+                                "          > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END");
       else
         severity_sql = g_strdup ("results.severity");
 
@@ -35350,7 +35385,11 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
       gchar *severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+        severity_sql = g_strdup_printf ("(SELECT CASE"
+                                        " WHEN results.severity"
+                                        "      > " G_STRINGIFY (SEVERITY_LOG)
+                                        " THEN nvts.cvss_base"
+                                        " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
                                         "   AND (results.ROWID = %llu))",
@@ -35485,7 +35524,11 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
       gchar *severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+        severity_sql = g_strdup_printf ("(SELECT CASE"
+                                        " WHEN results.severity"
+                                        "      > " G_STRINGIFY (SEVERITY_LOG)
+                                        " THEN nvts.cvss_base"
+                                        " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
                                         "   AND (results.ROWID = %llu))",
@@ -36311,7 +36354,11 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
       gchar *severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+        severity_sql = g_strdup_printf ("(SELECT CASE"
+                                        " WHEN results.severity"
+                                        "      > " G_STRINGIFY (SEVERITY_LOG)
+                                        " THEN nvts.cvss_base"
+                                        " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
                                         "   AND (results.ROWID = %llu))",
@@ -36447,7 +36494,11 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
       gchar *severity_sql;
 
       if (setting_dynamic_severity_int ())
-        severity_sql = g_strdup_printf ("(SELECT nvts.cvss_base"
+        severity_sql = g_strdup_printf ("(SELECT CASE"
+                                        " WHEN results.severity"
+                                        "      > " G_STRINGIFY (SEVERITY_LOG)
+                                        " THEN nvts.cvss_base"
+                                        " ELSE results.severity END"
                                         " FROM results, nvts"
                                         " WHERE (nvts.oid = results.nvt)"
                                         "   AND (results.ROWID = %llu))",
