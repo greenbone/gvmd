@@ -15558,7 +15558,7 @@ where_levels_type (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = g_string_new (" AND new_severity != "
+      levels_sql = g_string_new (" AND severity != "
                                  G_STRINGIFY (SEVERITY_ERROR));
     }
 
