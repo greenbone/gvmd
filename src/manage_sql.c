@@ -71,6 +71,11 @@
 #include "splint.h"
 #endif
 
+/**
+ * @brief Chunk size for SQLite memory allocation.
+ */
+#define DB_CHUNK_SIZE 1 * 1024 * 1024
+
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -9344,6 +9349,11 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       abort ();
     }
 #endif /* not S_SPLINT_S */
+
+  {
+    int chunk_size = DB_CHUNK_SIZE;
+    sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
+  }
 
   if (update_nvt_cache)
     {

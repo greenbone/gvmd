@@ -1,3 +1,8 @@
+2013-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (DB_CHUNK_SIZE): New define.
+	(init_manage_process): Set SQLite chunk size, to reduce fragmentation.
+
 2013-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (where_levels_type): Handle false positive results
