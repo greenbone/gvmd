@@ -2606,6 +2606,10 @@ result_overrides
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>threat</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -3216,6 +3220,7 @@ report_report_ports_port
      {
        text
        &amp; report_report_ports_port_host
+       &amp; report_report_ports_port_severity
        &amp; report_report_ports_port_threat
      }
 
@@ -3223,6 +3228,12 @@ report_report_ports_port_host
  = element host
      {
        text
+     }
+
+report_report_ports_port_severity
+ = element severity
+     {
+       severity
      }
 
 report_report_ports_port_threat
@@ -15747,6 +15758,7 @@ get_reports_response_report
          &lt;port&gt;
            general/tcp
            &lt;host&gt;127.0.1.1&lt;/host&gt;
+           &lt;severity&gt;5.0&lt;/severity&gt;
            &lt;threat&gt;Medium&lt;/threat&gt;
          &lt;/port&gt;
          ...

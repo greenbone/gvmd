@@ -1399,11 +1399,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             text
             <e>host</e>
+            <e>severity</e>
             <e>threat</e>
           </pattern>
           <ele>
             <name>host</name>
             <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <pattern><t>severity</t></pattern>
           </ele>
           <ele>
             <name>threat</name>
@@ -9673,6 +9678,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <port>
                   general/tcp
                   <host>127.0.1.1</host>
+                  <severity>5.0</severity>
                   <threat>Medium</threat>
                 </port>
                 <truncated>...</truncated>

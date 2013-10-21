@@ -1518,6 +1518,7 @@ report_report_ports_port
      {
        text
        & report_report_ports_port_host
+       & report_report_ports_port_severity
        & report_report_ports_port_threat
      }
 
@@ -1525,6 +1526,12 @@ report_report_ports_port_host
  = element host
      {
        text
+     }
+
+report_report_ports_port_severity
+ = element severity
+     {
+       severity
      }
 
 report_report_ports_port_threat

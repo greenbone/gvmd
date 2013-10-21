@@ -1,3 +1,10 @@
+2013-10-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (report): Add severity to port element.
+	(get_reports): Add severity to port element in example.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-10-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Add "owner IS NULL" to default
