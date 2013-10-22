@@ -1,5 +1,9 @@
 2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_has_access_uuid): Free quoted_permission.
+
+2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Combine two SQL cases.
 
 2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -636,37 +636,40 @@ user_has_access_uuid (const char *resource, const char *uuid,
       get = (permission == NULL || strcmp (permission, "get") == 0);
       quoted_permission = sql_quote (permission ? permission : "");
 
-      return sql_int (0, 0,
-                      "SELECT count(*) FROM permissions"
-                      " WHERE resource_uuid = '%s'"
-                      " AND ((subject_type = 'user'"
-                      "       AND subject"
-                      "           = (SELECT ROWID FROM users"
-                      "              WHERE users.uuid = '%s'))"
-                      "      OR (subject_type = 'group'"
-                      "          AND subject"
-                      "              IN (SELECT DISTINCT `group`"
-                      "                  FROM group_users"
-                      "                  WHERE user = (SELECT ROWID"
-                      "                                FROM users"
-                      "                                WHERE users.uuid"
-                      "                                      = '%s')))"
-                      "      OR (subject_type = 'role'"
-                      "          AND subject"
-                      "              IN (SELECT DISTINCT role"
-                      "                  FROM role_users"
-                      "                  WHERE user = (SELECT ROWID"
-                      "                                FROM users"
-                      "                                WHERE users.uuid"
-                      "                                      = '%s'))))"
-                      " %s%s%s;",
-                      uuid,
-                      current_credentials.uuid,
-                      current_credentials.uuid,
-                      current_credentials.uuid,
-                      (get ? "" : "AND name = '"),
-                      quoted_permission,
-                      (get ? "" : "'"));
+      ret = sql_int (0, 0,
+                     "SELECT count(*) FROM permissions"
+                     " WHERE resource_uuid = '%s'"
+                     " AND ((subject_type = 'user'"
+                     "       AND subject"
+                     "           = (SELECT ROWID FROM users"
+                     "              WHERE users.uuid = '%s'))"
+                     "      OR (subject_type = 'group'"
+                     "          AND subject"
+                     "              IN (SELECT DISTINCT `group`"
+                     "                  FROM group_users"
+                     "                  WHERE user = (SELECT ROWID"
+                     "                                FROM users"
+                     "                                WHERE users.uuid"
+                     "                                      = '%s')))"
+                     "      OR (subject_type = 'role'"
+                     "          AND subject"
+                     "              IN (SELECT DISTINCT role"
+                     "                  FROM role_users"
+                     "                  WHERE user = (SELECT ROWID"
+                     "                                FROM users"
+                     "                                WHERE users.uuid"
+                     "                                      = '%s'))))"
+                     " %s%s%s;",
+                     uuid,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     current_credentials.uuid,
+                     (get ? "" : "AND name = '"),
+                     quoted_permission,
+                     (get ? "" : "'"));
+
+      g_free (quoted_permission);
+      return ret;
     }
 
   if (actions_string == NULL || strlen (actions_string) == 0)
