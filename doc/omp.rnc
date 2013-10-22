@@ -10087,6 +10087,7 @@ get_tasks_response_task
        & get_tasks_response_task_slave
        & get_tasks_response_task_report_count
        & get_tasks_response_task_trend
+       & get_tasks_response_task_current_report?
        & get_tasks_response_task_first_report?
        & get_tasks_response_task_last_report?
        & get_tasks_response_task_second_last_report?
@@ -10375,6 +10376,25 @@ get_tasks_response_task_trend
  = element trend
      {
        task_trend
+     }
+
+get_tasks_response_task_current_report
+ = element current_report
+     {
+       get_tasks_response_task_current_report_report
+     }
+
+get_tasks_response_task_current_report_report
+ = element report
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_current_report_report_timestamp
+     }
+
+get_tasks_response_task_current_report_report_timestamp
+ = element timestamp
+     {
+       iso_time
      }
 
 get_tasks_response_task_first_report

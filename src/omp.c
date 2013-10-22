@@ -15661,6 +15661,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               char *description, *hosts_ordering;
               gchar *description64, *last_report_id, *last_report;
               gchar *second_last_report_id, *second_last_report;
+              gchar *current_report;
+              report_t running_report;
               schedule_t schedule;
               time_t next_time;
               char *owner, *observers;
@@ -15690,14 +15692,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_in_trash = task_target_in_trash (index);
               if ((target == 0)
                   && (task_run_status (index) == TASK_STATUS_RUNNING))
-                progress_xml = g_strdup_printf
-                                ("%i",
-                                 task_upload_progress (index));
+                {
+                  progress_xml = g_strdup_printf
+                                  ("%i",
+                                   task_upload_progress (index));
+                  running_report = 0;
+                }
               else
                 {
                   int progress;
                   gchar *host_xml;
-                  report_t running_report;
 
                   running_report = task_current_report (index);
                   progress = report_progress (running_report, index, &host_xml);
@@ -15725,6 +15729,36 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 description64 = g_strdup ("");
+
+              if (running_report)
+                {
+                  gchar *timestamp;
+                  char *scan_end, *current_report_id;
+
+                  current_report_id = report_uuid (running_report);
+
+                  if (report_timestamp (current_report_id, &timestamp))
+                    /** @todo Either fail better or abort at SQL level. */
+                    abort ();
+
+                  scan_end = scan_end_time_uuid (current_report_id),
+
+                  current_report = g_strdup_printf ("<current_report>"
+                                                    "<report id=\"%s\">"
+                                                    "<timestamp>"
+                                                    "%s"
+                                                    "</timestamp>"
+                                                    "<scan_end>%s</scan_end>"
+                                                    "</report>"
+                                                    "</current_report>",
+                                                    current_report_id,
+                                                    timestamp,
+                                                    scan_end);
+                  free (scan_end);
+                  g_free (timestamp);
+                }
+              else
+                current_report = g_strdup ("");
 
               first_report_id = task_first_report_id (index);
               if (first_report_id)
@@ -15982,7 +16016,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<next_time>%s</next_time>"
                            "<trash>%i</trash>"
                            "</schedule>"
-                           "%s%s%s",
+                           "%s%s%s%s",
                            get_tasks_data->get.trash
                             ? 0
                             : task_alterable (index),
@@ -16011,6 +16045,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              ? "over"
                              : iso_time (&next_time)),
                            schedule_in_trash,
+                           current_report,
                            first_report,
                            last_report,
                            second_last_report);
@@ -16019,6 +16054,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (task_target_uuid);
               free (hosts_ordering);
               g_free (progress_xml);
+              g_free (current_report);
               g_free (first_report);
               g_free (last_report);
               g_free (second_last_report);

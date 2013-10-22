@@ -12027,6 +12027,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>slave</e>
           <e>report_count</e>
           <e>trend</e>
+          <o><e>current_report</e></o>
           <o><e>first_report</e></o>
           <o><e>last_report</e></o>
           <o><e>second_last_report</e></o>
@@ -12288,6 +12289,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>trend</name>
           <pattern><t>task_trend</t></pattern>
+        </ele>
+        <ele>
+          <name>current_report</name>
+          <pattern>
+            <e>report</e>
+          </pattern>
+          <ele>
+            <name>report</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>timestamp</e>
+            </pattern>
+            <ele>
+              <name>timestamp</name>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>first_report</name>

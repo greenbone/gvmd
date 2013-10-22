@@ -1,3 +1,12 @@
+2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Add CURRENT_REPORT to
+	GET_REPORTS.
+
+	* src/schema_formats/XML/OMP.xml (get_tasks): Add CURRENT_REPORT.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (DB_CHUNK_SIZE): New define.
