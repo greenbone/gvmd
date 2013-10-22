@@ -1,5 +1,10 @@
 2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_has_access_uuid): Free uuid if it was
+	allocated.
+
+2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Combine the two SQL cases for
 	getting permissions.  Add missing check to args of other cases.
 

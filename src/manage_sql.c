@@ -539,11 +539,11 @@ user_has_access_uuid (const char *resource, const char *uuid,
   if (type_has_permissions (resource))
     {
       int get;
+      char *uuid_task;
       gchar *quoted_permission;
 
       if (strcasecmp (resource, "report") == 0)
         {
-          char *uuid_task;
           task_t task;
           report_t report;
 
@@ -567,44 +567,48 @@ user_has_access_uuid (const char *resource, const char *uuid,
           if (task == 0)
             return 0;
           task_uuid (task, &uuid_task);
-          // FIX free (uuid);
-          uuid = uuid_task;
         }
+      else
+        uuid_task = NULL;
 
       if ((strcmp (resource, "permission") == 0)
           && ((permission == NULL)
               || (strcmp (permission, "get") == 0)))
-        return sql_int (0, 0,
-                        "SELECT count(*) FROM permissions"
-                        /* Any permission implies 'get'. */
-                        " WHERE (resource_uuid = '%s'"
-                        /* Users may view any permission that affect them. */
-                        "        OR uuid = '%s')"
-                        " AND ((subject_type = 'user'"
-                        "       AND subject"
-                        "           = (SELECT ROWID FROM users"
-                        "              WHERE users.uuid = '%s'))"
-                        "      OR (subject_type = 'group'"
-                        "          AND subject"
-                        "              IN (SELECT DISTINCT `group`"
-                        "                  FROM group_users"
-                        "                  WHERE user = (SELECT ROWID"
-                        "                                FROM users"
-                        "                                WHERE users.uuid"
-                        "                                      = '%s')))"
-                        "      OR (subject_type = 'role'"
-                        "          AND subject"
-                        "              IN (SELECT DISTINCT role"
-                        "                  FROM role_users"
-                        "                  WHERE user = (SELECT ROWID"
-                        "                                FROM users"
-                        "                                WHERE users.uuid"
-                        "                                      = '%s'))));",
-                        uuid,
-                        uuid,
-                        current_credentials.uuid,
-                        current_credentials.uuid,
-                        current_credentials.uuid);
+        {
+          ret = sql_int (0, 0,
+                         "SELECT count(*) FROM permissions"
+                         /* Any permission implies 'get'. */
+                         " WHERE (resource_uuid = '%s'"
+                         /* Users may view any permission that affect them. */
+                         "        OR uuid = '%s')"
+                         " AND ((subject_type = 'user'"
+                         "       AND subject"
+                         "           = (SELECT ROWID FROM users"
+                         "              WHERE users.uuid = '%s'))"
+                         "      OR (subject_type = 'group'"
+                         "          AND subject"
+                         "              IN (SELECT DISTINCT `group`"
+                         "                  FROM group_users"
+                         "                  WHERE user = (SELECT ROWID"
+                         "                                FROM users"
+                         "                                WHERE users.uuid"
+                         "                                      = '%s')))"
+                         "      OR (subject_type = 'role'"
+                         "          AND subject"
+                         "              IN (SELECT DISTINCT role"
+                         "                  FROM role_users"
+                         "                  WHERE user = (SELECT ROWID"
+                         "                                FROM users"
+                         "                                WHERE users.uuid"
+                         "                                      = '%s'))));",
+                         uuid_task ? uuid_task : uuid,
+                         uuid_task ? uuid_task : uuid,
+                         current_credentials.uuid,
+                         current_credentials.uuid,
+                         current_credentials.uuid);
+          free (uuid_task);
+          return ret;
+        }
 
       get = (permission == NULL || strcmp (permission, "get") == 0);
       quoted_permission = sql_quote (permission ? permission : "");
@@ -633,7 +637,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      "                                WHERE users.uuid"
                      "                                      = '%s'))))"
                      " %s%s%s;",
-                     uuid,
+                     uuid_task ? uuid_task : uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
@@ -641,6 +645,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      (get ? "" : quoted_permission),
                      (get ? "" : "'"));
 
+      free (uuid_task);
       g_free (quoted_permission);
       return ret;
     }
