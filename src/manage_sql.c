@@ -574,11 +574,12 @@ user_has_access_uuid (const char *resource, const char *uuid,
       if ((strcmp (resource, "permission") == 0)
           && ((permission == NULL)
               || (strcmp (permission, "get") == 0)))
-        // TODO make this neat like result case below
         return sql_int (0, 0,
-                        /* Any permission implies 'get'. */
                         "SELECT count(*) FROM permissions"
-                        " WHERE resource_uuid = '%s'"
+                        /* Any permission implies 'get'. */
+                        " WHERE (resource_uuid = '%s'"
+                        /* Users may view any permission that affect them. */
+                        "        OR uuid = '%s')"
                         " AND ((subject_type = 'user'"
                         "       AND subject"
                         "           = (SELECT ROWID FROM users"
@@ -600,38 +601,10 @@ user_has_access_uuid (const char *resource, const char *uuid,
                         "                                WHERE users.uuid"
                         "                                      = '%s'))));",
                         uuid,
+                        uuid,
                         current_credentials.uuid,
                         current_credentials.uuid,
-                        current_credentials.uuid)
-               /* If the permission affects the user, the user may view it. */
-               || sql_int (0, 0,
-                           /* Any permission implies 'get'. */
-                           "SELECT count(*) FROM permissions"
-                           " WHERE uuid = '%s'"
-                           " AND ((subject_type = 'user'"
-                           "       AND subject"
-                           "           = (SELECT ROWID FROM users"
-                           "              WHERE users.uuid = '%s'))"
-                           "      OR (subject_type = 'group'"
-                           "          AND subject"
-                           "              IN (SELECT DISTINCT `group`"
-                           "                  FROM group_users"
-                           "                  WHERE user = (SELECT ROWID"
-                           "                                FROM users"
-                           "                                WHERE users.uuid"
-                           "                                      = '%s')))"
-                           "      OR (subject_type = 'role'"
-                           "          AND subject"
-                           "              IN (SELECT DISTINCT role"
-                           "                  FROM role_users"
-                           "                  WHERE user = (SELECT ROWID"
-                           "                                FROM users"
-                           "                                WHERE users.uuid"
-                           "                                      = '%s'))));",
-                           uuid,
-                           current_credentials.uuid,
-                           current_credentials.uuid,
-                           current_credentials.uuid);
+                        current_credentials.uuid);
 
       get = (permission == NULL || strcmp (permission, "get") == 0);
       quoted_permission = sql_quote (permission ? permission : "");
@@ -665,7 +638,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
                      (get ? "" : "AND name = '"),
-                     quoted_permission,
+                     (get ? "" : quoted_permission),
                      (get ? "" : "'"));
 
       g_free (quoted_permission);
@@ -727,7 +700,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
                      (get ? "" : "AND name = '"),
-                     quoted_permission,
+                     (get ? "" : quoted_permission),
                      (get ? "" : "'"));
       g_free (quoted_permission);
       return ret;
