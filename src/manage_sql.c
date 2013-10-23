@@ -1519,8 +1519,9 @@ parse_keyword (keyword_t* keyword)
 
   /* Special values to substitute */
 
-  if (strcasecmp (keyword->column, "severity") == 0
-      || strcasecmp (keyword->column, "new_severity") == 0)
+  if (keyword->column
+      && (strcasecmp (keyword->column, "severity") == 0
+          || strcasecmp (keyword->column, "new_severity") == 0))
     {
       if (strcasecmp (keyword->string, "Log") == 0)
         {
