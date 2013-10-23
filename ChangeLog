@@ -1,5 +1,14 @@
 2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_user_target_iterator): Simplify to match single
+	caller, removing use of init_user_get_iterator.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage.c (slave_setup): Update call.
+
+2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_owned): Add owner_filter arg.
 	(init_get_iterator, count): Move generation of filtered owner clause
 	into where owned so that it's in one place only.  The instance in count

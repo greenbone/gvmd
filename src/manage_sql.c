@@ -26875,22 +26875,22 @@ target_count (const get_data_t *get)
  * @brief Initialise a target iterator, limited to the current user's targets.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  target      Target to limit iteration to.  0 for all.
- * @param[in]  trash       Whether to iterate over trashcan targets.
- * @param[in]  filter      Filter term.
+ * @param[in]  target      Target to limit iteration to.
  */
 void
-init_user_target_iterator (iterator_t* iterator, target_t target, int trash,
-                           const char *filter)
+init_user_target_iterator (iterator_t* iterator, target_t target)
 {
-  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  get_data_t get;
-  memset (&get, '\0', sizeof (get));
-  get.trash = trash;
-  get.filter = (char*) filter;
-  init_user_get_iterator (iterator, "target", &get, TARGET_ITERATOR_COLUMNS,
-                          TARGET_ITERATOR_TRASH_COLUMNS, filter_columns,
-                          target, 0, 0, 0);
+  assert (target);
+  init_iterator (iterator,
+                 "SELECT %s"
+                 " FROM targets"
+                 " WHERE ROWID = %llu"
+                 " AND ((owner IS NULL)"
+                 "      OR (owner = (SELECT ROWID FROM users"
+                 "                   WHERE users.uuid = '%s')));",
+                 TARGET_ITERATOR_COLUMNS,
+                 target,
+                 current_credentials.uuid);
 }
 
 /**
