@@ -1,5 +1,12 @@
 2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_owned): Add owner_filter arg.
+	(init_get_iterator, count): Move generation of filtered owner clause
+	into where owned so that it's in one place only.  The instance in count
+	was missing a NULL check.
+
+2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (parse_keyword): Add column check to special values
 	condition, because it can be NULL for keywords "=value".
 
