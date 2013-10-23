@@ -100,7 +100,6 @@ set (CPACK_SOURCE_IGNORE_FILES
 "Makefile"
 "/doc/generated/"
 "log.conf$"
-"pwpolicy.conf$"
 "Doxyfile$"
 "Doxyfile_full$"
 "VERSION$"

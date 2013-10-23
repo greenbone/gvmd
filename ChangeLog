@@ -1,3 +1,9 @@
+2013-10-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Revert exclusion of pwpolicy.conf via
+	CPACK_SOURCE_IGNORE_FILES since a later install target requires the
+	presence of this file.
+
 2013-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_has_access_uuid): Free uuid if it was
