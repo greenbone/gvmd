@@ -3924,94 +3924,6 @@ copy_resource (const char *type, const char *name, const char *comment,
 /**
  * @brief Initialise a target iterator, limited to the current user's targets.
  *
- * @param[in]  iterator        Iterator.
- * @param[in]  type            Type of resource.
- * @param[in]  get             GET data.
- * @param[in]  columns         Columns for SQL.
- * @param[in]  trash_columns   Columns for SQL trash case.
- * @param[in]  filter_columns  Columns for filter.
- * @param[in]  distinct        Whether the query should be distinct.  Skipped
- *                             for trash and single resource.
- * @param[in]  extra_tables    Join tables.  Skipped for trash and single
- *                             resource.
- * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
- *                             resource.
- *
- * @return 0 success, 2 failed to find filter.
- */
-static int
-init_user_get_iterator (iterator_t* iterator, const char *type,
-                        const get_data_t *get, const char *columns,
-                        const char *trash_columns, const char **filter_columns,
-                        int distinct,
-                        const char *extra_tables, const char *extra_where)
-{
-  gchar *clause, *order, *filter;
-  int first, max;
-
-  assert (current_credentials.uuid);
-  assert (get);
-
-  if (get->filt_id && strcmp (get->filt_id, "0"))
-    {
-      filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        return 2;
-    }
-  else
-    filter = NULL;
-
-  // FIX owner,permissions?
-
-  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max, NULL, NULL);
-
-  g_free (filter);
-
-  if (get->trash)
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s"
-                   "%s;",
-                   trash_columns ? trash_columns : columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
-                   current_credentials.uuid,
-                   extra_where ? extra_where : "",
-                   order);
-  else
-    init_iterator (iterator,
-                   "SELECT%s %s"
-                   " FROM %ss%s"
-                   " WHERE ((%ss.owner IS NULL) OR (%ss.owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s%s%s%s%s"
-                   " LIMIT %i OFFSET %i;",
-                   distinct ? " DISTINCT" : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   type,
-                   type,
-                   current_credentials.uuid,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order,
-                   max,
-                   first);
-
-  g_free (clause);
-  return 0;
-}
-
-/**
- * @brief Initialise a target iterator, limited to the current user's targets.
- *
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
  * @param[in]  owned           Only get items owned by the current user.
@@ -8969,14 +8881,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
 static void
 init_user_task_iterator (iterator_t* iterator, int trash)
 {
-  static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
-  get_data_t get;
-  memset (&get, '\0', sizeof (get));
-  get.trash = trash;
-  init_user_get_iterator (iterator, "task", &get, TASK_ITERATOR_COLUMNS ("0"),
-                          TASK_ITERATOR_TRASH_COLUMNS ("0"), filter_columns,
-                          0, 0,
-                          trash ? " AND hidden = 2" : " AND hidden < 2");
+  init_iterator (iterator,
+                 "SELECT %s"
+                 " FROM tasks"
+                 " WHERE ((owner IS NULL)"
+                 "        OR (owner = (SELECT ROWID FROM users"
+                 "                     WHERE users.uuid = '%s')))"
+                 "%s;",
+                 trash
+                  ? TASK_ITERATOR_TRASH_COLUMNS ("0")
+                  : TASK_ITERATOR_COLUMNS ("0"),
+                 current_credentials.uuid,
+                 trash ? " AND hidden = 2" : " AND hidden < 2");
 }
 
 /**
