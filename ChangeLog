@@ -1,5 +1,12 @@
 2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_user_get_iterator): Remove resource arg.
+	Always 0.  Update caller.
+	(init_user_task_iterator): Make static.  Remove task arg.  Always 0.
+	Update callers.
+
+2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_user_target_iterator): Simplify to match single
 	caller, removing use of init_user_get_iterator.
 

@@ -3930,7 +3930,6 @@ copy_resource (const char *type, const char *name, const char *comment,
  * @param[in]  columns         Columns for SQL.
  * @param[in]  trash_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
- * @param[in]  resource        Resource.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
  * @param[in]  extra_tables    Join tables.  Skipped for trash and single
@@ -3944,7 +3943,7 @@ static int
 init_user_get_iterator (iterator_t* iterator, const char *type,
                         const get_data_t *get, const char *columns,
                         const char *trash_columns, const char **filter_columns,
-                        resource_t resource, int distinct,
+                        int distinct,
                         const char *extra_tables, const char *extra_where)
 {
   gchar *clause, *order, *filter;
@@ -3969,21 +3968,7 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
-  if (resource && get->trash)
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss%s"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s;",
-                   trash_columns ? trash_columns : columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
-                   resource,
-                   current_credentials.uuid,
-                   order);
-  else if (get->trash)
+  if (get->trash)
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM %ss%s"
@@ -3996,19 +3981,6 @@ init_user_get_iterator (iterator_t* iterator, const char *type,
                    type_trash_in_table (type) ? "" : "_trash",
                    current_credentials.uuid,
                    extra_where ? extra_where : "",
-                   order);
-  else if (resource)
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM %ss"
-                   " WHERE ROWID = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                   "%s;",
-                   columns,
-                   type,
-                   resource,
-                   current_credentials.uuid,
                    order);
   else
     init_iterator (iterator,
@@ -8992,13 +8964,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Initialise a task iterator, limited to current user's tasks.
  *
  * @param[in]  iterator    Task iterator.
- * @param[in]  task        Task to limit iteration to.  0 for all.
  * @param[in]  trash       Whether to iterate over trashcan tasks.
  */
-void
-init_user_task_iterator (iterator_t* iterator,
-                         task_t task,
-                         int trash)
+static void
+init_user_task_iterator (iterator_t* iterator, int trash)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
   get_data_t get;
@@ -9006,7 +8975,7 @@ init_user_task_iterator (iterator_t* iterator,
   get.trash = trash;
   init_user_get_iterator (iterator, "task", &get, TASK_ITERATOR_COLUMNS ("0"),
                           TASK_ITERATOR_TRASH_COLUMNS ("0"), filter_columns,
-                          task, 0, 0,
+                          0, 0,
                           trash ? " AND hidden = 2" : " AND hidden < 2");
 }
 
@@ -25147,7 +25116,7 @@ delete_trash_tasks ()
 {
   iterator_t tasks;
 
-  init_user_task_iterator (&tasks, 0, 1);
+  init_user_task_iterator (&tasks, 1);
   while (next (&tasks))
     {
       task_t task;
@@ -48058,7 +48027,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
                                          "SELECT uuid FROM users"
                                          " WHERE ROWID = %llu;",
                                          user);
-  init_user_task_iterator (&tasks, 0, 0);
+  init_user_task_iterator (&tasks, 0);
   while (next (&tasks))
     switch (task_iterator_run_status (&tasks))
       {
