@@ -34440,25 +34440,41 @@ agent_uuid (agent_t agent)
  * @brief Filter columns for agent iterator.
  */
 #define AGENT_ITERATOR_FILTER_COLUMNS          \
- { GET_ITERATOR_FILTER_COLUMNS, /* FIX "trust", */ NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "trust", NULL }
 
 /**
  * @brief Agent iterator columns.
  */
-#define AGENT_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS (agents) ", installer, installer_64," \
-  " installer_filename, installer_signature_64,"             \
-  " installer_trust, installer_trust_time, howto_install,"   \
-  " howto_use"
+#define AGENT_ITERATOR_COLUMNS                                        \
+  GET_ITERATOR_COLUMNS (agents) ", installer, installer_64,"          \
+  " installer_filename, installer_signature_64,"                      \
+  " installer_trust, installer_trust_time, howto_install,"            \
+  " howto_use,"                                                       \
+  " (CASE"                                                            \
+  "  WHEN installer_trust = 1 THEN 'yes'"                             \
+  "  WHEN installer_trust = 2 THEN 'no'"                              \
+  "  WHEN installer_trust = 3 THEN 'unknown'"                         \
+  "  ELSE ''"                                                         \
+  "  END)"                                                            \
+  " || ' (' || iso_time (installer_trust_time) || ')'"                \
+  " AS trust"
 
 /**
  * @brief Agent iterator columns for trash case.
  */
-#define AGENT_ITERATOR_TRASH_COLUMNS                               \
-  GET_ITERATOR_COLUMNS (agents_trash) ", installer, installer_64," \
-  " installer_filename, installer_signature_64,"                   \
-  " installer_trust, installer_trust_time, howto_install,"         \
-  " howto_use"
+#define AGENT_ITERATOR_TRASH_COLUMNS                                  \
+  GET_ITERATOR_COLUMNS (agents_trash) ", installer, installer_64,"    \
+  " installer_filename, installer_signature_64,"                      \
+  " installer_trust, installer_trust_time, howto_install,"            \
+  " howto_use,"                                                       \
+  " (CASE"                                                            \
+  "  WHEN installer_trust = 1 THEN 'yes'"                             \
+  "  WHEN installer_trust = 2 THEN 'no'"                              \
+  "  WHEN installer_trust = 3 THEN 'unknown'"                         \
+  "  ELSE ''"                                                         \
+  "  END)"                                                            \
+  " || ' (' || iso_time (installer_trust_time) || ')'"                \
+  " AS trust"
 
 /**
  * @brief Get the resource from a GET iterator.

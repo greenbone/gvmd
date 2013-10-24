@@ -1,4 +1,10 @@
-2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (AGENT_ITERATOR_FILTER_COLUMNS)
+	(AGENT_ITERATOR_COLUMNS, AGENT_ITERATOR_TRASH_COLUMNS): Add trust, so
+	that at least the GSA sorting works.
+
+2013-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (omp_command_takes_resource): New function.
 	(create_permission, modify_permission): Check if permission takes a
