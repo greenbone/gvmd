@@ -1,5 +1,11 @@
 2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_command_takes_resource): New function.
+	(create_permission, modify_permission): Check if permission takes a
+	resource using shared function.
+
+2013-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_user_get_iterator): Remove.  Out of use.
 	(init_user_task_iterator): Init the iterator directly.
 

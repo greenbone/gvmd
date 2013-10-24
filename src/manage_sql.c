@@ -411,6 +411,29 @@ omp_command_type (const char* name)
   return NULL;
 }
 
+/**
+ * @brief Check whether an OMP command takes a resource.
+ *
+ * MODIFY_TARGET, for example, takes a target.
+ *
+ * @param[in]  name  Command name.
+ *
+ * @return 1 if takes resource, else 0.
+ */
+static int
+omp_command_takes_resource (const char* name)
+{
+  assert (name);
+  return strcasecmp (name, "AUTHENTICATE")
+         && strcasecmp (name, "COMMANDS")
+         && strcasestr (name, "CREATE_") != name
+         && strcasecmp (name, "EMPTY_TRASHCAN")
+         && strcasecmp (name, "GET_VERSION")
+         && strcasecmp (name, "HELP")
+         && strcasecmp (name, "RUN_WIZARD")
+         && strcasestr (name, "SYNC_") != name;
+}
+
 
 /* General helpers. */
 
@@ -41594,9 +41617,7 @@ create_permission (const char *name_arg, const char *comment,
   if ((name_arg == NULL) || (valid_omp_command (name_arg) == 0))
     return 7;
 
-  if (strcasecmp (name_arg, "HELP") == 0
-      // FIX more
-      || strcasecmp (name_arg, "GET_VERSION") == 0)
+  if (omp_command_takes_resource (name_arg) == 0)
     resource_id = NULL;
 
   if (subject_type
@@ -42174,9 +42195,7 @@ modify_permission (const char *permission_id, const char *name,
           return 7;
         }
 
-      if (strcasecmp (name, "HELP") == 0
-          // FIX more
-          || strcasecmp (name, "GET_VERSION") == 0)
+      if (omp_command_takes_resource (name) == 0)
         resource_id = NULL;
 
       quoted_name = sql_quote (name);
