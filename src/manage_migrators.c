@@ -7896,6 +7896,55 @@ migrate_103_to_104 ()
 }
 
 /**
+ * @brief Migrate the database from version 103 to version 104.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_104_to_105 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 104. */
+
+  if (manage_db_version () != 104)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add expiration date column to reports cache. */
+  sql ("ALTER TABLE report_counts ADD COLUMN end_time INTEGER;");
+
+  /* Update cache to set expiration dates. */
+  sql ("UPDATE report_counts"
+       " SET end_time = (SELECT coalesce(min(end_time), 0)"
+       "                 FROM overrides, results"
+       "                 WHERE overrides.nvt = results.nvt"
+       "                 AND results.report = report_counts.report"
+       "                 AND overrides.end_time > 1)"
+       " WHERE report_counts.override = 1;");
+
+  sql ("UPDATE report_counts"
+       " SET end_time = 0"
+       " WHERE report_counts.override = 0;");
+
+  /* Clear cache for reports with already expired overrides */
+  sql ("DELETE FROM report_counts"
+       " WHERE end_time != 0 AND end_time <= now()");
+
+  /* Set the database version 105. */
+
+  set_db_version (105);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8004,6 +8053,7 @@ static migrator_t database_migrators[]
     {102, migrate_101_to_102},
     {103, migrate_102_to_103},
     {104, migrate_103_to_104},
+    {105, migrate_104_to_105},
     /* End marker. */
     {-1, NULL}};
 

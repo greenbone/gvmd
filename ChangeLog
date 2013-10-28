@@ -1,3 +1,24 @@
+2013-10-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add expiration time for report_counts. Hence increase database version
+	to 105.  Add database migration from version 104 to 105.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 105.
+
+	* src/manage_migrators.c (migrate_104_to_105): New function.
+	(database_migrators): Add migrate_104_to_105.
+
+	* src/manage_sql.c (create_tables): Add column end_time to
+	report_counts table.
+	(report_add_result): Update end_time as new results are added.
+	(report_counts_cache_exists, report_counts_from_cache)
+	(report_severity): Check end_time of cache.
+	(report_cache_counts): Calculate and set end_time of cache.
+
+	* doc/db_postgres.sql (report_counts): Added the table.
+
+	* doc/db.png: Update from source.
+
 2013-10-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (AGENT_ITERATOR_FILTER_COLUMNS)

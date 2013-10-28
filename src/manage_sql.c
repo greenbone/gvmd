@@ -4614,7 +4614,7 @@ create_tables ()
        "  scan_run_status INTEGER, slave_progress, slave_task_uuid);");
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
-       "  severity, count, override);");
+       "  severity, count, override, end_time INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL)");
@@ -14865,10 +14865,11 @@ report_add_result (report_t report, result_t result)
          " WHERE ROWID = %llu;", rowid);
   else
     sql ("INSERT OR IGNORE"
-        " INTO report_counts (report, user, override, severity, count)"
+        " INTO report_counts (report, user, override, severity, count,"
+        "                     end_time)"
         " VALUES (%llu,"
         "         (SELECT ROWID FROM users WHERE uuid='%s'),"
-        "         0, %1.1f, 1);",
+        "         0, %1.1f, 1, 0);",
         report, current_credentials.uuid, severity);
 
   ov_severity_str
@@ -14919,16 +14920,27 @@ report_add_result (report_t report, result_t result)
              " AND severity = %1.1f;",
              report, current_credentials.uuid, ov_severity);
   if (rowid)
-    sql ("UPDATE report_counts SET count = count + 1"
-         " WHERE ROWID = %llu;", rowid);
+    sql ("UPDATE report_counts"
+         " SET count = count + 1"
+         " WHERE ROWID = %llu;",
+         rowid);
   else
     sql ("INSERT OR IGNORE"
-        " INTO report_counts (report, user, override, severity, count)"
+        " INTO report_counts (report, user, override, severity, count,"
+        "                     end_time)"
         " VALUES (%llu,"
         "         (SELECT ROWID FROM users WHERE uuid='%s'),"
-        "         1, %1.1f, 1);",
+        "         1, %1.1f, 1, 0);",
         report, current_credentials.uuid, ov_severity);
 
+  sql ("UPDATE report_counts"
+       " SET end_time = (SELECT coalesce(min(overrides.end_time), -1)"
+       "                 FROM overrides, results"
+       "                 WHERE overrides.nvt = results.nvt"
+       "                 AND results.report = %llu"
+       "                 AND overrides.end_time >= now ())"
+       " WHERE report = %llu AND override = 1;",
+       report, report);
 }
 
 /**
@@ -18311,7 +18323,8 @@ report_counts_cache_exists (report_t report, int override)
                     " WHERE report = %llu"
                     "   AND override = %d"
                     "   AND user = (SELECT ROWID FROM users"
-                    "               WHERE users.uuid = '%s'));",
+                    "               WHERE users.uuid = '%s')"
+                    "   AND (end_time = 0 OR end_time >= now ()));",
                     report, override, current_credentials.uuid);
 }
 
@@ -18331,7 +18344,8 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
                  " WHERE report = %llu"
                  "   AND override = %i"
                  "   AND user = (SELECT ROWID FROM users"
-                 "               WHERE users.uuid = '%s');",
+                 "               WHERE users.uuid = '%s')"
+                 "   AND (end_time = 0 OR end_time >= now ());",
                  report, override, current_credentials.uuid);
   while (next (&iterator))
     {
@@ -18360,6 +18374,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
    * cache_report_counts then they'll deadlock. */
   int i, ret;
   double severity;
+  int end_time;
 
   // Do not cache results when using dynamic severity.
   if (setting_dynamic_severity_int ())
@@ -18386,11 +18401,12 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
       /* Create dummy entry for empty reports */
       ret = sql_giveup ("INSERT INTO"
                         " report_counts (report, user, override,"
-                        "                severity, count)"
+                        "                severity, count, end_time)"
                         " VALUES (%llu,"
                         "         (SELECT ROWID FROM users"
                         "          WHERE users.uuid = '%s'),"
-                        "         %d, " G_STRINGIFY (SEVERITY_MISSING) ", 0);",
+                        "         %d, " G_STRINGIFY (SEVERITY_MISSING) ","
+                        "         0, 0);",
                         report, current_credentials.uuid, override);
       if (ret)
         {
@@ -18401,6 +18417,17 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   else
     {
       i = 0;
+      if (override)
+        end_time = sql_int (0, 0,
+                            "SELECT coalesce(min(end_time), 0)"
+                            " FROM overrides, results"
+                            " WHERE overrides.nvt = results.nvt"
+                            " AND results.report = %llu"
+                            " AND overrides.end_time >= now ();",
+                            report);
+      else
+        end_time = 0;
+
       severity = severity_data_value (i);
       while (severity <= data->max && severity != SEVERITY_MISSING)
         {
@@ -18408,13 +18435,13 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
             {
               ret = sql_giveup ("INSERT INTO"
                                 " report_counts (report, user, override,"
-                                "                severity, count)"
+                                "                severity, count, end_time)"
                                 " VALUES (%llu,"
                                 "         (SELECT ROWID FROM users"
                                 "          WHERE users.uuid = '%s'),"
-                                "         %d, %1.1f, %d);",
+                                "         %d, %1.1f, %d, %d);",
                                 report, current_credentials.uuid, override,
-                                severity, data->counts[i]);
+                                severity, data->counts[i], end_time);
               if (ret)
                 {
                   sql ("ROLLBACK;");
@@ -18599,7 +18626,8 @@ report_severity (report_t report, int overrides)
                  "SELECT max(severity)"
                  " FROM report_counts"
                  " WHERE report = %llu"
-                 " AND override = %d;",
+                 " AND override = %d"
+                 " AND (end_time = 0 or end_time >= now());",
                  report, overrides);
   if (next (&iterator)
       && sqlite3_column_type (iterator.stmt, 0) != SQLITE_NULL)

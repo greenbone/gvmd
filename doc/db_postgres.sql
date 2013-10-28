@@ -344,6 +344,15 @@ CREATE TABLE reports (
     override_logs integer,
     override_fps integer);
 
+CREATE TABLE report_counts (
+       id integer PRIMARY KEY,
+       report integer REFERENCES reports (id) ON DELETE RESTRICT,
+       user integer REFERENCES users (id) ON DELETE RESTRICT,
+       severity decimal,
+       count integer,
+       override integer,
+       end_time integer);
+
 CREATE TABLE report_format_params (
     id integer PRIMARY KEY,
     report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
