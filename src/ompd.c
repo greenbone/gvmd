@@ -431,6 +431,13 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
                                         == SCANNER_INIT_CONNECT_INTR))
           {
             case 0:
+              switch (openvas_server_verify (*scanner_session))
+                {
+                  case 0:
+                    break;
+                  default:
+                    return -1;
+                }
               set_scanner_init_state (SCANNER_INIT_CONNECTED);
               /* Fall through to SCANNER_INIT_CONNECTED case below, to write
                * version string. */
