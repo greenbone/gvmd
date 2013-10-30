@@ -15782,7 +15782,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      ascending ? "ASC" : "DESC");
       else if (strcmp (sort_field, "vulnerability") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
-                                     " vulnerability %s,"
+                                     " vulnerability COLLATE NOCASE %s,"
                                      " port COLLATE collate_location,"
                                      " host COLLATE collate_ip,"
                                      " (CASE WHEN auto_type IS NULL"
