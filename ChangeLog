@@ -1,3 +1,10 @@
+2013-10-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_result_iterator): Add sorting of results by
+	host and vulnerability (NVT name). Use a variable and normal ifs for the
+	"ORDER BY" clause instead of nested ternary conditionals to improve
+	readability with the added cases.
+
 2013-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (write_to_scanner): Verify certificate.

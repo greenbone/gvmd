@@ -15609,7 +15609,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
   int dynamic_severity = setting_dynamic_severity_int (); // TODO: Add parameter
 
   GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *severity_sql, *sql;
+  gchar *severity_sql, *order_sql, *sql;
 
   assert ((report && result) == 0);
 
@@ -15748,6 +15748,73 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
              break;
          }
 
+      if (strcmp (sort_field, "ROWID") == 0)
+        order_sql = g_strdup_printf (" ORDER BY results.ROWID %s",
+                                     ascending ? "ASC" : "DESC");
+      else if (strcmp (sort_field, "port") == 0)
+        order_sql = g_strdup_printf (" ORDER BY"
+                                     " port COLLATE collate_location %s,"
+                                     " host COLLATE collate_ip,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN CAST (new_severity AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " DESC,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN new_type ELSE auto_type END)"
+                                     " COLLATE collate_message_type DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC");
+      else if (strcmp (sort_field, "host") == 0)
+        order_sql = g_strdup_printf (" ORDER BY"
+                                     " host COLLATE collate_ip %s,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN CAST (new_severity AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " DESC,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN new_type ELSE auto_type END)"
+                                     " COLLATE collate_message_type DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC");
+      else if (strcmp (sort_field, "vulnerability") == 0)
+        order_sql = g_strdup_printf (" ORDER BY"
+                                     " vulnerability %s,"
+                                     " port COLLATE collate_location,"
+                                     " host COLLATE collate_ip,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN CAST (new_severity AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " DESC,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN new_type ELSE auto_type END)"
+                                     " COLLATE collate_message_type DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC");
+      else
+        order_sql = g_strdup_printf (" ORDER BY "
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN CAST (new_severity AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " %s,"
+                                     " (CASE WHEN auto_type IS NULL"
+                                     "  THEN new_type ELSE auto_type END)"
+                                     " COLLATE collate_message_type ASC,"
+                                     " port COLLATE collate_location,"
+                                     " host COLLATE collate_ip,"
+                                     " (CAST ((CASE WHEN cvss_base >= 0.0"
+                                     "        THEN cvss_base ELSE 0.0 END)"
+                                     "       AS REAL)) DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC");
+
       sql = g_strdup_printf ("SELECT results.ROWID, host, port,"
                              " nvt, severity_to_type (%s) AS type,"
                              " severity_to_type (%s) AS new_type,"
@@ -15760,7 +15827,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              "  AS cvss_base,"
                              " nvt_version,"
                              " %s AS severity,"
-                             " %s AS new_severity"
+                             " %s AS new_severity,"
+                             " (SELECT name FROM nvts"
+                             "  WHERE nvts.oid = results.nvt)"
+                             "  AS vulnerability"
                              " FROM results, report_results"
                              " WHERE report_results.report = %llu"
                              "%s"
@@ -15778,68 +15848,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              levels_sql ? levels_sql->str : "",
                              phrase_sql ? phrase_sql->str : "",
                              cvss_sql ? cvss_sql->str : "",
-                             ascending
-                              ? ((strcmp (sort_field, "ROWID") == 0)
-                                  ? " ORDER BY results.ROWID"
-                                  : ((strcmp (sort_field, "port") == 0)
-                                      ? " ORDER BY"
-                                        " port COLLATE collate_location,"
-                                        " host COLLATE collate_ip,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                        "  END)"
-                                        " DESC,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN new_type ELSE auto_type END)"
-                                        " COLLATE collate_message_type DESC,"
-                                        " nvt,"
-                                        " description"
-                                      : " ORDER BY "
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                        "  END)"
-                                        " ASC,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN new_type ELSE auto_type END)"
-                                        " COLLATE collate_message_type ASC,"
-                                        " port COLLATE collate_location,"
-                                        " host COLLATE collate_ip,"
-                                        " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                        "        THEN cvss_base ELSE 0.0 END)"
-                                        "       AS REAL)) DESC,"
-                                        " nvt,"
-                                        " description"))
-                              : ((strcmp (sort_field, "ROWID") == 0)
-                                  ? " ORDER BY results.ROWID DESC"
-                                  : ((strcmp (sort_field, "port") == 0)
-                                      ? " ORDER BY"
-                                        " port COLLATE collate_location DESC,"
-                                        " host COLLATE collate_ip,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                        "  END)"
-                                        " DESC,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN new_type ELSE auto_type END)"
-                                        " COLLATE collate_message_type DESC,"
-                                        " nvt,"
-                                        " description"
-                                      : " ORDER BY"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN CAST (new_severity AS REAL)"
-                                        "  ELSE " G_STRINGIFY (SEVERITY_FP)
-                                        "  END)"
-                                        " DESC,"
-                                        " (CASE WHEN auto_type IS NULL"
-                                        "  THEN new_type ELSE auto_type END)"
-                                        " COLLATE collate_message_type DESC,"
-                                        " port COLLATE collate_location,"
-                                        " host COLLATE collate_ip,"
-                                        " nvt,"
-                                        " description")),
+                             order_sql,
                              max_results,
                              first_result);
 
@@ -15848,6 +15857,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
       g_free (auto_type_sql);
       g_free (new_severity_sql);
+      g_free (order_sql);
     }
   else if (result)
     {
