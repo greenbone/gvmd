@@ -1,3 +1,9 @@
+2013-10-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Don't set the process title. Current
+	implementation is buggy and should be replaced.
+	This reverts revision 15874.
+
 2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (manage_schedule): Skip warning correctly.
