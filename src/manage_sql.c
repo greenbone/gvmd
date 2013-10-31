@@ -223,6 +223,9 @@ user_ensure_in_db (const gchar *, const gchar *);
 static int
 report_format_verify (report_format_t);
 
+void
+cleanup_prognosis_iterator ();
+
 
 /* Variables. */
 
@@ -11769,6 +11772,7 @@ cleanup_manage_process (gboolean cleanup)
         {
           if (current_scanner_task)
             set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
+          cleanup_prognosis_iterator ();
           if (sqlite3_close (task_db) == SQLITE_BUSY)
             /* Richard Hipp on how to find the open statements:
              *
@@ -14080,6 +14084,24 @@ cpe_highest_cvss (const char *cpe)
 }
 
 /**
+ * @brief Prognosis iterator prepared statement.
+ */
+static sqlite3_stmt* prognosis_stmt = NULL;
+
+/**
+ * @brief Cleanup the prognosis iterator prepared statement.
+ */
+void
+cleanup_prognosis_iterator ()
+{
+  if (prognosis_stmt)
+    {
+      sqlite3_finalize (prognosis_stmt);
+      prognosis_stmt = NULL;
+    }
+}
+
+/**
  * @brief Initialise a prognosis iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -14088,29 +14110,29 @@ cpe_highest_cvss (const char *cpe)
 void
 init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 {
-  static sqlite3_stmt* stmt = NULL;
-
-  if (stmt == NULL)
-    stmt = sql_prepare ("SELECT cves.name, cves.cvss, cves.description,"
-                        "       cpes.name"
-                        " FROM scap.cves, scap.cpes, scap.affected_products"
-                        " WHERE cpes.name=$cpe"
-                        " AND cpes.id=affected_products.cpe"
-                        " AND cves.id=affected_products.cve"
-                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;");
+  if (prognosis_stmt == NULL)
+    prognosis_stmt = sql_prepare ("SELECT cves.name, cves.cvss,"
+                                  "       cves.description, cpes.name"
+                                  " FROM scap.cves, scap.cpes,"
+                                  "      scap.affected_products"
+                                  " WHERE cpes.name=$cpe"
+                                  " AND cpes.id=affected_products.cpe"
+                                  " AND cves.id=affected_products.cve"
+                                  " ORDER BY CAST (cves.cvss AS INTEGER)"
+                                  " DESC;");
   else
     {
-      sqlite3_clear_bindings (stmt);
-      sqlite3_reset (stmt);
+      sqlite3_clear_bindings (prognosis_stmt);
+      sqlite3_reset (prognosis_stmt);
     }
 
-  init_prepared_iterator (iterator, stmt);
+  init_prepared_iterator (iterator, prognosis_stmt);
 
   /* Bind iterator. */
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_text (stmt, 1, cpe, -1, SQLITE_TRANSIENT);
+      ret = sqlite3_bind_text (prognosis_stmt, 1, cpe, -1, SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind failed: %s\n",

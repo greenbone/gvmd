@@ -1,5 +1,15 @@
 2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_schedule): Skip the iterator init warning if it
+	is just due to locking.
+
+	* src/manage_sql.c (cleanup_manage_process): Cleanup prognosis iterator.
+	(prognosis_stmt): New global variable.  Was in init_prognosis_iterator.
+	(cleanup_prognosis_iterator): New function.
+	(init_prognosis_iterator): Use new variable.
+
+2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_severity): Cleanup iterator.
 
 2013-10-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
