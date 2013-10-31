@@ -4397,9 +4397,10 @@ manage_schedule (int (*fork_connection) (int *,
    * for each (scheduled) task to start or stop. */
 
   ret = init_task_schedule_iterator (&schedules);
-  if (ret == -1)
+  if (ret)
     {
-      g_warning ("%s: iterator init error\n", __FUNCTION__);
+      if (ret == -1)
+        g_warning ("%s: iterator init error\n", __FUNCTION__);
       return ret;
     }
   /* This iterator runs in an exclusive transaction, so this loop is atomic. */

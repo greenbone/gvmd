@@ -1,5 +1,9 @@
 2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_schedule): Skip warning correctly.
+
+2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Skip the iterator init warning if it
 	is just due to locking.
 
