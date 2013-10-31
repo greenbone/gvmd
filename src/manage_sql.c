@@ -18652,6 +18652,7 @@ report_severity (report_t report, int overrides)
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
                         NULL, &severity, overrides, NULL, 0);
     }
+  cleanup_iterator (&iterator);
   return severity;
 }
 
