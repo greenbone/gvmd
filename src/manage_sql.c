@@ -2718,6 +2718,11 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         " ORDER BY role"
                                         " COLLATE collate_role"
                                         " ASC");
+              else if ((strcmp (type, "slave") == 0)
+                       && (strcmp (keyword->string, "port") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY CAST (port AS INTEGER)"
+                                        " ASC");
               else if (((strcmp (type, "task") == 0)
                         || (strcmp (type, "report") == 0))
                        && (strcmp (keyword->string, "status") == 0))
@@ -2779,6 +2784,11 @@ filter_clause (const char* type, const char* filter, const char **columns,
                 g_string_append_printf (order,
                                         " ORDER BY role"
                                         " COLLATE collate_role"
+                                        " DESC");
+              else if ((strcmp (type, "slave") == 0)
+                       && (strcmp (keyword->string, "port") == 0))
+                g_string_append_printf (order,
+                                        " ORDER BY CAST (port AS INTEGER)"
                                         " DESC");
               else if (((strcmp (type, "task") == 0)
                         || (strcmp (type, "report") == 0))

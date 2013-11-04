@@ -1,3 +1,8 @@
+2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (filter_clause): Cast slave port to integer when sorting
+	so that it sorts as numbers.
+
 2013-10-31  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (main): Don't set the process title. Current
