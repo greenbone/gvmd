@@ -7896,7 +7896,7 @@ migrate_103_to_104 ()
 }
 
 /**
- * @brief Migrate the database from version 103 to version 104.
+ * @brief Migrate the database from version 104 to version 105.
  *
  * @return 0 success, -1 error.
  */
@@ -7938,6 +7938,39 @@ migrate_104_to_105 ()
   /* Set the database version 105. */
 
   set_db_version (105);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 105 to version 106.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_105_to_106 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 105. */
+
+  if (manage_db_version () != 105)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE users ADD COLUMN ifaces;");
+  sql ("ALTER TABLE users ADD COLUMN ifaces_allow;");
+  sql ("UPDATE users SET ifaces = '', ifaces_allow = 2");
+
+  /* Set the database version 106. */
+
+  set_db_version (106);
 
   sql ("COMMIT;");
 
@@ -8054,6 +8087,7 @@ static migrator_t database_migrators[]
     {103, migrate_102_to_103},
     {104, migrate_103_to_104},
     {105, migrate_104_to_105},
+    {106, migrate_105_to_106},
     /* End marker. */
     {-1, NULL}};
 

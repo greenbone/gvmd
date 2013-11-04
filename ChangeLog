@@ -1,3 +1,27 @@
+2013-11-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add Interface Access for users. Hence increase database version
+	to 106.  Add database migration from version 105 to 106.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 106.
+
+	* src/manage_migrators.c (migrate_105_to_106): New function.
+	(database_migrators): Add migrate_105_to_106.
+
+	* src/manage.h: Adjust prototypes accordingly.
+
+	* src/manage_sql.c (manage_first_user, omp_xml_handle_end_element):
+	Adjust create_user call.
+	(create_user): Add ifaces and ifaces_allow parameters.
+	(create_user_data_t, modify_user_data_t): Add ifaces and ifaces_allow
+	variables.
+	(create_user_data_reset, modify_user_data_reset): Free new variables
+	accordingly.
+	(client_state_t): Add states for ifaces element in user creation and
+	modification.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle ifaces element for create_user and
+	modify_user cases.
 2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (filter_clause): Cast slave port to integer when sorting

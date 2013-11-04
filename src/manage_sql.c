@@ -47670,8 +47670,8 @@ manage_first_user (const gchar *database, const gchar *name)
 
   sql ("DELETE FROM meta WHERE name = 'admin';");
   sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
-  switch (create_user (name, uuid, NULL, 0, NULL, NULL, NULL, roles, NULL,
-                       NULL, NULL))
+  switch (create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
+                       NULL, NULL, NULL))
     {
       case 0:
         printf ("User created with password '%s'.\n", uuid);
@@ -47769,12 +47769,13 @@ find_user_by_name (const char* name, user_t *user)
  */
 int
 create_user (const gchar * name, const gchar * password, const gchar * hosts,
-             int hosts_allow, const array_t * allowed_methods, array_t *groups,
+             int hosts_allow, const gchar *ifaces, int ifaces_allow,
+             const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc, user_t *new_user)
 {
   char *errstr;
-  gchar *quoted_hosts, *quoted_method, *quoted_name, *hash;
+  gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
   gchar *clean;
   int index, max;
   user_t user;
@@ -47842,23 +47843,28 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
     /* Convert "Deny none" to "Allow All". */
     hosts_allow = 2;
   quoted_hosts = sql_quote (clean);
+  quoted_ifaces = sql_quote (ifaces ? ifaces : "");
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "file");
   sql ("INSERT INTO users"
-       " (uuid, owner, name, password, hosts, hosts_allow, method,"
-       "  creation_time, modification_time)"
+       " (uuid, owner, name, password, hosts, hosts_allow,"
+       "  ifaces, ifaces_allow, method, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), NULL, '%s', '%s', '%s', %i, '%s', now (), now ());",
+       " (make_uuid (), NULL, '%s', '%s', '%s', %i,"
+       "  '%s', %i, '%s', now (), now ());",
        quoted_name,
        hash,
        quoted_hosts,
        hosts_allow,
+       quoted_ifaces,
+       ifaces_allow,
        quoted_method);
   user = sqlite3_last_insert_rowid (task_db);
   g_free (hash);
   g_free (quoted_hosts);
+  g_free (quoted_ifaces);
   g_free (quoted_method);
   g_free (quoted_name);
 
@@ -48240,13 +48246,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar * password,
-             const gchar * hosts, int hosts_allow,
-             const array_t * allowed_methods, array_t *groups,
+             const gchar * hosts, int hosts_allow, const gchar *ifaces,
+             int ifaces_allow, const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc)
 {
   char *errstr;
-  gchar *hash, *quoted_hosts, *quoted_method, *clean, *uuid;
+  gchar *hash, *quoted_hosts, *quoted_ifaces, *quoted_method, *clean, *uuid;
   user_t user;
   int max, was_admin, is_admin;
 
@@ -48335,6 +48341,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   if ((hosts_allow == 0) && (max == 0))
     /* Convert "Deny none" to "Allow All". */
     hosts_allow = 2;
+  quoted_ifaces = sql_quote (ifaces ? ifaces : "");
   quoted_hosts = sql_quote (clean);
   g_free (clean);
   quoted_method = sql_quote (allowed_methods
@@ -48343,16 +48350,21 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   sql ("UPDATE users"
        " SET hosts = '%s',"
        "     hosts_allow = '%i',"
+       "     ifaces = '%s',"
+       "     ifaces_allow = %i,"
        "     method = %s%s%s,"
        "     modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_hosts,
        hosts_allow,
+       quoted_ifaces,
+       ifaces_allow,
        allowed_methods ? "'" : "",
        allowed_methods ? quoted_method : "method",
        allowed_methods ? "'" : "",
        user);
   g_free (quoted_hosts);
+  g_free (quoted_ifaces);
   g_free (quoted_method);
   if (hash)
     sql ("UPDATE users"
