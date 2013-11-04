@@ -48557,7 +48557,8 @@ trash_user_writable (user_t user)
  * @brief User columns for user iterator.
  */
 #define USER_ITERATOR_FILTER_COLUMNS                        \
- { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", "hosts", \
+   "ifaces", NULL }
 
 /**
  * @brief User iterator columns.
@@ -48575,13 +48576,15 @@ trash_user_writable (user_t user)
   "            WHERE user = users.ROWID"                                   \
   "            ORDER BY groups.name ASC),"                                 \
   "           '')"                                                         \
-  " AS groups"
+  " AS groups,"                                                            \
+  " ifaces, ifaces_allow"
 
 /**
  * @brief User iterator columns for trash case.
  */
 #define USER_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS (users_trash) ", method, hosts, hosts_allow"
+  GET_ITERATOR_COLUMNS (users_trash) ", method, hosts, hosts_allow,"    \
+  " ifaces, ifaces_allow"
 
 /**
  * @brief Count number of users.
@@ -48657,6 +48660,30 @@ user_iterator_hosts_allow (iterator_t* iterator)
   if (iterator->done) return -1;
   return sqlite3_column_int (iterator->stmt,
                              GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get the ifaces from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Interfaces or NULL if iteration is complete.
+ */
+DEF_ACCESS (user_iterator_ifaces, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the ifaces allow value from a user iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Interfaces allow.
+ */
+int
+user_iterator_ifaces_allow (iterator_t* iterator)
+{
+  if (iterator->done) return -1;
+  return sqlite3_column_int (iterator->stmt,
+                             GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**

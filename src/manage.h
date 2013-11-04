@@ -3204,6 +3204,12 @@ user_iterator_hosts (iterator_t*);
 int
 user_iterator_hosts_allow (iterator_t*);
 
+const char*
+user_iterator_ifaces (iterator_t*);
+
+int
+user_iterator_ifaces_allow (iterator_t*);
+
 void
 init_user_group_iterator (iterator_t *, user_t);
 

@@ -16274,8 +16274,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           while (1)
             {
               iterator_t groups, roles;
-              const char *hosts;
-              int hosts_allow;
+              const char *hosts, *ifaces;
+              int hosts_allow, ifaces_allow;
 
               ret = get_next (&users, &get_users_data->get, &first, &count,
                               init_user_iterator);
@@ -16290,7 +16290,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_COMMON (user, &get_users_data->get, &users);
 
               hosts = user_iterator_hosts (&users);
-              if (hosts && (strlen (hosts) == 0))
+              if (strlen (hosts ? hosts : "") == 0)
                 hosts_allow = 2;
               else
                 hosts_allow = user_iterator_hosts_allow (&users);
@@ -16303,6 +16303,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         ? user_iterator_method (&users)
                                         : "file");
 
+              /* Interfaces Access */
+              ifaces = user_iterator_ifaces (&users);
+              if (strlen (ifaces ? ifaces : "") == 0)
+                ifaces_allow = 2;
+              else
+                ifaces_allow = user_iterator_ifaces_allow (&users);
+              SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
+                                       ifaces_allow,
+                                       ifaces ? ifaces : "");
+
+              /* User Roles */
               init_user_role_iterator (&roles,
                                        get_iterator_resource (&users));
               while (next (&roles))

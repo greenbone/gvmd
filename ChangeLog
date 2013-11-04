@@ -1,5 +1,16 @@
 2013-11-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* manage_sql.c (USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS)
+	(USER_ITERATOR_TRASH_COLUMNS): Add ifaces and ifaces_allow columns.
+	(user_iterator_ifaces, user_iterator_ifaces_allow): New functions.
+
+	* src/manage.h: Add prototypes accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send ifaces element in
+	get_users case.
+
+2013-11-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add Interface Access for users. Hence increase database version
 	to 106.  Add database migration from version 105 to 106.
 
