@@ -5457,18 +5457,17 @@ void
 init_task_group_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
-                 "SELECT ROWID, resource, subject,"
+                 "SELECT DISTINCT 1, resource, subject,"
                  " (SELECT name FROM groups"
                  "  WHERE groups.ROWID = permissions.subject),"
                  " (SELECT uuid FROM groups"
                  "  WHERE groups.ROWID = permissions.subject)"
                  " FROM permissions"
+                 /* Any permission implies 'get'. */
                  " WHERE resource_type = 'task'"
                  " AND resource = %llu"
                  " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
-                 " AND subject_type = 'group'"
-                 // FIX other types imply 'get' too?
-                 " AND name = 'get';",
+                 " AND subject_type = 'group';",
                  task);
 }
 
@@ -5515,18 +5514,17 @@ void
 init_task_role_iterator (iterator_t *iterator, task_t task)
 {
   init_iterator (iterator,
-                 "SELECT ROWID, resource, subject,"
+                 "SELECT DISTINCT 1, resource, subject,"
                  " (SELECT name FROM roles"
                  "  WHERE roles.ROWID = permissions.subject),"
                  " (SELECT uuid FROM roles"
                  "  WHERE roles.ROWID = permissions.subject)"
                  " FROM permissions"
+                 /* Any permission implies 'get'. */
                  " WHERE resource_type = 'task'"
                  " AND resource = %llu"
                  " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
-                 " AND subject_type = 'role'"
-                 // FIX other types imply 'get' too?
-                 " AND name = 'get';",
+                 " AND subject_type = 'role'",
                  task);
 }
 
@@ -13128,7 +13126,8 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
   sql ("DELETE FROM permissions"
        " WHERE resource_type = 'task'"
        " AND resource = %llu"
-       " AND subject_type = 'group';",
+       " AND subject_type = 'group'"
+       " AND name = 'get';",
        task);
 
   index = 0;

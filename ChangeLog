@@ -1,3 +1,13 @@
+2013-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_group_iterator)
+	(init_task_role_iterator): Make the select distinct in case there are
+	multiple permissions for the subject on the task.  Include groups that
+	have any type of permission on the task, because all of them can see the
+	task.
+	(set_task_groups): Remove only the 'get' permissions, because those are
+	the ones that this function adds.
+
 2013-11-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* manage_sql.c (USER_ITERATOR_FILTER_COLUMNS, USER_ITERATOR_COLUMNS)
@@ -33,6 +43,7 @@
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)
 	(omp_xml_handle_text): Handle ifaces element for create_user and
 	modify_user cases.
+
 2013-10-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (filter_clause): Cast slave port to integer when sorting
