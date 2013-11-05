@@ -41,6 +41,7 @@
 #define _XOPEN_SOURCE
 
 #include "manage.h"
+#include "sql.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
@@ -1450,37 +1451,109 @@ send_task_preferences (task_t task)
   return 0;
 }
 
-#if 0
 /**
- * @brief Send the rules (CLIENTSIDE_USERRULES) from a config to the scanner.
- *
- * @param[in]  config  Config.
+ * @brief Send ifaces_allow and ifaces_deny preferences to scanner.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
-send_config_rules (const char* config)
+send_ifaces_preferences (void)
 {
-  iterator_t prefs;
+  char *ifaces;
+  int ifaces_allow;
 
-  init_preference_iterator (&prefs, config, "CLIENTSIDE_USERRULES");
-  while (next (&prefs))
+  ifaces = sql_string (0, 0,
+                       "SELECT ifaces FROM users WHERE uuid = '%s';",
+                       current_credentials.uuid);
+  ifaces_allow = sql_int (0, 0,
+                          "SELECT ifaces_allow FROM users WHERE uuid = '%s';",
+                          current_credentials.uuid);
+
+  if (ifaces && strlen (ifaces))
     {
-      if (send_to_server (preference_iterator_name (&prefs)))
+      char *pref;
+
+      if (ifaces_allow == 1)
+        pref = "ifaces_allow";
+      else if (ifaces_allow == 0)
+        pref = "ifaces_deny";
+      else
         {
-          cleanup_iterator (&prefs);
-          return -1;
+          g_free (ifaces);
+          return 0;
         }
-      if (sendn_to_server ("\n", 1))
+
+      if (sendf_to_server ("%s <|> %s\n", pref, ifaces))
         {
-          cleanup_iterator (&prefs);
+          g_free (ifaces);
           return -1;
         }
     }
-  cleanup_iterator (&prefs);
   return 0;
 }
-#endif
+
+/**
+ * @brief Send some scanner preferences to the scanner.
+ *
+ * @param[in]  task     Task.
+ * @param[in]  target   Scan target.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_scanner_preferences (task_t task, target_t target)
+{
+  char *hosts_ordering, *exclude_hosts, *reverse_lookup_only;
+  char *reverse_lookup_unify;
+
+  /* Send ifaces_allow / ifaces_deny preferences. */
+  if (send_ifaces_preferences ())
+    return -1;
+
+  /* Send hosts_ordering preference. */
+  hosts_ordering = task_hosts_ordering (task);
+  if (hosts_ordering)
+    {
+      if (sendf_to_server ("hosts_ordering <|> %s\n", hosts_ordering))
+        {
+          free (hosts_ordering);
+          return -1;
+        }
+      free (hosts_ordering);
+    }
+
+  /* Send exclude_hosts preference. */
+  exclude_hosts = target_exclude_hosts (target);
+  if (exclude_hosts)
+    {
+      if (sendf_to_server ("exclude_hosts <|> %s\n", exclude_hosts))
+        {
+          free (exclude_hosts);
+          return -1;
+        }
+      free (exclude_hosts);
+    }
+
+  /* Send reverse_lookup_only preference. */
+  reverse_lookup_only = target_reverse_lookup_only (target);
+  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
+    reverse_lookup_only = "no";
+  else
+    reverse_lookup_only = "yes";
+  if (sendf_to_server ("reverse_lookup_only <|> %s\n", reverse_lookup_only))
+    return -1;
+
+  /* Send reverse_lookup_unify preference. */
+  reverse_lookup_unify = target_reverse_lookup_unify (target);
+  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
+    reverse_lookup_unify = "no";
+  else
+    reverse_lookup_unify = "yes";
+  if (sendf_to_server ("reverse_lookup_unify <|> %s\n", reverse_lookup_unify))
+    return -1;
+
+  return 0;
+}
 
 /**
  * @brief Send the rules listed in the users directory.
@@ -2784,8 +2857,7 @@ run_task (const char *task_id, char **report_id, int from)
 {
   task_t task;
   target_t target;
-  char *hosts, *port_range, *port, *exclude_hosts, *hosts_ordering;
-  char *reverse_lookup_only, *reverse_lookup_unify;
+  char *hosts, *port_range, *port;
   gchar *plugins;
   int fail, pid;
   GSList *files = NULL;
@@ -3111,52 +3183,8 @@ run_task (const char *task_id, char **report_id, int from)
       return -10;
     }
 
-  /* Send exclude_hosts preference. */
-
-  exclude_hosts = target_exclude_hosts (target);
-  if (exclude_hosts)
-    {
-      if (sendf_to_server ("exclude_hosts <|> %s\n", exclude_hosts))
-        {
-          free (hosts);
-          free (exclude_hosts);
-          g_ptr_array_add (preference_files, NULL);
-          array_free (preference_files);
-          slist_free (files);
-          set_task_run_status (task, run_status);
-          set_report_scan_run_status (current_report, run_status);
-          current_report = (report_t) 0;
-          return -10;
-        }
-      free (exclude_hosts);
-    }
-
-  /* Send hosts_ordering preference. */
-  hosts_ordering = task_hosts_ordering (task);
-  if (hosts_ordering)
-    {
-      if (sendf_to_server ("hosts_ordering <|> %s\n", hosts_ordering))
-        {
-          free (hosts);
-          free (hosts_ordering);
-          g_ptr_array_add (preference_files, NULL);
-          array_free (preference_files);
-          slist_free (files);
-          set_task_run_status (task, run_status);
-          set_report_scan_run_status (current_report, run_status);
-          current_report = (report_t) 0;
-          return -10;
-        }
-      free (hosts_ordering);
-    }
-
-  /* Send reverse_lookup_only preference. */
-  reverse_lookup_only = target_reverse_lookup_only (target);
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
-    reverse_lookup_only = g_strdup ("no");
-  else
-    reverse_lookup_only = g_strdup ("yes");
-  if (sendf_to_server ("reverse_lookup_only <|> %s\n", reverse_lookup_only))
+  /* Send other scanner preferences. */
+  if (send_scanner_preferences (task, target))
     {
       free (hosts);
       g_ptr_array_add (preference_files, NULL);
@@ -3167,26 +3195,6 @@ run_task (const char *task_id, char **report_id, int from)
       current_report = (report_t) 0;
       return -10;
     }
-  g_free (reverse_lookup_only);
-
-  /* Send reverse_lookup_unify preference. */
-  reverse_lookup_unify = target_reverse_lookup_unify (target);
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
-    reverse_lookup_unify = g_strdup ("no");
-  else
-    reverse_lookup_unify = g_strdup ("yes");
-  if (sendf_to_server ("reverse_lookup_unify <|> %s\n", reverse_lookup_unify))
-    {
-      free (hosts);
-      g_ptr_array_add (preference_files, NULL);
-      array_free (preference_files);
-      slist_free (files);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-  g_free (reverse_lookup_unify);
 
   /* Send credential preferences if there are credentials linked to target. */
 

@@ -1,3 +1,10 @@
+2013-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (send_ifaces_preferences, send_scanner_preferences): New
+	function.
+	(run_task): Refactor code to send_scanner_preferences, and call it
+	accordingly.
+
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_permission): For simplicity, refuse to make a
