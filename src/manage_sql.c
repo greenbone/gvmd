@@ -206,9 +206,6 @@ int
 type_has_permissions (const char *);
 
 gboolean
-find_report_with_permission (const char *, report_t *, const char *);
-
-gboolean
 find_group (const char*, group_t*);
 
 gboolean
@@ -3616,6 +3613,54 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
   gchar *quoted_uuid;
   quoted_uuid = sql_quote (uuid);
   if (user_owns_uuid (type, quoted_uuid, 0) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  // TODO should really check type
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss WHERE uuid = '%s'%s;",
+                     type,
+                     quoted_uuid,
+                     strcmp (type, "task") ? "" : " AND hidden < 2"))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}
+
+/**
+ * @brief Find a resource given a UUID and a permission.
+ *
+ * @param[in]   type        Type of resource.
+ * @param[in]   uuid        UUID of resource.
+ * @param[out]  resource    Resource return, 0 if succesfully failed to find
+ *                          resource.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+gboolean
+find_resource_with_permission (const char* type, const char* uuid,
+                               resource_t* resource, const char *permission)
+{
+  gchar *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -25217,40 +25262,19 @@ find_task (const char* uuid, task_t* task)
 }
 
 /**
- * @brief Find a task for an action, given an identifier.
+ * @brief Find a task for a specific permission, given a UUID.
  *
- * @param[in]   uuid     A task identifier.
- * @param[out]  task     Task return, 0 if succesfully failed to find task.
- * @param[in]   actions  Actions.
+ * @param[in]   uuid      UUID of task.
+ * @param[out]  task      Task return, 0 if succesfully failed to find task.
+ * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find task), TRUE on error.
  */
 gboolean
-find_task_for_actions (const char* uuid, task_t* task, const char *actions)
+find_task_with_permission (const char* uuid, task_t* task,
+                           const char *permission)
 {
-  if (user_has_access_uuid ("task", uuid, actions, NULL, 0) == 0)
-    {
-      *task = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (task, 0, 0,
-                     "SELECT ROWID FROM tasks WHERE uuid = '%s'"
-                     " AND hidden != 2;",
-                     uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *task = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
+  return find_resource_with_permission ("task", uuid, task, permission);
 }
 
 /**
@@ -25338,69 +25362,7 @@ gboolean
 find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *report = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (report, 0, 0,
-                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find a report given an identifier.
- *
- * @param[in]   uuid     A report identifier.
- * @param[out]  report   Report return, 0 if succesfully failed to find report.
- * @param[in]   actions  Actions.
- *
- * @return FALSE on success (including if failed to find report), TRUE on error.
- */
-gboolean
-find_report_for_actions (const char* uuid, report_t* report,
-                         const char *actions)
-{
-  if (user_has_access_uuid ("report", uuid, actions, NULL, 0) == 0)
-    {
-      *report = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (report, 0, 0,
-                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
-                     uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
+  return find_resource_with_permission ("report", uuid, report, permission);
 }
 
 /**
@@ -25574,47 +25536,6 @@ gboolean
 find_target (const char* uuid, target_t* target)
 {
   return find_resource ("target", uuid, target);
-}
-
-/**
- * @brief Find a target for a set of actions, given a UUID.
- *
- * @param[in]   uuid     UUID of target.
- * @param[out]  target   Target return, 0 if succesfully failed to find target.
- * @param[in]   actions  Actions.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_target_for_actions (const char* uuid, target_t* target,
-                         const char *actions)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("target", quoted_uuid, actions, NULL, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *target = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (target, 0, 0,
-                     "SELECT ROWID FROM targets WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *target = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
 }
 
 /**
@@ -27566,43 +27487,20 @@ find_config (const char* uuid, config_t* config)
 }
 
 /**
- * @brief Find a config for a set of actions, given a UUID.
+ * @brief Find a config for a set of permissions, given a UUID.
  *
- * @param[in]   uuid     Config UUID.
- * @param[out]  config   Config return, 0 if succesfully failed to find config.
- * @param[in]   actions  Actions.
+ * @param[in]   uuid        UUID of config.
+ * @param[out]  config      Config return, 0 if succesfully failed to find
+ *                          config.
+ * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find config), TRUE on error.
  */
 gboolean
-find_config_for_actions (const char* uuid, config_t* config,
-                         const char *actions)
+find_config_with_permission (const char* uuid, config_t* config,
+                             const char *permission)
 {
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("config", quoted_uuid, actions, NULL, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *config = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (config, 0, 0,
-                     "SELECT ROWID FROM configs WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *config = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-  g_free (quoted_uuid);
-  return FALSE;
+  return find_resource_with_permission ("config", uuid, config, permission);
 }
 
 /**
@@ -32304,50 +32202,6 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 {
   gchar *quoted_uuid = sql_quote (uuid);
   if (user_owns_uuid ("lsc_credential", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *lsc_credential = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (lsc_credential, 0, 0,
-                     "SELECT ROWID FROM lsc_credentials WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *lsc_credential = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find an LSC credential given a UUID.
- *
- * @param[in]   uuid            UUID of LSC credential.
- * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
- *                              to find credential.
- * @param[in]   actions         Actions.
- *
- * @return FALSE on success (including if failed to find LSC credential),
- *         TRUE on error.
- */
-gboolean
-find_lsc_credential_for_actions (const char* uuid,
-                                 lsc_credential_t* lsc_credential,
-                                 const char *actions)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("lsc_credential", quoted_uuid, actions, NULL, 0) == 0)
     {
       g_free (quoted_uuid);
       *lsc_credential = 0;

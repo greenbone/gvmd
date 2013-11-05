@@ -694,7 +694,7 @@ gboolean
 find_task (const char* id, task_t*);
 
 gboolean
-find_task_for_actions (const char*, task_t*, const char *);
+find_task_with_permission (const char*, task_t*, const char *);
 
 void
 reset_task (task_t);
@@ -934,7 +934,7 @@ gboolean
 find_report (const char*, report_t*);
 
 gboolean
-find_report_for_actions (const char*, report_t*, const char *);
+find_report_with_permission (const char *, report_t *, const char *);
 
 result_t
 make_result (task_t, const char*, const char*, const char*,
@@ -1235,9 +1235,6 @@ manage_count_hosts (const char *, const char *);
 gboolean
 find_target (const char*, target_t*);
 
-gboolean
-find_target_for_actions (const char*, target_t*, const char *);
-
 int
 create_target (const char*, const char*, const char*, const char*, const char *,
                const char*, lsc_credential_t, const char*, lsc_credential_t,
@@ -1413,7 +1410,7 @@ int
 delete_config (const char*, int);
 
 gboolean
-find_config_for_actions (const char*, config_t*, const char*);
+find_config_with_permission (const char*, config_t*, const char *);
 
 gboolean
 find_config (const char*, config_t*);
@@ -1728,9 +1725,6 @@ task_role_iterator_uuid (iterator_t*);
 
 gboolean
 find_lsc_credential (const char*, lsc_credential_t*);
-
-gboolean
-find_lsc_credential_for_actions (const char*, lsc_credential_t*, const char *);
 
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
@@ -2859,9 +2853,6 @@ split_filter (const gchar*);
 
 gboolean
 find_filter (const char*, filter_t*);
-
-gboolean
-find_filter_for_actions (const char*, filter_t*, const char*);
 
 char*
 filter_uuid (filter_t);

@@ -1,5 +1,21 @@
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_resource_with_permission): New function.
+	(find_task_with_permission,
+	(find_task_for_actions, find_report_for_actions)
+	(find_target_for_actions, find_config_for_actions)
+	(find_lsc_credential_for_actions): Remove.  Replaced with permission
+	versions.
+	(find_report_with_permission, find_config_with_permission): Use
+	find_resource_with_permission.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Replace actions find calls
+	with permissions versions.
+
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (parse_actions): Remove.  Out of use.
 	(user_has_access_uuid): Use only the permissions case, removing the
 	type_has_permissions check which has been always true for some time now.

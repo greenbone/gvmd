@@ -13010,9 +13010,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                 }
               else if (get_nvts_data->config_id
-                       && find_config_for_actions (get_nvts_data->config_id,
-                                                   &config,
-                                                   get_nvts_data->actions))
+                       && find_config_with_permission (get_nvts_data->config_id,
+                                                       &config,
+                                                       NULL))
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("get_nvts"));
               else if (get_nvts_data->config_id && (config == 0))
@@ -13687,9 +13687,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if ((strcmp (get_reports_data->type, "scan") == 0)
             && get_reports_data->report_id
-            && find_report_for_actions (get_reports_data->report_id,
-                                        &request_report,
-                                        "g"))
+            && find_report_with_permission (get_reports_data->report_id,
+                                            &request_report,
+                                            NULL))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -13699,9 +13699,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         if (get_reports_data->delta_report_id
             && strcmp (get_reports_data->delta_report_id, "0")
-            && find_report_for_actions (get_reports_data->delta_report_id,
-                                        &delta_report,
-                                        "g"))
+            && find_report_with_permission (get_reports_data->delta_report_id,
+                                            &delta_report,
+                                            NULL))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
@@ -14598,9 +14598,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (get_results_data->task_id
-                   && find_task_for_actions (get_results_data->task_id,
-                                             &task,
-                                             "g"))
+                   && find_task_with_permission (get_results_data->task_id,
+                                                 &task,
+                                                 NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (get_results_data->task_id && task == 0)
             {
@@ -14628,9 +14628,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   char *task_id;
                   task_uuid (result_iterator_task (&results), &task_id);
-                  if (find_task_for_actions (task_id,
-                                             &task,
-                                             "g"))
+                  if (find_task_with_permission (task_id,
+                                                 &task,
+                                                 NULL))
                     SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
                   free (task_id);
                 }
@@ -17651,9 +17651,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "Host specification exceeds"
                                 " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
           else if (create_note_data->task_id
-                   && find_task_for_actions (create_note_data->task_id,
-                                             &task,
-                                             "g"))
+                   && find_task_with_permission (create_note_data->task_id,
+                                                 &task,
+                                                 NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->task_id && task == 0)
             {
@@ -17831,9 +17831,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_OVERRIDE requires a NEW_THREAT"
                                 " or NEW_SEVERITY entity"));
           else if (create_override_data->task_id
-              && find_task_for_actions (create_override_data->task_id,
-                                        &task,
-                                        "g"))
+              && find_task_with_permission (create_override_data->task_id,
+                                            &task,
+                                            NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
           else if (create_override_data->task_id && task == 0)
             {
@@ -21457,9 +21457,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_note_data->task_id
-                   && find_task_for_actions (modify_note_data->task_id,
-                                             &task,
-                                             "g"))
+                   && find_task_with_permission (modify_note_data->task_id,
+                                                 &task,
+                                                 NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (modify_note_data->task_id && task == 0)
             {
@@ -21581,9 +21581,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_override_data->task_id
-                   && find_task_for_actions (modify_override_data->task_id,
-                                             &task,
-                                             "g"))
+                   && find_task_with_permission (modify_override_data->task_id,
+                                                 &task,
+                                                 NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (modify_override_data->task_id && task == 0)
             {
