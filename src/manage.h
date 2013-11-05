@@ -903,7 +903,7 @@ gboolean
 find_result (const char*, result_t*);
 
 gboolean
-find_result_for_actions (const char*, result_t*, const char *);
+find_result_with_permission (const char*, result_t*, const char *);
 
 int
 result_uuid (result_t, /*@out@*/ char **);

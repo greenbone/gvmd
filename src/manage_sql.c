@@ -607,6 +607,28 @@ user_has_access_uuid (const char *resource, const char *uuid,
             return 0;
           task_uuid (task, &uuid_task);
         }
+      else if (strcasecmp (resource, "result") == 0)
+        {
+          task_t task;
+
+          switch (sql_int64 (&task, 0, 0,
+                             "SELECT task FROM results WHERE uuid = '%s';",
+                             uuid))
+            {
+              case 0:
+                break;
+              case 1:        /* Too few rows in result of query. */
+                return 0;
+                break;
+              default:       /* Programming error. */
+                assert (0);
+              case -1:
+                return 0;
+                break;
+            }
+
+          task_uuid (task, &uuid_task);
+        }
       else
         uuid_task = NULL;
 
@@ -13847,26 +13869,29 @@ find_result (const char* uuid, result_t* result)
 }
 
 /**
- * @brief Find a result given an identifier.
+ * @brief Find a result for a set of permissions, given a UUID.
  *
- * @param[in]   uuid     A result identifier.
- * @param[out]  result   Result return, 0 if succesfully failed to find result.
- * @param[in]   actions  Actions.
+ * @param[in]   uuid        UUID of result.
+ * @param[out]  result      Result return, 0 if succesfully failed to find
+ *                          result.
+ * @param[in]   permission  Permission.
  *
  * @return FALSE on success (including if failed to find result), TRUE on error.
  */
 gboolean
-find_result_for_actions (const char *uuid, result_t *result,
-                         const char *actions)
+find_result_with_permission (const char* uuid, result_t* result,
+                             const char *permission)
 {
-  if (user_has_access_uuid ("result", uuid, actions, NULL, 0) == 0)
+  gchar *quoted_uuid = sql_quote (uuid);
+  if (user_has_access_uuid ("result", quoted_uuid, NULL, permission, 0) == 0)
     {
+      g_free (quoted_uuid);
       *result = 0;
       return FALSE;
     }
   switch (sql_int64 (result, 0, 0,
                      "SELECT ROWID FROM results WHERE uuid = '%s';",
-                     uuid))
+                     quoted_uuid))
     {
       case 0:
         break;
@@ -13876,10 +13901,12 @@ find_result_for_actions (const char *uuid, result_t *result,
       default:       /* Programming error. */
         assert (0);
       case -1:
+        g_free (quoted_uuid);
         return TRUE;
         break;
     }
 
+  g_free (quoted_uuid);
   return FALSE;
 }
 

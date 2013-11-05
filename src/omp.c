@@ -14581,9 +14581,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " details set to true if the"
                                 " notes attribute is true"));
           else if (get_results_data->result_id
-                   && find_result_for_actions (get_results_data->result_id,
-                                               &result,
-                                               "g"))
+                   && find_result_with_permission (get_results_data->result_id,
+                                                   &result,
+                                                   NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
           else if (get_results_data->result_id && result == 0)
             {
@@ -17668,9 +17668,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_note_data->result_id
-                   && find_result_for_actions (create_note_data->result_id,
-                                               &result,
-                                               "g"))
+                   && find_result_with_permission (create_note_data->result_id,
+                                                   &result,
+                                                   NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_note"));
           else if (create_note_data->result_id && result == 0)
             {
@@ -17848,9 +17848,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_override_data->result_id
-                   && find_result_for_actions (create_override_data->result_id,
-                                               &result,
-                                               "g"))
+                   && find_result_with_permission (create_override_data->result_id,
+                                                   &result,
+                                                   NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_override"));
           else if (create_override_data->result_id && result == 0)
             {
@@ -21474,9 +21474,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_note_data->result_id
-                   && find_result_for_actions (modify_note_data->result_id,
-                                               &result,
-                                               "g"))
+                   && find_result_with_permission (modify_note_data->result_id,
+                                                   &result,
+                                                   NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (modify_note_data->result_id && result == 0)
             {
@@ -21598,9 +21598,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (modify_override_data->result_id
-                   && find_result_for_actions (modify_override_data->result_id,
-                                               &result,
-                                               "g"))
+                   && find_result_with_permission (modify_override_data->result_id,
+                                                   &result,
+                                                   NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (modify_override_data->result_id && result == 0)
             {
