@@ -1,3 +1,8 @@
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (where_owned): Make all permissions visible to
+	admins, except those that refer to resources.
+
 2013-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (send_ifaces_preferences, send_scanner_preferences): New

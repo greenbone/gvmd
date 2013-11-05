@@ -4078,43 +4078,51 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                         "   WHERE users.uuid = '%s')))",
                                         current_credentials.uuid);
       else if (strcmp (type, "permission") == 0)
-        /* A user may see permissions that involve the user. */
-        owned_clause
-         = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
-                            "                WHERE users.uuid = '%s'))"
-                            "  OR (%ss.subject_type = 'user'"
-                            "      AND %ss.subject"
-                            "          = (SELECT ROWID FROM users"
-                            "             WHERE users.uuid = '%s'))"
-                            "  OR (%ss.subject_type = 'group'"
-                            "      AND %ss.subject"
-                            "          IN (SELECT DISTINCT `group`"
-                            "              FROM group_users"
-                            "              WHERE user = (SELECT ROWID"
-                            "                            FROM users"
-                            "                            WHERE users.uuid"
-                            "                                  = '%s')))"
-                            "  OR (%ss.subject_type = 'role'"
-                            "      AND %ss.subject"
-                            "          IN (SELECT DISTINCT role"
-                            "              FROM role_users"
-                            "              WHERE user = (SELECT ROWID"
-                            "                            FROM users"
-                            "                            WHERE users.uuid"
-                            "                                  = '%s')))"
-                            "  %s)",
-                            type,
-                            current_credentials.uuid,
-                            type,
-                            type,
-                            current_credentials.uuid,
-                            type,
-                            type,
-                            current_credentials.uuid,
-                            type,
-                            type,
-                            current_credentials.uuid,
-                            permission_clause ? permission_clause : "");
+        {
+          int admin;
+          admin = current_credentials.role
+                  && (strcasecmp (current_credentials.role, "Admin") == 0);
+          /* A user sees permissions that involve the user.  Admin users also
+           * see all higher level permissions. */
+          owned_clause
+           = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
+                              "                WHERE users.uuid = '%s'))"
+                              "  %s"
+                              "  OR (%ss.subject_type = 'user'"
+                              "      AND %ss.subject"
+                              "          = (SELECT ROWID FROM users"
+                              "             WHERE users.uuid = '%s'))"
+                              "  OR (%ss.subject_type = 'group'"
+                              "      AND %ss.subject"
+                              "          IN (SELECT DISTINCT `group`"
+                              "              FROM group_users"
+                              "              WHERE user = (SELECT ROWID"
+                              "                            FROM users"
+                              "                            WHERE users.uuid"
+                              "                                  = '%s')))"
+                              "  OR (%ss.subject_type = 'role'"
+                              "      AND %ss.subject"
+                              "          IN (SELECT DISTINCT role"
+                              "              FROM role_users"
+                              "              WHERE user = (SELECT ROWID"
+                              "                            FROM users"
+                              "                            WHERE users.uuid"
+                              "                                  = '%s')))"
+                              "  %s)",
+                              type,
+                              current_credentials.uuid,
+                              admin ? "OR (permissions.resource = 0)" : "",
+                              type,
+                              type,
+                              current_credentials.uuid,
+                              type,
+                              type,
+                              current_credentials.uuid,
+                              type,
+                              type,
+                              current_credentials.uuid,
+                              permission_clause ? permission_clause : "");
+        }
       else if (type_has_permissions (type))
         owned_clause
          = g_strdup_printf (" ((%ss.owner IS NULL)"
