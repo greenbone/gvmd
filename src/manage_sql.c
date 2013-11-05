@@ -4285,8 +4285,12 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   g_free (filter);
 
-  owned_clause = where_owned (type, get, owned, owner_filter, resource,
-                              permissions);
+  if (resource)
+    /* Ownership test is done above by find function. */
+    owned_clause = g_strdup (" 1");
+  else
+    owned_clause = where_owned (type, get, owned, owner_filter, resource,
+                                permissions);
 
   g_free (owner_filter);
   array_free (permissions);
@@ -44216,22 +44220,6 @@ gboolean
 find_filter (const char* uuid, filter_t* filter)
 {
   return find_resource ("filter", uuid, filter);
-}
-
-/**
- * @brief Find a filter for a set of actions, given a UUID.
- *
- * @param[in]   uuid     UUID of filter.
- * @param[out]  filter   Filter return, 0 if succesfully failed to find filter.
- * @param[in]   actions  Actions.
- *
- * @return FALSE on success (including if failed to find filter), TRUE on error.
- */
-gboolean
-find_filter_for_actions (const char* uuid, filter_t* filter,
-                         const char *actions)
-{
-  return find_resource_for_actions ("filter", uuid, filter, actions, 0);
 }
 
 /**

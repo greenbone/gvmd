@@ -1,5 +1,11 @@
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_get_iterator): Skip the ownership clause when
+	there is a resource, because the owner check is done when finding the
+	resource.
+
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (credential_is_admin): New function.
 	(user_has_access_uuid): Allow admins to delete/modify/etc other users'
 	permissions.
