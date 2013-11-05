@@ -1,5 +1,12 @@
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (credential_is_admin): New function.
+	(user_has_access_uuid): Allow admins to delete/modify/etc other users'
+	permissions.
+	(where_owned): Use new function.
+
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (where_owned): Make all permissions visible to
 	admins, except those that refer to resources.
 

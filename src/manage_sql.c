@@ -535,7 +535,20 @@ parse_actions (const char *actions_string)
 }
 
 /**
- * @brief Test whether a user may access a resource for a set of actions.
+ * @brief Check whether the credentials user is an admin.
+ *
+ * @param[in]  actions_string  Specifier.
+ *
+ * @return 1 .
+ */
+static int
+credentials_is_admin (credentials_t credentials)
+{
+  return credentials.role && (strcasecmp (credentials.role, "Admin") == 0);
+}
+
+/**
+ * @brief Test whether the user may access a resource for a set of actions.
  *
  * @param[in]  resource  Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
@@ -605,7 +618,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
                          "SELECT count(*) FROM permissions"
                          /* Any permission implies 'get'. */
                          " WHERE (resource_uuid = '%s'"
-                         /* Users may view any permission that affect them. */
+                         /* Users may view any permissions that affect them. */
                          "        OR uuid = '%s')"
                          " AND ((subject_type = 'user'"
                          "       AND subject"
@@ -634,6 +647,14 @@ user_has_access_uuid (const char *resource, const char *uuid,
                          current_credentials.uuid);
           free (uuid_task);
           return ret;
+        }
+      else if (strcmp (resource, "permission") == 0)
+        {
+          /* Only Admins can modify, delete, etc other users' permissions.
+           * This only really affects higher level permissions, because that's
+           * all Admins can see of others' permissions. */
+          free (uuid_task);
+          return credentials_is_admin (current_credentials);
         }
 
       get = (permission == NULL || strcmp (permission, "get") == 0);
@@ -4080,8 +4101,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
       else if (strcmp (type, "permission") == 0)
         {
           int admin;
-          admin = current_credentials.role
-                  && (strcasecmp (current_credentials.role, "Admin") == 0);
+          admin = credentials_is_admin (current_credentials);
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
           owned_clause
