@@ -550,7 +550,7 @@ credentials_is_admin (credentials_t credentials)
 /**
  * @brief Test whether the user may access a resource for a set of actions.
  *
- * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  type      Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
  * @param[in]  actions_string   Actions.
  * @param[in]  permission       Permission.
@@ -559,7 +559,7 @@ credentials_is_admin (credentials_t credentials)
  * @return 1 if user may access resource, else 0.
  */
 static int
-user_has_access_uuid (const char *resource, const char *uuid,
+user_has_access_uuid (const char *type, const char *uuid,
                       const char *actions_string, const char *permission,
                       int trash)
 {
@@ -567,7 +567,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
 
   assert (current_credentials.uuid);
 
-  ret = user_owns_uuid (resource, uuid, trash);
+  ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
 
@@ -575,13 +575,13 @@ user_has_access_uuid (const char *resource, const char *uuid,
     /* For simplicity, trashcan items are visible only to their owners. */
     return 0;
 
-  if (type_has_permissions (resource))
+  if (type_has_permissions (type))
     {
       int get;
       char *uuid_task;
       gchar *quoted_permission;
 
-      if (strcasecmp (resource, "report") == 0)
+      if (strcasecmp (type, "report") == 0)
         {
           task_t task;
           report_t report;
@@ -607,7 +607,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
             return 0;
           task_uuid (task, &uuid_task);
         }
-      else if (strcasecmp (resource, "result") == 0)
+      else if (strcasecmp (type, "result") == 0)
         {
           task_t task;
 
@@ -632,7 +632,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
       else
         uuid_task = NULL;
 
-      if ((strcmp (resource, "permission") == 0)
+      if ((strcmp (type, "permission") == 0)
           && ((permission == NULL)
               || (strcmp (permission, "get") == 0)))
         {
@@ -670,7 +670,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
           free (uuid_task);
           return ret;
         }
-      else if (strcmp (resource, "permission") == 0)
+      else if (strcmp (type, "permission") == 0)
         {
           /* Only Admins can modify, delete, etc other users' permissions.
            * This only really affects higher level permissions, because that's
@@ -727,7 +727,7 @@ user_has_access_uuid (const char *resource, const char *uuid,
   if (actions == 0)
     return 0;
 
-  if (strcmp (resource, "result") == 0)
+  if (strcmp (type, "result") == 0)
     {
       int get;
       gchar *quoted_permission;
@@ -790,11 +790,11 @@ user_has_access_uuid (const char *resource, const char *uuid,
                  "  (SELECT ROWID FROM users"
                  "   WHERE users.uuid = '%s')"
                  "  AND actions & %u = %u));",
-                 resource,
+                 type,
                  uuid,
                  current_credentials.uuid,
-                 resource,
-                 resource,
+                 type,
+                 type,
                  current_credentials.uuid,
                  actions,
                  actions);

@@ -1,5 +1,10 @@
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_has_access_uuid): Rename arg resource to type,
+	because it's a type.
+
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Check task if type is result.
 	(find_result_with_permission): New function.
 	(find_result_for_actions): Remove.  Replaced with permission version.
