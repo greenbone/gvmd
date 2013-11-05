@@ -41688,7 +41688,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
  *
  * @return 0 success, 2 failed to find subject, 3 failed to find resource,
  *         5 error in resource, 6 error in subject, 7 error in name,
- *         99 permission denied, -1 internal error.
+ *         8 permission on permission, 99 permission denied, -1 internal error.
  */
 int
 create_permission (const char *name_arg, const char *comment,
@@ -41754,6 +41754,13 @@ create_permission (const char *name_arg, const char *comment,
     {
       resource_id = NULL;
       resource_type = NULL;
+    }
+
+  /* For simplicity refuse to make permissions on permissions. */
+  if (resource && strcasestr (name_arg, "permission"))
+    {
+      sql ("ROLLBACK;");
+      return 8;
     }
 
   // TODO Does current user have permission to grant subject this permission?

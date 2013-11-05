@@ -18058,6 +18058,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "Error in NAME"));
                 log_event_fail ("permission", "Permission", NULL, "created");
                 break;
+              case 8:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_permission",
+                                    "Attempt to create permission on"
+                                    " permission"));
+                log_event_fail ("permission", "Permission", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_permission",
