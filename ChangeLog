@@ -1,5 +1,11 @@
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (parse_actions): Remove.  Out of use.
+	(user_has_access_uuid): Use only the permissions case, removing the
+	type_has_permissions check which has been always true for some time now.
+
+2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (user_has_access_uuid): Rename arg resource to type,
 	because it's a type.
 

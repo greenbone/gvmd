@@ -514,27 +514,6 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 }
 
 /**
- * @brief Parse an action specifier.
- *
- * @param[in]  actions_string  Specifier.
- *
- * @return Actions.
- */
-static int
-parse_actions (const char *actions_string)
-{
-  int actions;
-  actions = 0;
-  if (strchr (actions_string, 'g'))
-    actions |= MANAGE_ACTION_GET;
-  if (strchr (actions_string, 'm'))
-    actions |= MANAGE_ACTION_MODIFY;
-  if (strchr (actions_string, 'u'))
-    actions |= MANAGE_ACTION_USE;
-  return actions;
-}
-
-/**
  * @brief Check whether the credentials user is an admin.
  *
  * @param[in]  actions_string  Specifier.
@@ -563,7 +542,9 @@ user_has_access_uuid (const char *type, const char *uuid,
                       const char *actions_string, const char *permission,
                       int trash)
 {
-  int ret, actions;
+  int ret, get;
+  char *uuid_task;
+  gchar *quoted_permission;
 
   assert (current_credentials.uuid);
 
@@ -575,116 +556,67 @@ user_has_access_uuid (const char *type, const char *uuid,
     /* For simplicity, trashcan items are visible only to their owners. */
     return 0;
 
-  if (type_has_permissions (type))
+  if (strcasecmp (type, "report") == 0)
     {
-      int get;
-      char *uuid_task;
-      gchar *quoted_permission;
+      task_t task;
+      report_t report;
 
-      if (strcasecmp (type, "report") == 0)
+      switch (sql_int64 (&report, 0, 0,
+                         "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                         uuid))
         {
-          task_t task;
-          report_t report;
-
-          switch (sql_int64 (&report, 0, 0,
-                             "SELECT ROWID FROM reports WHERE uuid = '%s';",
-                             uuid))
-            {
-              case 0:
-                break;
-              case 1:        /* Too few rows in result of query. */
-                return 0;
-                break;
-              default:       /* Programming error. */
-                assert (0);
-              case -1:
-                return 0;
-                break;
-            }
-
-          report_task (report, &task);
-          if (task == 0)
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
             return 0;
-          task_uuid (task, &uuid_task);
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            return 0;
+            break;
         }
-      else if (strcasecmp (type, "result") == 0)
+
+      report_task (report, &task);
+      if (task == 0)
+        return 0;
+      task_uuid (task, &uuid_task);
+    }
+  else if (strcasecmp (type, "result") == 0)
+    {
+      task_t task;
+
+      switch (sql_int64 (&task, 0, 0,
+                         "SELECT task FROM results WHERE uuid = '%s';",
+                         uuid))
         {
-          task_t task;
-
-          switch (sql_int64 (&task, 0, 0,
-                             "SELECT task FROM results WHERE uuid = '%s';",
-                             uuid))
-            {
-              case 0:
-                break;
-              case 1:        /* Too few rows in result of query. */
-                return 0;
-                break;
-              default:       /* Programming error. */
-                assert (0);
-              case -1:
-                return 0;
-                break;
-            }
-
-          task_uuid (task, &uuid_task);
-        }
-      else
-        uuid_task = NULL;
-
-      if ((strcmp (type, "permission") == 0)
-          && ((permission == NULL)
-              || (strcmp (permission, "get") == 0)))
-        {
-          ret = sql_int (0, 0,
-                         "SELECT count(*) FROM permissions"
-                         /* Any permission implies 'get'. */
-                         " WHERE (resource_uuid = '%s'"
-                         /* Users may view any permissions that affect them. */
-                         "        OR uuid = '%s')"
-                         " AND ((subject_type = 'user'"
-                         "       AND subject"
-                         "           = (SELECT ROWID FROM users"
-                         "              WHERE users.uuid = '%s'))"
-                         "      OR (subject_type = 'group'"
-                         "          AND subject"
-                         "              IN (SELECT DISTINCT `group`"
-                         "                  FROM group_users"
-                         "                  WHERE user = (SELECT ROWID"
-                         "                                FROM users"
-                         "                                WHERE users.uuid"
-                         "                                      = '%s')))"
-                         "      OR (subject_type = 'role'"
-                         "          AND subject"
-                         "              IN (SELECT DISTINCT role"
-                         "                  FROM role_users"
-                         "                  WHERE user = (SELECT ROWID"
-                         "                                FROM users"
-                         "                                WHERE users.uuid"
-                         "                                      = '%s'))));",
-                         uuid_task ? uuid_task : uuid,
-                         uuid_task ? uuid_task : uuid,
-                         current_credentials.uuid,
-                         current_credentials.uuid,
-                         current_credentials.uuid);
-          free (uuid_task);
-          return ret;
-        }
-      else if (strcmp (type, "permission") == 0)
-        {
-          /* Only Admins can modify, delete, etc other users' permissions.
-           * This only really affects higher level permissions, because that's
-           * all Admins can see of others' permissions. */
-          free (uuid_task);
-          return credentials_is_admin (current_credentials);
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            return 0;
+            break;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            return 0;
+            break;
         }
 
-      get = (permission == NULL || strcmp (permission, "get") == 0);
-      quoted_permission = sql_quote (permission ? permission : "");
+      task_uuid (task, &uuid_task);
+    }
+  else
+    uuid_task = NULL;
 
+  if ((strcmp (type, "permission") == 0)
+      && ((permission == NULL)
+          || (strcmp (permission, "get") == 0)))
+    {
       ret = sql_int (0, 0,
                      "SELECT count(*) FROM permissions"
-                     " WHERE resource_uuid = '%s'"
+                     /* Any permission implies 'get'. */
+                     " WHERE (resource_uuid = '%s'"
+                     /* Users may view any permissions that affect them. */
+                     "        OR uuid = '%s')"
                      " AND ((subject_type = 'user'"
                      "       AND subject"
                      "           = (SELECT ROWID FROM users"
@@ -704,101 +636,61 @@ user_has_access_uuid (const char *type, const char *uuid,
                      "                  WHERE user = (SELECT ROWID"
                      "                                FROM users"
                      "                                WHERE users.uuid"
-                     "                                      = '%s'))))"
-                     " %s%s%s;",
+                     "                                      = '%s'))));",
+                     uuid_task ? uuid_task : uuid,
                      uuid_task ? uuid_task : uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
-                     current_credentials.uuid,
-                     (get ? "" : "AND name = '"),
-                     (get ? "" : quoted_permission),
-                     (get ? "" : "'"));
-
+                     current_credentials.uuid);
       free (uuid_task);
-      g_free (quoted_permission);
       return ret;
     }
-
-  if (actions_string == NULL || strlen (actions_string) == 0)
-    return 0;
-
-  actions = parse_actions (actions_string);
-
-  if (actions == 0)
-    return 0;
-
-  if (strcmp (type, "result") == 0)
+  else if (strcmp (type, "permission") == 0)
     {
-      int get;
-      gchar *quoted_permission;
-      get = (permission == NULL || strcmp (permission, "get") == 0);
-      quoted_permission = sql_quote (permission ? permission : "");
-      ret = sql_int (0, 0,
-                     "SELECT count(*) FROM results, report_results, reports"
-                     " WHERE results.uuid = '%s'"
-                     " AND report_results.result = results.ROWID"
-                     " AND report_results.report = reports.ROWID"
-                     " AND ((reports.owner IS NULL)"
-                     "      OR (reports.owner ="
-                     "          (SELECT users.ROWID FROM users"
-                     "           WHERE users.uuid = '%s'))"
-                     "      OR EXISTS"
-                     "       (SELECT ROWID FROM permissions"
-                     "        WHERE resource_type = 'task'"
-                     "        AND resource = reports.task"
-                     "        AND resource_location"
-                     "            = " G_STRINGIFY (LOCATION_TABLE)
-                     "        AND ((subject_type = 'user'"
-                     "              AND subject"
-                     "                  = (SELECT ROWID FROM users"
-                     "                     WHERE users.uuid = '%s'))"
-                     "             OR (subject_type = 'group'"
-                     "                 AND subject"
-                     "                     IN (SELECT DISTINCT `group`"
-                     "                         FROM group_users"
-                     "                         WHERE user = (SELECT ROWID"
-                     "                                       FROM users"
-                     "                                       WHERE users.uuid"
-                     "                                             = '%s')))"
-                     "             OR (subject_type = 'role'"
-                     "                 AND subject"
-                     "                     IN (SELECT DISTINCT role"
-                     "                         FROM role_users"
-                     "                         WHERE user = (SELECT ROWID"
-                     "                                       FROM users"
-                     "                                       WHERE users.uuid"
-                     "                                             = '%s'))))))"
-                     " %s%s%s;",
-                     uuid,
-                     current_credentials.uuid,
-                     current_credentials.uuid,
-                     current_credentials.uuid,
-                     (get ? "" : "AND name = '"),
-                     (get ? "" : quoted_permission),
-                     (get ? "" : "'"));
-      g_free (quoted_permission);
-      return ret;
+      /* Only Admins can modify, delete, etc other users' permissions.
+       * This only really affects higher level permissions, because that's
+       * all Admins can see of others' permissions. */
+      free (uuid_task);
+      return credentials_is_admin (current_credentials);
     }
+
+  get = (permission == NULL || strcmp (permission, "get") == 0);
+  quoted_permission = sql_quote (permission ? permission : "");
 
   ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss"
-                 " WHERE uuid = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s'))"
-                 " OR ROWID IN"
-                 " (SELECT %s FROM %s_users WHERE user ="
-                 "  (SELECT ROWID FROM users"
-                 "   WHERE users.uuid = '%s')"
-                 "  AND actions & %u = %u));",
-                 type,
-                 uuid,
+                 "SELECT count(*) FROM permissions"
+                 " WHERE resource_uuid = '%s'"
+                 " AND ((subject_type = 'user'"
+                 "       AND subject"
+                 "           = (SELECT ROWID FROM users"
+                 "              WHERE users.uuid = '%s'))"
+                 "      OR (subject_type = 'group'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT `group`"
+                 "                  FROM group_users"
+                 "                  WHERE user = (SELECT ROWID"
+                 "                                FROM users"
+                 "                                WHERE users.uuid"
+                 "                                      = '%s')))"
+                 "      OR (subject_type = 'role'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT role"
+                 "                  FROM role_users"
+                 "                  WHERE user = (SELECT ROWID"
+                 "                                FROM users"
+                 "                                WHERE users.uuid"
+                 "                                      = '%s'))))"
+                 " %s%s%s;",
+                 uuid_task ? uuid_task : uuid,
                  current_credentials.uuid,
-                 type,
-                 type,
                  current_credentials.uuid,
-                 actions,
-                 actions);
+                 current_credentials.uuid,
+                 (get ? "" : "AND name = '"),
+                 (get ? "" : quoted_permission),
+                 (get ? "" : "'"));
 
+  free (uuid_task);
+  g_free (quoted_permission);
   return ret;
 }
 
