@@ -1,3 +1,12 @@
+2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (credential_is_admin): Correct doc.
+	(user_has_access_uuid): Remove unused actions arg.  Update all callers.
+	(find_resource_with_permission): Add trash arg.  Update all callers.
+	(find_resource_for_actions): Remove.  Out of use.
+	(init_get_iterator): Switch to permissions version of find function.
+	(init_task_iterator): Remove doc ref to actions.
+
 2013-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (find_resource_with_permission): New function.

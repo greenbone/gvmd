@@ -513,7 +513,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 /**
  * @brief Check whether the credentials user is an admin.
  *
- * @param[in]  actions_string  Specifier.
+ * @param[in]  credentials  Credentials.
  *
  * @return 1 .
  */
@@ -524,11 +524,10 @@ credentials_is_admin (credentials_t credentials)
 }
 
 /**
- * @brief Test whether the user may access a resource for a set of actions.
+ * @brief Test whether the user may access a resource.
  *
  * @param[in]  type      Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
- * @param[in]  actions_string   Actions.
  * @param[in]  permission       Permission.
  * @param[in]  trash            Whether the resource is in the trash.
  *
@@ -536,8 +535,7 @@ credentials_is_admin (credentials_t credentials)
  */
 static int
 user_has_access_uuid (const char *type, const char *uuid,
-                      const char *actions_string, const char *permission,
-                      int trash)
+                      const char *permission, int trash)
 {
   int ret, get;
   char *uuid_task;
@@ -3650,63 +3648,19 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
  * @param[out]  resource    Resource return, 0 if succesfully failed to find
  *                          resource.
  * @param[in]   permission  Permission.
+ * @param[in]   trash       Whether resource is in trashcan.
  *
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
 gboolean
 find_resource_with_permission (const char* type, const char* uuid,
-                               resource_t* resource, const char *permission)
+                               resource_t* resource, const char *permission,
+                               int trash)
 {
   gchar *quoted_uuid;
   quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("report", quoted_uuid, NULL, permission, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *resource = 0;
-      return FALSE;
-    }
-  // TODO should really check type
-  switch (sql_int64 (resource, 0, 0,
-                     "SELECT ROWID FROM %ss WHERE uuid = '%s'%s;",
-                     type,
-                     quoted_uuid,
-                     strcmp (type, "task") ? "" : " AND hidden < 2"))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find a resource for a set of actions, given a UUID.
- *
- * @param[in]   type       Type of resource.
- * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if succesfully failed to find resource.
- * @param[in]   actions    Actions.
- * @param[in]   trash      Whether to search in trash instead of regular table.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
- */
-gboolean
-find_resource_for_actions (const char* type, const char* uuid,
-                           resource_t* resource, const char *actions, int trash)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid (type, quoted_uuid, actions, NULL, trash) == 0)
+  if (user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -4216,8 +4170,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
     }
   else if (get->id && owned)
     {
-      if (find_resource_for_actions (type, get->id, &resource, get->actions,
-                                     get->trash))
+      // FIX Assumes that permission is "get_xxx".  Should get it from filter?
+      if (find_resource_with_permission (type, get->id, &resource, NULL,
+                                         get->trash))
         return -1;
       if (resource == 0)
         return 1;
@@ -8923,9 +8878,6 @@ init_user_task_iterator (iterator_t* iterator, int trash)
 /**
  * @brief Initialise a task iterator.
  *
- * If there is a current user select that user's tasks and any tasks that user
- * is observing (according to actions_string), otherwise select all tasks.
- *
  * @param[in]  iterator    Task iterator.
  * @param[in]  get         GET data.
  *
@@ -9048,7 +9000,7 @@ task_alterable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, NULL, "modify", 0) == 0)
+  if (user_has_access_uuid ("task", uuid, "modify", 0) == 0)
     {
       free (uuid);
       return 0;
@@ -9074,7 +9026,7 @@ task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, NULL, "modify", 0) == 0)
+  if (user_has_access_uuid ("task", uuid, "modify", 0) == 0)
     {
       free (uuid);
       return 0;
@@ -9100,7 +9052,7 @@ trash_task_writable (task_t task)
   char *uuid;
 
   task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, NULL, "modify", 1) == 0)
+  if (user_has_access_uuid ("task", uuid, "modify", 1) == 0)
     {
       free (uuid);
       return 0;
@@ -13820,7 +13772,7 @@ find_result_with_permission (const char* uuid, result_t* result,
                              const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("result", quoted_uuid, NULL, permission, 0) == 0)
+  if (user_has_access_uuid ("result", quoted_uuid, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *result = 0;
@@ -25274,7 +25226,7 @@ gboolean
 find_task_with_permission (const char* uuid, task_t* task,
                            const char *permission)
 {
-  return find_resource_with_permission ("task", uuid, task, permission);
+  return find_resource_with_permission ("task", uuid, task, permission, 0);
 }
 
 /**
@@ -25362,7 +25314,7 @@ gboolean
 find_report_with_permission (const char* uuid, report_t* report,
                              const char *permission)
 {
-  return find_resource_with_permission ("report", uuid, report, permission);
+  return find_resource_with_permission ("report", uuid, report, permission, 0);
 }
 
 /**
@@ -27500,7 +27452,7 @@ gboolean
 find_config_with_permission (const char* uuid, config_t* config,
                              const char *permission)
 {
-  return find_resource_with_permission ("config", uuid, config, permission);
+  return find_resource_with_permission ("config", uuid, config, permission, 0);
 }
 
 /**
@@ -41902,7 +41854,7 @@ find_permission_with_permission (const char *uuid, permission_t *resource,
                                  const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("permission", quoted_uuid, NULL, permission, 0) == 0)
+  if (user_has_access_uuid ("permission", quoted_uuid, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
