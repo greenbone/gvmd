@@ -1,5 +1,26 @@
 2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove remains of "actions" GET command parameters.
+
+	* src/manage_sql.c (count): Remove actions warning.
+	(init_task_user_iterator, init_task_group_iterator)
+	(init_task_role_iterator): Remove old actions doc.
+	(resource_count): Remove actions.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (get_data_reset, get_data_parse_attributes)
+	(get_nvts_data_t, get_nvts_data_reset)
+	(omp_xml_handle_start_element): Remove actions.
+
+	* src/schema_formats/XML/OMP.xml: Remove all actions attributes.  Add
+	CHANGE accordingly.
+	(actions): Remove.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (credential_is_admin): Correct doc.
 	(user_has_access_uuid): Remove unused actions arg.  Update all callers.
 	(find_resource_with_permission): Add trash arg.  Update all callers.

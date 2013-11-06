@@ -2132,7 +2132,6 @@ delete_user_data_reset (delete_user_data_t *data)
 static void
 get_data_reset (get_data_t *data)
 {
-  free (data->actions);
   free (data->id);
   free (data->filt_id);
   free (data->filter);
@@ -2163,9 +2162,6 @@ get_data_parse_attributes (get_data_t *data, const gchar *type,
   const gchar *attribute;
 
   data->type = g_strdup (type);
-
-  append_attribute (attribute_names, attribute_values, "actions",
-                    &data->actions);
 
   append_attribute (attribute_names, attribute_values, "filter",
                     &data->filter);
@@ -2403,7 +2399,6 @@ get_notes_data_reset (get_notes_data_t *data)
  */
 typedef struct
 {
-  char *actions;         ///< Actions.
   char *config_id;       ///< ID of config to which to limit NVT selection.
   int details;           ///< Boolean.  Whether to include full NVT details.
   char *family;          ///< Name of family to which to limit NVT selection.
@@ -2423,7 +2418,6 @@ typedef struct
 static void
 get_nvts_data_reset (get_nvts_data_t *data)
 {
-  free (data->actions);
   free (data->config_id);
   free (data->family);
   free (data->nvt_oid);
@@ -6488,8 +6482,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_NVTS", element_name) == 0)
           {
             const gchar* attribute;
-            append_attribute (attribute_names, attribute_values, "actions",
-                              &get_nvts_data->actions);
             append_attribute (attribute_names, attribute_values, "nvt_oid",
                               &get_nvts_data->nvt_oid);
             append_attribute (attribute_names, attribute_values, "config_id",

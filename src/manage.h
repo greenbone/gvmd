@@ -251,7 +251,6 @@ typedef struct
  */
 typedef struct
 {
-  char *actions;       ///< Actions.
   int details;         ///< Boolean.  Whether to include full details.
   char *filt_id;       ///< Filter ID.  Overrides "filter".
   char *filter;        ///< Filter term.
@@ -885,16 +884,6 @@ next (iterator_t*);
 
 int
 user_may (const char *);
-
-/**
- * @brief Actions.
- */
-typedef enum
-{
-  MANAGE_ACTION_GET = 1,
-  MANAGE_ACTION_MODIFY = 2,
-  MANAGE_ACTION_USE = 3
-} action_t;
 
 
 /* Results. */

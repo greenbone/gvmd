@@ -25,10 +25,6 @@
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
 <tr id="index">
-<td id="index"><a href="#type_actions">actions</a></td>
-<td id="index"><div style="margin-left: 15px;">A specifier of actions: get, modify, use.</div></td>
-</tr>
-<tr id="index">
 <td id="index"><a href="#type_base64">base64</a></td>
 <td id="index"><div style="margin-left: 15px;">Base64 encoded data.</div></td>
 </tr>
@@ -748,25 +744,16 @@ response
 </pre></div>
 <h2 id="type_details">5 Data Type Details</h2>
 <div>
-<div><h3 id="type_actions">5.1
-        Data Type <tt>actions</tt>
-</h3></div>
-<p>In short: A specifier of actions: get, modify, use.</p>
-<h4>5.1.1 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>actions = xsd:token { pattern = "[gmu]{1,3}" }
-</pre></div>
-</div>
-<div>
-<div><h3 id="type_base64">5.2
+<div><h3 id="type_base64">5.1
         Data Type <tt>base64</tt>
 </h3></div>
 <p>In short: Base64 encoded data.</p>
-<h4>5.2.1 RNC</h4>
+<h4>5.1.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>base64 = xsd:base64Binary
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean">5.3
+<div><h3 id="type_boolean">5.2
         Data Type <tt>boolean</tt>
 </h3></div>
 <p>In short: A true or false value.</p>
@@ -774,12 +761,12 @@ response
       Zero is false, anything else is true.  As a result, the empty string is
       considered true.
     </p>
-<h4>5.3.1 RNC</h4>
+<h4>5.2.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean_atoi">5.4
+<div><h3 id="type_boolean_atoi">5.3
         Data Type <tt>boolean_atoi</tt>
 </h3></div>
 <p>In short: A true or false value, after conversion to an integer.</p>
@@ -788,63 +775,63 @@ response
       an integer, as by the C `atoi' routine.  This means that an empty string
       is considered false.
     </p>
-<h4>5.4.1 RNC</h4>
+<h4>5.3.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean_atoi = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_ctime">5.5
+<div><h3 id="type_ctime">5.4
         Data Type <tt>ctime</tt>
 </h3></div>
 <p>In short: A date and time, in the C `ctime' format.</p>
 <p>
       An example string in this format is "Wed Jun 30 21:49:08 1993\n".
     </p>
-<h4>5.5.1 RNC</h4>
+<h4>5.4.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>ctime = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_type_name">5.6
+<div><h3 id="type_type_name">5.5
         Data Type <tt>type_name</tt>
 </h3></div>
 <p>In short: A name of a data type.</p>
-<h4>5.6.1 RNC</h4>
+<h4>5.5.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>type_name = xsd:Name
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_integer">5.7
+<div><h3 id="type_integer">5.6
         Data Type <tt>integer</tt>
 </h3></div>
 <p>In short: An integer.</p>
-<h4>5.7.1 RNC</h4>
+<h4>5.6.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>integer = xsd:integer
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_iso_time">5.8
+<div><h3 id="type_iso_time">5.7
         Data Type <tt>iso_time</tt>
 </h3></div>
 <p>In short: A date and time, in ISO 8601 format.</p>
 <p>
       An example string in this format is "2011-11-08T19:57:06+02:00".
     </p>
-<h4>5.8.1 RNC</h4>
+<h4>5.7.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>iso_time = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_levels">5.9
+<div><h3 id="type_levels">5.8
         Data Type <tt>levels</tt>
 </h3></div>
 <p>In short: A string that may include the characters h, m, l, g and d.</p>
-<h4>5.9.1 RNC</h4>
+<h4>5.8.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>levels = xsd:token { pattern = "h?m?l?g?d?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_name">5.10
+<div><h3 id="type_name">5.9
         Data Type <tt>name</tt>
 </h3></div>
 <p>In short: A name.</p>
@@ -852,39 +839,39 @@ response
       Typically this is the name of one of the manager resources, like a
       task or target.
     </p>
-<h4>5.10.1 RNC</h4>
+<h4>5.9.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>name = xsd:string
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_port">5.11
+<div><h3 id="type_port">5.10
         Data Type <tt>port</tt>
 </h3></div>
 <p>In short: A port.</p>
-<h4>5.11.1 RNC</h4>
+<h4>5.10.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>port = xsd:token { pattern = "[0-9]{1,5}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_user_list">5.12
+<div><h3 id="type_user_list">5.11
         Data Type <tt>user_list</tt>
 </h3></div>
 <p>In short: A space separated list of users.</p>
-<h4>5.12.1 RNC</h4>
+<h4>5.11.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>user_list = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_oid">5.13
+<div><h3 id="type_oid">5.12
         Data Type <tt>oid</tt>
 </h3></div>
 <p>In short: An Object Identifier (OID).</p>
-<h4>5.13.1 RNC</h4>
+<h4>5.12.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_severity">5.14
+<div><h3 id="type_severity">5.13
         Data Type <tt>severity</tt>
 </h3></div>
 <p>In short: A severity score.</p>
@@ -896,12 +883,12 @@ response
       override applies, for values 0.0 and lower the severity must be equal
       to match while for &gt; 0.0 the compared value must be greater or equal.
     </p>
-<h4>5.14.1 RNC</h4>
+<h4>5.13.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>severity = xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">5.15
+<div><h3 id="type_sort_order">5.14
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -909,40 +896,40 @@ response
       The string "descending" denotes descending order, anything else means
       ascending.
     </p>
-<h4>5.15.1 RNC</h4>
+<h4>5.14.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">5.16
+<div><h3 id="type_status">5.15
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
-<h4>5.16.1 RNC</h4>
+<h4>5.15.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_status">5.17
+<div><h3 id="type_task_status">5.16
         Data Type <tt>task_status</tt>
 </h3></div>
 <p>In short: A task run status.</p>
-<h4>5.17.1 RNC</h4>
+<h4>5.16.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
 ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_trend">5.18
+<div><h3 id="type_task_trend">5.17
         Data Type <tt>task_trend</tt>
 </h3></div>
 <p>In short: The trend of results for a task.</p>
-<h4>5.18.1 RNC</h4>
+<h4>5.17.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_trend = xsd:token { pattern = "up|down|more|less|same" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">5.19
+<div><h3 id="type_threat">5.18
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
@@ -952,34 +939,34 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
     </p>
-<h4>5.19.1 RNC</h4>
+<h4>5.18.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">5.20
+<div><h3 id="type_time_unit">5.19
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
-<h4>5.20.1 RNC</h4>
+<h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.21
+<div><h3 id="type_uuid">5.20
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.21.1 RNC</h4>
+<h4>5.20.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.22
+<div><h3 id="type_uuid_or_empty">5.21
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.22.1 RNC</h4>
+<h4>5.21.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -9310,11 +9297,6 @@ get_agents_response_agent_count_page
           ID of single config to get.
           </li>
 <li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for configs of observed tasks.
-          </li>
-<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan configs instead.
@@ -9556,7 +9538,6 @@ get_agents_response_agent_count_page
  = element get_configs
      {
        attribute config_id { uuid }?
-       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute export { boolean }?
@@ -10504,11 +10485,6 @@ get_alerts_response_alert_filter_trash
           ID of filter to use to filter query.
           </li>
 <li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for filters of observed tasks.
-          </li>
-<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan filters instead.
@@ -10716,7 +10692,6 @@ get_alerts_response_alert_filter_trash
        attribute filter_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
-       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute alerts { boolean }?
      }
@@ -12118,11 +12093,6 @@ get_info_response_details
           ID of single LSC credential to get.
           </li>
 <li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for LSC credentials of observed tasks.
-          </li>
-<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan LSC credentials instead.
@@ -12280,7 +12250,6 @@ get_info_response_details
  = element get_lsc_credentials
      {
        attribute lsc_credential_id { uuid }?
-       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
@@ -13258,11 +13227,6 @@ get_notes_response_note_result_description
           Single NVT to get.
           </li>
 <li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for NVTs of configs observed tasks.
-          </li>
-<li>
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include full details.
@@ -13512,7 +13476,6 @@ get_notes_response_note_result_description
  = element get_nvts
      {
        attribute nvt_oid { oid }
-       &amp; attribute actions { actions }?
        &amp; attribute details { boolean }?
        &amp; attribute preferences { boolean }?
        &amp; attribute preference_count { boolean }?
@@ -18511,11 +18474,6 @@ get_target_locators_response_target_locator_name
           ID of filter to use to filter query..
           </li>
 <li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for targets of observed tasks.
-          </li>
-<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan targets instead.
@@ -18778,7 +18736,6 @@ get_target_locators_response_target_locator_name
        attribute target_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
-       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
        &amp; attribute sort_order { sort_order }?
@@ -19141,11 +19098,6 @@ get_targets_response_target_count_page
           @<b>task_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of single task to get.
-          </li>
-<li>
-          @<b>actions</b>
-          (<a href="#type_actions">actions</a>)
-          Actions filter for tasks of observed tasks.
           </li>
 <li>
           @<b>trash</b>
@@ -19670,7 +19622,6 @@ get_targets_response_target_count_page
  = element get_tasks
      {
        attribute task_id { uuid }?
-       &amp; attribute actions { actions }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute rcfile { boolean }?
@@ -24648,6 +24599,20 @@ run_wizard_params_param_value
       4.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>All GET commands</tt>
+</h3></div>
+<p>In short: Attribute "actions" replaced with owner filtering.</p>
+<p>
+        The attribute "actions" in GET commands has been removed.  The only
+        implemented function of this attribute was to include observed
+        resources in the listings.  For example, specifying actions="g" in a
+        GET_TASKS command would include tasks that other users had made
+        visible to the caller.  The new way to do this is to include
+        "owner=any" in the filter.
+      </p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>CREATE_ALERT, GET_ALERTS, MODIFY_ALERT</tt>
 </h3></div>
 <p>In short: "Threat level" replaced with "Severity" in alert conditions.</p>
@@ -24657,7 +24622,7 @@ run_wizard_params_param_value
         respectively.</p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>GET_REPORTS</tt>
 </h3></div>
 <p>In short: THREAT removed from PORT in response.</p>
@@ -24667,7 +24632,7 @@ run_wizard_params_param_value
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>GET_TARGETS</tt>
 </h3></div>
 <p>In short: PORT_RANGE not always returned within TARGET.</p>

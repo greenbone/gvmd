@@ -4326,9 +4326,6 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 
   array_free (permissions);
 
-  if (get->actions)
-    g_warning ("%s: get->actions given", __FUNCTION__);
-
   ret = sql_int (0, 0,
                  "SELECT count (%s%ss%s.ROWID), %s"
                  " FROM %ss%s%s"
@@ -5345,7 +5342,6 @@ name (iterator_t* iterator) \
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
- * @param[in]  action    Action.
  */
 void
 init_task_user_iterator (iterator_t *iterator, task_t task)
@@ -5397,7 +5393,6 @@ DEF_ACCESS (task_user_iterator_name, 3);
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
- * @param[in]  action    Action.
  */
 void
 init_task_group_iterator (iterator_t *iterator, task_t task)
@@ -5454,7 +5449,6 @@ DEF_ACCESS (task_group_iterator_uuid, 4);
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  task      Task.
- * @param[in]  action    Action.
  */
 void
 init_task_role_iterator (iterator_t *iterator, task_t task)
@@ -12041,7 +12035,6 @@ resource_count (const char *type, const get_data_t *get)
     count_get.filter = "rows=-1 first=1 permission=any owner=any";
   else
     count_get.filter = "rows=-1 first=1 permission=any";
-  count_get.actions = "g";
 
   return count (get->subtype ? get->subtype : type,
                 &count_get,

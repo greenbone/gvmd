@@ -63,11 +63,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
   <version>4.0</version>
   <type>
-    <name>actions</name>
-    <summary>A specifier of actions: get, modify, use</summary>
-    <pattern>xsd:token { pattern = "[gmu]{1,3}" }</pattern>
-  </type>
-  <type>
     <name>base64</name>
     <summary>Base64 encoded data</summary>
     <pattern>xsd:base64Binary</pattern>
@@ -5246,11 +5241,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>actions</name>
-        <summary>Actions filter for configs of observed tasks</summary>
-        <type>actions</type>
-      </attrib>
-      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan configs instead</summary>
         <type>boolean</type>
@@ -6051,11 +6041,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filt_id</name>
         <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>actions</name>
-        <summary>Actions filter for filters of observed tasks</summary>
-        <type>actions</type>
       </attrib>
       <attrib>
         <name>trash</name>
@@ -7168,11 +7153,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>actions</name>
-        <summary>Actions filter for LSC credentials of observed tasks</summary>
-        <type>actions</type>
-      </attrib>
-      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan LSC credentials instead</summary>
         <type>boolean</type>
@@ -7972,11 +7952,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Single NVT to get</summary>
         <type>oid</type>
         <required>1</required>
-      </attrib>
-      <attrib>
-        <name>actions</name>
-        <summary>Actions filter for NVTs of configs observed tasks</summary>
-        <type>actions</type>
       </attrib>
       <attrib>
         <name>details</name>
@@ -11502,11 +11477,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>actions</name>
-        <summary>Actions filter for targets of observed tasks</summary>
-        <type>actions</type>
-      </attrib>
-      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan targets instead</summary>
         <type>boolean</type>
@@ -11919,11 +11889,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>task_id</name>
         <summary>ID of single task to get</summary>
         <type>uuid</type>
-      </attrib>
-      <attrib>
-        <name>actions</name>
-        <summary>Actions filter for tasks of observed tasks</summary>
-        <type>actions</type>
       </attrib>
       <attrib>
         <name>trash</name>
@@ -15700,6 +15665,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>All GET commands</command>
+    <summary>Attribute "actions" replaced with owner filtering</summary>
+    <description>
+      <p>
+        The attribute "actions" in GET commands has been removed.  The only
+        implemented function of this attribute was to include observed
+        resources in the listings.  For example, specifying actions="g" in a
+        GET_TASKS command would include tasks that other users had made
+        visible to the caller.  The new way to do this is to include
+        "owner=any" in the filter.
+      </p>
+    </description>
+    <version>4.0</version>
+  </change>
   <change>
     <command>CREATE_ALERT, GET_ALERTS, MODIFY_ALERT</command>
     <summary>"Threat level" replaced with "Severity" in alert conditions</summary>
