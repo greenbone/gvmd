@@ -1,5 +1,10 @@
 2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_report): Set the task of the result to the
+	actual task instead of to 0, for consistency with normal results.
+
+2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_resource_with_permission): Add safety check.
 
 	* src/omp.c (omp_xml_handle_end_element): Move GET_RESULTS iterator

@@ -14661,8 +14661,9 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            " (uuid, task, host, port, nvt, type, description,"
            "  nvt_version, severity)"
            " VALUES"
-           " (make_uuid (), 0, '%s', '%s', '%s', '%s', '%s',"
+           " (make_uuid (), %llu, '%s', '%s', '%s', '%s', '%s',"
            "  '%s', '%s');",
+           task,
            quoted_host,
            quoted_port,
            quoted_nvt_oid,
