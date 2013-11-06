@@ -13635,7 +13635,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
         report_t request_report = 0, delta_report = 0, report;
         report_format_t report_format;
-        iterator_t results;
         float min_cvss_base;
         iterator_t reports;
         int count, filtered, ret, first;
@@ -14608,6 +14607,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
+              iterator_t results;
+
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">"
@@ -14616,36 +14617,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     NULL, get_results_data->autofp, NULL, 0,
                                     NULL, get_results_data->apply_overrides);
 
-              if (get_results_data->result_id && task == 0)
+              if (next (&results))
                 {
-                  char *task_id;
-                  task_uuid (result_iterator_task (&results), &task_id);
-                  if (find_task_with_permission (task_id,
-                                                 &task,
-                                                 NULL))
-                    SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-                  free (task_id);
-                }
+                  if (get_results_data->result_id && (task == 0))
+                    {
+                      char *task_id;
+                      task_uuid (result_iterator_task (&results), &task_id);
+                      if (find_task_with_permission (task_id, &task, NULL))
+                        {
+                          // FIX cleanup_iterator
+                          free (task_id);
+                          internal_error_send_to_client (error);
+                          return;
+                        }
+                      free (task_id);
+                    }
 
-              while (next (&results))
-                {
-                  GString *buffer = g_string_new ("");
-                  buffer_results_xml (buffer,
-                                      &results,
-                                      task,
-                                      get_results_data->notes,
-                                      get_results_data->notes_details,
-                                      get_results_data->overrides,
-                                      get_results_data->overrides_details,
-                                      1,
-                                      /* show tag details if selected by ID */
-                                      get_results_data->result_id != NULL,
-                                      get_results_data->details,
-                                      NULL,
-                                      NULL,
-                                      0);
-                  SEND_TO_CLIENT_OR_FAIL (buffer->str);
-                  g_string_free (buffer, TRUE);
+                  do
+                    {
+                      GString *buffer = g_string_new ("");
+                      buffer_results_xml (buffer,
+                                          &results,
+                                          task,
+                                          get_results_data->notes,
+                                          get_results_data->notes_details,
+                                          get_results_data->overrides,
+                                          get_results_data->overrides_details,
+                                          1,
+                                          /* show tag details if selected by ID */
+                                          get_results_data->result_id != NULL,
+                                          get_results_data->details,
+                                          NULL,
+                                          NULL,
+                                          0);
+                      SEND_TO_CLIENT_OR_FAIL (buffer->str);
+                      g_string_free (buffer, TRUE);
+                    }
+                  while (next (&results));
                 }
               cleanup_iterator (&results);
               SEND_TO_CLIENT_OR_FAIL ("</results>"

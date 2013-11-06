@@ -3659,6 +3659,8 @@ find_resource_with_permission (const char* type, const char* uuid,
                                int trash)
 {
   gchar *quoted_uuid;
+  if (uuid == NULL)
+    return TRUE;
   quoted_uuid = sql_quote (uuid);
   if (user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
     {

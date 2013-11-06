@@ -1,5 +1,14 @@
 2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_resource_with_permission): Add safety check.
+
+	* src/omp.c (omp_xml_handle_end_element): Move GET_RESULTS iterator
+	declaration out of GET_REPORTS.  In GET_RESULTS rework the loop so that
+	"next" is called before the task check, because the task check may use
+	the iterator.
+
+2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove remains of "actions" GET command parameters.
 
 	* src/manage_sql.c (count): Remove actions warning.
