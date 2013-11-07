@@ -14625,9 +14625,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       task_uuid (result_iterator_task (&results), &task_id);
                       if (find_task_with_permission (task_id, &task, NULL))
                         {
-                          // FIX cleanup_iterator
                           free (task_id);
                           internal_error_send_to_client (error);
+                          cleanup_iterator (&results);
                           return;
                         }
                       free (task_id);

@@ -1,3 +1,8 @@
+2013-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_RESULTS cleanup
+	iterator on error return.
+
 2013-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report): Set the task of the result to the
