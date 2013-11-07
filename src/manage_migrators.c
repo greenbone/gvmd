@@ -7978,6 +7978,39 @@ migrate_105_to_106 ()
 }
 
 /**
+ * @brief Migrate the database from version 106 to version 107.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_106_to_107 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 106. */
+
+  if (manage_db_version () != 106)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Results in container tasks were being given a task of 0. */
+  sql ("UPDATE results"
+       " SET task = (SELECT task FROM reports WHERE reports.ROWID = report);");
+
+  /* Set the database version 107. */
+
+  set_db_version (107);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8088,6 +8121,7 @@ static migrator_t database_migrators[]
     {104, migrate_103_to_104},
     {105, migrate_104_to_105},
     {106, migrate_105_to_106},
+    {107, migrate_106_to_107},
     /* End marker. */
     {-1, NULL}};
 

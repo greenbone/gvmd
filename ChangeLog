@@ -1,5 +1,17 @@
 2013-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Increase database version to 107 to ensure that all results have a task.
+	Add database migration from version 106 to 107.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 107.
+
+	* src/manage_migrators.c (migrate_106_to_107): New function.
+	(database_migrators): Add migrate_106_to_107.
+
+	* doc/db.png: Update for version change.
+
+2013-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_RESULTS cleanup
 	iterator on error return.
 
