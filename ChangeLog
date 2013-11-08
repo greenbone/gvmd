@@ -1,3 +1,9 @@
+2013-11-08  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_VERSION use correct
+	state in condition, otherwise the user is always considered
+	authenticated after GET_VERSION. Patch by Matthew Mundell.
+
 2013-10-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.
