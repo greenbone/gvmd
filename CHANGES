@@ -1,3 +1,28 @@
+openvas-manager 3.0.7 (2013-11-08)
+
+This is the seventh maintenance release of the openvas-manager 3.0 module for the
+Open Vulnerability Assessment System release 5 (OpenVAS-5). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This is a security release addressing a serious security bug and it is highly
+recommended to update any installation of OpenVAS Manager 3.0 with this
+release.
+
+A software bug in OpenVAS Manager allowed an attacker to bypass the OMP
+authentication procedure. The attack vector was remotely available in case
+OpenVAS Manager was listening on a public network interface. In case of
+successful attack, the attacker gained partial rights to execute OMP commands.
+The bypass authentication was, however, incomplete and several OMP commands
+failed to execute properly.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell.
+
+Main changes since 3.0.6:
+* Security fix for handling the authentication state in OMP.
+
+
 openvas-manager 3.0.6 (2013-07-05)
 
 This is the sixth maintenance release of the openvas-manager 3.0 module for the
