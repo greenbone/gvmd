@@ -1,5 +1,11 @@
 2013-11-08  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version number to 3.0.8.
+
+2013-11-08  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Preparing the openvas-manager 3.0.7 release.
 
 	* CHANGES: Updated.
