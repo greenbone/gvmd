@@ -1,3 +1,13 @@
+2013-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (send_ifaces_preferences): Rename to
+	send_ifaces_access_preferences.
+	(send_hosts_access_preferences): New function used to send users host
+	access as hosts_allow and hosts_deny preferences instead of using old
+	rules format.
+	(send_scanner_preferences): Call new functions.
+	(send_user_rules): Delete unused function.
+
 2013-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Increase database version to 107 to ensure that all results have a task.

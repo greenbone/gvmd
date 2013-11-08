@@ -1457,7 +1457,7 @@ send_task_preferences (task_t task)
  * @return 0 on success, -1 on failure.
  */
 static int
-send_ifaces_preferences (void)
+send_ifaces_access_preferences (void)
 {
   char *ifaces;
   int ifaces_allow;
@@ -1493,6 +1493,47 @@ send_ifaces_preferences (void)
 }
 
 /**
+ * @brief Send ifaces_allow and ifaces_deny preferences to scanner.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_hosts_access_preferences (void)
+{
+  char *hosts;
+  int hosts_allow;
+
+  hosts = sql_string (0, 0,
+                       "SELECT hosts FROM users WHERE uuid = '%s';",
+                       current_credentials.uuid);
+  hosts_allow = sql_int (0, 0,
+                          "SELECT hosts_allow FROM users WHERE uuid = '%s';",
+                          current_credentials.uuid);
+
+  if (hosts && strlen (hosts))
+    {
+      char *pref;
+
+      if (hosts_allow == 1)
+        pref = "hosts_allow";
+      else if (hosts_allow == 0)
+        pref = "hosts_deny";
+      else
+        {
+          g_free (hosts);
+          return 0;
+        }
+
+      if (sendf_to_server ("%s <|> %s\n", pref, hosts))
+        {
+          g_free (hosts);
+          return -1;
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Send some scanner preferences to the scanner.
  *
  * @param[in]  task     Task.
@@ -1507,7 +1548,11 @@ send_scanner_preferences (task_t task, target_t target)
   char *reverse_lookup_unify;
 
   /* Send ifaces_allow / ifaces_deny preferences. */
-  if (send_ifaces_preferences ())
+  if (send_ifaces_access_preferences ())
+    return -1;
+
+  /* Send hosts_allow / hosts_deny preferences. */
+  if (send_hosts_access_preferences ())
     return -1;
 
   /* Send hosts_ordering preference. */
@@ -1582,132 +1627,6 @@ send_user_rules_empty (report_t stopped_report)
   cleanup_iterator (&hosts);
 
   return send_to_server ("default accept\n") ? -1 : 0;
-}
-
-/**
- * @brief Send the rules listed in the users directory.
- *
- * @param[in]  stopped_report  Report whose finished hosts to deny.
- *
- * @return 0 on success, -1 on failure.
- */
-static int
-send_user_rules (report_t stopped_report)
-{
-  gchar *rules;
-  gchar **rule, **split;
-  int empty;
-
-  assert (current_credentials.uuid);
-
-  empty = 1;
-
-  rules = manage_user_rules (current_credentials.uuid);
-  if (rules == NULL)
-    {
-      tracef ("   failed to get rules.");
-      return -1;
-    }
-
-  split = rule = g_strsplit (rules, "\n", 0);
-  g_free (rules);
-
-  if (stopped_report && (*rule == NULL))
-    {
-      int ret;
-      ret = send_user_rules_empty (stopped_report);
-      g_strfreev (split);
-      return ret;
-    }
-
-  /** @todo Code to access the rules also occurs in openvas-administrator and
-   *        should be consolidated into openvas-libraries. Related code also
-   *        existent in openvas-libraries/misc/openvas_auth.c . */
-  while (*rule)
-    {
-      *rule = g_strstrip (*rule);
-      if (**rule == '#' || **rule == '\0')
-        {
-          rule++;
-          continue;
-        }
-
-      empty = 0;
-
-      /* Presume the rule is correctly formatted. */
-
-      if (stopped_report)
-        {
-          gboolean send_rule = TRUE;
-          iterator_t hosts;
-
-          /* Send deny rules for finished hosts before "allow all" rule. */
-
-          if (strncmp (*rule, "default accept", strlen ("default accept")) == 0)
-            {
-              init_host_iterator (&hosts, stopped_report, NULL, 0);
-              while (next (&hosts))
-                if (host_iterator_end_time (&hosts)
-                    && strlen (host_iterator_end_time (&hosts))
-                    && sendf_to_server ("deny %s\n",
-                                        host_iterator_host (&hosts)))
-                  {
-                    cleanup_iterator (&hosts);
-                    g_strfreev (split);
-                    return -1;
-                  }
-              cleanup_iterator (&hosts);
-            }
-          else
-            {
-              /* Prevent allow rules for finished hosts. */
-
-              init_host_iterator (&hosts, stopped_report, NULL, 0);
-              while (next (&hosts))
-                if (host_iterator_end_time (&hosts)
-                    && strlen (host_iterator_end_time (&hosts)))
-                  {
-                    if ((strncmp (*rule, "allow ", strlen ("allow "))
-                         == 0)
-                        && (strncmp (*rule + strlen ("allow "),
-                                     host_iterator_host (&hosts),
-                                     strlen (host_iterator_host (&hosts)))
-                            == 0))
-                      {
-                        send_rule = FALSE;
-                        break;
-                      }
-                  }
-              cleanup_iterator (&hosts);
-            }
-
-          /* Send the rule. */
-
-          if (send_rule && send_to_server (*rule))
-            {
-              g_strfreev (split);
-              return -1;
-            }
-        }
-      else if (send_to_server (*rule))
-        {
-          g_strfreev (split);
-          return -1;
-        }
-
-      if (sendn_to_server ("\n", 1))
-        {
-          g_strfreev (split);
-          return -1;
-        }
-      rule++;
-    }
-  g_strfreev (split);
-
-  if (stopped_report && empty)
-    return send_user_rules_empty (stopped_report);
-
-  return 0;
 }
 
 /**
@@ -3396,7 +3315,7 @@ run_task (const char *task_id, char **report_id, int from)
       return -10;
     }
 
-  if (send_user_rules (last_stopped_report))
+  if (send_user_rules_empty (last_stopped_report))
     {
       free (hosts);
       set_task_run_status (task, run_status);
