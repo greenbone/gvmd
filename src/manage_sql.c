@@ -5545,6 +5545,22 @@ find_alert (const char* uuid, alert_t* alert)
 }
 
 /**
+ * @brief Find a alert for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of alert.
+ * @param[out]  alert       Alert return, 0 if succesfully failed to find alert.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find alert), TRUE on error.
+ */
+gboolean
+find_alert_with_permission (const char* uuid, alert_t* alert,
+                            const char *permission)
+{
+  return find_resource_with_permission ("alert", uuid, alert, permission, 0);
+}
+
+/**
  * @brief Validate an email address.
  *
  * @param[in]  address  Email address.
@@ -6218,7 +6234,7 @@ delete_alert (const char *alert_id, int ultimate)
       return 99;
     }
 
-  if (find_alert (alert_id, &alert))
+  if (find_alert_with_permission (alert_id, &alert, "delete_alert"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -18828,7 +18844,7 @@ delete_report (const char *report_id, int dummy)
     }
 
   report = 0;
-  if (find_report (report_id, &report))
+  if (find_report_with_permission (report_id, &report, "delete_report"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -24886,7 +24902,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return 99;
     }
 
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, "delete_task"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -25297,7 +25313,7 @@ find_report (const char* uuid, report_t* report)
 }
 
 /**
- * @brief Find a report for a set of permissions, given a UUID.
+ * @brief Find a report for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of report.
  * @param[out]  report      Report return, 0 if succesfully failed to find
@@ -25484,6 +25500,22 @@ gboolean
 find_target (const char* uuid, target_t* target)
 {
   return find_resource ("target", uuid, target);
+}
+
+/**
+ * @brief Find a target for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of target.
+ * @param[out]  target      Target return, 0 if succesfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_target_with_permission (const char* uuid, target_t* target,
+                             const char *permission)
+{
+  return find_resource_with_permission ("target", uuid, target, permission, 0);
 }
 
 /**
@@ -26243,7 +26275,7 @@ delete_target (const char *target_id, int ultimate)
       return 99;
     }
 
-  if (find_target (target_id, &target))
+  if (find_target_with_permission (target_id, &target, "delete_target"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -28394,7 +28426,7 @@ delete_config (const char *config_id, int ultimate)
       return 99;
     }
 
-  if (find_config (config_id, &config))
+  if (find_config_with_permission (config_id, &config, "delete_config"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -32177,6 +32209,26 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 }
 
 /**
+ * @brief Find an LSC credential for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid            UUID of lsc_credential.
+ * @param[out]  lsc_credential  LSC credential return, 0 if succesfully failed
+ *                              to find LSC credential.
+ * @param[in]   permission      Permission.
+ *
+ * @return FALSE on success (including if failed to find lsc_credential), TRUE
+ *         on error.
+ */
+gboolean
+find_lsc_credential_with_permission (const char* uuid,
+                                     lsc_credential_t* lsc_credential,
+                                     const char *permission)
+{
+  return find_resource_with_permission ("lsc_credential", uuid, lsc_credential,
+                                        permission, 0);
+}
+
+/**
  * @brief Length of password generated in create_lsc_credential.
  */
 #define PASSWORD_LENGTH 10
@@ -32617,7 +32669,8 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
       return 99;
     }
 
-  if (find_lsc_credential (lsc_credential_id, &lsc_credential))
+  if (find_lsc_credential_with_permission (lsc_credential_id, &lsc_credential,
+                                           "delete_lsc_credential"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -33353,6 +33406,22 @@ find_agent (const char* uuid, agent_t* agent)
 }
 
 /**
+ * @brief Find a agent for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of agent.
+ * @param[out]  agent       Agent return, 0 if succesfully failed to find agent.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find agent), TRUE on error.
+ */
+gboolean
+find_agent_with_permission (const char* uuid, agent_t* agent,
+                            const char *permission)
+{
+  return find_resource_with_permission ("agent", uuid, agent, permission, 0);
+}
+
+/**
  * @brief Find a signature in a feed.
  *
  * @param[in]   location            Feed directory to search for signature.
@@ -34013,7 +34082,7 @@ delete_agent (const char *agent_id, int ultimate)
       return 99;
     }
 
-  if (find_agent (agent_id, &agent))
+  if (find_agent_with_permission (agent_id, &agent, "delete_agent"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -34634,6 +34703,22 @@ find_note (const char* uuid, note_t* note)
 }
 
 /**
+ * @brief Find a note for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of note.
+ * @param[out]  note        Note return, 0 if succesfully failed to find note.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find note), TRUE on error.
+ */
+gboolean
+find_note_with_permission (const char* uuid, note_t* note,
+                             const char *permission)
+{
+  return find_resource_with_permission ("note", uuid, note, permission, 0);
+}
+
+/**
  * @brief Create a note.
  *
  * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
@@ -34795,7 +34880,7 @@ delete_note (const char *note_id, int ultimate)
       return 99;
     }
 
-  if (find_note (note_id, &note))
+  if (find_note_with_permission (note_id, &note, "delete_note"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -35506,6 +35591,25 @@ find_override (const char* uuid, override_t* override)
 }
 
 /**
+ * @brief Find a override for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of override.
+ * @param[out]  override    Override return, 0 if succesfully failed to find
+ *                          override.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find override), TRUE on
+ *         error.
+ */
+gboolean
+find_override_with_permission (const char* uuid, override_t* override,
+                               const char *permission)
+{
+  return find_resource_with_permission ("override", uuid, override, permission,
+                                        0);
+}
+
+/**
  * @brief Create an override.
  *
  * @param[in]  active      NULL or -1 on, 0 off, n on for n days.
@@ -35729,7 +35833,7 @@ delete_override (const char *override_id, int ultimate)
 
   override = 0;
 
-  if (find_override (override_id, &override))
+  if (find_override_with_permission (override_id, &override, "delete_override"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -36477,6 +36581,22 @@ find_schedule (const char* uuid, schedule_t* schedule)
 }
 
 /**
+ * @brief Find a schedule for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of schedule.
+ * @param[out]  schedule    Schedule return, 0 if succesfully failed to find schedule.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find schedule), TRUE on error.
+ */
+gboolean
+find_schedule_with_permission (const char* uuid, schedule_t* schedule,
+                             const char *permission)
+{
+  return find_resource_with_permission ("schedule", uuid, schedule, permission, 0);
+}
+
+/**
  * @brief Create a schedule.
  *
  * @param[in]   name        Name of schedule.
@@ -36633,7 +36753,7 @@ delete_schedule (const char *schedule_id, int ultimate)
       return 99;
     }
 
-  if (find_schedule (schedule_id, &schedule))
+  if (find_schedule_with_permission (schedule_id, &schedule, "delete_schedule"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -37719,6 +37839,26 @@ find_report_format (const char* uuid, report_format_t* report_format)
 }
 
 /**
+ * @brief Find a reportformat for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report format.
+ * @param[out]  report_format  Report format return, 0 if succesfully failed to
+ *                             find report_format.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find report_format), TRUE
+ *         on error.
+ */
+gboolean
+find_report_format_with_permission (const char* uuid,
+                                    report_format_t* report_format,
+                                    const char *permission)
+{
+  return find_resource_with_permission ("report_format", uuid, report_format,
+                                        permission, 0);
+}
+
+/**
  * @brief Find a report format given a name.
  *
  * @param[in]   name           Name of report_format.
@@ -38707,7 +38847,8 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   /* Look in the "real" table. */
 
-  if (find_report_format (report_format_id, &report_format))
+  if (find_report_format_with_permission (report_format_id, &report_format,
+                                          "delete_report_format"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -40120,6 +40261,22 @@ find_slave (const char* uuid, slave_t* slave)
 }
 
 /**
+ * @brief Find a slave for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of slave.
+ * @param[out]  slave       Slave return, 0 if succesfully failed to find slave.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find slave), TRUE on error.
+ */
+gboolean
+find_slave_with_permission (const char* uuid, slave_t* slave,
+                            const char *permission)
+{
+  return find_resource_with_permission ("slave", uuid, slave, permission, 0);
+}
+
+/**
  * @brief Create a slave.
  *
  * @param[in]   name            Name of slave.
@@ -40362,7 +40519,7 @@ delete_slave (const char *slave_id, int ultimate)
       return 99;
     }
 
-  if (find_slave (slave_id, &slave))
+  if (find_slave_with_permission (slave_id, &slave, "delete_slave"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -41113,6 +41270,7 @@ delete_group (const char *group_id, int ultimate)
       return 99;
     }
 
+  /* Groups are owned collectively by the admins, hence no permission check. */
   if (find_group (group_id, &group))
     {
       sql ("ROLLBACK;");
@@ -42227,39 +42385,91 @@ find_port_list (const char* uuid, port_list_t* port_list)
 }
 
 /**
+ * @brief Find a port list for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of port list.
+ * @param[out]  port_list   Port list return, 0 if succesfully failed to find
+ *                          port list.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find port_list), TRUE on
+ *         error.
+ */
+gboolean
+find_port_list_with_permission (const char* uuid, port_list_t* port_list,
+                                const char *permission)
+{
+  return find_resource_with_permission ("port_list", uuid, port_list,
+                                        permission, 0);
+}
+
+/**
+ * @brief Return the UUID of the port list of a port_range.
+ *
+ * @param[in]  port_range  Port Range UUID.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+port_range_port_list_uuid (const char *port_range)
+{
+  gchar *quoted_port_range;
+  char *ret;
+
+  quoted_port_range = sql_quote (port_range);
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM port_ranges WHERE uuid = '%s';",
+               quoted_port_range))
+    ret = sql_string (0, 0,
+                      "SELECT uuid FROM port_lists"
+                      " WHERE ROWID = (SELECT port_range FROM port_ranges"
+                      "                WHERE uuid = '%s');",
+                      quoted_port_range);
+  else
+    ret = NULL;
+  g_free (quoted_port_range);
+  return ret;
+}
+
+/**
  * @brief Find a port range given a UUID.
  *
  * @param[in]   uuid        UUID of port_range.
  * @param[out]  port_range  Port range return, 0 if succesfully failed to find
  *                          port range.
+ * @param[in]   permission  UUID of port_range.
  *
  * @return FALSE on success (including if failed to find port range), TRUE on
  *         error.
  */
 gboolean
-find_port_range (const char* uuid, port_range_t* port_range)
+find_port_range_with_permission (const char *uuid, port_range_t *port_range,
+                                 const char *permission)
 {
+  char *port_list_uuid;
   gchar *quoted_uuid;
+  port_list_t port_list;
 
   assert (current_credentials.uuid);
 
-  quoted_uuid = sql_quote (uuid);
+  *port_range = 0;
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_ranges, port_lists"
-               " WHERE port_ranges.uuid = '%s'"
-               " AND port_ranges.port_list = port_lists.ROWID"
-               /* The owner of the port list owns the range. */
-               " AND ((port_lists.owner IS NULL) OR (port_lists.owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_uuid,
-               current_credentials.uuid)
-      == 0)
+  if (uuid == NULL)
+    return TRUE;
+
+  port_list_uuid = port_range_port_list_uuid (uuid);
+  if (port_list_uuid == NULL)
+    return TRUE;
+
+  if (find_port_list_with_permission (port_list_uuid, &port_list, permission)
+      || port_list == 0)
     {
-      g_free (quoted_uuid);
-      *port_range = 0;
-      return FALSE;
+      g_free (port_list_uuid);
+      return TRUE;
     }
+  g_free (port_list_uuid);
+
+  quoted_uuid = sql_quote (uuid);
   switch (sql_int64 (port_range, 0, 0,
                      "SELECT ROWID FROM port_ranges WHERE uuid = '%s';",
                      quoted_uuid))
@@ -43099,7 +43309,8 @@ delete_port_list (const char *port_list_id, int ultimate)
       return 99;
     }
 
-  if (find_port_list (port_list_id, &port_list))
+  if (find_port_list_with_permission (port_list_id, &port_list,
+                                      "delete_port_list"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -43217,7 +43428,8 @@ delete_port_range (const char *port_range_id, int dummy)
       return 99;
     }
 
-  if (find_port_range (port_range_id, &port_range))
+  if (find_port_range_with_permission (port_range_id, &port_range,
+                                       "delete_port_range"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -43944,6 +44156,23 @@ find_filter (const char* uuid, filter_t* filter)
 }
 
 /**
+ * @brief Find a filter for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of filter.
+ * @param[out]  filter      Filter return, 0 if succesfully failed to find
+ *                          filter.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find filter), TRUE on error.
+ */
+gboolean
+find_filter_with_permission (const char* uuid, filter_t* filter,
+                             const char *permission)
+{
+  return find_resource_with_permission ("filter", uuid, filter, permission, 0);
+}
+
+/**
  * @brief Return the UUID of a filter.
  *
  * @param[in]  filter  Filter.
@@ -44225,7 +44454,7 @@ delete_filter (const char *filter_id, int ultimate)
       return 99;
     }
 
-  if (find_filter (filter_id, &filter))
+  if (find_filter_with_permission (filter_id, &filter, "delete_filter"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -47452,6 +47681,22 @@ find_user (const char *uuid, user_t *user)
 }
 
 /**
+ * @brief Find a user for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of user.
+ * @param[out]  user        User return, 0 if succesfully failed to find user.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user_with_permission (const char* uuid, user_t* user,
+                           const char *permission)
+{
+  return find_resource_with_permission ("user", uuid, user, permission, 0);
+}
+
+/**
  * @brief Find a user given a name.
  *
  * @param[in]   name  A user name.
@@ -47772,6 +48017,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
       return 99;
     }
 
+  /* Users are owned collectively by the admins, hence no permission checks. */
   user = 0;
   if (user_id_arg)
     {
@@ -48503,6 +48749,36 @@ DEF_ACCESS (user_role_iterator_name, 2);
 /* Tags */
 
 /**
+ * @brief Find a tag given a UUID.
+ *
+ * @param[in]   uuid    UUID of tag.
+ * @param[out]  tag     Tag return, 0 if succesfully failed to find target.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_tag (const char* uuid, tag_t* tag)
+{
+  return find_resource ("tag", uuid, tag);
+}
+
+/**
+ * @brief Find a tag for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of tag.
+ * @param[out]  tag         Tag return, 0 if succesfully failed to find tag.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find tag), TRUE on error.
+ */
+gboolean
+find_tag_with_permission (const char* uuid, tag_t* tag,
+                          const char *permission)
+{
+  return find_resource_with_permission ("tag", uuid, tag, permission, 0);
+}
+
+/**
  * @brief Create a tag from an existing tag.
  *
  * @param[in]  name        Name of new tag.  NULL to copy from existing.
@@ -48713,7 +48989,7 @@ delete_tag (const char *tag_id, int ultimate)
       return 99;
     }
 
-  if (find_tag (tag_id, &tag))
+  if (find_tag_with_permission (tag_id, &tag, "delete_tag"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -48758,20 +49034,6 @@ delete_tag (const char *tag_id, int ultimate)
   sql ("COMMIT;");
 
   return 0;
-}
-
-/**
- * @brief Find a tag given a UUID.
- *
- * @param[in]   uuid    UUID of tag.
- * @param[out]  tag     Tag return, 0 if succesfully failed to find target.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_tag (const char* uuid, tag_t* tag)
-{
-  return find_resource ("tag", uuid, tag);
 }
 
 /**

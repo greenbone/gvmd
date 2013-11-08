@@ -1,3 +1,26 @@
+2013-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add resource level permission checking to DELETE commands.
+
+	* src/manage_sql.c (find_alert_with_permission): New function.
+	(delete_alert, delete_report, request_delete_task_uuid): Use permission
+	version of find function.
+	(find_report_with_permission): Correct doc.
+	(find_target_with_permission, find_lsc_credential_with_permission)
+	(find_agent_with_permission, find_note_with_permission)
+	(find_override_with_permission, find_schedule_with_permission)
+	(find_report_format_with_permission, find_slave_with_permission)
+	(find_port_list_with_permission, port_range_port_list_uuid)
+	(find_port_range_with_permission, find_filter_with_permission)
+	(find_user_with_permission, find_tag_with_permission): New functions.
+	(delete_target, delete_config, delete_lsc_credential, delete_agent)
+	(delete_note, delete_override, delete_schedule, delete_report_format)
+	(delete_slave, delete_port_list, delete_port_range, delete_filter)
+	(delete_tag): Use permission version of find function.
+	(find_port_range): Remove.  Out of use.
+	(delete_group, delete_user): Add note about permissions.
+	(find_tag): Move up in file.
+
 2013-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (send_ifaces_preferences): Rename to
