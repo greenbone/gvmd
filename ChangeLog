@@ -1,5 +1,24 @@
 2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (scanner): Initialize accordingly.
+	(run_task): Don't send client rules.
+
+	* src/manage.h (scanner_t): Remove rules and rules_size elements. Delete
+	unused prototype.
+
+	* src/manage_sql.c (manage_user_rules): Delete function.
+	(make_task_rcfiles): Don't add client side user rules.
+
+	* src/openvasmd.c: Delete dead code.
+
+	* src/otp.c (free_rule, maybe_free_scanner_rules, make_scanner_rules)
+	(add_scanner_rule, parse_scanner_rules): Delete functions.
+	(init_otp_data): Update initialization.
+	(scanner_state_t): Delete SCANNER_RULE state.
+	(process_otp_scanner_input): Don't handle SCANNER_RULE and RULES case.
+
+2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (finished_hosts_str): New function.
 	(send_scanner_preferences): Add finished hosts to exclude_hosts
 	preference appropriately.

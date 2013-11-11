@@ -55,11 +55,9 @@ typedef struct
   certificates_t* certificates;      ///< List of certificates.
   char* plugins_feed_version;        ///<  Feed version of plugins set.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
-  GPtrArray* rules;                  ///< Scanner rules.
-  int rules_size;                    ///< Number of rules.
 } scanner_t;
 
-/** @todo Exported for omp.c, manage.c and otp.c access to server info (rules,
+/** @todo Exported for omp.c, manage.c and otp.c access to server info (
   *       prefs, ...). */
 /**
  * @brief Information about the server.
@@ -3153,9 +3151,6 @@ manage_user_hash (const gchar *);
 
 gchar *
 manage_user_uuid (const gchar *, auth_method_t);
-
-gchar *
-manage_user_rules (const gchar *);
 
 int
 manage_user_set_role (const gchar *, const gchar *, const gchar *);

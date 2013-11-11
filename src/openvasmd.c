@@ -1389,13 +1389,6 @@ main (int argc, char** argv)
         manager_port_2 = manager_port;
     }
 
-#if 0
-  /* Initialise scanner information needed by `cleanup'. */
-
-  scanner.preferences = NULL;
-  scanner.rules = NULL;
-#endif
-
   if (foreground == FALSE)
     {
       /* Fork into the background. */

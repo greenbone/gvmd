@@ -667,16 +667,6 @@ serve_omp (gnutls_session_t* client_session,
                     (int (*) (const char*, void*)) ompd_send_to_client,
                     (void*) client_session,
                     disable);
-#if 0
-  /** @todo Consider free_omp_data (); on return. */
-  if (tasks) free_tasks ();
-  if (current_scanner_preference) free (current_scanner_preference);
-  free_credentials (&current_credentials);
-  maybe_free_current_scanner_plugin_dependency ();
-  maybe_free_scanner_preferences (); // old
-  maybe_free_scanner_rules ();
-  maybe_free_scanner_plugins_dependencies (); // old
-#endif
 
   /* Initiate connection (to_scanner is empty so this will just init). */
   while ((ret = write_to_scanner (scanner_socket, scanner_session)) == -3

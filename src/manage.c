@@ -143,7 +143,7 @@
 /**
  * @brief Information about the scanner.
  */
-scanner_t scanner = { NULL, NULL, NULL, NULL, 0 };
+scanner_t scanner = { NULL, NULL, NULL };
 
 
 /* Severity related functions. */
@@ -3323,31 +3323,11 @@ run_task (const char *task_id, char **report_id, int from)
       g_slist_free_1 (last);
     }
 
-  /* Send the rules. */
-
-  if (send_to_server ("CLIENT <|> RULES <|>\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
-  if (send_to_server ("<|> CLIENT\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
   /* Send the attack command. */
 
   /* Send all the hosts to the Scanner.  When resuming a stopped task,
    * the hosts that have been completely scanned are excluded by being
-   * included in the RULES above. */
+   * included in exclude_hosts preference. */
   fail = sendf_to_server ("CLIENT <|> LONG_ATTACK <|>\n%d\n%s\n",
                           strlen (hosts),
                           hosts);

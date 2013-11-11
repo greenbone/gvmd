@@ -536,59 +536,6 @@ finish_current_scanner_plugin_dependency ()
 }
 
 
-/* Scanner rules. */
-
-/**
- * @brief Free a scanner rule.
- *
- * @param[in]  rule   The scanner rule.
- * @param[in]  dummy  Dummy parameter, to please g_ptr_array_foreach.
- */
-static void
-free_rule (/*@only@*/ /*@out@*/ void* rule, /*@unused@*/ void* dummy)
-{
-  if (rule) free (rule);
-}
-
-/**
- * @brief Free any scanner rules.
- */
-static void
-maybe_free_scanner_rules ()
-{
-  if (scanner.rules)
-    {
-      g_ptr_array_foreach (scanner.rules, free_rule, NULL);
-      g_ptr_array_free (scanner.rules, TRUE);
-      scanner.rules_size = 0;
-    }
-}
-
-/**
- * @brief Create the scanner rules.
- */
-static void
-make_scanner_rules ()
-{
-  scanner.rules = g_ptr_array_new ();
-  scanner.rules_size = 0;
-}
-
-/**
- * @brief Add a rule to the scanner rules.
- *
- * The rule is used directly and is freed with the other scanner rules.
- *
- * @param[in]  rule  The rule.
- */
-static void
-add_scanner_rule (/*@keep@*/ char* rule)
-{
-  g_ptr_array_add (scanner.rules, rule);
-  scanner.rules_size++;
-}
-
-
 /* Scanner state. */
 
 /**
@@ -600,7 +547,6 @@ void
 init_otp_data ()
 {
   scanner.certificates = NULL;
-  scanner.rules = NULL;
   scanner.plugins_feed_version = NULL;
 }
 
@@ -646,7 +592,6 @@ typedef enum
   SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
-  SCANNER_RULE,
   SCANNER_SERVER,
   SCANNER_STATUS,
   SCANNER_STATUS_ATTACK_STATE,
@@ -1069,46 +1014,6 @@ parse_scanner_plugin_list_tags (char** messages)
 }
 
 /**
- * @brief Parse an OTP rule.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return 0 read a rule, -1 read a <|>, -2 too few characters (need
- *         more input).
- */
-static int
-parse_scanner_rule (char** messages)
-{
-  char *end, *match;
-  end = *messages + from_scanner_end - from_scanner_start;
-  while (*messages < end && ((*messages)[0] == '\n'))
-    { (*messages)++; from_scanner_start++; }
-  while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_scanner_start++; }
-  /* Check for the end marker. */
-  if (end - *messages > 2
-      && (*messages)[0] == '<'
-      && (*messages)[1] == '|'
-      && (*messages)[2] == '>')
-    /* The rules list ends with "<|> SERVER". */
-    return -1;
-  /* There may be a rule ending in a semicolon. */
-  if ((match = memchr (*messages,
-                       (int) ';',
-                       from_scanner_end - from_scanner_start)))
-    {
-      char* rule;
-      match[0] = '\0';
-      rule = g_strdup (*messages);
-      add_scanner_rule (rule);
-      from_scanner_start += match + 1 - *messages;
-      *messages = match + 1;
-      return 0;
-    }
-  return -2;
-}
-
-/**
  * @brief Parse the dependency of a scanner plugin.
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -1385,20 +1290,6 @@ process_otp_scanner_input ()
             g_free (current_scanner_preference);
             current_scanner_preference = NULL;
           }
-        else if (scanner_state == SCANNER_RULE)
-          while (1)
-            {
-              switch (parse_scanner_rule (&messages))
-                {
-                  case  0: continue;     /* Read a rule. */
-                  case -1: break;        /* At final <|>. */
-                  case -2:
-                    /* Need more input. */
-                    if (sync_buffer ()) return -1;
-                    return 0;
-                }
-              break;
-            }
         else if (scanner_state == SCANNER_SERVER)
           /* Look for any newline delimited scanner commands. */
           switch (parse_scanner_server (&messages))
@@ -2002,18 +1893,6 @@ process_otp_scanner_input ()
                   }
                   break;
                 }
-              case SCANNER_RULE:
-                /* A <|> following a rule. */
-                set_scanner_state (SCANNER_DONE);
-                switch (parse_scanner_done (&messages))
-                  {
-                    case -1: goto return_error;
-                    case -2:
-                      /* Need more input. */
-                      if (sync_buffer ()) goto return_error;
-                      goto return_need_more;
-                  }
-                break;
               case SCANNER_SERVER:
                 if (strcasecmp ("BYE", field) == 0)
                   set_scanner_state (SCANNER_BYE);
@@ -2064,26 +1943,6 @@ process_otp_scanner_input ()
                   {
                     assert (current_scanner_preference == NULL);
                     set_scanner_state (SCANNER_PREFERENCE_NAME);
-                  }
-                else if (strcasecmp ("RULES", field) == 0)
-                  {
-                    maybe_free_scanner_rules ();
-                    make_scanner_rules ();
-                    set_scanner_state (SCANNER_RULE);
-                    while (1)
-                      {
-                        switch (parse_scanner_rule (&messages))
-                          {
-                            case  0: continue;     /* Read a rule. */
-                            case -1: break;        /* At final <|>. */
-                            case -2:
-                              /* Need more input. */
-                              if (sync_buffer ()) goto return_error;
-                              goto return_need_more;
-                          }
-                        break;
-                      }
-                    break;
                   }
                 else if (strcasecmp ("TIME", field) == 0)
                   {
