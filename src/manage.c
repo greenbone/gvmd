@@ -1534,6 +1534,38 @@ send_hosts_access_preferences (void)
 }
 
 /**
+ * @brief Gives a comma-separated list of a report's finished hosts.
+ *
+ * @return String of finished hosts if found, NULL otherwise.
+ */
+static char *
+finished_hosts_str (report_t stopped_report)
+{
+  iterator_t hosts;
+  char *str = NULL;
+
+  if (stopped_report == 0)
+    return NULL;
+  init_host_iterator (&hosts, stopped_report, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *end_time = host_iterator_end_time (&hosts);
+
+      if (end_time && strlen (end_time))
+        {
+          char *new_str = str ?
+                           g_strdup_printf ("%s, %s", str,
+                                            host_iterator_host (&hosts))
+                           : g_strdup_printf ("%s",
+                                              host_iterator_host (&hosts));
+          g_free (str);
+          str = new_str;
+        }
+    }
+  return str;
+}
+
+/**
  * @brief Send some scanner preferences to the scanner.
  *
  * @param[in]  task     Task.
@@ -1542,7 +1574,7 @@ send_hosts_access_preferences (void)
  * @return 0 on success, -1 on failure.
  */
 static int
-send_scanner_preferences (task_t task, target_t target)
+send_scanner_preferences (task_t task, target_t target, report_t stopped_report)
 {
   char *hosts_ordering, *exclude_hosts, *reverse_lookup_only;
   char *reverse_lookup_unify;
@@ -1569,6 +1601,22 @@ send_scanner_preferences (task_t task, target_t target)
 
   /* Send exclude_hosts preference. */
   exclude_hosts = target_exclude_hosts (target);
+  if (exclude_hosts)
+    {
+      char *finished, *str;
+
+      finished = finished_hosts_str (stopped_report);
+      if (finished)
+        {
+          str = g_strdup_printf ("%s, %s", exclude_hosts, finished);
+          g_free (exclude_hosts);
+          g_free (finished);
+          exclude_hosts = str;
+        }
+    }
+  else
+    exclude_hosts = finished_hosts_str (stopped_report);
+
   if (exclude_hosts)
     {
       if (sendf_to_server ("exclude_hosts <|> %s\n", exclude_hosts))
@@ -1598,35 +1646,6 @@ send_scanner_preferences (task_t task, target_t target)
     return -1;
 
   return 0;
-}
-
-/**
- * @brief Send the rules listed in the users directory.
- *
- * @param[in]  stopped_report  Report whose finished hosts to deny.
- *
- * @return 0 on success, -1 on failure.
- */
-static int
-send_user_rules_empty (report_t stopped_report)
-{
-  iterator_t hosts;
-
-  /* Empty rules file.  Send rules to deny all finished hosts. */
-
-  init_host_iterator (&hosts, stopped_report, NULL, 0);
-  while (next (&hosts))
-    if (host_iterator_end_time (&hosts)
-        && strlen (host_iterator_end_time (&hosts))
-        && sendf_to_server ("deny %s\n",
-                            host_iterator_host (&hosts)))
-      {
-        cleanup_iterator (&hosts);
-        return -1;
-      }
-  cleanup_iterator (&hosts);
-
-  return send_to_server ("default accept\n") ? -1 : 0;
 }
 
 /**
@@ -3103,7 +3122,7 @@ run_task (const char *task_id, char **report_id, int from)
     }
 
   /* Send other scanner preferences. */
-  if (send_scanner_preferences (task, target))
+  if (send_scanner_preferences (task, target, last_stopped_report))
     {
       free (hosts);
       g_ptr_array_add (preference_files, NULL);
@@ -3307,15 +3326,6 @@ run_task (const char *task_id, char **report_id, int from)
   /* Send the rules. */
 
   if (send_to_server ("CLIENT <|> RULES <|>\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
-  if (send_user_rules_empty (last_stopped_report))
     {
       free (hosts);
       set_task_run_status (task, run_status);

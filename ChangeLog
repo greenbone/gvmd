@@ -1,5 +1,14 @@
 2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (finished_hosts_str): New function.
+	(send_scanner_preferences): Add finished hosts to exclude_hosts
+	preference appropriately.
+	(send_user_rules_empty): Delete function.
+	(run_task): Remove call to send_user_rules_empty. Adjust call to
+	send_scanner_preferences.
+
+2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_tables, user_ensure_in_db, copy_user): Adjust
 	to handle users ifaces and ifaces_allow columns accordingly. Issue
 	reported and tracked by Stefan Schwarz.
