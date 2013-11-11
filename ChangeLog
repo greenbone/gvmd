@@ -1,3 +1,8 @@
+2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_tables, user_ensure_in_db, copy_user): Adjust
+	to handle users ifaces and ifaces_allow columns accordingly.
+
 2013-11-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add resource level permission checking to DELETE commands.

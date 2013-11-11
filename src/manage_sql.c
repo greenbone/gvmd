@@ -4650,10 +4650,11 @@ create_tables ()
        "  creation_time, modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
+  /* Field ifaces_allow: 0 deny, 1 allow, 2 allow all. */
   sql ("CREATE TABLE IF NOT EXISTS users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
-       "  password, timezone, hosts, hosts_allow, method, creation_time,"
-       "  modification_time);");
+       "  password, timezone, hosts, hosts_allow, ifaces, ifaces_allow,"
+       "  method, creation_time, modification_time);");
 
   sql ("ANALYZE;");
 }
@@ -11881,11 +11882,11 @@ user_ensure_in_db (const gchar *name, const gchar *method)
 
   sql ("INSERT INTO users"
        " (uuid, owner, name, comment, password, timezone, method, hosts,"
-       "  hosts_allow, creation_time, modification_time)"
+       "  hosts_allow, ifaces, ifaces_allow, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (),"
        "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '', NULL, NULL, '%s', '', 2, now (), now ());",
+       "  '%s', '', NULL, NULL, '%s', '', 2, '', 2, now (), now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_method);
@@ -47955,7 +47956,8 @@ copy_user (const char* name, const char* comment, const char *user_id,
   sql ("BEGIN IMMEDIATE;");
 
   ret = copy_resource_lock ("user", name, comment, user_id,
-                            "password, timezone, hosts, hosts_allow, method",
+                            "password, timezone, hosts, hosts_allow,"
+                            " ifaces, ifaces_allow, method",
                             1, &user);
   if (ret)
     {
