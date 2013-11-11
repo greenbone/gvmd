@@ -1,5 +1,10 @@
 2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (serve_omp): Return commented out code removed in previous
+	change. Remove maybe_free_scanner_rules call.
+
+2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (scanner): Initialize accordingly.
 	(run_task): Don't send client rules.
 
