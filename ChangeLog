@@ -1,5 +1,10 @@
 2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (valid_type): Add missing "group" check.  Order
+	alphabetically.
+
+2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add resource level permission checking to CREATE commands.
 
 	* src/manage_sql.c (type_has_comment): New function.

@@ -3416,12 +3416,14 @@ valid_type (const char* type)
   return (strcasecmp (type, "agent") == 0)
          || (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "config") == 0)
-         || (strcasecmp (type, "lsc_credential") == 0)
          || (strcasecmp (type, "filter") == 0)
+         || (strcasecmp (type, "group") == 0)
+         || (strcasecmp (type, "info") == 0)
+         || (strcasecmp (type, "lsc_credential") == 0)
          || (strcasecmp (type, "note") == 0)
          || (strcasecmp (type, "override") == 0)
-         || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "permission") == 0)
+         || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "report") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
@@ -3431,8 +3433,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "tag") == 0)
          || (strcasecmp (type, "target") == 0)
          || (strcasecmp (type, "task") == 0)
-         || (strcasecmp (type, "user") == 0)
-         || (strcasecmp (type, "info") == 0);
+         || (strcasecmp (type, "user") == 0);
 }
 
 /**
