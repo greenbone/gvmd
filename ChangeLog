@@ -1,3 +1,8 @@
+2013-11-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (print_report_assets_xml): Send report result count
+	detail for number of log results.
+
 2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (valid_type): Add missing "group" check.  Order

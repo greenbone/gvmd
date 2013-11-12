@@ -20737,6 +20737,17 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
                      "</detail>",
                      infos);
 
+              PRINT (out,
+                     "<detail>"
+                     "<name>report/result_count/log</name>"
+                     "<value>%i</value>"
+                     "<source>"
+                     "<type></type>"
+                     "<name>openvasmd</name>"
+                     "<description>Number of logs</description>"
+                     "</source>"
+                     "</detail>",
+                     logs);
               /* Print all the host details. */
 
               highest_cvss = -1;
