@@ -1391,7 +1391,7 @@ int
 create_config_rc (const char*, const char*, char*, config_t*);
 
 int
-copy_config (const char*, const char*, config_t, config_t*);
+copy_config (const char*, const char*, const char *, config_t*);
 
 int
 delete_config (const char*, int);

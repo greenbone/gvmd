@@ -1,3 +1,21 @@
+2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add resource level permission checking to CREATE commands.
+
+	* src/manage_sql.c (type_has_comment): New function.
+	(copy_resource_lock): Add old_resource return arg.  Find with the
+	permissions function instead of by hand.  Check if the type has
+	comments when generating SQL.
+	(copy_alert, copy_task, copy_config, copy_report_format, copy_group)
+	(copy_port_list, copy_user): Use copy_resource_lock to do most of the
+	work.
+	(copy_target, copy_tag): Use copy_resource to do the work.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_CONFIG adjust
+	for standardised copy_config call.
+
 2013-11-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (report_port_count): Do not count results and error

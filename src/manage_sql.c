@@ -3558,6 +3558,19 @@ type_named (const char *type)
 }
 
 /**
+ * @brief Check whether a type has a comment.
+ *
+ * @param[in]  type  Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+type_has_comment (const char *type)
+{
+  return strcasecmp (type, "report_format");
+}
+
+/**
  * @brief Check whether a type has permission support.
  *
  * @param[in]  type          Type of resource.
@@ -3705,7 +3718,8 @@ find_resource_with_permission (const char* type, const char* uuid,
  * @param[in]  columns       Extra columns in resource.
  * @param[in]  make_name_unique  When name NULL, whether to make existing name
  *                               unique.
- * @param[out] new_resource  New resource.
+ * @param[out] new_resource  Address for new resource, or NULL.
+ * @param[out] old_resource  Address for existing resource, or NULL.
  *
  * @return 0 success, 1 resource exists already, 2 failed to find existing
  *         resource, 99 permission denied, -1 error.
@@ -3713,11 +3727,13 @@ find_resource_with_permission (const char* type, const char* uuid,
 static int
 copy_resource_lock (const char *type, const char *name, const char *comment,
                     const char *resource_id, const char *columns,
-                    int make_name_unique, resource_t* new_resource)
+                    int make_name_unique, resource_t* new_resource,
+                    resource_t *old_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command, *owner_string;
   int named, admin_type;
   user_t owner;
+  resource_t resource;
 
   if (resource_id == NULL)
     return -1;
@@ -3729,6 +3745,12 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
       return 99;
     }
   g_free (command);
+
+  if (find_resource_with_permission (type, resource_id, &resource, NULL, 0))
+    return -1;
+
+  if (resource == 0)
+    return 2;
 
   if (find_user_by_name (current_credentials.username, &owner)
       || owner == 0)
@@ -3757,19 +3779,6 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     quoted_name = NULL;
 
   quoted_uuid = sql_quote (resource_id);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM %ss"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = %llu))",
-               type,
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      g_free (quoted_name);
-      g_free (quoted_uuid);
-      return 2;
-    }
 
   /* Copy the existing resource. */
 
@@ -3816,16 +3825,18 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
   else if (named)
     sql ("INSERT INTO %ss"
-         " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s, %s%s%s, comment, now (), now ()%s%s"
+         " (uuid, owner, name%s, creation_time, modification_time%s%s)"
+         " SELECT make_uuid (), %s, %s%s%s%s, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
+         type_has_comment (type) ? ", comment" : "",
          columns ? ", " : "",
          columns ? columns : "",
          owner_string,
          quoted_name ? "'" : "",
          quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
+         type_has_comment (type) ? ", comment" : "",
          columns ? ", " : "",
          columns ? columns : "",
          type,
@@ -3846,6 +3857,9 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   if (new_resource)
     *new_resource = sqlite3_last_insert_rowid (task_db);
+
+  if (old_resource)
+    *old_resource = resource;
 
   g_free (owner_string);
   g_free (quoted_uuid);
@@ -3883,7 +3897,7 @@ copy_resource (const char *type, const char *name, const char *comment,
   sql ("BEGIN IMMEDIATE;");
 
   ret = copy_resource_lock (type, name, comment, resource_id, columns,
-                            make_name_unique, new_resource);
+                            make_name_unique, new_resource, NULL);
 
   if (ret)
     sql ("ROLLBACK;");
@@ -5867,10 +5881,8 @@ int
 copy_alert (const char* name, const char* comment, const char* alert_id,
             alert_t* new_alert)
 {
-  alert_t new_id, alert;
-  gchar *quoted_name, *quoted_comment, *quoted_uuid, *uniquify;
-  char *alertchr;
-  user_t owner;
+  int ret;
+  alert_t new, old;
 
   assert (current_credentials.uuid);
 
@@ -5879,110 +5891,38 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
 
   sql ("BEGIN IMMEDIATE");
 
-  if (user_may ("create_alert") == 0)
+  ret = copy_resource_lock ("alert", name, comment, alert_id,
+                            "event, condition, method, filter",
+                            1, &new, &old);
+  if (ret)
     {
       sql ("ROLLBACK;");
-      return 99;
+      return ret;
     }
-
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  quoted_name = sql_quote (name);
-
-  /* Check for existing name. */
-  if (quoted_name && strlen (quoted_name))
-    {
-      if (sql_int (0, 0,
-                   "SELECT COUNT (*) FROM alerts WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = "
-                   " (SELECT users.ROWID FROM users WHERE useres.uuid = '%s')));",
-                   quoted_name,
-                   current_credentials.uuid))
-        {
-          tracef ("   alert \"%s\" exists already\n", name);
-          sql ("ROLLBACK");
-          g_free (quoted_name);
-          return 1;
-        }
-    }
-  else
-    quoted_name = NULL;
-
-  quoted_uuid = sql_quote (alert_id);
-  /* Check that alert to copy exists. */
-  alertchr = sql_string (0, 0,
-                         "SELECT ROWID FROM alerts"
-                         " WHERE uuid = '%s'"
-                         " AND ((owner IS NULL) OR (owner = %llu));",
-                         quoted_uuid,
-                         owner);
-  if (alertchr == NULL)
-    {
-      sql ("ROLLBACK");
-      g_free (quoted_name);
-      g_free (quoted_uuid);
-      return 2;
-    }
-  alert = atoi (alertchr);
-  free (alertchr);
-
-  /* Copy the alert. */
-  if (comment && strlen (comment) > 0)
-    quoted_comment = sql_nquote (comment, strlen (comment));
-  else
-    quoted_comment = NULL;
-
-  uniquify = g_strdup_printf ("uniquify ('alert', name, %llu, ' Clone')",
-                              owner);
-  sql ("INSERT INTO alerts"
-       " (uuid, name, owner, comment, event, condition, method, filter,"
-       "  creation_time, modification_time)"
-       " SELECT make_uuid (), %s%s%s, %llu, %s%s%s, event, condition, method,"
-       "  filter, now (), now ()"
-       " FROM alerts WHERE uuid = '%s';",
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : uniquify,
-       quoted_name ? "'" : "",
-       owner,
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_uuid);
-
-  new_id = sqlite3_last_insert_rowid (task_db);
 
   /* Copy the alert condition data */
   sql ("INSERT INTO alert_condition_data (alert, name, data)"
        " SELECT %llu, name, data FROM alert_condition_data"
        "  WHERE alert = %llu;",
-       new_id,
-       alert);
+       new,
+       old);
 
   /* Copy the alert event data */
   sql ("INSERT INTO alert_event_data (alert, name, data)"
        " SELECT %llu, name, data FROM alert_event_data"
        "  WHERE alert = %llu;",
-       new_id,
-       alert);
+       new,
+       old);
 
   /* Copy the alert method data */
   sql ("INSERT INTO alert_method_data (alert, name, data)"
        " SELECT %llu, name, data FROM alert_method_data"
        "  WHERE alert = %llu;",
-       new_id,
-       alert);
+       new,
+       old);
 
   sql ("COMMIT;");
-  g_free (quoted_name);
-  g_free (quoted_comment);
-  g_free (quoted_uuid);
-  g_free (uniquify);
-  if (new_alert) *new_alert = new_id;
+  if (new_alert) *new_alert = new;
   return 0;
 }
 
@@ -24647,9 +24587,8 @@ int
 copy_task (const char* name, const char* comment, const char *task_id,
            int alterable, task_t* new_task)
 {
-  task_t task;
-  gchar *quoted_name, *quoted_uuid, *uniquify;
-  user_t owner;
+  task_t new, old;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -24658,125 +24597,62 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (user_may ("create_task") == 0)
+  // FIX task names are allowed to clash
+  ret = copy_resource_lock ("task", name, comment, task_id,
+                            "time, config, target, schedule,"
+                            " schedule_next_time, slave, config_location,"
+                            " target_location, schedule_location,"
+                            " slave_location, hosts_ordering",
+                            1, &new, &old);
+  if (ret)
     {
       sql ("ROLLBACK;");
-      return 99;
+      return ret;
     }
 
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  sql ("UPDATE tasks SET alterable = %i, hidden = 0 WHERE ROWID = %llu;",
+       alterable,
+       new);
 
-  if (name && strlen (name))
-    quoted_name = sql_quote (name);
-  else
-    quoted_name = NULL;
-
-  quoted_uuid = sql_quote (task_id);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM tasks"
-               " WHERE uuid = '%s'"
-               " AND hidden = 0"
-               " AND ((owner IS NULL) OR (owner = %llu))",
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      return 2;
-    }
-
-  /* Copy the existing task. */
-
-  uniquify = g_strdup_printf ("uniquify ('task', name, %llu, ' Clone')",
-                              owner);
-  if (comment && strlen (comment))
-    {
-      gchar *quoted_comment;
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO tasks"
-           " (uuid, owner, name, hidden, time, comment, config, target,"
-           "  schedule, schedule_next_time, slave, config_location,"
-           "  target_location, schedule_location, slave_location,"
-           "  hosts_ordering, alterable, creation_time, modification_time)"
-           " SELECT make_uuid (), %llu, %s%s%s, 0, time, '%s', config, target,"
-           " schedule, schedule_next_time, slave, config_location,"
-           " target_location, schedule_location, slave_location,"
-           " hosts_ordering, %i, now (), now ()"
-           " FROM tasks WHERE uuid = '%s';",
-           owner,
-           quoted_name ? "'" : "",
-           quoted_name ? quoted_name : uniquify,
-           quoted_name ? "'" : "",
-           quoted_comment ? quoted_comment : "",
-           alterable,
-           quoted_uuid);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT into tasks"
-         " (uuid, owner, name, hidden, time, comment, config, target,"
-         "  schedule, schedule_next_time, slave, config_location,"
-         "  target_location, schedule_location, slave_location, hosts_ordering,"
-         "  alterable, creation_time, modification_time)"
-         " SELECT make_uuid (), %llu, %s%s%s, 0, time, comment, config,"
-         " target, schedule, schedule_next_time, slave, config_location,"
-         " target_location, schedule_location, slave_location, hosts_ordering,"
-         " %i, now (), now ()"
-         " FROM tasks WHERE uuid = '%s';",
-         owner,
-         quoted_name ? "'" : "",
-         quoted_name
-          ? quoted_name
-          : "uniquify ('task', name, owner, ' Clone')",
-         quoted_name ? "'" : "",
-         alterable,
-         quoted_uuid);
-
-  task = sqlite3_last_insert_rowid (task_db);
-
-  if (new_task)
-    *new_task = task;
-
-  set_task_run_status (task, TASK_STATUS_NEW);
+  set_task_run_status (new, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
        " SELECT %llu, name, value FROM task_preferences"
-       " WHERE task = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
-       task,
-       quoted_uuid);
+       " WHERE task = %llu;",
+       new,
+       old);
 
   sql ("INSERT INTO task_alerts (task, alert, alert_location)"
        " SELECT %llu, alert, alert_location FROM task_alerts"
-       " WHERE task = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
-       task,
-       quoted_uuid);
+       " WHERE task = %llu;",
+       new,
+       old);
 
+  // FIX do this for all types
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
        "  resource_location, subject_type, subject, creation_time,"
        "  modification_time)"
-       " SELECT make_uuid (), %llu, name, comment, resource_type, %llu,"
-       "        resource_uuid, resource_location, subject_type, subject,"
-       "        now (), now ()"
+       " SELECT make_uuid (), (SELECT owner FROM tasks WHERE ROWID = %llu),"
+       "        name, comment, resource_type, %llu, resource_uuid,"
+       "        resource_location, subject_type, subject, now (), now ()"
        " FROM permissions"
-       " WHERE owner = %llu"
+       " WHERE owner = (SELECT owner FROM tasks WHERE ROWID = %llu)"
        " AND resource_type = 'task'"
        " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
-       " AND resource = (SELECT ROWID FROM tasks WHERE uuid = '%s');",
-       owner,
-       task,
-       owner,
-       quoted_uuid);
+       " AND resource = %llu;",
+       new,
+       new,
+       old,
+       old);
+
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
 
   sql ("COMMIT;");
-  g_free (quoted_uuid);
-  g_free (quoted_name);
-  g_free (uniquify);
+  if (new_task) *new_task = new;
   return 0;
 }
 
@@ -26115,109 +25991,11 @@ int
 copy_target (const char* name, const char* comment, const char *target_id,
              target_t* new_target)
 {
-  gchar *quoted_name, *quoted_uuid, *uniquify;
-  user_t owner;
-
-  assert (current_credentials.uuid);
-
-  if (target_id == NULL)
-    return -1;
-
-  sql ("BEGIN IMMEDIATE;");
-
-  if (user_may ("create_target") == 0)
-    {
-      sql ("ROLLBACK;");
-      return 99;
-    }
-
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  if (name && strlen (name))
-    {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM targets WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                   quoted_name,
-                   owner))
-        {
-          sql ("ROLLBACK;");
-          g_free (quoted_name);
-          return 1;
-        }
-    }
-  else
-    quoted_name = NULL;
-
-  quoted_uuid = sql_quote (target_id);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM targets"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = %llu))",
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      return 2;
-    }
-
-  /* Copy the existing target. */
-
-  uniquify = g_strdup_printf ("uniquify ('target', name, %llu, ' Clone')",
-                              owner);
-  if (comment && strlen (comment))
-    {
-      gchar *quoted_comment;
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO targets"
-           " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
-           "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
-           "  reverse_lookup_unify, creation_time, modification_time)"
-           " SELECT make_uuid (), %llu, %s%s%s, '%s', hosts, exclude_hosts,"
-           "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-           "        reverse_lookup_only, reverse_lookup_unify, now (), now ()"
-           " FROM targets WHERE uuid = '%s';",
-           owner,
-           quoted_name ? "'" : "",
-           quoted_name
-            ? quoted_name
-            : "uniquify ('target', name, owner, ' Clone')",
-           quoted_name ? "'" : "",
-           quoted_comment,
-           quoted_uuid);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO targets"
-         " (uuid, owner, name, comment, hosts, exclude_hosts, lsc_credential,"
-         "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
-         "  reverse_lookup_unify, creation_time, modification_time)"
-         " SELECT make_uuid (), %llu, %s%s%s, comment, hosts, exclude_hosts,"
-         "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-         "        reverse_lookup_only, reverse_lookup_unify, now (), now ()"
-         " FROM targets WHERE uuid = '%s';",
-         owner,
-         quoted_name ? "'" : "",
-         quoted_name ? quoted_name : uniquify,
-         quoted_name ? "'" : "",
-         quoted_uuid);
-
-  if (new_target)
-    *new_target = sqlite3_last_insert_rowid (task_db);
-
-  sql ("COMMIT;");
-  g_free (quoted_uuid);
-  g_free (quoted_name);
-  g_free (uniquify);
-  return 0;
+  return copy_resource ("target", name, comment, target_id,
+                        "hosts, exclude_hosts, lsc_credential, ssh_port,"
+                        " smb_lsc_credential, port_range, reverse_lookup_only,"
+                        " reverse_lookup_unify",
+                        1, new_target);
 }
 
 /**
@@ -28208,161 +27986,66 @@ create_config_rc (const char* name, const char* comment, char* rc,
  *
  * @param[in]  name        Name of new config and NVT selector.
  * @param[in]  comment     Comment on new config.
- * @param[in]  config      Existing config.
+ * @param[in]  config_id   UUID of existing config.
  * @param[out] new_config  New config.
  *
  * @return 0 success, 1 config exists already, 2 failed to find existing
  *         config, 99 permission denied, -1 error.
  */
 int
-copy_config (const char* name, const char* comment, config_t config,
+copy_config (const char* name, const char* comment, const char *config_id,
              config_t* new_config)
 {
-  char *config_selector, *uuid;
-  config_t id;
-  gchar *quoted_name = sql_quote (name);
-  gchar *quoted_comment, *quoted_config_selector;
-  gchar *uniquify;
-  user_t owner;
+  int ret;
+  char *config_selector;
+  gchar *quoted_config_selector;
+  config_t new, old;
 
   assert (current_credentials.uuid);
 
-  config_selector = config_nvt_selector (config);
+  sql ("BEGIN IMMEDIATE;");
+
+  /* Copy the existing config. */
+
+  ret = copy_resource_lock ("config", name, comment, config_id,
+                            " comment, family_count, nvt_count,"
+                            " families_growing, nvts_growing",
+                            1, &new, &old);
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+
+  sql ("UPDATE configs SET nvt_selector = make_uuid () WHERE ROWID = %llu;",
+       new);
+
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
+       " SELECT %llu, type, name, value FROM config_preferences"
+       " WHERE config = %llu;",
+       new,
+       old);
+
+  config_selector = config_nvt_selector (old);
   if (config_selector == NULL)
     {
-      g_free (quoted_name);
+      sql ("ROLLBACK;");
       return -1;
     }
   quoted_config_selector = sql_quote (config_selector);
   free (config_selector);
 
-  sql ("BEGIN IMMEDIATE;");
-
-  if (user_may ("create_config") == 0)
-    {
-      g_free (quoted_config_selector);
-      sql ("ROLLBACK;");
-      return 99;
-    }
-
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      g_free (quoted_config_selector);
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  if (quoted_name && strlen (quoted_name))
-    {
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM configs WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                   quoted_name,
-                   owner))
-        {
-          tracef ("   config \"%s\" already exists\n", name);
-          sql ("ROLLBACK;");
-          g_free (quoted_name);
-          g_free (quoted_config_selector);
-          return 1;
-        }
-    }
-  else
-    quoted_name = NULL;
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM configs"
-               " WHERE ROWID = %llu"
-               " AND ((owner IS NULL) OR (owner = %llu))",
-               config,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      g_free (quoted_config_selector);
-      return 2;
-    }
-
-  uuid = openvas_uuid_make ();
-  if (uuid == NULL)
-    {
-      tracef ("   failed to create UUID \n");
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      g_free (quoted_config_selector);
-      return -1;
-    }
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
-               uuid))
-    {
-      tracef ("   NVT selector \"%s\" already exists\n", uuid);
-      sql ("ROLLBACK;");
-      free (uuid);
-      g_free (quoted_name);
-      g_free (quoted_config_selector);
-      return -1;
-    }
-
-  /* Copy the existing config. */
-
-  uniquify = g_strdup_printf ("uniquify ('config', name, %llu, ' Clone')",
-                              owner);
-  if (comment && strlen (comment) > 0)
-    {
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs"
-           " (uuid, name, owner, nvt_selector, comment, family_count,"
-           "  nvt_count, families_growing, nvts_growing,"
-           "  creation_time, modification_time)"
-           " SELECT make_uuid (), '%s', %llu, '%s', '%s', family_count,"
-           " nvt_count, families_growing, nvts_growing, now (), now ()"
-           " FROM configs WHERE ROWID = %llu;",
-           quoted_name,
-           owner,
-           uuid,
-           quoted_comment,
-           config);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO configs"
-         " (uuid, name, owner, nvt_selector, comment, family_count, nvt_count,"
-         "  families_growing, nvts_growing, creation_time, modification_time)"
-         " SELECT make_uuid (), %s%s%s, %llu, '%s', %s, family_count,"
-         " nvt_count, families_growing, nvts_growing, now (), now ()"
-         " FROM configs WHERE ROWID = %llu",
-         quoted_name ? "'" : "",
-         quoted_name ? quoted_name : uniquify,
-         quoted_name ? "'" : "",
-         owner,
-         uuid,
-         quoted_name ? "''" : "comment",
-         config);
-
-  id = sqlite3_last_insert_rowid (task_db);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " SELECT %llu, type, name, value FROM config_preferences"
-       " WHERE config = %llu;",
-       id,
-       config);
-
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " SELECT '%s', exclude, type, family_or_nvt, family FROM nvt_selectors"
+       " SELECT (SELECT nvt_selector FROM configs WHERE ROWID = %llu),"
+       "        exclude, type, family_or_nvt, family"
+       " FROM nvt_selectors"
        " WHERE name = '%s';",
-       uuid,
+       new,
        quoted_config_selector);
+  g_free (quoted_config_selector);
 
   sql ("COMMIT;");
-  free (uuid);
-  g_free (quoted_name);
-  g_free (quoted_config_selector);
-  g_free (uniquify);
-  if (new_config) *new_config = id;
+  if (new_config) *new_config = new;
   return 0;
 }
 
@@ -38443,116 +38126,39 @@ int
 copy_report_format (const char* name, const char* source_uuid,
                     report_format_t* new_report_format)
 {
-  report_format_t copy_report_format, source_report_format;
-  gchar *quoted_name, *quoted_uuid, *copy_uuid, *source_dir, *copy_dir;
+  report_format_t new, old;
+  gchar *copy_uuid, *source_dir, *copy_dir;
   gchar *tmp_dir;
-  int global;
-  user_t owner;
-  gchar *uniquify;
+  int global, ret;
 
   assert (current_credentials.uuid);
 
-  if (source_uuid == NULL)
-    return -1;
-
   sql ("BEGIN IMMEDIATE");
 
-  if (user_may ("create_report_format") == 0)
+  ret = copy_resource_lock ("report_format", name, NULL, source_uuid,
+                            "extension, content_type, summary, description,"
+                            " signature, trust, trust_time, flags",
+                            1, &new, &old);
+  if (ret)
     {
       sql ("ROLLBACK;");
-      return 99;
+      return ret;
     }
 
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
+  /* Copy report format parameters. */
 
-  copy_uuid = openvas_uuid_make ();
-  if (copy_uuid == NULL)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Check that provided name doesn't exist already */
-  if (name && strlen (name))
-    {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT (*) from report_formats WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                   quoted_name,
-                   owner))
-        {
-          sql ("ROLLBACK");
-          g_free (quoted_name);
-          g_free (copy_uuid);
-          return 1;
-        }
-    }
-  else
-    quoted_name = NULL;
-
-  /* Check that Report Format to copy exists */
-  quoted_uuid = sql_quote (source_uuid);
-  if (sql_int (0, 0,
-               "SELECT COUNT (*) from report_formats WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = %llu));",
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK");
-      g_free (quoted_name);
-      g_free (quoted_uuid);
-      g_free (copy_uuid);
-      return 2;
-    }
-
-  uniquify = g_strdup_printf("uniquify ('report_format', name,"
-                             "%llu, ' Clone')",
-                             owner);
-
-  /* Copy Report Format in DB */
-  sql ("INSERT INTO report_formats (uuid, owner, name, extension,"
-       " content_type, summary, description, signature, trust, trust_time,"
-       " flags, creation_time, modification_time)"
-       " SELECT '%s', %llu, %s%s%s, extension, content_type, summary,"
-       "  description, signature, trust, trust_time, flags, now (), now ()"
-       "  FROM report_formats WHERE uuid = '%s';",
-       copy_uuid,
-       owner,
-       quoted_name ? "'" : "",
-       quoted_name
-        ? quoted_name
-        : uniquify,
-       quoted_name ? "'" : "",
-       quoted_uuid);
-
-  g_free (uniquify);
-  copy_report_format = sqlite3_last_insert_rowid (task_db);
-
-  /* Copy Report Format Parameters */
   sql ("INSERT INTO report_format_params "
        " (report_format, name, type, value, type_min, type_max,"
        "  type_regex, fallback)"
        " SELECT %llu, name, type, value, type_min, type_max,"
        "  type_regex, fallback"
-       "  FROM report_format_params WHERE report_format = "
-       "   (SELECT report_formats.ROWID FROM report_formats"
-       "    WHERE report_formats.uuid = '%s');",
-       copy_report_format,
-       quoted_uuid);
-  find_report_format (quoted_uuid, &source_report_format);
+       "  FROM report_format_params WHERE report_format = %llu;",
+       new,
+       old);
 
-  g_free (quoted_name);
-  g_free (quoted_uuid);
+  /* Copy files on disk. */
 
-  /* Copy files on disk */
-  global = report_format_global (source_report_format);
+  global = report_format_global (old);
   if (global)
     source_dir = g_build_filename (OPENVAS_DATA_DIR,
                                    "openvasmd",
@@ -38570,18 +38176,26 @@ copy_report_format (const char* name, const char* source_uuid,
                                      NULL);
     }
 
-  /* Check that the directory exists. */
+  /* Check that the source directory exists. */
+
   if (!g_file_test (source_dir, G_FILE_TEST_EXISTS))
     {
       g_warning ("%s: report format directory %s not found",
                  __FUNCTION__, source_dir);
       g_free (source_dir);
-      g_free (copy_uuid);
       sql ("ROLLBACK;");
       return -1;
     }
 
-  /* Directory to copy into */
+  copy_uuid = report_format_uuid (new);
+  if (copy_uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Prepare directory to copy into. */
+
   copy_dir = g_build_filename (OPENVAS_STATE_DIR,
                                "openvasmd",
                                "report_formats",
@@ -38611,6 +38225,7 @@ copy_report_format (const char* name, const char* source_uuid,
     }
 
   /* Correct permissions as glib doesn't seem to do so. */
+
   tmp_dir = g_build_filename (OPENVAS_STATE_DIR,
                               "openvasmd",
                               "report_formats",
@@ -38655,7 +38270,7 @@ copy_report_format (const char* name, const char* source_uuid,
   g_free (tmp_dir);
   g_free (copy_uuid);
 
-  /* Copy files in directory */
+  /* Copy files into new directory. */
   {
     GDir *directory;
     GError *error;
@@ -38687,16 +38302,16 @@ copy_report_format (const char* name, const char* source_uuid,
             copy_file = g_build_filename (copy_dir, filename, NULL);
 
             if (openvas_file_copy (source_file, copy_file) == FALSE)
-            {
-              g_warning ("%s: copy of %s to %s failed.\n",
-                         "copy_report_format", source_file, copy_file);
-              g_free (source_file);
-              g_free (copy_file);
-              g_free (source_dir);
-              g_free (copy_dir);
-              sql ("ROLLBACK");
-              return -1;
-            }
+              {
+                g_warning ("%s: copy of %s to %s failed.\n",
+                           __FUNCTION__, source_file, copy_file);
+                g_free (source_file);
+                g_free (copy_file);
+                g_free (source_dir);
+                g_free (copy_dir);
+                sql ("ROLLBACK");
+                return -1;
+              }
             g_free (source_file);
             g_free (copy_file);
             filename = g_dir_read_name (directory);
@@ -38707,7 +38322,7 @@ copy_report_format (const char* name, const char* source_uuid,
   sql ("COMMIT");
   g_free (source_dir);
   g_free (copy_dir);
-  if (new_report_format) *new_report_format = copy_report_format;
+  if (new_report_format) *new_report_format = new;
   return 0;
 }
 
@@ -41002,29 +40617,27 @@ copy_group (const char *name, const char *comment, const char *group_id,
             group_t *new_group_return)
 {
   int ret;
-  group_t new_group;
-  gchar *quoted_group_id;
+  group_t new, old;
 
-  // TODO Wrap in transaction.
+  sql ("BEGIN IMMEDIATE");
 
-  if (user_may ("create_group") == 0)
-    return 99;
-
-  ret = copy_resource ("group", name, comment, group_id, NULL, 1, &new_group);
+  ret = copy_resource_lock ("group", name, comment, group_id, NULL, 1, &new,
+                            &old);
   if (ret)
-    return ret;
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
 
-  quoted_group_id = sql_quote (group_id);
   sql ("INSERT INTO group_users (`group`, user)"
        " SELECT %llu, user FROM group_users"
-       " WHERE `group` = (SELECT ROWID FROM groups WHERE uuid = '%s');",
-       new_group,
-       quoted_group_id);
-  g_free (quoted_group_id);
+       " WHERE `group` = %llu;",
+       new,
+       old);
 
+  sql ("COMMIT;");
   if (new_group_return)
-    *new_group_return = new_group;
-
+    *new_group_return = new;
   return 0;
 }
 
@@ -42951,108 +42564,32 @@ create_port_list (const char* id, const char* name, const char* comment,
  */
 int
 copy_port_list (const char* name, const char* comment,
-                const char* port_list_id, port_list_t* port_list)
+                const char* port_list_id, port_list_t* new_port_list)
 {
-  port_list_t new_port_list;
-  gchar *quoted_name, *quoted_comment, *quoted_uuid, *uniquify;
-  user_t owner;
-
-  assert (current_credentials.uuid);
-
-  if (port_list_id == NULL)
-    return -1;
+  int ret;
+  port_list_t new, old;
 
   sql ("BEGIN IMMEDIATE");
 
-  if (user_may ("create_port_list") == 0)
+  ret = copy_resource_lock ("port_list", name, comment, port_list_id, NULL, 1,
+                            &new, &old);
+  if (ret)
     {
       sql ("ROLLBACK;");
-      return 99;
+      return ret;
     }
 
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Check that name doesn't exist already */
-  if (name && strlen (name))
-    {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT (*) from port_lists WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner = %llu));",
-                   quoted_name,
-                   owner))
-        {
-          tracef ("  Port List \"%s\" exists already\n", name);
-          sql ("ROLLBACK");
-          g_free (quoted_name);
-          return 1;
-        }
-    }
-  else
-    quoted_name = NULL;
-
-  /* Check that Port List to copy exists */
-  quoted_uuid = sql_quote (port_list_id);
-  if (sql_int (0, 0,
-               "SELECT COUNT (*) from port_lists WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = %llu));",
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK");
-      g_free (quoted_name);
-      g_free (quoted_uuid);
-      return 2;
-    }
-
-  /* Copy Port List */
-
-  if (comment && strlen (comment) > 0)
-    quoted_comment = sql_nquote (comment, strlen (comment));
-  else
-    quoted_comment = NULL;
-
-  uniquify = g_strdup_printf ("uniquify ('port_list', name, %llu, ' Clone')",
-                              owner);
-  sql ("INSERT INTO port_lists (uuid, owner, name, comment,"
-       " creation_time, modification_time) "
-       " SELECT make_uuid (),%llu,"
-       "  %s%s%s, %s%s%s, now (), now ()"
-       "  FROM port_lists WHERE uuid = '%s';",
-       owner,
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : uniquify,
-       quoted_name ? "'" : "",
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_uuid);
-
-  new_port_list = sqlite3_last_insert_rowid (task_db);
-
-  /* Copy Port Ranges */
+  /* Copy port ranges. */
 
   sql ("INSERT INTO port_ranges "
        " (uuid, port_list, type, start, end, comment, exclude)"
        " SELECT make_uuid(), %llu, type, start, end, comment, exclude"
-       "  FROM port_ranges WHERE port_list = "
-       "   (SELECT port_lists.ROWID FROM port_lists"
-       "    WHERE port_lists.uuid = '%s');",
-       new_port_list,
-       port_list_id);
+       "  FROM port_ranges WHERE port_list = %llu;",
+       new,
+       old);
 
-  sql ("COMMIT");
-  g_free (quoted_name);
-  g_free (quoted_comment);
-  g_free (quoted_uuid);
-  g_free (uniquify);
-  if (port_list) *port_list = new_port_list;
+  sql ("COMMIT;");
+  if (new_port_list) *new_port_list = new;
   return 0;
 }
 
@@ -47927,7 +47464,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   ret = copy_resource_lock ("user", name, comment, user_id,
                             "password, timezone, hosts, hosts_allow,"
                             " ifaces, ifaces_allow, method",
-                            1, &user);
+                            1, &user, NULL);
   if (ret)
     {
       sql ("ROLLBACK;");
@@ -48764,97 +48301,9 @@ int
 copy_tag (const char* name, const char* comment, const char *tag_id,
           tag_t* new_tag)
 {
-  gchar *quoted_name, *quoted_uuid;
-  user_t owner;
-
-  assert (current_credentials.uuid);
-
-  if (tag_id == NULL)
-    return -1;
-
-  sql ("BEGIN IMMEDIATE;");
-
-  if (user_may ("create_tag") == 0)
-    {
-      sql ("ROLLBACK;");
-      return 99;
-    }
-
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  if (name && strlen (name))
-    quoted_name = sql_quote (name);
-  else
-    quoted_name = NULL;
-
-  quoted_uuid = sql_quote (tag_id);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM tags"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner = %llu))",
-               quoted_uuid,
-               owner)
-      == 0)
-    {
-      sql ("ROLLBACK;");
-      g_free (quoted_name);
-      g_free (quoted_uuid);
-      return 2;
-    }
-
-  /* Copy the existing tag. */
-
-  if (comment && strlen (comment))
-    {
-      gchar *quoted_comment;
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ( "INSERT INTO tags"
-            " (uuid, owner, creation_time, modification_time, name, comment,"
-            "  value, attach_type, attach_id, active)"
-            " SELECT"
-            "  make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-            "  %i, %i, %s%s%s, '%s', value, attach_type, attach_id, active"
-            " FROM tags"
-            " WHERE uuid = '%s';",
-            current_credentials.uuid,
-            time (NULL),
-            time (NULL),
-            quoted_name ? "'" : "",
-            quoted_name ? quoted_name : "name",
-            quoted_name ? "'" : "",
-            quoted_comment,
-            quoted_uuid);
-      g_free (quoted_comment);
-    }
-  else
-    sql ( "INSERT INTO tags"
-          " (uuid, owner, creation_time, modification_time, name, comment,"
-          "  value, attach_type, attach_id, active)"
-          " SELECT"
-          "  make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-          "  %i, %i, %s%s%s, comment, value, attach_type, attach_id, active"
-          " FROM tags"
-          " WHERE uuid = '%s';",
-          current_credentials.uuid,
-          time (NULL),
-          time (NULL),
-          quoted_name ? "'" : "",
-          quoted_name ? quoted_name : "name",
-          quoted_name ? "'" : "",
-          quoted_uuid);
-
-  if (new_tag)
-    *new_tag = sqlite3_last_insert_rowid (task_db);
-
-  sql ("COMMIT;");
-  g_free (quoted_uuid);
-  g_free (quoted_name);
-  return 0;
+  return copy_resource ("tag", name, comment, tag_id,
+                        "value, attach_type, attach_id, active",
+                        1, new_tag);
 }
 
 /**

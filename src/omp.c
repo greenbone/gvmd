@@ -16649,7 +16649,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CREATE_CONFIG:
         {
-          config_t config = 0, new_config;
+          config_t new_config;
 
           assert (strcasecmp ("CREATE_CONFIG", element_name) == 0);
           assert (import_config_data->import
@@ -16803,23 +16803,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
-          else if (find_config (create_config_data->copy, &config))
-            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_config"));
-          else if (config == 0)
-            {
-              if (send_find_error_to_client ("create_config",
-                                             "config",
-                                             create_config_data->copy,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-            }
           else switch (copy_config (create_config_data->name,
                                     create_config_data->comment,
-                                    config,
+                                    create_config_data->copy,
                                     &new_config))
             {
               case 0:
@@ -16837,6 +16823,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_config",
                                     "Config exists already"));
                 log_event_fail ("config", "Scan config", NULL, "created");
+                break;
+              case 2:
+                if (send_find_error_to_client ("create_config",
+                                               "config",
+                                               create_config_data->copy,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("config", "Config", NULL, "created");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
