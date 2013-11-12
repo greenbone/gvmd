@@ -1,3 +1,12 @@
+2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ANON_GET_ITERATOR_COLUMNS): Add _owner.
+	(REPORT_ITERATOR_FILTER_COLUMNS): Adjust line end marker.
+	(REPORT_ITERATOR_COLUMNS, NOTE_ITERATOR_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, REPORT_FORMAT_ITERATOR_COLUMNS): Select
+	_owner too.
+	(REPORT_FORMAT_ITERATOR_FILTER_COLUMNS): Neaten NULL formatting.
+
 2013-11-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (print_report_assets_xml): Send report result count

@@ -3368,7 +3368,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
  * @brief Filter columns for GET iterator.
  */
 #define ANON_GET_ITERATOR_FILTER_COLUMNS "uuid", \
- "created", "modified"
+ "created", "modified", "_owner"
 
 /**
  * @brief Filter columns for GET iterator.
@@ -14849,7 +14849,7 @@ report_add_result (report_t report, result_t result)
  */
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "date", "status",      \
-   "task", "severity", "false_positive", "log", "low", "medium", "high",      \
+   "task", "severity", "false_positive", "log", "low", "medium", "high",       \
    NULL }
 
 /**
@@ -14875,7 +14875,9 @@ report_add_result (report_t report, result_t result)
   " report_severity_count (ROWID, " overrides ", 'Log') AS log,"             \
   " report_severity_count (ROWID, " overrides ", 'Low') AS low,"             \
   " report_severity_count (ROWID, " overrides ", 'Medium') AS medium,"       \
-  " report_severity_count (ROWID, " overrides ", 'High') AS high"
+  " report_severity_count (ROWID, " overrides ", 'High') AS high,"           \
+  " (SELECT name FROM users WHERE users.ROWID = reports.owner)"              \
+  " AS _owner"
 
 /**
  * @brief Count number of reports.
@@ -34773,7 +34775,9 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = notes.task) AS task_id,"         \
   " (SELECT name FROM tasks WHERE ROWID = notes.task) AS task_name,"       \
-  " notes.severity"
+  " notes.severity,"                                                       \
+  " (SELECT name FROM users WHERE users.ROWID = notes.owner)"              \
+  " AS _owner"
 
 /**
  * @brief Note iterator columns for trash case.
@@ -35760,7 +35764,9 @@ modify_override (override_t override, const char *active, const char* text,
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE ROWID = overrides.task) AS task_id,"         \
   " (SELECT name FROM tasks WHERE ROWID = overrides.task) AS task_name,"       \
-  " overrides.severity, overrides.new_severity"
+  " overrides.severity, overrides.new_severity,"                               \
+  " (SELECT name FROM users WHERE users.ROWID = overrides.owner)"              \
+  " AS _owner"
 
 /**
  * @brief Override iterator columns for trash case.
@@ -39409,8 +39415,7 @@ report_format_trust (report_format_t report_format)
  */
 #define REPORT_FORMAT_ITERATOR_FILTER_COLUMNS                                 \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "extension", "content_type",     \
-   "summary", "description", "trust", "trust_time", "active"                  \
-   , NULL }
+   "summary", "description", "trust", "trust_time", "active", NULL }
 
 /**
  * @brief Report Format iterator columns.
@@ -39420,7 +39425,9 @@ report_format_trust (report_format_t report_format)
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
   " modification_time AS modified, '', extension, content_type, summary, "    \
-  " description, signature, trust, trust_time, flags & 1 AS active"
+  " description, signature, trust, trust_time, flags & 1 AS active,"          \
+  " (SELECT name FROM users WHERE users.ROWID = report_formats.owner)"        \
+  " AS _owner"
 
 /**
  * @brief Report Format iterator columns for trash case.
