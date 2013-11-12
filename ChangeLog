@@ -1,3 +1,8 @@
+2013-11-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (report_port_count): Do not count results and error
+	messages with no specific port value set as a distinct port.
+
 2013-11-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Return commented out code removed in previous
