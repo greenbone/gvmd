@@ -5972,7 +5972,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
     }
 
   alert = 0;
-  if (find_alert (alert_id, &alert))
+  if (find_alert_with_permission (alert_id, &alert, "modify_alert"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -18705,7 +18705,7 @@ modify_report (const char *report_id, const char *comment)
     }
 
   report = 0;
-  if (find_report (report_id, &report))
+  if (find_report_with_permission (report_id, &report, "modify_report"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -26188,7 +26188,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   target = 0;
   port_list = 0;
-  if (find_target (target_id, &target)
+  if (find_target_with_permission (target_id, &target, "modify_target")
       || find_port_list (port_list_id, &port_list))
     {
       sql ("ROLLBACK;");
@@ -32258,7 +32258,8 @@ modify_lsc_credential (const char *lsc_credential_id,
     }
 
   lsc_credential = 0;
-  if (find_lsc_credential (lsc_credential_id, &lsc_credential))
+  if (find_lsc_credential_with_permission (lsc_credential_id, &lsc_credential,
+                                           "modify_lsc_credential"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -33675,7 +33676,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
     }
 
   agent = 0;
-  if (find_agent (agent_id, &agent))
+  if (find_agent_with_permission (agent_id, &agent, "modify_agent"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -34380,7 +34381,7 @@ find_note (const char* uuid, note_t* note)
  */
 gboolean
 find_note_with_permission (const char* uuid, note_t* note,
-                             const char *permission)
+                           const char *permission)
 {
   return find_resource_with_permission ("note", uuid, note, permission, 0);
 }
@@ -37329,7 +37330,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
     }
 
   schedule = 0;
-  if (find_schedule (schedule_id, &schedule))
+  if (find_schedule_with_permission (schedule_id, &schedule, "modify_schedule"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -38377,7 +38378,8 @@ modify_report_format (const char *report_format_id, const char *name,
     }
 
   report_format = 0;
-  if (find_report_format (report_format_id, &report_format))
+  if (find_report_format_with_permission (report_format_id, &report_format,
+                                          "modify_report_format"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -40032,7 +40034,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
     }
 
   slave = 0;
-  if (find_slave (slave_id, &slave))
+  if (find_slave_with_permission (slave_id, &slave, "modify_slave"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -41125,6 +41127,8 @@ modify_group (const char *group_id, const char *name, const char *comment,
     }
 
   group = 0;
+
+  /* Groups are owned collectively by the admins, so no permission check. */
   if (find_group (group_id, &group))
     {
       sql ("ROLLBACK;");
@@ -42644,7 +42648,8 @@ modify_port_list (const char *port_list_id, const char *name,
     }
 
   port_list = 0;
-  if (find_port_list (port_list_id, &port_list))
+  if (find_port_list_with_permission (port_list_id, &port_list,
+                                      "modify_port_list"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -44290,7 +44295,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
     }
 
   filter = 0;
-  if (find_filter (filter_id, &filter))
+  if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -47797,6 +47802,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
       return 99;
     }
 
+  /* Users are owned collectively by the admins, so no permission check. */
   user = 0;
   if (user_id)
     {
@@ -48512,7 +48518,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
     }
 
   tag = 0;
-  if (find_tag (tag_id, &tag))
+  if (find_tag_with_permission (tag_id, &tag, "modify_tag"))
     {
       sql ("ROLLBACK;");
       return -1;

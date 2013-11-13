@@ -21440,7 +21440,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
                                 "MODIFY_NOTE requires a TEXT entity"));
-          else if (find_note (modify_note_data->note_id, &note))
+          // FIX move find_* down into manage_sql.c modify_note
+          else if (find_note_with_permission (modify_note_data->note_id, &note,
+                                              "modify_note"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (note == 0)
             {
@@ -21564,7 +21566,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_override",
                                 "MODIFY_OVERRIDE requires a TEXT entity"));
-          else if (find_override (modify_override_data->override_id, &override))
+          else if (find_override_with_permission
+                    (modify_override_data->override_id, &override,
+                     "modify_override"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (override == 0)
             {

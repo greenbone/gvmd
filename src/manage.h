@@ -1903,6 +1903,9 @@ agent_name (lsc_credential_t);
 gboolean
 find_note (const char*, note_t*);
 
+gboolean
+find_note_with_permission (const char*, note_t*, const char *);
+
 int
 create_note (const char*, const char*, const char*, const char*, const char*,
              const char*, const char*, task_t, result_t, note_t*);
@@ -1973,6 +1976,9 @@ note_iterator_severity (iterator_t *);
 
 gboolean
 find_override (const char*, override_t*);
+
+gboolean
+find_override_with_permission (const char*, override_t*, const char *);
 
 int
 create_override (const char*, const char*, const char*, const char*,

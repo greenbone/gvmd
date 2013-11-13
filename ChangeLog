@@ -1,3 +1,19 @@
+2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add resource level permission checking to MODIFY commands.
+
+	* src/manage_sql.c (modify_alert, modify_report, modify_target)
+	(modify_lsc_credential, modify_agent, modify_schedule)
+	(modify_report_format, modify_slave, modify_port_list)
+	(modify_filter, modify_tag): Use permission version of find function.
+	(modify_group, modify_user): Add note about permission check.
+	(find_note): Neaten indent.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Use permission version of
+	find function for MODIFY_NOTE and MODIFY_OVERRIDE.
+
 2013-11-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (ANON_GET_ITERATOR_COLUMNS): Add _owner.
