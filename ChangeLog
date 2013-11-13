@@ -1,5 +1,27 @@
 2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add resource level permission checking to remaining commands.
+
+	* src/manage.c (run_task): Add permission arg and check.
+	(start_task, stop_task, pause_task, resume_paused_task)
+	(resume_stopped_task, resume_or_start_task): Add permissions to find
+	and run_task calls.
+	(init_report_format_file_iterator): Use the owner of the report format
+	in the path, instead of assuming that the current user is the owner.
+
+	* src/manage_sql.c (manage_alert): Use permission version of find
+	function.
+	(make_report): Get the report owner from the task, instead of using the
+	current user.
+	(verify_agent): Use permission find.  Adjust filter so that iterator
+	actually find the report format.  Add warnings.
+	(verify_report_format): Use permission find.
+	(report_format_owner_uuid): New function.
+
+	* src/manage.h: Add header accordingly.
+
+2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add resource level permission checking to MODIFY commands.
 
 	* src/manage_sql.c (modify_alert, modify_report, modify_target)

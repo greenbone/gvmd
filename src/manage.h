@@ -2256,6 +2256,9 @@ verify_report_format (const char *);
 char *
 report_format_uuid (report_format_t);
 
+char *
+report_format_owner_uuid (report_format_t);
+
 void
 set_report_format_active (report_format_t, int);
 

@@ -2782,6 +2782,7 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
  * @param[out]  report_id  The report ID.
  * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
  *                         continue if stopped else start from beginning.
+ * @param[in]   permission  Permission required on task.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         -1 error, -2 task is missing a target, -3 creating the report failed,
@@ -2791,7 +2792,8 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
  *         -10 error (child).
  */
 static int
-run_task (const char *task_id, char **report_id, int from)
+run_task (const char *task_id, char **report_id, int from,
+          const char *permission)
 {
   task_t task;
   target_t target;
@@ -2806,7 +2808,7 @@ run_task (const char *task_id, char **report_id, int from)
   report_t last_stopped_report;
 
   task = 0;
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, permission))
     return -1;
   if (task == 0)
     return 3;
@@ -3378,7 +3380,7 @@ start_task (const char *task_id, char **report_id)
   if (user_may ("start_task") == 0)
     return 99;
 
-  return run_task (task_id, report_id, 0);
+  return run_task (task_id, report_id, 0, "start_task");
 }
 
 /**
@@ -3452,7 +3454,7 @@ stop_task (const char *task_id)
     return 99;
 
   task = 0;
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, "stop_task"))
     return -1;
   if (task == 0)
     return 3;
@@ -3482,7 +3484,7 @@ pause_task (const char *task_id)
     return 99;
 
   task = 0;
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, "pause_task"))
     return -1;
   if (task == 0)
     return 3;
@@ -3526,7 +3528,7 @@ resume_paused_task (const char *task_id)
     return 99;
 
   task = 0;
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, "resume_paused_task"))
     return -1;
   if (task == 0)
     return 3;
@@ -3567,14 +3569,14 @@ resume_stopped_task (const char *task_id, char **report_id)
     return 99;
 
   task = 0;
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, "resume_stopped_task"))
     return -1;
   if (task == 0)
     return 3;
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
-    return run_task (task_id, report_id, 1);
+    return run_task (task_id, report_id, 1, "resume_stopped_task");
   return 22;
 }
 
@@ -3594,7 +3596,7 @@ resume_or_start_task (const char *task_id, char **report_id)
   if (user_may ("resume_or_start_task") == 0)
     return 99;
 
-  return run_task (task_id, report_id, 2);
+  return run_task (task_id, report_id, 2, "resume_or_start_task");
 }
 
 
@@ -4759,13 +4761,18 @@ init_report_format_file_iterator (file_iterator_t* iterator,
                                  NULL);
   else
     {
-      assert (current_credentials.uuid);
+      gchar *owner_uuid;
+
+      owner_uuid = report_format_owner_uuid (report_format);
+      if (owner_uuid == NULL)
+        return -1;
       dir_name = g_build_filename (OPENVAS_STATE_DIR,
                                    "openvasmd",
                                    "report_formats",
-                                   current_credentials.uuid,
+                                   owner_uuid,
                                    uuid,
                                    NULL);
+      g_free (owner_uuid);
     }
 
   g_free (uuid);

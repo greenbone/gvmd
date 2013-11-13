@@ -8454,12 +8454,12 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
   if (user_may ("test_alert") == 0)
     return 99;
 
-  if (find_alert (alert_id, &alert))
+  if (find_alert_with_permission (alert_id, &alert, "test_alert"))
     return -1;
   if (alert == 0)
     return 1;
 
-  if (find_task (task_id, &task))
+  if (find_task_with_permission (task_id, &task, NULL))
     return -1;
   if (task == 0)
     return 2;
@@ -14363,18 +14363,13 @@ report_cache_counts (report_t report)
 report_t
 make_report (task_t task, const char* uuid, task_status_t status)
 {
-  report_t report;
-
-  assert (current_credentials.uuid);
-
   sql ("INSERT into reports (uuid, owner, hidden, task, date, nbefile, comment,"
        " scan_run_status, slave_progress, slave_task_uuid)"
        " VALUES ('%s',"
-       " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       " (SELECT owner FROM tasks WHERE tasks.ROWID = %llu),"
        " 0, %llu, %i, '', '', %u, 0, '');",
-       uuid, current_credentials.uuid, task, time (NULL), status);
-  report = sqlite3_last_insert_rowid (task_db);
-  return report;
+       uuid, task, task, time (NULL), status);
+  return sqlite3_last_insert_rowid (task_db);
 }
 
 /**
@@ -33877,15 +33872,16 @@ verify_agent (const char *agent_id)
     }
 
   agent = 0;
-  if (find_agent (agent_id, &agent))
+  if (find_agent_with_permission (agent_id, &agent, "verify_agent"))
     return -1;
 
   if (agent == 0)
     return 1;
 
   memset (&get, 0, sizeof (get));
-  get.filter = "asc=ROWID";
+  get.filter = g_strdup_printf ("uuid=%s owner=any permission=any", agent_id);
   init_agent_iterator (&agents, &get);
+  g_free (get.filter);
   if (next (&agents))
     {
       const char *signature_64;
@@ -33921,6 +33917,7 @@ verify_agent (const char *agent_id)
               if (verify_signature (installer, installer_size, signature,
                                     signature_length, &agent_trust))
                 {
+                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
                   sql ("ROLLBACK;");
@@ -33938,6 +33935,7 @@ verify_agent (const char *agent_id)
               if (verify_signature (installer, installer_size, agent_signature,
                                     strlen (agent_signature), &agent_trust))
                 {
+                  g_warning ("%s: verify_signature error\n", __FUNCTION__);
                   cleanup_iterator (&agents);
                   g_free (agent_signature);
                   sql ("ROLLBACK;");
@@ -33965,6 +33963,7 @@ verify_agent (const char *agent_id)
     }
   else
     {
+      g_warning ("%s: agent iterator empty\n", __FUNCTION__);
       cleanup_iterator (&agents);
       sql ("ROLLBACK;");
       return -1;
@@ -38845,7 +38844,8 @@ verify_report_format (const char *report_format_id)
     }
 
   report_format = 0;
-  if (find_report_format (report_format_id, &report_format))
+  if (find_report_format_with_permission (report_format_id, &report_format,
+                                          "verify_report_format"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -38901,6 +38901,28 @@ report_format_uuid (report_format_t report_format)
 {
   return sql_string (0, 0,
                      "SELECT uuid FROM report_formats WHERE ROWID = %llu;",
+                     report_format);
+}
+
+/**
+ * @brief Return the UUID of the owner of a report format.
+ *
+ * @param[in]  report_format  Report format.
+ *
+ * @return Newly allocated owner UUID if there is an owner, else NULL.
+ */
+char *
+report_format_owner_uuid (report_format_t report_format)
+{
+  if (sql_int (0, 0,
+               "SELECT owner IS NULL FROM report_formats"
+               " WHERE ROWID = %llu;",
+               report_format))
+    return NULL;
+  return sql_string (0, 0,
+                     "SELECT uuid FROM users"
+                     " WHERE ROWID = (SELECT owner FROM report_formats"
+                     "                WHERE ROWID = %llu);",
                      report_format);
 }
 
