@@ -1,5 +1,17 @@
 2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_can_everything, type_is_shared): New functions.
+	(user_may): Use user_can_everything.
+	(where_owned): Add special cases for users, groups and roles, that use
+	restrict the "global" resources to users with admin permissions.
+	(init_manage_process): Init SQL function user_can_everything.
+
+	* src/sql.c (sql_user_can_everything): New function.
+
+	* src/sql.h: Add header accordingly.
+
+2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add resource level permission checking to remaining commands.
 
 	* src/manage.c (run_task): Add permission arg and check.

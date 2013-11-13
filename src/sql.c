@@ -46,6 +46,9 @@ iso_time (time_t *);
 long
 current_offset (const char *);
 
+int
+user_can_everything (const char *);
+
 
 /* Variables */
 
@@ -1989,7 +1992,6 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
     sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
   sqlite3_finalize (stmt);
   return;
-
 }
 
 /**
@@ -2021,6 +2023,33 @@ sql_severity_in_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   sqlite3_result_int (context, severity_in_level (severity, threat));
 
   return;
+}
+
+/**
+ * @brief Check if a user can do anything.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_user_can_everything (sqlite3_context *context, int argc,
+                         sqlite3_value** argv)
+{
+  const unsigned char *uuid;
+
+  assert (argc == 1);
+
+  uuid = sqlite3_value_text (argv[0]);
+  if (uuid == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get uuid argument", -1);
+      return;
+    }
+
+  sqlite3_result_int (context, user_can_everything ((char *) uuid));
 }
 
 

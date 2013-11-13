@@ -1335,6 +1335,45 @@ user_is_observer (const char *uuid)
 }
 
 /**
+ * @brief Test whether a user may perform any operation.
+ *
+ * @param[in]  user_id  UUID of user.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+int
+user_can_everything (const char *user_id)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) > 0 FROM permissions"
+                  " WHERE resource = 0"
+                  " AND ((subject_type = 'user'"
+                  "       AND subject"
+                  "           = (SELECT ROWID FROM users"
+                  "              WHERE users.uuid = '%s'))"
+                  "      OR (subject_type = 'group'"
+                  "          AND subject"
+                  "              IN (SELECT DISTINCT `group`"
+                  "                  FROM group_users"
+                  "                  WHERE user = (SELECT ROWID"
+                  "                                FROM users"
+                  "                                WHERE users.uuid"
+                  "                                      = '%s')))"
+                  "      OR (subject_type = 'role'"
+                  "          AND subject"
+                  "              IN (SELECT DISTINCT role"
+                  "                  FROM role_users"
+                  "                  WHERE user = (SELECT ROWID"
+                  "                                FROM users"
+                  "                                WHERE users.uuid"
+                  "                                      = '%s'))))"
+                  " AND name = 'Everything';",
+                  user_id,
+                  user_id,
+                  user_id);
+}
+
+/**
  * @brief Test whether a user may perform an operation.
  *
  * @param[in]  operations  Name of operation.
@@ -1355,31 +1394,7 @@ user_may (const char *operation)
     return 1;
 
   if (sql_int (0, 0,
-               "SELECT count(*) FROM permissions"
-               " WHERE resource = 0"
-               " AND ((subject_type = 'user'"
-               "       AND subject"
-               "           = (SELECT ROWID FROM users"
-               "              WHERE users.uuid = '%s'))"
-               "      OR (subject_type = 'group'"
-               "          AND subject"
-               "              IN (SELECT DISTINCT `group`"
-               "                  FROM group_users"
-               "                  WHERE user = (SELECT ROWID"
-               "                                FROM users"
-               "                                WHERE users.uuid"
-               "                                      = '%s')))"
-               "      OR (subject_type = 'role'"
-               "          AND subject"
-               "              IN (SELECT DISTINCT role"
-               "                  FROM role_users"
-               "                  WHERE user = (SELECT ROWID"
-               "                                FROM users"
-               "                                WHERE users.uuid"
-               "                                      = '%s'))))"
-               " AND name = 'Everything';",
-               current_credentials.uuid,
-               current_credentials.uuid,
+               "SELECT user_can_everything ('%s');",
                current_credentials.uuid))
     return 1;
 
@@ -3585,6 +3600,21 @@ type_has_permissions (const char *type)
 }
 
 /**
+ * @brief Check whether a type has permission support.
+ *
+ * @param[in]  type          Type of resource.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+type_is_shared (const char *type)
+{
+  return strcasecmp (type, "user") == 0
+         || strcasecmp (type, "group") == 0
+         || strcasecmp (type, "role") == 0;
+}
+
+/**
  * @brief Check whether a resource type has an owner.
  *
  * @param[in]  type  Type of resource.
@@ -4012,6 +4042,14 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
+      else if (get->trash && type_is_shared (type))
+        owned_clause
+         = g_strdup_printf (" (((%ss_trash.owner IS NULL)"
+                            "   AND user_can_everything ('%s'))"
+                            "  %s)",
+                            type,
+                            current_credentials.uuid,
+                            permission_clause ? permission_clause : "");
       else if (get->trash && type_has_permissions (type))
         owned_clause
          = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
@@ -4073,6 +4111,14 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               current_credentials.uuid,
                               permission_clause ? permission_clause : "");
         }
+      else if (type_is_shared (type))
+        owned_clause
+         = g_strdup_printf (" (((%ss.owner IS NULL)"
+                            "   AND user_can_everything ('%s'))"
+                            "  %s)",
+                            type,
+                            current_credentials.uuid,
+                            permission_clause ? permission_clause : "");
       else if (type_has_permissions (type))
         owned_clause
          = g_strdup_printf (" ((%ss.owner IS NULL)"
@@ -9599,6 +9645,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create severity_in_level", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "user_can_everything",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_user_can_everything,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_can_everything", __FUNCTION__);
       abort ();
     }
 }

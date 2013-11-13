@@ -157,6 +157,9 @@ sql_resource_exists (sqlite3_context *, int, sqlite3_value **);
 void
 sql_severity_in_level (sqlite3_context *, int, sqlite3_value**);
 
+void
+sql_user_can_everything (sqlite3_context *, int, sqlite3_value **);
+
 
 /* Iterators. */
 
