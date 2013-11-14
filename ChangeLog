@@ -1,3 +1,10 @@
+2013-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (USER_MAY): New macro.
+	(user_may): Use macro.
+	(init_port_range_iterator): Use USER_MAY, so that the port ranges are
+	still accessible if the port list is owned by someone else.
+
 2013-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_can_everything, type_is_shared): New functions.

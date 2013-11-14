@@ -1374,6 +1374,37 @@ user_can_everything (const char *user_id)
 }
 
 /**
+ * @brief Generate SQL for user permission check.
+ *
+ * @param[in]  resource  Resource.
+ */
+#define USER_MAY(resource)                                            \
+  "SELECT count(*) FROM permissions"                                  \
+  " WHERE resource = " resource                                       \
+  " AND ((subject_type = 'user'"                                      \
+  "       AND subject"                                                \
+  "           = (SELECT ROWID FROM users"                             \
+  "              WHERE users.uuid = '%s'))"                           \
+  "      OR (subject_type = 'group'"                                  \
+  "          AND subject"                                             \
+  "              IN (SELECT DISTINCT `group`"                         \
+  "                  FROM group_users"                                \
+  "                  WHERE user = (SELECT ROWID"                      \
+  "                                FROM users"                        \
+  "                                WHERE users.uuid"                  \
+  "                                      = '%s')))"                   \
+  "      OR (subject_type = 'role'"                                   \
+  "          AND subject"                                             \
+  "              IN (SELECT DISTINCT role"                            \
+  "                  FROM role_users"                                 \
+  "                  WHERE user = (SELECT ROWID"                      \
+  "                                FROM users"                        \
+  "                                WHERE users.uuid"                  \
+  "                                      = '%s'))))"                  \
+  " AND (lower (substr ('%s', 1, 3)) = 'get'"                         \
+  "      OR name = lower ('%s'))"
+
+/**
  * @brief Test whether a user may perform an operation.
  *
  * @param[in]  operations  Name of operation.
@@ -1400,33 +1431,11 @@ user_may (const char *operation)
 
   quoted_operation = sql_quote (operation);
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM permissions"
-                 " WHERE resource = 0"
-                 " AND ((subject_type = 'user'"
-                 "       AND subject"
-                 "           = (SELECT ROWID FROM users"
-                 "              WHERE users.uuid = '%s'))"
-                 "      OR (subject_type = 'group'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT `group`"
-                 "                  FROM group_users"
-                 "                  WHERE user = (SELECT ROWID"
-                 "                                FROM users"
-                 "                                WHERE users.uuid"
-                 "                                      = '%s')))"
-                 "      OR (subject_type = 'role'"
-                 "          AND subject"
-                 "              IN (SELECT DISTINCT role"
-                 "                  FROM role_users"
-                 "                  WHERE user = (SELECT ROWID"
-                 "                                FROM users"
-                 "                                WHERE users.uuid"
-                 "                                      = '%s'))))"
-                 " AND name = lower ('%s');",
+  ret = sql_int (0, 0, USER_MAY ("0"),
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
+                 quoted_operation,
                  quoted_operation);
 
   g_free (quoted_operation);
@@ -43431,11 +43440,18 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    " (((SELECT owner FROM port_lists WHERE ROWID = port_list)"
                    "   IS NULL)"
                    "  OR ((SELECT owner FROM port_lists WHERE ROWID = port_list)"
-                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR (%i AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    port_list,
                    current_credentials.uuid,
+                   trash ? 0 : 1,
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   "get_port_lists",
+                   "get_port_lists",
                    sort_field ? sort_field : "type, CAST (start AS INTEGER)",
                    ascending ? "ASC" : "DESC");
   else
@@ -43446,10 +43462,17 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    " (((SELECT owner FROM port_lists WHERE ROWID = port_list)"
                    "   IS NULL)"
                    "  OR ((SELECT owner FROM port_lists WHERE ROWID = port_list)"
-                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                   "      = (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   "  OR (%i AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
+                   trash ? 0 : 1,
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   current_credentials.uuid,
+                   "get_port_lists",
+                   "get_port_lists",
                    sort_field ? sort_field : "type, CAST (start AS INTEGER)",
                    ascending ? "ASC" : "DESC");
 }
