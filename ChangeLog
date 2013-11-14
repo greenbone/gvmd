@@ -1,5 +1,15 @@
 2013-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (user_can_everything): Move up in file.
+	(user_has_access_uuid): Take full command name into account in the
+	checks for GET permission.  Use user_can_everything instead of
+	credentials_is_admin to check for full permissions, because
+	credentials_is_admin just checks the role.
+	(init_get_iterator): Clarify permission used in get->id case.
+	(report_counts): Use full permission name.
+
+2013-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (USER_MAY): New macro.
 	(user_may): Use macro.
 	(init_port_range_iterator): Use USER_MAY, so that the port ranges are

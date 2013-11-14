@@ -457,6 +457,45 @@ cvss_threat (double cvss)
 }
 
 /**
+ * @brief Test whether a user may perform any operation.
+ *
+ * @param[in]  user_id  UUID of user.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+int
+user_can_everything (const char *user_id)
+{
+  return sql_int (0, 0,
+                  "SELECT count(*) > 0 FROM permissions"
+                  " WHERE resource = 0"
+                  " AND ((subject_type = 'user'"
+                  "       AND subject"
+                  "           = (SELECT ROWID FROM users"
+                  "              WHERE users.uuid = '%s'))"
+                  "      OR (subject_type = 'group'"
+                  "          AND subject"
+                  "              IN (SELECT DISTINCT `group`"
+                  "                  FROM group_users"
+                  "                  WHERE user = (SELECT ROWID"
+                  "                                FROM users"
+                  "                                WHERE users.uuid"
+                  "                                      = '%s')))"
+                  "      OR (subject_type = 'role'"
+                  "          AND subject"
+                  "              IN (SELECT DISTINCT role"
+                  "                  FROM role_users"
+                  "                  WHERE user = (SELECT ROWID"
+                  "                                FROM users"
+                  "                                WHERE users.uuid"
+                  "                                      = '%s'))))"
+                  " AND name = 'Everything';",
+                  user_id,
+                  user_id,
+                  user_id);
+}
+
+/**
  * @brief Test whether a string equal to a given string exists in an array.
  *
  * @param[in]  array   Array of gchar* pointers.
@@ -604,7 +643,7 @@ user_has_access_uuid (const char *type, const char *uuid,
 
   if ((strcmp (type, "permission") == 0)
       && ((permission == NULL)
-          || (strcmp (permission, "get") == 0)))
+          || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0)))
     {
       ret = sql_int (0, 0,
                      "SELECT count(*) FROM permissions"
@@ -646,10 +685,11 @@ user_has_access_uuid (const char *type, const char *uuid,
        * This only really affects higher level permissions, because that's
        * all Admins can see of others' permissions. */
       free (uuid_task);
-      return credentials_is_admin (current_credentials);
+      return user_can_everything (current_credentials.uuid);
     }
 
-  get = (permission == NULL || strcmp (permission, "get") == 0);
+  get = (permission == NULL
+         || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0));
   quoted_permission = sql_quote (permission ? permission : "");
 
   ret = sql_int (0, 0,
@@ -1332,45 +1372,6 @@ user_is_observer (const char *uuid)
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
-}
-
-/**
- * @brief Test whether a user may perform any operation.
- *
- * @param[in]  user_id  UUID of user.
- *
- * @return 1 if user has permission, else 0.
- */
-int
-user_can_everything (const char *user_id)
-{
-  return sql_int (0, 0,
-                  "SELECT count(*) > 0 FROM permissions"
-                  " WHERE resource = 0"
-                  " AND ((subject_type = 'user'"
-                  "       AND subject"
-                  "           = (SELECT ROWID FROM users"
-                  "              WHERE users.uuid = '%s'))"
-                  "      OR (subject_type = 'group'"
-                  "          AND subject"
-                  "              IN (SELECT DISTINCT `group`"
-                  "                  FROM group_users"
-                  "                  WHERE user = (SELECT ROWID"
-                  "                                FROM users"
-                  "                                WHERE users.uuid"
-                  "                                      = '%s')))"
-                  "      OR (subject_type = 'role'"
-                  "          AND subject"
-                  "              IN (SELECT DISTINCT role"
-                  "                  FROM role_users"
-                  "                  WHERE user = (SELECT ROWID"
-                  "                                FROM users"
-                  "                                WHERE users.uuid"
-                  "                                      = '%s'))))"
-                  " AND name = 'Everything';",
-                  user_id,
-                  user_id,
-                  user_id);
 }
 
 /**
@@ -4242,7 +4243,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
     }
   else if (get->id && owned)
     {
-      // FIX Assumes that permission is "get_xxx".  Should get it from filter?
+      /* For now assume that the permission is "get_<type>".  Callers wishing
+       * to iterate over a single resource with other permissions can use
+       * uuid= in the filter (instead of passing get->id). */
       if (find_resource_with_permission (type, get->id, &resource, NULL,
                                          get->trash))
         return -1;
@@ -18275,7 +18278,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 {
   report_t report;
   // TODO Wrap in transaction.
-  if (find_report_with_permission (report_id, &report, "get"))
+  if (find_report_with_permission (report_id, &report, "get_report"))
     return -1;
   // TODO Check if report was found.
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
