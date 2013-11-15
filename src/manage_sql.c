@@ -11581,6 +11581,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       while (command[0].name)
         {
           if (strstr (command[0].name, "DESCRIBE") == NULL
+              && strcmp (command[0].name, "GET_VERSION")
               && strstr (command[0].name, "GROUP") == NULL
               && strcmp (command[0].name, "HELP")
               && strstr (command[0].name, "ROLE") == NULL
@@ -11608,10 +11609,12 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           if ((strstr (command[0].name, "GET") == command[0].name)
               && strcmp (command[0].name, "GET_GROUPS")
               && strcmp (command[0].name, "GET_ROLES")
-              && strcmp (command[0].name, "GET_USERS"))
+              && strcmp (command[0].name, "GET_USERS")
+              && strcmp (command[0].name, "GET_VERSION"))
             add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
           command++;
         }
+      add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       sql ("COMMIT;");
     }
 
@@ -41299,7 +41302,8 @@ modify_group (const char *group_id, const char *name, const char *comment,
  *
  * @return 0 success, 2 failed to find subject, 3 failed to find resource,
  *         5 error in resource, 6 error in subject, 7 error in name,
- *         8 permission on permission, 99 permission denied, -1 internal error.
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
  */
 int
 create_permission (const char *name_arg, const char *comment,
@@ -41311,11 +41315,16 @@ create_permission (const char *name_arg, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if ((name_arg == NULL) || (valid_omp_command (name_arg) == 0))
+  if ((name_arg == NULL)
+      || (valid_omp_command (name_arg) == 0)
+      || (strcasecmp (name_arg, "get_version") == 0))
     return 7;
 
-  if (omp_command_takes_resource (name_arg) == 0)
-    resource_id = NULL;
+  if (resource_id
+      && strcmp (resource_id, "")
+      && strcmp (resource_id, "0")
+      && (omp_command_takes_resource (name_arg) == 0))
+    return 9;
 
   if (subject_type
       && strcmp (subject_type, "group")

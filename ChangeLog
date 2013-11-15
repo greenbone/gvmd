@@ -1,5 +1,17 @@
 2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Remove GET_VERSION from role
+	permissions.  Add HELP to observer permissions.
+	(create_permission): Refuse to create permission on GET_VERSION.  It has
+	no permission check now, and is available without authentication anyway.
+	Return an error if a resource is given for a permission that does not
+	take resources, instead of ignoring the resource.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new create_permission
+	return.
+
+2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In GET_VERSION remove
 	permission check so that the command is always available.  Also use
 	correct state in condition, otherwise the user is always considered
