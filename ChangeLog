@@ -1,3 +1,14 @@
+2013-11-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_tables): Update comment for host and
+	interfaces access.
+	(create_user): Don't set hosts_allow value to 2 in "deny none" case.
+
+	* src/omp.c (omp_xml_handle_start_element): Set hosts_allow and
+	ifaces_allow default value to 0 in CREATE_USER case.
+	(omp_xml_handle_end_element): Don't send hosts_allow and ifaces_allow
+	value as 2 when hosts and ifaces values are empty in CLIENT_GET_USERS.
+
 2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_permission): Prevent resource linked

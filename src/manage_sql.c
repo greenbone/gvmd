@@ -4056,8 +4056,8 @@ create_tables ()
        "  upload_result_count INTEGER, hosts_ordering, alterable,"
        "  creation_time, modification_time);");
   /* Field password contains the hash. */
-  /* Field hosts_allow: 0 deny, 1 allow, 2 allow all. */
-  /* Field ifaces_allow: 0 deny, 1 allow, 2 allow all. */
+  /* Field hosts_allow: 0 deny, 1 allow. */
+  /* Field ifaces_allow: 0 deny, 1 allow. */
   sql ("CREATE TABLE IF NOT EXISTS users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  password, timezone, hosts, hosts_allow, ifaces, ifaces_allow,"
@@ -46813,9 +46813,6 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   /* Add the user to the database. */
 
   clean = clean_hosts (hosts ? hosts : "", &max);
-  if ((hosts_allow == 0) && (max == 0))
-    /* Convert "Deny none" to "Allow All". */
-    hosts_allow = 2;
   quoted_hosts = sql_quote (clean);
   quoted_ifaces = sql_quote (ifaces ? ifaces : "");
   g_free (clean);

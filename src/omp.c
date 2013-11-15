@@ -6119,8 +6119,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_USER);
             create_user_data->groups = make_array ();
             create_user_data->roles = make_array ();
-            create_user_data->hosts_allow = 2;
-            create_user_data->ifaces_allow = 2;
+            create_user_data->hosts_allow = 0;
+            create_user_data->ifaces_allow = 0;
           }
         else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
           {
@@ -16290,10 +16290,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_COMMON (user, &get_users_data->get, &users);
 
               hosts = user_iterator_hosts (&users);
-              if (strlen (hosts ? hosts : "") == 0)
-                hosts_allow = 2;
-              else
-                hosts_allow = user_iterator_hosts_allow (&users);
+              hosts_allow = user_iterator_hosts_allow (&users);
 
               SENDF_TO_CLIENT_OR_FAIL ("<hosts allow=\"%i\">%s</hosts>"
                                        "<sources><source>%s</source></sources>",
@@ -16305,10 +16302,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* Interfaces Access */
               ifaces = user_iterator_ifaces (&users);
-              if (strlen (ifaces ? ifaces : "") == 0)
-                ifaces_allow = 2;
-              else
-                ifaces_allow = user_iterator_ifaces_allow (&users);
+              ifaces_allow = user_iterator_ifaces_allow (&users);
               SENDF_TO_CLIENT_OR_FAIL ("<ifaces allow=\"%i\">%s</ifaces>",
                                        ifaces_allow,
                                        ifaces ? ifaces : "");
