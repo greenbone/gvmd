@@ -1,5 +1,10 @@
 2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Prevent resource linked
+	permission for users, roles and groups.
+
+2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Isolate the access control code in an Access Control Layer file.
 
 	* src/manage_sql.c (user_can_everything, user_owns_uuid)

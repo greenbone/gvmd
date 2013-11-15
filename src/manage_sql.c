@@ -40657,7 +40657,11 @@ create_permission (const char *name_arg, const char *comment,
   if (resource_id
       && strcmp (resource_id, "")
       && strcmp (resource_id, "0")
-      && (omp_command_takes_resource (name_arg) == 0))
+      && ((omp_command_takes_resource (name_arg) == 0)
+          /* Permission on users, groups and roles is limited, for now. */
+          || strcasestr (name_arg, "_user")
+          || strcasestr (name_arg, "_role")
+          || strcasestr (name_arg, "_group")))
     return 9;
 
   if (subject_type
