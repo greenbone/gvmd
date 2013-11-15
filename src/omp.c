@@ -16351,17 +16351,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_GET_VERSION:
       case CLIENT_GET_VERSION_AUTHENTIC:
-        if (user_may ("get_version") == 0)
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("get_version",
-                              "Permission denied"));
-        else
-          SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">"
-                                  "<version>4.0</version>"
-                                  "</get_version_response>");
-        if (client_state)
+        SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
+                                " status=\"" STATUS_OK "\""
+                                " status_text=\"" STATUS_OK_TEXT "\">"
+                                "<version>4.0</version>"
+                                "</get_version_response>");
+        if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
           set_client_state (CLIENT_AUTHENTIC);
         else
           set_client_state (CLIENT_TOP);

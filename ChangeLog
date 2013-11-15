@@ -1,3 +1,10 @@
+2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_VERSION remove
+	permission check so that the command is always available.  Also use
+	correct state in condition, otherwise the user is always considered
+	authenticated after GET_VERSION.
+
 2013-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (user_can_everything): Move up in file.
