@@ -1,5 +1,23 @@
 2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Isolate the access control code in an Access Control Layer file.
+
+	* src/manage_sql.c (user_can_everything, user_owns_uuid)
+	(user_has_access_uuid, user_owns_result, user_is_admin)
+	(user_is_observer, user_may, type_has_permissions, type_is_shared)
+	(where_owned): Remove.  Moved to manage_acl.c.
+	(USER_MAY): Remove.  Moved to manage_acl.h.
+	(credentials_is_admin): Remove.  Out of use.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new create_permission
+
+	* src/manage_acl.c, src/manage_acl.h: New files.
+
+	* src/CMakeLists.txt: Add manage_acl.c to manage library.
+	(C_FILES): Add manage_acl.c.
+
+2013-11-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Remove GET_VERSION from role
 	permissions.  Add HELP to observer permissions.
 	(create_permission): Refuse to create permission on GET_VERSION.  It has
