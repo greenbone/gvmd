@@ -1,3 +1,14 @@
+2013-11-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Set Interfaces and Hosts access "Allow All" to "Deny none". Hence
+	increase database version to 108.  Add database migration from version
+	107 to 108.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 108.
+
+	* src/manage_migrators.c (migrate_107_to_108): New function.
+	(database_migrators): Add migrate_107_to_108.
+
 2013-11-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_tables): Update comment for host and

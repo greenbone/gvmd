@@ -8011,6 +8011,41 @@ migrate_106_to_107 ()
 }
 
 /**
+ * @brief Migrate the database from version 107 to version 108.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_107_to_108 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 107. */
+
+  if (manage_db_version () != 107)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Change hosts and interfaces Access "Allow All" to "Deny none". */
+  sql ("UPDATE users"
+       " SET hosts = '', hosts_allow = 0 WHERE hosts_allow = 2;");
+  sql ("UPDATE users"
+       " SET ifaces = '', ifaces_allow = 0 WHERE ifaces_allow = 2;");
+
+  /* Set the database version 108. */
+
+  set_db_version (108);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8122,6 +8157,7 @@ static migrator_t database_migrators[]
     {105, migrate_104_to_105},
     {106, migrate_105_to_106},
     {107, migrate_106_to_107},
+    {108, migrate_107_to_108},
     /* End marker. */
     {-1, NULL}};
 
