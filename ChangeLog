@@ -1,5 +1,12 @@
 2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): When creating a higher level
+	permission, where the resource is 0, make the owner NULL so that the
+	permission is shared between the admins, and remains even if the creator
+	user is removed.
+
+2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add options --user and --new-password.
 
 	* src/manage_sql.c (modify_setting): Use set_password.

@@ -40647,7 +40647,7 @@ create_permission (const char *name_arg, const char *comment,
                    const char *resource_id, const char *subject_type,
                    const char *subject_id, permission_t *permission)
 {
-  gchar *name, *quoted_name, *quoted_comment, *resource_type;
+  gchar *name, *owner, *quoted_name, *quoted_comment, *resource_type;
   resource_t resource, subject;
 
   assert (current_credentials.uuid);
@@ -40749,17 +40749,22 @@ create_permission (const char *name_arg, const char *comment,
   quoted_name = sql_quote (name);
   g_free (name);
   quoted_comment = sql_quote (comment ? comment : "");
+  if (resource)
+    owner = g_strdup_printf ("(SELECT ROWID FROM users"
+                             " WHERE users.uuid = '%s')",
+                             current_credentials.uuid);
+  else
+    owner = g_strdup ("NULL");
 
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
        "  resource_location, subject_type, subject, creation_time,"
        "  modification_time)"
        " VALUES"
-       " (make_uuid (),"
-       "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       " (make_uuid (), %s,"
        "  '%s', '%s', '%s', '%s', %llu, " G_STRINGIFY (LOCATION_TABLE) ","
        "  %s%s%s, %llu, now (), now ());",
-       current_credentials.uuid,
+       owner,
        quoted_name,
        quoted_comment,
        resource_id ? resource_type : "",
@@ -40770,6 +40775,7 @@ create_permission (const char *name_arg, const char *comment,
        subject_id ? "'" : "",
        subject);
 
+  g_free (owner);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (resource_type);
