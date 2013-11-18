@@ -1,3 +1,15 @@
+2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add options --user and --new-password.
+
+	* src/manage_sql.c (modify_setting): Use set_password.
+	(set_password): New function.  Body from modify_setting.
+	(manage_set_password): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add new options.
+
 2013-11-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Set Interfaces and Hosts access "Allow All" to "Deny none". Hence

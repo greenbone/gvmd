@@ -218,6 +218,9 @@ report_format_verify (report_format_t);
 void
 cleanup_prognosis_iterator ();
 
+int
+set_password (const gchar *, const gchar *, const gchar *, gchar **);
+
 
 /* Variables. */
 
@@ -45396,8 +45399,8 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (name && (strcmp (name, "Password") == 0))
     {
       gsize value_size;
-      gchar *value, *hash;
-      gchar *errstr;
+      gchar *value;
+      int ret;
 
       assert (current_credentials.username);
 
@@ -45409,25 +45412,12 @@ modify_setting (const gchar *uuid, const gchar *name,
           value_size = 0;
         }
 
-      if ((errstr = openvas_validate_password (value,
-                                               current_credentials.username)))
-        {
-          g_warning ("new password for '%s' rejected: %s",
-                     current_credentials.username, errstr);
-          if (r_errdesc)
-            *r_errdesc = errstr;
-          else
-            g_free (errstr);
-          return -1;
-        }
-      hash = get_password_hashes (GCRY_MD_MD5, value);
+      ret = set_password (current_credentials.username,
+                          current_credentials.uuid,
+                          value,
+                          r_errdesc);
       g_free (value);
-      sql ("UPDATE users SET password = '%s', modification_time = now ()"
-           " WHERE uuid = '%s';",
-           hash,
-           current_credentials.uuid);
-      g_free (hash);
-      return 0;
+      return ret;
     }
 
   if (uuid && (strcmp (uuid, "5f5a8712-8017-11e1-8556-406186ea4fc5") == 0
@@ -46650,6 +46640,92 @@ manage_first_user (const gchar *database, const gchar *name)
   cleanup_manage_process (TRUE);
 
   return 0;
+}
+
+/**
+ * @brief Set the password of a user.
+ *
+ * @param[in]  name      Name of user.
+ * @param[in]  uuid      User UUID.
+ * @param[in]  password  New password.
+ * @param[out] r_errdesc Address to receive a malloced string with the error
+ *                       description, or NULL.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+set_password (const gchar *name, const gchar *uuid, const gchar *password,
+              gchar **r_errdesc)
+{
+  gchar *errstr, *hash;
+
+  assert (name && uuid);
+
+  if ((errstr = openvas_validate_password (password, name)))
+    {
+      g_warning ("new password for '%s' rejected: %s", name, errstr);
+      if (r_errdesc)
+        *r_errdesc = errstr;
+      else
+        g_free (errstr);
+      return -1;
+    }
+  hash = get_password_hashes (GCRY_MD_MD5, password);
+  sql ("UPDATE users SET password = '%s', modification_time = now ()"
+       " WHERE uuid = '%s';",
+       hash,
+       uuid);
+  g_free (hash);
+  return 0;
+}
+
+/**
+ * @brief Set the password of a user.
+ *
+ * @param[in]  database  Location of manage database.
+ * @param[in]  name      Name of user.
+ * @param[in]  password  New password.
+ *
+ * @return 0 success, 1 failed to find user, -1 error.
+ */
+int
+manage_set_password (const gchar *database, const gchar *name,
+                     const gchar *password)
+{
+  user_t user;
+  char *uuid;
+  int ret;
+  const gchar *db;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  init_manage_process (0, db);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (find_user_by_name (name, &user))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (user == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  ret = set_password (name, uuid, password, NULL);
+  sql ("COMMIT;");
+  free (uuid);
+  return ret;
 }
 
 /**

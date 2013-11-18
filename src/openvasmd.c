@@ -1091,6 +1091,8 @@ main (int argc, char** argv)
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *first_user = NULL;
+  static gchar *user = NULL;
+  static gchar *new_password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
@@ -1123,12 +1125,14 @@ main (int argc, char** argv)
         { "decrypt-all-credentials", '\0',
           G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
           &decrypt_all_credentials, NULL, NULL },
+        { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
+        { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --modify-password.", "<username>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
@@ -1229,6 +1233,29 @@ main (int argc, char** argv)
       if (manage_first_user (database, first_user))
         return EXIT_FAILURE;
       return EXIT_SUCCESS;
+    }
+
+  if (new_password)
+    {
+      /* Modify the password and then exit. */
+
+      if (user == NULL)
+        {
+          g_warning ("%s: --user required\n", __FUNCTION__);
+          return EXIT_FAILURE;
+        }
+
+      switch (manage_set_password (database, user, new_password))
+        {
+          case -1:
+            return EXIT_FAILURE;
+          case 1:
+            g_warning ("%s: failed to find user\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case 0:
+          default:
+            return EXIT_SUCCESS;
+        }
     }
 
   if (migrate_database)
