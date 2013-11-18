@@ -40724,7 +40724,12 @@ create_permission (const char *name_arg, const char *comment,
       return 8;
     }
 
-  // TODO Does current user have permission to grant subject this permission?
+  /* Ensure the user may grant this permission. */
+  if ((resource == 0) && (user_can_everything (current_credentials.uuid) == 0))
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   subject = 0;
   if (subject_id)

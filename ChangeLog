@@ -1,5 +1,10 @@
 2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Restrict creating upper level
+	permissions to users with admin permissions.
+
+2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_permission): When creating a higher level
 	permission, where the resource is 0, make the owner NULL so that the
 	permission is shared between the admins, and remains even if the creator
