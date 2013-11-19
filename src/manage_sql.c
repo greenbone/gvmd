@@ -46620,6 +46620,9 @@ manage_first_user (const gchar *database, const gchar *name)
   array_t *roles;
   const gchar *db;
 
+  if (openvas_auth_init ())
+    return -1;
+
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
   init_manage_process (0, db);
@@ -46711,6 +46714,9 @@ manage_set_password (const gchar *database, const gchar *name,
   char *uuid;
   int ret;
   const gchar *db;
+
+  if (openvas_auth_init ())
+    return -1;
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 

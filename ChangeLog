@@ -1,5 +1,12 @@
 2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_first_user, manage_set_password): Init
+	openvas_auth.
+
+	* src/openvasmd.c (main): Check openvas_auth_init_funcs return.
+
+2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (USER_MAY): Remove.  Duplicate.
 	(user_may): Add more args for USER_MAY update.
 
