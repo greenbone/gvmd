@@ -420,9 +420,7 @@ type_has_permissions (const char *type)
 static int
 type_is_shared (const char *type)
 {
-  return strcasecmp (type, "user") == 0
-         || strcasecmp (type, "group") == 0
-         || strcasecmp (type, "role") == 0;
+  return 0;
 }
 
 /**

@@ -1,5 +1,11 @@
 2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (type_is_shared): Remove types, as the operation
+	level permissions prevent regular users from even using the associated
+	commands anyway.
+
+2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_first_user, manage_set_password): Init
 	openvas_auth.
 
