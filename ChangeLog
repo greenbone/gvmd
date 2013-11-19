@@ -1,3 +1,13 @@
+2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (USER_MAY): Remove.  Duplicate.
+	(user_may): Add more args for USER_MAY update.
+
+	* src/manage_acl.h (USER_MAY): Correct the implied permission case.
+
+	* src/manage_sql.c (init_port_range_iterator): Add more args for
+	USER_MAY update.
+
 2013-11-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_permission): Restrict creating upper level

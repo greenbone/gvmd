@@ -40,37 +40,6 @@
 #include <string.h>
 
 /**
- * @brief Generate SQL for user permission check.
- *
- * @param[in]  resource  Resource.
- */
-#define USER_MAY(resource)                                            \
-  "SELECT count(*) FROM permissions"                                  \
-  " WHERE resource = " resource                                       \
-  " AND ((subject_type = 'user'"                                      \
-  "       AND subject"                                                \
-  "           = (SELECT ROWID FROM users"                             \
-  "              WHERE users.uuid = '%s'))"                           \
-  "      OR (subject_type = 'group'"                                  \
-  "          AND subject"                                             \
-  "              IN (SELECT DISTINCT `group`"                         \
-  "                  FROM group_users"                                \
-  "                  WHERE user = (SELECT ROWID"                      \
-  "                                FROM users"                        \
-  "                                WHERE users.uuid"                  \
-  "                                      = '%s')))"                   \
-  "      OR (subject_type = 'role'"                                   \
-  "          AND subject"                                             \
-  "              IN (SELECT DISTINCT role"                            \
-  "                  FROM role_users"                                 \
-  "                  WHERE user = (SELECT ROWID"                      \
-  "                                FROM users"                        \
-  "                                WHERE users.uuid"                  \
-  "                                      = '%s'))))"                  \
-  " AND (lower (substr ('%s', 1, 3)) = 'get'"                         \
-  "      OR name = lower ('%s'))"
-
-/**
  * @brief Test whether a user may perform an operation.
  *
  * @param[in]  operations  Name of operation.
@@ -101,6 +70,8 @@ user_may (const char *operation)
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
+                 quoted_operation,
+                 quoted_operation,
                  quoted_operation,
                  quoted_operation);
 

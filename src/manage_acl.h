@@ -57,7 +57,12 @@
   "                                FROM users"                        \
   "                                WHERE users.uuid"                  \
   "                                      = '%s'))))"                  \
-  " AND (lower (substr ('%s', 1, 3)) = 'get'"                         \
+  /* Any permission implies GET. */                                   \
+  " AND ((lower (substr ('%s', 1, 3)) = 'get'"                        \
+  "       AND name LIKE '%%'"                                         \
+  "                     || lower (substr ('%s',"                      \
+  "                                       5,"                         \
+  "                                       length ('%s') - 5)))"       \
   "      OR name = lower ('%s'))"
 
 int
