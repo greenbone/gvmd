@@ -13408,7 +13408,7 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
                                   " WHERE cpes.name=$cpe"
                                   " AND cpes.id=affected_products.cpe"
                                   " AND cves.id=affected_products.cve"
-                                  " ORDER BY CAST (cves.cvss AS INTEGER)"
+                                  " ORDER BY CAST (cves.cvss AS NUMERIC)"
                                   " DESC;");
   else
     {
@@ -13578,6 +13578,49 @@ prognosis_where_cvss_base (const char* min_cvss_base)
 }
 
 /**
+ * @brief Return SQL ORDER BY for sorting results in a prognostic report.
+ *
+ * @param[in]  sort_field  Name of the field to sort by.
+ * @param[in]  ascending   Sort in ascending order if true, descending if false.
+ *
+ * @return ORDER BY clause.
+ */
+static GString *
+prognosis_order_by (const char* sort_field, int ascending)
+{
+  GString* order_sql = g_string_new("");
+
+  if (strcmp (sort_field, "ROWID") == 0)
+    g_string_append_printf (order_sql,
+                            " ORDER BY cves.ROWID %s",
+                            ascending ? "ASC" : "DESC");
+  else if (strcmp (sort_field, "host") == 0)
+    g_string_append_printf (order_sql,
+                            " ORDER BY"
+                            " host COLLATE collate_ip %s,"
+                            " severity DESC",
+                            ascending ? "ASC" : "DESC");
+  else if (strcmp (sort_field, "vulnerability") == 0)
+    g_string_append_printf (order_sql,
+                            " ORDER BY"
+                            " vulnerability COLLATE NOCASE %s",
+                            ascending ? "ASC" : "DESC");
+  else if (strcmp (sort_field, "location") == 0)
+    g_string_append_printf (order_sql,
+                            " ORDER BY"
+                            " location COLLATE NOCASE %s,"
+                            " severity DESC",
+                            ascending ? "ASC" : "DESC");
+  else
+    g_string_append_printf (order_sql,
+                            " ORDER BY"
+                            " severity %s",
+                            ascending ? "ASC" : "DESC");
+
+  return order_sql;
+}
+
+/**
  * @brief Initialise a report host prognosis iterator.
  *
  * @param[in]  iterator     Iterator.
@@ -13592,22 +13635,31 @@ prognosis_where_cvss_base (const char* min_cvss_base)
  *                            NULL.
  * @param[in]  search_phrase  Phrase that results must include.  All results
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
+ * @param[in]  sort_order     Whether to sort in ascending order.
+ * @param[in]  sort_field     Name of the field to sort by.
  */
 static void
 init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                               int first_result, int max_results,
                               const char *levels, const char *search_phrase,
-                              const char *min_cvss_base)
+                              const char *min_cvss_base, int sort_order,
+                              const char *sort_field)
 {
-  GString *phrase_sql, *cvss_sql;
+  GString *phrase_sql, *cvss_sql, *order_sql;
 
   if (levels == NULL) levels = "hmlgdf";
 
   phrase_sql = prognosis_where_search_phrase (search_phrase);
   cvss_sql = prognosis_where_cvss_base (min_cvss_base);
+  order_sql = prognosis_order_by (sort_field, sort_order);
 
   init_iterator (iterator,
-                 "SELECT cves.name, cves.cvss, cves.description, cpes.name"
+                 "SELECT cves.name AS vulnerability,"
+                 "       CAST (cves.cvss AS NUMERIC) AS severity,"
+                 "       cves.description,"
+                 "       cpes.name AS location,"
+                 "       (SELECT host FROM report_hosts"
+                 "        WHERE ROWID = %llu) AS host"
                  " FROM scap.cves, scap.cpes, scap.affected_products,"
                  "      report_host_details"
                  " WHERE report_host_details.report_host = %llu"
@@ -13615,18 +13667,20 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                  " AND report_host_details.name = 'App'"
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
-                 "%s%s%s"
-                 " ORDER BY CAST (cves.cvss AS INTEGER) DESC"
+                 "%s%s%s%s"
                  " LIMIT %i OFFSET %i;",
+                 report_host,
                  report_host,
                  phrase_sql ? phrase_sql->str : "",
                  prognosis_where_levels (levels),
                  cvss_sql ? cvss_sql->str : "",
+                 order_sql ? order_sql->str : "",
                  max_results,
                  first_result);
 
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
+  if (order_sql) g_string_free (order_sql, TRUE);
 }
 
 /**
@@ -13661,8 +13715,7 @@ prognostic_report_result_count (report_host_t report_host,
                         " AND report_host_details.name = 'App'"
                         " AND cpes.id=affected_products.cpe"
                         " AND cves.id=affected_products.cve"
-                        "%s%s%s"
-                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                        "%s%s%s;",
                         report_host,
                         phrase_sql ? phrase_sql->str : "",
                         prognosis_where_levels ("h"),
@@ -13677,8 +13730,7 @@ prognostic_report_result_count (report_host_t report_host,
                            " AND report_host_details.name = 'App'"
                            " AND cpes.id=affected_products.cpe"
                            " AND cves.id=affected_products.cve"
-                           "%s%s%s"
-                           " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                           "%s%s%s;",
                            report_host,
                            phrase_sql ? phrase_sql->str : "",
                            prognosis_where_levels ("m"),
@@ -13693,8 +13745,7 @@ prognostic_report_result_count (report_host_t report_host,
                         " AND report_host_details.name = 'App'"
                         " AND cpes.id=affected_products.cpe"
                         " AND cves.id=affected_products.cve"
-                        "%s%s%s"
-                        " ORDER BY CAST (cves.cvss AS INTEGER) DESC;",
+                        "%s%s%s;",
                         report_host,
                         phrase_sql ? phrase_sql->str : "",
                         prognosis_where_levels ("l"),
@@ -20474,6 +20525,8 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
  * @param[in]  min_cvss_base       Minimum CVSS base of included results.  All
  *                                 results if NULL.
  * @param[in]  result_hosts_only   Whether to show only hosts with results.
+ * @param[in]  sort_order          Whether to sort in ascending order.
+ * @param[in]  sort_field          Name of the field to sort by.
  *
  * @return 0 on success, -1 error.
  */
@@ -20485,7 +20538,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                              const char *host_search_phrase,
                              const char *host_levels, int host_first_result,
                              int host_max_results, gchar *min_cvss_base,
-                             int result_hosts_only)
+                             int result_hosts_only, int sort_order,
+                             const char *sort_field)
 {
   array_t *buffer;
   buffer_host_t *buffer_host;
@@ -20571,7 +20625,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
               init_host_prognosis_iterator (&prognosis, report_host,
                                             0, -1,
                                             levels, search_phrase,
-                                            min_cvss_base);
+                                            min_cvss_base,
+                                            sort_order, sort_field);
               while (next (&prognosis))
                 {
                   const char *threat;
@@ -21486,7 +21541,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                          apply_overrides, autofp,
                                          host_search_phrase, host_levels,
                                          host_first_result, host_max_results,
-                                         min_cvss_base, result_hosts_only);
+                                         min_cvss_base, result_hosts_only,
+                                         sort_order, sort_field);
 
       g_free (sort_field);
       g_free (levels);

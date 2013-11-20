@@ -1,3 +1,15 @@
+2013-11-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_prognosis_iterator): Cast CVSS to numeric
+	instead of integer to avoid rounding.
+	(prognosis_order_by): New function.
+	(init_host_prognosis_iterator): Add sorting field and order parameters.
+	(prognostic_report_result_count): Remove ORDER BY clauses not needed
+	for counting.
+	(print_report_prognostic_xml): Add sorting field and order parameters.
+	(print_report_xml): Use sorting field and order also for prognostic
+	reports.
+
 2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_common): Send user's permissions on the resource.
