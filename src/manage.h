@@ -3235,6 +3235,9 @@ int
 user_is_observer (const char *);
 
 int
+user_is_user (const char *);
+
+int
 user_in_use (user_t);
 
 int

@@ -168,6 +168,30 @@ user_is_observer (const char *uuid)
 }
 
 /**
+ * @brief Check whether a user has the User role.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if user has the User role, else 0.
+ */
+int
+user_is_user (const char *uuid)
+{
+  int ret;
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_int (0, 0,
+                 "SELECT count (*) FROM role_users"
+                 " WHERE role = (SELECT ROWID FROM roles"
+                 "               WHERE uuid = '" ROLE_UUID_USER "')"
+                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                 quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
  * @brief Test whether a user owns a result.
  *
  * @param[in]  uuid      UUID of result.

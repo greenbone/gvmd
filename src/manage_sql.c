@@ -11352,7 +11352,9 @@ authenticate (credentials_t* credentials)
                          ? "Admin"
                          : (user_is_observer (credentials->uuid)
                              ? "Observer"
-                             : "User"));
+                             : (user_is_user (credentials->uuid)
+                                 ? "User"
+                                 : "")));
 
 
           return 0;

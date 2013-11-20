@@ -1,5 +1,14 @@
 2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (user_is_user): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage_acl.c (authenticate): Check if user actually has the User
+	role.
+
+2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Allow observers to get and modify
 	their settings.
 
