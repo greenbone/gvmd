@@ -10952,6 +10952,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
           command++;
         }
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
+      add_role_permission (ROLE_UUID_OBSERVER, "GET_SETTINGS");
+      add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
       sql ("COMMIT;");
     }
 

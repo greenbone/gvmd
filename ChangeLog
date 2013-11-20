@@ -1,3 +1,8 @@
+2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Allow observers to get and modify
+	their settings.
+
 2013-11-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_prognosis_iterator): Cast CVSS to numeric
