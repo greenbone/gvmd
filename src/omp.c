@@ -5498,6 +5498,8 @@ send_get_start (const char *type, int (*write_to_client) (const char*, void*),
  * @param[in]  write_to_client_data  Data for write_to_client.
  * @param[in]  writable              Whether the resource is writable.
  * @param[in]  in_use                Whether the resource is in use.
+ *
+ * @return 0 success, 1 send error.
  */
 int
 send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
@@ -5507,6 +5509,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
   GString *buffer;
   const char *tag_type;
   iterator_t tags;
+
   buffer = g_string_new ("");
 
   buffer_xml_append_printf (buffer,
@@ -5517,7 +5520,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             "<creation_time>%s</creation_time>"
                             "<modification_time>%s</modification_time>"
                             "<writable>%i</writable>"
-                            "<in_use>%i</in_use>",
+                            "<in_use>%i</in_use>"
+                            "<permissions>",
                             type,
                             get_iterator_uuid (iterator)
                             ? get_iterator_uuid (iterator)
@@ -5539,6 +5543,35 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             : "",
                             writable,
                             in_use);
+
+  if (current_credentials.username
+      && get_iterator_owner_name (iterator)
+      && (strcmp (get_iterator_owner_name (iterator),
+                  current_credentials.username)
+          == 0))
+    buffer_xml_append_printf (buffer,
+                              "<permission><name>Everything</name></permission>"
+                              "</permissions>");
+  else
+    {
+      iterator_t perms;
+      get_data_t perms_get;
+
+      memset (&perms_get, '\0', sizeof (perms_get));
+      perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                          " owner=any"
+                                          " permission=any",
+                                          get_iterator_uuid (iterator));
+      init_permission_iterator (&perms, &perms_get);
+      g_free (perms_get.filter);
+      while (next (&perms))
+        buffer_xml_append_printf (buffer,
+                                  "<permission><name>%s</name></permission>",
+                                  get_iterator_name (&perms));
+      cleanup_iterator (&perms);
+
+      buffer_xml_append_printf (buffer, "</permissions>");
+    }
 
   tag_type = get->subtype ? get->subtype : get->type;
 

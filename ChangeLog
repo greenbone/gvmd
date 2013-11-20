@@ -1,3 +1,7 @@
+2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (send_get_common): Send user's permissions on the resource.
+
 2013-11-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (type_is_shared): Remove types, as the operation
