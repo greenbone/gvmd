@@ -1,3 +1,14 @@
+2013-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_resource_lock): Use the current owner in all
+	cases.
+	(copy_permission): Clear the owner after if it's a command level
+	permission.
+	(modify_permission): Set resource_type only when there's a resource_id,
+	otherwise the permission permission gets a type.
+
+	* src/sql.c (sql_resource_name): Include type in error message.
+
 2013-11-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_prognostic_xml): Apply overrides to
@@ -11,7 +22,7 @@
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
-2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_groups, set_task_observers): Use full
 	permission name.

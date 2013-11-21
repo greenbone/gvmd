@@ -3338,7 +3338,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                     int make_name_unique, resource_t* new_resource,
                     resource_t *old_resource)
 {
-  gchar *quoted_name, *quoted_uuid, *uniquify, *command, *owner_string;
+  gchar *quoted_name, *quoted_uuid, *uniquify, *command;
   int named, admin_type;
   user_t owner;
   resource_t resource;
@@ -3401,10 +3401,6 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   admin_type = (strcmp (type, "group") == 0)
                || (strcmp (type, "role") == 0)
                || (strcmp (type, "user") == 0);
-  if (admin_type)
-    owner_string = g_strdup ("NULL");
-  else
-    owner_string = g_strdup_printf ("%llu", owner);
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -3434,13 +3430,15 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name%s, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s, %s%s%s%s, now (), now ()%s%s"
+         " SELECT make_uuid (), %s%s%s, %s%s%s%s, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          type_has_comment (type) ? ", comment" : "",
          columns ? ", " : "",
          columns ? columns : "",
-         owner_string,
+         admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
+         admin_type ? "" : current_credentials.uuid,
+         admin_type ? "" : "')",
          quoted_name ? "'" : "",
          quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
@@ -3452,12 +3450,14 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else
     sql ("INSERT INTO %ss"
          " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s, now (), now ()%s%s"
+         " SELECT make_uuid (), %s%s%s, now (), now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         owner_string,
+         admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
+         admin_type ? "" : current_credentials.uuid,
+         admin_type ? "" : "')",
          columns ? ", " : "",
          columns ? columns : "",
          type,
@@ -3469,7 +3469,6 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   if (old_resource)
     *old_resource = resource;
 
-  g_free (owner_string);
   g_free (quoted_uuid);
   g_free (quoted_name);
   g_free (uniquify);
@@ -40868,10 +40867,31 @@ int
 copy_permission (const char* comment, const char *permission_id,
                  permission_t* new_permission)
 {
-  return copy_resource ("permission", NULL, comment, permission_id,
-                        "resource_type, resource, resource_uuid,"
-                        " resource_location, subject_type, subject",
-                        0, new_permission);
+  int ret;
+  permission_t new, old;
+
+  sql ("BEGIN IMMEDIATE");
+
+  ret = copy_resource_lock ("permission", NULL, comment, permission_id,
+                            "resource_type, resource, resource_uuid,"
+                            " resource_location, subject_type, subject",
+                            0, &new, &old);
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+
+  /* Clear the owner if it's a command level permission. */
+
+  sql ("UPDATE permissions SET owner = NULL"
+       " WHERE ROWID = %llu AND resource = 0;",
+       new);
+
+  sql ("COMMIT;");
+  if (new_permission) *new_permission = new;
+  return 0;
+
 }
 
 /**
@@ -41321,6 +41341,7 @@ modify_permission (const char *permission_id, const char *name,
         }
 
       if (omp_command_takes_resource (name) == 0)
+        // FIX return errr like create
         resource_id = NULL;
 
       quoted_name = sql_quote (name);
@@ -41354,9 +41375,11 @@ modify_permission (const char *permission_id, const char *name,
       else
         {
           gchar *quoted_resource_id;
+          // FIX permission_id
           quoted_resource_id = sql_quote (resource_id);
           command = sql_string (0, 0,
                                 "SELECT name FROM permissions"
+                                // FIX uuid =
                                 " WHERE ROWID = '%llu';",
                                 quoted_resource_id);
           g_free (quoted_resource_id);
@@ -41369,12 +41392,12 @@ modify_permission (const char *permission_id, const char *name,
         }
 
       strdown (command);
-      resource_type = omp_command_type (command);
+      resource_type = NULL;
       g_free (command);
       resource = 0;
       if (strlen (resource_id) == 0
           || strcmp (resource_id, "0") == 0
-          || resource_type == NULL)
+          || (resource_type = omp_command_type (command)) == NULL)
         resource_id = "";
       else
         {

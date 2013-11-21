@@ -1915,7 +1915,10 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   if (valid_db_resource_type (type) == 0)
     {
-      sqlite3_result_error (context, "Invalid resource type argument", -1);
+      gchar *msg;
+      msg = g_strdup_printf ("Invalid resource type argument: %s", type);
+      sqlite3_result_error (context, msg, -1);
+      g_free (msg);
       return;
     }
   else if (strcasecmp (type, "note") == 0)
