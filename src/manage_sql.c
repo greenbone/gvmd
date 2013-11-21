@@ -12447,7 +12447,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
            " VALUES"
            " (make_uuid (),"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  'get', '', 'task', %llu,"
+           "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
            "  " G_STRINGIFY (LOCATION_TABLE) ", 'group', %llu, now (), now ());",
            current_credentials.uuid, task, task, group);
@@ -12881,7 +12881,7 @@ set_task_observers (task_t task, const gchar *observers)
            " VALUES"
            " (make_uuid (),"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  'get', '', 'task', %llu,"
+           "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
            "  " G_STRINGIFY (LOCATION_TABLE) ", 'user', %llu, now (), now ());",
            current_credentials.uuid, task, task, user);

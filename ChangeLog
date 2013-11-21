@@ -1,10 +1,15 @@
 2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_groups, set_task_observers): Use full
+	permission name.
+
+2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (user_is_user): New function.
 
 	* src/manage.h: Add header accordingly.
 
-	* src/manage_acl.c (authenticate): Check if user actually has the User
+	* src/manage_sql.c (authenticate): Check if user actually has the User
 	role.
 
 2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
