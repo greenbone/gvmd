@@ -1,3 +1,16 @@
+2013-11-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (print_report_prognostic_xml): Apply overrides to
+	hosts if apply_overrides is true.
+
+	* src/omp.c (omp_xml_handle_start_element): Add attribute
+	host_search_phrase to GET_REPORTS.
+
+	* src/schema_formats/XML/OMP.xml (get_reports): Add host_search_phrase
+	attribute to command.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_groups, set_task_observers): Use full

@@ -3549,6 +3549,8 @@ get_reports
        attribute host_max_results { integer }?
        & # For "assets" or "prognostic", which threat levels to include in hosts.
        attribute host_levels { levels }?
+       & # For "assets" or "prognostic", the search phrase to limit hosts to..
+       attribute host_search_phrase { text }?
        & # For type "assets", position of report used, from end.
        attribute pos { integer }?
        & # ID of second report, for producing a delta report.

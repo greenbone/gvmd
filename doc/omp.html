@@ -15537,6 +15537,11 @@ get_preferences_response_preference_default
           For "assets" or "prognostic", which threat levels to include in hosts.
           </li>
 <li>
+          @<b>host_search_phrase</b>
+          (text)
+          For "assets" or "prognostic", the search phrase to limit hosts to..
+          </li>
+<li>
           @<b>pos</b>
           (<a href="#type_integer">integer</a>)
           For type "assets", position of report used, from end.
@@ -15609,6 +15614,7 @@ get_preferences_response_preference_default
        &amp; attribute host_first_result { integer }?
        &amp; attribute host_max_results { integer }?
        &amp; attribute host_levels { levels }?
+       &amp; attribute host_search_phrase { text }?
        &amp; attribute pos { integer }?
        &amp; attribute delta_report_id { uuid }?
        &amp; attribute delta_states {  }?

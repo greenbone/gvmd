@@ -6716,6 +6716,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "host_levels",
                               &get_reports_data->host_levels);
 
+            append_attribute (attribute_names, attribute_values,
+                              "host_search_phrase",
+                              &get_reports_data->host_search_phrase);
+
             append_attribute (attribute_names, attribute_values, "delta_states",
                               &get_reports_data->delta_states);
 

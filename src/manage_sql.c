@@ -20561,7 +20561,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
       host_levels = host_levels ? host_levels : "hmlgd";
 
       init_asset_iterator (&hosts, host_first_result, host_max_results,
-                           host_levels, host_search_phrase, 0);
+                           host_levels, host_search_phrase, apply_overrides);
     }
 
   holes = warnings = infos = logs = 0;

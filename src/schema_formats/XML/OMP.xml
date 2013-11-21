@@ -9513,6 +9513,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>levels</type>
       </attrib>
       <attrib>
+        <name>host_search_phrase</name>
+        <summary>
+          For "assets" or "prognostic", the search phrase to limit hosts to.
+        </summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
         <name>pos</name>
         <summary>For type "assets", position of report used, from end</summary>
         <type>integer</type>
