@@ -1,3 +1,40 @@
+openvas-manager 5.0+beta3 (2013-11-22)
+
+This is the third beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds support for Alterable Tasks and Source Interface access
+control and features a reworked host access control concept replacing the old
+rules based concept. It also features further integration of the new concepts
+for severity and permission checks as well as numerous small improvements.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Andre Heinecke, Matthew Mundell, Timo Pollmeier, Stefan
+Schwarz and Michael Wiegand.
+
+Main changes since 5.0+beta2:
+* Support for Alterable Tasks has been added.
+* Support for Source Interface access control has been added.
+* The host access control concept has been reworked, resulting in a removal of
+  the old rules based concept.
+* Support for the new "Severity" concept has been added in more places.
+* Resource level permission checking has been improved.
+* An issue which caused new databases to be initialised improperly has been
+  fixed.
+* NVT descriptions are no longer stored separately in the database and thus no
+  longer duplicate information already present in the NVT tags.
+* OpenVAS Manager will now attempt to reduce database fragmentation.
+* The handling of the obsolete "subnet" element in the results has been
+  removed.
+* The NBE report format plugin has been updated.
+* The verinice ISM report format plugin has been updated.
+* Support for changing a user password on the command line has been added.
+* Large number of small fixes and speed improvements.
+* Code cleanup.
+* Documentation has been updated.
+
+
 openvas-manager 5.0+beta2 (2013-09-30)
 
 This is the second beta version of the upcoming 5.0 release of the OpenVAS
