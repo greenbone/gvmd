@@ -1,3 +1,15 @@
+2013-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Increase database version to 109 to ensure that permission all use full
+	command names.  Add database migration from version 108 to 108.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 108.
+
+	* src/manage_migrators.c (migrate_107_to_108): New function.
+	(database_migrators): Add migrate_107_to_108.
+
+	* doc/db.png: Update for version change.
+
 2013-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_permission): Only do the takes_resource check

@@ -8046,6 +8046,53 @@ migrate_107_to_108 ()
 }
 
 /**
+ * @brief Migrate the database from version 108 to version 109.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_108_to_109 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 108. */
+
+  if (manage_db_version () != 108)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Permission names changed to full command names. */
+
+  sql ("UPDATE permissions SET name = 'create_' || resource_type"
+       " WHERE name = 'create';");
+  sql ("DELETE FROM permissions WHERE name = 'create_';");
+
+  sql ("UPDATE permissions SET name = 'delete_' || resource_type"
+       " WHERE name = 'delete';");
+  sql ("DELETE FROM permissions WHERE name = 'delete_';");
+
+  sql ("UPDATE permissions SET name = 'get_' || resource_type || 's'"
+       " WHERE name = 'get';");
+  sql ("DELETE FROM permissions WHERE name = 'get_';");
+
+  sql ("UPDATE permissions SET name = 'modify_' || resource_type"
+       " WHERE name = 'modify';");
+  sql ("DELETE FROM permissions WHERE name = 'modify_';");
+
+  /* Set the database version 109. */
+
+  set_db_version (109);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8158,6 +8205,7 @@ static migrator_t database_migrators[]
     {106, migrate_105_to_106},
     {107, migrate_106_to_107},
     {108, migrate_107_to_108},
+    {109, migrate_108_to_109},
     /* End marker. */
     {-1, NULL}};
 
