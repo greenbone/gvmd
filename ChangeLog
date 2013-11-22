@@ -1,5 +1,10 @@
 2013-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_resource_lock): Refuse to clone other people's
+	property, because the permissions on the dependant resources may change.
+
+2013-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_setting): Add Permissions Filter.
 
 2013-11-22  Michael Wiegand <michael.wiegand@greenbone.net>

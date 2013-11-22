@@ -3354,7 +3354,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
   g_free (command);
 
-  if (find_resource_with_permission (type, resource_id, &resource, NULL, 0))
+  if (find_resource (type, resource_id, &resource))
     return -1;
 
   if (resource == 0)
