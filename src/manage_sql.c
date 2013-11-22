@@ -45639,6 +45639,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         filter_name = g_strdup ("Notes Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
         filter_name = g_strdup ("Overrides Filter");
+      else if (strcmp (uuid, "ffb16b28-538c-11e3-b8f9-406186ea4fc5") == 0)
+        filter_name = g_strdup ("Permissions Filter");
       else if (strcmp (uuid, "7d52d575-baeb-4d98-bb68-e1730dbc6236") == 0)
         filter_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
