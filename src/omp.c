@@ -21804,6 +21804,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_permission_data->permission_id,
                                 "modified");
                 break;
+              case 9:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_permission",
+                                    "Permission does not accept a resource"));
+                log_event_fail ("permission", "Permission", NULL, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_permission",

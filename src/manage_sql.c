@@ -41294,7 +41294,8 @@ strdown (gchar *string)
  * @return 0 success, 1 failed to find permission, 2 failed to find subject,
  *         3 failed to find resource, 4 permission_id required, 5 error in
  *         resource, 6 error in subject, 7 error in name, 8 name required to
- *         find resource, 99 permission denied, -1 internal error.
+ *         find resource, 9 permission does not accept resource, 99 permission
+ *         denied, -1 internal error.
  */
 int
 modify_permission (const char *permission_id, const char *name,
@@ -41340,10 +41341,6 @@ modify_permission (const char *permission_id, const char *name,
           return 7;
         }
 
-      if (omp_command_takes_resource (name) == 0)
-        // FIX return errr like create
-        resource_id = NULL;
-
       quoted_name = sql_quote (name);
       sql ("UPDATE permissions SET"
            " name = lower ('%s')"
@@ -41374,15 +41371,10 @@ modify_permission (const char *permission_id, const char *name,
         command = g_strdup (name);
       else
         {
-          gchar *quoted_resource_id;
-          // FIX permission_id
-          quoted_resource_id = sql_quote (resource_id);
           command = sql_string (0, 0,
                                 "SELECT name FROM permissions"
-                                // FIX uuid =
-                                " WHERE ROWID = '%llu';",
-                                quoted_resource_id);
-          g_free (quoted_resource_id);
+                                " WHERE ROWID = %llu;",
+                                permission);
           if ((command == NULL) || (strlen (command) == 0))
             {
               g_free (command);
@@ -41393,7 +41385,6 @@ modify_permission (const char *permission_id, const char *name,
 
       strdown (command);
       resource_type = NULL;
-      g_free (command);
       resource = 0;
       if (strlen (resource_id) == 0
           || strcmp (resource_id, "0") == 0
@@ -41403,6 +41394,7 @@ modify_permission (const char *permission_id, const char *name,
         {
           if (find_resource (resource_type, resource_id, &resource))
             {
+              g_free (command);
               g_free (resource_type);
               sql ("ROLLBACK;");
               return -1;
@@ -41410,9 +41402,31 @@ modify_permission (const char *permission_id, const char *name,
 
           if (resource == 0)
             {
+              g_free (command);
               g_free (resource_type);
               sql ("ROLLBACK;");
               return 3;
+            }
+        }
+      g_free (command);
+
+      if (resource)
+        {
+          if (omp_command_takes_resource (name) == 0)
+            {
+              g_free (resource_type);
+              sql ("ROLLBACK;");
+              return 9;
+            }
+        }
+      else
+        {
+          /* Ensure the user may grant this permission. */
+          if (user_can_everything (current_credentials.uuid) == 0)
+            {
+              g_free (resource_type);
+              sql ("ROLLBACK;");
+              return 99;
             }
         }
 
@@ -41478,6 +41492,12 @@ modify_permission (const char *permission_id, const char *name,
   sql ("UPDATE permissions SET"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
+       permission);
+
+  /* Clear the owner if it's a command level permission. */
+
+  sql ("UPDATE permissions SET owner = NULL"
+       " WHERE ROWID = %llu AND resource = 0;",
        permission);
 
   sql ("COMMIT;");

@@ -1,5 +1,18 @@
 2013-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_permission): Only do the takes_resource check
+	when there is a resource, and return an error instead of clearing the
+	id, otherwise the permission will be upgraded to a command level
+	permission.  Use permission instead of resource when getting command
+	name from permission.  Free command after use, instead of before.
+	Ensure that the user may grant the permission.  Clear the owner if it's
+	a command level permission.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new modify_permission
+	return.
+
+2013-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_resource_lock): Use the current owner in all
 	cases.
 	(copy_permission): Clear the owner after if it's a command level
