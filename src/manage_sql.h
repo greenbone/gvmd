@@ -85,6 +85,11 @@
 #define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
 
 /**
+ * @brief UUID of 'Host Discovery' config.
+ */
+#define CONFIG_UUID_HOST_DISCOVERY "2d3f051c-55ba-11e3-bf43-406186ea4fc5"
+
+/**
  * @brief Location of a constituent of a trashcan resource.
  */
 #define LOCATION_TABLE 0
@@ -103,6 +108,12 @@
  * @brief UUID of 'Discovery' NVT selector.
  */
 #define MANAGE_NVT_SELECTOR_UUID_DISCOVERY "0d9a2738-8fe2-4e22-8f26-bb886179e759"
+
+/**
+ * @brief UUID of 'Discovery' NVT selector.
+ */
+#define MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY \
+ "f5f80744-55c7-11e3-8dc6-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.

@@ -1,3 +1,18 @@
+2013-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new predefined config Host Discovery.
+
+	* src/manage_sql.c (init_manage): Make Host Discovery config.
+	(delete_config, config_in_use, delete_user): Add Host Discovery config.
+
+	* src/manage.h (CONFIG_UUID_HOST_DISCOVERY)
+	(MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY): New defines.
+
+	* src/manage_config_host_discovery.c: New file.
+
+	* src/CMakeLists.txt: Add manage_config_discovery.c to manage library.
+	(C_FILES): Add config source files.
+
 2013-11-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_resource_lock): Refuse to clone other people's
