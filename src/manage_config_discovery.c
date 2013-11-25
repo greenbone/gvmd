@@ -29,11 +29,12 @@
 /**
  * @brief Insert a nvt selector.
  */
-#define NVT_SELECTOR(selector, oid, family)                      \
-  sql ("INSERT INTO nvt_selectors"                               \
-       " VALUES"                                                 \
-       " (NULL, '%s', 0, 2, "  \
-       "  '%s','%s');", selector, oid, family)
+#define NVT_SELECTOR(selector, oid, family)                               \
+  sql ("INSERT INTO nvt_selectors"                                        \
+       " (name, exclude, type, family_or_nvt, family)"                    \
+       " VALUES"                                                          \
+       " ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ", '%s','%s');", \
+       selector, oid, family)
 
 /**
  * @brief Make Discovery Scan Config.
@@ -45,7 +46,7 @@
 void
 make_config_discovery (char *const uuid, char *const selector_name)
 {
-  sql ("BEGIN TRANSACTION");
+  sql ("BEGIN EXCLUSIVE;");
 
   /* First, create the Discovery config. */
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
@@ -1047,5 +1048,5 @@ make_config_discovery (char *const uuid, char *const selector_name)
        uuid);
 
 
-  sql ("END TRANSACTION");
+  sql ("COMMIT;");
 }

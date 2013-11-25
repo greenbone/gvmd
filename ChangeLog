@@ -1,5 +1,11 @@
 2013-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_config_discovery.c (NVT_SELECTOR): Put the column names in,
+	at least for clarity.  Use NVT_SELECTOR_TYPE_ALL instead of 2.
+	(make_config_discovery): Match transaction SQL to rest of Manager.
+
+2013-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new predefined config Host Discovery.
 
 	* src/manage_sql.c (init_manage): Make Host Discovery config.
