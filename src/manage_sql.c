@@ -224,6 +224,9 @@ cleanup_prognosis_iterator ();
 int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
+void
+permissions_set_locations (const char *, resource_t, resource_t, int);
+
 
 /* Variables. */
 
@@ -5676,6 +5679,9 @@ delete_alert (const char *alert_id, int ultimate)
            " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_alert,
            alert);
+
+      permissions_set_locations ("alert", alert, trash_alert,
+                                 LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM task_alerts"
@@ -24295,6 +24301,8 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return -1;
     }
 
+  permissions_set_locations ("task", task, task, LOCATION_TRASH);
+
   switch (stop_task_internal (task))
     {
       case 0:    /* Stopped. */
@@ -25592,6 +25600,10 @@ delete_target (const char *target_id, int ultimate)
            " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            target);
+
+      permissions_set_locations ("target", target,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -27676,6 +27688,9 @@ delete_config (const char *config_id, int ultimate)
            " AND config_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_config,
            config);
+
+      permissions_set_locations ("config", config, trash_config,
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
@@ -31883,6 +31898,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
            "  private_key, rpm, deb, exe, creation_time, modification_time"
            " FROM lsc_credentials WHERE ROWID = %llu;",
            lsc_credential);
+
       /* Update the credential references in any trashcan targets.  This
        * situation is possible if the user restores the credential when the
        * target is in the trashcan. */
@@ -31898,6 +31914,10 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
            " WHERE smb_lsc_credential = %llu;",
            sqlite3_last_insert_rowid (task_db),
            lsc_credential);
+
+      permissions_set_locations ("lsc_credential", lsc_credential,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
@@ -33275,6 +33295,10 @@ delete_agent (const char *agent_id, int ultimate)
            "  modification_time"
            " FROM agents WHERE ROWID = %llu;",
            agent);
+
+      permissions_set_locations ("agent", agent,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
@@ -34072,6 +34096,10 @@ delete_note (const char *note_id, int ultimate)
            "        hosts, port, severity, task, result, end_time"
            " FROM notes WHERE ROWID = %llu;",
            note);
+
+      permissions_set_locations ("note", note,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
@@ -35028,6 +35056,10 @@ delete_override (const char *override_id, int ultimate)
            "        result, end_time"
            " FROM overrides WHERE ROWID = %llu;",
            override);
+
+      permissions_set_locations ("override", override,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
@@ -35982,6 +36014,10 @@ delete_schedule (const char *schedule_id, int ultimate)
            " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            schedule);
+
+      permissions_set_locations ("schedule", schedule,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -38094,6 +38130,9 @@ delete_report_format (const char *report_format_id, int ultimate)
                param);
         }
       cleanup_iterator (&params);
+
+      permissions_set_locations ("report_format", report_format,
+                                 trash_report_format, LOCATION_TRASH);
     }
 
   /* Remove from "real" tables. */
@@ -39704,6 +39743,10 @@ delete_slave (const char *slave_id, int ultimate)
            " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            slave);
+
+      permissions_set_locations ("slave", slave,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -40429,6 +40472,8 @@ delete_group (const char *group_id, int ultimate)
 
   if (ultimate == 0)
     {
+      group_t trash_group;
+
       sql ("INSERT INTO groups_trash"
            " (uuid, owner, name, comment, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, creation_time,"
@@ -40436,12 +40481,16 @@ delete_group (const char *group_id, int ultimate)
            " FROM groups WHERE ROWID = %llu;",
            group);
 
+      trash_group = sqlite3_last_insert_rowid (task_db);
+
       sql ("INSERT INTO group_users_trash"
            " (`group`, user)"
            " SELECT `group`, user"
            " FROM group_users WHERE `group` = %llu;",
            group);
 
+      permissions_set_locations ("group", group, trash_group,
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM groups WHERE ROWID = %llu;", group);
@@ -40700,6 +40749,26 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
 
 /* Permissions. */
+
+/**
+ * @brief Create a permission.
+ *
+ * @param[in]   type  Type.
+ * @param[in]   old   Resource ID in old table.
+ * @param[in]   new   Resource ID in new table.
+ * @param[in]   to    Destination, trash or table.
+ */
+void
+permissions_set_locations (const char *type, resource_t old, resource_t new,
+                           int to)
+{
+  sql ("UPDATE permissions SET resource_location = %i, resource = %llu"
+       " WHERE resource = %llu AND resource_location = %i;",
+       to,
+       new,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+}
 
 /**
  * @brief Create a permission.
@@ -42501,6 +42570,9 @@ delete_port_list (const char *port_list_id, int ultimate)
            " AND port_list_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_port_list,
            port_list);
+
+      permissions_set_locations ("port_list", port_list, trash_port_list,
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM port_lists WHERE ROWID = %llu;", port_list);
@@ -43649,6 +43721,10 @@ delete_filter (const char *filter_id, int ultimate)
            " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            sqlite3_last_insert_rowid (task_db),
            filter);
+
+      permissions_set_locations ("filter", filter,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM filters WHERE ROWID = %llu;", filter);
@@ -44236,6 +44312,10 @@ manage_restore (const char *id)
            " FROM agents_trash WHERE ROWID = %llu;",
            resource);
 
+      permissions_set_locations ("agent", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -44292,6 +44372,9 @@ manage_restore (const char *id)
            " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
            config,
            resource);
+
+      permissions_set_locations ("config", resource, config,
+                                 LOCATION_TABLE);
 
       sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
            resource);
@@ -44375,6 +44458,9 @@ manage_restore (const char *id)
            alert,
            resource);
 
+      permissions_set_locations ("alert", resource, alert,
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
            resource);
       sql ("DELETE FROM alert_event_data_trash WHERE alert = %llu;",
@@ -44427,6 +44513,10 @@ manage_restore (const char *id)
            sqlite3_last_insert_rowid (task_db),
            resource);
 
+      permissions_set_locations ("filter", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -44442,6 +44532,8 @@ manage_restore (const char *id)
 
   if (resource)
     {
+      group_t group;
+
       if (sql_int (0, 0,
                    "SELECT count(*) FROM groups"
                    " WHERE name ="
@@ -44463,11 +44555,16 @@ manage_restore (const char *id)
            " FROM groups_trash WHERE ROWID = %llu;",
            resource);
 
+      group = sqlite3_last_insert_rowid (task_db);
+
       sql ("INSERT INTO group_users"
            " (`group`, user)"
            " SELECT `group`, user"
            " FROM group_users_trash WHERE `group` = %llu;",
            resource);
+
+      permissions_set_locations ("group", resource, group,
+                                 LOCATION_TABLE);
 
       sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", resource);
       sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", resource);
@@ -44508,8 +44605,9 @@ manage_restore (const char *id)
            " FROM lsc_credentials_trash WHERE ROWID = %llu;",
            resource);
 
-      /* Update the credentials in any trashcan targets. */
       credential = sqlite3_last_insert_rowid (task_db);
+
+      /* Update the credentials in any trashcan targets. */
       sql ("UPDATE targets_trash"
            " SET ssh_location = " G_STRINGIFY (LOCATION_TABLE) ","
            "     lsc_credential = %llu"
@@ -44524,6 +44622,9 @@ manage_restore (const char *id)
            " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
+
+      permissions_set_locations ("lsc_credential", resource, credential,
+                                 LOCATION_TABLE);
 
       sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -44547,6 +44648,11 @@ manage_restore (const char *id)
            "        hosts, port, severity, task, result, end_time"
            " FROM notes_trash WHERE ROWID = %llu;",
            resource);
+
+      permissions_set_locations ("note", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -44570,6 +44676,11 @@ manage_restore (const char *id)
            "        result, end_time"
            " FROM overrides_trash WHERE ROWID = %llu;",
            resource);
+
+      permissions_set_locations ("override", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
       reports_clear_count_cache (1);
       sql ("COMMIT;");
@@ -44650,6 +44761,9 @@ manage_restore (const char *id)
            " AND port_list_location = " G_STRINGIFY (LOCATION_TRASH),
            table_port_list,
            resource);
+
+      permissions_set_locations ("port_list", resource, table_port_list,
+                                 LOCATION_TABLE);
 
       sql ("DELETE FROM port_lists_trash WHERE ROWID = %llu;", resource);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
@@ -44740,6 +44854,9 @@ manage_restore (const char *id)
                                resource);
       if (trash_uuid == NULL)
         abort ();
+
+      permissions_set_locations ("report_format", resource, report_format,
+                                 LOCATION_TABLE);
 
       /* Remove from trash tables. */
 
@@ -44847,6 +44964,10 @@ manage_restore (const char *id)
            sqlite3_last_insert_rowid (task_db),
            resource);
 
+      permissions_set_locations ("schedule", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -44893,6 +45014,10 @@ manage_restore (const char *id)
            sqlite3_last_insert_rowid (task_db),
            resource);
 
+      permissions_set_locations ("slave", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -44915,6 +45040,10 @@ manage_restore (const char *id)
            "        modification_time, attach_type, attach_id, active, value"
            " FROM tags_trash WHERE ROWID = %llu;",
            resource);
+
+      permissions_set_locations ("tag", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
 
       sql ("DELETE FROM tags_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -44976,6 +45105,10 @@ manage_restore (const char *id)
            sqlite3_last_insert_rowid (task_db),
            resource);
 
+      permissions_set_locations ("target", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+
       sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
       return 0;
@@ -45006,6 +45139,8 @@ manage_restore (const char *id)
           sql ("ROLLBACK;");
           return 1;
         }
+
+      permissions_set_locations ("task", resource, resource, LOCATION_TABLE);
 
       sql ("UPDATE tasks SET hidden = 0 WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -48143,6 +48278,10 @@ delete_tag (const char *tag_id, int ultimate)
            "        modification_time, attach_type, attach_id, active, value"
            " FROM tags WHERE ROWID = %llu;",
            tag);
+
+      permissions_set_locations ("tag", tag,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM tags WHERE ROWID = %llu;", tag);

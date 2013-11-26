@@ -1,3 +1,13 @@
+2013-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_alert, request_delete_task_uuid)
+	(delete_target, delete_config, delete_lsc_credential, delete_agent)
+	(delete_note, delete_override, delete_schedule, delete_report_format)
+	(delete_slave, delete_group, delete_port_list, delete_filter)
+	(delete_tag): Adjust location in permission when moving to trash.
+	(permissions_set_locations): New function.
+	(manage_restore): Adjust location in permission.
+
 2013-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_config_discovery.c (NVT_SELECTOR): Put the column names in,
