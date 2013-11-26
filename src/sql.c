@@ -49,6 +49,9 @@ current_offset (const char *);
 int
 user_can_everything (const char *);
 
+int
+resource_name (const char *, const char *, int, gchar **);
+
 
 /* Variables */
 
@@ -1883,7 +1886,7 @@ sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Get the name of a resource by its type and ID.
  *
- * This is a callback for a scalar SQL function of two arguments.
+ * This is a callback for a scalar SQL function of three arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1893,11 +1896,10 @@ void
 sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const char *type, *id;
-  sqlite3_stmt *stmt;
-  int ret;
-  const char *name;
+  int location;
+  char *name;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
   type = (char*) sqlite3_value_text (argv[0]);
   if (type == NULL)
@@ -1913,7 +1915,9 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  if (valid_db_resource_type (type) == 0)
+  location = sqlite3_value_int (argv[2]);
+
+  if (resource_name (type, id, location, &name))
     {
       gchar *msg;
       msg = g_strdup_printf ("Invalid resource type argument: %s", type);
@@ -1921,84 +1925,19 @@ sql_resource_name (sqlite3_context *context, int argc, sqlite3_value** argv)
       g_free (msg);
       return;
     }
-  else if (strcasecmp (type, "note") == 0)
-    stmt = sql_prepare ("SELECT 'Note for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = notes.nvt)"
-                        " FROM notes"
-                        " WHERE uuid = '%s';",
-                        id);
-  else if (strcasecmp (type, "override") == 0)
-    stmt = sql_prepare ("SELECT 'Override for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = overrides.nvt)"
-                        " FROM overrides"
-                        " WHERE uuid = '%s';",
-                        id);
-  else if (strcasecmp (type, "report") == 0)
-    stmt = sql_prepare ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "         WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT end_time"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM reports"
-                        " WHERE uuid = '%s';",
-                        id);
-  else if (strcasecmp (type, "result") == 0)
-    stmt = sql_prepare ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT name FROM nvts WHERE oid = nvt)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "         WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT end_time"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM results"
-                        " WHERE uuid = '%s';",
-                        id);
-  else
-    stmt = sql_prepare ("SELECT name"
-                        " FROM %ss"
-                        " WHERE uuid = '%s';",
-                        type,
-                        id);
 
-  do
-    {
-      ret = sqlite3_step (stmt);
-    }
-  while (ret == SQLITE_BUSY);
-
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-    {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-      g_warning ("%s: sqlite3_step failed: %s",
-                  __FUNCTION__,
-                  sqlite3_errmsg (task_db));
-      sqlite3_finalize (stmt);
-      return;
-    }
-
-  name = (const char*) sqlite3_column_text (stmt, 0);
-  if (name != NULL)
+  if (name)
     sqlite3_result_text (context, name, -1, SQLITE_TRANSIENT);
   else
     sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
-  sqlite3_finalize (stmt);
+
+  free (name);
+
   return;
 }
 
 /**
- * @brief Check whether a severity walls within a threat level.
+ * @brief Check whether a severity falls within a threat level.
  *
  * This is a callback for a scalar SQL function of two arguments.
  *

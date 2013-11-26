@@ -1,5 +1,26 @@
 2013-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add trash indicator to RESOURCE in GET_PERMISSIONS response.
+
+	* src/manage_sql.c (resource_name): New function.  Body from
+	sql_resource_name, with added location arg for trash case.
+	(init_manage): Add new resource_name arg.
+	(PERMISSION_ITERATOR_COLUMNS, PERMISSION_ITERATOR_TRASH_COLUMNS): Add
+	resource location.  Adjust accessors accordingly.
+	(permission_iterator_resource_in_trash): New function.
+	(TAG_ITERATOR_COLUMNS): Pass location to resource_name.  Cleanup
+	formatting.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add trash indicator to
+	GET_PERMISSIONS response.
+
+	* src/sql.c (sql_resource_name): Call out to resource_name.
+	(sql_severity_in_level): Correct doc typo.
+
+2013-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_alert, request_delete_task_uuid)
 	(delete_target, delete_config, delete_lsc_credential, delete_agent)
 	(delete_note, delete_override, delete_schedule, delete_report_format)

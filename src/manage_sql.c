@@ -3521,6 +3521,93 @@ copy_resource (const char *type, const char *name, const char *comment,
 }
 
 /**
+ * @brief Get the name of a resource.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  uuid      UUID.
+ * @param[in]  location  Location.
+ * @param[out] name      Name return.
+ *
+ * @return 0 success, 1 error in type.
+ */
+int
+resource_name (const char *type, const char *uuid, int location, char **name)
+{
+  if (valid_db_resource_type (type) == 0)
+    return 1;
+
+  if (strcasecmp (type, "note") == 0)
+    *name = sql_string (0, 0,
+                        "SELECT 'Note for: '"
+                        " || (SELECT name"
+                        "     FROM nvts"
+                        "     WHERE nvts.uuid = notes%s.nvt)"
+                        " FROM notes%s"
+                        " WHERE uuid = '%s';",
+                        location == LOCATION_TABLE ? "" : "_trash",
+                        location == LOCATION_TABLE ? "" : "_trash",
+                        uuid);
+  else if (strcasecmp (type, "override") == 0)
+    *name = sql_string (0, 0,
+                        "SELECT 'Override for: '"
+                        " || (SELECT name"
+                        "     FROM nvts"
+                        "     WHERE nvts.uuid = overrides%s.nvt)"
+                        " FROM overrides%s"
+                        " WHERE uuid = '%s';",
+                        location == LOCATION_TABLE ? "" : "_trash",
+                        location == LOCATION_TABLE ? "" : "_trash",
+                        uuid);
+  else if (strcasecmp (type, "report") == 0)
+    *name = sql_string (0, 0,
+                        "SELECT (SELECT name FROM tasks WHERE id = task)"
+                        " || ' - '"
+                        " || (SELECT"
+                        "       CASE (SELECT end_time FROM tasks"
+                        "         WHERE id = task)"
+                        "       WHEN 0 THEN 'N/A'"
+                        "       ELSE (SELECT end_time"
+                        "             FROM tasks WHERE id = task)"
+                        "    END)"
+                        " FROM reports"
+                        " WHERE uuid = '%s';",
+                        uuid);
+  else if (strcasecmp (type, "result") == 0)
+    *name = sql_string (0, 0,
+                        "SELECT (SELECT name FROM tasks WHERE id = task)"
+                        " || ' - '"
+                        " || (SELECT name FROM nvts WHERE oid = nvt)"
+                        " || ' - '"
+                        " || (SELECT"
+                        "       CASE (SELECT end_time FROM tasks"
+                        "         WHERE id = task)"
+                        "       WHEN 0 THEN 'N/A'"
+                        "       ELSE (SELECT end_time"
+                        "             FROM tasks WHERE id = task)"
+                        "    END)"
+                        " FROM results"
+                        " WHERE uuid = '%s';",
+                        uuid);
+  else if (location == LOCATION_TABLE)
+    *name = sql_string (0, 0,
+                        "SELECT name"
+                        " FROM %ss"
+                        " WHERE uuid = '%s';",
+                        type,
+                        uuid);
+  else
+    *name = sql_string (0, 0,
+                        "SELECT name"
+                        " FROM %ss%s"
+                        " WHERE uuid = '%s';",
+                        type,
+                        strcmp (type, "task") ? "_trash" : "",
+                        uuid);
+
+  return 0;
+}
+
+/**
  * @brief Initialise a GET iterator, including observed resources.
  *
  * @param[in]  iterator        Iterator.
@@ -8979,7 +9066,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (sqlite3_create_function (task_db,
                                "resource_name",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_resource_name,
@@ -41072,10 +41159,11 @@ trash_permission_writable (permission_t permission)
   GET_ITERATOR_COLUMNS (permissions) ", resource_type AS type,"             \
   " resource_uuid,"                                                         \
   " (CASE"                                                                  \
-  "  WHEN resource_type == '' OR resource_type IS NULL"                     \
+  "  WHEN resource_type = '' OR resource_type IS NULL"                      \
   "  THEN ''"                                                               \
-  "  ELSE resource_name (resource_type, resource_uuid)"                     \
+  "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
   "  END) AS _resource,"                                                    \
+  " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
   " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
@@ -41099,10 +41187,11 @@ trash_permission_writable (permission_t permission)
   GET_ITERATOR_COLUMNS (permissions_trash) ", resource_type AS type,"       \
   " resource_uuid,"                                                         \
   " (CASE"                                                                  \
-  "  WHEN resource_type == '' OR resource_type IS NULL"                     \
+  "  WHEN resource_type = '' OR resource_type IS NULL"                      \
   "  THEN ''"                                                               \
-  "  ELSE resource_name (resource_type, resource_uuid)"                     \
+  "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
   "  END) AS _resource,"                                                    \
+  " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
   " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
@@ -41191,13 +41280,27 @@ DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
 DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
+ * @brief Return the permission resource location.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the resource is in the trashcan
+ */
+int
+permission_iterator_resource_in_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
  * @brief Get the type of subject from a permission iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Type, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the subject UUID from a permission iterator.
@@ -41206,7 +41309,7 @@ DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 3);
  *
  * @return UUID, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the subject name from a permission iterator.
@@ -41215,7 +41318,7 @@ DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 4);
  *
  * @return Name, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Find a permission with a given permission, given a UUID.
@@ -41517,7 +41620,8 @@ modify_permission (const char *permission_id, const char *name,
       sql ("UPDATE permissions SET"
            " resource_type = '%s',"
            " resource_uuid = '%s',"
-           " resource = %llu"
+           " resource = %llu,"
+           " resource_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE ROWID = %llu;",
            resource_type ? resource_type : "",
            resource_id,
@@ -48438,11 +48542,12 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 /**
  * @brief Tag iterator columns.
  */
-#define TAG_ITERATOR_COLUMNS                                    \
-  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"       \
-  "active, value,"                                              \
-  "NOT resource_exists (attach_type, attach_id) AS orphaned,"   \
-  "resource_name(attach_type, attach_id) AS attach_name"
+#define TAG_ITERATOR_COLUMNS                                                  \
+  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"                     \
+  " active, value,"                                                           \
+  " NOT resource_exists (attach_type, attach_id) AS orphaned,"                \
+  " resource_name (attach_type, attach_id, " G_STRINGIFY (LOCATION_TABLE) ")" \
+  " AS attach_name"
 
 /**
  * @brief Tag iterator trash columns.
