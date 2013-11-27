@@ -227,6 +227,9 @@ set_password (const gchar *, const gchar *, const gchar *, gchar **);
 void
 permissions_set_locations (const char *, resource_t, resource_t, int);
 
+void
+permissions_set_orphans (const char *, resource_t, int);
+
 
 /* Variables. */
 
@@ -5699,6 +5702,8 @@ delete_alert (const char *alert_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("alert", alert, LOCATION_TRASH);
+
       sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
            alert);
       sql ("DELETE FROM alert_event_data_trash WHERE alert = %llu;",
@@ -5779,6 +5784,8 @@ delete_alert (const char *alert_id, int ultimate)
       sql ("ROLLBACK;");
       return 1;
     }
+  else
+    permissions_set_orphans ("alert", alert, LOCATION_TABLE);
 
   sql ("DELETE FROM alert_condition_data WHERE alert = %llu;",
        alert);
@@ -18197,6 +18204,10 @@ delete_report_internal (report_t report)
   sql ("DELETE FROM report_counts WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
 
+  /* Adjust permissions. */
+
+  permissions_set_orphans ("report", report, LOCATION_TABLE);
+
   /* Update the task state. */
 
   switch (sql_int64 (&report, 0, 0,
@@ -24364,6 +24375,8 @@ request_delete_task_uuid (const char *task_id, int ultimate)
           return -1;
         }
 
+      permissions_set_orphans ("task", task, LOCATION_TRASH);
+
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -24387,8 +24400,6 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       sql ("ROLLBACK;");
       return -1;
     }
-
-  permissions_set_locations ("task", task, task, LOCATION_TRASH);
 
   switch (stop_task_internal (task))
     {
@@ -24454,6 +24465,11 @@ delete_task (task_t task, int ultimate)
       if (delete_reports (task))
         return -1;
 
+      permissions_set_orphans ("task", task,
+                               task_in_trash (task)
+                                ? LOCATION_TRASH
+                                : LOCATION_TABLE);
+
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
@@ -24461,7 +24477,10 @@ delete_task (task_t task, int ultimate)
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
     }
   else
-    sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
+    {
+      permissions_set_locations ("task", task, task, LOCATION_TRASH);
+      sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
+    }
 
   return 0;
 }
@@ -25646,6 +25665,8 @@ delete_target (const char *target_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("target", target, LOCATION_TRASH);
+
       sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", target);
       sql ("COMMIT;");
       return 0;
@@ -25701,6 +25722,8 @@ delete_target (const char *target_id, int ultimate)
       sql ("ROLLBACK;");
       return 1;
     }
+  else
+    permissions_set_orphans ("target", target, LOCATION_TABLE);
 
   sql ("DELETE FROM targets WHERE ROWID = %llu;", target);
 
@@ -27707,6 +27730,8 @@ delete_config (const char *config_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("config", config, LOCATION_TRASH);
+
       sql ("DELETE FROM nvt_selectors WHERE name ="
            " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
            config);
@@ -27733,6 +27758,8 @@ delete_config (const char *config_id, int ultimate)
       sql ("DELETE FROM nvt_selectors WHERE name ="
            " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
            config);
+
+      permissions_set_orphans ("config", config, LOCATION_TABLE);
     }
   else
     {
@@ -31960,6 +31987,9 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("lsc_credential", lsc_credential,
+                               LOCATION_TRASH);
+
       sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", lsc_credential);
       sql ("COMMIT;");
       return 0;
@@ -32006,6 +32036,8 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("lsc_credential", lsc_credential, LOCATION_TABLE);
 
   sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
 
@@ -33363,6 +33395,8 @@ delete_agent (const char *agent_id, int ultimate)
           return 0;
         }
 
+      permissions_set_orphans ("agent", agent, LOCATION_TRASH);
+
       sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", agent);
       sql ("COMMIT;");
       return 0;
@@ -33387,6 +33421,8 @@ delete_agent (const char *agent_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("agent", agent, LOCATION_TABLE);
 
   sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
   sql ("COMMIT;");
@@ -34169,6 +34205,8 @@ delete_note (const char *note_id, int ultimate)
           return 0;
         }
 
+      permissions_set_orphans ("note", note, LOCATION_TRASH);
+
       sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", note);
       sql ("COMMIT;");
       return 0;
@@ -34188,6 +34226,8 @@ delete_note (const char *note_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("note", note, LOCATION_TABLE);
 
   sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
 
@@ -35128,6 +35168,8 @@ delete_override (const char *override_id, int ultimate)
           return 0;
         }
 
+      permissions_set_orphans ("override", override, LOCATION_TRASH);
+
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", override);
       sql ("COMMIT;");
       return 0;
@@ -35148,6 +35190,8 @@ delete_override (const char *override_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("override", override, LOCATION_TABLE);
 
   sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
 
@@ -36065,6 +36109,8 @@ delete_schedule (const char *schedule_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("schedule", schedule, LOCATION_TRASH);
+
       sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", schedule);
       sql ("COMMIT;");
       return 0;
@@ -36115,6 +36161,8 @@ delete_schedule (const char *schedule_id, int ultimate)
       sql ("ROLLBACK;");
       return 1;
     }
+  else
+    permissions_set_orphans ("schedule", schedule, LOCATION_TABLE);
 
   sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
 
@@ -38092,6 +38140,8 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Remove entirely. */
 
+      permissions_set_orphans ("report_format", report_format, LOCATION_TRASH);
+
       sql ("DELETE FROM report_formats_trash WHERE ROWID = %llu;",
            report_format);
       sql ("DELETE FROM report_format_param_options_trash"
@@ -38145,6 +38195,8 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   if (ultimate)
     {
+      permissions_set_orphans ("report_format", report_format, LOCATION_TABLE);
+
       /* Remove directory. */
 
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
@@ -39795,6 +39847,8 @@ delete_slave (const char *slave_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("slave", slave, LOCATION_TRASH);
+
       sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", slave);
       sql ("COMMIT;");
       return 0;
@@ -39844,6 +39898,8 @@ delete_slave (const char *slave_id, int ultimate)
       sql ("ROLLBACK;");
       return 1;
     }
+  else
+    permissions_set_orphans ("slave", slave, LOCATION_TABLE);
 
   sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);
   sql ("COMMIT;");
@@ -40559,8 +40615,6 @@ delete_group (const char *group_id, int ultimate)
 
   if (ultimate == 0)
     {
-      group_t trash_group;
-
       sql ("INSERT INTO groups_trash"
            " (uuid, owner, name, comment, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, creation_time,"
@@ -40568,16 +40622,11 @@ delete_group (const char *group_id, int ultimate)
            " FROM groups WHERE ROWID = %llu;",
            group);
 
-      trash_group = sqlite3_last_insert_rowid (task_db);
-
       sql ("INSERT INTO group_users_trash"
            " (`group`, user)"
            " SELECT `group`, user"
            " FROM group_users WHERE `group` = %llu;",
            group);
-
-      permissions_set_locations ("group", group, trash_group,
-                                 LOCATION_TRASH);
     }
 
   sql ("DELETE FROM groups WHERE ROWID = %llu;", group);
@@ -40838,7 +40887,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 /* Permissions. */
 
 /**
- * @brief Create a permission.
+ * @brief Adjust location of resource in permissions.
  *
  * @param[in]   type  Type.
  * @param[in]   old   Resource ID in old table.
@@ -40850,11 +40899,30 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
                            int to)
 {
   sql ("UPDATE permissions SET resource_location = %i, resource = %llu"
-       " WHERE resource = %llu AND resource_location = %i;",
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
        to,
        new,
+       type,
        old,
        to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+}
+
+/**
+ * @brief Set permissions to orphan.
+ *
+ * @param[in]   type      Type.
+ * @param[in]   resource  Resource ID.
+ */
+void
+permissions_set_orphans (const char *type, resource_t resource, int location)
+{
+  sql ("UPDATE permissions SET resource = -1"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       type,
+       resource,
+       location);
 }
 
 /**
@@ -41164,6 +41232,7 @@ trash_permission_writable (permission_t permission)
   "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
   "  END) AS _resource,"                                                    \
   " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
+  " resource = -1,"                                                         \
   " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
@@ -41192,6 +41261,7 @@ trash_permission_writable (permission_t permission)
   "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
   "  END) AS _resource,"                                                    \
   " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
+  " resource = -1,"                                                         \
   " subject_type,"                                                          \
   " (CASE"                                                                  \
   "  WHEN subject_type = 'user'"                                            \
@@ -41294,13 +41364,27 @@ permission_iterator_resource_in_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Check if the permission resource has been deleted.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the resource has been deleted.
+ */
+int
+permission_iterator_resource_orphan (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
  * @brief Get the type of subject from a permission iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Type, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Get the subject UUID from a permission iterator.
@@ -41309,7 +41393,7 @@ DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 4);
  *
  * @return UUID, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the subject name from a permission iterator.
@@ -41318,7 +41402,7 @@ DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 5);
  *
  * @return Name, or NULL if iteration is complete.
  */
-DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 6);
+DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Find a permission with a given permission, given a UUID.
@@ -42631,6 +42715,8 @@ delete_port_list (const char *port_list_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("port_list", port_list, LOCATION_TRASH);
+
       sql ("DELETE FROM port_lists_trash WHERE ROWID = %llu;", port_list);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
       sql ("COMMIT;");
@@ -42678,6 +42764,8 @@ delete_port_list (const char *port_list_id, int ultimate)
       permissions_set_locations ("port_list", port_list, trash_port_list,
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("port_list", port_list, LOCATION_TABLE);
 
   sql ("DELETE FROM port_lists WHERE ROWID = %llu;", port_list);
   sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
@@ -43788,6 +43876,8 @@ delete_filter (const char *filter_id, int ultimate)
           return 1;
         }
 
+      permissions_set_orphans ("filter", filter, LOCATION_TRASH);
+
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", filter);
       sql ("COMMIT;");
       return 0;
@@ -43830,6 +43920,8 @@ delete_filter (const char *filter_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("filter", filter, LOCATION_TABLE);
 
   sql ("DELETE FROM filters WHERE ROWID = %llu;", filter);
 
@@ -48368,6 +48460,8 @@ delete_tag (const char *tag_id, int ultimate)
           return 0;
         }
 
+      permissions_set_orphans ("tag", tag, LOCATION_TRASH);
+
       sql ("DELETE FROM tags_trash WHERE ROWID = %llu;", tag);
       sql ("COMMIT;");
       return 0;
@@ -48387,6 +48481,8 @@ delete_tag (const char *tag_id, int ultimate)
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
     }
+  else
+    permissions_set_orphans ("tag", tag, LOCATION_TABLE);
 
   sql ("DELETE FROM tags WHERE ROWID = %llu;", tag);
   sql ("COMMIT;");

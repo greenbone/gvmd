@@ -2623,6 +2623,9 @@ permission_iterator_resource_name (iterator_t*);
 int
 permission_iterator_resource_in_trash (iterator_t*);
 
+int
+permission_iterator_resource_orphan (iterator_t*);
+
 const char*
 permission_iterator_subject_type (iterator_t*);
 

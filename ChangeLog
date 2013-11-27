@@ -1,3 +1,28 @@
+2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Mark permissions when the associated resource is deleted.
+
+	* src/manage_sql.c (delete_alert, delete_report_internal)
+	(delete_target, delete_config, delete_lsc_credential, delete_agent)
+	(delete_note, delete_override, delete_schedule, delete_report_format)
+	(delete_slave, delete_port_list, delete_filter, delete_tag): Set
+	orphan in permission when ultimately removing resource from db.
+	(request_delete_task_uuid): Remove setting of locations.  Better done in
+	delete_task.
+	(delete_task): Set orphan and location.
+	(delete_group): Remove setting of location, as resource permissions are
+	prevented on groups.
+	(permissions_set_locations): Add missing location clause.
+	(permissions_set_orphans): New function.
+	(PERMISSION_ITERATOR_COLUMNS, PERMISSION_ITERATOR_TRASH_COLUMNS): Add
+	orphan field.  Adjust accessors accordingly.
+	(permission_iterator_resource_orphan): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_PERMISSION mark
+	resource as deleted if it has been.
+
 2013-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add trash indicator to RESOURCE in GET_PERMISSIONS response.
