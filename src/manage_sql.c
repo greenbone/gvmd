@@ -3424,7 +3424,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
            columns ? ", " : "",
            columns ? columns : "",
            admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
-           admin_type ? "" : current_credentials.uuid,
+           admin_type ? "NULL" : current_credentials.uuid,
            admin_type ? "" : "')",
            quoted_name ? "'" : "",
            quoted_name ? quoted_name : uniquify,
@@ -3446,7 +3446,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
          columns ? ", " : "",
          columns ? columns : "",
          admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
-         admin_type ? "" : current_credentials.uuid,
+         admin_type ? "NULL" : current_credentials.uuid,
          admin_type ? "" : "')",
          quoted_name ? "'" : "",
          quoted_name ? quoted_name : uniquify,
@@ -3465,7 +3465,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
          columns ? ", " : "",
          columns ? columns : "",
          admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
-         admin_type ? "" : current_credentials.uuid,
+         admin_type ? "NULL" : current_credentials.uuid,
          admin_type ? "" : "')",
          columns ? ", " : "",
          columns ? columns : "",
@@ -3997,7 +3997,7 @@ create_tables ()
        " ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
        " (nvt, oid, cve_name)");
-  sql ("CREATE INDEX nvt_cves_by_oid"
+  sql ("CREATE INDEX IF NOT EXISTS nvt_cves_by_oid"
        " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, nvt,"

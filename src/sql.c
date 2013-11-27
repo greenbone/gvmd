@@ -239,7 +239,7 @@ sql (char* sql, ...)
   va_list args;
 
   va_start (args, sql);
-  if (sqlv (1, sql, args) == -2)
+  if (sqlv (1, sql, args) == -1)
     {
       g_warning ("%s: %s\n",
                  __FUNCTION__,

@@ -1,5 +1,14 @@
 2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sql): Correct return value is conditional.  This was hiding
+	SQL errors.
+
+	* src/manage_sql.c (copy_resource_lock): Add owner value for the admin
+	case.
+	(create_tables): Add "IF NOT EXISTS" to index SQL.
+
+2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/ompd.c (serve_omp): In more places check client_active before
 	closing the client socket.
 
