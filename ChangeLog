@@ -1,6 +1,14 @@
 2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/sql.c (sql): Correct return value is conditional.  This was hiding
+	* src/omp.c (send_get_common): Add special cases for the permissions of
+	the shared types, because their access is determined by the command
+	level permissions.
+
+	* src/manage.h: Extern user_can_everything for omp.c.
+
+2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql.c (sql): Correct return value in conditional.  This was hiding
 	SQL errors.
 
 	* src/manage_sql.c (copy_resource_lock): Add owner value for the admin

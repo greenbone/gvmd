@@ -5544,11 +5544,16 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             writable,
                             in_use);
 
-  if (current_credentials.username
-      && get_iterator_owner_name (iterator)
-      && (strcmp (get_iterator_owner_name (iterator),
-                  current_credentials.username)
-          == 0))
+  if ((current_credentials.username
+       && get_iterator_owner_name (iterator)
+       && (strcmp (get_iterator_owner_name (iterator),
+                   current_credentials.username)
+           == 0))
+      || (current_credentials.uuid
+          && ((strcmp (type, "group") == 0)
+              || (strcmp (type, "role") == 0)
+              || (strcmp (type, "user") == 0))
+          && user_can_everything (current_credentials.uuid)))
     buffer_xml_append_printf (buffer,
                               "<permission><name>Everything</name></permission>"
                               "</permissions>");
@@ -5558,10 +5563,19 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       get_data_t perms_get;
 
       memset (&perms_get, '\0', sizeof (perms_get));
-      perms_get.filter = g_strdup_printf ("resource_uuid=%s"
-                                          " owner=any"
-                                          " permission=any",
-                                          get_iterator_uuid (iterator));
+      if ((strcmp (type, "group") == 0)
+          || (strcmp (type, "role") == 0)
+          || (strcmp (type, "user") == 0))
+        // TODO Do this a safer way.
+        perms_get.filter = g_strdup_printf ("name~_%s"
+                                            " owner=any"
+                                            " permission=any",
+                                            type);
+      else
+        perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                            " owner=any"
+                                            " permission=any",
+                                            get_iterator_uuid (iterator));
       init_permission_iterator (&perms, &perms_get);
       g_free (perms_get.filter);
       while (next (&perms))
