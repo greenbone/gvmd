@@ -1,5 +1,10 @@
 2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/ompd.c (serve_omp): In more places check client_active before
+	closing the client socket.
+
+2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Mark permissions when the associated resource is deleted.
 
 	* src/manage_sql.c (delete_alert, delete_report_internal)

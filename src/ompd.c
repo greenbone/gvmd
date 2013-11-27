@@ -827,9 +827,10 @@ serve_omp (gnutls_session_t* client_session,
           else if (recv (scanner_socket, &recv_ch, 1, MSG_PEEK) == 0)
             {
               /* Scanner has gone down.  Exit. */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
+              if (client_active)
+                openvas_server_free (client_socket,
+                                     *client_session,
+                                     *client_credentials);
               return -1;
             }
         }
@@ -861,9 +862,10 @@ serve_omp (gnutls_session_t* client_session,
           g_warning ("%s: child select failed: %s\n",
                      __FUNCTION__,
                      strerror (errno));
-          openvas_server_free (client_socket,
-                               *client_session,
-                               *client_credentials);
+          if (client_active)
+            openvas_server_free (client_socket,
+                                 *client_session,
+                                 *client_credentials);
           return -1;
         }
 
@@ -881,9 +883,10 @@ serve_omp (gnutls_session_t* client_session,
           && (recv (scanner_socket, &recv_ch, 1, MSG_PEEK) == 0))
         {
           /* Scanner has gone down.  Exit. */
-          openvas_server_free (client_socket,
-                               *client_session,
-                               *client_credentials);
+          if (client_active)
+            openvas_server_free (client_socket,
+                                 *client_session,
+                                 *client_credentials);
           return -1;
         }
 
@@ -1117,9 +1120,10 @@ serve_omp (gnutls_session_t* client_session,
                  * at the end of a command. */
                 /** @todo Then should get EOF (-3). */
                 set_scanner_init_state (SCANNER_INIT_TOP);
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
+                if (client_active)
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                 return -1;
                 break;
               case -2:       /* from_scanner buffer full. */
@@ -1131,9 +1135,10 @@ serve_omp (gnutls_session_t* client_session,
                   /* The client has closed the connection, so exit. */
                   return 0;
                 /* Scanner went down, exit. */
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
+                if (client_active)
+                  openvas_server_free (client_socket,
+                                       *client_session,
+                                       *client_credentials);
                 return -1;
                 break;
               default:       /* Programming error. */
@@ -1204,9 +1209,10 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == -1)
            {
              /* Error. */
-             openvas_server_free (client_socket,
-                                  *client_session,
-                                  *client_credentials);
+             if (client_active)
+               openvas_server_free (client_socket,
+                                    *client_session,
+                                    *client_credentials);
              return -1;
            }
           else if (ret == -3)
@@ -1435,8 +1441,9 @@ serve_omp (gnutls_session_t* client_session,
 
     } /* while (1) */
 
-  openvas_server_free (client_socket,
-                       *client_session,
-                       *client_credentials);
+  if (client_active)
+    openvas_server_free (client_socket,
+                         *client_session,
+                         *client_credentials);
   return 0;
 }
