@@ -8093,6 +8093,43 @@ migrate_108_to_109 ()
 }
 
 /**
+ * @brief Migrate the database from version 109 to version 110.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_109_to_110 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 109. */
+
+  if (manage_db_version () != 109)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The permissions tables got subject_location fields. */
+
+  sql ("ALTER TABLE permissions ADD COLUMN subject_location;");
+  sql ("UPDATE permissions SET subject_location = 0;");
+
+  sql ("ALTER TABLE permissions_trash ADD COLUMN subject_location;");
+  sql ("UPDATE permissions_trash SET subject_location = 0;");
+
+  /* Set the database version 110. */
+
+  set_db_version (110);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8206,6 +8243,7 @@ static migrator_t database_migrators[]
     {107, migrate_106_to_107},
     {108, migrate_107_to_108},
     {109, migrate_108_to_109},
+    {110, migrate_109_to_110},
     /* End marker. */
     {-1, NULL}};
 

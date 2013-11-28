@@ -1,5 +1,31 @@
 2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Track trash/table location of groups in permissions.  Hence increase
+	database version to 110.  Add database migration from version 109 to
+	110.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 110.
+
+	* src/manage_migrators.c (migrate_109_to_110): New function.
+	(database_migrators): Add migrate_109_to_110.
+
+	* src/manage_sql.c (create_tables): Add subject_location to permissions
+	tables.
+	(add_role_permission, init_manage, set_task_groups, set_task_observers)
+	(copy_task): Handle subject_location when inserting a permission.
+	(delete_group): Delete permissions assigned to group.  When moving to
+	trashcan adjust subject in permissions.
+	(permissions_set_subjects): New function.
+	(create_permission, delete_permission): Handle subject_location when
+	inserting a permission.
+	(copy_permission): Add subject_location to fields.
+	(manage_restore): When restoring group adjust subject in permissions.
+	Add subject_location to group insert.
+
+	* doc/db.png: Update for version change.
+
+2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_group): Use the trash check when in trashcan.
 	(group_in_use): Remove dependence on permission.  This is probably more
 	the expected behaviour.

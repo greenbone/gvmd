@@ -230,6 +230,9 @@ permissions_set_locations (const char *, resource_t, resource_t, int);
 void
 permissions_set_orphans (const char *, resource_t, int);
 
+void
+permissions_set_subjects (const char *, resource_t, resource_t, int);
+
 
 /* Variables. */
 
@@ -4010,11 +4013,13 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS permissions"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
-       "  subject_type, subject, creation_time, modification_time);");
+       "  subject_type, subject, subject_location,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS permissions_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
-       "  subject_type, subject, creation_time, modification_time);");
+       "  subject_type, subject, subject_location,"
+       "  creation_time, modification_time);");
   /* Overlapping port ranges will cause problems, at least for the port
    * counting.  OMP CREATE_PORT_LIST and CREATE_PORT_RANGE check for this,
    * but whoever creates a predefined port list must check this manually. */
@@ -10195,13 +10200,13 @@ add_role_permission (const gchar *role, const gchar *permission)
 {
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-       "  resource_location, subject_type, subject, creation_time,"
-       "  modification_time)"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), NULL, lower ('%s'), '', '',"
        "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
        "  (SELECT ROWID FROM roles WHERE uuid = '%s'),"
-       "  now (), now ());",
+       "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
        permission,
        role);
 }
@@ -11007,13 +11012,13 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       == 0)
     sql ("INSERT INTO permissions"
          " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-         "  resource_location, subject_type, subject, creation_time,"
-         "  modification_time)"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
          " VALUES"
          " ('" PERMISSION_UUID_ADMIN_EVERYTHING "', NULL, 'Everything', '', '',"
          "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
          "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
-         "  now (), now ());");
+         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM permissions"
@@ -12554,13 +12559,14 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
-           "  creation_time, modification_time)"
+           "  subject_location, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (),"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
-           "  " G_STRINGIFY (LOCATION_TABLE) ", 'group', %llu, now (), now ());",
+           "  " G_STRINGIFY (LOCATION_TABLE) ", 'group', %llu,"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
            current_credentials.uuid, task, task, group);
 
       index++;
@@ -12988,13 +12994,14 @@ set_task_observers (task_t task, const gchar *observers)
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
-           "  creation_time, modification_time)"
+           "  subject_location, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (),"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
            "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.ROWID = %llu),"
-           "  " G_STRINGIFY (LOCATION_TABLE) ", 'user', %llu, now (), now ());",
+           "  " G_STRINGIFY (LOCATION_TABLE) ", 'user', %llu,"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
            current_credentials.uuid, task, task, user);
 
       point++;
@@ -24223,14 +24230,15 @@ copy_task (const char* name, const char* comment, const char *task_id,
        new,
        old);
 
-  // FIX do this for all types
+  // FIX do this for all types, or none
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-       "  resource_location, subject_type, subject, creation_time,"
-       "  modification_time)"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
        " SELECT make_uuid (), (SELECT owner FROM tasks WHERE ROWID = %llu),"
        "        name, comment, resource_type, %llu, resource_uuid,"
-       "        resource_location, subject_type, subject, now (), now ()"
+       "        resource_location, subject_type, subject, subject_location,"
+       "        now (), now ()"
        " FROM permissions"
        " WHERE owner = (SELECT owner FROM tasks WHERE ROWID = %llu)"
        " AND resource_type = 'task'"
@@ -40600,6 +40608,17 @@ delete_group (const char *group_id, int ultimate)
           return 1;
         }
 
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'group'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'group'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
+
       sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", group);
       sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", group);
       sql ("COMMIT;");
@@ -40614,6 +40633,8 @@ delete_group (const char *group_id, int ultimate)
 
   if (ultimate == 0)
     {
+      group_t trash_group;
+
       sql ("INSERT INTO groups_trash"
            " (uuid, owner, name, comment, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, creation_time,"
@@ -40621,10 +40642,27 @@ delete_group (const char *group_id, int ultimate)
            " FROM groups WHERE ROWID = %llu;",
            group);
 
+      trash_group = sqlite3_last_insert_rowid (task_db);
+
       sql ("INSERT INTO group_users_trash"
            " (`group`, user)"
            " SELECT `group`, user"
            " FROM group_users WHERE `group` = %llu;",
+           group);
+
+      permissions_set_subjects ("group", group, trash_group, LOCATION_TRASH);
+    }
+  else
+    {
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'group'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           group);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'group'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            group);
     }
 
@@ -40921,6 +40959,38 @@ permissions_set_orphans (const char *type, resource_t resource, int location)
 }
 
 /**
+ * @brief Adjust subject in permissions.
+ *
+ * @param[in]   old   Resource ID in old table.
+ * @param[in]   new   Resource ID in new table.
+ * @param[in]   to    Destination, trash or table.
+ */
+void
+permissions_set_subjects (const char *type, resource_t old, resource_t new,
+                          int to)
+{
+  sql ("UPDATE permissions"
+       " SET subject_location = %i, subject = %llu"
+       " WHERE subject_location = %i"
+       " AND subject_type = 'group'"
+       " AND subject = %llu;",
+       to,
+       new,
+       to == LOCATION_TRASH ? LOCATION_TABLE : LOCATION_TRASH,
+       old);
+
+  sql ("UPDATE permissions_trash"
+       " SET subject_location = %i, subject = %llu"
+       " WHERE subject_location = %i"
+       " AND subject_type = 'group'"
+       " AND subject = %llu;",
+       to,
+       new,
+       to == LOCATION_TRASH ? LOCATION_TABLE : LOCATION_TRASH,
+       old);
+}
+
+/**
  * @brief Create a permission.
  *
  * @param[in]   name_arg        Name of permission.
@@ -41056,12 +41126,12 @@ create_permission (const char *name_arg, const char *comment,
 
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
-       "  resource_location, subject_type, subject, creation_time,"
-       "  modification_time)"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), %s,"
        "  '%s', '%s', '%s', '%s', %llu, " G_STRINGIFY (LOCATION_TABLE) ","
-       "  %s%s%s, %llu, now (), now ());",
+       "  %s%s%s, %llu, " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
        owner,
        quoted_name,
        quoted_comment,
@@ -41108,7 +41178,8 @@ copy_permission (const char* comment, const char *permission_id,
 
   ret = copy_resource_lock ("permission", NULL, comment, permission_id,
                             "resource_type, resource, resource_uuid,"
-                            " resource_location, subject_type, subject",
+                            " resource_location, subject_type, subject,"
+                            " subject_location",
                             0, &new, &old);
   if (ret)
     {
@@ -41501,10 +41572,10 @@ delete_permission (const char *permission_id, int ultimate)
     sql ("INSERT INTO permissions_trash"
          " (uuid, owner, name, comment, resource_type, resource,"
          "  resource_uuid, resource_location, subject_type, subject,"
-         "  creation_time, modification_time)"
+         "  subject_location, creation_time, modification_time)"
          " SELECT uuid, owner, name, comment, resource_type, resource,"
          "  resource_uuid, resource_location, subject_type, subject,"
-         "  creation_time, modification_time"
+         "  subject_location, creation_time, modification_time"
          " FROM permissions"
          " WHERE ROWID = %llu;",
          permission);
@@ -44754,8 +44825,9 @@ manage_restore (const char *id)
            " FROM group_users_trash WHERE `group` = %llu;",
            resource);
 
-      permissions_set_locations ("group", resource, group,
-                                 LOCATION_TABLE);
+      permissions_set_locations ("group", resource, group, LOCATION_TABLE);
+
+      permissions_set_subjects ("group", resource, group, LOCATION_TABLE);
 
       sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", resource);
       sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", resource);
@@ -44891,10 +44963,10 @@ manage_restore (const char *id)
       sql ("INSERT INTO permissions"
            " (uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
-           "  creation_time, modification_time)"
+           "  subject_location, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, resource_type, resource,"
            "  resource_uuid, resource_location, subject_type, subject,"
-           "  creation_time, modification_time"
+           "  subject_location, creation_time, modification_time"
            " FROM permissions_trash"
            " WHERE ROWID = %llu;",
            resource);
