@@ -40939,6 +40939,14 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
        type,
        old,
        to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+  sql ("UPDATE permissions_trash SET resource_location = %i, resource = %llu"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       to,
+       new,
+       type,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
 }
 
 /**
@@ -40951,6 +40959,12 @@ void
 permissions_set_orphans (const char *type, resource_t resource, int location)
 {
   sql ("UPDATE permissions SET resource = -1"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       type,
+       resource,
+       location);
+  sql ("UPDATE permissions_trash SET resource = -1"
        " WHERE resource_type = '%s' AND resource = %llu"
        " AND resource_location = %i;",
        type,
