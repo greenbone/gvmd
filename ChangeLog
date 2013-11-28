@@ -1,3 +1,12 @@
+2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_group): Use the trash check when in trashcan.
+	(group_in_use): Remove dependence on permission.  This is probably more
+	the expected behaviour.
+	(delete_user): Delete user's permissions and permissions assigned to
+	user.  Remove trailing paren errors that were hidden by the sql function
+	error.
+
 2013-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_common): Add special cases for the permissions of

@@ -40594,8 +40594,7 @@ delete_group (const char *group_id, int ultimate)
           return 0;
         }
 
-      /* Check if it's in use by a permission in the trashcan. */
-      if (group_in_use (group))
+      if (trash_group_in_use (group))
         {
           sql ("ROLLBACK;");
           return 1;
@@ -40704,11 +40703,7 @@ trash_group_writable (group_t group)
 int
 group_in_use (group_t group)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM permissions"
-                    " WHERE subject = %llu"
-                    " AND subject_type = 'group';",
-                    group);
+  return 0;
 }
 
 /**
@@ -47655,6 +47650,12 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
 
+  sql ("DELETE FROM permissions"
+       " WHERE owner = %llu"
+       " OR subject_type = 'user' AND subject = %llu;",
+       user,
+       user);
+
   sql ("DELETE FROM port_ranges"
        " WHERE port_list IN (SELECT ROWID FROM port_lists WHERE owner = %llu);",
        user);
@@ -47698,13 +47699,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
        "                                        WHERE owner = %llu));",
        user);
   sql ("DELETE FROM report_hosts"
-       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM report_results"
-       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM results"
-       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu));",
+       " WHERE report IN (SELECT ROWID FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM reports WHERE owner = %llu;", user);
 
@@ -47723,13 +47724,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
 
   sql ("DELETE FROM task_files"
-       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu);",
        user);
   sql ("DELETE FROM task_alerts"
-       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu);",
        user);
   sql ("DELETE FROM task_preferences"
-       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu));",
+       " WHERE task IN (SELECT ROWID FROM tasks WHERE owner = %llu);",
        user);
   sql ("DELETE FROM tasks WHERE owner = %llu;", user);
 
