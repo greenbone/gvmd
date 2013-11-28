@@ -1,5 +1,11 @@
 2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_task_user_iterator): Remove name clause.  Add
+	locations.
+	(init_task_group_iterator): Add subject location.
+
+2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (permissions_set_locations)
 	(permissions_set_orphans): Add trash cases.
 

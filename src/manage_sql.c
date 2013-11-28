@@ -4864,10 +4864,12 @@ init_task_user_iterator (iterator_t *iterator, task_t task)
                  " (SELECT name FROM users"
                  "  WHERE users.ROWID = permissions.subject)"
                  " FROM permissions"
+                 /* Any permission implies 'get_tasks'. */
                  " WHERE resource_type = 'task'"
                  " AND resource = %llu"
+                 " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
                  " AND subject_type = 'user'"
-                 " AND name = 'get';",
+                 " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
                  task);
 }
 
@@ -4917,11 +4919,12 @@ init_task_group_iterator (iterator_t *iterator, task_t task)
                  " (SELECT uuid FROM groups"
                  "  WHERE groups.ROWID = permissions.subject)"
                  " FROM permissions"
-                 /* Any permission implies 'get'. */
+                 /* Any permission implies 'get_tasks'. */
                  " WHERE resource_type = 'task'"
                  " AND resource = %llu"
                  " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
-                 " AND subject_type = 'group';",
+                 " AND subject_type = 'group'"
+                 " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
                  task);
 }
 
