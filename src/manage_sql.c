@@ -41304,6 +41304,10 @@ trash_permission_writable (permission_t permission)
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
   "  WHEN subject_type = 'group'"                                           \
+  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
+  "  THEN (SELECT uuid FROM groups_trash"                                   \
+  "        WHERE groups_trash.ROWID = subject)"                             \
+  "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
   "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS subject_uuid,"                                                 \
@@ -41311,9 +41315,14 @@ trash_permission_writable (permission_t permission)
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
   "  WHEN subject_type = 'group'"                                           \
+  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
+  "  THEN (SELECT name FROM groups_trash"                                   \
+  "        WHERE groups_trash.ROWID = subject)"                             \
+  "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
   "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
-  "  END) AS _subject"
+  "  END) AS _subject,"                                                     \
+  " subject_location = " G_STRINGIFY (LOCATION_TRASH)
 
 /**
  * @brief Permission iterator columns.
@@ -41333,6 +41342,10 @@ trash_permission_writable (permission_t permission)
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT uuid FROM users WHERE users.ROWID = subject)"             \
   "  WHEN subject_type = 'group'"                                           \
+  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
+  "  THEN (SELECT uuid FROM groups_trash"                                   \
+  "        WHERE groups_trash.ROWID = subject)"                             \
+  "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
   "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS subject_uuid,"                                                 \
@@ -41340,9 +41353,14 @@ trash_permission_writable (permission_t permission)
   "  WHEN subject_type = 'user'"                                            \
   "  THEN (SELECT name FROM users WHERE users.ROWID = subject)"             \
   "  WHEN subject_type = 'group'"                                           \
+  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
+  "  THEN (SELECT name FROM groups_trash"                                   \
+  "        WHERE groups_trash.ROWID = subject)"                             \
+  "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
   "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
-  "  END) AS _subject"
+  "  END) AS _subject,"                                                     \
+  " subject_location = " G_STRINGIFY (LOCATION_TRASH)
 
 /**
  * @brief Count number of permissions.
@@ -41469,6 +41487,20 @@ DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
  * @return Name, or NULL if iteration is complete.
  */
 DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Return the permission subject location.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the subject is in the trashcan
+ */
+int
+permission_iterator_subject_in_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 8);
+}
 
 /**
  * @brief Find a permission with a given permission, given a UUID.

@@ -2639,6 +2639,9 @@ const char*
 permission_iterator_subject_name (iterator_t*);
 
 int
+permission_iterator_subject_in_trash (iterator_t*);
+
+int
 delete_permission (const char*, int);
 
 int

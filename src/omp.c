@@ -13420,6 +13420,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 "<subject id=\"%s\">"
                 "<name>%s</name>"
                 "<type>%s</type>"
+                "<trash>%i</trash>"
                 "</subject>",
                 permission_iterator_resource_uuid (&permissions),
                 resource_type && strcmp (resource_type, "")
@@ -13430,7 +13431,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 permission_iterator_resource_orphan (&permissions),
                 permission_iterator_subject_uuid (&permissions),
                 permission_iterator_subject_name (&permissions),
-                permission_iterator_subject_type (&permissions));
+                permission_iterator_subject_type (&permissions),
+                permission_iterator_subject_in_trash (&permissions));
 
               SEND_TO_CLIENT_OR_FAIL ("</permission>");
               count++;
