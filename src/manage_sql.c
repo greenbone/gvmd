@@ -3329,6 +3329,46 @@ find_resource_with_permission (const char* type, const char* uuid,
 }
 
 /**
+ * @brief Find a resource given a name.
+ *
+ * @param[in]   type      Type of resource.
+ * @param[in]   name      A resource name.
+ * @param[out]  resource  Resource return, 0 if succesfully failed to find
+ *                        resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+static gboolean
+find_resource_by_name (const char* type, const char* name, resource_t *resource)
+{
+  gchar *quoted_name;
+  quoted_name = sql_quote (name);
+  // TODO should really check type
+  switch (sql_int64 (resource, 0, 0,
+                     "SELECT ROWID FROM %ss WHERE name = '%s'"
+                     " ORDER BY ROWID DESC;",
+                     type,
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
  * @brief Create a resource from an existing resource.
  *
  * @param[in]  type          Type of resource.
@@ -43524,6 +43564,35 @@ find_role (const char* uuid, role_t* role)
 }
 
 /**
+ * @brief Find a role given a name.
+ *
+ * @param[in]   name  A role name.
+ * @param[out]  role  Role return, 0 if succesfully failed to find role.
+ *
+ * @return FALSE on success (including if failed to find role), TRUE on error.
+ */
+static gboolean
+find_role_by_name (const char* name, role_t *role)
+{
+  return find_resource_by_name ("role", name, role);
+}
+
+/**
+ * @brief Gets UUID of role.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return Users.
+ */
+gchar *
+role_uuid (role_t role)
+{
+  return sql_string (0, 0,
+                     "SELECT uuid FROM roles WHERE ROWID = %llu;",
+                     role);
+}
+
+/**
  * @brief Gets users of role as a string.
  *
  * @param[in]  role  Role.
@@ -47183,13 +47252,15 @@ DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 /**
  * @brief Create the given user.
  *
- * @param[in]  database  Location of manage database.
- * @param[in]  name      Name of user.
+ * @param[in]  database   Location of manage database.
+ * @param[in]  name       Name of user.
+ * @param[in]  role_name  Role of user.  Admin if NULL.
  *
  * @return 0 success, -1 error.
  */
 int
-manage_first_user (const gchar *database, const gchar *name)
+manage_create_user (const gchar *database, const gchar *name,
+                    const gchar *role_name)
 {
   char *uuid;
   array_t *roles;
@@ -47203,15 +47274,33 @@ manage_first_user (const gchar *database, const gchar *name)
 
   init_manage_process (0, db);
 
-  uuid = openvas_uuid_make ();
   roles = make_array ();
-  array_add (roles, g_strdup (ROLE_UUID_ADMIN));
+  if (role_name)
+    {
+      role_t role;
+      if (find_role_by_name (role_name, &role))
+        {
+          array_free (roles);
+          cleanup_manage_process (TRUE);
+          printf ("Internal Error.\n");
+          return -1;
+        }
+      if (role == 0)
+        {
+          array_free (roles);
+          cleanup_manage_process (TRUE);
+          printf ("Failed to find role.\n");
+          return -1;
+        }
+      array_add (roles, role_uuid (role));
+    }
+  else
+    array_add (roles, g_strdup (ROLE_UUID_ADMIN));
+
+  uuid = openvas_uuid_make ();
 
   /* Setup a dummy user, so that create_user will work. */
   current_credentials.uuid = "";
-
-  sql ("DELETE FROM meta WHERE name = 'admin';");
-  sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
 
   ret = create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
                      NULL, NULL, NULL);
@@ -47369,28 +47458,7 @@ find_user_with_permission (const char* uuid, user_t* user,
 static gboolean
 find_user_by_name (const char* name, user_t *user)
 {
-  gchar *quoted_name;
-  quoted_name = sql_quote (name);
-  switch (sql_int64 (user, 0, 0,
-                     "SELECT ROWID FROM users WHERE name = '%s'"
-                     " ORDER BY ROWID DESC;",
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *user = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
+  return find_resource_by_name ("user", name, user);
 }
 
 /**

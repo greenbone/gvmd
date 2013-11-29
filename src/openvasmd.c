@@ -1090,7 +1090,7 @@ main (int argc, char** argv)
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
-  static gchar *first_user = NULL;
+  static gchar *create_user = NULL;
   static gchar *user = NULL;
   static gchar *new_password = NULL;
   static gchar *manager_address_string = NULL;
@@ -1099,6 +1099,7 @@ main (int argc, char** argv)
   static gchar *manager_port_string_2 = NULL;
   static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
+  static gchar *role = NULL;
   static gchar *disable = NULL;
   GError *error = NULL;
   GOptionContext *option_context;
@@ -1113,7 +1114,7 @@ main (int argc, char** argv)
         {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
          &disable_password_policy, "Do not restrict passwords to the policy.",
          NULL},
-        { "first-user", '\0', 0, G_OPTION_ARG_STRING, &first_user, "Create admin user <username> and exit.", "<username>" },
+        { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
@@ -1129,6 +1130,7 @@ main (int argc, char** argv)
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
+        { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user.", "<role>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
@@ -1225,12 +1227,12 @@ main (int argc, char** argv)
       g_free (password_policy);
     }
 
-  if (first_user)
+  if (create_user)
     {
       infof ("   Creating admin user.\n");
 
       /* Create the user and then exit. */
-      if (manage_first_user (database, first_user))
+      if (manage_create_user (database, create_user, role))
         return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }

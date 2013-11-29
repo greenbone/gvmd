@@ -1,5 +1,20 @@
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Rename option --first-user to --create-user.
+	Add --role, which allows to set the role with --first-user.
+
+	* src/manage_sql.c (find_resource_by_name): New function.  Body from
+	find_user_by_name.
+	(find_role_by_name, role_uuid): New functions.
+	(manage_first_user): Remove.  Now manage_create_user.
+	(manage_create_user): New function.  Was manage_create_user.  Add role
+	arg.  Remove storage of username in meta.
+	(find_user_by_name): Call find_resource_by_name.
+
+	* src/manage.h: Update headers accordingly.
+
+2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_prognostic_xml): Do the variable inits
 	in one place.  Count the hosts being looped over, instead of counting
 	all hosts for each report.  Similarly for apps, buffer unique CPE names
