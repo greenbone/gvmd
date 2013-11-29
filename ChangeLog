@@ -1,3 +1,8 @@
+2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_first_user): Return the value of create_user,
+	so that the exit code is EXIT_FAILURE when there is a problem.
+
 2013-11-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_task_user_iterator): Remove name clause.  Add

@@ -47186,6 +47186,7 @@ manage_first_user (const gchar *database, const gchar *name)
   char *uuid;
   array_t *roles;
   const gchar *db;
+  int ret;
 
   if (openvas_auth_init ())
     return -1;
@@ -47203,8 +47204,11 @@ manage_first_user (const gchar *database, const gchar *name)
 
   sql ("DELETE FROM meta WHERE name = 'admin';");
   sql ("INSERT INTO meta (name, value) VALUES ('admin', '%s');", uuid);
-  switch (create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
-                       NULL, NULL, NULL))
+
+  ret = create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
+                     NULL, NULL, NULL);
+
+  switch (ret)
     {
       case 0:
         printf ("User created with password '%s'.\n", uuid);
@@ -47224,7 +47228,7 @@ manage_first_user (const gchar *database, const gchar *name)
 
   cleanup_manage_process (TRUE);
 
-  return 0;
+  return ret;
 }
 
 /**
