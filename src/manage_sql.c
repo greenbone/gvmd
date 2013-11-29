@@ -47329,6 +47329,53 @@ manage_create_user (const gchar *database, const gchar *name,
 }
 
 /**
+ * @brief Delete the given user.
+ *
+ * @param[in]  database   Location of manage database.
+ * @param[in]  name       Name of user.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_delete_user (const gchar *database, const gchar *name)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  init_manage_process (0, db);
+
+  /* Setup a dummy user, so that delete_user will work. */
+  current_credentials.uuid = "";
+
+  switch (delete_user (NULL, name, 1))
+    {
+      case 0:
+        printf ("User deleted.\n");
+        break;
+      case 2:
+        printf ("Failed to find user.\n");
+        break;
+      case 4:
+        printf ("User has active tasks.\n");
+        break;
+      default:
+        printf ("Internal Error.\n");
+        break;
+    }
+
+  current_credentials.uuid = NULL;
+
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
+
+/**
  * @brief Set the password of a user.
  *
  * @param[in]  name      Name of user.
@@ -47724,7 +47771,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  name       Name of user.  Overridden by user_id.
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find user, 3 user has active tasks,
+ * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         99 permission denied, -1 error.
  */
 int

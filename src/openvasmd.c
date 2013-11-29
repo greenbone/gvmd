@@ -1091,6 +1091,7 @@ main (int argc, char** argv)
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static gchar *create_user = NULL;
+  static gchar *delete_user = NULL;
   static gchar *user = NULL;
   static gchar *new_password = NULL;
   static gchar *manager_address_string = NULL;
@@ -1115,6 +1116,7 @@ main (int argc, char** argv)
          &disable_password_policy, "Do not restrict passwords to the policy.",
          NULL},
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
+        { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
@@ -1233,6 +1235,16 @@ main (int argc, char** argv)
 
       /* Create the user and then exit. */
       if (manage_create_user (database, create_user, role))
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (delete_user)
+    {
+      infof ("   Deleting user.\n");
+
+      /* Delete the user and then exit. */
+      if (manage_delete_user (database, delete_user))
         return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }

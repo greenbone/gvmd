@@ -1,5 +1,14 @@
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Add option --delete-user.
+
+	* src/manage_sql.c (manage_delete_user): New function.
+	(delete_user): Correct value in doc.
+
+	* src/manage.h: Add header accordingly.
+
+2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Rename option --first-user to --create-user.
 	Add --role, which allows to set the role with --first-user.
 

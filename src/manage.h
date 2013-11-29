@@ -3168,6 +3168,9 @@ int
 manage_create_user (const gchar *, const gchar *, const gchar *);
 
 int
+manage_delete_user (const gchar *, const gchar *);
+
+int
 manage_set_password (const gchar *, const gchar *, const gchar *);
 
 gchar *
