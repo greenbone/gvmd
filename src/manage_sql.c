@@ -20670,16 +20670,12 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                              int result_hosts_only, int sort_order,
                              const char *sort_field)
 {
-  array_t *buffer;
+  array_t *buffer, *apps;
   buffer_host_t *buffer_host;
-  int index, skip, result_total = 0;
-  int total_host_count = 0, total_app_count = 0;
-  int filtered_result_count;
+  int index, skip, result_total, total_host_count, filtered_result_count;
   int holes, infos, logs, warnings;
   int f_holes, f_infos, f_logs, f_warnings;
   iterator_t hosts;
-
-  buffer = make_array ();
 
   if (host == NULL)
     {
@@ -20689,9 +20685,13 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                            host_levels, host_search_phrase, apply_overrides);
     }
 
+  buffer = make_array ();
+  apps = make_array ();
   holes = warnings = infos = logs = 0;
   filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
   skip = 0;
+  total_host_count = 0;
+  result_total = 0;
 
   /* Output the results, buffering the associated hosts. */
 
@@ -20714,6 +20714,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           if (host == NULL)
             cleanup_iterator (&hosts);
           free_buffer (buffer);
+          array_free (apps);
           return -1;
         }
 
@@ -20722,6 +20723,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
           int filtered, host_result_total;
           filtered = 0;
           host_result_total = 0;
+
+          total_host_count++;
 
           prognostic_report_result_total (report_host, &host_result_total);
           result_total += host_result_total;
@@ -20762,6 +20765,9 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
                   threat = cvss_threat (prognosis_iterator_cvss_double
                                          (&prognosis));
+
+                  array_add_new_string (apps,
+                                        prognosis_iterator_cpe (&prognosis));
 
                   if (skip < first_result)
                     {
@@ -20920,9 +20926,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                             &h_warnings, &h_false_positives, &h_severity, 0,
                             buffer_host->ip, 0);
 
-          total_host_count += report_host_count (report);
-          total_app_count += report_app_count (report);
-
           PRINT (out,
                  "<detail>"
                  "<name>report/result_count/high</name>"
@@ -20961,7 +20964,10 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
           if (print_report_host_details_xml
               (buffer_host->report_host, out))
-            return -1;
+            {
+              array_free (apps);
+              return -1;
+            }
 
           PRINT (out,
                  "<detail>"
@@ -21019,7 +21025,9 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
   PRINT (out,
          "<apps><count>%i</count></apps>",
-         total_app_count);
+         apps->len);
+
+  array_free (apps);
 
   return 0;
 }

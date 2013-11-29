@@ -1,5 +1,13 @@
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_prognostic_xml): Do the variable inits
+	in one place.  Count the hosts being looped over, instead of counting
+	all hosts for each report.  Similarly for apps, buffer unique CPE names
+	in the loop and count them at the end, instead of counting all CPEs on
+	the reports associated with the hosts.
+
+2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_first_user): Return the value of create_user,
 	so that the exit code is EXIT_FAILURE when there is a problem.
 
