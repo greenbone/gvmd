@@ -1,5 +1,11 @@
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (parse_keyword): Only test the number cases when
+	there are actually leading digits, otherwise terms like subject=y are
+	treated as dates.
+
+2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* INSTALL: Update option name.
 
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>

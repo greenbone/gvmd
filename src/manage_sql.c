@@ -1097,6 +1097,7 @@ static void
 parse_keyword (keyword_t* keyword)
 {
   gchar *string;
+  int digits;
 
   if (keyword->column == NULL && keyword->equal == 0)
     {
@@ -1146,8 +1147,15 @@ parse_keyword (keyword_t* keyword)
       return;
     }
   if (*string && *string == '-' && strlen (string) > 1) string++;
-  while (*string && isdigit (*string)) string++;
-  if (*string)
+  digits = 0;
+  while (*string && isdigit (*string))
+    {
+      digits = 1;
+      string++;
+    }
+  if (digits == 0)
+    keyword->type = KEYWORD_TYPE_STRING;
+  else if (*string)
     {
       struct tm date;
       gchar next;
