@@ -1,3 +1,11 @@
+2013-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS): Move the _owner
+	selection in the last field to replace the dummy owner selection in the
+	usual position.  This was preventing messing up the permissions in
+	GET_REPORT_FORMAT.
+	(REPORT_FORMAT_ITERATOR_TRASH_COLUMNS): Match to table case.
+
 2013-11-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (parse_keyword): Only test the number cases when

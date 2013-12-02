@@ -39179,10 +39179,11 @@ report_format_trust (report_format_t report_format)
   /* ANON doesn't have name column */                                         \
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified, '', extension, content_type, summary, "    \
-  " description, signature, trust, trust_time, flags & 1 AS active,"          \
+  " modification_time AS modified,"                                           \
   " (SELECT name FROM users WHERE users.ROWID = report_formats.owner)"        \
-  " AS _owner"
+  " AS _owner,"                                                               \
+  " extension, content_type, summary, description, signature, trust,"         \
+  " trust_time, flags & 1 AS active"
 
 /**
  * @brief Report Format iterator columns for trash case.
@@ -39191,8 +39192,11 @@ report_format_trust (report_format_t report_format)
   /* ANON doesn't have name column */                                         \
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified, '', extension, content_type, summary, "    \
-  " description, signature, trust, trust_time, flags"
+  " modification_time AS modified,"                                           \
+  " (SELECT name FROM users WHERE users.ROWID = report_formats.owner)"        \
+  " AS _owner,"                                                               \
+  " extension, content_type, summary, description, signature, trust,"         \
+  " trust_time, flags & 1 AS active"
 
 /**
  * @brief Count the number of Report Formats.
