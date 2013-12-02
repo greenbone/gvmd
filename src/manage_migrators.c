@@ -126,6 +126,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <glib/gstdio.h>
 #include <assert.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -6444,6 +6445,7 @@ migrate_79_to_80 ()
   int count, index;
   array_t *dirs;
   gchar *dir;
+  struct stat state;
 
   sql ("BEGIN EXCLUSIVE;");
 
@@ -6775,7 +6777,15 @@ migrate_79_to_80 ()
   /* Remove entire user-remote dir. */
 
   dir = g_build_filename (OPENVAS_STATE_DIR, "users-remote", NULL);
-  openvas_file_remove_recurse (dir);
+  if (g_lstat (dir, &state))
+    {
+      if (errno != ENOENT)
+        g_warning ("%s: g_lstat (%s) failed: %s\n",
+                   __FUNCTION__, dir, g_strerror (errno));
+    }
+  else
+    openvas_file_remove_recurse (dir);
+
   g_free (dir);
 
   /* Remove user dirs. */

@@ -1,3 +1,8 @@
+2013-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_79_to_80): Check if users-remote
+	directory exists before trying to remove it.
+
 2013-12-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Add new report format plugin for exporting TLS mapping results into a
