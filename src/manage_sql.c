@@ -39193,7 +39193,7 @@ report_format_trust (report_format_t report_format)
   "ROWID, uuid, name, '', iso_time (creation_time),"                          \
   " iso_time (modification_time), creation_time AS created,"                  \
   " modification_time AS modified,"                                           \
-  " (SELECT name FROM users WHERE users.ROWID = report_formats.owner)"        \
+  " (SELECT name FROM users WHERE users.ROWID = report_formats_trash.owner)"  \
   " AS _owner,"                                                               \
   " extension, content_type, summary, description, signature, trust,"         \
   " trust_time, flags & 1 AS active"

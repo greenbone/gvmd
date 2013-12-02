@@ -1,5 +1,10 @@
 2013-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_TRASH_COLUMNS): Correct table
+	name.
+
+2013-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS): Move the _owner
 	selection in the last field to replace the dummy owner selection in the
 	usual position.  This was preventing messing up the permissions in
