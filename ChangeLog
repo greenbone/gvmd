@@ -1,3 +1,8 @@
+2013-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (PERMISSION_ITERATOR_FILTER_COLUMNS): Add
+	subject_uuid.
+
 2013-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Return response of last command via

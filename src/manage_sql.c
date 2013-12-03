@@ -41361,7 +41361,7 @@ trash_permission_writable (permission_t permission)
  */
 #define PERMISSION_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "type", "resource_uuid", "subject_type", \
-   "_subject", "_resource", NULL }
+   "_subject", "_resource", "subject_uuid", NULL }
 
 /**
  * @brief Permission iterator columns.
