@@ -11153,6 +11153,14 @@ run_wizard_response
      {
        attribute status { status }
        & attribute status_text { text }
+       & run_wizard_response_response
+     }
+
+# Contains the response of the command run in the last step.
+run_wizard_response_response
+ = element response
+     {
+       ""
      }
 
 ## Response to start_task

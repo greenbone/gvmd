@@ -1,3 +1,18 @@
+2013-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (manage_run_wizard): Return response of last command via
+	new ret_response parameter.
+
+	* src/manage.h (manage_run_wizard): Add new parameter.
+
+	* src/omp.c (omp_xml_handle_end_element): Add response of last command
+	run by wizard to RUN_WIZARD response.
+
+	* src/schema_formats/XML/OMP.xml (run_wizard): Add response of last
+	command to response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-12-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_79_to_80): Check if users-remote

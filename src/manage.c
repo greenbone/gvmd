@@ -6422,6 +6422,7 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @param[in]  params            Wizard params.  Array of name_value_t.
  * @param[out] command_error     Address for error message from failed command
  *                               when return is 4, or NULL.
+ * @param[out] ret_response      Address for response string of last command.
  *
  * @return 0 success, 1 name error, 2 process forked to run task, -10 process
  *         forked to run task where task start failed, -2 to_scanner buffer
@@ -6433,7 +6434,8 @@ manage_run_wizard (const gchar *name,
                    int (*run_command) (void*, gchar*, gchar**),
                    void *run_command_data,
                    array_t *params,
-                   gchar **command_error)
+                   gchar **command_error,
+                   gchar **ret_response)
 {
   gchar *file, *file_name, *response, *wizard;
   gsize wizard_len;
@@ -6756,6 +6758,7 @@ manage_run_wizard (const gchar *name,
         }
       steps = next_entities (steps);
     }
+  *ret_response = g_strdup (response);
   free_entity (entity);
   g_free (response);
 

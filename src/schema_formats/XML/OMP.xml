@@ -15435,7 +15435,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>response</e>
       </pattern>
+      <ele>
+        <name>response</name>
+        <summary>Contains the response of the command run in the last step</summary>
+        <pattern></pattern>
+      </ele>
     </response>
     <example>
       <summary>Run the Quick Start wizard to scan localhost</summary>
@@ -15451,7 +15457,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </run_wizard>
       </request>
       <response>
-        <run_wizard_response status="202" status_text="OK, request submitted"/>
+        <run_wizard_response status="202" status_text="OK, request submitted">
+          <response>
+            <start_task_response status="202" status_text="OK, request submitted">
+              <report_id>a06d21f7-8e2f-4d7f-bceb-1df852d8b37d</report_id>
+            </start_task_response>
+          </response>
+        </run_wizard_response>
       </response>
     </example>
   </command>

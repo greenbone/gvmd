@@ -23790,12 +23790,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (run_wizard_data->name)
           {
             gchar *command_error;
+            gchar *response = NULL;
             switch (manage_run_wizard (run_wizard_data->name,
                                        (int (*) (void *, gchar *, gchar **))
                                          process_omp,
                                        omp_parser,
                                        run_wizard_data->params,
-                                       &command_error))
+                                       &command_error,
+                                       &response))
               {
                 case 3:
                   /* Parent after a start_task fork. */
@@ -23807,16 +23809,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            ("<run_wizard_response"
                             " status=\"" STATUS_OK_REQUESTED "\""
                             " status_text=\"" STATUS_OK_REQUESTED_TEXT "\">"
-                            "</run_wizard_response>");
+                            "%s%s%s"
+                            "</run_wizard_response>",
+                            response ? "<response>" : "",
+                            response ? response : "",
+                            response ? "</response>" : "");
                     if (send_to_client (msg,
                                         write_to_client,
                                         write_to_client_data))
                       {
                         g_free (msg);
+                        g_free (response);
                         error_send_to_client (error);
                         return;
                       }
                     g_free (msg);
+                    g_free (response);
                     log_event ("wizard", "Wizard", run_wizard_data->name,
                                "run");
                     break;

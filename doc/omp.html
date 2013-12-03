@@ -24245,6 +24245,11 @@ modify_user_sources
           @<b>status_text</b>
           (text)
           </li>
+<li>
+              &lt;<b>response</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Contains the response of the command run in the last step.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -24293,6 +24298,13 @@ run_wizard_params_param_value
      {
        attribute status { status }
        &amp; attribute status_text { text }
+       &amp; run_wizard_response_response
+     }
+
+run_wizard_response_response
+ = element response
+     {
+       ""
      }
 </pre></div>
 </div>
@@ -24309,7 +24321,14 @@ run_wizard_params_param_value
  &lt;/run_wizard&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard_response status="202"
-                      status_text="OK, request submitted"/&gt;
+                      status_text="OK, request submitted"&gt;
+   &lt;response&gt;
+     &lt;start_task_response status="202"
+                          status_text="OK, request submitted"&gt;
+       &lt;report_id&gt;a06d21f7-8e2f-4d7f-bceb-1df852d8b37d&lt;/report_id&gt;
+     &lt;/start_task_response&gt;
+   &lt;/response&gt;
+ &lt;/run_wizard_response&gt;
 </pre></div>
 </div>
 </div>
