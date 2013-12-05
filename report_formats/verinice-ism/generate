@@ -39,9 +39,13 @@ FILELOC=$TMP/files/${FILENAME}
 HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\.html/')
 HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\.html/')
 
+HTML_REQUESTED=`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Attach HTML report']/value"`
 
+if [ -n "$HTML_REQUESTED" ] && [ "$HTML_REQUESTED" -eq 1 ]
+then
+  xsltproc ./html.xsl $1 > "$HTML_FILELOC"
+fi
 
-xsltproc ./html.xsl $1 > "$HTML_FILELOC"
 xsltproc --stringparam htmlfilename "$HTML_FILE" \
          --stringparam filedate `stat -c %Z $XMLFILE` ./gsm_verinice_ism.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \

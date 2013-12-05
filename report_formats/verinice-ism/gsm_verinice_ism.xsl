@@ -546,6 +546,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <extId><xsl:value-of select="$filename"/></extId>
             <file>files/<xsl:value-of select="$filename"/></file>
         </file> -->
+        <xsl:choose>
+          <xsl:when test="report/report_format/param[name='Attach HTML report'] and report/report_format/param[name='Attach HTML report']/value = '1'">
         <file>
             <syncAttribute>
                 <name>attachment_file_name</name>
@@ -566,6 +568,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <extId><xsl:value-of select="$htmlfilename"/></extId>
             <file>files/<xsl:value-of select="$htmlfilename"/></file>
         </file>
+          </xsl:when>
+        </xsl:choose>
 
         </syncObject>
         <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0]/nvt[generate-id(@oid) = generate-id(key('scenarios', @oid)[1])]">

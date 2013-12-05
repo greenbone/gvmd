@@ -1,3 +1,18 @@
+2013-12-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Add parameter to disable or enable attaching of the HTML report to the
+	verinice ISM report.
+
+	* report_formats/verinice-ism/generate: Generate HTML report only when
+	requested.
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Only include HTML
+	report if it was requested.
+
+	* report_formats/verinice-ism/create_report_import: Add support for
+	parameters, include HTML report parameter. Add support for inline
+	signature. Bump version.
+
 2013-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Add read_only parameter and check
