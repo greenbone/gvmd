@@ -1,3 +1,16 @@
+2013-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (nvt_preference_iterator_real_name): Duplicate to the
+	end of the string, because there's always a trailing zero and the sscanf
+	expression may cut the preference name short if it contains special
+	characters.
+
+	* src/otp.c (message_value): New function.
+	(parse_scanner_certificate_public_key, parse_scanner_preference_value)
+	(parse_scanner_plugin_list_tags): Use messages_value to get value, so
+	that UTF-8 conversion is done.
+	(parse_scanner_plugin_dependency_dependency): Add note about conversion.
+
 2013-12-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Add parameter to disable or enable attaching of the HTML report to the

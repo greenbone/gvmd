@@ -721,11 +721,39 @@ sync_buffer ()
   return 0;
 }
 
-/** @todo Complete ISO to UTF-8 hack.
+/**
+ * @brief Get the current message string, handling encoding.
  *
- * In all of these "messages" parsing functions, convert to UTF before
- * passing into rest of Manager.
+ * @param  messages  A pointer into the OTP input buffer.
+ *
+ * @return Freshly allocated message string.
  */
+static gchar *
+messages_value (char** messages)
+{
+  gchar *value;
+#ifdef SCANNER_SENDS_UTF8
+  /* What to do when the scanner sends UTF-8. */
+  value = g_strdup (*messages);
+#else
+  /* ISO-8859-1 input to UTF-8 hack. */
+  {
+    gsize size_dummy;
+    gchar *compressed;
+    char* iso_field;
+
+    iso_field = *messages;
+    compressed = g_strcompress (iso_field);
+    blank_control_chars (compressed);
+    value = g_convert (compressed, strlen (compressed),
+                       "UTF-8", "ISO_8859-1",
+                       NULL, &size_dummy, NULL);
+    g_free (compressed);
+    if (value == NULL) abort ();
+  }
+#endif
+  return value;
+}
 
 /**
  * @brief Parse the final field of a certificate in a certificate list.
@@ -750,7 +778,7 @@ parse_scanner_certificate_public_key (char** messages)
       match[0] = '\0';
       if (current_certificates && current_certificate)
         {
-          value = g_strdup (*messages);
+          value = messages_value (messages);
           certificate_set_public_key (current_certificate, value);
           certificates_add (current_certificates, current_certificate);
           current_certificate = NULL;
@@ -941,7 +969,7 @@ parse_scanner_preference_value (char** messages)
                        from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
-      value = g_strdup (*messages);
+      value = messages_value (messages);
       if (current_scanner_preference)
         {
           if (scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE)
@@ -977,7 +1005,7 @@ parse_scanner_plugin_list_tags (char** messages)
                        from_scanner_end - from_scanner_start)))
     {
       match[0] = '\0';
-      value = g_strdup (*messages);
+      value = messages_value (messages);
       if (value != NULL)
         {
           char* pos = value;
@@ -1058,6 +1086,7 @@ parse_scanner_plugin_dependency_dependency (/*@dependent@*/ char** messages)
       /* Compare newline position to <|> position. */
       if ((separator == NULL) || (match < separator))
         {
+          /* Already converted to UTF-8 in process_otp_scanner_input. */
           finish_current_scanner_plugin_dependency ();
           from_scanner_start += match + 1 - *messages;
           *messages = match + 1;

@@ -31229,7 +31229,7 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
       if (count == 0 && value_start > 0 && value_end > 0)
         {
           ret += value_start;
-          return g_strndup (ret, value_end - value_start);
+          return g_strdup (ret);
         }
       return g_strdup (ret);
     }
