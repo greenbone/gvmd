@@ -6420,27 +6420,30 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @param[in]  run_command       Function to run OMP command.
  * @param[in]  run_command_data  Argument for run_command.
  * @param[in]  params            Wizard params.  Array of name_value_t.
+ * @param[in]  read_only         Whether to only allow wizards marked as
+ *                               read only.
  * @param[out] command_error     Address for error message from failed command
  *                               when return is 4, or NULL.
  * @param[out] ret_response      Address for response string of last command.
  *
  * @return 0 success, 1 name error, 2 process forked to run task, -10 process
  *         forked to run task where task start failed, -2 to_scanner buffer
- *         full, 4 command in wizard failed, -1 internal error, 99 permission
- *         denied.
+ *         full, 4 command in wizard failed, 5 wizard not read only,
+ *         -1 internal error, 99 permission denied.
  */
 int
 manage_run_wizard (const gchar *name,
                    int (*run_command) (void*, gchar*, gchar**),
                    void *run_command_data,
                    array_t *params,
+                   int read_only,
                    gchar **command_error,
                    gchar **ret_response)
 {
   gchar *file, *file_name, *response, *wizard;
   gsize wizard_len;
   GError *get_error;
-  entity_t entity, step;
+  entity_t entity, read_only_entity, step;
   entities_t steps;
   int ret, forked;
   const gchar *point;
@@ -6493,6 +6496,16 @@ manage_run_wizard (const gchar *name,
       return -1;
     }
   g_free (wizard);
+
+  /* If needed, check if wizard is marked as read only.
+   * This does not check the actual commands.
+   */
+  read_only_entity = entity_child (entity, "read_only");
+  if (read_only_entity == NULL)
+    {
+      free_entity (entity);
+      return 5;
+    }
 
   /* Run each step of the wizard. */
 

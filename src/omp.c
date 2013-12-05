@@ -3854,6 +3854,7 @@ typedef struct
   char *name;          ///< Name of the wizard.
   name_value_t *param; ///< Current param.
   array_t *params;     ///< Parameters.
+  char *read_only;     ///< Read only flag.
 } run_wizard_data_t;
 
 /**
@@ -3865,6 +3866,7 @@ static void
 run_wizard_data_reset (run_wizard_data_t *data)
 {
   free (data->name);
+  free (data->read_only);
   if (data->params)
     {
       guint index = data->params->len;
@@ -7226,6 +7228,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "name",
                               &run_wizard_data->name);
+            append_attribute (attribute_names, attribute_values, "read_only",
+                              &run_wizard_data->read_only);
             set_client_state (CLIENT_RUN_WIZARD);
           }
         else if (strcasecmp ("START_TASK", element_name) == 0)
@@ -23791,11 +23795,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           {
             gchar *command_error;
             gchar *response = NULL;
+            int read_only;
+
+            read_only = (run_wizard_data->read_only
+                         && strcmp (run_wizard_data->read_only, "")
+                         && strcmp (run_wizard_data->read_only, "0"));
+
             switch (manage_run_wizard (run_wizard_data->name,
                                        (int (*) (void *, gchar *, gchar **))
                                          process_omp,
                                        omp_parser,
                                        run_wizard_data->params,
+                                       read_only,
                                        &command_error,
                                        &response))
               {
@@ -23873,6 +23884,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     g_free (msg);
                     log_event_fail ("wizard", "Wizard", run_wizard_data->name,
                                     "run");
+                    break;
+                  }
+
+                case 5:
+                  {
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("run_wizard",
+                                        "Wizard is not marked as read only"));
                     break;
                   }
 

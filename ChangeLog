@@ -1,3 +1,16 @@
+2013-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (manage_run_wizard): Add read_only parameter and check
+	wizard XML for a read_only element if it is true.
+
+	* src/manage.h (manage_run_wizard): Add new parameter.
+
+	* src/omp.c (run_wizard_data_t, run_wizard_data_reset): Add read_only
+	component.
+	(omp_xml_handle_start_element): Add read_only attribute to RUN_WIZARD.
+	(omp_xml_handle_end_element): Add parameter and error message for
+	read_only check in CLIENT_RUN_WIZARD case.
+
 2013-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (PERMISSION_ITERATOR_FILTER_COLUMNS): Add
