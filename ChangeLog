@@ -1,3 +1,8 @@
+2013-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (manage_run_wizard): Add missing check for read_only
+	parameter.
+
 2013-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (nvt_preference_iterator_real_name): Duplicate to the

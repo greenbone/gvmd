@@ -6500,11 +6500,14 @@ manage_run_wizard (const gchar *name,
   /* If needed, check if wizard is marked as read only.
    * This does not check the actual commands.
    */
-  read_only_entity = entity_child (entity, "read_only");
-  if (read_only_entity == NULL)
+  if (read_only)
     {
-      free_entity (entity);
-      return 5;
+      read_only_entity = entity_child (entity, "read_only");
+      if (read_only_entity == NULL)
+        {
+          free_entity (entity);
+          return 5;
+        }
     }
 
   /* Run each step of the wizard. */
