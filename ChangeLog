@@ -1,4 +1,8 @@
-2013-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c: File forgotten in last commit.
+
+2013-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18451.
 
@@ -13,7 +17,7 @@
 	that UTF-8 conversion is done.
 	(parse_scanner_plugin_dependency_dependency): Add note about conversion.
 
-2013-12-08  Matthew Mundell <matthew.mundell@greenbone.net>
+2013-12-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r15908.
 
