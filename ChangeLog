@@ -1,3 +1,13 @@
+2013-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r18464.
+
+	* src/manage.c (slave_setup): Request passwords from
+	buffer_config_preference_xml.
+
+	* src/omp.c (buffer_config_preference_xml): Add hide_passwords param.
+	Update callers.
+
 2013-12-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18451.
