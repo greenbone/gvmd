@@ -1,3 +1,8 @@
+2013-12-09  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Improve support
+	for "Info" assets.
+
 2013-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Add missing check for read_only

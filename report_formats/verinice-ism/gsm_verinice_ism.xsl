@@ -215,6 +215,203 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </syncAttribute>
   </xsl:template>
 
+  <!--
+       Info elements. Those are used in verinice to add an escalation
+       method for automatically imported reports. Contents are static.
+  -->
+  <xsl:template name="info-asset">
+    <xsl:param name="task_id"/>
+    <children>
+      <syncAttribute>
+        <name>gsm_traceroute</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_cpuinfo</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_open_ports</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>asset_description</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>asset_value_availability</name>
+        <value>0</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_asset_description</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_scan_ended</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>asset_type</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_memory</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ip_address</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_mac_address</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_scan_started</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>asset_name</name>
+        <value>IS Coordinator Info</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_hostname</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>asset_abbr</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_asset_tag</name>
+        <value>gsm_system_info</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_os_cpe</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_installed_apps</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_os</name>
+        <value></value>
+      </syncAttribute>
+      <extId><xsl:value-of select="$task_id"/>-InfoAsset</extId>
+      <extObjectType>gsm_ism_asset</extObjectType>
+    </children>
+  </xsl:template>
+  <xsl:template name="info-vulnerability">
+    <xsl:param name="task_id"/>
+    <children>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_name</name>
+        <value>IS Coordinator Info</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_level</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_cvss</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_cve</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_description</name>
+        <value></value>
+      </syncAttribute>
+      <extId><xsl:value-of select="$task_id"/>-InfoVulnerability</extId>
+      <extObjectType>gsm_ism_vulnerability</extObjectType>
+    </children>
+  </xsl:template>
+  <xsl:template name="info-control">
+    <xsl:param name="task_id"/>
+    <children>
+      <syncAttribute>
+        <name>control_implemented</name>
+        <value>control_implemented_no</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_control_description</name>
+        <value>Dear IS Coordinator,
+A new scan has been carried out and the results are now available in Verinice.
+If responsible persons are linked to the asset groups, the tasks are already created.
+
+Please check the results in a timely manner.
+
+Best regards
+CIS</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_control_tag</name>
+        <value>gsm_system_info</value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_control_cpe</name>
+        <value></value>
+      </syncAttribute>
+      <syncAttribute>
+        <name>control_name</name>
+        <value>IS Coordinator Info</value>
+      </syncAttribute>
+      <extId><xsl:value-of select="$task_id"/>-InfoControl</extId>
+      <extObjectType>gsm_ism_control</extObjectType>
+    </children>
+  </xsl:template>
+
+  <xsl:template name="info-scenario">
+    <xsl:param name="task_id"/>
+      <children>
+          <syncAttribute>
+              <name>gsm_ism_scenario_cve</name>
+              <value></value>
+          </syncAttribute>
+          <syncAttribute>
+              <name>incident_scenario_name</name>
+              <value>IS Coordinator Info</value>
+          </syncAttribute>
+          <syncAttribute>
+              <name>gsm_ism_scenario_cvss</name>
+              <value></value>
+          </syncAttribute>
+          <syncAttribute>
+              <name>gsm_ism_scenario_level</name>
+              <value></value>
+          </syncAttribute>
+          <syncAttribute>
+              <name>gsm_ism_scenario_description</name>
+              <value></value>
+          </syncAttribute>
+          <extId><xsl:value-of select="$task_id"/>-InfoScenario</extId>
+          <extObjectType>gsm_ism_scenario</extObjectType>
+      </children>
+  </xsl:template>
+  <xsl:template name="info-links">
+    <xsl:param name="task_id"/>
+        <syncLink>
+            <dependant><xsl:value-of select="$task_id"/>-InfoScenario</dependant>
+            <dependency><xsl:value-of select="$task_id"/>-InfoAsset</dependency>
+            <relationId>rel_incscen_asset</relationId>
+        </syncLink>
+        <syncLink>
+            <dependant><xsl:value-of select="$task_id"/>-InfoScenario</dependant>
+            <dependency><xsl:value-of select="$task_id"/>-InfoVulnerability</dependency>
+            <relationId>rel_incscen_vulnerability</relationId>
+        </syncLink>
+        <syncLink>
+            <dependant><xsl:value-of select="$task_id"/>-InfoControl</dependant>
+            <dependency><xsl:value-of select="$task_id"/>-InfoScenario</dependency>
+            <relationId>rel_control_incscen</relationId>
+        </syncLink>
+  </xsl:template>
+  <!-- End Info elements -->
+
+
   <xsl:template match="report/host_start">
     <xsl:param name="task_id"/>
     <xsl:variable name="addr">
@@ -417,6 +614,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:value-of select="@oid"/>
     </xsl:variable>
 
+    <xsl:call-template name="info-links">
+      <xsl:with-param name="task_id">
+        <xsl:value-of select="$task_id"/>
+      </xsl:with-param>
+    </xsl:call-template>
+
     <xsl:for-each select="/report/results/result[nvt/@oid = $cur_oid]">
       <syncLink>
         <dependant><xsl:value-of select="$task_id"/>-<xsl:value-of select="$cur_oid"/>-scenario</dependant>
@@ -479,6 +682,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <xsl:value-of select="$task_id"/>
               </xsl:with-param>
             </xsl:apply-templates>
+            <xsl:call-template name="info-asset">
+              <xsl:with-param name="task_id">
+                <xsl:value-of select="$task_id"/>
+              </xsl:with-param>
+            </xsl:call-template>
           </children>
           <children>
             <syncAttribute>
@@ -488,14 +696,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <extId><xsl:value-of select="$task_id"/>-ism-vulnerabilities</extId>
             <extObjectType>gsm_ism_vulnerabilities</extObjectType>
             <xsl:for-each select="/report/results/result[count(notes/note) &gt; 0]/nvt[generate-id(@oid) = generate-id(key('vulnerabilities', @oid)[1])]/..">
-                <xsl:call-template name="vulnerability_details">
-                    <xsl:with-param name="task_id">
-                        <xsl:value-of select="$task_id"/>
-                    </xsl:with-param>
-                </xsl:call-template>
+              <xsl:call-template name="vulnerability_details">
+                <xsl:with-param name="task_id">
+                  <xsl:value-of select="$task_id"/>
+                </xsl:with-param>
+              </xsl:call-template>
             </xsl:for-each>
-        </children>
-        <children>
+            <xsl:call-template name="info-vulnerability">
+              <xsl:with-param name="task_id">
+                <xsl:value-of select="$task_id"/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </children>
+          <children>
             <syncAttribute>
               <name>gsm_ism_controls_group_name</name>
               <value>Controls GSM-Scan</value>
@@ -503,13 +716,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <extId><xsl:value-of select="$task_id"/>-ism-controls</extId>
             <extObjectType>gsm_ism_controls</extObjectType>
             <xsl:for-each select="/report/results/result/notes/note[generate-id(@id) = generate-id(key('controls', @id)[1])]">
-                <xsl:call-template name="control_details">
-                    <xsl:with-param name="task_id">
-                        <xsl:value-of select="$task_id"/>
-                    </xsl:with-param>
-                </xsl:call-template>
+              <xsl:call-template name="control_details">
+                <xsl:with-param name="task_id">
+                  <xsl:value-of select="$task_id"/>
+                </xsl:with-param>
+              </xsl:call-template>
             </xsl:for-each>
-        </children>
+            <xsl:call-template name="info-control">
+              <xsl:with-param name="task_id">
+                <xsl:value-of select="$task_id"/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </children>
           <children>
             <syncAttribute>
               <name>gsm_ism_scenarios_group_name</name>
@@ -525,7 +743,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </xsl:with-param>
               </xsl:call-template>
             </xsl:for-each>
-        </children>
+            <xsl:call-template name="info-scenario">
+              <xsl:with-param name="task_id">
+                <xsl:value-of select="$task_id"/>
+              </xsl:with-param>
+            </xsl:call-template>
+          </children>
         <!--        <file>
             <syncAttribute>
                 <name>attachment_file_name</name>
@@ -613,6 +836,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ns2:mapObjectType intId="vulnerability" extId="gsm_ism_vulnerability">
         <ns2:mapAttributeType intId="vulnerability_name" extId="gsm_ism_vulnerability_name"/>
         <ns2:mapAttributeType intId="gsm_ism_vulnerability_description" extId="gsm_ism_vulnerability_description"/>
+        <ns2:mapAttributeType intId="gsm_ism_vulnerability_cvss" extId="gsm_ism_vulnerability_cvss"/>
         <ns2:mapAttributeType intId="gsm_ism_vulnerability_cve" extId="gsm_ism_vulnerability_cve"/>
         <ns2:mapAttributeType intId="gsm_ism_vulnerability_level" extId="gsm_ism_vulnerability_level"/>
       </ns2:mapObjectType>
