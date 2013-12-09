@@ -1,3 +1,11 @@
+2013-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Request passwords from
+	buffer_config_preference_xml.
+
+	* src/omp.c (buffer_config_preference_xml): Add hide_passwords param.
+	Update callers.
+
 2013-12-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Improve support

@@ -1920,7 +1920,7 @@ slave_authenticate (gnutls_session_t *session, slave_t slave)
 }
 
 /* Defined in omp.c. */
-void buffer_config_preference_xml (GString *, iterator_t *, config_t);
+void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
 
 
 /**
@@ -2241,7 +2241,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         while (next (&prefs))
           {
             GString *buffer = g_string_new ("");
-            buffer_config_preference_xml (buffer, &prefs, config);
+            buffer_config_preference_xml (buffer, &prefs, config, 0);
             if (openvas_server_send (session, buffer->str))
               {
                 cleanup_iterator (&prefs);

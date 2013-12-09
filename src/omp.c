@@ -9996,10 +9996,11 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
  * @param[in]  buffer  Buffer.
  * @param[in]  prefs   NVT preference iterator.
  * @param[in]  config  Config.
+ * @param[in]  hide_passwords  Whether to hide passwords.
  */
 void
 buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
-                              config_t config)
+                              config_t config, int hide_passwords)
 {
   char *real_name, *type, *value, *nvt;
   const char *default_value;
@@ -10042,6 +10043,7 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
     }
   else if (value
            && type
+           && hide_passwords
            && (strcmp (type, "password") == 0))
     buffer_xml_append_printf (buffer, "<value></value>");
   else
@@ -11884,7 +11886,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   while (next (&prefs))
                     {
                       GString *buffer = g_string_new ("");
-                      buffer_config_preference_xml (buffer, &prefs, config);
+                      buffer_config_preference_xml (buffer, &prefs, config, 1);
                       SEND_TO_CLIENT_OR_FAIL (buffer->str);
                       g_string_free (buffer, TRUE);
                     }
@@ -13139,7 +13141,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             while (next (&prefs))
                               {
                                 GString *buffer = g_string_new ("");
-                                buffer_config_preference_xml (buffer, &prefs, config);
+                                buffer_config_preference_xml (buffer, &prefs,
+                                                              config, 1);
                                 SEND_TO_CLIENT_OR_FAIL (buffer->str);
                                 g_string_free (buffer, TRUE);
                               }
@@ -13660,7 +13663,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             == 0))
                       {
                         GString *buffer = g_string_new ("");
-                        buffer_config_preference_xml (buffer, &prefs, config);
+                        buffer_config_preference_xml (buffer, &prefs, config, 1);
                         SEND_TO_CLIENT_OR_FAIL (buffer->str);
                         g_string_free (buffer, TRUE);
                         break;
@@ -13670,7 +13673,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 while (next (&prefs))
                   {
                     GString *buffer = g_string_new ("");
-                    buffer_config_preference_xml (buffer, &prefs, config);
+                    buffer_config_preference_xml (buffer, &prefs, config, 1);
                     SEND_TO_CLIENT_OR_FAIL (buffer->str);
                     g_string_free (buffer, TRUE);
                   }
