@@ -1,6 +1,22 @@
 2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add new predefined report format CSV Summary.
+	Add new predefined report format CSV Results.  Based on the Sourcefire
+	report format.
+
+	* src/manage_sql.c (init_manage): Setup CSV Results.
+	(report_format_predefined): Add CSV Results.
+
+	* src/report_formats/CSV_Results: New dir.
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl,
+	src/report_formats/CSV_Results/generate: New files.
+
+	* CMakeLists.txt: Add CSV Results report format.
+
+2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new predefined report format CSV Summary.  Report format written by
+	Henri Doreau.
 
 	* src/manage_sql.c (init_manage): Setup CSV Summary.
 	(report_format_predefined): Add CSV Summary.

@@ -281,6 +281,11 @@ install (FILES src/report_formats/CPE/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/5ceff8ba-1f62-11e1-ab9f-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES src/report_formats/CSV_Results/generate
+               src/report_formats/CSV_Results/CSV_Results.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c1645568-627a-11e3-a660-406186ea4fc5
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES src/report_formats/CSV_Summary/generate
                src/report_formats/CSV_Summary/CSV_Summary.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/9087b18c-626c-11e3-8892-406186ea4fc5
