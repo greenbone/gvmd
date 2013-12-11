@@ -25,7 +25,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:func="http://exslt.org/functions"
+                xmlns:openvas="http://openvas.org"
+                xmlns:str="http://exslt.org/strings"
+                extension-element-prefixes="func str">
 <xsl:output method="text"
             encoding="string"/>
 
@@ -123,11 +128,69 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </xsl:template>
 
+<func:function name="openvas:get-nvt-tag">
+  <xsl:param name="tags"/>
+  <xsl:param name="name"/>
+  <xsl:variable name="after">
+    <xsl:value-of select="substring-after (nvt/tags, concat ($name, '='))"/>
+  </xsl:variable>
+  <xsl:choose>
+      <xsl:when test="contains ($after, '|')">
+        <func:result select="substring-before ($after, '|')"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="$after"/>
+      </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
+<xsl:param name="quote">"</xsl:param>
+<xsl:param name="two-quotes">""</xsl:param>
+
 <!-- MATCH RESULT -->
 <xsl:template match="result">
-<xsl:value-of select="host"/>,<xsl:value-of select="nvt/@oid"/>,<xsl:call-template name="portport" select="port"/>,<xsl:call-template name="portproto" select="port"/>,"<xsl:call-template name="nvt_name"/>","<xsl:value-of select="translate(translate(description, '&#10;&quot;', ' '), &quot;&apos;&quot;, '')"/>","<xsl:call-template name="cve"/>"
+  <xsl:variable name="ip" select="host"/>
+  <xsl:variable name="summary-tag" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+  <xsl:variable name="summary">
+    <xsl:choose>
+      <xsl:when test="string-length ($summary-tag) &gt; 0">
+        <xsl:value-of select="$summary-tag"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="description"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:value-of select="$ip"/>
+  <xsl:text>,</xsl:text>
+  <xsl:value-of select="../../host[ip = $ip]/detail[name = 'hostname']/value"/>
+  <xsl:text>,</xsl:text>
+  <xsl:call-template name="portport" select="port"/>
+  <xsl:text>,</xsl:text>
+  <xsl:call-template name="portproto" select="port"/>
+  <xsl:text>,</xsl:text>
+  <xsl:value-of select="nvt/cvss_base"/>
+  <xsl:text>,</xsl:text>
+  <xsl:value-of select="threat"/>
+  <xsl:text>,</xsl:text>
+  <xsl:value-of select="@id"/>
+  <xsl:text>,"</xsl:text>
+  <xsl:value-of select="str:replace ($summary, $quote, $two-quotes)"/>
+  <xsl:text>",</xsl:text>
+  <xsl:value-of select="nvt/@oid"/>
+  <xsl:text>,"</xsl:text>
+  <xsl:call-template name="nvt_name"/>
+  <xsl:text>","</xsl:text>
+  <xsl:value-of select="nvt/cve"/>
+  <xsl:text>",</xsl:text>
+  <xsl:value-of select="../../task/@id"/>
+  <xsl:text>,"</xsl:text>
+  <xsl:value-of select="../../task/name"/>
+  <xsl:text>",</xsl:text>
+  <xsl:value-of select="../../host[ip = $ip]/start"/>
+  <xsl:text>
+</xsl:text>
 </xsl:template>
-<!-- Note to the above: Single and double quotes are removed from the description. -->
 
 <!-- MATCH HOST_START -->
 <xsl:template match="host_start">
@@ -175,10 +238,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 </xsl:template>
 
 <!-- MATCH REPORT -->
-<!-- The following lines are intentionally not indented. -->
 <xsl:template match="/report">
-<xsl:apply-templates select="host_start"/>
-<xsl:apply-templates select="results"/>
+  <xsl:text>Host IP, Host Name, Port, Port Protocol, CVSS, Severity, Result ID, Summary, OID, NVT Name, CVEs, Task ID, Task Name, Timestamp
+</xsl:text>
+  <xsl:apply-templates select="results"/>
 </xsl:template>
 
 </xsl:stylesheet>

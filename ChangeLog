@@ -1,5 +1,14 @@
 2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/CSV_Results/CSV_Results.xsl
+	(openvas:get-nvt-tag): New template.
+	(quote, two-quotes): New params.
+	(results): Add more fields.  Indent normally.  Replace " with "" in
+	summary.
+	(/report): Add heading.  Indent normally.
+
+2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new predefined report format CSV Results.  Based on the Sourcefire
 	report format.
 
