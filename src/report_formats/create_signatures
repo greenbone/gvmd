@@ -36,7 +36,7 @@ ln -s ../LaTeX/latex.xsl PDF/latex.xsl || exit 1
 echo .
 echo Creating signatures from $DB:
 for uuid in `sqlite3 -noheader -init "" $DB 'SELECT uuid FROM report_formats' 2>/dev/null`; do
-  name=`sqlite3 -noheader -init "" $DB "SELECT name FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
+  name=`sqlite3 -noheader -init "" $DB "SELECT replace (name, ' ', '_') FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
   id=`sqlite3 -noheader -init "" $DB "SELECT ROWID FROM report_formats WHERE uuid = '$uuid'" 2>/dev/null`
   if [ -d "$name" ]; then
     echo "  Format $name with UUID $uuid and ROWID $id"

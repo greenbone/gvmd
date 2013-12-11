@@ -1,3 +1,20 @@
+2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new predefined report format CSV Summary.
+
+	* src/manage_sql.c (init_manage): Setup CSV Summary.
+	(report_format_predefined): Add CSV Summary.
+
+	* src/report_formats/create_signatures: Replace spaces with underscores in
+	name.
+
+	* src/report_formats/CSV_Summary: New dir.
+
+	* src/report_formats/CSV_Summary/CSV_Summary.xsl,
+	src/report_formats/CSV_Summary/generate: New files.
+
+	* CMakeLists.txt: Add CSV Summary report format.
+
 2013-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Request passwords from
