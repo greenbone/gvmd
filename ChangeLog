@@ -1,3 +1,11 @@
+2013-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl
+	(openvas:new-style-nvt): New function.  From GSA.
+	(result): Move Result ID to the end.  Add Detection Result in its place.
+	Do quoting in Task Name.
+	(report): Move Result ID to the end.  Add Detection Result in its place.
+
 2013-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/CSV_Results/CSV_Results.xsl

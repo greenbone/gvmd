@@ -144,6 +144,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </func:function>
 
+<func:function name="openvas:new-style-nvt">
+  <xsl:param name="nvt"/>
+  <xsl:choose>
+    <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
+      <func:result select="1"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="0"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
 <xsl:param name="quote">"</xsl:param>
 <xsl:param name="two-quotes">""</xsl:param>
 
@@ -161,6 +178,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
+
   <xsl:value-of select="$ip"/>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="../../host[ip = $ip]/detail[name = 'hostname']/value"/>
@@ -172,9 +190,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:value-of select="nvt/cvss_base"/>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="threat"/>
-  <xsl:text>,</xsl:text>
-  <xsl:value-of select="@id"/>
   <xsl:text>,"</xsl:text>
+  <xsl:if test="openvas:new-style-nvt (nvt)">
+    <xsl:choose>
+      <xsl:when test="string-length (description) &lt; 2">
+        <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="str:replace (description, $quote, $two-quotes)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:if>
+  <xsl:text>","</xsl:text>
   <xsl:value-of select="str:replace ($summary, $quote, $two-quotes)"/>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="nvt/@oid"/>
@@ -185,9 +212,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>",</xsl:text>
   <xsl:value-of select="../../task/@id"/>
   <xsl:text>,"</xsl:text>
-  <xsl:value-of select="../../task/name"/>
+  <xsl:value-of select="str:replace (../../task/name, $quote, $two-quotes)"/>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="../../host[ip = $ip]/start"/>
+  <xsl:text>,</xsl:text>
+  <xsl:value-of select="@id"/>
   <xsl:text>
 </xsl:text>
 </xsl:template>
@@ -239,7 +268,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- MATCH REPORT -->
 <xsl:template match="/report">
-  <xsl:text>Host IP, Host Name, Port, Port Protocol, CVSS, Severity, Result ID, Summary, OID, NVT Name, CVEs, Task ID, Task Name, Timestamp
+  <xsl:text>Host IP, Host Name, Port, Port Protocol, CVSS, Severity, Detection Result, Summary, OID, NVT Name, CVEs, Task ID, Task Name, Timestamp, Result ID
 </xsl:text>
   <xsl:apply-templates select="results"/>
 </xsl:template>
