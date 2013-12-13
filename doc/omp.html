@@ -24233,6 +24233,11 @@ modify_user_sources
 </ul>
 </li></ul>
 </li>
+<li>
+          @<b>read_only</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to only run wizards marked as read only.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -24260,6 +24265,7 @@ modify_user_sources
      {
        run_wizard_name
        &amp; run_wizard_params
+       &amp; attribute read_only { boolean }?
      }
 
 run_wizard_name

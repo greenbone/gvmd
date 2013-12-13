@@ -1,3 +1,10 @@
+2013-12-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (run_wizard): Add read_only attribute
+	to command.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2013-12-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/CSV_Results/CSV_Results.xsl

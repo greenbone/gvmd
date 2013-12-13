@@ -4964,6 +4964,8 @@ run_wizard
      {
        run_wizard_name
        & run_wizard_params
+       & # Whether to only run wizards marked as read only.
+       attribute read_only { boolean }?
      }
 
 # The name of the wizard.

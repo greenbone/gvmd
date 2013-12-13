@@ -15395,6 +15395,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <e>params</e>
+      <attrib>
+        <name>read_only</name>
+        <type>boolean</type>
+        <summary>Whether to only run wizards marked as read only</summary>
+        <required>0</required>
+      </attrib>
     </pattern>
     <ele>
       <name>name</name>
