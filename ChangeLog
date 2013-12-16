@@ -1,5 +1,14 @@
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/CSV_Hosts/CSV_Summary.xsl: Remove.  Renamed.
+
+	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl: New file.
+	Was CSV_Summary.xsl.
+
+	* src/report_formats/CSV_Hosts/generate: Update file name.
+
+2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Rename CSV_Summary to CSV_Hosts.
 
 	* src/report_formats/CSV_Summary,
