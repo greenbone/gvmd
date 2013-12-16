@@ -10800,8 +10800,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
       sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
            " extension, content_type, signature, trust, trust_time, flags,"
            " creation_time, modification_time)"
-           " VALUES ('9087b18c-626c-11e3-8892-406186ea4fc5', NULL, 'CSV Summary',"
-           " 'Simple CSV Summary.',"
+           " VALUES ('9087b18c-626c-11e3-8892-406186ea4fc5', NULL, 'CSV Hosts',"
+           " 'CSV host summary.',"
            " 'Base host information and result counts',"
            " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
            TRUST_YES,

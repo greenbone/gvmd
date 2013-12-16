@@ -1,5 +1,9 @@
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Rename CSV Summary to CSV Hosts.
+
+2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Summary: Actually remove dir.
 
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
