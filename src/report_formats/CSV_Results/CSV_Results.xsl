@@ -191,6 +191,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>,</xsl:text>
   <xsl:value-of select="threat"/>
   <xsl:text>,"</xsl:text>
+  <xsl:call-template name="nvt_name"/>
+  <xsl:text>","</xsl:text>
+  <xsl:value-of select="str:replace ($summary, $quote, $two-quotes)"/>
+  <xsl:text>","</xsl:text>
   <xsl:if test="openvas:new-style-nvt (nvt)">
     <xsl:choose>
       <xsl:when test="string-length (description) &lt; 2">
@@ -201,13 +205,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:otherwise>
     </xsl:choose>
   </xsl:if>
-  <xsl:text>","</xsl:text>
-  <xsl:value-of select="str:replace ($summary, $quote, $two-quotes)"/>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="nvt/@oid"/>
   <xsl:text>,"</xsl:text>
-  <xsl:call-template name="nvt_name"/>
-  <xsl:text>","</xsl:text>
   <xsl:value-of select="nvt/cve"/>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="../../task/@id"/>
@@ -268,7 +268,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- MATCH REPORT -->
 <xsl:template match="/report">
-  <xsl:text>Host IP, Host Name, Port, Port Protocol, CVSS, Severity, Detection Result, Summary, OID, NVT Name, CVEs, Task ID, Task Name, Timestamp, Result ID
+  <xsl:text>IP, Hostname, Port, Port Protocol, CVSS, Severity, NVT Name, Summary, Specific Result, OID, CVEs, Task ID, Task Name, Timestamp, Result ID
 </xsl:text>
   <xsl:apply-templates select="results"/>
 </xsl:template>
