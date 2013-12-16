@@ -1,5 +1,9 @@
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/CSV_Summary: Actually remove dir.
+
+2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Hosts/CSV_Summary.xsl: Remove.  Renamed.
 
 	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl: New file.
