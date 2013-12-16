@@ -1,5 +1,9 @@
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/CSV_Results/CSV_Summary.xsl (result): Move NVT Name
+
+2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Move NVT Name
 	and Summary forward.
 	(report): Rename a few columns.

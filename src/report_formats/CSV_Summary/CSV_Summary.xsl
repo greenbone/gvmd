@@ -33,19 +33,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
   <xsl:template match="report">
-    <xsl:text>Hostname,IP,OS,Last Scan,Severity,High,Medium,Low,Log,False Positive,Total
+    <xsl:text>IP,Hostname,OS,Scan Start,CVSS,Severity,High,Medium,Low,Log,False Positive,Total
 </xsl:text>
     <xsl:for-each select="host">
       <xsl:variable name="current_host" select="ip/text()"/>
 
-      <xsl:value-of select="detail[name/text() = 'hostname']/value/text()"/>
-      <xsl:text>,</xsl:text>
       <xsl:value-of select="$current_host"/>
+      <xsl:text>,</xsl:text>
+      <xsl:value-of select="detail[name/text() = 'hostname']/value/text()"/>
       <xsl:text>,</xsl:text>
       <xsl:value-of select="detail[name/text() = 'best_os_cpe']/value/text()"/>
       <xsl:text>,</xsl:text>
       <xsl:value-of select="start/text()"/>
       <xsl:text>,</xsl:text>
+
+      <xsl:variable name="max">
+        <xsl:for-each select="/report/results/result[host/text() = $current_host]/nvt/cvss_base">
+          <xsl:sort select="." data-type="number" order="descending"/>
+          <xsl:if test="position () = 1"><xsl:value-of select="."/></xsl:if>
+        </xsl:for-each>
+      </xsl:variable>
+      <xsl:value-of select="$max"/><xsl:text>,</xsl:text>
 
       <xsl:variable name="cnt_high"
                     select="count(/report/results/result[host/text() = $current_host][threat/text() = 'High'])"/>
