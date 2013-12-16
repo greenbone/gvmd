@@ -1,6 +1,20 @@
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Rename CSV_Summary to CSV_Hosts.
+
+	* src/report_formats/CSV_Summary,
+	src/report_formats/CSV_Summary/CSV_Summary.xsl,
+	src/report_formats/CSV_Summary/generate: Remove.  Renamed.
+
+	* src/report_formats/CSV_Hosts: New dir.  Was CSV_Summary.
+
+	* src/report_formats/CSV_Hosts/CSV_Summary.xsl,
+	src/report_formats/CSV_Hosts/generate: New files.  From CSV_Summary.
+
+2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Results/CSV_Summary.xsl (result): Move NVT Name
+	and IP.  Add CVSS.
 
 2013-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
