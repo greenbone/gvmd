@@ -1,3 +1,14 @@
+2013-12-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (parse_scanner_certificate_public_key)
+	(parse_scanner_preference_value, parse_scanner_plugin_list_tags): Use
+	message value directly instead of calling messages_value to encode in
+	UTF-8 as scanner does it now.
+	(process_otp_scanner_input): Adjust code to messages being already UTF-8
+	encoded.
+
+	(blank_control_chars, messages_value): Remove unused function.
+
 2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add new option --max-ips-per-target.
