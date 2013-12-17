@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet
   version="1.0"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:str="http://exslt.org/strings"
+  xmlns:func="http://exslt.org/functions"
+  xmlns:openvas="http://openvas.org"
+  extension-element-prefixes="str func openvas">
   <xsl:output
     method = "text"
     indent = "no" />
@@ -32,10 +36,34 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+  <func:function name="openvas:max-cvss">
+    <xsl:param name="current_host"/>
+    <xsl:variable name="max">
+      <xsl:for-each select="/report/results/result[host/text() = $current_host]/nvt/cvss_base">
+        <xsl:sort select="." data-type="number" order="descending"/>
+        <xsl:if test="position () = 1"><xsl:value-of select="."/></xsl:if>
+      </xsl:for-each>
+    </xsl:variable>
+    <func:result select="$max"/>
+  </func:function>
+
+  <func:function name="openvas:ip-pad">
+    <xsl:param name="current_host"/>
+    <func:result>
+      <xsl:for-each select="str:split ($current_host, '.')">
+        <xsl:value-of select="format-number (., '000')"/>
+      </xsl:for-each>
+    </func:result>
+  </func:function>
+
   <xsl:template match="report">
-    <xsl:text>IP,Hostname,OS,Scan Start,CVSS,Severity,High,Medium,Low,Log,False Positive,Total
+    <xsl:text>IP,Hostname,OS,Scan Start,Scan End,CVSS,Severity,High,Medium,Low,Log,False Positive,Total
 </xsl:text>
     <xsl:for-each select="host">
+      <xsl:sort select="openvas:max-cvss (ip/text())" data-type="number" order="descending"/>
+      <xsl:sort select="openvas:ip-pad (ip/text())" data-type="number" order="ascending"/>
+      <xsl:sort select="start/text()"/>
+
       <xsl:variable name="current_host" select="ip/text()"/>
 
       <xsl:value-of select="$current_host"/>
@@ -46,14 +74,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:text>,</xsl:text>
       <xsl:value-of select="start/text()"/>
       <xsl:text>,</xsl:text>
+      <xsl:value-of select="end/text()"/>
+      <xsl:text>,</xsl:text>
 
-      <xsl:variable name="max">
-        <xsl:for-each select="/report/results/result[host/text() = $current_host]/nvt/cvss_base">
-          <xsl:sort select="." data-type="number" order="descending"/>
-          <xsl:if test="position () = 1"><xsl:value-of select="."/></xsl:if>
-        </xsl:for-each>
-      </xsl:variable>
-      <xsl:value-of select="$max"/><xsl:text>,</xsl:text>
+      <xsl:value-of select="openvas:max-cvss ($current_host)"/><xsl:text>,</xsl:text>
 
       <xsl:variable name="cnt_high"
                     select="count(/report/results/result[host/text() = $current_host][threat/text() = 'High'])"/>

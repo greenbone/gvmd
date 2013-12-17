@@ -1,3 +1,10 @@
+2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl (openvas:max-cvss)
+	(openvas:ip-pad): New functions.
+	(report): Add Scan End column.  Sort hosts by CVSS then IP then Scan
+	Start.
+
 2013-12-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Made upper limit of ips allow 40000
