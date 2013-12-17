@@ -65,7 +65,7 @@ typedef struct
 extern scanner_t scanner;
 
 int
-init_manage (GSList*, int, const gchar*);
+init_manage (GSList*, int, const gchar*, int);
 
 void
 init_manage_process (int, const gchar*);
@@ -1201,9 +1201,12 @@ rc_preference (const char*, const char*);
 /* Targets. */
 
 /**
- * @brief Maximum number of hosts a target may specify.
+ * @brief Default maximum number of hosts a target may specify.
  */
 #define MANAGE_MAX_HOSTS 4095
+
+int
+manage_max_hosts ();
 
 void
 manage_filter_controls (const gchar *, int *, int *, gchar **, int *);

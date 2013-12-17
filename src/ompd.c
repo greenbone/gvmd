@@ -160,14 +160,17 @@ static int ompd_nvt_cache_mode = 0;
  * @param[in]  nvt_cache_mode  0 operate normally, -1 just update NVT cache,
  *                             -2 just rebuild NVT cache.
  * @param[in]  database        Location of manage database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
- *         needs to be initialized from server.
+ *         needs to be initialized from server, -4 max_ips_per_target out of
+ *         range.
  */
 int
-init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database)
+init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
+           int max_ips_per_target)
 {
-  return init_omp (log_config, nvt_cache_mode, database);
+  return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target);
 }
 
 /**
