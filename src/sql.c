@@ -44,7 +44,7 @@ char *
 iso_time (time_t *);
 
 int
-manage_max_hosts (const char *);
+manage_count_hosts (const char *);
 
 long
 current_offset (const char *);
@@ -985,7 +985,7 @@ sql_max_hosts (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  max = g_strdup_printf ("%i", manage_max_hosts ((gchar*) hosts));
+  max = g_strdup_printf ("%i", manage_count_hosts ((gchar*) hosts));
   sqlite3_result_text (context, max, -1, SQLITE_TRANSIENT);
   g_free (max);
 }

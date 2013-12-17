@@ -822,7 +822,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   switch (init_ompd (log_config,
                      update_nvt_cache ? -1 : -2,
-                     database))
+                     database,
+                     manage_max_hosts ()))
     {
       case 0:
         break;
@@ -1123,6 +1124,7 @@ main (int argc, char** argv)
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
+  static int max_ips_per_target = MANAGE_MAX_HOSTS;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
@@ -1146,6 +1148,7 @@ main (int argc, char** argv)
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
+        { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "create-credentials-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
           &create_cred_enc_key, "Create a key to encrypt credentials.", NULL },
@@ -1446,7 +1449,7 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  switch (init_ompd (log_config, 0, database))
+  switch (init_ompd (log_config, 0, database, max_ips_per_target))
     {
       case 0:
         break;
@@ -1459,6 +1462,11 @@ main (int argc, char** argv)
         g_critical ("%s: database must be initialised"
                     " (with --update or --rebuild)\n",
                     __FUNCTION__);
+        free_log_configuration (log_config);
+        exit (EXIT_FAILURE);
+        break;
+      case -4:
+        g_critical ("%s: --max-ips-per-target out of range\n", __FUNCTION__);
         free_log_configuration (log_config);
         exit (EXIT_FAILURE);
         break;

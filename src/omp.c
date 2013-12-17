@@ -13691,16 +13691,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_note",
                                 "CREATE_NOTE requires a TEXT entity"));
           else if (create_note_data->hosts
-                   && ((max = manage_max_hosts (create_note_data->hosts))
+                   && ((max = manage_count_hosts (create_note_data->hosts))
                        == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
                                 "Error in host specification"));
-          else if (create_note_data->hosts && (max > MANAGE_MAX_HOSTS))
+          else if (create_note_data->hosts && (max > manage_max_hosts ()))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_note",
-                                "Host specification exceeds"
-                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
+                                "Host specification exceeds maximum number"
+                                " of hosts"));
           else if (create_note_data->task_id
                    && find_task_for_actions (create_note_data->task_id,
                                              &task,
@@ -13858,16 +13858,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_override",
                                 "CREATE_OVERRIDE requires a TEXT entity"));
           else if (create_override_data->hosts
-                   && ((max = manage_max_hosts (create_override_data->hosts))
+                   && ((max = manage_count_hosts (create_override_data->hosts))
                        == -1))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
                                 "Error in host specification"));
-          else if (create_override_data->hosts && (max > MANAGE_MAX_HOSTS))
+          else if (create_override_data->hosts && (max > manage_max_hosts ()))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
-                                "Host specification exceeds"
-                                " " G_STRINGIFY (MANAGE_MAX_HOSTS) " hosts"));
+                                "Host specification exceeds maximum number"
+                                " of hosts"));
           else if (create_override_data->new_threat == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_override",
@@ -15311,9 +15311,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
-                                    "Host specification exceeds"
-                                    " " G_STRINGIFY (MANAGE_MAX_HOSTS)
-                                    " hosts"));
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
               case 4:
@@ -16822,9 +16821,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "Host specification exceeds"
-                                    " " G_STRINGIFY (MANAGE_MAX_HOSTS)
-                                    " hosts"));
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id, "modified");
                 break;
@@ -19519,7 +19517,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>",
                                            target_iterator_hosts (&targets),
-                                           manage_max_hosts
+                                           manage_count_hosts
                                             (target_iterator_hosts (&targets)),
                                            port_range,
                                            port_list_uuid ? port_list_uuid : "",
@@ -19708,7 +19706,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 hosts = target ? trash_target_hosts (target) : NULL;
               else
                 hosts = target ? target_hosts (target) : NULL;
-              maximum_hosts = hosts ? manage_max_hosts (hosts) : 0;
+              maximum_hosts = hosts ? manage_count_hosts (hosts) : 0;
 
               running_report = task_current_report (index);
               if ((target == 0)
@@ -21112,19 +21110,22 @@ extern buffer_size_t from_client_end;
  * @param[in]  log_config      Logging configuration list.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of manage database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
- *         needs to be initialized from server.
+ *         needs to be initialized from server, -4 max_ips_per_target out of
+ *         range.
  */
 int
-init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database)
+init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
+          int max_ips_per_target)
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
                      (GLogFunc) openvas_log_func,
                      log_config);
   command_data_init (&command_data);
-  return init_manage (log_config, nvt_cache_mode, database);
+  return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target);
 }
 
 /**

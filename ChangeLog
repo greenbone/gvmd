@@ -1,3 +1,28 @@
+2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r18493.  Add new option --max-ips-per-target.  Rename original
+	manage_max_hosts function to manage_count_hosts, to accommodate
+	backport.
+
+	* src/manage_sql.c (max_hosts): New variable.
+	(init_manage): Add max_ips_per_target arg.
+	(manage_max_hosts): New function.
+	(manage_count_hosts): New function.  Was manage_max_hosts.  Update
+	callers.
+	(create_target, modify_target): Switch to max hosts variable.
+
+	* src/omp.c (omp_xml_handle_end_element): Switch to max hosts function.
+	(init_omp): Add max_ips_per_target arg.
+
+	* src/ompd.c (init_ompd): Add max_ips_per_target arg.
+
+	* src/manage.h, src/omp.h, src/ompd.h: Udpate headers accordingly.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Update init_ompd call.
+	(main): Add --max-ips-per-target.  Update init_ompd call.
+
+	* src/sql.c (sql_max_hosts): Update function name.
+
 2013-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18464.

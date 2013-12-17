@@ -338,6 +338,11 @@ find_user (const char *, user_t *user);
 /* Variables. */
 
 /**
+ * @brief Max number of hosts per target.
+ */
+static int max_hosts = MANAGE_MAX_HOSTS;
+
+/**
  * @brief Memory cache of NVT information from the database.
  */
 nvtis_t* nvti_cache = NULL;
@@ -15096,14 +15101,22 @@ refresh_nvt_cves ()
  * @param[in]  log_config      Log configuration.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server.
+ *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
-init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database)
+init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
+             int max_ips_per_target)
 {
   char *database_version;
+
+  if ((max_ips_per_target <= 0)
+      || (max_ips_per_target >= 40000))
+    return -4;
+
+  max_hosts = max_ips_per_target;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -28701,6 +28714,17 @@ task_file_iterator_length (iterator_t* iterator)
 /* Targets. */
 
 /**
+ * @brief Get the maximum allowed number of hosts per target.
+ *
+ * @return Maximum.
+ */
+int
+manage_max_hosts ()
+{
+  return max_hosts;
+}
+
+/**
  * @brief Find a target given a UUID.
  *
  * @param[in]   uuid    UUID of target.
@@ -28927,7 +28951,7 @@ validate_host (const char *string)
  * @return Number of hosts, or -1 on error.
  */
 int
-manage_max_hosts (const char *given_hosts)
+manage_count_hosts (const char *given_hosts)
 {
   long count = 0;
   gchar **split, **point, *hosts, *hosts_start;
@@ -29717,7 +29741,7 @@ create_target (const char* name, const char* hosts, const char* comment,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
-      max = manage_max_hosts (import_hosts);
+      max = manage_count_hosts (import_hosts);
       if (max <= 0)
         {
           g_free (import_hosts);
@@ -29726,7 +29750,7 @@ create_target (const char* name, const char* hosts, const char* comment,
           return 2;
         }
       clean = clean_hosts (import_hosts, &max);
-      if (max > MANAGE_MAX_HOSTS)
+      if (max > max_hosts)
         {
           g_free (import_hosts);
           g_free (quoted_name);
@@ -29744,7 +29768,7 @@ create_target (const char* name, const char* hosts, const char* comment,
 
       /* User provided hosts. */
 
-      max = manage_max_hosts (hosts);
+      max = manage_count_hosts (hosts);
       if (max <= 0)
         {
           g_free (quoted_name);
@@ -29752,7 +29776,7 @@ create_target (const char* name, const char* hosts, const char* comment,
           return 2;
         }
       clean = clean_hosts (hosts, &max);
-      if (max > MANAGE_MAX_HOSTS)
+      if (max > max_hosts)
         {
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -30195,7 +30219,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                                                                 ", ");
 
       openvas_string_list_free (hosts_list);
-      max = manage_max_hosts (import_hosts);
+      max = manage_count_hosts (import_hosts);
       if (max <= 0)
         {
           g_free (import_hosts);
@@ -30204,7 +30228,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 2;
         }
       clean = clean_hosts (import_hosts, &max);
-      if (max > MANAGE_MAX_HOSTS)
+      if (max > max_hosts)
         {
           g_free (import_hosts);
           g_free (quoted_name);
@@ -30222,7 +30246,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       /* User provided hosts. */
 
-      max = manage_max_hosts (hosts);
+      max = manage_count_hosts (hosts);
       if (max <= 0)
         {
           g_free (quoted_name);
@@ -30230,7 +30254,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 2;
         }
       clean = clean_hosts (hosts, &max);
-      if (max > MANAGE_MAX_HOSTS)
+      if (max > max_hosts)
         {
           g_free (quoted_name);
           sql ("ROLLBACK;");
