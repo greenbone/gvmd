@@ -178,14 +178,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
+  <xsl:variable name="port">
+    <xsl:call-template name="portport" select="port"/>
+  </xsl:variable>
 
   <xsl:value-of select="$ip"/>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="../../host[ip = $ip]/detail[name = 'hostname']/value"/>
   <xsl:text>,</xsl:text>
-  <xsl:call-template name="portport" select="port"/>
+  <xsl:value-of select="$port"/>
   <xsl:text>,</xsl:text>
-  <xsl:call-template name="portproto" select="port"/>
+  <xsl:choose>
+    <xsl:when test="string-length ($port) &gt; 0">
+      <xsl:call-template name="portproto" select="port"/>
+    </xsl:when>
+  </xsl:choose>
   <xsl:text>,</xsl:text>
   <xsl:value-of select="nvt/cvss_base"/>
   <xsl:text>,</xsl:text>
@@ -268,7 +275,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- MATCH REPORT -->
 <xsl:template match="/report">
-  <xsl:text>IP, Hostname, Port, Port Protocol, CVSS, Severity, NVT Name, Summary, Specific Result, OID, CVEs, Task ID, Task Name, Timestamp, Result ID
+  <xsl:text>IP, Hostname, Port, Port Protocol, CVSS, Severity, NVT Name, Summary, Specific Result, NVT OID, CVEs, Task ID, Task Name, Timestamp, Result ID
 </xsl:text>
   <xsl:apply-templates select="results"/>
 </xsl:template>

@@ -1,5 +1,11 @@
 2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Skip protocol
+	if port is empty.
+	(report): Rename OID to NVT OID.
+
+2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Hosts/CSV_Hosts.xsl (openvas:max-cvss)
 	(openvas:ip-pad): New functions.
 	(report): Add Scan End column.  Sort hosts by CVSS then IP then Scan
