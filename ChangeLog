@@ -1,3 +1,8 @@
+2013-12-17  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Made upper limit of ips allow 40000
+	instead of 39999.
+
 2013-12-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (parse_scanner_certificate_public_key)

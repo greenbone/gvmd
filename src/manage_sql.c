@@ -10336,7 +10336,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   char *database_version;
 
   if ((max_ips_per_target <= 0)
-      || (max_ips_per_target >= 40000))
+      || (max_ips_per_target > 40000))
     return -4;
 
   max_hosts = max_ips_per_target;
