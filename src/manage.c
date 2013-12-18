@@ -218,9 +218,7 @@ severity_in_level (double severity, const char *level)
     {
       g_free (class);
       if (strcmp (level, "high") == 0)
-        return severity > 8 && severity <= 10;
-      else if (strcmp (level, "high") == 0)
-        return severity > 5 && severity <= 8;
+        return severity > 5 && severity <= 10;
       else if (strcmp (level, "medium") == 0)
         return severity > 2 && severity <= 5;
       else if (strcmp (level, "low") == 0)

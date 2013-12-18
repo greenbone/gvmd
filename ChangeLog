@@ -1,3 +1,9 @@
+2013-12-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (severity_in_level): Remove duplicate "high" case for
+	the "classic" severity class (which was never reached) and fix valid
+	CVSS range for first "high" case.
+
 2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/CSV_Results/CSV_Results.xsl (result): Skip protocol
