@@ -1,3 +1,8 @@
+2013-12-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/verinice-ism/generate: Use date of scan start instead
+	of date of report generation in the file names.
+
 2013-12-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (severity_in_level): Remove duplicate "high" case for

@@ -27,7 +27,7 @@
 TMP=`mktemp -d` || exit 1
 STARTDIR=`pwd`
 XMLFILE=`readlink -f $1`
-DATE=$(date +%F-%H-%M-%S)
+DATE=`xmlstarlet sel -t -v /report/scan_start "$XMLFILE" | cut -c 1-10`
 
 SCAN_NAME=`xmlstarlet sel -t -v /report/task/name "$XMLFILE"`
 
