@@ -33,20 +33,33 @@ SCAN_NAME=`xmlstarlet sel -t -v /report/task/name "$XMLFILE"`
 
 SCAN_NAME=$(echo $SCAN_NAME | sed 's/ /_/g')
 
+# File size above which the attachments should be compressed
+COMPRESS_SIZE=10485760
+
 mkdir -p  $TMP/files
 FILENAME=${SCAN_NAME}_${DATE}.xml
 FILELOC=$TMP/files/${FILENAME}
-HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\.html/')
-HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\.html/')
+HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\_HTML.html/')
+HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\_HTML.html/')
+HTML_MIMETYPE="html"
 
 HTML_REQUESTED=`cat $1 | xmlstarlet sel -t -v "/report/report_format/param[name='Attach HTML report']/value"`
 
 if [ -n "$HTML_REQUESTED" ] && [ "$HTML_REQUESTED" -eq 1 ]
 then
   xsltproc ./html.xsl $1 > "$HTML_FILELOC"
+  if [ `wc -c < "$HTML_FILELOC"` -ge $COMPRESS_SIZE ]
+  then
+    zip -j -q `echo $HTML_FILELOC | sed 's/\.html/\.zip/'` "$HTML_FILELOC"
+    rm -f "$HTML_FILELOC"
+    HTML_FILELOC=$(echo $FILELOC | sed 's/\.xml/\_HTML.zip/')
+    HTML_FILE=$(echo $FILENAME | sed 's/\.xml/\_HTML.zip/')
+    HTML_MIMETYPE="zip"
+  fi
 fi
 
 xsltproc --stringparam htmlfilename "$HTML_FILE" \
+         --stringparam htmlmimetype "$HTML_MIMETYPE" \
          --stringparam filedate `stat -c %Z $XMLFILE` ./gsm_verinice_ism.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \
         xmlstarlet fo >  $TMP/verinice.xml && \

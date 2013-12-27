@@ -786,7 +786,7 @@ CIS</value>
             </syncAttribute>
             <syncAttribute>
                 <name>attachment_mime_type</name>
-                <value>html</value>
+                <value><xsl:value-of select="$htmlmimetype"/></value>
             </syncAttribute>
             <extId><xsl:value-of select="$htmlfilename"/></extId>
             <file>files/<xsl:value-of select="$htmlfilename"/></file>

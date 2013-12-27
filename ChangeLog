@@ -1,5 +1,16 @@
 2013-12-27  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Add support for compressing large attachements.
+
+	* report_formats/verinice-ism/generate: Add support for compressing
+	the attached report if it is over 10 MB in size, updating file name
+	and MIME type as required.
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl: Handle
+	htmlmimetype parameter now that the MIME type is dynamic.
+
+2013-12-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* report_formats/verinice-ism/generate: Use date of scan start instead
 	of date of report generation in the file names.
 
