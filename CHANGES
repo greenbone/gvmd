@@ -1,3 +1,31 @@
+openvas-manager 5.0+beta4 (2014-??-??)
+
+This is the fourth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds a couple of new command line options and report format
+plugins.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Henri Doreau, Matthew Mundell Timo Pollmeier,
+Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 5.0+beta3:
+* Use UTF-8 for OTP.
+* New option --max-ips-per-target.
+* New predefined report format CSV Hosts.
+* New predefined report format CSV Results.
+* Extended report format plugin for verinice.
+* New report format plugin for exporting TLS mapping results into a CSV file.
+* Add option --delete-user.
+* Rename option --first-user to --create-user.
+* Add option --role, which allows to set the role with --first-user.
+* New predefined config Host Discovery.
+* Large number of small fixes and improvements, especially
+  regrding permissions.
+
+
 openvas-manager 5.0+beta3 (2013-11-22)
 
 This is the third beta version of the upcoming 5.0 release of the OpenVAS
