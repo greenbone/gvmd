@@ -5216,6 +5216,14 @@ migrate_57_to_58 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS agents_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  installer TEXT, installer_64 TEXT, installer_filename,"
+       "  installer_signature_64 TEXT, installer_trust INTEGER,"
+       "  installer_trust_time, howto_install TEXT, howto_use TEXT);");
+
   /* Targets and agents got creation and modification times. */
 
   sql ("ALTER TABLE targets ADD COLUMN creation_time;");
@@ -5455,6 +5463,12 @@ migrate_62_to_63 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  first_time, period, period_months, duration);");
+
   /* The reports table got count cache columns. */
 
   sql ("ALTER TABLE schedules ADD COLUMN timezone;");
@@ -5664,7 +5678,13 @@ migrate_67_to_68 ()
 
   /** @todo ROLLBACK on failure. */
 
-  /* Schedules got creation and modification times. */
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS slaves_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, host,"
+       "  port, login, password);");
+
+  /* Slaves got creation and modification times. */
 
   sql ("ALTER TABLE slaves ADD COLUMN creation_time;");
   sql ("ALTER TABLE slaves ADD COLUMN modification_time;");
@@ -5704,6 +5724,13 @@ migrate_68_to_69 ()
   /* Update the database. */
 
   /** @todo ROLLBACK on failure. */
+
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS report_formats_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, extension,"
+       "  content_type, summary, description, signature, trust INTEGER,"
+       "  trust_time, flags INTEGER, original_uuid);");
 
   /* Schedules got creation and modification times. */
 
@@ -5831,6 +5858,13 @@ migrate_71_to_72 ()
 
   /** @todo ROLLBACK on failure. */
 
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  deb TEXT, exe TEXT);");
+
   /* Add creation and modification times to LSC Credentials. */
 
   sql ("ALTER TABLE lsc_credentials ADD COLUMN creation_time;");
@@ -5872,6 +5906,13 @@ migrate_72_to_73 ()
   /* Update the database. */
 
   /** @todo ROLLBACK on failure. */
+
+  /* Ensure the new tables exist for the migrator. */
+
+  sql ("CREATE TABLE IF NOT EXISTS configs_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
+       "  families_growing INTEGER, nvts_growing INTEGER);");
 
   /* Add creation and modification times to Scan Configs. */
 
@@ -5957,12 +5998,16 @@ migrate_74_to_75 ()
 
   /* Update the database. */
 
-  /* Ensure the new table exists for the migrator. */
+  /* Ensure the tables exist for the migrator. */
 
   sql ("CREATE TABLE IF NOT EXISTS permissions"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  resource_type, resource, resource_uuid, resource_location,"
        "  subject_type, subject, creation_time, modification_time);");
+
+  sql ("CREATE TABLE IF NOT EXISTS task_users"
+       " (id INTEGER PRIMARY KEY, task INTEGER, user INTEGER,"
+       "  actions INTEGER);");
 
   /** @todo ROLLBACK on failure. */
 
@@ -6460,6 +6505,10 @@ migrate_79_to_80 ()
   /* Update the database. */
 
   /* Ensure that all tables exists. */
+  sql ("CREATE TABLE IF NOT EXISTS alert_condition_data_trash"
+       " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
+  sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS groups"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");
@@ -6490,6 +6539,11 @@ migrate_79_to_80 ()
   sql ("CREATE TABLE IF NOT EXISTS port_names"
        " (id INTEGER PRIMARY KEY, number INTEGER, protocol, name,"
        "  UNIQUE (number, protocol) ON CONFLICT REPLACE);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_params_trash"
+       " (id INTEGER PRIMARY KEY, report_format, name, type INTEGER, value,"
+       "  type_min, type_max, type_regex, fallback);");
+  sql ("CREATE TABLE IF NOT EXISTS report_format_param_options_trash"
+       " (id INTEGER PRIMARY KEY, report_format_param, value);");
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"

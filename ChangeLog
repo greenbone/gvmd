@@ -1,3 +1,10 @@
+2014-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_57_to_58, migrate_62_to_63)
+	(migrate_67_to_68, migrate_68_to_69, migrate_71_to_72, migrate_72_to_73)
+	(migrate_74_to_75, migrate_79_to_80): Ensure tables exist before using
+	them.
+
 2014-01-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Preparing the openvas-manager 5.0+beta4 release.
