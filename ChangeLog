@@ -1,5 +1,11 @@
 2014-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_counts_match): Also check whether the NVT
+	exists, in the SQL, otherwise sql_int aborts if the NVT has been removed
+	from the feed.
+
+2014-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_57_to_58, migrate_62_to_63)
 	(migrate_67_to_68, migrate_68_to_69, migrate_71_to_72, migrate_72_to_73)
 	(migrate_74_to_75, migrate_79_to_80): Ensure tables exist before using
