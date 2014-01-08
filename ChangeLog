@@ -1,5 +1,10 @@
 2014-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (main): Use ellispes in message to match Scanner
+	better.  Print \b separately.
+
+2014-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add --progress option, which displays a progress spinner during
 	--rebuild and --update.
 

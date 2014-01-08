@@ -1420,9 +1420,9 @@ main (int argc, char** argv)
       if (progress)
         {
           if (update_nvt_cache)
-            printf ("Updating NVT cache: \\");
+            printf ("Updating NVT cache... \\");
           else
-            printf ("Rebuilding NVT cache: \\");
+            printf ("Rebuilding NVT cache... \\");
           fflush (stdout);
         }
       if (update_or_rebuild_nvt_cache (update_nvt_cache,
@@ -1434,7 +1434,8 @@ main (int argc, char** argv)
         {
           if (progress)
             {
-              printf ("\bdone.\n");
+              putchar ('\b');
+              printf ("done.\n");
               fflush (stdout);
             }
           return EXIT_SUCCESS;
