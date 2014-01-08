@@ -36,7 +36,7 @@
 #define TO_CLIENT_BUFFER_SIZE 26214400
 
 int
-init_omp (GSList*, int, const gchar*, int);
+init_omp (GSList*, int, const gchar*, int, void (*) ());
 
 void
 init_omp_process (int, const gchar*, int (*) (const char*, void*), void*,

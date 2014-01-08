@@ -237,6 +237,11 @@ permissions_set_subjects (const char *, resource_t, resource_t, int);
 /* Variables. */
 
 /**
+ * @brief Function to mark progress.
+ */
+void (*progress) () = NULL;
+
+/**
  * @brief Max number of hosts per target.
  */
 static int max_hosts = MANAGE_MAX_HOSTS;
@@ -4219,7 +4224,11 @@ create_tables ()
        "  password, timezone, hosts, hosts_allow, ifaces, ifaces_allow,"
        "  method, creation_time, modification_time);");
 
+  if (progress)
+    progress ();
   sql ("ANALYZE;");
+  if (progress)
+    progress ();
 }
 
 
@@ -8596,8 +8605,12 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     {
       if (update_nvt_cache == -2)
         {
+          if (progress)
+            progress ();
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
+          if (progress)
+            progress ();
           sql ("DELETE FROM nvt_preferences;");
         }
       return;
@@ -8669,8 +8682,12 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     {
       if (update_nvt_cache == -2)
         {
+          if (progress)
+            progress ();
           sql ("BEGIN EXCLUSIVE;");
           sql ("DELETE FROM nvts;");
+          if (progress)
+            progress ();
           sql ("DELETE FROM nvt_preferences;");
         }
     }
@@ -10325,13 +10342,14 @@ refresh_nvt_cves ()
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  update_progress     Function to update progress, or NULL. *
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
-             int max_ips_per_target)
+             int max_ips_per_target, void (*update_progress) ())
 {
   char *database_version;
 
@@ -10340,6 +10358,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
     return -4;
 
   max_hosts = max_ips_per_target;
+  progress = update_progress;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -11279,7 +11298,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
 
   /* Run ANALYZE because there may have been big changes since create_tables. */
 
+  if (progress)
+    progress ();
   sql ("ANALYZE;");
+  if (progress)
+    progress ();
 
   /* Load the NVT cache into memory. */
 
@@ -29692,6 +29715,8 @@ insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
   if (nvti == NULL)
     return;
 
+  if (progress)
+    progress ();
   make_nvt_from_nvti (nvti, 0);
 }
 
@@ -29724,6 +29749,8 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
 
   /* Remove preferences from configs where the preference has vanished from
    * the associated NVT. */
+  if (progress)
+    progress ();
   init_iterator (&configs, "SELECT ROWID FROM configs;");
   while (next (&configs))
     sql ("DELETE FROM config_preferences"
@@ -29733,12 +29760,22 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
          config_iterator_config (&configs));
   cleanup_iterator (&configs);
 
+  if (progress)
+    progress ();
   update_all_config_caches ();
+  if (progress)
+    progress ();
   refresh_nvt_cves ();
+
   if (mode == -2) sql ("COMMIT;");
 
   /* Run ANALYZE because there may have been big changes during the update. */
+  if (progress)
+    progress ();
   sql ("ANALYZE;");
+
+  if (progress)
+    progress ();
 }
 
 

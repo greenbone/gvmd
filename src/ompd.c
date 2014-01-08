@@ -161,6 +161,7 @@ static int ompd_nvt_cache_mode = 0;
  *                             -2 just rebuild NVT cache.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  progress        Function to update progress, or NULL.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
  *         needs to be initialized from server, -4 max_ips_per_target out of
@@ -168,9 +169,10 @@ static int ompd_nvt_cache_mode = 0;
  */
 int
 init_ompd (GSList *log_config, int nvt_cache_mode, const gchar *database,
-           int max_ips_per_target)
+           int max_ips_per_target, void (*progress) ())
 {
-  return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target);
+  return init_omp (log_config, nvt_cache_mode, database, max_ips_per_target,
+                   progress);
 }
 
 /**
@@ -628,6 +630,7 @@ recreate_session (int server_socket,
  * @param[in]  scanner_socket_addr  The socket connected to the scanner.
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
+ * @param[in]  progress             Function to mark progress, or NULL.
  *
  * @return 0 on success, 1 failed to connect to scanner for cache
  *         update/rebuild, -1 on error.
@@ -638,7 +641,7 @@ serve_omp (gnutls_session_t* client_session,
            gnutls_certificate_credentials_t* client_credentials,
            gnutls_certificate_credentials_t* scanner_credentials,
            int client_socket, int* scanner_socket_addr,
-           const gchar* database, gchar **disable)
+           const gchar* database, gchar **disable, void (*progress) ())
 {
   int nfds, ret;
   fd_set readfds, exceptfds, writefds;
@@ -1172,7 +1175,7 @@ serve_omp (gnutls_session_t* client_session,
             }
 #endif /* TRACE || LOG */
 
-          ret = process_otp_scanner_input ();
+          ret = process_otp_scanner_input (progress);
           if (ret == 0)
             /* Processed all input. */
             scanner_input_stalled = FALSE;
@@ -1379,7 +1382,7 @@ serve_omp (gnutls_session_t* client_session,
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */
 
-          ret = process_otp_scanner_input ();
+          ret = process_otp_scanner_input (progress);
           if (ret == 0)
             /* Processed all input. */
             scanner_input_stalled = FALSE;

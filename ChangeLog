@@ -1,3 +1,28 @@
+2014-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add --progress option, which displays a progress spinner during
+	--rebuild and --update.
+
+	* src/openvasmd.c (serve_client): Update serve_omp call.
+	(spin_progress): New function.
+	(update_or_rebuild_nvt_cache): Add progress arg.  Pass to OMP functions.
+	(fork_update_nvt_cache): Update update call.
+	(main): Add --progress option.
+
+	* src/manage_sql.c (progress): New variable.
+	(create_tables, init_manage_process, insert_nvt_from_nvti)
+	(manage_complete_nvt_cache_update): Spin at long ops.
+	(init_manage): Add progress arg.
+
+	* src/omp.c (init_omp): Add progress arg.
+
+	* src/otp.c (parse_scanner_preference_value)
+	(process_otp_scanner_input): Add progress arg.
+
+	* src/ompd.c (init_ompd, serve_omp): Add progress arg.
+
+	* src/ompd.h, src/omp.h, src/manage.h: Update headers accordingly.
+
 2014-01-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_counts_match): Also check whether the NVT

@@ -371,7 +371,7 @@ serve_client (int server_socket, int client_socket)
   if (serve_omp (&client_session, &scanner_session,
                  &client_credentials, &scanner_credentials,
                  client_socket, &scanner_socket,
-                 database, disabled_commands))
+                 database, disabled_commands, NULL))
     goto server_fail;
 
   openvas_server_free (scanner_socket,
@@ -767,6 +767,34 @@ handle_sigsegv (/*@unused@*/ int signal)
 
 
 /**
+ * @brief Nudge the progress indicator.
+ */
+void
+spin_progress ()
+{
+  static char current = '/';
+  switch (current)
+    {
+      case '\\':
+        current = '|';
+        break;
+      case '|':
+        current = '/';
+        break;
+      case '/':
+        current = '-';
+        break;
+      case '-':
+        current = '\\';
+        break;
+    }
+  putchar ('\b');
+  putchar (current);
+  fflush (stdout);
+  tracef ("   %c\n", current);
+}
+
+/**
  * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
  *
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
@@ -774,13 +802,14 @@ handle_sigsegv (/*@unused@*/ int signal)
  * @param[in]  scanner_address_string  Address of the scanner as string.
  * @param[in]  scanner_port            Port of the scanner.
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
+ * @param[in]  progress                Function to update progress, or NULL.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
 update_or_rebuild_nvt_cache (int update_nvt_cache,
                              gchar* scanner_address_string, int scanner_port,
-                             int register_cleanup)
+                             int register_cleanup, void (*progress) ())
 {
   int scanner_socket;
   gnutls_session_t scanner_session;
@@ -791,7 +820,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
   switch (init_ompd (log_config,
                      update_nvt_cache ? -1 : -2,
                      database,
-                     manage_max_hosts ()))
+                     manage_max_hosts (),
+                     progress))
     {
       case 0:
         break;
@@ -886,11 +916,12 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
    * request and cache the plugins, then exit. */
 
   switch (serve_omp (NULL, &scanner_session,
-                 NULL, &scanner_credentials,
-                 update_nvt_cache ? -1 : -2,
-                 &scanner_socket,
-                 database,
-                 NULL))
+                     NULL, &scanner_credentials,
+                     update_nvt_cache ? -1 : -2,
+                     &scanner_socket,
+                     database,
+                     NULL,
+                     progress))
     {
       case 0:
         openvas_server_free (scanner_socket,
@@ -942,7 +973,8 @@ fork_update_nvt_cache ()
         update_or_rebuild_nvt_cache (0,
                                      scanner_address_string,
                                      scanner_port,
-                                     0);
+                                     0,
+                                     NULL);
 
         /* Exit. */
 
@@ -1091,6 +1123,7 @@ main (int argc, char** argv)
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
+  static gboolean progress = FALSE;
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
@@ -1134,13 +1167,14 @@ main (int argc, char** argv)
         { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
+        { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user.", "<role>" },
         { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --modify-password.", "<username>" },
-        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print progress messages.", NULL },
+        { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print tracing messages.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
       };
@@ -1383,10 +1417,29 @@ main (int argc, char** argv)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
 
-      return update_or_rebuild_nvt_cache (update_nvt_cache,
-                                          scanner_address_string,
-                                          scanner_port,
-                                          1);
+      if (progress)
+        {
+          if (update_nvt_cache)
+            printf ("Updating NVT cache: \\");
+          else
+            printf ("Rebuilding NVT cache: \\");
+          fflush (stdout);
+        }
+      if (update_or_rebuild_nvt_cache (update_nvt_cache,
+                                       scanner_address_string,
+                                       scanner_port,
+                                       1,
+                                       progress ? spin_progress : NULL)
+          == EXIT_SUCCESS)
+        {
+          if (progress)
+            {
+              printf ("\bdone.\n");
+              fflush (stdout);
+            }
+          return EXIT_SUCCESS;
+        }
+      return EXIT_FAILURE;
     }
 
   /* Run the standard manager. */
@@ -1460,7 +1513,7 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  switch (init_ompd (log_config, 0, database, max_ips_per_target))
+  switch (init_ompd (log_config, 0, database, max_ips_per_target, NULL))
     {
       case 0:
         break;
