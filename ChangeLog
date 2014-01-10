@@ -1,5 +1,9 @@
 2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (load_cas): Skip "." and "..".
+
+2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Trust certificates located in var/lib/openvas/openvasmd/CAs.  This helps
 	the Scanner use a self-signed certificate.
 

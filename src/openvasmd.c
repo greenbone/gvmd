@@ -311,6 +311,10 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
       gchar *name;
       struct stat state;
 
+      if ((strcmp (entry->d_name, ".") == 0)
+          || (strcmp (entry->d_name, "..") == 0))
+        continue;
+
       name = g_build_filename (CA_DIR, entry->d_name, NULL);
       stat (name, &state);
       if (S_ISREG (state.st_mode)
