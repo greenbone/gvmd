@@ -1,3 +1,9 @@
+2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END stop
+	the transaction before calling delete_task_lock, because it also runs
+	a transaction.
+
 2014-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (main): Use ellispes in message to match Scanner

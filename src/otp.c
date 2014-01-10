@@ -2126,13 +2126,19 @@ process_otp_scanner_input (void (*progress) ())
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                           case TASK_STATUS_DELETE_WAITING:
-                            delete_task_lock (current_scanner_task, 0);
+                            /* Stop transaction so that delete can run one. */
+                            manage_transaction_stop (TRUE);
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
+                            delete_task_lock (current_scanner_task, 0);
                             current_report = (report_t) 0;
                             break;
                           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
                           case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+                            /* Stop transaction so that delete can run one. */
+                            manage_transaction_stop (TRUE);
+                            set_task_run_status (current_scanner_task,
+                                                 TASK_STATUS_STOPPED);
                             delete_task_lock (current_scanner_task, 1);
                             current_report = (report_t) 0;
                             break;
