@@ -87,6 +87,10 @@ if (OPENVAS_CA_CERTIFICATE)
   add_definitions (-DCACERT=\\\"${OPENVAS_CA_CERTIFICATE}\\\")
 endif (OPENVAS_CA_CERTIFICATE)
 
+if (OPENVAS_CA_DIR)
+  add_definitions (-DCA_DIR=\\\"${OPENVAS_CA_DIR}\\\")
+endif (OPENVAS_CA_DIR)
+
 if (OPENVAS_LOG_DIR)
   add_definitions (-DOPENVAS_LOG_DIR=\\\"${OPENVAS_LOG_DIR}\\\")
 endif (OPENVAS_LOG_DIR)

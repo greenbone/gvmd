@@ -1,5 +1,17 @@
 2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Trust certificates located in var/lib/openvas/openvasmd/CAs.  This helps
+	the Scanner use a self-signed certificate.
+
+	* CMakeLists.txt (OPENVAS_CA_DIR): New variable.
+
+	* src/CMakeLists.txt: Add CA_DIR definition.
+
+	* src/openvasmd.c (load_cas): New function.  Loads CAs.
+	(serve_client, update_or_rebuild_nvt_cache): Load the CAs.
+
+2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END stop
 	the transaction before calling delete_task_lock, because it also runs
 	a transaction.

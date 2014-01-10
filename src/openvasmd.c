@@ -282,6 +282,59 @@ gboolean disable_encrypted_credentials;
 /* Forking, serving the client. */
 
 /**
+ * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
+ *
+ * @param[in]  scanner_credentials  Scanner credentials.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+load_cas (gnutls_certificate_credentials_t *scanner_credentials)
+{
+  DIR *dir;
+  struct dirent *entry;
+
+  g_debug ("%s: CA_DIR: %s\n", __FUNCTION__, CA_DIR);
+  dir = opendir (CA_DIR);
+  if (dir == NULL)
+    {
+      if (errno != ENOENT)
+        {
+          g_warning ("%s: failed to open " CA_DIR ": %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+    }
+  else while ((entry = readdir (dir)))
+    {
+      gchar *name;
+      struct stat state;
+
+      name = g_build_filename (CA_DIR, entry->d_name, NULL);
+      stat (name, &state);
+      if (S_ISREG (state.st_mode)
+          && (gnutls_certificate_set_x509_trust_file (*scanner_credentials,
+                                                      name,
+                                                      GNUTLS_X509_FMT_PEM)
+              < 0))
+        {
+          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s\n",
+                     __FUNCTION__,
+                     name);
+          g_free (name);
+          closedir (dir);
+          return -1;
+        }
+      else
+        g_debug ("%s: loaded %s\n", __FUNCTION__, name);
+      g_free (name);
+    }
+  closedir (dir);
+  return 0;
+}
+
+/**
  * @brief Serve the client.
  *
  * Connect to the openvassd scanner, then call \ref serve_omp to serve OMP.
@@ -330,6 +383,14 @@ serve_client (int server_socket, int client_socket)
                           CLIENTKEY,
                           &scanner_session,
                           &scanner_credentials))
+    {
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
+      return EXIT_FAILURE;
+    }
+
+  if (load_cas (&scanner_credentials))
     {
       openvas_server_free (client_socket,
                            client_session,
@@ -899,6 +960,9 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
                           CLIENTKEY,
                           &scanner_session,
                           &scanner_credentials))
+    return EXIT_FAILURE;
+
+  if (load_cas (&scanner_credentials))
     return EXIT_FAILURE;
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
