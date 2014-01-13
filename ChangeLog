@@ -1,3 +1,7 @@
+2014-01-13  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-certdata-sync: Make variable quoting consistent.
+
 2013-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18493.  Add new option --max-ips-per-target.  Rename original

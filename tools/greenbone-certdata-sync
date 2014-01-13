@@ -303,7 +303,7 @@ sync_certdata(){
         gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
         PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
       fi
-      if [ -z $gsmproxy ] || [ "proxy_feed" = "$gsmproxy" ]
+      if [ -z "$gsmproxy" ] || [ "proxy_feed" = "$gsmproxy" ]
       then
         rsync -e "ssh -o \"UserKnownHostsFile=/dev/null\" -o \"StrictHostKeyChecking=no\" -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
       else
