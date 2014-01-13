@@ -1,3 +1,16 @@
+2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add NVT and "Strictly unauthenticated" preference to Host Discovery
+	config.
+
+	* src/manage_sql.c (init_manage): Call check_config_host_discovery.
+
+	* src/manage_config_host_discovery.c (make_config_host_discovery): Align
+	SQL values properly.  Correct -PA value, which is redundant anyway.
+	Remove duplicate.
+	(NAME): New define.
+	(check_config_host_discovery): New function.
+
 2014-01-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (load_cas): Skip "." and "..".

@@ -76,71 +76,113 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Do a TCP ping',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Do an ICMP ping',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about reachable Hosts',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
-       " 'no');",
+       "         'no');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Use ARP',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Use nmap',"
-       " 'yes');",
+       "         'yes');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:nmap: try also with only -sP',"
-       " 'no');",
+       "         'no');",
        config);
 
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:nmap additional ports for -PA',"
-       " 'no');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[entry]:nmap additional ports for -PA|8080,3128',"
-       " 'no');",
+       "         'Ping Host[entry]:nmap additional ports for -PA',"
+       "         '8080,3128');",
        config);
 
   sql ("COMMIT;");
+}
+
+/**
+ * @brief Preference name.
+ */
+#define NAME "Global variable settings[checkbox]:Strictly unauthenticated"
+
+/**
+ * @brief Ensure the Host Discovery config is up to date.
+ *
+ * @param[in]  uuid  UUID of config.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_config_host_discovery (char *const uuid)
+{
+  /* Check new preference. */
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM config_preferences"
+               " WHERE config = (SELECT ROWID FROM configs WHERE uuid = '%s')"
+               "       AND type = 'PLUGINS_PREFS'"
+               "       AND name = '" NAME "';",
+               uuid)
+      == 0)
+    sql ("INSERT INTO config_preferences (config, type, name, value)"
+         " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+         "         'PLUGINS_PREFS',"
+         "         '" NAME "',"
+         "         'yes');",
+         uuid);
+
+  /* Check new NVT. */
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM nvt_selectors"
+               " WHERE name = (SELECT nvt_selector FROM configs"
+               "               WHERE uuid = '%s')"
+               "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.12288';",
+               uuid)
+      == 0)
+    sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+         " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+         "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+         "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
+         uuid);
+
+  return 0;
 }

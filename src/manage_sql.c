@@ -123,6 +123,9 @@ make_config_discovery (char *const, const char * const);
 void
 make_config_host_discovery (char *const, const char * const);
 
+void
+check_config_host_discovery (const char *);
+
 
 /* Static headers. */
 
@@ -10665,6 +10668,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
       == 0)
     make_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY,
                                 MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY);
+
+  check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
 
   /* Ensure the predefined port lists exist. */
 
