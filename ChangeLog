@@ -1,5 +1,9 @@
 2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt (OPENVAS_CA_DIR): Change to trusted_certs for clarity.
+
+2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add NVT and "Strictly unauthenticated" preference to Host Discovery
 	config.
 
