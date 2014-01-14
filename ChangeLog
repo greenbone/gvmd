@@ -1,3 +1,18 @@
+2014-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent tasks from appearing in other user's lists when the task's owner
+	has been deleted.  Administrator deletes users but their resources
+	remain in the db.
+
+	* src/manage_sql.c (user_exists): New function.
+	(init_get_iterator, count): Only include rows whose owners exist.
+	(init_manage_process): Add SQL function user_exists.
+
+	* src/sql.c (user_t): New typedef.
+	(sql_user_exists): New function.
+
+	* src/sql.h: Add header accordingly.
+
 2014-01-13  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-certdata-sync: Make variable quoting consistent.

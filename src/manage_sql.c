@@ -1177,6 +1177,26 @@ vector_find_string (const gchar **vector, const gchar *string)
   return NULL;
 }
 
+/**
+ * @brief Check whether a user exists.
+ *
+ * @param[in]  user  User.
+ *
+ * @return 0 no, 1 yes.
+ */
+int
+user_exists (user_t user)
+{
+  char *name;
+  int ret;
+  name = sql_string (0, 0,
+                     "SELECT name FROM users WHERE ROWID = %llu;",
+                     user);
+  ret = openvas_user_exists (name);
+  free (name);
+  return ret;
+}
+
 
 /* Filter utilities. */
 
@@ -3349,14 +3369,16 @@ init_get_iterator (iterator_t* iterator, const char *type,
                                                     used_by_clause ? used_by_clause : "");
       else if (type_has_users (type))
         owned_and_used_by_clause
-         = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
-                            "  (SELECT ROWID FROM users"
-                            "   WHERE users.uuid = '%s')"
-                            "  OR (ROWID IN (SELECT %s FROM %s_users"
-                            "                WHERE user ="
-                            "                      (SELECT ROWID FROM users"
-                            "                       WHERE users.uuid = '%s')"
-                            "                AND actions & %u = %u)))"
+         = g_strdup_printf (" ((%ss.owner IS NULL)"
+                            "  OR ((%ss.owner = (SELECT ROWID FROM users"
+                            "                    WHERE users.uuid = '%s')"
+                            "       OR (ROWID IN (SELECT %s FROM %s_users"
+                            "                     WHERE user ="
+                            "                           (SELECT ROWID FROM users"
+                            "                            WHERE users.uuid"
+                            "                                  = '%s')"
+                            "                     AND actions & %u = %u)))"
+                            "      AND user_exists (%ss.owner))"
                             " %s)",
                             type,
                             type,
@@ -3366,6 +3388,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                             current_credentials.uuid,
                             actions,
                             actions,
+                            type,
                             used_by_clause ? used_by_clause : "");
       else
         owned_and_used_by_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
@@ -3495,12 +3518,15 @@ count (const char *type, const get_data_t *get,
   clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
                           get->trash, NULL, NULL, NULL);
   if (owned)
-    owned_clause = g_strdup_printf ("((%ss.owner IS NULL) OR (%ss.owner ="
-                                    " (SELECT ROWID FROM users"
-                                    " WHERE users.uuid = '%s')))",
+    owned_clause = g_strdup_printf ("((%ss.owner IS NULL)"
+                                    " OR ((%ss.owner"
+                                    "      = (SELECT ROWID FROM users"
+                                    "         WHERE users.uuid = '%s'))"
+                                    "     AND user_exists (%ss.owner)))",
                                     type,
                                     type,
-                                    current_credentials.uuid);
+                                    current_credentials.uuid,
+                                    type);
   else
     owned_clause = g_strdup ("1");
 
@@ -3532,11 +3558,12 @@ count (const char *type, const get_data_t *get,
                  "SELECT count (%s%ss.ROWID), %s"
                  " FROM %ss%s"
                  " WHERE (%s OR"
-                 "  (ROWID IN"
-                 "   (SELECT %s FROM %s_users WHERE user ="
-                 "    (SELECT ROWID FROM users"
-                 "     WHERE users.uuid = '%s')"
-                 "    AND actions & %u = %u)))"
+                 "  ((ROWID IN"
+                 "    (SELECT %s FROM %s_users WHERE user ="
+                 "     (SELECT ROWID FROM users"
+                 "      WHERE users.uuid = '%s')"
+                 "     AND actions & %u = %u))"
+                 "   AND user_exists (%ss.owner)))"
                  "%s%s%s;",
                  distinct ? "DISTINCT " : "",
                  type,
@@ -3549,6 +3576,7 @@ count (const char *type, const get_data_t *get,
                  current_credentials.uuid,
                  actions,
                  actions,
+                 type,
                  clause ? " AND " : "",
                  clause ? clause : "",
                  extra_where ? extra_where : "");
@@ -13987,6 +14015,20 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create run_status_name", __FUNCTION__);
+      abort ();
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "user_exists",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_user_exists,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_exists", __FUNCTION__);
       abort ();
     }
 }

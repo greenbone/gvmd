@@ -49,6 +49,14 @@ manage_count_hosts (const char *);
 long
 current_offset (const char *);
 
+/**
+ * @brief A user.
+ */
+typedef long long int user_t;
+
+int
+user_exists (user_t);
+
 
 /* Variables */
 
@@ -1226,6 +1234,33 @@ sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   name = run_status_name (status);
   sqlite3_result_text (context, name ? name : "", -1, SQLITE_TRANSIENT);
+  return;
+}
+
+/**
+ * @brief Check if a user exists.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_user_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  user_t user;
+
+  assert (argc == 1);
+
+  user = sqlite3_value_int64 (argv[0]);
+  if (user == 0)
+    {
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  sqlite3_result_int (context, user_exists (user) > 0);
   return;
 }
 
