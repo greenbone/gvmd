@@ -5847,7 +5847,8 @@ openvas_get_sync_script_identification (const gchar * sync_script,
                                         int feed_type)
 {
   g_assert (sync_script);
-  g_assert_cmpstr (*identification, ==, NULL);
+  if (identification)
+    g_assert_cmpstr (*identification, ==, NULL);
 
   gchar *script_working_dir = g_path_get_dirname (sync_script);
 
@@ -5913,7 +5914,8 @@ openvas_get_sync_script_identification (const gchar * sync_script,
       return FALSE;
     }
 
-  *identification = g_strdup (script_out);
+  if (identification)
+    *identification = g_strdup (script_out);
 
   g_free (script_working_dir);
   g_strfreev (argv);
@@ -6361,7 +6363,7 @@ exit:
  * Calls a sync script to migrate the SCAP or CERT database.
  *
  * @param[in]  sync_script   The file name of the synchronization script.
- * @param[in]  feed_type     Could be NVT_FEED, SCAP_FEED or CERT_FEED.
+ * @param[in]  feed_type     Could be SCAP_FEED or CERT_FEED.
  *
  * @return 0 sync complete, 1 sync already in progress, -1 error
  */
@@ -6370,7 +6372,6 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
 {
   int fd, ret = 0;
   gchar *lockfile_name, *lockfile_dirname;
-  gchar *script_identification_string = NULL;
   pid_t pid;
   mode_t old_mask;
 
@@ -6383,7 +6384,7 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
     }
 
   if (!openvas_get_sync_script_identification
-      (sync_script, &script_identification_string, feed_type))
+      (sync_script, NULL, feed_type))
     {
       g_warning ("No valid synchronization script supplied!");
       return -1;

@@ -1,5 +1,21 @@
 2014-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.c (openvas_get_sync_script_identification): Skip
+	returning the identification string via the parameter "identification"
+	if the parameter is NULL.
+	(openvas_migrate_secinfo): Remove NVT_FEED option from documentation of
+	feed_type parameter. Do not get identification string.
+
+	* src/manage_migrators.c (manage_migrate): Add initialization for
+	version_current and scap_version_current. Check old_cert_version if
+	CERT database exists.
+
+	* src/manage_sql.c (init_manage): Remove extra initialization of
+	cert_db_version. Get version number for correct database in error
+	messages.
+
+2014-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	If SCAP and/or CERT database exists, check version on openvasmd startup
 	and migrate them to current version on openvasmd --migrate.
 

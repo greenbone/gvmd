@@ -8376,7 +8376,7 @@ manage_migrate (GSList *log_config, const gchar *database)
   int old_version, old_scap_version, old_cert_version;
   /* The version that this program requires. */
   int new_version, new_scap_version, new_cert_version;
-  int version_current, scap_version_current, cert_version_current = 0;
+  int version_current = 0, scap_version_current = 0, cert_version_current = 0;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -8479,7 +8479,7 @@ manage_migrate (GSList *log_config, const gchar *database)
       g_debug ("CERT database already at current version");
       cert_version_current = 1;
     }
-  else if (old_scap_version == -1)
+  else if (old_cert_version == -1)
     g_warning ("No CERT database found for migration");
   else if (old_cert_version > new_cert_version)
     {

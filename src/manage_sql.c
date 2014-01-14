@@ -10425,7 +10425,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, void (*update_progress) ())
 {
   char *database_version;
-  int scap_db_version, cert_db_version = -1;
+  int scap_db_version, cert_db_version;
 
   if ((max_ips_per_target <= 0)
       || (max_ips_per_target > 40000))
@@ -10514,9 +10514,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
     g_message ("No SCAP database found");
   else if (scap_db_version != manage_scap_db_supported_version ())
     {
-      g_message ("%s: database version of SCAP database: %s\n",
+      g_message ("%s: database version of SCAP database: %d\n",
                   __FUNCTION__,
-                  database_version);
+                  scap_db_version);
       g_message ("%s: SCAP database version supported by manager: %s\n",
                   __FUNCTION__,
                   G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
@@ -10530,9 +10530,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
     g_message ("No CERT database found");
   else if (cert_db_version != manage_cert_db_supported_version ())
     {
-      g_message ("%s: database version of CERT database: %s\n",
+      g_message ("%s: database version of CERT database: %d\n",
                   __FUNCTION__,
-                  database_version);
+                  cert_db_version);
       g_message ("%s: CERT database version supported by manager: %s\n",
                   __FUNCTION__,
                   G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
