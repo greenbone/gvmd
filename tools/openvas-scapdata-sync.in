@@ -101,6 +101,7 @@ VERBOSE=0
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
   echo " --rsync		sync with rsync (default)"
+  echo " --migrate		migrate database without downloading feed data"
   echo " --refresh		update database without downloading feed data"
   echo " --refresh-private	update database only using private data"
   echo " --check		just checksum check"
@@ -750,6 +751,10 @@ if [ -n "$1" ]; then
         VERBOSE=1
         ;;
       --refresh)
+        do_refresh
+        exit 0
+        ;;
+      --migrate)
         do_refresh
         exit 0
         ;;

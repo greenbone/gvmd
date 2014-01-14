@@ -4332,6 +4332,76 @@ manage_db_version ()
 }
 
 /**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_scap_db_supported_version ()
+{
+  return OPENVASMD_SCAP_DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version of the actual database.
+ *
+ * @return Database version read from database if possible, else -1.
+ */
+int
+manage_scap_db_version ()
+{
+  if (manage_scap_loaded () == 0)
+    return -1;
+
+  int number;
+  char *version = sql_string (0, 0,
+                              "SELECT value FROM scap.meta"
+                              " WHERE name = 'database_version' LIMIT 1;");
+  if (version)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_cert_db_supported_version ()
+{
+  return OPENVASMD_CERT_DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version of the actual database.
+ *
+ * @return Database version read from database if possible, else -1.
+ */
+int
+manage_cert_db_version ()
+{
+  if (manage_cert_loaded () == 0)
+    return -1;
+
+  int number;
+  char *version = sql_string (0, 0,
+                              "SELECT value FROM cert.meta"
+                              " WHERE name = 'database_version' LIMIT 1;");
+  if (version)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
  * @brief Returns associated name for a tcp/ip port.
  *
  * @param   number      Port number to get name for.
@@ -10355,6 +10425,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, void (*update_progress) ())
 {
   char *database_version;
+  int scap_db_version, cert_db_version = -1;
 
   if ((max_ips_per_target <= 0)
       || (max_ips_per_target > 40000))
@@ -10435,6 +10506,38 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                      " OR name = 'nvt_preferences_enabled';")
           || count < 2)
         return -3;
+    }
+
+  /* Check SCAP database version */
+  scap_db_version = manage_scap_db_version ();
+  if (scap_db_version == -1)
+    g_message ("No SCAP database found");
+  else if (scap_db_version != manage_scap_db_supported_version ())
+    {
+      g_message ("%s: database version of SCAP database: %s\n",
+                  __FUNCTION__,
+                  database_version);
+      g_message ("%s: SCAP database version supported by manager: %s\n",
+                  __FUNCTION__,
+                  G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
+      g_free (database_version);
+      return -2;
+    }
+
+  /* Check CERT database version */
+  cert_db_version = manage_cert_db_version ();
+  if (cert_db_version == -1)
+    g_message ("No CERT database found");
+  else if (cert_db_version != manage_cert_db_supported_version ())
+    {
+      g_message ("%s: database version of CERT database: %s\n",
+                  __FUNCTION__,
+                  database_version);
+      g_message ("%s: CERT database version supported by manager: %s\n",
+                  __FUNCTION__,
+                  G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
+      g_free (database_version);
+      return -2;
     }
 
   /* Ensure the tables exist. */

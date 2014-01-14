@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20130521
+VERSION=20140114
 RESTRICTED=1
 
 # SETTINGS
@@ -269,6 +269,7 @@ do_help () {
   echo " --feedversion	display version of this feed"
   echo " --help		display this help"
   echo " --identify	display information"
+  echo " --migrate	update database without downloading new state"
   echo " --refresh	update database without downloading new state"
   echo " --selftest	perform self-test"
   echo " --version	display version"
@@ -478,6 +479,9 @@ while test $# -gt 0; do
           exit 0
           ;;
         --refresh)
+          REFRESH_ONLY=1
+          ;;
+        --migrate)
           REFRESH_ONLY=1
           ;;
         --selftest)

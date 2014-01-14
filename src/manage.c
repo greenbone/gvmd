@@ -6356,6 +6356,235 @@ exit:
 }
 
 /**
+ * @brief Migrates SCAP or CERT database, waiting until migration terminates.
+ *
+ * Calls a sync script to migrate the SCAP or CERT database.
+ *
+ * @param[in]  sync_script   The file name of the synchronization script.
+ * @param[in]  feed_type     Could be NVT_FEED, SCAP_FEED or CERT_FEED.
+ *
+ * @return 0 sync complete, 1 sync already in progress, -1 error
+ */
+int
+openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
+{
+  int fd, ret = 0;
+  gchar *lockfile_name, *lockfile_dirname;
+  gchar *script_identification_string = NULL;
+  pid_t pid;
+  mode_t old_mask;
+
+  g_assert (sync_script);
+
+  if (feed_type != SCAP_FEED && feed_type != CERT_FEED)
+    {
+      g_warning ("Unsupported feed_type!");
+      return -1;
+    }
+
+  if (!openvas_get_sync_script_identification
+      (sync_script, &script_identification_string, feed_type))
+    {
+      g_warning ("No valid synchronization script supplied!");
+      return -1;
+    }
+
+  /* Open the lock file. */
+
+  lockfile_name =
+    g_build_filename (g_get_tmp_dir (), "openvas-feed-sync", sync_script, NULL);
+  lockfile_dirname = g_path_get_dirname (lockfile_name);
+  old_mask = umask (0);
+  if (g_mkdir_with_parents (lockfile_dirname,
+                            /* "-rwxrwxrwx" */
+                            S_IRWXU | S_IRWXG | S_IRWXO))
+    {
+      umask (old_mask);
+      g_warning ("Failed to create lock dir '%s': %s", lockfile_dirname,
+                 strerror (errno));
+      g_free (lockfile_name);
+      g_free (lockfile_dirname);
+      return -1;
+    }
+  umask (old_mask);
+  g_free (lockfile_dirname);
+
+  fd =
+    open (lockfile_name, O_RDWR | O_CREAT | O_EXCL,
+          S_IWUSR | S_IRUSR | S_IROTH | S_IRGRP /* "-rw-r--r--" */ );
+  if (fd == -1)
+    {
+      if (errno == EEXIST)
+        return 1;
+      g_warning ("Failed to open lock file '%s': %s", lockfile_name,
+                 strerror (errno));
+      g_free (lockfile_name);
+      return -1;
+    }
+
+  /* Write the current time and user to the lock file. */
+  {
+    const char *output;
+    int count, left;
+    time_t now;
+
+    time (&now);
+    output = ctime (&now);
+    left = strlen (output);
+    while (1)
+      {
+        count = write (fd, output, left);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == left)
+          break;
+        left -= count;
+        output += count;
+      }
+
+    output = ""; // user name
+    left = strlen (output);
+    while (1)
+      {
+        count = write (fd, output, left);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == left)
+          break;
+        left -= count;
+        output += count;
+      }
+
+    while (1)
+      {
+        count = write (fd, "\n", 1);
+        if (count < 0)
+          {
+            if (errno == EINTR || errno == EAGAIN)
+              continue;
+            g_warning ("%s: write: %s", __FUNCTION__, strerror (errno));
+            goto exit;
+          }
+        if (count == 1)
+          break;
+      }
+  }
+
+  /* Fork a child to be the sync process. */
+
+  pid = fork ();
+  switch (pid)
+    {
+    case 0:
+      {
+        /* Child.  Become the sync process. */
+
+        if (freopen ("/tmp/openvasad_sync_out", "w", stdout) == NULL)
+          {
+            g_warning ("Failed to reopen stdout: %s", strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+
+        if (freopen ("/tmp/openvasad_sync_err", "w", stderr) == NULL)
+          {
+            g_warning ("Failed to reopen stderr: %s", strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+
+        if (execl (sync_script, sync_script, "--migrate", (char *) NULL))
+          {
+            g_warning ("Failed to execl %s: %s", sync_script, strerror (errno));
+            exit (EXIT_FAILURE);
+          }
+        /*@notreached@ */
+        exit (EXIT_FAILURE);
+        break;
+      }
+    case -1:
+      /* Parent when error. */
+
+      g_warning ("%s: failed to fork syncer: %s\n", __FUNCTION__,
+                 strerror (errno));
+      ret = -1;
+      goto exit;
+      break;
+    default:
+      {
+        int status;
+
+        /* Parent on success.  Wait for child, and handle result. */
+
+        while (wait (&status) < 0)
+          {
+            if (errno == ECHILD)
+              {
+                g_warning ("Failed to get child exit status");
+                ret = -1;
+                goto exit;
+              }
+            if (errno == EINTR)
+              continue;
+            g_warning ("wait: %s", strerror (errno));
+            ret = -1;
+            goto exit;
+          }
+        if (WIFEXITED (status))
+          switch (WEXITSTATUS (status))
+            {
+              case EXIT_SUCCESS:
+                break;
+              case EXIT_FAILURE:
+              default:
+                g_warning ("Error during SecInfo migration.");
+                ret = -1;
+                break;
+            }
+        else
+          {
+            g_message ("Error during SecInfo migration.");
+            ret = -1;
+          }
+
+        break;
+      }
+    }
+
+exit:
+
+  /* Close the lock file. */
+
+  if (close (fd))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to close lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  /* Remove the lock file. */
+
+  if (unlink (lockfile_name))
+    {
+      g_free (lockfile_name);
+      g_warning ("Failed to remove lock file: %s", strerror (errno));
+      return -1;
+    }
+
+  g_free (lockfile_name);
+
+  return ret;
+}
+
+/**
  * @brief Determine if the administrator is synchronizing with a feed.
  *
  * @param[in]   sync_script  The file name of the synchronization script.

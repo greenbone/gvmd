@@ -113,6 +113,18 @@ manage_db_supported_version ();
 int
 manage_db_version ();
 
+int
+manage_scap_db_supported_version ();
+
+int
+manage_scap_db_version ();
+
+int
+manage_cert_db_supported_version ();
+
+int
+manage_cert_db_version ();
+
 char *
 port_name_formatted (const char *);
 
@@ -3374,6 +3386,9 @@ trash_tag_writable (tag_t);
 int
 openvas_sync_feed
 (const gchar *, const gchar *, int);
+
+int
+openvas_migrate_secinfo (const gchar*, int);
 
 int
 openvas_current_sync (const gchar *, gchar **, gchar **);

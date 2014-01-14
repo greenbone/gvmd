@@ -8364,16 +8364,19 @@ migrate_is_available (int old_version, int new_version)
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
  *
- * @return 0 success, 1 already on supported version, 2 too hard, -1 error.
+ * @return 0 success, 1 already on supported version, 2 too hard,
+ * 11 cannot migrate SCAP DB, 12 cannot migrate CERT DB,
+ * -1 error, -11 error running SCAP migration, -12 error running CERT migration.
  */
 int
 manage_migrate (GSList *log_config, const gchar *database)
 {
   migrator_t *migrators;
   /* The version on the disk. */
-  int old_version;
+  int old_version, old_scap_version, old_cert_version;
   /* The version that this program requires. */
-  int new_version;
+  int new_version, new_scap_version, new_cert_version;
+  int version_current, scap_version_current, cert_version_current = 0;
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -8393,42 +8396,122 @@ manage_migrate (GSList *log_config, const gchar *database)
 
   if (old_version == new_version)
     {
-      cleanup_manage_process (TRUE);
-      return 1;
+      version_current = 1;
     }
-
-  switch (migrate_is_available (old_version, new_version))
+  else
     {
-      case -1:
-        cleanup_manage_process (TRUE);
-        return -1;
-      case  0:
-        cleanup_manage_process (TRUE);
-        return  2;
-    }
-
-  /* Call the migrators to take the DB from the old version to the new. */
-
-  migrators = database_migrators + old_version + 1;
-
-  while ((migrators->version >= 0) && (migrators->version <= new_version))
-    {
-      if (migrators->function == NULL)
+      switch (migrate_is_available (old_version, new_version))
         {
-          cleanup_manage_process (TRUE);
-          return -1;
+          case -1:
+            cleanup_manage_process (TRUE);
+            return -1;
+          case  0:
+            cleanup_manage_process (TRUE);
+            return  2;
         }
 
-      infof ("   Migrating to %i", migrators->version);
+      /* Call the migrators to take the DB from the old version to the new. */
 
-      if (migrators->function ())
+      migrators = database_migrators + old_version + 1;
+
+      while ((migrators->version >= 0) && (migrators->version <= new_version))
         {
-          cleanup_manage_process (TRUE);
-          return -1;
+          if (migrators->function == NULL)
+            {
+              cleanup_manage_process (TRUE);
+              return -1;
+            }
+
+          infof ("   Migrating to %i", migrators->version);
+
+          if (migrators->function ())
+            {
+              cleanup_manage_process (TRUE);
+              return -1;
+            }
+          migrators++;
         }
-      migrators++;
+    }
+
+  /* Migrate SCAP and CERT databases */
+  old_scap_version = manage_scap_db_version ();
+  new_scap_version = manage_scap_db_supported_version ();
+  old_cert_version = manage_cert_db_version ();
+  new_cert_version = manage_cert_db_supported_version ();
+
+  if (old_scap_version == new_scap_version)
+    {
+      g_debug ("SCAP database already at current version");
+      scap_version_current = 1;
+    }
+  else if (old_scap_version == -1)
+    g_message ("No SCAP database found for migration");
+  else if (old_scap_version > new_scap_version)
+    {
+      g_warning ("SCAP database version too new: %d", old_scap_version);
+      return 11;
+    }
+  else
+    {
+      g_message ("Migrating SCAP database");
+      switch (openvas_migrate_secinfo (SBINDIR "/openvas-scapdata-sync",
+                                       SCAP_FEED))
+        {
+          case 0:
+            g_message ("SCAP database migrated successfully");
+            break;
+          case 1:
+            g_warning ("SCAP sync already running");
+            cleanup_manage_process (TRUE);
+            return 11;
+            break;
+          default:
+            assert (0);
+          case -1:
+            cleanup_manage_process (TRUE);
+            return -11;
+            break;
+        }
+    }
+
+  if (old_cert_version == new_cert_version)
+    {
+      g_debug ("CERT database already at current version");
+      cert_version_current = 1;
+    }
+  else if (old_scap_version == -1)
+    g_warning ("No CERT database found for migration");
+  else if (old_cert_version > new_cert_version)
+    {
+      g_warning ("CERT database version too new: %d", old_cert_version);
+      return 12;
+    }
+  else
+    {
+      g_message ("Migrating CERT database");
+      switch (openvas_migrate_secinfo (SBINDIR "/openvas-certdata-sync",
+                                       CERT_FEED))
+        {
+          case 0:
+            g_message ("CERT database migrated successfully");
+            break;
+          case 1:
+            g_warning ("CERT sync already running");
+            cleanup_manage_process (TRUE);
+            return 12;
+            break;
+          default:
+            assert (0);
+          case -1:
+            cleanup_manage_process (TRUE);
+            return -12;
+            break;
+        }
     }
 
   cleanup_manage_process (TRUE);
-  return 0;
+  if (version_current && scap_version_current && cert_version_current)
+    return 1;
+  else
+    return 0;
 }

@@ -104,6 +104,7 @@ fi
 do_help () {
   echo "$0: Sync CERT advisory data"
   echo "OpenVAS administrator functions:"
+  echo " --migrate      migrate database without downloading feed data"
   echo " --refresh      refresh database without downloading feed data"
   echo " --selftest     perform self-test"
   echo " --identify     display information"
@@ -319,6 +320,10 @@ if [ -n "$1" ]; then
         exit 0
         ;;
       --refresh)
+        do_refresh
+        exit 0
+        ;;
+      --migrate)
         do_refresh
         exit 0
         ;;

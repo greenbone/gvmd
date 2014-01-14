@@ -1388,15 +1388,31 @@ main (int argc, char** argv)
             infof ("   Migration succeeded.\n");
             return EXIT_SUCCESS;
           case 1:
-            g_warning ("%s: database is already at the supported version\n",
+            g_warning ("%s: databases are already at the supported version\n",
                        __FUNCTION__);
             return EXIT_SUCCESS;
           case 2:
             g_warning ("%s: database migration too hard\n",
                        __FUNCTION__);
             return EXIT_FAILURE;
+          case 11:
+            g_warning ("%s: cannot migrate SCAP database\n",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case 12:
+            g_warning ("%s: cannot migrate CERT database\n",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
           case -1:
             g_critical ("%s: database migration failed\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+          case -11:
+            g_critical ("%s: SCAP database migration failed\n",
+                        __FUNCTION__);
+            return EXIT_FAILURE;
+          case -12:
+            g_critical ("%s: CERT database migration failed\n",
                         __FUNCTION__);
             return EXIT_FAILURE;
           default:

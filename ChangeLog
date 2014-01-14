@@ -1,3 +1,36 @@
+2014-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	If SCAP and/or CERT database exists, check version on openvasmd startup
+	and migrate them to current version on openvasmd --migrate.
+
+	* CMakeLists.txt (OPENVASMD_SCAP_DATABASE_VERSION)
+	(OPENVASMD_CERT_DATABASE_VERSION): New variables.
+
+	* src/CMakeLists.txt (OPENVASMD_SCAP_DATABASE_VERSION)
+	(OPENVASMD_CERT_DATABASE_VERSION): New "add_definitions".
+
+	* src/manage.c (openvas_migrate_secinfo): New function.
+
+	* src/manage.h (manage_scap_db_supported_version)
+	(manage_scap_db_version, manage_cert_db_supported_version)
+	(manage_cert_db_version, openvas_migrate_secinfo): New function
+	prototypes.
+
+	* src/manage_migrators.c (manage_migrate): Add migration of SCAP and
+	CERT databases in case they exist.
+
+	* src/manage_sql.c (manage_scap_db_supported_version)
+	(manage_scap_db_version, manage_cert_db_supported_version)
+	(manage_cert_db_version): New functions.
+	(init_manage): Check version of SCAP and CERT databases, if they exist.
+
+	* src/openvasmd.c (main): Handle new SCAP and CERT related return
+	values of manage_migrate.
+
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync,
+	tools/openvas-scapdata-sync.in, tools/openvas-certdata-sync.in: New
+	parameter "--migrate"
+
 2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* CMakeLists.txt (OPENVAS_CA_DIR): Change to trusted_certs for clarity.
