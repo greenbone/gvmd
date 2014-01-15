@@ -1,3 +1,8 @@
+2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Remove extra calls of g_free in
+	SCAP / CERT version checks.
+
 2014-01-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (openvas_get_sync_script_identification): Skip

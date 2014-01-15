@@ -10520,7 +10520,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
       g_message ("%s: SCAP database version supported by manager: %s\n",
                   __FUNCTION__,
                   G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
-      g_free (database_version);
       return -2;
     }
 
@@ -10536,7 +10535,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
       g_message ("%s: CERT database version supported by manager: %s\n",
                   __FUNCTION__,
                   G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
-      g_free (database_version);
       return -2;
     }
 
