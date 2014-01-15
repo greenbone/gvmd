@@ -3,8 +3,10 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:str="http://exslt.org/strings"
+    xmlns:func="http://exslt.org/functions"
     xmlns:date="http://exslt.org/dates-and-times"
-    extension-element-prefixes="str date">
+    xmlns:openvas="http://openvas.org"
+    extension-element-prefixes="str date func openvas">
   <xsl:output method="html"
               doctype-system="http://www.w3.org/TR/html4/strict.dtd"
               doctype-public="-//W3C//DTD HTML 4.01//EN"
@@ -38,6 +40,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <!-- <xsl:key name="host_results" match="*/result" use="host" /> -->
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
+
+<func:function name="openvas:get-nvt-tag">
+    <xsl:param name="tags"/>
+    <xsl:param name="name"/>
+  <xsl:variable name="after">
+    <xsl:value-of select="substring-after (nvt/tags, concat ($name, '='))"/>
+  </xsl:variable>
+  <xsl:choose>
+      <xsl:when test="contains ($after, '|')">
+        <func:result select="substring-before ($after, '|')"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="$after"/>
+      </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
+<func:function name="openvas:newstyle-nvt">
+  <xsl:param name="nvt"/>
+  <xsl:choose>
+    <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
+                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
+      <func:result select="1"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="0"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
+<!-- Currently only a very simple formatting method to produce
+     nice HTML from a structured text:
+     - create paragraphs for each text block separated with a empty line
+-->
+<xsl:template name="structured-text">
+  <xsl:param name="string"/>
+
+  <xsl:for-each select="str:split($string, '&#10;&#10;')">
+    <p>
+      <xsl:value-of select="."/>
+    </p>
+  </xsl:for-each>
+</xsl:template>
 
 <xsl:template name="prognostic-description">
   <xsl:param name="string"/>
@@ -296,53 +345,107 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </div>
   </xsl:template>
 
-  <xsl:template match="nvt">
-    <xsl:variable name="cve_ref">
-      <xsl:if test="cve != '' and cve != 'NOCVE'">
-        <xsl:value-of select="cve/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="bid_ref">
-      <xsl:if test="bid != '' and bid != 'NOBID'">
-        <xsl:value-of select="bid/text()"/>
-      </xsl:if>
-    </xsl:variable>
-    <xsl:variable name="xref_ref">
-      <xsl:if test="xref != '' and xref != 'NOXREF'">
-        <xsl:value-of select="xref/text()"/>
-      </xsl:if>
-    </xsl:variable>
+  <xsl:template name="ref_cve_list">
+    <xsl:param name="cvelist"/>
 
-    <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
-      <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-        <b>References</b><br/>
+    <xsl:variable name="token" select="/envelope/token"/>
 
-        <table>
-          <xsl:if test="$cve_ref != ''">
-            <tr valign="top">
-              <td>CVE:</td>
-              <td><xsl:value-of select="$cve_ref"/></td>
-            </tr>
-          </xsl:if>
-          <xsl:if test="$bid_ref != ''">
-            <tr valign="top">
-              <td>BID:</td>
-              <td><xsl:value-of select="$bid_ref"/></td>
-            </tr>
-          </xsl:if>
-          <xsl:if test="$xref_ref != ''">
-            <tr valign="top">
-              <td>Other:</td>
-            </tr>
-            <xsl:for-each select="str:split($xref_ref, ',')">
-              <tr valign="top">
-                <td></td>
-                <td><xsl:value-of select="."/></td>
-              </tr>
-            </xsl:for-each>
-          </xsl:if>
-        </table>
-      </div>
+    <xsl:variable name="cvecount" select="count(str:split($cvelist, ','))"/>
+    <xsl:if test="$cvecount &gt; 0">
+      <tr valign="top">
+        <td>CVE:</td>
+        <td>
+          <xsl:for-each select="str:split($cvelist, ',')">
+            <xsl:value-of select="normalize-space(.)"/>
+            <xsl:if test="position() &lt; $cvecount">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </td>
+      </tr>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template name="ref_bid_list">
+    <xsl:param name="bidlist"/>
+
+    <xsl:variable name="token" select="/envelope/token"/>
+
+    <xsl:variable name="bidcount" select="count(str:split($bidlist, ','))"/>
+    <xsl:if test="$bidcount &gt; 0">
+      <tr valign="top">
+        <td>BID:</td>
+        <td>
+          <xsl:for-each select="str:split($bidlist, ',')">
+            <xsl:value-of select="."/>
+            <xsl:if test="position() &lt; $bidcount">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </td>
+      </tr>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template name="ref_cert_list">
+    <xsl:param name="certlist"/>
+    <xsl:variable name="token" select="/envelope/token"/>
+    <xsl:variable name="certcount" select="count($certlist/cert_ref)"/>
+
+    <xsl:if test="count($certlist/warning)">
+      <xsl:for-each select="$certlist/warning">
+        <tr valign="top">
+          <td>CERT:</td>
+          <td><i>Warning: <xsl:value-of select="text()"/></i></td>
+        </tr>
+      </xsl:for-each>
+    </xsl:if>
+
+    <xsl:if test="$certcount &gt; 0">
+      <tr valign="top">
+        <td>CERT:</td>
+        <td>
+          <xsl:for-each select="$certlist/cert_ref">
+            <xsl:choose>
+              <xsl:when test="@type='DFN-CERT'">
+                <xsl:call-template name="wrap">
+                  <xsl:with-param name="string" select="@id"/>
+                  <xsl:with-param name="width" select="'55'"/>
+                </xsl:call-template>
+              </xsl:when>
+              <xsl:otherwise>
+                <b>?</b><xsl:value-of select="./@id"/>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:if test="position() &lt; $certcount">
+              <xsl:text>, </xsl:text>
+            </xsl:if>
+          </xsl:for-each>
+        </td>
+      </tr>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template name="ref_xref_list">
+    <xsl:param name="xreflist"/>
+
+    <xsl:variable name="token" select="/envelope/token"/>
+
+    <xsl:variable name="xrefcount" select="count(str:split($xreflist, ','))"/>
+    <xsl:if test="$xrefcount &gt; 0">
+      <xsl:for-each select="str:split($xreflist, ',')">
+        <tr valign="top">
+          <td><xsl:if test="position()=1">Other:</xsl:if></td>
+          <xsl:choose>
+            <xsl:when test="contains(., 'URL:')">
+              <td><xsl:value-of select="substring-after(., 'URL:')"/></td>
+            </xsl:when>
+            <xsl:otherwise>
+              <td><xsl:value-of select="."/></td>
+            </xsl:otherwise>
+          </xsl:choose>
+        </tr>
+      </xsl:for-each>
     </xsl:if>
   </xsl:template>
 
@@ -434,18 +537,223 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             (OID: <xsl:value-of select="detection/result/details/detail[name = 'source_oid']/value/text()"/>)
           </div>
         </xsl:if>
+
+        <!-- Summary -->
+        <xsl:if test="openvas:newstyle-nvt (nvt)">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Summary</b>
+            <xsl:call-template name="structured-text">
+              <xsl:with-param name="string"
+                              select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+            </xsl:call-template>
+          </div>
+        </xsl:if>
+
+        <!-- Result -->
+        <xsl:choose>
+          <xsl:when test="$report/@type = 'prognostic'">
+            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <xsl:choose>
+                <xsl:when test="delta/text() = 'changed'">
+                  <b>Result 1</b>
+                  <p></p>
+                </xsl:when>
+              </xsl:choose>
+              <p>
+                <xsl:call-template name="prognostic-description">
+                  <xsl:with-param name="string" select="description"/>
+                </xsl:call-template>
+              </p>
+            </div>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:choose>
+              <xsl:when test="openvas:newstyle-nvt (nvt)">
+                <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+                  <xsl:choose>
+                    <xsl:when test="delta/text() = 'changed'">
+                      <b>Result 1</b>
+                      <p></p>
+                    </xsl:when>
+                  </xsl:choose>
+                  <b>Vulnerability Detection Result</b>
+                  <xsl:choose>
+                    <xsl:when test="string-length(description) &lt; 2">
+                      <p>
+                        Vulnerability was detected according to the Vulnerability Detection Method.
+                      </p>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <pre>
+                        <xsl:call-template name="wrap">
+                          <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
+                        </xsl:call-template>
+                      </pre>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                </div>
+              </xsl:when>
+              <xsl:otherwise>
+                <div class="result_section_top result_section">
+                  <xsl:choose>
+                    <xsl:when test="delta/text() = 'changed'">
+                      <b>Result 1</b>
+                      <p></p>
+                    </xsl:when>
+                  </xsl:choose>
+                  <pre>
+                    <xsl:call-template name="wrap">
+                      <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
+                    </xsl:call-template>
+                  </pre>
+                </div>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:otherwise>
+        </xsl:choose>
+
+        <xsl:if test="openvas:newstyle-nvt (nvt)">
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <b>Impact</b>
+              <xsl:call-template name="structured-text">
+                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+              </xsl:call-template>
+            </div>
+          </xsl:if>
+
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Solution</b>
+              <xsl:call-template name="structured-text">
+                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+              </xsl:call-template>
+            </div>
+          </xsl:if>
+
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <b>Vulnerability Insight</b>
+              <xsl:call-template name="structured-text">
+                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+              </xsl:call-template>
+            </div>
+          </xsl:if>
+        </xsl:if>
+
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
           <xsl:choose>
-            <xsl:when test="delta/text() = 'changed'">
-              <b>Result 1</b>
+            <xsl:when test="(nvt/cvss_base &gt; 0) or (cve/cvss_base &gt; 0)">
+              <b>Vulnerability Detection Method</b>
+            </xsl:when>
+            <xsl:otherwise>
+              <b>Log Method</b>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:call-template name="structured-text">
+            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
+          </xsl:call-template>
+          <p>
+            Details:
+            <xsl:choose>
+              <xsl:when test="$report/@type = 'prognostic'">
+                <xsl:value-of select="normalize-space(cve/@id)"/>
+              </xsl:when>
+              <xsl:when test="nvt/@oid = 0">
+                <xsl:if test="delta/text()">
+                  <br/>
+                </xsl:if>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:variable name="max" select="80"/>
+                <xsl:choose>
+                  <xsl:when test="string-length(nvt/name) &gt; $max">
+                    <abbr title="{nvt/name} ({nvt/@oid})"><xsl:value-of select="substring(nvt/name, 0, $max)"/>...</abbr>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:value-of select="nvt/name"/>
+                  </xsl:otherwise>
+                </xsl:choose>
+                (OID: <xsl:value-of select="nvt/@oid"/>)
+              </xsl:otherwise>
+            </xsl:choose>
+          </p>
+          <xsl:choose>
+            <xsl:when test="not($report/@type = 'prognostic')">
+              <xsl:if test="scan_nvt_version != ''">
+                <p>
+                  Version used: <xsl:value-of select="scan_nvt_version"/>
+                </p>
+              </xsl:if>
             </xsl:when>
           </xsl:choose>
-          <pre>
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="description"/>
-            </xsl:call-template>
-          </pre>
         </div>
+
+        <xsl:if test="count (detection)">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Product Detection Result</b>
+            <p>
+              <table>
+                <tr>
+                  <td>Product:</td>
+                  <td>
+                    <xsl:call-template name="wrap">
+                      <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
+                      <xsl:with-param name="width" select="'55'"/>
+                    </xsl:call-template>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Method:</td>
+                  <td>
+                    <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+                    (OID: <xsl:value-of select="detection/result/details/detail[name = 'source_oid']/value/text()"/>)
+                  </td>
+                </tr>
+              </table>
+            </p>
+          </div>
+        </xsl:if>
+
+        <xsl:variable name="cve_ref">
+          <xsl:if test="nvt/cve != '' and nvt/cve != 'NOCVE'">
+            <xsl:value-of select="nvt/cve/text()"/>
+          </xsl:if>
+        </xsl:variable>
+        <xsl:variable name="bid_ref">
+          <xsl:if test="nvt/bid != '' and nvt/bid != 'NOBID'">
+            <xsl:value-of select="nvt/bid/text()"/>
+          </xsl:if>
+        </xsl:variable>
+        <xsl:variable name="cert_ref" select="nvt/cert"/>
+        <xsl:variable name="xref">
+          <xsl:if test="nvt/xref != '' and nvt/xref != 'NOXREF'">
+            <xsl:value-of select="nvt/xref/text()"/>
+          </xsl:if>
+        </xsl:variable>
+
+        <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref != '' or count($cert_ref/cert_ref) > 0">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>References</b><br/>
+            <p>
+              <table>
+                <xsl:call-template name="ref_cve_list">
+                  <xsl:with-param name="cvelist" select="$cve_ref"/>
+                </xsl:call-template>
+                <xsl:call-template name="ref_bid_list">
+                  <xsl:with-param name="bidlist" select="$bid_ref"/>
+                </xsl:call-template>
+                <xsl:call-template name="ref_cert_list">
+                  <xsl:with-param name="certlist" select="$cert_ref"/>
+                </xsl:call-template>
+                <xsl:call-template name="ref_xref_list">
+                  <xsl:with-param name="xreflist" select="$xref"/>
+                </xsl:call-template>
+              </table>
+            </p>
+          </div>
+        </xsl:if>
+
         <xsl:if test="delta">
           <xsl:choose>
             <xsl:when test="delta/text() = 'changed'">
@@ -474,7 +782,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:otherwise>0</xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
-        <xsl:apply-templates select="nvt"/>
         <xsl:apply-templates select="notes/note">
           <xsl:with-param name="delta" select="$delta"/>
         </xsl:apply-templates>

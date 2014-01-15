@@ -1,3 +1,12 @@
+2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (openvas:get-nvt-tag)
+	(openvas:newstyle-nvt): New functions.
+	(structured-text, ref_cve_list, ref_bid_list, ref_cert_list)
+	(ref_xref_list): New templates.
+	(nvt): Remove.
+	(result [issue]): Add description sections for new style NVTs.
+
 2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (manage_migrate): Change log level of CERT
