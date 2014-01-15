@@ -1,4 +1,4 @@
-openvas-manager 5.0+beta4 (2014-??-??)
+openvas-manager 5.0+beta4 (2014-01-15)
 
 This is the fourth beta version of the upcoming 5.0 release of the OpenVAS
 Manager. It is the central management service between the actual security
@@ -20,10 +20,11 @@ Main changes since 5.0+beta3:
 * New report format plugin for exporting TLS mapping results into a CSV file.
 * Add option --delete-user.
 * Rename option --first-user to --create-user.
-* Add option --role, which allows to set the role with --first-user.
+* Add option --role, which allows to set the role with --create-user.
 * New predefined config Host Discovery.
 * Large number of small fixes and improvements, especially
-  regrding permissions.
+  regarding permissions.
+* The --migrate option now also migrates SCAP and CERT databases.
 
 
 openvas-manager 5.0+beta3 (2013-11-22)

@@ -1,3 +1,7 @@
+2014-01-15  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* CHANGES: Add mention of the --migrate behavior change, add date
+
 2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-certdata-sync (check_db_version): Delete newlines
