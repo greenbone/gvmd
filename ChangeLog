@@ -1,3 +1,9 @@
+2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_migrators.c (manage_migrate): Change log level of CERT
+	database not found messages to message. Count missing SCAP / CERT
+	databases as current for the purpose of this function.
+
 2014-01-15  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* CHANGES: Add mention of the --migrate behavior change, add date

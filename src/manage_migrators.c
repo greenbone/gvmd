@@ -8445,7 +8445,10 @@ manage_migrate (GSList *log_config, const gchar *database)
       scap_version_current = 1;
     }
   else if (old_scap_version == -1)
-    g_message ("No SCAP database found for migration");
+    {
+      g_message ("No SCAP database found for migration");
+      scap_version_current = 1;
+    }
   else if (old_scap_version > new_scap_version)
     {
       g_warning ("SCAP database version too new: %d", old_scap_version);
@@ -8480,7 +8483,10 @@ manage_migrate (GSList *log_config, const gchar *database)
       cert_version_current = 1;
     }
   else if (old_cert_version == -1)
-    g_warning ("No CERT database found for migration");
+    {
+      g_message ("No CERT database found for migration");
+      cert_version_current = 1;
+    }
   else if (old_cert_version > new_cert_version)
     {
       g_warning ("CERT database version too new: %d", old_cert_version);
