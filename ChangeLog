@@ -1,3 +1,9 @@
+2014-01-15  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Post release version bump.
+
+	* CMakeLists.txt: Change version to 5.0+beta5
+
 2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (openvas:get-nvt-tag)
