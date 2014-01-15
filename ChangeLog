@@ -1,5 +1,21 @@
 2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/greenbone-certdata-sync (check_db_version): Delete newlines
+	from SQLite response.
+
+	* tools/greenbone-scapdata-sync (check_db_version): Delete newlines
+	from SQLite response.
+
+	* tools/openvas-certdata-sync.in: If $CERT_DIR is not set, use value
+	of cmake variable OPENVAS_CERT_DATA_DIR.
+	(check_db_version) Delete newlines from SQLite response.
+
+	* tools/openvas-scapdata-sync.in: If $SCAP_DIR is not set, use value
+	of cmake variable OPENVAS_SCAP_DATA_DIR.
+	(check_db_version) Delete newlines from SQLite response.
+
+2014-01-15  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Remove extra calls of g_free in
 	SCAP / CERT version checks.
 

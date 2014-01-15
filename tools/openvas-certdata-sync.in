@@ -26,16 +26,7 @@
 
 # configure CERT_DIR where we will sync CERT data
 if [ -z "$CERT_DIR" ]; then
-  OPENVASSD=`which openvassd`
-  if [ -z "$OPENVASSD" ] ; then
-    echo "[e] Error: openvassd is not in the path, could not determine CERT directory."
-    exit 1
-  else
-    # get the parent directory of the plugins
-    CERT_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)\/plugins/\1/'`
-    # suffix it with "cert-data" which is our target (destination) directory
-    CERT_DIR="$CERT_DIR/cert-data"
-  fi
+  CERT_DIR=@OPENVAS_CERT_DATA_DIR@
 fi
 CERT_DB="$CERT_DIR/cert.db"
 
@@ -210,7 +201,7 @@ db_migrate_4 () {
 }
 
 check_db_version () {
-  DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
+  DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;

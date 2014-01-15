@@ -27,16 +27,7 @@
 
 # configure SCAP_DIR where we will sync SCAP data
 if [ -z "$SCAP_DIR" ]; then
-  OPENVASSD=`which openvassd`
-  if [ -z "$OPENVASSD" ] ; then
-    echo "[e] Error: openvassd is not in the path, could not determine SCAP directory."
-    exit 1
-  else
-    # get the parent directory of the plugins
-    SCAP_DIR=`openvassd -s | awk -F" = " '/^plugins_folder/ { print $2 }' | sed -s 's/\(^.*\)\/plugins/\1/'`
-    # suffix it with "scap-data" which is our target (destination) directory
-    SCAP_DIR="$SCAP_DIR/scap-data"
-  fi
+  SCAP_DIR=@OPENVAS_SCAP_DATA_DIR@
 fi
 SEC_DB="$SCAP_DIR/scap.db"
 
@@ -349,7 +340,7 @@ db_migrate_14 () {
 }
 
 check_db_version () {
-  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null || echo 0`
+  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
