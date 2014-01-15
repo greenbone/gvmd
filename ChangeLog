@@ -1,10 +1,21 @@
+2014-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl (openvas:get-nvt-tag): Correct
+	alignment.
+
+	* src/report_formats/LaTeX/latex.xsl (openvas:get-nvt-tag)
+	(openvas:newstyle-nvt): New functions.
+	(prognostic-description): New template.
+	(result-details-host-port-threat): Add description sections for new style
+	NVTs.
+
 2014-01-15  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump.
 
 	* CMakeLists.txt: Change version to 5.0+beta5
 
-2014-01-13  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (openvas:get-nvt-tag)
 	(openvas:newstyle-nvt): New functions.
