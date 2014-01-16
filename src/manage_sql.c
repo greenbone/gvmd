@@ -48020,7 +48020,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
- *         99 permission denied, -1 error.
+ *         5 attempted suicide, 99 permission denied, -1 error.
  */
 int
 delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
@@ -48031,6 +48031,15 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   char *current_uuid;
 
   assert (user_id_arg || name_arg);
+
+  if (user_id_arg)
+    {
+      if (strcmp (user_id_arg, current_credentials.uuid) == 0)
+        return 5;
+    }
+  else if (name_arg
+           && (strcmp (user_id_arg, current_credentials.username) == 0))
+    return 5;
 
   sql ("BEGIN EXCLUSIVE;");
 

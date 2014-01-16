@@ -11043,6 +11043,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("delete_user",
                                     "User has an active task"));
                 break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("delete_user",
+                                    "Attempt to delete current user"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",

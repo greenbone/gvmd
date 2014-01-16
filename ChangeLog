@@ -1,5 +1,11 @@
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Handle new delete_user return.
+
+	* src/manage_sql.c (delete_user): Refuse to delete current user.
+
+2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (update_config_cache_init): New function.
 
 	* src/manage_sql.h: Add header accordingly.  Format headers like others.
