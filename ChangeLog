@@ -1,5 +1,9 @@
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Clean up alignment.
+
+2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (result [issue]): Replace GSA class
 	with explicit style.
 
