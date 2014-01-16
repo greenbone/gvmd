@@ -29808,6 +29808,29 @@ update_all_config_caches ()
   cleanup_iterator (&configs);
 }
 
+/**
+ * @brief Update count and growing info in config, without checking user.
+ *
+ * For use during initialisation.
+ *
+ * @param[in]  uuid  Config UUID.
+ *
+ * It's up to the caller to organise a transaction.
+ */
+void
+update_config_cache_init (const char *uuid)
+{
+  iterator_t configs;
+
+  init_iterator (&configs,
+                 "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs"
+                 " WHERE uuid = '%s';",
+                 uuid);
+  while (next (&configs))
+    update_config_cache (&configs);
+  cleanup_iterator (&configs);
+}
+
 /*
  * @brief Inserts a nvt from nvti structure.
  *

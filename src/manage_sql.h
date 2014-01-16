@@ -300,10 +300,10 @@ int manage_report_host_details (report_t, const char *, entity_t);
 
 int manage_report_host_detail (report_t, const char *, const char *);
 
-const char*
-run_status_name_internal (task_status_t);
+const char *run_status_name_internal (task_status_t);
 
-gchar*
-get_ovaldef_short_filename (char*);
+gchar *get_ovaldef_short_filename (char*);
+
+void update_config_cache_init (const char *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

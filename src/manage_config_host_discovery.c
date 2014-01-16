@@ -24,7 +24,10 @@
  */
 
 #include "manage.h"
+#include "manage_sql.h"
 #include "sql.h"
+
+#include <assert.h>
 
 /**
  * @brief Make Host Discovery Scan Config.
@@ -153,6 +156,12 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 int
 check_config_host_discovery (char *const uuid)
 {
+  int update;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  update = 0;
+
   /* Check new preference. */
 
   if (sql_int (0, 0,
@@ -162,12 +171,15 @@ check_config_host_discovery (char *const uuid)
                "       AND name = '" NAME "';",
                uuid)
       == 0)
-    sql ("INSERT INTO config_preferences (config, type, name, value)"
-         " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
-         "         'PLUGINS_PREFS',"
-         "         '" NAME "',"
-         "         'yes');",
-         uuid);
+    {
+      sql ("INSERT INTO config_preferences (config, type, name, value)"
+           " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+           "         'PLUGINS_PREFS',"
+           "         '" NAME "',"
+           "         'yes');",
+           uuid);
+      update = 1;
+    }
 
   /* Check new NVT. */
 
@@ -178,11 +190,19 @@ check_config_host_discovery (char *const uuid)
                "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.12288';",
                uuid)
       == 0)
-    sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-         " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
-         "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
-         "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
-         uuid);
+    {
+      sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+           " VALUES ((SELECT nvt_selector FROM configs WHERE uuid = '%s'), 0,"
+           "         " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           "         '1.3.6.1.4.1.25623.1.0.12288', 'Settings');",
+           uuid);
+      update = 1;
+    }
+
+  if (update)
+    update_config_cache_init (uuid);
+
+  sql ("COMMIT;");
 
   return 0;
 }

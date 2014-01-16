@@ -1,5 +1,14 @@
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (update_config_cache_init): New function.
+
+	* src/manage_sql.h: Add header accordingly.  Format headers like others.
+
+	* src/manage_config_host_discovery.c (check_config_host_discovery): Add
+	config cache updating.
+
+2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Clean up alignment.
 
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
