@@ -294,7 +294,6 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
   DIR *dir;
   struct dirent *entry;
 
-  g_debug ("%s: CA_DIR: %s\n", __FUNCTION__, CA_DIR);
   dir = opendir (CA_DIR);
   if (dir == NULL)
     {
@@ -330,8 +329,6 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
           closedir (dir);
           return -1;
         }
-      else
-        g_debug ("%s: loaded %s\n", __FUNCTION__, name);
       g_free (name);
     }
   closedir (dir);

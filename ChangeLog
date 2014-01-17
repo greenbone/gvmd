@@ -1,3 +1,7 @@
+2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (load_cas): Remove debug messages.
+
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Handle new delete_user return.
