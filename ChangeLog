@@ -1,5 +1,9 @@
 2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (port_range_port_list_uuid): Correct column in SQL.
+
+2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Correct MODIFY_GROUP message.
 
 2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>

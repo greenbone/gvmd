@@ -42269,7 +42269,7 @@ port_range_port_list_uuid (const char *port_range)
                quoted_port_range))
     ret = sql_string (0, 0,
                       "SELECT uuid FROM port_lists"
-                      " WHERE ROWID = (SELECT port_range FROM port_ranges"
+                      " WHERE ROWID = (SELECT port_list FROM port_ranges"
                       "                WHERE uuid = '%s');",
                       quoted_port_range);
   else
