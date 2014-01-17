@@ -17528,7 +17528,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_group",
-                                    "Type must be a valid OMP type"));
+                                    "Failed to find user"));
                 log_event_fail ("group", "Group", NULL, "created");
                 break;
               case 99:
