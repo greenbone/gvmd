@@ -1,0 +1,173 @@
+<!--
+OpenVAS Manager
+$Id$
+Description: OpenVAS Manager Protocol (OMP) quick authenticated scan wizard.
+
+Authors:
+Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+Copyright:
+Copyright (C) 2013-2014 Greenbone Networks GmbH
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 2,
+or, at your option, any later version as published by the Free
+Software Foundation
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+
+<!--
+  This wizard sets up a new task and target to run a scan on a
+  host (or range of hosts) specified by the parameter "hosts" using the
+  "Full and Fast" scan config and default port range.
+  If given a username and password, the wizard will set up credentials to
+  attempt an authenticated scan as well.
+  Additionally, the names of the created resources can be chosen as well.
+
+  Optional parameters:
+  hosts : The hosts to scan. Syntax is the same as for the hosts
+           parameter of the OMP command CREATE_TARGET.
+           Will default to "localhost".
+  username : The username to use for creating credential. If missing, no
+              credentials will be used.
+  password : The password to use for creating credential.
+  task_name : The name to use for the task. Defaults to
+              "LSC Credential for immediate scan of [hosts]"
+  target_name : The name to use for the target. Defaults to
+                 "Target for immediate scan of [hosts]"
+  lsc_credential_name : The name to use for the LSC credential. Defaults to
+                         "LSC Credential for immediate scan of [hosts]"
+
+  To run this wizard, use the OMP command RUN_WIZARD.
+  Please see the OMP documentation for details.
+ -->
+
+<wizard>
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <commands>
+            <xsl:if test="/wizard/params/param[name='username']/value != ''">
+              <create_lsc_credential>
+                <xsl:choose>
+                  <xsl:when test="/wizard/params/param[name='lsc_credential_name']/value">
+                    <name><xsl:value-of select="/wizard/params/param[name='lsc_credential_name']/value"/></name>
+                  </xsl:when>
+                  <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
+                    <name>LSC Credential for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <name>LSC Credential for immediate scan of localhost</name>
+                  </xsl:otherwise>
+                </xsl:choose>
+                <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
+                <login><xsl:value-of select="/wizard/params/param[name='username']/value"/></login>
+                <password><xsl:value-of select="/wizard/params/param[name='password']/value"/></password>
+              </create_lsc_credential>
+            </xsl:if>
+          </commands>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <create_target>
+            <xsl:choose>
+              <xsl:when test="/wizard/params/param[name='target_name']/value">
+                <name><make_unique>1</make_unique><xsl:value-of select="/wizard/params/param[name='target_name']/value"/></name>
+              </xsl:when>
+              <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
+                <name><make_unique>1</make_unique>Target for immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+              </xsl:when>
+              <xsl:otherwise>
+                <name><make_unique>1</make_unique>Target for immediate scan of localhost</name>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:if test="/wizard/previous/response/commands_response/create_lsc_credential_response/@id != ''">
+              <ssh_lsc_credential id="{/wizard/previous/response/commands_response/create_lsc_credential_response/@id}"><port>22</port></ssh_lsc_credential>
+              <smb_lsc_credential id="{/wizard/previous/response/commands_response/create_lsc_credential_response/@id}"></smb_lsc_credential>
+            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
+                <hosts><xsl:value-of select="/wizard/params/param[name='hosts']/value"/></hosts>
+              </xsl:when>
+              <xsl:otherwise>
+                <hosts>localhost</hosts>
+              </xsl:otherwise>
+            </xsl:choose>
+            <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
+          </create_target>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <create_task>
+            <xsl:choose>
+              <xsl:when test="/wizard/params/param[name='task_name']/value">
+                <name><xsl:value-of select="/wizard/params/param[name='task_name']/value"/></name>
+              </xsl:when>
+              <xsl:when test="/wizard/params/param[name='hosts']/value != ''">
+                <name>Immediate scan of <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
+              </xsl:when>
+              <xsl:otherwise>
+                <name>Immediate scan of localhost</name>
+              </xsl:otherwise>
+            </xsl:choose>
+            <target id="{/wizard/previous/response/create_target_response/@id}"/>
+            <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+            <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
+          </create_task>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+
+  <step>
+    <command>
+      <xsl:stylesheet
+          version="1.0"
+          xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output
+          method="xml"
+          encoding="UTF-8"/>
+        <xsl:template match="/">
+          <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
+        </xsl:template>
+      </xsl:stylesheet>
+    </command>
+  </step>
+
+</wizard>

@@ -1,14 +1,13 @@
 <!--
 OpenVAS Manager
 $Id$
-Description: OpenVAS Manager Protocol (OMP) quick first scan wizard.
+Description: OpenVAS Manager Protocol (OMP) deep task delete wizard.
 
 Authors:
-Matthew Mundell <matthew.mundell@greenbone.net>
 Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 Copyright:
-Copyright (C) 2012-2014 Greenbone Networks GmbH
+Copyright (C) 2013-2014 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License version 2,
@@ -26,13 +25,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
 <!--
-  This wizard sets up a new task and target to run an unauthenticated scan on a
-  host (or range of hosts) specified by the parameter "hosts" using the
-  "Full and Fast" scan config and default port range.
+  This wizard deletes a task as well as the associated target and credentials.
 
   Required parameters:
-  hosts : The hosts to scan. Syntax is the same as for the hosts parameter of
-          the OMP command CREATE_TARGET.
+  task_id : The ID of the task to delete.
 
   To run this wizard, use the OMP command RUN_WIZARD.
   Please see the OMP documentation for details.
@@ -48,10 +44,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <create_target>
-            <name><make_unique>1</make_unique>Target for immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
-            <hosts><xsl:value-of select="/wizard/params/param[name='hosts']/value"/></hosts>
-          </create_target>
+          <get_tasks task_id="{/wizard/params/param[name='task_id']/value}" details="1"></get_tasks>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -65,11 +58,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <create_task>
-            <name>Immediate scan of IP <xsl:value-of select="/wizard/params/param[name='hosts']/value"/></name>
-            <target id="{/wizard/previous/response/create_target_response/@id}"/>
-            <config id="daba56c8-73ec-11df-a475-002264764cea"/>
-          </create_task>
+          <commands>
+            <delete_task task_id="{/wizard/params/param[name='task_id']/value}" />
+            <get_targets target_id="{/wizard/previous/response/get_tasks_response/task/target/@id}" />
+          </commands>
         </xsl:template>
       </xsl:stylesheet>
     </command>
@@ -83,7 +75,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           method="xml"
           encoding="UTF-8"/>
         <xsl:template match="/">
-          <start_task task_id="{/wizard/previous/response/create_task_response/@id}"/>
+          <commands>
+            <xsl:if test="/wizard/previous/response/commands_response/get_targets_response/target/@id != ''">
+              <delete_target target_id="{/wizard/previous/response/commands_response/get_targets_response/target/@id}" />
+            </xsl:if>
+            <xsl:if test="/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id != ''">
+              <delete_lsc_credential lsc_credential_id="{/wizard/previous/response/commands_response/get_targets_response/target/ssh_lsc_credential/@id}" />
+            </xsl:if>
+          </commands>
         </xsl:template>
       </xsl:stylesheet>
     </command>

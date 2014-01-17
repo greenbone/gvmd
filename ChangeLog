@@ -1,3 +1,19 @@
+2014-01-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt: Add installation of new files:
+	src/wizards/get_tasks_deep.xml, src/wizards/delete_task_deep.xml,
+	src/wizards/quick_auth_scan.xml, src/wizards/reset_task.xml.
+
+	* src/wizards/delete_task_deep.xml: New wizard.
+
+	* src/wizards/get_tasks_deep.xml: New wizard.
+
+	* src/wizards/quick_auth_scan.xml: New wizard.
+
+	* src/wizards/quick_first_scan.xml: Add copyright and usage comments.
+
+	* src/wizards/reset_task.xml: New wizard.
+
 2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Send permissions
