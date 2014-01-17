@@ -21399,7 +21399,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
-                                    "Group with new name exists already"));
+                                    "Failed to find user"));
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
