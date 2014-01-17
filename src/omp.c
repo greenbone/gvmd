@@ -9601,13 +9601,46 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       else
         uuid_result = NULL;
 
+      buffer_xml_append_printf (buffer,
+                                "<note id=\"%s\">"
+                                "<permissions>",
+                                get_iterator_uuid (notes));
+
+      if (current_credentials.username
+          && get_iterator_owner_name (notes)
+          && (strcmp (get_iterator_owner_name (notes),
+                      current_credentials.username)
+              == 0))
+        buffer_xml_append_printf (buffer,
+                                  "<permission><name>Everything</name></permission>"
+                                  "</permissions>");
+      else
+        {
+          iterator_t perms;
+          get_data_t perms_get;
+
+          memset (&perms_get, '\0', sizeof (perms_get));
+          perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                              " owner=any"
+                                              " permission=any",
+                                              get_iterator_uuid (notes));
+          init_permission_iterator (&perms, &perms_get);
+          g_free (perms_get.filter);
+          while (next (&perms))
+            buffer_xml_append_printf (buffer,
+                                      "<permission><name>%s</name></permission>",
+                                      get_iterator_name (&perms));
+          cleanup_iterator (&perms);
+
+          buffer_xml_append_printf (buffer, "</permissions>");
+        }
+
       if (include_notes_details == 0)
         {
           const char *text = note_iterator_text (notes);
           gchar *excerpt = g_strndup (text, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
-                                    "<note id=\"%s\">"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
@@ -9622,7 +9655,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<count>%i</count>"
                                     "</user_tags>"
                                     "</note>",
-                                    get_iterator_uuid (notes),
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
                                     get_iterator_creation_time (notes),
@@ -9663,7 +9695,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           /* This must match send_get_common. */
           buffer_xml_append_printf
            (buffer,
-            "<note id=\"%s\">"
             "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
@@ -9679,7 +9710,6 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<threat>%s</threat>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_uuid (notes),
             get_iterator_owner_name (notes)
             ? get_iterator_owner_name (notes)
             : "",
@@ -9803,13 +9833,46 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       else
         uuid_result = NULL;
 
+      buffer_xml_append_printf (buffer,
+                                "<override id=\"%s\">"
+                                "<permissions>",
+                                get_iterator_uuid (overrides));
+
+      if (current_credentials.username
+          && get_iterator_owner_name (overrides)
+          && (strcmp (get_iterator_owner_name (overrides),
+                      current_credentials.username)
+              == 0))
+        buffer_xml_append_printf (buffer,
+                                  "<permission><name>Everything</name></permission>"
+                                  "</permissions>");
+      else
+        {
+          iterator_t perms;
+          get_data_t perms_get;
+
+          memset (&perms_get, '\0', sizeof (perms_get));
+          perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                              " owner=any"
+                                              " permission=any",
+                                              get_iterator_uuid (overrides));
+          init_permission_iterator (&perms, &perms_get);
+          g_free (perms_get.filter);
+          while (next (&perms))
+            buffer_xml_append_printf (buffer,
+                                      "<permission><name>%s</name></permission>",
+                                      get_iterator_name (&perms));
+          cleanup_iterator (&perms);
+
+          buffer_xml_append_printf (buffer, "</permissions>");
+        }
+
       if (include_overrides_details == 0)
         {
           const char *text = override_iterator_text (overrides);
           gchar *excerpt = g_strndup (text, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
-                                    "<override id=\"%s\">"
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
@@ -9829,7 +9892,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<count>%i</count>"
                                     "</user_tags>"
                                     "</override>",
-                                    get_iterator_uuid (overrides),
                                     get_iterator_owner_name (overrides)
                                     ? get_iterator_owner_name (overrides)
                                     : "",
@@ -9881,7 +9943,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           /* This must match send_get_common. */
           buffer_xml_append_printf
            (buffer,
-            "<override id=\"%s\">"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
@@ -9898,7 +9959,6 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<new_severity>%s</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
-            get_iterator_uuid (overrides),
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
             get_iterator_creation_time (overrides),

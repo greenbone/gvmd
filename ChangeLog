@@ -1,5 +1,10 @@
 2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Send permissions
+	too.
+
+2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (load_cas): Remove debug messages.
 
 2014-01-16  Matthew Mundell <matthew.mundell@greenbone.net>
