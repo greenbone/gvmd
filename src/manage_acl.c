@@ -495,41 +495,81 @@ where_owned (const char *type, const get_data_t *get, int owned,
       /* Check on index is because default is owner and global, for backward
        * compatibility. */
       if (current_credentials.uuid && index)
-        permission_clause
-         = g_strdup_printf ("OR EXISTS"
-                            " (SELECT ROWID FROM permissions"
-                            "  WHERE resource = %ss%s.ROWID"
-                            "  AND resource_type = '%s'"
-                            "  AND resource_location = %i"
-                            "  AND ((subject_type = 'user'"
-                            "        AND subject"
-                            "            = (SELECT ROWID FROM users"
-                            "               WHERE users.uuid = '%s'))"
-                            "       OR (subject_type = 'group'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT `group`"
-                            "                   FROM group_users"
-                            "                   WHERE user = (SELECT ROWID"
-                            "                                 FROM users"
-                            "                                 WHERE users.uuid"
-                            "                                       = '%s')))"
-                            "       OR (subject_type = 'role'"
-                            "           AND subject"
-                            "               IN (SELECT DISTINCT role"
-                            "                   FROM role_users"
-                            "                   WHERE user = (SELECT ROWID"
-                            "                                 FROM users"
-                            "                                 WHERE users.uuid"
-                            "                                       = '%s'))))"
-                            "  AND (%s))",
-                            type,
-                            get->trash && strcmp (type, "task") ? "_trash" : "",
-                            type,
-                            get->trash ? LOCATION_TRASH : LOCATION_TABLE,
-                            current_credentials.uuid,
-                            current_credentials.uuid,
-                            current_credentials.uuid,
-                            permission_or->str);
+        {
+          gchar *clause;
+          clause
+           = g_strdup_printf ("OR EXISTS"
+                              " (SELECT ROWID FROM permissions"
+                              "  WHERE resource = %ss%s.ROWID"
+                              "  AND resource_type = '%s'"
+                              "  AND resource_location = %i"
+                              "  AND ((subject_type = 'user'"
+                              "        AND subject"
+                              "            = (SELECT ROWID FROM users"
+                              "               WHERE users.uuid = '%s'))"
+                              "       OR (subject_type = 'group'"
+                              "           AND subject"
+                              "               IN (SELECT DISTINCT `group`"
+                              "                   FROM group_users"
+                              "                   WHERE user = (SELECT ROWID"
+                              "                                 FROM users"
+                              "                                 WHERE users.uuid"
+                              "                                       = '%s')))"
+                              "       OR (subject_type = 'role'"
+                              "           AND subject"
+                              "               IN (SELECT DISTINCT role"
+                              "                   FROM role_users"
+                              "                   WHERE user = (SELECT ROWID"
+                              "                                 FROM users"
+                              "                                 WHERE users.uuid"
+                              "                                       = '%s'))))"
+                              "  AND (%s))",
+                              type,
+                              get->trash && strcmp (type, "task") ? "_trash" : "",
+                              type,
+                              get->trash ? LOCATION_TRASH : LOCATION_TABLE,
+                              current_credentials.uuid,
+                              current_credentials.uuid,
+                              current_credentials.uuid,
+                              permission_or->str);
+
+          if (strcmp (type, "report") == 0)
+            permission_clause
+             = g_strdup_printf ("%s"
+                                " OR EXISTS"
+                                " (SELECT ROWID FROM permissions"
+                                "  WHERE resource = reports%s.task"
+                                "  AND resource_type = 'task'"
+                                "  AND ((subject_type = 'user'"
+                                "        AND subject"
+                                "            = (SELECT ROWID FROM users"
+                                "               WHERE users.uuid = '%s'))"
+                                "       OR (subject_type = 'group'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT `group`"
+                                "                   FROM group_users"
+                                "                   WHERE user = (SELECT ROWID"
+                                "                                 FROM users"
+                                "                                 WHERE users.uuid"
+                                "                                       = '%s')))"
+                                "       OR (subject_type = 'role'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT role"
+                                "                   FROM role_users"
+                                "                   WHERE user = (SELECT ROWID"
+                                "                                 FROM users"
+                                "                                 WHERE users.uuid"
+                                "                                       = '%s'))))"
+                                "  AND (%s))",
+                                clause,
+                                get->trash ? "_trash" : "",
+                                current_credentials.uuid,
+                                current_credentials.uuid,
+                                current_credentials.uuid,
+                                permission_or->str);
+          else
+            permission_clause = clause;
+        }
       else
         permission_clause = NULL;
 

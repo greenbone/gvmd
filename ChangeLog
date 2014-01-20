@@ -1,5 +1,11 @@
 2014-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned): Let the user inherit report
+	permissions from the task, so that observers can see the list of reports
+	on a task like they can see the report details.
+
+2014-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_delete_user): Set the return value.
 
 2014-01-17  Matthew Mundell <matthew.mundell@greenbone.net>
