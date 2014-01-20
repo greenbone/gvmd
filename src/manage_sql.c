@@ -47582,7 +47582,7 @@ manage_create_user (const gchar *database, const gchar *name,
  * @param[in]  database   Location of manage database.
  * @param[in]  name       Name of user.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 2 failed to find user, 4 user has active tasks, -1 error.
  */
 int
 manage_delete_user (const gchar *database, const gchar *name)
@@ -47600,7 +47600,7 @@ manage_delete_user (const gchar *database, const gchar *name)
   /* Setup a dummy user, so that delete_user will work. */
   current_credentials.uuid = "";
 
-  switch (delete_user (NULL, name, 1))
+  switch ((ret = delete_user (NULL, name, 1)))
     {
       case 0:
         printf ("User deleted.\n");
