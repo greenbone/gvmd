@@ -1,3 +1,8 @@
+2014-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (resource_count): Exclude reports of hidden tasks
+	when counting reports.
+
 2014-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (where_owned): Let the user inherit report

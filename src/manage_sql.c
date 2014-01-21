@@ -11739,7 +11739,11 @@ resource_count (const char *type, const get_data_t *get)
                 type_owned (type) ? extra_columns : NULL,
                 0, NULL,
                 strcmp (type, "task")
-                 ? NULL
+                 ? (strcmp (type, "report")
+                     ? NULL
+                     : " AND (SELECT hidden FROM tasks"
+                       "      WHERE tasks.ROWID = task)"
+                       "     = 0")
                  : (get->id
                     && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                         == 0))
