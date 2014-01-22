@@ -594,7 +594,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </div>
               </xsl:when>
               <xsl:otherwise>
-                <div class="result_section_top result_section">
+                <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
                   <xsl:choose>
                     <xsl:when test="delta/text() = 'changed'">
                       <b>Result 1</b>
