@@ -42,8 +42,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
 
 <func:function name="openvas:get-nvt-tag">
-    <xsl:param name="tags"/>
-    <xsl:param name="name"/>
+  <xsl:param name="tags"/>
+  <xsl:param name="name"/>
   <xsl:variable name="after">
     <xsl:value-of select="substring-after (nvt/tags, concat ($name, '='))"/>
   </xsl:variable>

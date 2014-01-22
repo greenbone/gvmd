@@ -35,9 +35,42 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     xmlns:str="http://exslt.org/strings"
     xmlns:openvas="http://openvas.org"
     xmlns:date="http://exslt.org/dates-and-times"
-    extension-element-prefixes="str func date">
+    extension-element-prefixes="str func date openvas">
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
+
+  <func:function name="openvas:get-nvt-tag">
+    <xsl:param name="tags"/>
+    <xsl:param name="name"/>
+    <xsl:variable name="after">
+      <xsl:value-of select="substring-after (nvt/tags, concat ($name, '='))"/>
+    </xsl:variable>
+    <xsl:choose>
+        <xsl:when test="contains ($after, '|')">
+          <func:result select="substring-before ($after, '|')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <func:result select="$after"/>
+        </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
+  <func:function name="openvas:newstyle-nvt">
+    <xsl:param name="nvt"/>
+    <xsl:choose>
+      <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
+        <func:result select="1"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="0"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
 
   <func:function name="openvas:report">
     <xsl:choose>
@@ -1014,6 +1047,18 @@ advice given in each description, in order to rectify the issue.
 
 <!-- SUBSECTION: Results for a single host. -->
 
+  <xsl:template name="prognostic-description">
+    <xsl:param name="string"/>
+
+    <xsl:for-each select="str:split($string, '&#10;&#10;')">
+      <xsl:call-template name="latex-newline"/>
+      <xsl:for-each select="str:split(., '&#10;')">
+        <xsl:value-of select="."/>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:for-each>
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- Overview table for a single host -->
   <xsl:template name="result-details-host-port-threat">
     <xsl:param name="host"/>
@@ -1104,22 +1149,171 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-hline"/>
         </xsl:if>
 
+        <!-- Summary -->
+        <xsl:if test="openvas:newstyle-nvt (nvt)">
+          <xsl:call-template name="latex-newline"/>
+          <xsl:text>\textbf{Summary}</xsl:text>
+          <xsl:call-template name="latex-newline"/>
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+          </xsl:call-template>
+          <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
+          <xsl:call-template name="latex-newline"/>
+          <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
+          <xsl:call-template name="latex-newline"/>
+        </xsl:if>
+
+        <!-- Result -->
         <xsl:choose>
-          <xsl:when test="delta/text() = 'changed'">
+          <xsl:when test="openvas:newstyle-nvt (nvt)">
             <xsl:call-template name="latex-newline"/>
-            <xsl:text>\textbf{Result 1}</xsl:text>
+            <xsl:choose>
+              <xsl:when test="delta/text() = 'changed'">
+                <xsl:call-template name="latex-newline"/>
+                <xsl:text>\textbf{Result 1}</xsl:text>
+                <xsl:call-template name="latex-newline"/>
+              </xsl:when>
+            </xsl:choose>
             <xsl:call-template name="latex-newline"/>
+            \hline
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>\textbf{Vulnerability Detection Result}</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+            <xsl:choose>
+              <xsl:when test="string-length(description) &lt; 2">
+                <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+                <xsl:call-template name="latex-newline"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:call-template name="text-to-escaped-row">
+                  <xsl:with-param name="string" select="description"/>
+                </xsl:call-template>
+              </xsl:otherwise>
+            </xsl:choose>
           </xsl:when>
+          <xsl:otherwise>
+            <xsl:choose>
+              <xsl:when test="delta/text() = 'changed'">
+                <xsl:call-template name="latex-newline"/>
+                <xsl:text>\textbf{Result 1}</xsl:text>
+                <xsl:call-template name="latex-newline"/>
+              </xsl:when>
+            </xsl:choose>
+            <xsl:call-template name="text-to-escaped-row">
+              <xsl:with-param name="string" select="description"/>
+            </xsl:call-template>
+            <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:otherwise>
+        </xsl:choose>
+
+        <xsl:if test="openvas:newstyle-nvt (nvt)">
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+            <xsl:call-template name="latex-newline"/>
+            \hline
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>\textbf{Impact}</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+            <xsl:call-template name="text-to-escaped-row">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+            </xsl:call-template>
+          </xsl:if>
+
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+            <xsl:call-template name="latex-newline"/>
+            \hline
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>\textbf{Solution}</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+            <xsl:call-template name="text-to-escaped-row">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+            </xsl:call-template>
+          </xsl:if>
+
+          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+            <xsl:call-template name="latex-newline"/>
+            \hline
+            <xsl:call-template name="latex-newline"/>
+            <xsl:text>\textbf{Vulnerability Insight}</xsl:text>
+            <xsl:call-template name="latex-newline"/>
+            <xsl:call-template name="text-to-escaped-row">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+            </xsl:call-template>
+          </xsl:if>
+        </xsl:if>
+
+        <xsl:call-template name="latex-newline"/>
+        \hline
+        <xsl:call-template name="latex-newline"/>
+        <xsl:choose>
+          <xsl:when test="(nvt/cvss_base &gt; 0) or (cve/cvss_base &gt; 0)">
+            <xsl:text>\textbf{Vulnerability Detection Method}</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>\textbf{Log Method}</xsl:text>
+          </xsl:otherwise>
         </xsl:choose>
         <xsl:call-template name="latex-newline"/>
         <xsl:call-template name="text-to-escaped-row">
-          <xsl:with-param name="string" select="description"/>
+          <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
         </xsl:call-template>
-        <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
-        <xsl:text>\rowcolor{white}{\verb==}</xsl:text><xsl:call-template name="latex-newline"/>
-        <xsl:call-template name="latex-newline"/>
-        <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
-        <xsl:call-template name="latex-newline"/>
+
+        <xsl:text>Details:</xsl:text>
+        <xsl:choose>
+          <xsl:when test="nvt/@oid = 0">
+            <xsl:if test="delta/text()">
+              <xsl:call-template name="latex-newline"/>
+            </xsl:if>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:variable name="max" select="80"/>
+            <xsl:choose>
+              <xsl:when test="string-length(nvt/name) &gt; $max">
+                <xsl:call-template name="text-to-escaped-row">
+                  <xsl:with-param name="string" select="concat (substring(nvt/name, 0, $max), '...')"/>
+                </xsl:call-template>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:call-template name="text-to-escaped-row">
+                  <xsl:with-param name="string" select="nvt/name"/>
+                </xsl:call-template>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:text>OID:</xsl:text>
+            <xsl:call-template name="text-to-escaped-row">
+              <xsl:with-param name="string" select="nvt/@oid"/>
+            </xsl:call-template>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="scan_nvt_version != ''">
+          Version used:
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="scan_nvt_version"/>
+          </xsl:call-template>
+        </xsl:if>
+
+        <xsl:if test="count (detection)">
+          <xsl:call-template name="latex-newline"/>
+          \hline
+          <xsl:call-template name="latex-newline"/>
+          <xsl:text>\textbf{Product Detection Result}</xsl:text>
+          Product:
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
+          </xsl:call-template>
+          <xsl:call-template name="latex-newline"/>
+          Method:
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+          </xsl:call-template>
+          OID:
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="detection/result/details/detail[name = 'source_oid']/value/text()"/>)
+          </xsl:call-template>
+        </xsl:if>
+
         <xsl:if test="delta">
           <xsl:choose>
             <xsl:when test="delta/text() = 'changed'">
