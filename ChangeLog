@@ -1,3 +1,12 @@
+2014-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/NBE/NBE.xsl (openvas:get-nvt-tag)
+	(openvas:newstyle-nvt): New functions.
+	(nvt): Remove.
+	(prognostic-description, ref_cve_list, ref_bid_list, ref_cert_list)
+	(ref_xref_list): New templates.
+	(result [issue]): Add description sections for new style NVTs.
+
 2014-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/NBE/NBE.xsl (result): Use xsl:text to spread the
