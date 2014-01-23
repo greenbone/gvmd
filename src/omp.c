@@ -11402,7 +11402,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            cert_description);
                   g_strfreev (ident);
                   if (openvas_sync_script_perform_selftest
-                      (scap_script, &selftest_result) == FALSE)
+                      (cert_script, &selftest_result) == FALSE)
                     {
                       SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
                                                "<error>%s</error>"

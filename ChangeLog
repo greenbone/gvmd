@@ -1,3 +1,9 @@
+2014-01-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Call the correct sync script
+	when asking the script to do a selftest while getting the description
+	for the CERT synchronization script.
+
 2014-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Cleanup last entry.
