@@ -1,5 +1,14 @@
 2014-01-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): In the SYNC ops, set
+	current_error to 4 instead of 2 when the child has succeeded, to
+	indicate that the process must exit.
+
+	* src/ompd.c (serve_omp): Handle new return 4 from
+	process_omp_client_input, by exiting.
+
+2014-01-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Call the correct sync script
 	when asking the script to do a selftest while getting the description
 	for the CERT synchronization script.

@@ -1059,6 +1059,21 @@ serve_omp (gnutls_session_t* client_session,
               client_active = 0;
               client_input_stalled = 0;
             }
+          else if (ret == 4)
+            {
+              /* Now in a process forked for some operation which has
+               * successfully completed.  Close the client connection,
+               * and exit, as the parent process has continued the
+               * session with the client. */
+#if 0
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              return 0;
+            }
           else if (ret == -10)
             {
               /* Now in a process forked to run a task, which has
@@ -1332,6 +1347,21 @@ serve_omp (gnutls_session_t* client_session,
                                    *client_credentials);
 #endif
               client_active = 0;
+            }
+          else if (ret == 4)
+            {
+              /* Now in a process forked for some operation which has
+               * successfully completed.  Close the client connection,
+               * and exit, as the parent process has continued the
+               * session with the client. */
+#if 0
+              /** @todo This seems to close the parent connections.  Maybe just do
+               *        part of this? */
+              openvas_server_free (client_socket,
+                                   *client_session,
+                                   *client_credentials);
+#endif
+              return 0;
             }
           else if (ret == -10)
             {

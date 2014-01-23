@@ -24246,13 +24246,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             case 2:
               /* Forked sync process: success. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -24295,13 +24295,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             case 2:
               /* Forked sync process: success. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
@@ -24343,13 +24343,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             case 2:
               /* Forked sync process: success. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
             case 11:
               /* Forked sync process: success busy. */
-              current_error = 2;
+              current_error = 4;
               g_set_error (error, G_MARKUP_ERROR, G_MARKUP_ERROR_INVALID_CONTENT,
                            "Dummy error for current_error");
               break;
