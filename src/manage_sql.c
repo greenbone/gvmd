@@ -10404,6 +10404,115 @@ refresh_nvt_cves ()
 }
 
 /**
+ * @brief Ensure that the databases are the right versions.
+ *
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database
+ *         needs to be initialised from server.
+ */
+int
+check_db_versions (int nvt_cache_mode)
+{
+  char *database_version;
+  int scap_db_version, cert_db_version;
+
+  database_version = sql_string (0, 0,
+                                 "SELECT value FROM main.meta"
+                                 " WHERE name = 'database_version';");
+  if (nvt_cache_mode)
+    {
+      if (database_version
+          && strcmp (database_version,
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
+        {
+          g_message ("%s: database version of database: %s\n",
+                     __FUNCTION__,
+                     database_version);
+          g_message ("%s: database version supported by manager: %s\n",
+                     __FUNCTION__,
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
+          g_free (database_version);
+          return -2;
+        }
+      g_free (database_version);
+
+      /* If database_version was NULL then meta was missing, so assume
+       * that the database is missing, which is OK. */
+    }
+  else
+    {
+      long long int count;
+
+      if (database_version)
+        {
+          if (strcmp (database_version,
+                      G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
+            {
+              g_message ("%s: database version of database: %s\n",
+                         __FUNCTION__,
+                         database_version);
+              g_message ("%s: database version supported by manager: %s\n",
+                         __FUNCTION__,
+                         G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
+              g_free (database_version);
+              return -2;
+            }
+          g_free (database_version);
+        }
+      else
+        /* Assume database is missing. */
+        return -3;
+
+      /* Check that the database was initialised from the scanner.
+       *
+       * This can also fail after a migration, for example if the database
+       * was created before NVT preferences were cached in the database.
+       */
+
+      if (sql_int64 (&count, 0, 0,
+                     "SELECT count(*) FROM main.meta"
+                     " WHERE name = 'nvts_feed_version'"
+                     " OR name = 'nvt_preferences_enabled';")
+          || count < 2)
+        return -3;
+    }
+
+  /* Check SCAP database version. */
+
+  scap_db_version = manage_scap_db_version ();
+  if (scap_db_version == -1)
+    g_message ("No SCAP database found");
+  else if (scap_db_version != manage_scap_db_supported_version ())
+    {
+      g_message ("%s: database version of SCAP database: %i\n",
+                 __FUNCTION__,
+                 scap_db_version);
+      g_message ("%s: SCAP database version supported by manager: %s\n",
+                 __FUNCTION__,
+                 G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
+      return -2;
+    }
+
+  /* Check CERT database version. */
+
+  cert_db_version = manage_cert_db_version ();
+  if (cert_db_version == -1)
+    g_message ("No CERT database found");
+  else if (cert_db_version != manage_cert_db_supported_version ())
+    {
+      g_message ("%s: database version of CERT database: %i\n",
+                 __FUNCTION__,
+                 cert_db_version);
+      g_message ("%s: CERT database version supported by manager: %s\n",
+                 __FUNCTION__,
+                 G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
+      return -2;
+    }
+  return 0;
+}
+
+/**
  * @brief Ensure that the database is in order.
  *
  * @return 0 success, -1 error.
@@ -11211,6 +11320,87 @@ check_db ()
 }
 
 /**
+ * @brief Stop any active tasks.
+ */
+void
+stop_active_tasks ()
+{
+  iterator_t tasks;
+  get_data_t get;
+
+  /* Set requested, paused and running tasks to stopped. */
+
+  assert (current_credentials.uuid == NULL);
+  memset (&get, '\0', sizeof (get));
+  init_task_iterator (&tasks, &get);
+  while (next (&tasks))
+    {
+      switch (task_iterator_run_status (&tasks))
+        {
+          case TASK_STATUS_DELETE_REQUESTED:
+          case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
+          case TASK_STATUS_DELETE_ULTIMATE_WAITING:
+          case TASK_STATUS_DELETE_WAITING:
+          case TASK_STATUS_PAUSE_REQUESTED:
+          case TASK_STATUS_PAUSE_WAITING:
+          case TASK_STATUS_PAUSED:
+          case TASK_STATUS_REQUESTED:
+          case TASK_STATUS_RESUME_REQUESTED:
+          case TASK_STATUS_RESUME_WAITING:
+          case TASK_STATUS_RUNNING:
+          case TASK_STATUS_STOP_REQUESTED_GIVEUP:
+          case TASK_STATUS_STOP_REQUESTED:
+          case TASK_STATUS_STOP_WAITING:
+            {
+              task_t index = get_iterator_resource (&tasks);
+              /* Set the current user, for event checks. */
+              current_credentials.uuid = task_owner_uuid (index);
+              set_task_run_status (index, TASK_STATUS_STOPPED);
+              free (current_credentials.uuid);
+              break;
+            }
+          default:
+            break;
+        }
+    }
+  cleanup_iterator (&tasks);
+  current_credentials.uuid = NULL;
+
+  /* Set requested and running reports to stopped. */
+
+  sql ("UPDATE reports SET scan_run_status = %u"
+       " WHERE scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u"
+       " OR scan_run_status = %u;",
+       TASK_STATUS_STOPPED,
+       TASK_STATUS_DELETE_REQUESTED,
+       TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
+       TASK_STATUS_DELETE_ULTIMATE_WAITING,
+       TASK_STATUS_DELETE_WAITING,
+       TASK_STATUS_PAUSE_REQUESTED,
+       TASK_STATUS_PAUSE_WAITING,
+       TASK_STATUS_PAUSED,
+       TASK_STATUS_REQUESTED,
+       TASK_STATUS_RESUME_REQUESTED,
+       TASK_STATUS_RESUME_WAITING,
+       TASK_STATUS_RUNNING,
+       TASK_STATUS_STOP_REQUESTED,
+       TASK_STATUS_STOP_REQUESTED_GIVEUP,
+       TASK_STATUS_STOP_WAITING);
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -11231,8 +11421,7 @@ int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
              int max_ips_per_target, void (*update_progress) ())
 {
-  char *database_version;
-  int scap_db_version, cert_db_version, ret;
+  int ret;
 
   if ((max_ips_per_target <= 0)
       || (max_ips_per_target > 40000))
@@ -11252,100 +11441,11 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
 
   init_manage_process (0, database);
 
-  /* Check that the version of the database is correct. */
+  /* Check that the versions of the databases are correct. */
 
-  database_version = sql_string (0, 0,
-                                 "SELECT value FROM main.meta"
-                                 " WHERE name = 'database_version';");
-  if (nvt_cache_mode)
-    {
-      if (database_version
-          && strcmp (database_version,
-                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
-        {
-          g_message ("%s: database version of database: %s\n",
-                     __FUNCTION__,
-                     database_version);
-          g_message ("%s: database version supported by manager: %s\n",
-                     __FUNCTION__,
-                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
-          g_free (database_version);
-          return -2;
-        }
-      g_free (database_version);
-
-      /* If database_version was NULL then meta was missing, so assume
-       * that the database is missing, which is OK. */
-    }
-  else
-    {
-      long long int count;
-
-      if (database_version)
-        {
-          if (strcmp (database_version,
-                      G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
-            {
-              g_message ("%s: database version of database: %s\n",
-                         __FUNCTION__,
-                         database_version);
-              g_message ("%s: database version supported by manager: %s\n",
-                         __FUNCTION__,
-                         G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
-              g_free (database_version);
-              return -2;
-            }
-          g_free (database_version);
-        }
-      else
-        /* Assume database is missing. */
-        return -3;
-
-      /* Check that the database was initialised from the scanner.
-       *
-       * This can also fail after a migration, for example if the database
-       * was created before NVT preferences were cached in the database.
-       */
-
-      if (sql_int64 (&count, 0, 0,
-                     "SELECT count(*) FROM main.meta"
-                     " WHERE name = 'nvts_feed_version'"
-                     " OR name = 'nvt_preferences_enabled';")
-          || count < 2)
-        return -3;
-    }
-
-  /* Check SCAP database version. */
-
-  scap_db_version = manage_scap_db_version ();
-  if (scap_db_version == -1)
-    g_message ("No SCAP database found");
-  else if (scap_db_version != manage_scap_db_supported_version ())
-    {
-      g_message ("%s: database version of SCAP database: %i\n",
-                 __FUNCTION__,
-                 scap_db_version);
-      g_message ("%s: SCAP database version supported by manager: %s\n",
-                 __FUNCTION__,
-                 G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
-      return -2;
-    }
-
-  /* Check CERT database version. */
-
-  cert_db_version = manage_cert_db_version ();
-  if (cert_db_version == -1)
-    g_message ("No CERT database found");
-  else if (cert_db_version != manage_cert_db_supported_version ())
-    {
-      g_message ("%s: database version of CERT database: %i\n",
-                 __FUNCTION__,
-                 cert_db_version);
-      g_message ("%s: CERT database version supported by manager: %s\n",
-                 __FUNCTION__,
-                 G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
-      return -2;
-    }
+  ret = check_db_versions (nvt_cache_mode);
+  if (ret)
+    return ret;
 
   /* Ensure the database is complete. */
 
@@ -11354,81 +11454,8 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
     return ret;
 
   if (nvt_cache_mode == 0)
-    {
-      iterator_t tasks;
-      get_data_t get;
-
-      /* Set requested, paused and running tasks to stopped. */
-
-      assert (current_credentials.uuid == NULL);
-      memset (&get, '\0', sizeof (get));
-      init_task_iterator (&tasks, &get);
-      while (next (&tasks))
-        {
-          switch (task_iterator_run_status (&tasks))
-            {
-              case TASK_STATUS_DELETE_REQUESTED:
-              case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
-              case TASK_STATUS_DELETE_ULTIMATE_WAITING:
-              case TASK_STATUS_DELETE_WAITING:
-              case TASK_STATUS_PAUSE_REQUESTED:
-              case TASK_STATUS_PAUSE_WAITING:
-              case TASK_STATUS_PAUSED:
-              case TASK_STATUS_REQUESTED:
-              case TASK_STATUS_RESUME_REQUESTED:
-              case TASK_STATUS_RESUME_WAITING:
-              case TASK_STATUS_RUNNING:
-              case TASK_STATUS_STOP_REQUESTED_GIVEUP:
-              case TASK_STATUS_STOP_REQUESTED:
-              case TASK_STATUS_STOP_WAITING:
-                {
-                  task_t index = get_iterator_resource (&tasks);
-                  /* Set the current user, for event checks. */
-                  current_credentials.uuid = task_owner_uuid (index);
-                  set_task_run_status (index, TASK_STATUS_STOPPED);
-                  free (current_credentials.uuid);
-                  break;
-                }
-              default:
-                break;
-            }
-        }
-      cleanup_iterator (&tasks);
-      current_credentials.uuid = NULL;
-
-      /* Set requested and running reports to stopped. */
-
-      sql ("UPDATE reports SET scan_run_status = %u"
-           " WHERE scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u"
-           " OR scan_run_status = %u;",
-           TASK_STATUS_STOPPED,
-           TASK_STATUS_DELETE_REQUESTED,
-           TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
-           TASK_STATUS_DELETE_ULTIMATE_WAITING,
-           TASK_STATUS_DELETE_WAITING,
-           TASK_STATUS_PAUSE_REQUESTED,
-           TASK_STATUS_PAUSE_WAITING,
-           TASK_STATUS_PAUSED,
-           TASK_STATUS_REQUESTED,
-           TASK_STATUS_RESUME_REQUESTED,
-           TASK_STATUS_RESUME_WAITING,
-           TASK_STATUS_RUNNING,
-           TASK_STATUS_STOP_REQUESTED,
-           TASK_STATUS_STOP_REQUESTED_GIVEUP,
-           TASK_STATUS_STOP_WAITING);
-    }
+    /* Stop any active tasks. */
+    stop_active_tasks ();
 
   /* Load the NVT cache into memory. */
 
