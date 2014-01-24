@@ -1,5 +1,11 @@
 2014-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db): New function.  Body from init_manage.
+	(init_manage): Move all the database checking out to check_db, for
+	clarity.
+
+2014-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/CSV_Results/CSV_Results.xsl (openvas:report): New
 	function.
 	(newline): New template.

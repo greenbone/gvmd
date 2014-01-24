@@ -10404,140 +10404,13 @@ refresh_nvt_cves ()
 }
 
 /**
- * @brief Initialize the manage library.
+ * @brief Ensure that the database is in order.
  *
- * Ensure all tasks are in a clean initial state.
- *
- * Beware that calling this function while tasks are running may lead to
- * problems.
- *
- * @param[in]  log_config      Log configuration.
- * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
- * @param[in]  database        Location of database.
- * @param[in]  max_ips_per_target  Max number of IPs per target.
- * @param[in]  update_progress     Function to update progress, or NULL. *
- *
- * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
- *         to be initialised from server, -4 max_ips_per_target out of range.
+ * @return 0 success, -1 error.
  */
 int
-init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
-             int max_ips_per_target, void (*update_progress) ())
+check_db ()
 {
-  char *database_version;
-  int scap_db_version, cert_db_version;
-
-  if ((max_ips_per_target <= 0)
-      || (max_ips_per_target > 40000))
-    return -4;
-
-  max_hosts = max_ips_per_target;
-  progress = update_progress;
-
-  g_log_set_handler (G_LOG_DOMAIN,
-                     ALL_LOG_LEVELS,
-                     (GLogFunc) openvas_log_func,
-                     log_config);
-
-  current_credentials.uuid = NULL;
-  current_credentials.username = NULL;
-  current_credentials.password = NULL;
-
-  init_manage_process (0, database);
-
-  /* Check that the version of the database is correct. */
-
-  database_version = sql_string (0, 0,
-                                 "SELECT value FROM main.meta"
-                                 " WHERE name = 'database_version';");
-  if (nvt_cache_mode)
-    {
-      if (database_version
-          && strcmp (database_version,
-                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
-        {
-          g_message ("%s: database version of database: %s\n",
-                     __FUNCTION__,
-                     database_version);
-          g_message ("%s: database version supported by manager: %s\n",
-                     __FUNCTION__,
-                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
-          g_free (database_version);
-          return -2;
-        }
-      g_free (database_version);
-
-      /* If database_version was NULL then meta was missing, so assume
-       * that the database is missing, which is OK. */
-    }
-  else
-    {
-      long long int count;
-
-      if (database_version)
-        {
-          if (strcmp (database_version,
-                      G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
-            {
-              g_message ("%s: database version of database: %s\n",
-                         __FUNCTION__,
-                         database_version);
-              g_message ("%s: database version supported by manager: %s\n",
-                         __FUNCTION__,
-                         G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
-              g_free (database_version);
-              return -2;
-            }
-          g_free (database_version);
-        }
-      else
-        /* Assume database is missing. */
-        return -3;
-
-      /* Check that the database was initialised from the scanner.
-       *
-       * This can also fail after a migration, for example if the database
-       * was created before NVT preferences were cached in the database.
-       */
-
-      if (sql_int64 (&count, 0, 0,
-                     "SELECT count(*) FROM main.meta"
-                     " WHERE name = 'nvts_feed_version'"
-                     " OR name = 'nvt_preferences_enabled';")
-          || count < 2)
-        return -3;
-    }
-
-  /* Check SCAP database version */
-  scap_db_version = manage_scap_db_version ();
-  if (scap_db_version == -1)
-    g_message ("No SCAP database found");
-  else if (scap_db_version != manage_scap_db_supported_version ())
-    {
-      g_message ("%s: database version of SCAP database: %i\n",
-                 __FUNCTION__,
-                 scap_db_version);
-      g_message ("%s: SCAP database version supported by manager: %s\n",
-                 __FUNCTION__,
-                 G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
-      return -2;
-    }
-
-  /* Check CERT database version */
-  cert_db_version = manage_cert_db_version ();
-  if (cert_db_version == -1)
-    g_message ("No CERT database found");
-  else if (cert_db_version != manage_cert_db_supported_version ())
-    {
-      g_message ("%s: database version of CERT database: %i\n",
-                 __FUNCTION__,
-                 cert_db_version);
-      g_message ("%s: CERT database version supported by manager: %s\n",
-                 __FUNCTION__,
-                 G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
-      return -2;
-    }
-
   /* Ensure the tables exist. */
 
   create_tables ();
@@ -11313,6 +11186,173 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
       sql ("COMMIT;");
     }
 
+  /* Clean up orphaned results */
+
+  sql ("DELETE FROM results"
+       " WHERE NOT EXISTS (SELECT * FROM report_results"
+       "                   WHERE report_results.result = results.id);");
+  if (sqlite3_changes (task_db) > 0)
+    {
+      g_debug ("%s: Removed %d orphaned result(s).",
+               __FUNCTION__, sqlite3_changes (task_db));
+      reports_clear_count_cache (0);
+      reports_clear_count_cache (1);
+    }
+
+  /* Run ANALYZE because there may have been big changes since create_tables. */
+
+  if (progress)
+    progress ();
+  sql ("ANALYZE;");
+  if (progress)
+    progress ();
+
+  return 0;
+}
+
+/**
+ * @brief Initialize the manage library.
+ *
+ * Ensure all tasks are in a clean initial state.
+ *
+ * Beware that calling this function while tasks are running may lead to
+ * problems.
+ *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  update_progress     Function to update progress, or NULL. *
+ *
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range.
+ */
+int
+init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
+             int max_ips_per_target, void (*update_progress) ())
+{
+  char *database_version;
+  int scap_db_version, cert_db_version, ret;
+
+  if ((max_ips_per_target <= 0)
+      || (max_ips_per_target > 40000))
+    return -4;
+
+  max_hosts = max_ips_per_target;
+  progress = update_progress;
+
+  g_log_set_handler (G_LOG_DOMAIN,
+                     ALL_LOG_LEVELS,
+                     (GLogFunc) openvas_log_func,
+                     log_config);
+
+  current_credentials.uuid = NULL;
+  current_credentials.username = NULL;
+  current_credentials.password = NULL;
+
+  init_manage_process (0, database);
+
+  /* Check that the version of the database is correct. */
+
+  database_version = sql_string (0, 0,
+                                 "SELECT value FROM main.meta"
+                                 " WHERE name = 'database_version';");
+  if (nvt_cache_mode)
+    {
+      if (database_version
+          && strcmp (database_version,
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
+        {
+          g_message ("%s: database version of database: %s\n",
+                     __FUNCTION__,
+                     database_version);
+          g_message ("%s: database version supported by manager: %s\n",
+                     __FUNCTION__,
+                     G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
+          g_free (database_version);
+          return -2;
+        }
+      g_free (database_version);
+
+      /* If database_version was NULL then meta was missing, so assume
+       * that the database is missing, which is OK. */
+    }
+  else
+    {
+      long long int count;
+
+      if (database_version)
+        {
+          if (strcmp (database_version,
+                      G_STRINGIFY (OPENVASMD_DATABASE_VERSION)))
+            {
+              g_message ("%s: database version of database: %s\n",
+                         __FUNCTION__,
+                         database_version);
+              g_message ("%s: database version supported by manager: %s\n",
+                         __FUNCTION__,
+                         G_STRINGIFY (OPENVASMD_DATABASE_VERSION));
+              g_free (database_version);
+              return -2;
+            }
+          g_free (database_version);
+        }
+      else
+        /* Assume database is missing. */
+        return -3;
+
+      /* Check that the database was initialised from the scanner.
+       *
+       * This can also fail after a migration, for example if the database
+       * was created before NVT preferences were cached in the database.
+       */
+
+      if (sql_int64 (&count, 0, 0,
+                     "SELECT count(*) FROM main.meta"
+                     " WHERE name = 'nvts_feed_version'"
+                     " OR name = 'nvt_preferences_enabled';")
+          || count < 2)
+        return -3;
+    }
+
+  /* Check SCAP database version. */
+
+  scap_db_version = manage_scap_db_version ();
+  if (scap_db_version == -1)
+    g_message ("No SCAP database found");
+  else if (scap_db_version != manage_scap_db_supported_version ())
+    {
+      g_message ("%s: database version of SCAP database: %i\n",
+                 __FUNCTION__,
+                 scap_db_version);
+      g_message ("%s: SCAP database version supported by manager: %s\n",
+                 __FUNCTION__,
+                 G_STRINGIFY (OPENVASMD_SCAP_DATABASE_VERSION));
+      return -2;
+    }
+
+  /* Check CERT database version. */
+
+  cert_db_version = manage_cert_db_version ();
+  if (cert_db_version == -1)
+    g_message ("No CERT database found");
+  else if (cert_db_version != manage_cert_db_supported_version ())
+    {
+      g_message ("%s: database version of CERT database: %i\n",
+                 __FUNCTION__,
+                 cert_db_version);
+      g_message ("%s: CERT database version supported by manager: %s\n",
+                 __FUNCTION__,
+                 G_STRINGIFY (OPENVASMD_CERT_DATABASE_VERSION));
+      return -2;
+    }
+
+  /* Ensure the database is complete. */
+
+  ret = check_db ();
+  if (ret)
+    return ret;
+
   if (nvt_cache_mode == 0)
     {
       iterator_t tasks;
@@ -11389,26 +11429,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
            TASK_STATUS_STOP_REQUESTED_GIVEUP,
            TASK_STATUS_STOP_WAITING);
     }
-
-  /* Clean up orphaned results */
-  sql ("DELETE FROM results"
-       " WHERE NOT EXISTS (SELECT * FROM report_results"
-       "                   WHERE report_results.result = results.id);");
-  if (sqlite3_changes (task_db) > 0)
-    {
-      g_debug ("%s: Removed %d orphaned result(s).",
-               __FUNCTION__, sqlite3_changes (task_db));
-      reports_clear_count_cache (0);
-      reports_clear_count_cache (1);
-    }
-
-  /* Run ANALYZE because there may have been big changes since create_tables. */
-
-  if (progress)
-    progress ();
-  sql ("ANALYZE;");
-  if (progress)
-    progress ();
 
   /* Load the NVT cache into memory. */
 
