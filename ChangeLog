@@ -1,3 +1,15 @@
+2014-01-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl (openvas:report): New
+	function.
+	(newline): New template.
+	(openvas:new-style-nvt): Remove.  Renamed to newstyle-nvt to match other
+	formats.
+	(openvas:newstyle-nvt): New function.  Was new-style-nvt.
+	(result): Add description columns for new style NVTs, as well as new
+	reference columns.
+	(report): Remove spaces for consistency.
+
 2014-01-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In the SYNC ops, set
