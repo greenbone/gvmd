@@ -331,7 +331,8 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
         }
       g_free (name);
     }
-  closedir (dir);
+  if (dir != NULL)
+    closedir (dir);
   return 0;
 }
 
@@ -746,7 +747,10 @@ handle_sigabrt (int signal)
   frame_count = backtrace (frames, BA_SIZE);
   frames_text = backtrace_symbols (frames, frame_count);
   if (frames_text == NULL)
-    perror ("backtrace symbols");
+    {
+      perror ("backtrace symbols");
+      frame_count = 0;
+    }
   for (index = 0; index < frame_count; index++)
     tracef ("%s\n", frames_text[index]);
   free (frames_text);

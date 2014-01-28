@@ -634,7 +634,8 @@ parse_otp_time (const char *text_time)
   if (setenv ("TZ", "UTC", 1) == -1)
     {
       g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -642,7 +643,8 @@ parse_otp_time (const char *text_time)
   if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
     {
       g_warning ("%s: Failed to parse time", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -650,7 +652,8 @@ parse_otp_time (const char *text_time)
   if (epoch_time == -1)
     {
       g_warning ("%s: Failed to make time", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -733,7 +736,8 @@ parse_iso_time (const char *text_time)
       if (setenv ("TZ", "UTC", 1) == -1)
         {
           g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-          setenv ("TZ", tz, 1);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
           g_free (tz);
           return 0;
         }
@@ -742,7 +746,8 @@ parse_iso_time (const char *text_time)
         {
           assert (0);
           g_warning ("%s: Failed to parse time", __FUNCTION__);
-          setenv ("TZ", tz, 1);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
           g_free (tz);
           return 0;
         }
@@ -751,7 +756,8 @@ parse_iso_time (const char *text_time)
       if (epoch_time == -1)
         {
           g_warning ("%s: Failed to make time", __FUNCTION__);
-          setenv ("TZ", tz, 1);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
           g_free (tz);
           return 0;
         }
@@ -844,7 +850,8 @@ iso_time_tz (time_t *epoch_time, const char *timezone)
   if (setenv ("TZ", timezone, 1) == -1)
     {
       g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return iso_time (epoch_time);
     }
@@ -893,7 +900,8 @@ current_offset (const char *zone)
   if (setenv ("TZ", zone, 1) == -1)
     {
       g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -905,7 +913,8 @@ current_offset (const char *zone)
   if (setenv ("TZ", "UTC", 1) == -1)
     {
       g_warning ("%s: Failed to switch to UTC", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -954,7 +963,8 @@ time_offset (const char *zone, time_t time)
   if (setenv ("TZ", zone, 1) == -1)
     {
       g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -965,7 +975,8 @@ time_offset (const char *zone, time_t time)
   if (strftime (buf, 100, "%z", time_broken) == 0)
     {
       g_warning ("%s: Failed to format timezone", __FUNCTION__);
-      setenv ("TZ", tz, 1);
+      if (tz != NULL)
+        setenv ("TZ", tz, 1);
       g_free (tz);
       return 0;
     }
@@ -2627,7 +2638,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
               continue;
             }
 
-          if ((strlen (keyword->column) > 3)
+          if (keyword->column
+              && (strlen (keyword->column) > 3)
               && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
                   == 0)
               && strcasecmp (keyword->column, "nvt_id"))
@@ -2679,7 +2691,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
 
               g_free (type_term);
             }
-          else if (strcmp (keyword->column, "owner"))
+          else if (keyword->column && strcmp (keyword->column, "owner"))
             {
               quoted_keyword = sql_quote (keyword->string);
               quoted_column = ret == 2
@@ -21586,9 +21598,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       return -1;
     }
 
-  if (get
-      && ((get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
-          || (get->filter && strlen (get->filter))))
+  assert (get);
+
+  if ((get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
+      || (get->filter && strlen (get->filter)))
     {
       term = NULL;
       if (get->filt_id && strlen (get->filt_id) && strcmp (get->filt_id, "0"))
@@ -21734,7 +21747,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   clean = manage_clean_filter (term
                                 ? term
-                                : (get && get->filter ? get->filter : ""));
+                                : (get->filter ? get->filter : ""));
   g_free (term);
   term = clean;
 
@@ -21753,7 +21766,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<min_cvss_base>%s</min_cvss_base>",
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
-    get && get->filt_id ? get->filt_id : "0",
+    get->filt_id ? get->filt_id : "0",
     term,
     levels,
     search_phrase ? search_phrase : "",
@@ -40861,6 +40874,7 @@ create_group (const char *group_name, const char *comment, const char *users,
 
   assert (current_credentials.uuid);
   assert (group_name);
+  assert (group);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -40891,9 +40905,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   g_free (quoted_comment);
   g_free (quoted_group_name);
 
-  if (group)
-    *group = sqlite3_last_insert_rowid (task_db);
-
+  *group = sqlite3_last_insert_rowid (task_db);
   ret = group_add_users (*group, users);
 
   if (ret)
@@ -48089,7 +48101,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
         return 5;
     }
   else if (name_arg
-           && (strcmp (user_id_arg, current_credentials.username) == 0))
+           && (strcmp (name_arg, current_credentials.username) == 0))
     return 5;
 
   sql ("BEGIN EXCLUSIVE;");

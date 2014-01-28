@@ -1,3 +1,17 @@
+2014-01-28  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Solve issues raised by clang static analyser
+
+	* src/openvasmd.c (load_cas): Null pointer passed as an argument to a
+	  'nonnull' parameter
+          (handle_sigabrt): Array access results in a null pointer dereference
+	* src/manage_sql.c (parse_iso_time, current_offset, delete_user,
+	  iso_time_tz, parse_otp_time, filter_clause, time_offset): Null
+	  pointer passed as an argument to a 'nonnull' parameter
+	  (create_group, print_report_xml): Dereference of null pointer
+	* src/manage_migrators.c (migrate_19_to_20): Function call argument is
+	  an uninitialized value
+
 2014-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* report_formats/verinice-ism/gsm_verinice_ism.xsl (openvas:get-nvt-tag)

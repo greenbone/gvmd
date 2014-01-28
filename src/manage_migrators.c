@@ -2015,7 +2015,10 @@ migrate_19_to_20 ()
       if (strlen (installer_64) > 0)
         installer = (gchar*) g_base64_decode (installer_64, &installer_size);
       else
-        installer = g_strdup ("");
+        {
+          installer = g_strdup ("");
+          installer_size = 0;
+        }
 
       /* Bind the packages to the "$values" in the SQL statement. */
 
