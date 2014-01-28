@@ -80,6 +80,9 @@ REBUILD_OVAL=0
 # This is usually done with the option --verbose
 VERBOSE=0
 
+# Split CVE data files into parts of this size in kB. 0 = no splitting
+SPLIT_PART_SIZE=0
+
 # SQLITE3 defines the name of the sqlite binary to call, along with additional
 # parameters.
 SQLITE3="sqlite3 -noheader"
@@ -123,6 +126,17 @@ fi
 
 RSYNC=`command -v rsync`
 SQLITE=`command -v sqlite3`
+
+if [ -z "$TMPDIR" ]; then
+  SYNC_TMP_DIR=/tmp
+  # If we have mktemp, create a temporary dir (safer)
+  if [ -n "`which mktemp`" ]; then
+    SYNC_TMP_DIR=`mktemp -t -d greenbone-scap-data-sync.XXXXXXXXXX` || { echo "[e] Error: Cannot create temporary directory for file download" >&2; exit 1 ; }
+    trap "rm -rf $SYNC_TMP_DIR" EXIT HUP INT TRAP TERM
+  fi
+else
+  SYNC_TMP_DIR="$TMPDIR"
+fi
 
 do_describe () {
   echo "This script synchronizes a SCAP collection with the '$FEED_NAME'."
@@ -707,11 +721,29 @@ update_scap_db() {
       do
         if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
         then
-          updated_cves=1
           log_info "Updating $cvefile"
-          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-            xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-            $SQLITE3 $SCAP_DB
+
+          filesize=`stat -c "%s" "$cvefile"`
+          if [ "0" -ne "$SPLIT_PART_SIZE" ] && [ "$filesize" -gt $(($SPLIT_PART_SIZE * 1024)) ]
+          then
+            log_info "File is larger than ${SPLIT_PART_SIZE}k. Splitting into multiple parts"
+            "$SCAP_RES_DIR/xml_split" "$cvefile" -M "$SPLIT_PART_SIZE" -o "$SYNC_TMP_DIR"
+            cvefile_nodir="${cvefile##*/}"
+            for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
+            do
+              log_info "Updating part $cvepart"
+              xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart | \
+                xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+                $SQLITE3 $SCAP_DB
+              rm "$cvepart"
+            done
+          else
+            xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+              xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+              $SQLITE $SCAP_DB
+          fi
+
+          updated_cves=1
         else
           log_info "Skipping $cvefile, file is older than last revision (this is not an error)."
         fi

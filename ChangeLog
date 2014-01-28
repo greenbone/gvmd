@@ -1,5 +1,15 @@
 2014-01-28  Benoît Allard  <benoit.allard@greenbone.net>
 
+	Add xml_split, a utility to split a huge xml into smaller parts. Its
+	usage is disabled.
+
+	* tools/openvas-scapdata-sync.ini, tools/greenbone-scapdata-sync: Add
+	  possibility to use the xml_split utility.
+	* tools/extra/xml_split, tools/extra/README: Add new utility, and
+	  explanation.
+
+2014-01-28  Benoît Allard  <benoit.allard@greenbone.net>
+
 	Solve issues raised by clang static analyser
 
 	* src/openvasmd.c (load_cas): Null pointer passed as an argument to a

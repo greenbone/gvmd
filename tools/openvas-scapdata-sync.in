@@ -89,6 +89,9 @@ REBUILD_OVAL=0
 # Whether to output extra data
 VERBOSE=0
 
+# Split CVE data files into parts of this size in kB. 0 = no splitting
+SPLIT_PART_SIZE=0
+
 do_help () {
   echo "$0: Sync SCAP data using different protocols"
   echo " --rsync		sync with rsync (default)"
@@ -639,9 +642,27 @@ update_sec_db () {
       if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
         echo "[i] Updating $cvefile"
-        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-          xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-          $SQLITE $SEC_DB
+
+        filesize=`stat -c "%s" "$cvefile"`
+        if [ "0" -ne "$SPLIT_PART_SIZE" ] && [ "$filesize" -gt $(($SPLIT_PART_SIZE * 1024))  ]
+        then
+          echo "[i] File is larger than ${SPLIT_PART_SIZE}k. Splitting into multiple parts"
+          "$SCAP_RES_DIR/xml_split" "$cvefile" -M "$SPLIT_PART_SIZE" -o "$SYNC_TMP_DIR"
+          cvefile_nodir=${cvefile##*/}
+          for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
+          do
+            echo "[i] Updating part $cvepart"
+            xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart | \
+              xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+              $SQLITE $SEC_DB
+            rm "$cvepart"
+          done
+        else
+          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
+            xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
+            $SQLITE $SEC_DB
+        fi
+
         updated_cves=1
       else
         echo "[i] Skipping $cvefile, file is older than last revision"
