@@ -1,3 +1,8 @@
+2014-01-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/extra/README: Fixed typos and added note on how
+	to enable the functionality.
+
 2014-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (): Add math.h import.
