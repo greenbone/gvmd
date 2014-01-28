@@ -1,3 +1,12 @@
+2014-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (): Add math.h import.
+	(severity_data_index): Round before casting to int to avoid problems
+	with inexact double values.
+
+	* src/manage_sql.c (print_report_xml): Use result severity level
+	instead of type when counting delta results.
+
 2014-01-28  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Add xml_split, a utility to split a huge xml into smaller parts. Its

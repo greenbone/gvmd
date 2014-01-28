@@ -22139,7 +22139,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 /* Extra results in 'delta_results'. */
                 do
                   {
-                    const char *type;
+                    const char *level;
 
                     tracef ("   delta: %s: extra from report 2: %s",
                             __FUNCTION__,
@@ -22153,30 +22153,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                       }
 
                     /* Increase the result count. */
-                    type = result_iterator_type (&delta_results);
+                    level = result_iterator_level (&delta_results);
                     orig_filtered_result_count++;
                     filtered_result_count++;
-                    if (strcmp (type, "Security Hole") == 0)
+                    if (strcmp (level, "High") == 0)
                       {
                         orig_f_holes++;
                         f_holes++;
                       }
-                    else if (strcmp (type, "Security Warning") == 0)
+                    else if (strcmp (level, "Medium") == 0)
                       {
                         orig_f_warnings++;
                         f_warnings++;
                       }
-                    else if (strcmp (type, "Security Note") == 0)
+                    else if (strcmp (level, "Low") == 0)
                       {
                         orig_f_infos++;
                         f_infos++;
                       }
-                    else if (strcmp (type, "Log Message") == 0)
+                    else if (strcmp (level, "Log") == 0)
                       {
                         orig_f_logs++;
                         f_logs++;
                       }
-                    else if (strcmp (type, "False Positive") == 0)
+                    else if (strcmp (level, "False Positive") == 0)
                       {
                         orig_f_false_positives++;
                         f_false_positives++;
@@ -22257,33 +22257,33 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               else
                 do
                   {
-                    const char *type;
+                    const char *level;
 
                     /* Decrease the result count. */
-                    type = result_iterator_type (&results);
+                    level = result_iterator_level (&results);
                     orig_filtered_result_count--;
                     filtered_result_count--;
-                    if (strcmp (type, "Security Hole") == 0)
+                    if (strcmp (level, "High") == 0)
                       {
                         orig_f_holes--;
                         f_holes--;
                       }
-                    else if (strcmp (type, "Security Warning") == 0)
+                    else if (strcmp (level, "Medium") == 0)
                       {
                         orig_f_warnings--;
                         f_warnings--;
                       }
-                    else if (strcmp (type, "Security Note") == 0)
+                    else if (strcmp (level, "Low") == 0)
                       {
                         orig_f_infos--;
                         f_infos--;
                       }
-                    else if (strcmp (type, "Log Message") == 0)
+                    else if (strcmp (level, "Log") == 0)
                       {
                         orig_f_logs--;
                         f_logs--;
                       }
-                    else if (strcmp (type, "False Positive") == 0)
+                    else if (strcmp (level, "False Positive") == 0)
                       {
                         orig_f_false_positives--;
                         f_false_positives--;
@@ -22336,28 +22336,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   || (state == COMPARE_RESULTS_SAME)
                   || (state == COMPARE_RESULTS_CHANGED)))
             {
-              const char *type;
+              const char *level;
 
               /* Decrease the result count. */
-              type = result_iterator_type (&results);
+              level = result_iterator_level (&results);
               filtered_result_count--;
-              if (strcmp (type, "Security Hole") == 0)
+              if (strcmp (level, "High") == 0)
                 {
                   f_holes--;
                 }
-              else if (strcmp (type, "Security Warning") == 0)
+              else if (strcmp (level, "Medium") == 0)
                 {
                   f_warnings--;
                 }
-              else if (strcmp (type, "Security Note") == 0)
+              else if (strcmp (level, "Low") == 0)
                 {
                   f_infos--;
                 }
-              else if (strcmp (type, "Log Message") == 0)
+              else if (strcmp (level, "Log") == 0)
                 {
                   f_logs--;
                 }
-              else if (strcmp (type, "False Positive") == 0)
+              else if (strcmp (level, "False Positive") == 0)
                 {
                   f_false_positives--;
                 }
@@ -22368,28 +22368,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   || (state == COMPARE_RESULTS_SAME)
                   || (state == COMPARE_RESULTS_CHANGED)))
             {
-              const char *type;
+              const char *level;
 
               /* Decrease the result count. */
-              type = result_iterator_type (&results);
+              level = result_iterator_level (&results);
               orig_filtered_result_count--;
-              if (strcmp (type, "Security Hole") == 0)
+              if (strcmp (level, "High") == 0)
                 {
                   orig_f_holes--;
                 }
-              else if (strcmp (type, "Security Warning") == 0)
+              else if (strcmp (level, "Medium") == 0)
                 {
                   orig_f_warnings--;
                 }
-              else if (strcmp (type, "Security Note") == 0)
+              else if (strcmp (level, "Low") == 0)
                 {
                   orig_f_infos--;
                 }
-              else if (strcmp (type, "Log Message") == 0)
+              else if (strcmp (level, "Log") == 0)
                 {
                   orig_f_logs--;
                 }
-              else if (strcmp (type, "False Positive") == 0)
+              else if (strcmp (level, "False Positive") == 0)
                 {
                   orig_f_false_positives--;
                 }
@@ -22427,31 +22427,31 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               if (would_use)
                 {
-                  const char *type;
+                  const char *level;
 
                   /* Would have "used" just the 'delta_results' result, on
                    * an earlier page. */
 
                   /* Increase the result count. */
-                  type = result_iterator_type (&delta_results);
+                  level = result_iterator_level (&delta_results);
                   orig_filtered_result_count++;
-                  if (strcmp (type, "Security Hole") == 0)
+                  if (strcmp (level, "High") == 0)
                     {
                       orig_f_holes++;
                     }
-                  else if (strcmp (type, "Security Warning") == 0)
+                  else if (strcmp (level, "Medium") == 0)
                     {
                       orig_f_warnings++;
                     }
-                  else if (strcmp (type, "Security Note") == 0)
+                  else if (strcmp (level, "Low") == 0)
                     {
                       orig_f_infos++;
                     }
-                  else if (strcmp (type, "Log Message") == 0)
+                  else if (strcmp (level, "Log") == 0)
                     {
                       orig_f_logs++;
                     }
-                  else if (strcmp (type, "False Positive") == 0)
+                  else if (strcmp (level, "False Positive") == 0)
                     {
                       orig_f_false_positives++;
                     }
@@ -22459,30 +22459,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               if (used)
                 {
-                  const char *type;
+                  const char *level;
 
                   /* "Used" just the 'delta_results' result. */
 
                   /* Increase the result count. */
-                  type = result_iterator_type (&delta_results);
+                  level = result_iterator_level (&delta_results);
                   filtered_result_count++;
-                  if (strcmp (type, "Security Hole") == 0)
+                  if (strcmp (level, "High") == 0)
                     {
                       f_holes++;
                     }
-                  else if (strcmp (type, "Security Warning") == 0)
+                  else if (strcmp (level, "Medium") == 0)
                     {
                       f_warnings++;
                     }
-                  else if (strcmp (type, "Security Note") == 0)
+                  else if (strcmp (level, "Low") == 0)
                     {
                       f_infos++;
                     }
-                  else if (strcmp (type, "Log Message") == 0)
+                  else if (strcmp (level, "Log") == 0)
                     {
                       f_logs++;
                     }
-                  else if (strcmp (type, "False Positive") == 0)
+                  else if (strcmp (level, "False Positive") == 0)
                     {
                       f_false_positives++;
                     }
@@ -22516,32 +22516,32 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                 /* Extra results in 'delta_results'. */
                 do
                   {
-                    const char *type;
+                    const char *level;
 
                     tracef ("   delta: %s: extra from report 2: %s",
                             __FUNCTION__,
                             result_iterator_nvt_oid (&delta_results));
 
                     /* Increase the result count. */
-                    type = result_iterator_type (&delta_results);
+                    level = result_iterator_level (&delta_results);
                     orig_filtered_result_count++;
-                    if (strcmp (type, "Security Hole") == 0)
+                    if (strcmp (level, "High") == 0)
                       {
                         orig_f_holes++;
                       }
-                    else if (strcmp (type, "Security Warning") == 0)
+                    else if (strcmp (level, "Medium") == 0)
                       {
                         orig_f_warnings++;
                       }
-                    else if (strcmp (type, "Security Note") == 0)
+                    else if (strcmp (level, "Low") == 0)
                       {
                         orig_f_infos++;
                       }
-                    else if (strcmp (type, "Log Message") == 0)
+                    else if (strcmp (level, "Log") == 0)
                       {
                         orig_f_logs++;
                       }
-                    else if (strcmp (type, "False Positive") == 0)
+                    else if (strcmp (level, "False Positive") == 0)
                       {
                         orig_f_false_positives++;
                       }
@@ -22566,28 +22566,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               else
                 do
                   {
-                    const char *type;
+                    const char *level;
 
                     /* Decrease the result count. */
-                    type = result_iterator_type (&results);
+                    level = result_iterator_level (&results);
                     orig_filtered_result_count--;
-                    if (strcmp (type, "Security Hole") == 0)
+                    if (strcmp (level, "High") == 0)
                       {
                         orig_f_holes--;
                       }
-                    else if (strcmp (type, "Security Warning") == 0)
+                    else if (strcmp (level, "Medium") == 0)
                       {
                         orig_f_warnings--;
                       }
-                    else if (strcmp (type, "Security Note") == 0)
+                    else if (strcmp (level, "Low") == 0)
                       {
                         orig_f_infos--;
                       }
-                    else if (strcmp (type, "Log Message") == 0)
+                    else if (strcmp (level, "Log") == 0)
                       {
                         orig_f_logs--;
                       }
-                    else if (strcmp (type, "False Positive") == 0)
+                    else if (strcmp (level, "False Positive") == 0)
                       {
                         orig_f_false_positives--;
                       }
@@ -22634,30 +22634,30 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             {
               if (used)
                 {
-                  const char *type;
+                  const char *level;
 
                   /* "Used" just the 'delta_results' result. */
 
                   /* Increase the result count. */
-                  type = result_iterator_type (&delta_results);
+                  level = result_iterator_level (&delta_results);
                   orig_filtered_result_count++;
-                  if (strcmp (type, "Security Hole") == 0)
+                  if (strcmp (level, "High") == 0)
                     {
                       orig_f_holes++;
                     }
-                  else if (strcmp (type, "Security Warning") == 0)
+                  else if (strcmp (level, "Medium") == 0)
                     {
                       orig_f_warnings++;
                     }
-                  else if (strcmp (type, "Security Note") == 0)
+                  else if (strcmp (level, "Low") == 0)
                     {
                       orig_f_infos++;
                     }
-                  else if (strcmp (type, "Log Message") == 0)
+                  else if (strcmp (level, "Log") == 0)
                     {
                       orig_f_logs++;
                     }
-                  else if (strcmp (type, "False Positive") == 0)
+                  else if (strcmp (level, "False Positive") == 0)
                     {
                       orig_f_false_positives++;
                     }
@@ -22669,28 +22669,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
             }
           else
             {
-              const char *type;
+              const char *level;
 
               /* Decrease the result count. */
-              type = result_iterator_type (&results);
+              level = result_iterator_level (&results);
               orig_filtered_result_count--;
-              if (strcmp (type, "Security Hole") == 0)
+              if (strcmp (level, "High") == 0)
                 {
                   orig_f_holes--;
                 }
-              else if (strcmp (type, "Security Warning") == 0)
+              else if (strcmp (level, "Medium") == 0)
                 {
                   orig_f_warnings--;
                 }
-              else if (strcmp (type, "Security Note") == 0)
+              else if (strcmp (level, "Low") == 0)
                 {
                   orig_f_infos--;
                 }
-              else if (strcmp (type, "Log Message") == 0)
+              else if (strcmp (level, "Log") == 0)
                 {
                   orig_f_logs--;
                 }
-              else if (strcmp (type, "False Positive") == 0)
+              else if (strcmp (level, "False Positive") == 0)
                 {
                   orig_f_false_positives--;
                 }

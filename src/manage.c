@@ -52,6 +52,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <math.h>
 #include <locale.h>
 #include <uuid/uuid.h>
 #include <stdio.h>
@@ -562,10 +563,10 @@ severity_data_index (double severity)
 {
   int ret;
   if (severity >= 0.0)
-    ret = (int)(severity * SEVERITY_SUBDIVISIONS) + ZERO_SEVERITY_INDEX;
+    ret = (int)(round (severity * SEVERITY_SUBDIVISIONS)) + ZERO_SEVERITY_INDEX;
   else if (severity == SEVERITY_FP || severity == SEVERITY_DEBUG
            || severity == SEVERITY_ERROR)
-    ret = (int)(severity) + ZERO_SEVERITY_INDEX;
+    ret = (int)(round (severity)) + ZERO_SEVERITY_INDEX;
   else
     ret = 0;
 
