@@ -1,3 +1,13 @@
+2014-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r18655.
+
+	* report_formats/verinice-ism/gsm_verinice_ism.xsl (openvas:get-nvt-tag)
+	(openvas:newstyle-nvt): New functions.
+	(newline, prognostic-description): New templates.
+	(vulnerability_details): Add new style NVT sections to description.
+	(/): Flush trailing whitespace.
+
 2014-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18630.

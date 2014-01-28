@@ -33,11 +33,67 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:str="http://exslt.org/strings" version="1.0" extension-element-prefixes="str">
+<xsl:stylesheet
+    version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:str="http://exslt.org/strings"
+    xmlns:func="http://exslt.org/functions"
+    xmlns:openvas="http://openvas.org"
+    extension-element-prefixes="str func openvas">
   <xsl:param name="htmlfilename"/>
   <xsl:param name="filedate"/>
   <xsl:include href="classification.xsl"/>
   <xsl:output method="xml" encoding="UTF-8"/>
+
+  <func:function name="openvas:get-nvt-tag">
+    <xsl:param name="tags"/>
+    <xsl:param name="name"/>
+    <xsl:variable name="after">
+      <xsl:value-of select="substring-after (nvt/tags, concat ($name, '='))"/>
+    </xsl:variable>
+    <xsl:choose>
+        <xsl:when test="contains ($after, '|')">
+          <func:result select="substring-before ($after, '|')"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <func:result select="$after"/>
+        </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
+  <func:function name="openvas:newstyle-nvt">
+    <xsl:param name="nvt"/>
+    <xsl:choose>
+      <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
+                      and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
+        <func:result select="1"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="0"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
+  <xsl:template name="newline">
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
+
+  <xsl:template name="prognostic-description">
+    <xsl:param name="string"/>
+
+    <xsl:for-each select="str:split($string, '&#10;&#10;')">
+      <xsl:for-each select="str:split(., '&#10;')">
+        <xsl:value-of select="."/>
+        <xsl:call-template name="newline"/>
+      </xsl:for-each>
+      <xsl:call-template name="newline"/>
+    </xsl:for-each>
+  </xsl:template>
 
   <xsl:template match="task">
     <xsl:value-of select="@id"/>
@@ -278,7 +334,156 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <syncAttribute>
         <name>gsm_ism_vulnerability_description</name>
         <value>
-          <xsl:value-of select="description/text()"/>
+          <xsl:variable name="report" select="/report"/>
+
+          <!-- Summary -->
+          <xsl:if test="openvas:newstyle-nvt (nvt)">
+            <xsl:text>Summary:</xsl:text>
+            <xsl:call-template name="newline"/>
+            <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
+            <xsl:call-template name="newline"/>
+            <xsl:call-template name="newline"/>
+          </xsl:if>
+
+          <!-- Result -->
+          <xsl:choose>
+            <xsl:when test="$report/@type = 'prognostic'">
+              <xsl:choose>
+                <xsl:when test="delta/text() = 'changed'">
+                  <xsl:text>Result 1:</xsl:text>
+                  <xsl:call-template name="newline"/>
+                </xsl:when>
+              </xsl:choose>
+              <xsl:call-template name="prognostic-description">
+                <xsl:with-param name="string" select="description"/>
+              </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:choose>
+                <xsl:when test="openvas:newstyle-nvt (nvt)">
+                  <xsl:choose>
+                    <xsl:when test="delta/text() = 'changed'">
+                      <xsl:text>Result 1:</xsl:text>
+                      <xsl:call-template name="newline"/>
+                      <xsl:call-template name="newline"/>
+                    </xsl:when>
+                  </xsl:choose>
+                  <xsl:text>Vulnerability Detection Result:</xsl:text>
+                  <xsl:call-template name="newline"/>
+                  <xsl:choose>
+                    <xsl:when test="string-length(description) &lt; 2">
+                      <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="description"/>
+                    </xsl:otherwise>
+                  </xsl:choose>
+                  <xsl:call-template name="newline"/>
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:choose>
+                    <xsl:when test="delta/text() = 'changed'">
+                      <xsl:text>Result 1:</xsl:text>
+                      <xsl:call-template name="newline"/>
+                    </xsl:when>
+                  </xsl:choose>
+                  <xsl:value-of select="description"/>
+                  <xsl:call-template name="newline"/>
+                </xsl:otherwise>
+              </xsl:choose>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:call-template name="newline"/>
+
+          <xsl:if test="openvas:newstyle-nvt (nvt)">
+            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+              <xsl:text>Impact:</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+              <xsl:call-template name="newline"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+
+            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+              <xsl:text>Solution:</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:value-of name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+              <xsl:call-template name="newline"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+
+            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+              <xsl:text>Vulnerability Insight:</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+              <xsl:call-template name="newline"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+          </xsl:if>
+
+          <xsl:choose>
+            <xsl:when test="(nvt/cvss_base &gt; 0) or (cve/cvss_base &gt; 0)">
+              <xsl:text>Vulnerability Detection Method:</xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:text>Log Method:</xsl:text>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:call-template name="newline"/>
+          <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
+          <xsl:call-template name="newline"/>
+          <xsl:text>Details:</xsl:text>
+          <xsl:call-template name="newline"/>
+          <xsl:choose>
+            <xsl:when test="$report/@type = 'prognostic'">
+              <xsl:value-of select="normalize-space(cve/@id)"/>
+            </xsl:when>
+            <xsl:when test="nvt/@oid = 0">
+              <xsl:if test="delta/text()">
+                <xsl:call-template name="newline"/>
+              </xsl:if>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:variable name="max" select="77"/>
+              <xsl:choose>
+                <xsl:when test="string-length(nvt/name) &gt; $max">
+                  <xsl:value-of select="substring(nvt/name, 0, $max)"/>...
+                </xsl:when>
+                <xsl:otherwise>
+                  <xsl:value-of select="nvt/name"/>
+                </xsl:otherwise>
+              </xsl:choose>
+              <xsl:call-template name="newline"/>
+              <xsl:text>(OID: </xsl:text>
+              <xsl:value-of select="nvt/@oid"/>
+              <xsl:text>)</xsl:text>
+              <xsl:call-template name="newline"/>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:choose>
+            <xsl:when test="not($report/@type = 'prognostic')">
+              <xsl:if test="scan_nvt_version != ''">
+                <xsl:text>Version used: </xsl:text>
+                <xsl:value-of select="scan_nvt_version"/>
+                <xsl:call-template name="newline"/>
+              </xsl:if>
+            </xsl:when>
+          </xsl:choose>
+
+          <xsl:if test="count (detection)">
+            <xsl:text>Product Detection Result:</xsl:text>
+            <xsl:call-template name="newline"/>
+            <xsl:text>Product: </xsl:text>
+            <xsl:value-of select="detection/result/details/detail[name = 'product']/value/text()"/>
+            <xsl:call-template name="newline"/>
+            <xsl:text>Method: </xsl:text>
+            <xsl:call-template name="newline"/>
+            <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
+            <xsl:call-template name="newline"/>
+            <xsl:text>(OID: </xsl:text>
+            <xsl:value-of select="detection/result/details/detail[name = 'source_oid']/value/text()"/>)
+            <xsl:call-template name="newline"/>
+          </xsl:if>
         </value>
       </syncAttribute>
       <syncAttribute>
@@ -444,12 +649,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:call-template name="extract_organization"/>
     </xsl:variable>
 
-    <ns3:syncRequest 
+    <ns3:syncRequest
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xmlns="http://www.sernet.de/sync/data"
       xmlns:ns2="http://www.sernet.de/sync/mapping"
       xmlns:ns3="http://www.sernet.de/sync/sync"
-      xsi:schemaLocation="http://www.sernet.de/sync/sync sync.xsd         http://www.sernet.de/sync/data data.xsd         http://www.sernet.de/sync/mapping mapping.xsd" 
+      xsi:schemaLocation="http://www.sernet.de/sync/sync sync.xsd         http://www.sernet.de/sync/data data.xsd         http://www.sernet.de/sync/mapping mapping.xsd"
       sourceId="{$scan_name}">
       <syncData>
         <syncObject>
