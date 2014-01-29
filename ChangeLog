@@ -1,5 +1,11 @@
 2014-01-29  Benoît Allard  <benoit.allard@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt: Updated version number to openvas-manager-5.0+beta6 
+
+2014-01-29  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* ChangeLog: correct authorship of an old patch
 	* CHANGES: Prepare 5.0+beta5 release
 
