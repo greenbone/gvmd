@@ -1,3 +1,8 @@
+2014-01-29  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* ChangeLog: correct authorship of an old patch
+	* CHANGES: Prepare 5.0+beta5 release
+
 2014-01-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/extra/README: Fixed typos and added note on how
@@ -68,7 +73,7 @@
 	reference columns.
 	(report): Remove spaces for consistency.
 
-2014-01-23  Michael Wiegand <michael.wiegand@greenbone.net>
+2014-01-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In the SYNC ops, set
 	current_error to 4 instead of 2 when the child has succeeded, to
