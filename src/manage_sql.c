@@ -21489,6 +21489,94 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
 }
 
 /**
+ * @brief Buffer XML for a severity class.
+ *
+ * @param[in]  severity  Severity name.
+ *
+ * @return Freshly allocated XML on success, else NULL.
+ */
+gchar *
+severity_class_xml (const gchar *severity)
+{
+  if (severity)
+    {
+      if ((strcmp (severity, "nist") == 0)
+          || (strcmp (severity, "bsi") == 0))
+        return g_strdup_printf ("<severity_class"
+                                " id=\"d4c74cda-89e1-11e3-9c29-406186ea4fc5\">"
+                                "<name>nist</name>"
+                                "<full_name>%s</full_name>"
+                                "<severity_range>"
+                                "<name>None</name>"
+                                "<min>0.0</min>"
+                                "<max>0.0</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>Low</name>"
+                                "<min>0.1</min>"
+                                "<max>3.9</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>Medium</name>"
+                                "<min>4.0</min>"
+                                "<max>6.9</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>High</name>"
+                                "<min>7.0</min>"
+                                "<max>10.0</max>"
+                                "</severity_range>"
+                                "</severity_class>",
+                                strcmp (severity, "nist") == 0
+                                 ? "NVD Vulnerability Severity Ratings"
+                                 : "BSI Schwachstellenampel (Germany)");
+      else if (strcmp (severity, "classic") == 0)
+        return g_strdup_printf ("<severity_class"
+                                " id=\"dc1d556a-89e1-11e3-bc21-406186ea4fc5\">"
+                                "<name>classic</name>"
+                                "<full_name>OpenVAS Classic</full_name>"
+                                "<severity_range>"
+                                "<name>None</name>"
+                                "<min>0.0</min>"
+                                "<max>0.0</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>Low</name>"
+                                "<min>0.1</min>"
+                                "<max>2.0</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>Medium</name>"
+                                "<min>2.1</min>"
+                                "<max>5.0</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>High</name>"
+                                "<min>5.1</min>"
+                                "<max>10.0</max>"
+                                "</severity_range>"
+                                "</severity_class>");
+      else if (strcmp (severity, "pci-dss") == 0)
+        return g_strdup_printf ("<severity_class"
+                                " id=\"e442e476-89e1-11e3-bfc6-406186ea4fc5\">"
+                                "<name>pci-dss</name>"
+                                "<full_name>PCI-DSS</full_name>"
+                                "<severity_range>"
+                                "<name>None</name>"
+                                "<min>0.0</min>"
+                                "<max>4.2</max>"
+                                "</severity_range>"
+                                "<severity_range>"
+                                "<name>High</name>"
+                                "<min>4.2</min>"
+                                "<max>10.0</max>"
+                                "</severity_range>"
+                                "</severity_class>");
+    }
+  return NULL;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -21816,6 +21904,19 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
            host ? host : "");
 
   PRINT (out, "</filters>");
+
+  {
+    gchar *severity_setting, *class_xml;
+
+    severity_setting = setting_severity ();
+    class_xml = severity_class_xml (severity_setting);
+    g_free (severity_setting);
+    if (class_xml)
+      {
+        PRINT_XML (out, class_xml);
+        g_free (class_xml);
+      }
+  }
 
   if (report)
     {
