@@ -1,5 +1,9 @@
 2014-01-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* INSTALL: Add section about static code analysis with CLang.
+
+2014-01-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Removed unnecessary
 	0-initialization of variable 'fail'.
 
