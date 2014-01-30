@@ -20101,7 +20101,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int fail;
               gchar *fail_group_id;
 
-              fail = 0;
               switch ((fail = set_task_groups (create_task_data->task,
                                                create_task_data->groups,
                                                &fail_group_id)))
