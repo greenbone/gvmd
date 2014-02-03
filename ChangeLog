@@ -1,3 +1,8 @@
+2014-02-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/CMakeLists.txt: Link against math library. Fixes build on some
+	environments.
+
 2014-01-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (severity_class_xml): New function.
@@ -16,7 +21,7 @@
 
 	Post release version bump.
 
-	* CMakeLists.txt: Updated version number to openvas-manager-5.0+beta6 
+	* CMakeLists.txt: Updated version number to openvas-manager-5.0+beta6
 
 2014-01-29  Benoît Allard  <benoit.allard@greenbone.net>
 
@@ -53,7 +58,7 @@
 
 	* src/openvasmd.c (load_cas): Null pointer passed as an argument to a
 	  'nonnull' parameter
-          (handle_sigabrt): Array access results in a null pointer dereference
+	(handle_sigabrt): Array access results in a null pointer dereference
 	* src/manage_sql.c (parse_iso_time, current_offset, delete_user,
 	  iso_time_tz, parse_otp_time, filter_clause, time_offset): Null
 	  pointer passed as an argument to a 'nonnull' parameter
