@@ -1,5 +1,10 @@
 2014-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-certdata-sync: Move declaration of SCRIPT_NAME up to
+	make it available to LOG_CMD.
+
+2014-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync: Do not
 	check if feed is current when REFRESH_ONLY is set.
 
