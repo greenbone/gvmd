@@ -1,5 +1,13 @@
 2014-02-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.h: Include base/openvas_networking.h
+	(port_protocol_t, struct range): Remove, as they are moved to libraries.
+
+	* src/manage_sql.c (port_range_ranges): Remove function definition.
+	Remove extra include.
+
+2014-02-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c: Include base/openvas_networking.h
 	(validate_port_range): Delete function.
 

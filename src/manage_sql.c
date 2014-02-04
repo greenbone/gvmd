@@ -61,7 +61,6 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
-#include <openvas/base/openvas_networking.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
@@ -42507,106 +42506,6 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
          range->end,
          range->exclude);
   return 0;
-}
-
-/**
- * @brief Create a range array from an OMP port range string.
- *
- * @param[out]  port_range  Valid OMP port range string.
- *
- * @return Range array.
- */
-static array_t*
-port_range_ranges (const char *port_range)
-{
-  gchar **split, **point, *range_start, *current;
-  array_t *ranges;
-  int tcp;
-
-  ranges = make_array ();
-
-  while (*port_range && isblank (*port_range)) port_range++;
-
-  /* Scanner accepts only 1-6,9 or T:1-3,5,U:1-5,9.  Manager accepts T: and
-   * U: before any of the ranges.  This toggles the remaining ranges, as in
-   * nmap.  Manager treats a leading naked range as TCP, whereas nmap treats
-   * it as TCP and UDP.  Manager sends to the Scanner in the format Scanner
-   * accepts. */
-
-  /* Treat newlines like commas. */
-  range_start = current = g_strdup (port_range);
-  while (*current)
-    {
-      if (*current == '\n') *current = ',';
-      current++;
-    }
-
-  tcp = 1;
-  split = g_strsplit (range_start, ",", 0);
-  g_free (range_start);
-  point = split;
-
-  while (*point)
-    {
-      gchar *hyphen, *element;
-      range_t *range;
-
-      element = g_strstrip (*point);
-      if (strlen (element) >= 2)
-        {
-          if ((element[0] == 'T') && (element[1] == ':'))
-            {
-              tcp = 1;
-              element = element + 2;
-            }
-          else if ((element[0] == 'U') && (element[1] == ':'))
-            {
-              tcp = 0;
-              element = element + 2;
-            }
-          /* Else tcp stays as it is. */
-        }
-
-      /* Skip any space that followed the type specifier. */
-      while (*element && isblank (*element)) element++;
-
-      hyphen = strchr (element, '-');
-      if (hyphen)
-        {
-          *hyphen = '\0';
-          hyphen++;
-          while (*hyphen && isblank (*hyphen)) hyphen++;
-          assert (*hyphen);  /* Validation checks this. */
-
-          /* A range. */
-
-          range = (range_t*) g_malloc0 (sizeof (range_t));
-
-          range->start = atoi (element);
-          range->end = atoi (hyphen);
-          range->type = tcp ? PORT_PROTOCOL_TCP : PORT_PROTOCOL_UDP;
-          range->exclude = 0;
-
-          array_add (ranges, range);
-        }
-      else if (*element)
-        {
-          /* A single port. */
-
-          range = (range_t*) g_malloc0 (sizeof (range_t));
-
-          range->start = atoi (element);
-          range->end = range->start;
-          range->type = tcp ? PORT_PROTOCOL_TCP : PORT_PROTOCOL_UDP;
-          range->exclude = 0;
-
-          array_add (ranges, range);
-        }
-      /* Else skip over empty range. */
-      point += 1;
-    }
-  g_strfreev (split);
-  return ranges;
 }
 
 /**
