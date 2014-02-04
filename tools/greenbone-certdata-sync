@@ -511,11 +511,14 @@ then
   log_notice "Purging corrupted database."
   rm -f $CERT_DB
 else
-  is_feed_current
-  if [ $FEED_CURRENT -eq 1 ] && [ $REFRESH_ONLY -ne 1 ]
+  if [ $REFRESH_ONLY -ne 1 ]
   then
-    log_notice "Feed is already current, skipping synchronization."
-    exit 0
+    is_feed_current
+    if [ $FEED_CURRENT -eq 1 ]
+    then
+      log_notice "Feed is already current, skipping synchronization."
+      exit 0
+    fi
   fi
 fi
 sync_certdata

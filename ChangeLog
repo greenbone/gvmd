@@ -1,3 +1,8 @@
+2014-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync: Do not
+	check if feed is current when REFRESH_ONLY is set.
+
 2014-02-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/CMakeLists.txt: Link against math library. Fixes build on some
