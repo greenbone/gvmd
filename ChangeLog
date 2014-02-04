@@ -1,3 +1,8 @@
+2014-02-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c: Include base/openvas_networking.h
+	(validate_port_range): Delete function.
+
 2014-02-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-certdata-sync: Move declaration of SCRIPT_NAME up to
