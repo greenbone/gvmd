@@ -1188,6 +1188,7 @@ main (int argc, char** argv)
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean create_cred_enc_key = FALSE;
   static gboolean disable_password_policy = FALSE;
+  static gboolean list_users = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1222,6 +1223,7 @@ main (int argc, char** argv)
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
+        { "list-users", '\0', 0, G_OPTION_ARG_NONE, &list_users, "List users and exit.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
@@ -1351,6 +1353,14 @@ main (int argc, char** argv)
 
       /* Delete the user and then exit. */
       if (manage_delete_user (database, delete_user))
+        return EXIT_FAILURE;
+      return EXIT_SUCCESS;
+    }
+
+  if (list_users)
+    {
+      /* List the users and then exit. */
+      if (manage_list_users (database))
         return EXIT_FAILURE;
       return EXIT_SUCCESS;
     }

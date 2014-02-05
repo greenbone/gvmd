@@ -47556,6 +47556,36 @@ manage_delete_user (const gchar *database, const gchar *name)
 }
 
 /**
+ * @brief List users.
+ *
+ * @param[in]  database   Location of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_list_users (const gchar *database)
+{
+  iterator_t users;
+  const gchar *db;
+
+  if (openvas_auth_init ())
+    return -1;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  init_manage_process (0, db);
+
+  init_iterator (&users, "SELECT name FROM users;");
+  while (next (&users))
+    printf ("%s\n", iterator_string (&users, 0));
+  cleanup_iterator (&users);
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
+
+/**
  * @brief Set the password of a user.
  *
  * @param[in]  name      Name of user.

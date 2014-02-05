@@ -1,3 +1,13 @@
+2014-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add option --list-users.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage_sql.c (manage_list_users): New function.
+
+	* src/openvasmd.c (main): Add --list-users.
+
 2014-02-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Include base/openvas_networking.h
@@ -44,7 +54,7 @@
 
 	Post release version bump.
 
-	* CMakeLists.txt: Updated version number to openvas-manager-5.0+beta6
+	* CMakeLists.txt: Updated version number to openvas-manager-5.0+beta6.
 
 2014-01-29  Benoît Allard  <benoit.allard@greenbone.net>
 
