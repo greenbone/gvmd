@@ -1,3 +1,7 @@
+2014-02-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_target): Remove default value of port_range.
+
 2014-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add option --list-users.
@@ -8,7 +12,7 @@
 
 	* src/openvasmd.c (main): Add --list-users.
 
-2014-02-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2014-02-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Include base/openvas_networking.h
 	(port_protocol_t, struct range): Remove, as they are moved to libraries.
