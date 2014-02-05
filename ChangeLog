@@ -1,3 +1,7 @@
+2014-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (trim_partial_report): Correct SQL keyword.
+
 2014-02-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_target): Remove default value of port_range.

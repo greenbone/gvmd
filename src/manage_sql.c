@@ -18806,7 +18806,7 @@ trim_partial_report (report_t report)
 
   sql ("DELETE FROM report_host_details WHERE report_host IN"
        " (SELECT report_hosts.ROWID FROM report_hosts"
-       "  AND report_hosts.report = %llu"
+       "  WHERE report_hosts.report = %llu"
        "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
        report);
 
