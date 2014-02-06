@@ -1,3 +1,13 @@
+2014-02-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (find_trash_task_with_permission): New function.
+
+	* src/manage.h (find_trash_task_with_permission): New prototype.
+
+	* src/omp.c (xml_handle_end_element): In cases for CLIENT_MODIFY_NOTE
+	and CLIENT_MODIFY_OVERRIDE allow task_id to refer to a task in the
+	trashcan.
+
 2014-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (trim_partial_report): Correct SQL keyword.

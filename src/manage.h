@@ -693,6 +693,9 @@ find_task (const char* id, task_t*);
 gboolean
 find_task_with_permission (const char*, task_t*, const char *);
 
+gboolean
+find_trash_task_with_permission (const char*, task_t*, const char *);
+
 void
 reset_task (task_t);
 

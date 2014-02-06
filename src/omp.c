@@ -21582,6 +21582,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  &task,
                                                  NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
+          else if (modify_note_data->task_id
+                   && task == 0
+                   && find_trash_task_with_permission (modify_note_data
+                                                         ->task_id,
+                                                       &task,
+                                                       NULL))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_note"));
           else if (modify_note_data->task_id && task == 0)
             {
               if (send_find_error_to_client ("modify_note",
@@ -21707,6 +21714,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    && find_task_with_permission (modify_override_data->task_id,
                                                  &task,
                                                  NULL))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
+          else if (modify_override_data->task_id
+                   && task == 0
+                   && find_trash_task_with_permission (modify_override_data
+                                                         ->task_id,
+                                                       &task,
+                                                       NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_override"));
           else if (modify_override_data->task_id && task == 0)
             {

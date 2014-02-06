@@ -25112,6 +25112,22 @@ find_task_with_permission (const char* uuid, task_t* task,
 }
 
 /**
+ * @brief Find a task in the trashcan for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid      UUID of task.
+ * @param[out]  task      Task return, 0 if succesfully failed to find task.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find task), TRUE on error.
+ */
+gboolean
+find_trash_task_with_permission (const char* uuid, task_t* task,
+                                 const char *permission)
+{
+  return find_resource_with_permission ("task", uuid, task, permission, 1);
+}
+
+/**
  * @brief Find a task in the trashcan, given an identifier.
  *
  * @param[in]   uuid  A task identifier.
