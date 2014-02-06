@@ -1,5 +1,10 @@
 2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/sql.c (sql_nquote): Small changes to string allocation and parsing
+	to improve performance a bit.
+
+2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove OTP ERROR command handling as it is not used anymore.
 
 	* src/otp.c (scanner_state_t): Remove SCANNER_ERROR state.
