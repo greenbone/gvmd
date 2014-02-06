@@ -1,3 +1,8 @@
+2014-02-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (stop_task_internal): Only check if scanner is up when
+	scanner is required.
+
 2014-02-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (find_trash_task_with_permission): New function.

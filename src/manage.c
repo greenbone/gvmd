@@ -3398,8 +3398,6 @@ stop_task_internal (task_t task)
 {
   task_status_t run_status;
 
-  if (scanner_up == 0)
-    return -5;
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_PAUSE_REQUESTED
       || run_status == TASK_STATUS_PAUSE_WAITING
@@ -3409,9 +3407,13 @@ stop_task_internal (task_t task)
       || run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      if (current_scanner_task == task
-          && send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
-        return -1;
+      if (current_scanner_task == task)
+        {
+          if (scanner_up == 0)
+            return -5;
+          if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
+            return -1;
+        }
       set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
       return 1;
     }
