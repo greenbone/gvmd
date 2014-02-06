@@ -36,6 +36,7 @@
 #include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
+#include <openvas/misc/network.h>
 
 /**
  * @brief Name value pair.
@@ -111,19 +112,6 @@ manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_mode);
 
 extern short scanner_up;
 extern short scanner_active;
-
-/**
- * @brief Possible port types.
- *
- * These numbers are used in the database, so if the number associated with
- * any symbol changes then a migrator must be added to update existing data.
- */
-typedef enum
-{
-  PORT_PROTOCOL_TCP = 0,
-  PORT_PROTOCOL_UDP = 1,
-  PORT_PROTOCOL_OTHER = 2
-} port_protocol_t;
 
 /** @todo Should be in otp.c/h. */
 /**
@@ -2303,20 +2291,6 @@ slave_task_iterator_uuid (iterator_t*);
 
 
 /* Port lists. */
-
-/**
- * @brief A port range.
- */
-struct range
-{
-  gchar *comment;       ///< Comment.
-  int end;              ///< End port.  0 for single port.
-  int exclude;          ///< Whether to exclude range.
-  gchar *id;            ///< UUID.
-  int start;            ///< Start port.
-  int type;             ///< Port protocol.
-};
-typedef struct range range_t;
 
 gboolean
 find_port_list (const char*, port_list_t*);

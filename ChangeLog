@@ -1,3 +1,13 @@
+2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport r18689 and 18682, adjusted accordingly.
+
+	* src/manage_sql.c (validate_port_range, port_range_ranges): Remove
+	function definitions.
+
+	* src/manage.h: Include misc/network.h
+	(port_protocol_t, struct range): Remove, as moved to libraries.
+
 2014-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r18655.
