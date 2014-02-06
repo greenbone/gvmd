@@ -1,3 +1,12 @@
+2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove OTP ERROR command handling as it is not used anymore.
+
+	* src/otp.c (scanner_state_t): Remove SCANNER_ERROR state.
+	(parse_scanner_error): Delete function.
+	(process_otp_scanner_input): Remove SCANNER_ERROR state and ERROR
+	command handling.
+
 2014-02-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (stop_task_internal): Only check if scanner is up when

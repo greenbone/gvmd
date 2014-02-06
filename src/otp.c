@@ -556,7 +556,6 @@ typedef enum
   SCANNER_ERRMSG_HOST,
   SCANNER_ERRMSG_NUMBER,
   SCANNER_ERRMSG_OID,
-  SCANNER_ERROR,
   SCANNER_ALARM_DESCRIPTION,
   SCANNER_ALARM_HOST,
   SCANNER_ALARM_NUMBER,
@@ -805,104 +804,6 @@ parse_scanner_bad_login (char** messages)
         }
     }
   return 1;
-}
-
-/**
- * @brief Parse the description in an ERROR message.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return 0 success, -1 fail, -2 too few characters (need more input).
- */
-static int
-parse_scanner_error (char** messages)
-{
-  char err;
-  char *end = *messages + from_scanner_end - from_scanner_start;
-
-  /* OTP has two error messages.  One ends with a newline, the other ends
-   * with a "<|> SERVER" field (and a newline).  The GTK client is
-   * hardcoded to handle these two error types. */
-
-  while (*messages < end && ((*messages)[0] == ' ' || (*messages)[0] == '\n'))
-    { (*messages)++; from_scanner_start++; }
-  if ((int) (end - *messages) < 5)
-    /* Too few characters to be the error number, return to select to
-     * wait for more input. */
-    return -2;
-  if (sscanf (*messages, "E00%c ", &err) != 1)
-    {
-      tracef ("   scanner fail: failed to parse error message number\n");
-      return -1;
-    }
-  from_scanner_start += 5;
-  (*messages) += 5;
-  switch (err)
-    {
-      case '1':
-        {
-          int length = strlen ("- Invalid port range <|>");
-
-          /* Parse "- Invalid port range". */
-
-          if ((int) (end - *messages) < length)
-            /* Too few characters, return to select to wait for more input. */
-            return -2;
-
-          if (strncmp (*messages, "- Invalid port range <|>", length))
-            {
-              tracef ("   scanner fail: failed to parse error description\n");
-              tracef ("   scanner fail: messages was: %.*s\n",
-                      length,
-                      *messages);
-              return -1;
-            }
-
-          g_warning ("%s: Received \"invalid port range\" ERROR message\n",
-                     __FUNCTION__);
-
-          from_scanner_start += length;
-          (*messages) += length;
-
-          if (current_scanner_task)
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_INTERNAL_ERROR);
-
-          set_scanner_state (SCANNER_DONE);
-          switch (parse_scanner_done (messages))
-            {
-              case -1: return -1;
-              case -2:
-                /* Need more input. */
-                if (sync_buffer ()) return -1;
-                return -1;
-            }
-        }
-        break;
-
-      case '2':
-        {
-          char *match;
-          if ((match = memchr (*messages,
-                               (int) '\n',
-                               from_scanner_end - from_scanner_start)))
-            {
-              from_scanner_start += match - *messages;
-              *messages = match;
-
-              /** @todo Parse the list of hosts and note that permissions
-               *        prevented those scans. */
-
-              set_scanner_state (SCANNER_TOP);
-            }
-          else
-            /* Need more input for a newline. */
-            return -2;
-        }
-        break;
-    }
-
-  return 0;
 }
 
 /** @todo Update doc. */
@@ -1481,9 +1382,6 @@ process_otp_scanner_input (void (*progress) ())
                     }
                   break;
                 }
-              case SCANNER_ERROR:
-                assert (0);
-                break;
               case SCANNER_ALARM_DESCRIPTION:
                 {
                   if (current_message)
@@ -1860,25 +1758,6 @@ process_otp_scanner_input (void (*progress) ())
                   set_scanner_state (SCANNER_BYE);
                 else if (strcasecmp ("ERRMSG", field) == 0)
                   set_scanner_state (SCANNER_ERRMSG_HOST);
-                else if (strcasecmp ("ERROR", field) == 0)
-                  {
-                    set_scanner_state (SCANNER_ERROR);
-                    switch (parse_scanner_error (&messages))
-                      {
-                        case 0:
-                          /* parse_scanner_error can read across a <|>,
-                           * because one ERROR case is newline terminated
-                           * while the other is "<|> SERVER" terminated,
-                           * so adjust input. */
-                          input = messages;
-                          break;
-                        case -1: goto return_error;
-                        case -2:
-                          /* Need more input. */
-                          if (sync_buffer ()) goto return_error;
-                          goto return_need_more;
-                      }
-                  }
                 else if (strcasecmp ("FILE_ACCEPTED", field) == 0)
                   {
                     set_scanner_state (SCANNER_DONE);
