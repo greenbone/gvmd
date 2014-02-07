@@ -1,3 +1,13 @@
+2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl
+	(highest-severity-for-host): Remove.
+	(results-overview-table-single-host-row): Put the hostname on a second
+	line in the Host cell.
+	(results-overview): Remove "Most Severe Result(s)" column.  It's
+	redundant, no other formats have it and there's no special indication
+	of why it was included.  Make last column heading singular like others.
+
 2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/sql.c (sql_nquote): Small changes to string allocation and parsing

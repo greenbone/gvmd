@@ -621,40 +621,13 @@ advice given in each description, in order to rectify the issue.
     <xsl:text>\tableofcontents</xsl:text><xsl:call-template name="newline"/>
   </xsl:template>
 
-  <!-- Find the highest Threat for a host. -->
-  <xsl:template name="highest-severity-for-host">
-    <xsl:param name="host"/>
-    <xsl:choose>
-      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'High']/node()">High</xsl:when>
-      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Medium']/node()">Medium</xsl:when>
-      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Low']/node()">Low</xsl:when>
-      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'Log']/node()">Log</xsl:when>
-      <xsl:when test="openvas:report()/ports/port[host = $host][threat = 'False Positive']/node()">False Positive</xsl:when>
-      <xsl:otherwise>None</xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- Row in table with count of issues for a single host. -->
   <xsl:template name="results-overview-table-single-host-row">
     <xsl:variable name="host" select="ip"/>
     <xsl:variable name="hostname" select="detail[name/text() = 'hostname']/value"/>
-    <xsl:choose>
-      <xsl:when test="$hostname">
-        <xsl:call-template name="latex-hyperref">
-          <xsl:with-param name="target" select="concat('host:',$host)"/>
-          <xsl:with-param name="text" select="concat($host, ' (', $hostname, ')')"/>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="latex-hyperref">
-          <xsl:with-param name="target" select="concat('host:',$host)"/>
-          <xsl:with-param name="text" select="$host"/>
-        </xsl:call-template>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:text>&amp;Severity: </xsl:text>
-    <xsl:call-template name="highest-severity-for-host">
-      <xsl:with-param name="host" select="$host"/>
+    <xsl:call-template name="latex-hyperref">
+      <xsl:with-param name="target" select="concat('host:',$host)"/>
+      <xsl:with-param name="text" select="$host"/>
     </xsl:call-template>
     <xsl:text>&amp;</xsl:text>
     <xsl:value-of select="count(../results/result[host=$host][threat/text()='High'])"/>
@@ -667,6 +640,18 @@ advice given in each description, in order to rectify the issue.
     <xsl:text>&amp;</xsl:text>
     <xsl:value-of select="count(../results/result[host=$host][threat/text()='False Positive'])"/>
     <xsl:call-template name="latex-newline"/>
+    <xsl:choose>
+      <xsl:when test="$hostname">
+        <xsl:call-template name="latex-hyperref">
+          <xsl:with-param name="target" select="concat('host:',$host)"/>
+          <xsl:with-param name="text" select="$hostname"/>
+        </xsl:call-template>
+        <xsl:text>&amp;&amp;&amp;&amp;&amp;</xsl:text>
+        <xsl:call-template name="latex-newline"/>
+      </xsl:when>
+      <xsl:otherwise>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="latex-hline"/>
   </xsl:template>
 
@@ -677,17 +662,17 @@ advice given in each description, in order to rectify the issue.
     </xsl:call-template>
     <xsl:call-template name="newline"/>
 
-    <xsl:text>\begin{longtable}{|l|l|l|l|l|l|l|}</xsl:text><xsl:call-template name="newline"/>
+    <xsl:text>\begin{longtable}{|l|l|l|l|l|l|}</xsl:text><xsl:call-template name="newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:call-template name="longtable-continue-block">
       <xsl:with-param name="number-of-columns">6</xsl:with-param>
       <xsl:with-param name="header-color">openvas_report</xsl:with-param>
-      <xsl:with-param name="header-text">Host&amp;Most Severe Result(s)&amp;High&amp;Medium&amp;Low&amp;Log&amp;False Positives</xsl:with-param>
+      <xsl:with-param name="header-text">Host&amp;High&amp;Medium&amp;Low&amp;Log&amp;False Positive</xsl:with-param>
     </xsl:call-template>
     <xsl:for-each select="host"><xsl:call-template name="results-overview-table-single-host-row"/></xsl:for-each>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>Total: </xsl:text>
-    <xsl:value-of select="count(openvas:report()/host_start)"/>&amp;&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
+    <xsl:value-of select="count(openvas:report()/host_start)"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'High'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Medium'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Low'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'Log'])"/>&amp;<xsl:value-of select="count(openvas:report()/results/result[threat = 'False Positive'])"/><xsl:call-template name="latex-newline"/>
     <xsl:call-template name="latex-hline"/>
     <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
 
