@@ -1,3 +1,10 @@
+2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r18655.
+
+	* src/manage.c (stop_task): Only check if scanner is up when scanner is
+	required.
+
 2014-02-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport r18689 and 18682, adjusted accordingly.
