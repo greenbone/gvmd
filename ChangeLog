@@ -1,6 +1,22 @@
 2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Backport r18655.
+	Backport r18726.
+
+	* src/report_formats/LaTeX/latex.xsl
+	(highest-severity-for-host): Remove.
+	(results-overview-table-single-host-row): Put the hostname on a second
+	line in the Host cell.
+	(results-overview): Remove "Most Severe Result(s)" column.  It's
+	redundant, no other formats have it and there's no special indication
+	of why it was included.  Make last column heading singular like others.
+
+2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Correct revision.
+
+2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r18714.
 
 	* src/manage.c (stop_task): Only check if scanner is up when scanner is
 	required.
