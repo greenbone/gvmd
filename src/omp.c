@@ -15848,6 +15848,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target = task_target (index);
               slave = task_slave (index);
 
+              SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+
               target_in_trash = task_target_in_trash (index);
               if ((target == 0)
                   && (task_run_status (index) == TASK_STATUS_RUNNING))
@@ -16106,8 +16108,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (first_report_id);
               g_free (second_last_report_id);
 
-              SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-
               owner = task_owner_name (index);
               observers = task_observers (index);
               config = task_config_name (index);
@@ -16218,8 +16218,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (last_report);
               g_free (second_last_report);
               g_free (description64);
-              free (task_schedule_uuid);
-              free (task_schedule_name);
+              g_free (task_schedule_uuid);
+              g_free (task_schedule_name);
               free (task_slave_uuid);
               free (task_slave_name);
               if (send_to_client (response,

@@ -7938,7 +7938,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           free (filt_id);
           free (ip);
-          free (port);
+          g_free (port);
           free (pkcs12);
           g_free (report_content);
 
@@ -21696,7 +21696,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
         {
           term = filter_term (get->filt_id);
           if (term == NULL)
-            return 2;
+            {
+              fclose (out);
+              return 2;
+            }
         }
 
       /* Set the filter parameters from the filter term. */
@@ -21730,6 +21733,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (task && task_uuid (task, &tsk_uuid))
     {
       fclose (out);
+      g_free (term);
       g_free (sort_field);
       g_free (levels);
       g_free (search_phrase);
@@ -23043,10 +23047,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
            end_time);
   free (end_time);
 
-  if (delta == 0)
-    {
-      print_report_errors_xml (report, out);
-    }
+  if (delta == 0 && print_report_errors_xml (report, out))
+    return -1;
 
   PRINT (out, "</report>");
 
@@ -35370,7 +35372,10 @@ create_override (const char* active, const char* nvt, const char* text,
               && new_severity_dbl != SEVERITY_LOG
               && new_severity_dbl != SEVERITY_FP
               && new_severity_dbl != SEVERITY_DEBUG))
-        return 2;
+        {
+          g_free (quoted_severity);
+          return 2;
+        }
     }
   else if (new_threat != NULL && strcmp (new_threat, ""))
     {
@@ -35390,7 +35395,10 @@ create_override (const char* active, const char* nvt, const char* text,
         return -1;
     }
   else
-    return -1;
+    {
+      g_free (quoted_severity);
+      return -1;
+    }
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -35637,7 +35645,10 @@ modify_override (override_t override, const char *active, const char* text,
               && new_severity_dbl != SEVERITY_LOG
               && new_severity_dbl != SEVERITY_FP
               && new_severity_dbl != SEVERITY_DEBUG))
-        return 3;
+        {
+          g_free (quoted_severity);
+          return 3;
+        }
     }
   else if (new_threat != NULL && strcmp (new_threat, ""))
     {
@@ -35654,10 +35665,16 @@ modify_override (override_t override, const char *active, const char* text,
       else if (strcmp (new_threat, "Debug") == 0)
         new_severity_dbl = SEVERITY_DEBUG;
       else
-        return -1;
+        {
+          g_free (quoted_severity);
+          return -1;
+        }
     }
   else
-    return -1;
+    {
+      g_free (quoted_severity);
+      return -1;
+    }
 
   quoted_text = sql_insert (text);
   quoted_hosts = sql_insert (hosts);
@@ -37447,6 +37464,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   g_free (first_time_string);
   g_free (offset_string);
   g_free (period_string);
+  g_free (period_months_string);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_timezone);

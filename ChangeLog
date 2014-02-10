@@ -1,3 +1,21 @@
+2014-02-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Fix various memory leaks and errors. Found using cppchecker.
+
+	* src/manage_sql.c (escalate_2): Use g_free for port variable to match
+	the way it was allocated.
+	(print_report_xml): Close out stream and free term variable before
+	return on error.  Check print_report_errors_xml() return value
+	adequately.
+	(create_override, modify_override): Free quoted_severity before return
+	on error.
+	(modify_schedule): Free period_months_string memory leak.
+
+	* src/omp.c (omp_xml_handle_end_element): Call SEND_GET_ELEMENT earlier
+	in CLIENT_GET_TASKS to fix memory leaks in case of error. Call g_free()
+	for task_schedule_uuid and task_schedule_name to match allocation
+	method.
+
 2014-02-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl
