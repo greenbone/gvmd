@@ -8777,7 +8777,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("SUMMARY", element_name) == 0)
           set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_SUMMARY);
         else if (strcasecmp ("TRUST", element_name) == 0)
-          set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
+          {
+            omp_parser->read_over = 1;
+            set_client_state (CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST);
+          }
         ELSE_ERROR ("create_report_format");
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM:
@@ -19134,7 +19137,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, PREDEFINED);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SIGNATURE);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, SUMMARY);
-      CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT, TRUST);
+      CLOSE_READ_OVER (CLIENT_CRF_GRFR_REPORT_FORMAT, TRUST);
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_OPTIONS_OPTION:
         assert (strcasecmp ("OPTION", element_name) == 0);

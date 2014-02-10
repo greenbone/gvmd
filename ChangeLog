@@ -1,5 +1,11 @@
 2014-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_start_element)
+	(omp_xml_handle_end_element): Read over TRUST when importing report
+	formats, to handle the new TIME element.
+
+2014-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (send_get_end): Quote keyword value if it was quoted
 	in the filter term.
 
