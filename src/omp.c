@@ -5724,11 +5724,13 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                                 "<keyword>"
                                 "<column>%s</column>"
                                 "<relation>%s</relation>"
-                                "<value>%s</value>"
+                                "<value>%s%s%s</value>"
                                 "</keyword>",
                                 keyword->column ? keyword->column : "",
                                 keyword_relation_symbol (keyword->relation),
-                                keyword->string ? keyword->string : "");
+                                keyword->quoted ? "\"" : "",
+                                keyword->string ? keyword->string : "",
+                                keyword->quoted ? "\"" : "");
       point++;
     }
   filter_free (split);

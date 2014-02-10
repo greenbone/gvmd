@@ -1,3 +1,8 @@
+2014-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (send_get_end): Quote keyword value if it was quoted
+	in the filter term.
+
 2014-02-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Fix various memory leaks and errors. Found using cppchecker.
