@@ -1,3 +1,8 @@
+2014-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_setting_iterator): Group conditions in SQL else
+	precedence is wrong.
+
 2014-02-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_count_hosts): Call openvas_hosts_new_with_max

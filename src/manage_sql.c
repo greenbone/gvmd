@@ -46092,9 +46092,9 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "SELECT ROWID, uuid, name, comment, value"
                    " FROM settings"
                    " WHERE uuid = '%s'"
-                   " AND (owner IS NULL)"
-                   " OR (owner ="
-                   "     (SELECT ROWID FROM users WHERE users.uuid = '%s'))"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT ROWID FROM users"
+                   "                   WHERE users.uuid = '%s')))"
                    /* Force the user's setting to come before the default. */
                    " ORDER BY owner DESC;",
                    quoted_uuid,
