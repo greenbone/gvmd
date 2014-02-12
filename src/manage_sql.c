@@ -25431,7 +25431,7 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
   int count;
   openvas_hosts_t *hosts;
 
-  hosts = openvas_hosts_new (given_hosts);
+  hosts = openvas_hosts_new_with_max (given_hosts, manage_max_hosts ());
   if (hosts == NULL)
     return -1;
 

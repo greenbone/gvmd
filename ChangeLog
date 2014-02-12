@@ -1,3 +1,8 @@
+2014-02-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_count_hosts): Call openvas_hosts_new_with_max
+	with manage_max_hosts return value instead of openvas_hosts_new.
+
 2014-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_start_element)
