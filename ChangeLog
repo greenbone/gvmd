@@ -1,5 +1,10 @@
 2014-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage_settings, modify_setting): Add User
+	Interface Language.
+
+2014-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_setting_iterator): Group conditions in SQL else
 	precedence is wrong.
 
