@@ -29578,10 +29578,7 @@ create_target (const char* name, const char* hosts, const char* comment,
   port_list_t port_list;
   int ret;
 
-  if (port_range == NULL)
-    port_range = "default";
-
-  if (validate_port_range (port_range))
+  if (port_range && validate_port_range (port_range))
     return 4;
 
   if (ssh_port && validate_port (ssh_port))
