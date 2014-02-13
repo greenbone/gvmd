@@ -1,3 +1,35 @@
+2014-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add an Alive Test property to Targets, which can override the config
+	settings.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 111.
+
+	* src/manage_migrators.c (migrate_110_to_111): New function.
+	(database_migrators): Add migrate_110_to_111.
+
+	* src/manage_sql.c (create_tables): Add alive_test to targets tables.
+	(add_role_permission, init_manage, set_task_groups, set_task_observers)
+	(create_target): Add alive_tests arg.
+	(TARGET_ITERATOR_COLUMNS): Add alive_tests column.
+	(target_iterator_alive_tests): New accessor.
+	(target_alive_test): New function.
+
+	* src/manage.c (send_alive_test_preferences): New function.
+	(run_task): Send alive test preferences after others.
+
+	* src/manage.h: Update headers accordingly.
+	(alive_test_t): New type.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(client_state_t): Add alive test fields.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add ALIVE_TEST to CREATE_TARGET.
+
+	* doc/db_postgres.sql (targets): Add alive_test.
+
+	* doc/db.png: Update from source.
+
 2014-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage_settings, modify_setting): Add User

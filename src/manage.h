@@ -199,6 +199,19 @@ typedef enum
   TASK_STATUS_DELETE_ULTIMATE_WAITING = 17
 } task_status_t;
 
+/**
+ * @brief Alive tests.
+ *
+ * These numbers are used in the database, so if the number associated with
+ * any symbol changes then a migrator must be added to update existing data.
+ */
+typedef enum
+{
+  ALIVE_TEST_TCP_SERVICE = 1,
+  ALIVE_TEST_ICMP = 2,
+  ALIVE_TEST_ARP = 4
+} alive_test_t;
+
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int alert_t;
@@ -1235,7 +1248,7 @@ int
 create_target (const char*, const char*, const char*, const char*, const char *,
                const char*, lsc_credential_t, const char*, lsc_credential_t,
                const char*, const char*, const char*, const char *,
-               const char *, int, target_t*);
+               const char *, const char *, int, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1305,6 +1318,9 @@ target_iterator_port_list_name (iterator_t*);
 int
 target_iterator_port_list_trash (iterator_t*);
 
+const char*
+target_iterator_alive_tests (iterator_t*);
+
 char*
 target_uuid (target_t);
 
@@ -1355,6 +1371,9 @@ trash_target_writable (target_t);
 
 char*
 target_lsc_credential_name (const char *);
+
+int
+target_alive_test (const target_t, alive_test_t);
 
 void
 init_target_task_iterator (iterator_t*, target_t);

@@ -4208,7 +4208,7 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
        "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify, comment,"
        "  lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER,"
-       "  port_range, creation_time, modification_time);");
+       "  port_range, alive_test, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
        "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify,"
@@ -25677,13 +25677,15 @@ validate_results_port (const char *port)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
+ * @param[in]   alive_tests     Alive tests.
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  target          Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
- *         6 failed to find port list, 99 permission denied, -1 if import from
- *         target locator failed or response was empty.
+ *         6 failed to find port list, 7 error in alive tests,
+ *         99 permission denied, -1 if import from target locator failed or
+ *         response was empty.
  */
 int
 create_target (const char* name, const char* hosts, const char* exclude_hosts,
@@ -25692,13 +25694,14 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
                const char* ssh_port, lsc_credential_t smb_lsc_credential,
                const char* target_locator, const char* username,
                const char* password, const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, int make_name_unique,
-               target_t* target)
+               const char *reverse_lookup_unify, const char *alive_tests,
+               int make_name_unique, target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
   gchar *port_list_comment, *quoted_ssh_port;
   port_list_t port_list;
   int ret;
+  alive_test_t alive_test;
 
   assert (current_credentials.uuid);
 
@@ -25707,6 +25710,27 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
 
   if (ssh_port && validate_port (ssh_port))
     return 5;
+
+  if (alive_tests == NULL
+      || strcmp (alive_tests, "") == 0
+      || strcmp (alive_tests, "Scan Config Default") == 0)
+    alive_test = 0;
+  else if (strcmp (alive_tests, "ICMP, TCP Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & TCP Service Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "ICMP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP;
+  else
+    return 7;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -25870,28 +25894,31 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
       sql ("INSERT INTO targets"
            " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
            "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
-           "  reverse_lookup_unify, creation_time, modification_time)"
+           "  reverse_lookup_unify, alive_test, creation_time,"
+           "  modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'), '%s',"
-           " '%s', '%s', %llu, %s, %llu, %llu, '%s', '%s', now (), now ());",
+           " '%s', '%s', %llu, %s, %llu, %llu, '%s', '%s', %i, now (),"
+           " now ());",
            quoted_name, current_credentials.uuid, quoted_hosts,
            quoted_exclude_hosts, quoted_comment, ssh_lsc_credential,
            quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
-           reverse_lookup_unify);
+           reverse_lookup_unify, alive_test);
       g_free (quoted_comment);
     }
   else
     sql ("INSERT INTO targets"
          " (uuid, name, owner, hosts, exclude_hosts, comment, lsc_credential,"
          "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
-         "  reverse_lookup_unify, creation_time, modification_time)"
+         "  reverse_lookup_unify, alive_test, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '', %llu, %s, %llu, %llu, '%s', '%s', now (), now ());",
+         " '%s', '%s', '', %llu, %s, %llu, %llu, '%s', '%s', %i, now (),"
+         " now ());",
          quoted_name, current_credentials.uuid, quoted_hosts,
          quoted_exclude_hosts, quoted_exclude_hosts, ssh_lsc_credential,
          quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
-         reverse_lookup_unify);
+         reverse_lookup_unify, alive_test);
 
   if (target)
     *target = sqlite3_last_insert_rowid (task_db);
@@ -26339,6 +26366,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   " 0,"                                                     \
   " exclude_hosts,"                                         \
   " reverse_lookup_only, reverse_lookup_unify,"             \
+  " alive_test,"                                            \
   " (SELECT name FROM lsc_credentials"                      \
   "  WHERE lsc_credentials.ROWID = lsc_credential)"         \
   " AS ssh_credential,"                                     \
@@ -26621,8 +26649,8 @@ DEF_ACCESS (target_iterator_exclude_hosts, GET_ITERATOR_COLUMN_COUNT + 10);
  *
  * @return Reverse lookup only of the target or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_reverse_lookup_only, GET_ITERATOR_COLUMN_COUNT
-            + 11);
+DEF_ACCESS (target_iterator_reverse_lookup_only,
+            GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
  * @brief Get the reverse lookup unify value from a target iterator.
@@ -26631,8 +26659,44 @@ DEF_ACCESS (target_iterator_reverse_lookup_only, GET_ITERATOR_COLUMN_COUNT
  *
  * @return Reverse lookup unify of the target or NULL if iteration is complete.
  */
-DEF_ACCESS (target_iterator_reverse_lookup_unify, GET_ITERATOR_COLUMN_COUNT
-            + 12);
+DEF_ACCESS (target_iterator_reverse_lookup_unify,
+            GET_ITERATOR_COLUMN_COUNT + 12);
+
+/**
+ * @brief Get the alive test description from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reverse lookup unify of the target or NULL if iteration is complete.
+ */
+const char*
+target_iterator_alive_tests (iterator_t* iterator)
+{
+  int tests;
+  if (iterator->done) return "";
+  tests = (int) sqlite3_column_int (iterator->stmt,
+                                    GET_ITERATOR_COLUMN_COUNT + 13);
+  if ((tests & ALIVE_TEST_TCP_SERVICE)
+      && (tests & ALIVE_TEST_ICMP)
+      && (tests & ALIVE_TEST_ARP))
+    return "ICMP, TCP Service & ARP Ping";
+  if ((tests & ALIVE_TEST_TCP_SERVICE)
+      && (tests & ALIVE_TEST_ARP))
+    return "TCP Service & ARP Ping";
+  if ((tests & ALIVE_TEST_ICMP)
+      && (tests & ALIVE_TEST_ARP))
+    return "ICMP & ARP Ping";
+  if ((tests & ALIVE_TEST_ICMP)
+      && (tests & ALIVE_TEST_TCP_SERVICE))
+    return "ICMP & TCP Service Ping";
+  if (tests & ALIVE_TEST_ARP)
+    return "ARP Ping";
+  if (tests & ALIVE_TEST_TCP_SERVICE)
+    return "TCP Service Ping";
+  if (tests & ALIVE_TEST_ICMP)
+    return "ICMP Ping";
+  return "Scan Config Default";
+}
 
 /**
  * @brief Return the UUID of a tag.
@@ -26972,6 +27036,26 @@ target_port_range (target_t target)
     }
   cleanup_iterator (&ranges);
   return g_string_free (range, FALSE);
+}
+
+/**
+ * @brief Return whether an alive test is associated with a target.
+ *
+ * @param[in]  target  Target.
+ * @param[in]  test    Alive test.
+ *
+ * @return 0 use config value, 1 set to "yes", -1 set to "no".
+ */
+int
+target_alive_test (const target_t target, alive_test_t test)
+{
+  alive_test_t alive_test;
+  alive_test = sql_int (0, 0,
+                        "SELECT alive_test FROM targets WHERE ROWID = %llu;",
+                        target);
+  if (alive_test == 0)
+    return 0;
+  return (alive_test & test) ? 1 : -1;
 }
 
 /**

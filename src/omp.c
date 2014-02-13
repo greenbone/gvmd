@@ -1527,6 +1527,7 @@ create_slave_data_reset (create_slave_data_t *data)
  */
 typedef struct
 {
+  char *alive_tests;             ///< Alive tests.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
   char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
@@ -1553,6 +1554,7 @@ typedef struct
 static void
 create_target_data_reset (create_target_data_t *data)
 {
+  free (data->alive_tests);
   free (data->comment);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
@@ -4899,6 +4901,7 @@ typedef enum
   CLIENT_CREATE_TAG_NAME,
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
+  CLIENT_CREATE_TARGET_ALIVE_TESTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY,
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
@@ -8947,6 +8950,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_ONLY);
         else if (strcasecmp ("REVERSE_LOOKUP_UNIFY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY);
+        else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
@@ -15665,7 +15670,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "</reverse_lookup_only>"
                                            "<reverse_lookup_unify>"
                                            "%s"
-                                           "</reverse_lookup_unify>",
+                                           "</reverse_lookup_unify>"
+                                           "<alive_tests>%s</alive_tests>",
                                            hosts,
                                            exclude_hosts ? exclude_hosts : "",
                                            max_hosts,
@@ -15684,7 +15690,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                              && target_iterator_smb_trash
                                                  (&targets)),
                                            reverse_lookup_only,
-                                           reverse_lookup_unify);
+                                           reverse_lookup_unify,
+                                           target_iterator_alive_tests
+                                            (&targets));
 
                   if (get_targets_data->get.details)
                     SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
@@ -19735,6 +19743,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          create_target_data->target_locator_password,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
+                         create_target_data->alive_tests,
                          (create_target_data->make_name_unique
                           && strcmp (create_target_data->make_name_unique, "0"))
                            ? 1 : 0,
@@ -19784,6 +19793,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 7:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Error in alive test"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -19815,6 +19830,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
+      CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
@@ -20208,7 +20224,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               target_name = g_strdup_printf ("Imported target for task %s",
                                              tsk_uuid);
               if (create_target (target_name, hosts, NULL, NULL, NULL, NULL, 0,
-                                 NULL, 0, NULL, NULL, NULL, "0", "0", 0,
+                                 NULL, 0, NULL, NULL, NULL, "0", "0", NULL, 0,
                                  &target))
                 {
                   request_delete_task (&create_task_data->task);
@@ -25123,6 +25139,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
               &create_target_data->reverse_lookup_unify);
+
+      APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
+              &create_target_data->alive_tests);
 
       APPEND (CLIENT_CREATE_TARGET_COMMENT,
               &create_target_data->comment);

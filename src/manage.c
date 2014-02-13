@@ -1720,6 +1720,40 @@ send_task_file (task_t task, const char* file)
   return 0;
 }
 
+/**
+ * @brief Send target "Alive Test" preferences to the scanner.
+ *
+ * @param[in]  target   Scan target.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+send_alive_test_preferences (target_t target)
+{
+  if (target_alive_test (target, ALIVE_TEST_TCP_SERVICE)
+      && sendf_to_server ("Ping Host[checkbox]:Do a TCP ping: <|> %s\n",
+                          target_alive_test (target, ALIVE_TEST_TCP_SERVICE) == 1
+                           ? "yes"
+                           : "no"))
+    return -1;
+
+  if (target_alive_test (target, ALIVE_TEST_ICMP)
+      && sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping: <|> %s\n",
+                          target_alive_test (target, ALIVE_TEST_ICMP) == 1
+                           ? "yes"
+                           : "no"))
+    return -1;
+
+  if (target_alive_test (target, ALIVE_TEST_ARP)
+      && sendf_to_server ("Ping Host[checkbox]:Use ARP: <|> %s\n",
+                          target_alive_test (target, ALIVE_TEST_ARP) == 1
+                           ? "yes"
+                           : "no"))
+    return -1;
+
+  return 0;
+}
+
 /** @todo g_convert back to ISO-8559-1 for scanner? */
 
 /**
@@ -3254,6 +3288,19 @@ run_task (const char *task_id, char **report_id, int from,
     }
 
   g_ptr_array_add (preference_files, NULL);
+
+  /* Send preferences for target "Alive Test", overriding config values. */
+
+  if (send_alive_test_preferences (target))
+    {
+      free (hosts);
+      array_free (preference_files);
+      slist_free (files);
+      set_task_run_status (task, run_status);
+      set_report_scan_run_status (current_report, run_status);
+      current_report = (report_t) 0;
+      return -10;
+    }
 
   if (send_to_server ("<|> CLIENT\n"))
     {

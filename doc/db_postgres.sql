@@ -197,6 +197,7 @@ CREATE TABLE targets (
     ssh_port text,
     smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
     port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+    alive_test integer,
     creation_time date,
     modification_time date);
 

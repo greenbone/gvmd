@@ -8197,6 +8197,40 @@ migrate_109_to_110 ()
 }
 
 /**
+ * @brief Migrate the database from version 110 to version 111.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_110_to_111 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 110. */
+
+  if (manage_db_version () != 110)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The targets tables got an alive_test field. */
+
+  sql ("ALTER TABLE targets ADD COLUMN alive_test;");
+  sql ("UPDATE targets SET alive_test = 0;");
+
+  /* Set the database version 111. */
+
+  set_db_version (111);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8311,6 +8345,7 @@ static migrator_t database_migrators[]
     {108, migrate_107_to_108},
     {109, migrate_108_to_109},
     {110, migrate_109_to_110},
+    {111, migrate_110_to_111},
     /* End marker. */
     {-1, NULL}};
 
