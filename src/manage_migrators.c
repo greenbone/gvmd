@@ -8221,6 +8221,9 @@ migrate_110_to_111 ()
   sql ("ALTER TABLE targets ADD COLUMN alive_test;");
   sql ("UPDATE targets SET alive_test = 0;");
 
+  sql ("ALTER TABLE targets_trash ADD COLUMN alive_test;");
+  sql ("UPDATE targets_trash SET alive_test = 0;");
+
   /* Set the database version 111. */
 
   set_db_version (111);

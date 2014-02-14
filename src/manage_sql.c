@@ -26060,13 +26060,14 @@ delete_target (const char *target_id, int ultimate)
            " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
            "  ssh_port, smb_lsc_credential, port_range, ssh_location,"
            "  smb_location, port_list_location, reverse_lookup_only,"
-           "  reverse_lookup_unify, creation_time, modification_time)"
+           "  reverse_lookup_unify, alive_test, creation_time,"
+           "  modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
            "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
            "      " G_STRINGIFY (LOCATION_TABLE) ","
-           "        reverse_lookup_only, reverse_lookup_unify,"
+           "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
            "        creation_time, modification_time"
            " FROM targets WHERE ROWID = %llu;",
            target);
@@ -45812,11 +45813,12 @@ manage_restore (const char *id)
       sql ("INSERT INTO targets"
            " (uuid, owner, name, hosts, exclude_hosts, comment, lsc_credential,"
            "  ssh_port, smb_lsc_credential, port_range, reverse_lookup_only,"
-           "  reverse_lookup_unify, creation_time, modification_time)"
+           "  reverse_lookup_unify, alive_test, creation_time,"
+           "  modification_time)"
            " SELECT uuid, owner, name, hosts, exclude_hosts, comment, "
            "        lsc_credential, ssh_port, smb_lsc_credential, port_range,"
-           "        reverse_lookup_only, reverse_lookup_unify, creation_time,"
-           "        modification_time"
+           "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
+           "        creation_time, modification_time"
            " FROM targets_trash WHERE ROWID = %llu;",
            resource);
 

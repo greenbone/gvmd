@@ -1,5 +1,13 @@
 2014-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_110_to_111): Add column to trash table
+	too.
+
+	* src/manage_sql.c (delete_target, manage_restore): Add alive_test
+	column.
+
+2014-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add modification of target alive tests.
 
 	* src/omp.c (modify_target_data_t, modify_target_data_reset)
@@ -16,7 +24,8 @@
 2014-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add an Alive Test property to Targets, which can override the config
-	settings.
+	settings.  Hence increase database version to 111.  Add database
+	migration from version 110 to 111.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 111.
 
