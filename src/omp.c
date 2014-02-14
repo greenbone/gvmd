@@ -3402,6 +3402,7 @@ modify_setting_data_reset (modify_setting_data_t *data)
  */
 typedef struct
 {
+  char *alive_tests;             ///< Alive tests.
   char *comment;                 ///< Comment.
   char *exclude_hosts;           ///< Hosts to exclude from set.
   char *reverse_lookup_only;     ///< Boolean. Whether to consider only hosts that reverse lookup.
@@ -3426,6 +3427,7 @@ typedef struct
 static void
 modify_target_data_reset (modify_target_data_t *data)
 {
+  free (data->alive_tests);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
   free (data->reverse_lookup_unify);
@@ -5123,6 +5125,7 @@ typedef enum
   CLIENT_MODIFY_TAG_NAME,
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
+  CLIENT_MODIFY_TARGET_ALIVE_TESTS,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_HOSTS,
   CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
@@ -7795,6 +7798,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY);
         else if (strcasecmp ("REVERSE_LOOKUP_UNIFY", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY);
+        else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
         else if (strcasecmp ("HOSTS", element_name) == 0)
@@ -22641,7 +22646,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          modify_target_data->target_locator_username,
                          modify_target_data->target_locator_password,
                          modify_target_data->reverse_lookup_only,
-                         modify_target_data->reverse_lookup_unify))
+                         modify_target_data->reverse_lookup_unify,
+                         modify_target_data->alive_tests))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -22744,6 +22750,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     return;
                   }
                 break;
+              case 10:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Error in alive test"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -22775,6 +22789,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
+      CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
@@ -25437,6 +25452,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
               &modify_target_data->reverse_lookup_unify);
+
+      APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
+              &modify_target_data->alive_tests);
 
       APPEND (CLIENT_MODIFY_TARGET_COMMENT,
               &modify_target_data->comment);

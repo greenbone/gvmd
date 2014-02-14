@@ -1,3 +1,18 @@
+2014-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add modification of target alive tests.
+
+	* src/omp.c (modify_target_data_t, modify_target_data_reset)
+	(client_state_t): Add alive test elements.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	ALIVE_TESTS to MODIFY_TARGET.
+
+	* src/manage_sql.c (alive_test_from_string): New function.
+	(create_target): Use alive_test_from_string.
+	(modify_target): Add alive_tests arg.
+
+	* src/manage.h: Update header accordingly.
+
 2014-02-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add an Alive Test property to Targets, which can override the config

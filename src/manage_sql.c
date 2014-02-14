@@ -25666,6 +25666,43 @@ validate_results_port (const char *port)
  * exclusive, if target_locator is not NULL, always try to import from source.
  *
  * @param[in]   name            Name of target.
+ *
+ * @return Alive test, or -1 on error.
+ */
+alive_test_t
+alive_test_from_string (const char* alive_tests)
+{
+  alive_test_t alive_test;
+  if (alive_tests == NULL
+      || strcmp (alive_tests, "") == 0
+      || strcmp (alive_tests, "Scan Config Default") == 0)
+    alive_test = 0;
+  else if (strcmp (alive_tests, "ICMP, TCP Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP & TCP Service Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "ARP Ping") == 0)
+    alive_test = ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "ICMP Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP;
+  else
+    return -1;
+  return alive_test;
+}
+
+/**
+ * @brief Create a target.
+ *
+ * The \param hosts and \param target_locator parameters are mutually
+ * exclusive, if target_locator is not NULL, always try to import from source.
+ *
+ * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
@@ -25711,25 +25748,8 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   if (ssh_port && validate_port (ssh_port))
     return 5;
 
-  if (alive_tests == NULL
-      || strcmp (alive_tests, "") == 0
-      || strcmp (alive_tests, "Scan Config Default") == 0)
-    alive_test = 0;
-  else if (strcmp (alive_tests, "ICMP, TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & TCP Service Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_TCP_SERVICE;
-  else if (strcmp (alive_tests, "ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE;
-  else if (strcmp (alive_tests, "ICMP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP;
-  else
+  alive_test = alive_test_from_string (alive_tests);
+  if (alive_test == -1)
     return 7;
 
   sql ("BEGIN IMMEDIATE;");
@@ -26100,13 +26120,14 @@ delete_target (const char *target_id, int ultimate)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
+ * @param[in]   alive_tests     Alive tests.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
- *         find SMB cred, 9 failed to find target, 99 permission denied, -1 if
- *         import from target locator failed or response was empty FIX or
- *         internal error.
+ *         find SMB cred, 9 failed to find target, 10 error in alive tests,
+ *         99 permission denied, -1 if import from target locator failed or
+ *         response was empty FIX or internal error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
@@ -26115,17 +26136,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_port, const char *smb_lsc_credential_id,
                const char *target_locator, const char *username,
                const char *password, const char *reverse_lookup_only,
-               const char *reverse_lookup_unify)
+               const char *reverse_lookup_unify, const char *alive_tests)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
   gchar *quoted_exclude_hosts;
   port_list_t port_list;
   target_t target;
   lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
+  alive_test_t alive_test;
 
   assert (target_id);
   assert (port_list_id);
   assert (name);
+
+  alive_test = alive_test_from_string (alive_tests);
+  if (alive_test == -1)
+    return 10;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -26311,11 +26337,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            " ssh_port = %s,"
            " smb_lsc_credential = %llu,"
            " port_range = %llu,"
+           " alive_test = %i,"
            " modification_time = now ()"
            " WHERE ROWID = %llu;",
            quoted_name, quoted_hosts, quoted_exclude_hosts, quoted_comment,
            ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential, port_list,
-           target);
+           alive_test, target);
       g_free (quoted_comment);
     }
   else
@@ -26329,11 +26356,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
          " ssh_port = %s,"
          " smb_lsc_credential = %llu,"
          " port_range = %llu,"
+         " alive_test = %i,"
          " modification_time = now ()"
          " WHERE ROWID = %llu;",
          quoted_name, quoted_hosts, quoted_exclude_hosts, reverse_lookup_only,
          reverse_lookup_unify, ssh_lsc_credential, quoted_ssh_port,
-         smb_lsc_credential, port_list, target);
+         smb_lsc_credential, port_list, alive_test, target);
 
   g_free (quoted_name);
   g_free (quoted_hosts);
