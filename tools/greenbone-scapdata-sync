@@ -684,7 +684,10 @@ update_scap_db_private () {
       $SQLITE3 "$SCAP_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
     fi
 
-    $SQLITE3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+    # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
+    LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+
+    $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
   else
     log_notice "No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
@@ -805,7 +808,9 @@ update_scap_db() {
   update_scap_db_private
   update_cvss
 
-  sqlite3 $SCAP_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+
+  $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
 }
 
 sync_scapdata(){

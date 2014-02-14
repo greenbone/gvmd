@@ -1,3 +1,11 @@
+2014-02-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-certdata-sync, tools/openvas-scapdata-sync.in,
+	tools/openvas-certdata-sync.in, tools/greenbone-scapdata-sync: Use the
+	"timestamp" file for the "last_update" value instead of the current
+	system time. Otherwise actions like "--migrate" would incorrectly
+	update the timestamp even though no data was updated.
+
 2014-02-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_110_to_111): Add column to trash table

@@ -364,7 +364,9 @@ update_cert_db() {
 
   update_cvss
 
-  $SQLITE3 $CERT_DB "UPDATE meta SET value ='`date +%s`' WHERE name = 'last_update';"
+  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+
+  $SQLITE3 $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
 }
 
 sync_certdata(){

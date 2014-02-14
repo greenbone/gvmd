@@ -607,7 +607,10 @@ update_sec_db_private () {
       $SQLITE "$SEC_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
     fi
 
-    $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+    # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
+    LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+
+    $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
   else
     echo "[i] No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
@@ -725,7 +728,9 @@ update_sec_db () {
   update_sec_db_private
   update_cvss
 
-  $SQLITE $SEC_DB "update meta set value ='`date +%s`' where name = 'last_update';"
+  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+
+  $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
 }
 
 do_refresh () {
