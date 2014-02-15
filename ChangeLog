@@ -1,3 +1,8 @@
+2014-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_56_to_57): Add note about missing
+	case.
+
 2014-02-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/greenbone-certdata-sync, tools/openvas-scapdata-sync.in,

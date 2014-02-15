@@ -5136,6 +5136,10 @@ migrate_56_to_57 ()
                      "escalator", "alert");
   sql ("DROP TABLE escalator_condition_data;");
 
+  /* Note: This is missing the escalator_condition_data_trash case.  It's so
+   * long ago that anyone who was affected has probably worked through the
+   * problem already, so I'm leaving it like this. */
+
   sql ("CREATE TABLE alert_event_data"
        " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
   sql_rename_column ("escalator_event_data", "alert_event_data",
