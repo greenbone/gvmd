@@ -1,3 +1,27 @@
+openvas-manager 5.0+beta6 (2014-02-16)
+
+This is the sixth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and various user clients.
+
+This release adds user language setting, Alive Test property for Targets
+and fixes a large number of small bugs.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier, Michael Wiegand
+and Jan-Oliver Wagner
+
+Main changes since 5.0+beta5:
+* Add an Alive Test property to Targets, which can override the scan config
+  settings.
+* Added user setting for preferred interface language.
+* Removed column "Most Severe Result(s)" from LaTeX/PDF report format plugin.
+* New option "--list-users".
+* Moved some functions to openvas-libraries.
+* Severity classes added to report XML.
+* Large number of small fixes and improvements.
+
+
 openvas-manager 5.0+beta5 (2014-01-28)
 
 This is the fifth beta version of the upcoming 5.0 release of the OpenVAS
