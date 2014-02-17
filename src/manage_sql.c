@@ -26127,8 +26127,11 @@ delete_target (const char *target_id, int ultimate)
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
  *         find SMB cred, 9 failed to find target, 10 error in alive tests,
- *         99 permission denied, -1 if import from target locator failed or
- *         response was empty FIX or internal error.
+ *         11 zero length name, 12 exclude hosts requires hosts or target
+ *         locator, 13 hosts or target locator requires exclude hosts,
+ *         14 hosts must be at least one character, 99 permission denied,
+ *         -1 if import from target locator failed or response was empty FIX
+ *         or internal error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
@@ -26139,20 +26142,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *password, const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests)
 {
-  gchar *quoted_name, *quoted_hosts, *quoted_comment, *quoted_ssh_port;
-  gchar *quoted_exclude_hosts;
-  port_list_t port_list;
   target_t target;
-  lsc_credential_t ssh_lsc_credential, smb_lsc_credential;
-  alive_test_t alive_test;
 
   assert (target_id);
-  assert (port_list_id);
-  assert (name);
-
-  alive_test = alive_test_from_string (alive_tests);
-  if (alive_test == -1)
-    return 10;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -26164,10 +26156,14 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 99;
     }
 
+  if ((hosts || target_locator) && (exclude_hosts == NULL))
+    {
+      sql ("ROLLBACK;");
+      return 13;
+    }
+
   target = 0;
-  port_list = 0;
-  if (find_target_with_permission (target_id, &target, "modify_target")
-      || find_port_list (port_list_id, &port_list))
+  if (find_target_with_permission (target_id, &target, "modify_target"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -26179,195 +26175,286 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 9;
     }
 
-  if (port_list == 0)
+  if (name)
     {
-      sql ("ROLLBACK;");
-      return 6;
-    }
+      gchar *quoted_name;
 
-  ssh_lsc_credential = 0;
-  if (ssh_lsc_credential_id && strcmp (ssh_lsc_credential_id, "0"))
-    {
-      if (find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+      if (strlen (name) == 0)
         {
           sql ("ROLLBACK;");
-          return -1;
+          return 11;
         }
 
-      if (ssh_lsc_credential == 0)
+      quoted_name = sql_quote (name);
+
+      /* Check whether a target with the same name exists already. */
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM targets"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   target,
+                   current_credentials.uuid))
         {
+          g_free (quoted_name);
           sql ("ROLLBACK;");
-          return 7;
+          return 1;
         }
 
-      if (ssh_port && validate_port (ssh_port))
-        {
-          sql ("ROLLBACK;");
-          return 5;
-        }
-    }
+      sql ("UPDATE targets SET"
+           " name = '%s',"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           quoted_name,
+           target);
 
-  smb_lsc_credential = 0;
-  if (smb_lsc_credential_id && strcmp (smb_lsc_credential_id, "0"))
-    {
-      if (find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
-        {
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      if (smb_lsc_credential == 0)
-        {
-          sql ("ROLLBACK;");
-          return 7;
-        }
-    }
-
-  /* Check whether a target with the same name exists already. */
-  quoted_name = sql_quote (name);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM targets"
-               " WHERE name = '%s'"
-               " AND ROWID != %llu"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               target,
-               current_credentials.uuid))
-    {
       g_free (quoted_name);
-      sql ("ROLLBACK;");
-      return 1;
     }
-
-  quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
-                                       : g_strdup ("");
-  /* Import targets from target locator. */
-  if (target_locator != NULL)
-    {
-      int max;
-      gchar *clean;
-      GSList* hosts_list = resource_request_resource (target_locator,
-                                                      RESOURCE_TYPE_TARGET,
-                                                      username ? username : "",
-                                                      password ? password : "");
-
-      if (hosts_list == NULL)
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      gchar* import_hosts = openvas_string_flatten_string_list (hosts_list,
-                                                                ", ");
-
-      openvas_string_list_free (hosts_list);
-      max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
-      if (max <= 0)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      clean = clean_hosts (import_hosts, &max);
-      if (max > max_hosts)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-      g_free (import_hosts);
-      quoted_hosts = sql_quote (clean);
-      g_free (clean);
-    }
-  else
-    {
-      int max;
-      gchar *clean;
-
-      /* User provided hosts. */
-
-      max = manage_count_hosts (hosts, quoted_exclude_hosts);
-      if (max <= 0)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      clean = clean_hosts (hosts, &max);
-      if (max > max_hosts)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-      quoted_hosts = sql_quote (clean);
-      g_free (clean);
-    }
-
-  if (ssh_lsc_credential)
-    quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
-  else
-    quoted_ssh_port = g_strdup ("NULL");
-
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
-    reverse_lookup_only = "0";
-  else
-    reverse_lookup_only = "1";
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
-    reverse_lookup_unify = "0";
-  else
-    reverse_lookup_unify = "1";
 
   if (comment)
     {
+      gchar *quoted_comment;
       quoted_comment = sql_quote (comment);
       sql ("UPDATE targets SET"
-           " name = '%s',"
-           " hosts = '%s',"
-           " exclude_hosts = '%s',"
            " comment = '%s',"
-           " lsc_credential = %llu,"
-           " ssh_port = %s,"
-           " smb_lsc_credential = %llu,"
-           " port_range = %llu,"
-           " alive_test = %i,"
            " modification_time = now ()"
            " WHERE ROWID = %llu;",
-           quoted_name, quoted_hosts, quoted_exclude_hosts, quoted_comment,
-           ssh_lsc_credential, quoted_ssh_port, smb_lsc_credential, port_list,
-           alive_test, target);
+           quoted_comment,
+           target);
       g_free (quoted_comment);
     }
-  else
+
+  if (port_list_id)
+    {
+      port_list_t port_list;
+
+      port_list = 0;
+      if (find_port_list (port_list_id, &port_list))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      if (port_list == 0)
+        {
+          sql ("ROLLBACK;");
+          return 6;
+        }
+
+      sql ("UPDATE targets SET"
+           " port_range = %llu,"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           port_list,
+           target);
+    }
+
+  if (ssh_lsc_credential_id)
+    {
+      lsc_credential_t ssh_lsc_credential;
+      gchar *quoted_ssh_port;
+
+      ssh_lsc_credential = 0;
+      if (strcmp (ssh_lsc_credential_id, "0"))
+        {
+          if (find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (ssh_lsc_credential == 0)
+            {
+              sql ("ROLLBACK;");
+              return 7;
+            }
+
+           if (ssh_port && validate_port (ssh_port))
+            {
+              sql ("ROLLBACK;");
+              return 5;
+            }
+
+          quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
+        }
+      else
+        quoted_ssh_port = g_strdup ("NULL");
+
+      sql ("UPDATE targets SET"
+           " lsc_credential = %llu,"
+           " ssh_port = %s,"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           ssh_lsc_credential,
+           quoted_ssh_port,
+           target);
+
+       g_free (quoted_ssh_port);
+    }
+
+  if (smb_lsc_credential_id)
+    {
+      lsc_credential_t smb_lsc_credential;
+
+      smb_lsc_credential = 0;
+      if (strcmp (smb_lsc_credential_id, "0"))
+        {
+          if (find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          if (smb_lsc_credential == 0)
+            {
+              sql ("ROLLBACK;");
+              return 7;
+            }
+        }
+
+      sql ("UPDATE targets SET"
+           " smb_lsc_credential = %llu,"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           smb_lsc_credential,
+           target);
+    }
+
+  if (exclude_hosts)
+    {
+      gchar *quoted_exclude_hosts, *quoted_hosts;
+
+      quoted_exclude_hosts = sql_quote (exclude_hosts);
+      if (target_locator != NULL)
+        {
+          int max;
+          gchar *clean;
+          GSList *hosts_list;
+          gchar *import_hosts;
+
+          /* Import targets from target locator. */
+
+          hosts_list = resource_request_resource (target_locator,
+                                                  RESOURCE_TYPE_TARGET,
+                                                  username ? username : "",
+                                                  password ? password : "");
+
+          if (hosts_list == NULL)
+            {
+              sql ("ROLLBACK;");
+              return -1;
+            }
+
+          import_hosts = openvas_string_flatten_string_list (hosts_list, ", ");
+
+          openvas_string_list_free (hosts_list);
+          max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
+          if (max <= 0)
+            {
+              g_free (quoted_exclude_hosts);
+              g_free (import_hosts);
+              sql ("ROLLBACK;");
+              return 2;
+            }
+          clean = clean_hosts (import_hosts, &max);
+          if (max > max_hosts)
+            {
+              g_free (quoted_exclude_hosts);
+              g_free (import_hosts);
+              sql ("ROLLBACK;");
+              return 3;
+            }
+          g_free (import_hosts);
+          quoted_hosts = sql_quote (clean);
+          g_free (clean);
+        }
+      else
+        {
+          int max;
+          gchar *clean;
+
+          /* User provided hosts. */
+
+          if (hosts == NULL)
+            {
+              g_free (quoted_exclude_hosts);
+              sql ("ROLLBACK;");
+              return 12;
+            }
+
+          if (strlen (hosts) == 0)
+            {
+              g_free (quoted_exclude_hosts);
+              sql ("ROLLBACK;");
+              return 14;
+            }
+
+          max = manage_count_hosts (hosts, quoted_exclude_hosts);
+          if (max <= 0)
+            {
+              g_free (quoted_exclude_hosts);
+              sql ("ROLLBACK;");
+              return 2;
+            }
+          clean = clean_hosts (hosts, &max);
+          if (max > max_hosts)
+            {
+              g_free (quoted_exclude_hosts);
+              sql ("ROLLBACK;");
+              return 3;
+            }
+          quoted_hosts = sql_quote (clean);
+          g_free (clean);
+        }
+
+      sql ("UPDATE targets SET"
+           " hosts = '%s',"
+           " exclude_hosts = '%s',"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           quoted_hosts,
+           quoted_exclude_hosts,
+           target);
+
+      g_free (quoted_hosts);
+      g_free (quoted_exclude_hosts);
+    }
+
+  if (reverse_lookup_only)
     sql ("UPDATE targets SET"
-         " name = '%s',"
-         " hosts = '%s',"
-         " exclude_hosts = '%s',"
-         " reverse_lookup_only = '%s',"
-         " reverse_lookup_unify = '%s',"
-         " lsc_credential = %llu,"
-         " ssh_port = %s,"
-         " smb_lsc_credential = %llu,"
-         " port_range = %llu,"
-         " alive_test = %i,"
+         " reverse_lookup_only = '%i',"
          " modification_time = now ()"
          " WHERE ROWID = %llu;",
-         quoted_name, quoted_hosts, quoted_exclude_hosts, reverse_lookup_only,
-         reverse_lookup_unify, ssh_lsc_credential, quoted_ssh_port,
-         smb_lsc_credential, port_list, alive_test, target);
+         strcmp (reverse_lookup_only, "0") ? 1 : 0,
+         target);
 
-  g_free (quoted_name);
-  g_free (quoted_hosts);
-  g_free (quoted_exclude_hosts);
-  g_free (quoted_ssh_port);
+  if (reverse_lookup_unify)
+    sql ("UPDATE targets SET"
+         " reverse_lookup_unify = '%i',"
+         " modification_time = now ()"
+         " WHERE ROWID = %llu;",
+         strcmp (reverse_lookup_unify, "0") ? 1 : 0,
+         target);
+
+  if (alive_tests)
+    {
+      alive_test_t alive_test;
+
+      alive_test = alive_test_from_string (alive_tests);
+      if (alive_test == -1)
+        {
+          sql ("ROLLBACK;");
+          return 10;
+        }
+      sql ("UPDATE targets SET"
+           " alive_test = '%i',"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           alive_test,
+           target);
+    }
 
   sql ("COMMIT;");
 
@@ -27152,12 +27239,11 @@ trash_target_in_use (target_t target)
 int
 target_writable (target_t target)
 {
-  return (sql_int (0, 0,
-                  "SELECT count(*) FROM targets"
-                  " WHERE ROWID = %llu"
-                  " AND uuid = '" TARGET_UUID_LOCALHOST "'",
-                  target)
-          || target_in_use (target))
+  return sql_int (0, 0,
+                 "SELECT count(*) FROM targets"
+                 " WHERE ROWID = %llu"
+                 " AND uuid = '" TARGET_UUID_LOCALHOST "'",
+                 target)
          == 0;
 }
 

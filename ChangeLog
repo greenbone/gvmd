@@ -1,3 +1,15 @@
+2014-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_target): Modify each column separately,
+	leaving the column alone if the given value is NULL.  This allows the
+	OMP user to modify part of the target in a single command, instead of
+	requiring every field to be given.
+	(target_writable): Allow "in use" targets to be modified.
+
+	* src/omp.c (omp_xml_handle_start_element): Init MODIFY_TARGET elements,
+	so that they have at least the empty string when empty.
+	(omp_xml_handle_end_element): Handle new style of modify_target call.
+
 2014-02-16  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.

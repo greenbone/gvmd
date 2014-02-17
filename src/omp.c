@@ -7793,7 +7793,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_TARGET:
         if (strcasecmp ("EXCLUDE_HOSTS", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS);
+          {
+            openvas_append_string (&modify_target_data->exclude_hosts, "");
+            set_client_state (CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS);
+          }
         else if (strcasecmp ("REVERSE_LOOKUP_ONLY", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY);
         else if (strcasecmp ("REVERSE_LOOKUP_UNIFY", element_name) == 0)
@@ -7801,9 +7804,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("ALIVE_TESTS", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
         else if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
+          {
+            openvas_append_string (&modify_target_data->comment, "");
+            set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
+          }
         else if (strcasecmp ("HOSTS", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_HOSTS);
+          {
+            openvas_append_string (&modify_target_data->hosts, "");
+            set_client_state (CLIENT_MODIFY_TARGET_HOSTS);
+          }
         else if (strcasecmp ("PORT_LIST", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7823,7 +7832,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL);
           }
         else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_NAME);
+          {
+            openvas_append_string (&modify_target_data->name, "");
+            set_client_state (CLIENT_MODIFY_TARGET_NAME);
+          }
         else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR);
         ELSE_ERROR ("modify_target");
@@ -22602,36 +22614,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (modify_target_data->target_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET requires a target_id attribute"));
-          else if (modify_target_data->port_list_id == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET requires a PORT_LIST"));
-          else if (modify_target_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET requires a NAME entity"));
-          else if (strlen (modify_target_data->name) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET name must be at"
-                                " least one character long"));
-          else if (((modify_target_data->hosts == NULL)
-                    || (strlen (modify_target_data->hosts) == 0))
-                   && modify_target_data->target_locator == NULL)
-            /** @todo Legitimate to pass an empty hosts element? */
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_target",
-                                "MODIFY_TARGET hosts must both be at least one"
-                                " character long, or TARGET_LOCATOR must"
-                                " be set"));
-          else if (strlen (modify_target_data->hosts) != 0
-                   && modify_target_data->target_locator != NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_target",
-                                " MODIFY_TARGET requires either a"
-                                " TARGET_LOCATOR or a host"));
-          /* Modify target from host string. */
+                                "MODIFY_TARGET requires a target_id"
+                                " attribute"));
           else switch (modify_target
                         (modify_target_data->target_id,
                          modify_target_data->name,
@@ -22754,6 +22738,43 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
                                     "Error in alive test"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "MODIFY_TARGET name must be at"
+                                    " least one character long"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "MODIFY_TARGET EXCLUDE_HOSTS requires"
+                                    " a HOSTS or a TARGET_LOCATOR"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
+              case 13:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "MODIFY_TARGET with a HOSTS or a"
+                                    " TARGET_LOCATOR requires an"
+                                    " EXCLUDE_HOSTS"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
+              case 14:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "MODIFY_TARGET HOSTS must be at least one"
+                                    "character long"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
                                 "modified");
