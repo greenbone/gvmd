@@ -1,5 +1,15 @@
 2014-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_target): Actually prevent "in use" targets
+	from being modified.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new modify_target
+	return.
+
+2014-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove need for all elements to be given in MODIFY_TARGET.
+
 	* src/manage_sql.c (modify_target): Modify each column separately,
 	leaving the column alone if the given value is NULL.  This allows the
 	OMP user to modify part of the target in a single command, instead of

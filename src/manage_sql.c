@@ -26129,9 +26129,9 @@ delete_target (const char *target_id, int ultimate)
  *         find SMB cred, 9 failed to find target, 10 error in alive tests,
  *         11 zero length name, 12 exclude hosts requires hosts or target
  *         locator, 13 hosts or target locator requires exclude hosts,
- *         14 hosts must be at least one character, 99 permission denied,
- *         -1 if import from target locator failed or response was empty FIX
- *         or internal error.
+ *         14 hosts must be at least one character, 15 target is in use,
+ *         99 permission denied, -1 if import from target locator failed or
+ *         response was empty FIX or internal error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
@@ -26226,9 +26226,33 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       g_free (quoted_comment);
     }
 
+  if (alive_tests)
+    {
+      alive_test_t alive_test;
+
+      alive_test = alive_test_from_string (alive_tests);
+      if (alive_test == -1)
+        {
+          sql ("ROLLBACK;");
+          return 10;
+        }
+      sql ("UPDATE targets SET"
+           " alive_test = '%i',"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           alive_test,
+           target);
+    }
+
   if (port_list_id)
     {
       port_list_t port_list;
+
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
 
       port_list = 0;
       if (find_port_list (port_list_id, &port_list))
@@ -26255,6 +26279,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       lsc_credential_t ssh_lsc_credential;
       gchar *quoted_ssh_port;
+
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
 
       ssh_lsc_credential = 0;
       if (strcmp (ssh_lsc_credential_id, "0"))
@@ -26298,6 +26328,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       lsc_credential_t smb_lsc_credential;
 
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
+
       smb_lsc_credential = 0;
       if (strcmp (smb_lsc_credential_id, "0"))
         {
@@ -26325,6 +26361,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   if (exclude_hosts)
     {
       gchar *quoted_exclude_hosts, *quoted_hosts;
+
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
 
       quoted_exclude_hosts = sql_quote (exclude_hosts);
       if (target_locator != NULL)
@@ -26423,36 +26465,34 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     }
 
   if (reverse_lookup_only)
-    sql ("UPDATE targets SET"
-         " reverse_lookup_only = '%i',"
-         " modification_time = now ()"
-         " WHERE ROWID = %llu;",
-         strcmp (reverse_lookup_only, "0") ? 1 : 0,
-         target);
-
-  if (reverse_lookup_unify)
-    sql ("UPDATE targets SET"
-         " reverse_lookup_unify = '%i',"
-         " modification_time = now ()"
-         " WHERE ROWID = %llu;",
-         strcmp (reverse_lookup_unify, "0") ? 1 : 0,
-         target);
-
-  if (alive_tests)
     {
-      alive_test_t alive_test;
-
-      alive_test = alive_test_from_string (alive_tests);
-      if (alive_test == -1)
+      if (target_in_use (target))
         {
           sql ("ROLLBACK;");
-          return 10;
+          return 15;
         }
+
       sql ("UPDATE targets SET"
-           " alive_test = '%i',"
+           " reverse_lookup_only = '%i',"
            " modification_time = now ()"
            " WHERE ROWID = %llu;",
-           alive_test,
+           strcmp (reverse_lookup_only, "0") ? 1 : 0,
+           target);
+    }
+
+  if (reverse_lookup_unify)
+    {
+      if (target_in_use (target))
+        {
+          sql ("ROLLBACK;");
+          return 15;
+        }
+
+      sql ("UPDATE targets SET"
+           " reverse_lookup_unify = '%i',"
+           " modification_time = now ()"
+           " WHERE ROWID = %llu;",
+           strcmp (reverse_lookup_unify, "0") ? 1 : 0,
            target);
     }
 

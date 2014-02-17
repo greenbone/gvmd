@@ -22779,6 +22779,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_target_data->target_id,
                                 "modified");
                 break;
+              case 15:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Target is in use"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
