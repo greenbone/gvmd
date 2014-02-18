@@ -1731,21 +1731,21 @@ static int
 send_alive_test_preferences (target_t target)
 {
   if (target_alive_test (target, ALIVE_TEST_TCP_SERVICE)
-      && sendf_to_server ("Ping Host[checkbox]:Do a TCP ping: <|> %s\n",
+      && sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> %s\n",
                           target_alive_test (target, ALIVE_TEST_TCP_SERVICE) == 1
                            ? "yes"
                            : "no"))
     return -1;
 
   if (target_alive_test (target, ALIVE_TEST_ICMP)
-      && sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping: <|> %s\n",
+      && sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping <|> %s\n",
                           target_alive_test (target, ALIVE_TEST_ICMP) == 1
                            ? "yes"
                            : "no"))
     return -1;
 
   if (target_alive_test (target, ALIVE_TEST_ARP)
-      && sendf_to_server ("Ping Host[checkbox]:Use ARP: <|> %s\n",
+      && sendf_to_server ("Ping Host[checkbox]:Use ARP <|> %s\n",
                           target_alive_test (target, ALIVE_TEST_ARP) == 1
                            ? "yes"
                            : "no"))

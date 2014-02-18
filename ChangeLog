@@ -1,3 +1,8 @@
+2014-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (send_alive_test_preferences): Remove erroneous trailing
+	colons.
+
 2014-02-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_target): Actually prevent "in use" targets
