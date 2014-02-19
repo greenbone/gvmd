@@ -1,3 +1,12 @@
+2014-02-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/wizards/delete_task_deep.xml: Add optional parameter "ultimate".
+
+	* src/wizards/get_tasks_deep.xml: Add optional "include_report_formats"
+	and "include_configs" parameters.
+
+	* src/wizards/quick_auth_scan.xml: Add optional "config_id" parameter.
+
 2014-02-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (send_alive_test_preferences): Remove erroneous trailing

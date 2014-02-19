@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   hosts : The hosts to scan. Syntax is the same as for the hosts
            parameter of the OMP command CREATE_TARGET.
            Will default to "localhost".
+  config_id : UUID of the scan config to use. Leave blank for "full and fast".
   username : The username to use for creating credential. If missing, no
               credentials will be used.
   password : The password to use for creating credential.
@@ -147,7 +148,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:otherwise>
             </xsl:choose>
             <target id="{/wizard/previous/response/create_target_response/@id}"/>
-            <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+            <xsl:choose>
+              <xsl:when test="/wizard/params/param[name='config_id']/value">
+                <config id="{/wizard/params/param[name='config_id']/value}"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+              </xsl:otherwise>
+            </xsl:choose>
             <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>
           </create_task>
         </xsl:template>

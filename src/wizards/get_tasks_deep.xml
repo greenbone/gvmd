@@ -32,6 +32,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   name :    The name of the task to get, used if no task_id is given.
   filter :  A filter term to select the tasks with, used if no task_id or name
              is given.
+  include_report_formats : Whether to also get a list of all report formats.
+  include_configs : Whether to also get a list of all scan configs.
 
   To run this wizard, use the OMP command RUN_WIZARD.
   Please see the OMP documentation for details.
@@ -98,6 +100,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:template match="/">
           <xsl:variable name="response" select="/wizard/previous/response/commands_response"/>
           <commands>
+            <xsl:if test="/wizard/params/param[name='include_report_formats']/value">
+              <get_report_formats/>
+            </xsl:if>
+            <xsl:if test="/wizard/params/param[name='include_configs']/value">
+              <get_configs/>
+            </xsl:if>
             <xsl:for-each select="$response/commands_response">
               <commands>
                 <get_tasks task_id="{get_tasks_response/task/@id}" details="1"/>
