@@ -63,6 +63,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
   <version>4.0</version>
   <type>
+    <name>alive_test</name>
+    <summary>An alive test</summary>
+    <pattern>
+      xsd:token { pattern = "ICMP, TCP Service &amp; ARP Ping|TCP Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP Service Ping|ARP Ping|TCP Service Ping|ICMP Ping|Scan Config Default" }
+    </pattern>
+  </type>
+  <type>
     <name>base64</name>
     <summary>Base64 encoded data</summary>
     <pattern>xsd:base64Binary</pattern>
@@ -871,6 +878,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>scan_run_status</e>
             <e>result_count</e>
             <e>severity</e>
+            <e>severity_class</e>
             <o><e>host_count</e></o>
             <e>task</e>
             <e>ports</e>
@@ -1316,6 +1324,60 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>filtered</name>
           <pattern><t>severity</t></pattern>
           <summary>Maximum severity of the report after filtering</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>severity_class</name>
+        <pattern>
+          <e>name</e>
+          <e>full_name</e>
+          <any><e>severity_range</e></any>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <pattern>
+            <alts>
+              <alt>nist</alt>
+              <alt>classic</alt>
+              <alt>pci-dss</alt>
+            </alts>
+          </pattern>
+          <summary>Short severity class name</summary>
+        </ele>
+        <ele>
+          <name>full_name</name>
+          <pattern><t>text</t></pattern>
+          <summary>Full severity class name</summary>
+        </ele>
+        <ele>
+          <name>severity_range</name>
+          <summary>Severity range</summary>
+          <pattern>
+            <e>name</e>
+            <e>min</e>
+            <e>max</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of severity range</summary>
+            <pattern>
+              <t>name</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>min</name>
+            <summary>Minimum CVSS value</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>max</name>
+            <summary>Maximum CVSS value</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
         </ele>
       </ele>
       <ele>
@@ -3479,6 +3541,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>ssh_lsc_credential</e>
       <e>smb_lsc_credential</e>
       <e>target_locator</e>
+      <e>alive_tests</e>
+      <e>reverse_lookup_only</e>
+      <e>reverse_lookup_unify</e>
       <o><e>port_range</e></o>
       <o><e>port_list</e></o>
     </pattern>
@@ -3567,6 +3632,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           text
         </pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>alive_tests</name>
+      <summary>Which alive tests to use</summary>
+      <pattern>
+        <t>alive_test</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>reverse_lookup_only</name>
+      <summary>Whether to scan only hosts that have names</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>reverse_lookup_unify</name>
+      <summary>
+        Whether to scan only one IP when multiple IPs have the same name
+      </summary>
+      <pattern><t>boolean</t></pattern>
     </ele>
     <ele>
       <name>port_range</name>
@@ -11536,6 +11620,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>smb_lsc_credential</e>
           <e>port_range</e>
           <e>port_list</e>
+          <e>alive_tests</e>
+          <e>reverse_lookup_only</e>
+          <e>reverse_lookup_unify</e>
           <o><e>tasks</e></o>
         </pattern>
         <ele>
@@ -11710,6 +11797,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the port_list is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>alive_tests</name>
+          <summary>Which alive tests to use</summary>
+          <pattern>
+            <t>alive_test</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>reverse_lookup_only</name>
+          <summary>Whether to scan only hosts that have names</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>reverse_lookup_unify</name>
+          <summary>
+            Whether to scan only one IP when multiple IPs have the same name
+          </summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>tasks</name>
@@ -14758,6 +14864,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>smb_lsc_credential</e></o>
       <o><e>port_list</e></o>
       <o><e>target_locator</e></o>
+      <o><e>alive_tests</e></o>
+      <o><e>reverse_lookup_only</e></o>
+      <o><e>reverse_lookup_unify</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -14821,6 +14930,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>password</name>
         <pattern>text</pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>alive_tests</name>
+      <summary>Which alive tests to use</summary>
+      <pattern>
+        <t>alive_test</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>reverse_lookup_only</name>
+      <summary>Whether to scan only hosts that have names</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>reverse_lookup_unify</name>
+      <summary>
+        Whether to scan only one IP when multiple IPs have the same name
+      </summary>
+      <pattern><t>boolean</t></pattern>
     </ele>
     <response>
       <pattern>

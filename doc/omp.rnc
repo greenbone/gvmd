@@ -204,6 +204,8 @@ response
 
 ### Data Types
 
+# An alive test.
+alive_test = xsd:token { pattern = "ICMP, TCP Service & ARP Ping|TCP Service & ARP Ping|ICMP & ARP Ping|ICMP & TCP Service Ping|ARP Ping|TCP Service Ping|ICMP Ping|Scan Config Default" }
 # Base64 encoded data.
 base64 = xsd:base64Binary
 # A true or false value.
@@ -998,6 +1000,7 @@ report_report
            & report_report_scan_run_status
            & report_report_result_count
            & report_report_severity
+           & report_report_severity_class
            & report_report_host_count?
            & report_report_task
            & report_report_ports
@@ -1450,6 +1453,60 @@ report_report_severity_filtered
  = element filtered
      {
        severity
+     }
+
+report_report_severity_class
+ = element severity_class
+     {
+       report_report_severity_class_name
+       & report_report_severity_class_full_name
+       & report_report_severity_class_severity_range*
+     }
+
+# Short severity class name.
+report_report_severity_class_name
+ = element name
+     {
+       
+        ERROR
+      
+     }
+
+# Full severity class name.
+report_report_severity_class_full_name
+ = element full_name
+     {
+       text
+     }
+
+# Severity range.
+report_report_severity_class_severity_range
+ = element severity_range
+     {
+       report_report_severity_class_severity_range_name
+       & report_report_severity_class_severity_range_min
+       & report_report_severity_class_severity_range_max
+     }
+
+# Name of severity range.
+report_report_severity_class_severity_range_name
+ = element name
+     {
+       name
+     }
+
+# Minimum CVSS value.
+report_report_severity_class_severity_range_min
+ = element min
+     {
+       integer
+     }
+
+# Maximum CVSS value.
+report_report_severity_class_severity_range_max
+ = element max
+     {
+       integer
      }
 
 # Counts of hosts in the results.
@@ -2764,6 +2821,9 @@ create_target
        & create_target_ssh_lsc_credential
        & create_target_smb_lsc_credential
        & create_target_target_locator
+       & create_target_alive_tests
+       & create_target_reverse_lookup_only
+       & create_target_reverse_lookup_unify
        & create_target_port_range?
        & create_target_port_list?
      }
@@ -2846,6 +2906,27 @@ create_target_target_locator_password
  = element password
      {
        text
+     }
+
+# Which alive tests to use.
+create_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+# Whether to scan only hosts that have names.
+create_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+# Whether to scan only one IP when multiple IPs have the same name.
+create_target_reverse_lookup_unify
+ = element reverse_lookup_unify
+     {
+       boolean
      }
 
 # Port range for the target.
@@ -4624,6 +4705,9 @@ modify_target
        & modify_target_smb_lsc_credential?
        & modify_target_port_list?
        & modify_target_target_locator?
+       & modify_target_alive_tests?
+       & modify_target_reverse_lookup_only?
+       & modify_target_reverse_lookup_unify?
      }
 
 # Comment on target.
@@ -4685,6 +4769,27 @@ modify_target_target_locator_password
  = element password
      {
        text
+     }
+
+# Which alive tests to use.
+modify_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+# Whether to scan only hosts that have names.
+modify_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+# Whether to scan only one IP when multiple IPs have the same name.
+modify_target_reverse_lookup_unify
+ = element reverse_lookup_unify
+     {
+       boolean
      }
 
 ## Command modify_tag
@@ -9739,6 +9844,9 @@ get_targets_response_target
        & get_targets_response_target_smb_lsc_credential
        & get_targets_response_target_port_range
        & get_targets_response_target_port_list
+       & get_targets_response_target_alive_tests
+       & get_targets_response_target_reverse_lookup_only
+       & get_targets_response_target_reverse_lookup_unify
        & get_targets_response_target_tasks?
      }
 
@@ -9922,6 +10030,27 @@ get_targets_response_target_port_list_name
 # Whether the port_list is in the trashcan.
 get_targets_response_target_port_list_trash
  = element trash
+     {
+       boolean
+     }
+
+# Which alive tests to use.
+get_targets_response_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+# Whether to scan only hosts that have names.
+get_targets_response_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+# Whether to scan only one IP when multiple IPs have the same name.
+get_targets_response_target_reverse_lookup_unify
+ = element reverse_lookup_unify
      {
        boolean
      }

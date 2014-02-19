@@ -25,6 +25,10 @@
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
 <tr id="index">
+<td id="index"><a href="#type_alive_test">alive_test</a></td>
+<td id="index"><div style="margin-left: 15px;">An alive test.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_base64">base64</a></td>
 <td id="index"><div style="margin-left: 15px;">Base64 encoded data.</div></td>
 </tr>
@@ -744,16 +748,27 @@ response
 </pre></div>
 <h2 id="type_details">5 Data Type Details</h2>
 <div>
-<div><h3 id="type_base64">5.1
+<div><h3 id="type_alive_test">5.1
+        Data Type <tt>alive_test</tt>
+</h3></div>
+<p>In short: An alive test.</p>
+<h4>5.1.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>alive_test = xsd:token { pattern = "ICMP, TCP Service &amp; ARP Ping|TCP Service &amp; ARP Ping|I↵
+CMP &amp; ARP Ping|ICMP &amp; TCP Service Ping|ARP Ping|TCP Service Ping|ICMP Ping|S↵
+can Config Default" }
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_base64">5.2
         Data Type <tt>base64</tt>
 </h3></div>
 <p>In short: Base64 encoded data.</p>
-<h4>5.1.1 RNC</h4>
+<h4>5.2.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>base64 = xsd:base64Binary
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean">5.2
+<div><h3 id="type_boolean">5.3
         Data Type <tt>boolean</tt>
 </h3></div>
 <p>In short: A true or false value.</p>
@@ -761,12 +776,12 @@ response
       Zero is false, anything else is true.  As a result, the empty string is
       considered true.
     </p>
-<h4>5.2.1 RNC</h4>
+<h4>5.3.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_boolean_atoi">5.3
+<div><h3 id="type_boolean_atoi">5.4
         Data Type <tt>boolean_atoi</tt>
 </h3></div>
 <p>In short: A true or false value, after conversion to an integer.</p>
@@ -775,63 +790,63 @@ response
       an integer, as by the C `atoi' routine.  This means that an empty string
       is considered false.
     </p>
-<h4>5.3.1 RNC</h4>
+<h4>5.4.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>boolean_atoi = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_ctime">5.4
+<div><h3 id="type_ctime">5.5
         Data Type <tt>ctime</tt>
 </h3></div>
 <p>In short: A date and time, in the C `ctime' format.</p>
 <p>
       An example string in this format is "Wed Jun 30 21:49:08 1993\n".
     </p>
-<h4>5.4.1 RNC</h4>
+<h4>5.5.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>ctime = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_type_name">5.5
+<div><h3 id="type_type_name">5.6
         Data Type <tt>type_name</tt>
 </h3></div>
 <p>In short: A name of a data type.</p>
-<h4>5.5.1 RNC</h4>
+<h4>5.6.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>type_name = xsd:Name
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_integer">5.6
+<div><h3 id="type_integer">5.7
         Data Type <tt>integer</tt>
 </h3></div>
 <p>In short: An integer.</p>
-<h4>5.6.1 RNC</h4>
+<h4>5.7.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>integer = xsd:integer
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_iso_time">5.7
+<div><h3 id="type_iso_time">5.8
         Data Type <tt>iso_time</tt>
 </h3></div>
 <p>In short: A date and time, in ISO 8601 format.</p>
 <p>
       An example string in this format is "2011-11-08T19:57:06+02:00".
     </p>
-<h4>5.7.1 RNC</h4>
+<h4>5.8.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>iso_time = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_levels">5.8
+<div><h3 id="type_levels">5.9
         Data Type <tt>levels</tt>
 </h3></div>
 <p>In short: A string that may include the characters h, m, l, g and d.</p>
-<h4>5.8.1 RNC</h4>
+<h4>5.9.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>levels = xsd:token { pattern = "h?m?l?g?d?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_name">5.9
+<div><h3 id="type_name">5.10
         Data Type <tt>name</tt>
 </h3></div>
 <p>In short: A name.</p>
@@ -839,39 +854,39 @@ response
       Typically this is the name of one of the manager resources, like a
       task or target.
     </p>
-<h4>5.9.1 RNC</h4>
+<h4>5.10.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>name = xsd:string
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_port">5.10
+<div><h3 id="type_port">5.11
         Data Type <tt>port</tt>
 </h3></div>
 <p>In short: A port.</p>
-<h4>5.10.1 RNC</h4>
+<h4>5.11.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>port = xsd:token { pattern = "[0-9]{1,5}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_user_list">5.11
+<div><h3 id="type_user_list">5.12
         Data Type <tt>user_list</tt>
 </h3></div>
 <p>In short: A space separated list of users.</p>
-<h4>5.11.1 RNC</h4>
+<h4>5.12.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>user_list = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_oid">5.12
+<div><h3 id="type_oid">5.13
         Data Type <tt>oid</tt>
 </h3></div>
 <p>In short: An Object Identifier (OID).</p>
-<h4>5.12.1 RNC</h4>
+<h4>5.13.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>oid = xsd:token { pattern = "[0-9\.]{1,80}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_severity">5.13
+<div><h3 id="type_severity">5.14
         Data Type <tt>severity</tt>
 </h3></div>
 <p>In short: A severity score.</p>
@@ -883,12 +898,12 @@ response
       override applies, for values 0.0 and lower the severity must be equal
       to match while for &gt; 0.0 the compared value must be greater or equal.
     </p>
-<h4>5.13.1 RNC</h4>
+<h4>5.14.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>severity = xsd:token { pattern = "-[1-3](\.0)?|[0-9](\.[0-9])?|10(\.0)?" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_sort_order">5.14
+<div><h3 id="type_sort_order">5.15
         Data Type <tt>sort_order</tt>
 </h3></div>
 <p>In short: A string describing an order for sorting.</p>
@@ -896,40 +911,40 @@ response
       The string "descending" denotes descending order, anything else means
       ascending.
     </p>
-<h4>5.14.1 RNC</h4>
+<h4>5.15.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>sort_order = text
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_status">5.15
+<div><h3 id="type_status">5.16
         Data Type <tt>status</tt>
 </h3></div>
 <p>In short: The success or failure status of a command.</p>
-<h4>5.15.1 RNC</h4>
+<h4>5.16.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_status">5.16
+<div><h3 id="type_task_status">5.17
         Data Type <tt>task_status</tt>
 </h3></div>
 <p>In short: A task run status.</p>
-<h4>5.16.1 RNC</h4>
+<h4>5.17.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
 ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_task_trend">5.17
+<div><h3 id="type_task_trend">5.18
         Data Type <tt>task_trend</tt>
 </h3></div>
 <p>In short: The trend of results for a task.</p>
-<h4>5.17.1 RNC</h4>
+<h4>5.18.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_trend = xsd:token { pattern = "up|down|more|less|same" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_threat">5.18
+<div><h3 id="type_threat">5.19
         Data Type <tt>threat</tt>
 </h3></div>
 <p>In short: A threat level.</p>
@@ -939,34 +954,34 @@ ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
       The use of these elements is deprecated as they are otherwise replaced by
       severity elements, which should be used instead.
     </p>
-<h4>5.18.1 RNC</h4>
+<h4>5.19.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>threat = xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_time_unit">5.19
+<div><h3 id="type_time_unit">5.20
         Data Type <tt>time_unit</tt>
 </h3></div>
 <p>In short: A unit of time.</p>
-<h4>5.19.1 RNC</h4>
+<h4>5.20.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.20
+<div><h3 id="type_uuid">5.21
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.20.1 RNC</h4>
+<h4>5.21.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.21
+<div><h3 id="type_uuid_or_empty">5.22
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.21.1 RNC</h4>
+<h4>5.22.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -2531,6 +2546,42 @@ result_overrides
 </ul>
 </li>
 <li>
+              &lt;<b>severity_class</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Short severity class name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>full_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Full severity class name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity_range</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Severity range.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of severity range.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>min</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Minimum CVSS value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>max</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum CVSS value.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>host_count</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Counts of hosts in the results.</div>
 <ul style="list-style: none">
@@ -2750,6 +2801,7 @@ report_report
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
            &amp; report_report_severity
+           &amp; report_report_severity_class
            &amp; report_report_host_count?
            &amp; report_report_task
            &amp; report_report_ports
@@ -3146,6 +3198,54 @@ report_report_severity_filtered
  = element filtered
      {
        severity
+     }
+
+report_report_severity_class
+ = element severity_class
+     {
+       report_report_severity_class_name
+       &amp; report_report_severity_class_full_name
+       &amp; report_report_severity_class_severity_range*
+     }
+
+report_report_severity_class_name
+ = element name
+     {
+       
+        ERROR
+      
+     }
+
+report_report_severity_class_full_name
+ = element full_name
+     {
+       text
+     }
+
+report_report_severity_class_severity_range
+ = element severity_range
+     {
+       report_report_severity_class_severity_range_name
+       &amp; report_report_severity_class_severity_range_min
+       &amp; report_report_severity_class_severity_range_max
+     }
+
+report_report_severity_class_severity_range_name
+ = element name
+     {
+       name
+     }
+
+report_report_severity_class_severity_range_min
+ = element min
+     {
+       integer
+     }
+
+report_report_severity_class_severity_range_max
+ = element max
+     {
+       integer
      }
 
 report_report_host_count
@@ -6957,6 +7057,21 @@ create_tag_active
 </ul>
 </li>
 <li>
+              &lt;<b>alive_tests</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_only</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to scan only hosts that have names.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_unify</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to scan only one IP when multiple IPs have the same name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>port_range</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Port range for the target.</div>
 <ul style="list-style: none"></ul>
@@ -7000,6 +7115,9 @@ create_tag_active
        &amp; create_target_ssh_lsc_credential
        &amp; create_target_smb_lsc_credential
        &amp; create_target_target_locator
+       &amp; create_target_alive_tests
+       &amp; create_target_reverse_lookup_only
+       &amp; create_target_reverse_lookup_unify
        &amp; create_target_port_range?
        &amp; create_target_port_list?
      }
@@ -7071,6 +7189,24 @@ create_target_target_locator_password
  = element password
      {
        text
+     }
+
+create_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+create_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+create_target_reverse_lookup_unify
+ = element reverse_lookup_unify
+     {
+       boolean
      }
 
 create_target_port_range
@@ -18657,6 +18793,21 @@ get_target_locators_response_target_locator_name
 </ul>
 </li>
 <li>
+              &lt;<b>alive_tests</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_only</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to scan only hosts that have names.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_unify</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether to scan only one IP when multiple IPs have the same name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>tasks</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">All tasks using the target.</div>
 <ul style="list-style: none"><li>
@@ -18776,6 +18927,9 @@ get_targets_response_target
        &amp; get_targets_response_target_smb_lsc_credential
        &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_port_list
+       &amp; get_targets_response_target_alive_tests
+       &amp; get_targets_response_target_reverse_lookup_only
+       &amp; get_targets_response_target_reverse_lookup_unify
        &amp; get_targets_response_target_tasks?
      }
 
@@ -18936,6 +19090,24 @@ get_targets_response_target_port_list_name
 
 get_targets_response_target_port_list_trash
  = element trash
+     {
+       boolean
+     }
+
+get_targets_response_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+get_targets_response_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+get_targets_response_target_reverse_lookup_unify
+ = element reverse_lookup_unify
      {
        boolean
      }
@@ -23333,6 +23505,21 @@ modify_slave_password
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>alive_tests</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_only</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Whether to scan only hosts that have names.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>reverse_lookup_unify</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Whether to scan only one IP when multiple IPs have the same name.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -23361,6 +23548,9 @@ modify_slave_password
        &amp; modify_target_smb_lsc_credential?
        &amp; modify_target_port_list?
        &amp; modify_target_target_locator?
+       &amp; modify_target_alive_tests?
+       &amp; modify_target_reverse_lookup_only?
+       &amp; modify_target_reverse_lookup_unify?
      }
 
 modify_target_comment
@@ -23416,6 +23606,24 @@ modify_target_target_locator_password
  = element password
      {
        text
+     }
+
+modify_target_alive_tests
+ = element alive_tests
+     {
+       alive_test
+     }
+
+modify_target_reverse_lookup_only
+ = element reverse_lookup_only
+     {
+       boolean
+     }
+
+modify_target_reverse_lookup_unify
+ = element reverse_lookup_unify
+     {
+       boolean
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>modify_target_response
