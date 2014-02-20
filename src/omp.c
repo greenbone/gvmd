@@ -5559,6 +5559,10 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
            == 0))
       || (current_credentials.uuid
           && ((strcmp (type, "group") == 0)
+              || ((strcmp (type, "permission") == 0)
+                  && get_iterator_uuid (iterator)
+                  && strcmp (get_iterator_uuid (iterator),
+                             PERMISSION_UUID_ADMIN_EVERYTHING))
               || (strcmp (type, "role") == 0)
               || (strcmp (type, "user") == 0))
           && user_can_everything (current_credentials.uuid)))

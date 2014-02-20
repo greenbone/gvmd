@@ -1,3 +1,9 @@
+2014-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (send_get_common): Include permission type in special case
+	for PERMISSIONS, because Admin users have full action to permissions
+	that apply to whole commands.
+
 2014-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/html/XML/OMP.xml (alive_test): New type.
