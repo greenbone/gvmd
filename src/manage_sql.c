@@ -236,6 +236,9 @@ permissions_set_orphans (const char *, resource_t, int);
 void
 permissions_set_subjects (const char *, resource_t, resource_t, int);
 
+static resource_t
+permission_resource (permission_t);
+
 
 /* Variables. */
 
@@ -3449,6 +3452,16 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
       || owner == 0)
     {
       return -1;
+    }
+
+  if (strcmp (type, "permission") == 0)
+    {
+      resource_t perm_resource;
+      perm_resource = permission_resource (resource);
+      if ((perm_resource == 0)
+          && (user_can_everything (current_credentials.uuid) == 0))
+        /* Only admins can copy permissions that apply to whole commands. */
+        return 99;
     }
 
   named = type_named (type);
@@ -41792,7 +41805,7 @@ create_permission (const char *name_arg, const char *comment,
  * @param[out] new_permission  New permission.
  *
  * @return 0 success, 1 permission exists already, 2 failed to find existing
- *         permission, -1 error.
+ *         permission, 99 permission denied, -1 error.
  */
 int
 copy_permission (const char* comment, const char *permission_id,
@@ -41839,6 +41852,23 @@ permission_uuid (permission_t permission)
   return sql_string (0, 0,
                      "SELECT uuid FROM permissions WHERE ROWID = %llu;",
                      permission);
+}
+
+/**
+ * @brief Return the resource of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Resource if there is one, else 0.
+ */
+static resource_t
+permission_resource (permission_t permission)
+{
+  resource_t resource;
+  sql_int64 (&resource, 0, 0,
+             "SELECT resource FROM permissions WHERE ROWID = %llu;",
+             permission);
+  return resource;
 }
 
 int

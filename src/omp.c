@@ -18130,7 +18130,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   log_event_fail ("permission", "Permission", NULL, "created");
                   break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_permission",
+                                      "Permission denied"));
+                  log_event_fail ("permission", "Permission", NULL, "created");
+                  break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_permission"));
                   log_event_fail ("permission", "Permission", NULL, "created");

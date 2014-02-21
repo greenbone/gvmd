@@ -1,3 +1,12 @@
+2014-02-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_resource_lock): Add special check for cloning
+	permissions.
+	(permission_resource): New function.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle permission return from
+	copy_permission.  Add default case too.
+
 2014-02-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_common): Include permission type in special case
