@@ -15819,6 +15819,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <change>
+    <command>MODIFY_TARGET</command>
+    <summary>
+      Missing elements now leave the associate target property alone
+    </summary>
+    <description>
+      <p>
+        MODIFY_TARGET now allows the user to modify one or more of the
+        Target elements in a single command, instead of requiring all
+        elements to be modified at once.
+      </p>
+      <p>
+        As a side effect of this, leaving out an element will no longer
+        set the associated target value to a default, but will leave the
+        associated target value untouched.  For example, if SSH_LSC_CREDENTIAL
+        is omitted from the MODIFY_TARGET command, the command will no
+        longer reset the SSH credential of the target, but will leave the
+        target's current SSH credential intact.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
+  <change>
     <command>All GET commands</command>
     <summary>Attribute "actions" replaced with owner filtering</summary>
     <description>

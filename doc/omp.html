@@ -24836,6 +24836,25 @@ run_wizard_response_response
 <h2 id="changes">
       8 Compatibility Changes in Version
       5.0</h2>
+<div>
+<div><h3>8.1
+          Change in <tt>MODIFY_TARGET</tt>
+</h3></div>
+<p>In short: Missing elements now leave the associate target property alone.</p>
+<p>
+        MODIFY_TARGET now allows the user to modify one or more of the
+        Target elements in a single command, instead of requiring all
+        elements to be modified at once.
+      </p>
+<p>
+        As a side effect of this, leaving out an element will no longer
+        set the associated target value to a default, but will leave the
+        associated target value untouched.  For example, if SSH_LSC_CREDENTIAL
+        is omitted from the MODIFY_TARGET command, the command will no
+        longer reset the SSH credential of the target, but will leave the
+        target's current SSH credential intact.
+      </p>
+</div>
 <div style="text-align: center; padding: 5px;">
                   This file was automatically generated.
                 </div>
