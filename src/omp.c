@@ -20027,6 +20027,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               alert_id = (gchar*) g_ptr_array_index (create_task_data->alerts,
                                                      index);
+              if (strcmp (alert_id, "0") == 0)
+                continue;
               if (find_alert (alert_id, &alert))
                 {
                   request_delete_task (&create_task_data->task);
