@@ -14728,8 +14728,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute or"
-                                " details set to true if the"
-                                " notes attribute is true"));
+                                " details set to true if the apply_overides or "
+                                " overrides attributes are true"));
           else if (get_results_data->result_id
                    && find_result_with_permission (get_results_data->result_id,
                                                    &result,

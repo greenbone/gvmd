@@ -1,3 +1,7 @@
+2014-02-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Fix error message.
+
 2014-02-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Add GET_TARGETS compatibility change.
