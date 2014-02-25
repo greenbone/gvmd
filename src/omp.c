@@ -16720,6 +16720,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("agent", "Agent", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_agent"));
                   log_event_fail ("agent", "Agent", NULL, "created");
@@ -16994,6 +16995,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 log_event_fail ("config", "Scan config", NULL, "created");
                 break;
               case -1:
+              default:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("create_config"));
                 log_event_fail ("config", "Scan config", NULL, "created");
@@ -17138,6 +17140,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("alert", "Alert", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_alert"));
                   log_event_fail ("alert", "Alert", NULL, "created");
@@ -17401,6 +17404,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("filter", "Filter", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_filter"));
                   log_event_fail ("filter", "Filter", NULL, "created");
@@ -17524,6 +17528,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("group", "Group", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_group"));
                   log_event_fail ("group", "Group", NULL, "created");
@@ -17640,6 +17645,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_lsc_credential"));
                   log_event_fail ("lsc_credential", "LSC Credential", NULL,
@@ -17775,6 +17781,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("note", "Note", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_note"));
                   log_event_fail ("note", "Note", NULL, "created");
@@ -17948,6 +17955,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("override", "Override", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_override"));
                   log_event_fail ("override", "Override", NULL, "created");
@@ -18392,6 +18400,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("port_list", "Port List", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_port_list"));
                   log_event_fail ("port_list", "Port List", NULL, "created");
@@ -18929,6 +18938,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_report_format"));
                   log_event_fail ("report_format", "Report Format", NULL,
@@ -19236,6 +19246,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("schedule", "Schedule", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_schedule"));
                   log_event_fail ("schedule", "Schedule", NULL, "created");
@@ -19406,6 +19417,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("slave", "Slave", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_slave"));
                   log_event_fail ("slave", "Slave", NULL, "created");
@@ -19545,6 +19557,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("tag", "Tag", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_tag"));
                   log_event_fail ("tag", "Tag", NULL, "created");
@@ -19689,6 +19702,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("target", "Target", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_target"));
                   log_event_fail ("target", "Target", NULL, "created");
@@ -20493,6 +20507,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event_fail ("user", "User", NULL, "created");
                   break;
                 case -1:
+                default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_user"));
                   log_event_fail ("user", "User", NULL, "created");

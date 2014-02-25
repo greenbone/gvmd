@@ -1,5 +1,10 @@
 2014-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Add defaults to copy switches,
+	for safety.
+
+2014-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Skip alerts with ID 0, as a
 	convenience for clients when removing alerts.
 
