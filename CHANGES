@@ -1,3 +1,22 @@
+openvas-manager 5.0+beta7 (2014-02-27)
+
+This is the seventh beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and its various user clients.
+
+This release fixes a large number of small issues.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Timo Pollmeier and Hani Benhabiles.
+
+Main changes since 5.0+beta6:
+* Update documentation about the alive tests property.
+* Increase the OMP version to 5.0.
+* Prevent targets curently used to be modified.
+* Remove need for all elements to be given in MODIFY_TARGET.
+* Large number of small fixes and improvements.
+
+
 openvas-manager 5.0+beta6 (2014-02-16)
 
 This is the sixth beta version of the upcoming 5.0 release of the OpenVAS

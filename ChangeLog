@@ -1,3 +1,9 @@
+2014-02-27  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Preparing the openvas-manager 5.0+beta7 release.
+
+	* CHANGES: Updated.
+
 2014-02-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Add defaults to copy switches,
