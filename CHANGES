@@ -1,3 +1,31 @@
+openvas-manager 4.0.5 (2014-02-28)
+
+This is the fifth maintenance release of the openvas-manager 4.0 module for the
+Open Vulnerability Assessment System release 6 (OpenVAS-6). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release adds support for setting the maximum number of IPs per target,
+improves the handling of encoding conversions and port range validations and
+fixes an issue with transferring credential preferences to slaves. It also
+updates the built-in Report Format Plugins (RFPs) to make use of the information
+provided by new style NVTs.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell and Michael Wiegand
+
+Main changes since 4.0.4:
+* Handle ISO/UTF-8 conversion consistently.
+* Fixed an issue with transferring credential preferences to slaves.
+* Add support for setting the maximum number of IPs per target when launching
+  OpenVAS Manager with "--max-ips-per-target".
+* Improve handling of new style NVT sections by built-in RFPs.
+* Port range validation has been moved to OpenVAS Libraries, raising the minimum
+  required libopenvas version to 6.0.2.
+* The layout of the results overview section in LaTeX based reports has been
+  improved.
+
+
 openvas-manager 4.0.4 (2013-11-08)
 
 This is the fourth maintenance release of the openvas-manager 4.0 module for the
