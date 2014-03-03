@@ -1,3 +1,19 @@
+2014-03-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove new style NVT special casing from report formats.  All NVTs are
+	expected in the new style now.
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl,
+	src/report_formats/NBE/NBE.xsl (openvas:newstyle-nvt): Remove.
+	(result): Remove check.
+
+	* src/report_formats/HTML/HTML.xsl,
+	src/report_formats/TXT/TXT.xsl (openvas:newstyle-nvt): Remove.
+	(result [issue]): Remove check.
+
+	* src/report_formats/LaTeX/latex.xsl (openvas:newstyle-nvt): Remove.
+	(result-details-host-port-threat): Remove check.
+
 2014-02-27  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version Bump.

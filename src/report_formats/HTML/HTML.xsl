@@ -57,23 +57,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </func:function>
 
-<func:function name="openvas:newstyle-nvt">
-  <xsl:param name="nvt"/>
-  <xsl:choose>
-    <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
-      <func:result select="1"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <func:result select="0"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</func:function>
-
 <!-- Currently only a very simple formatting method to produce
      nice HTML from a structured text:
      - create paragraphs for each text block separated with a empty line
@@ -539,7 +522,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </xsl:if>
 
         <!-- Summary -->
-        <xsl:if test="openvas:newstyle-nvt (nvt)">
+        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
           <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
             <b>Summary</b>
             <xsl:call-template name="structured-text">
@@ -567,78 +550,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </div>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:choose>
-              <xsl:when test="openvas:newstyle-nvt (nvt)">
-                <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-                  <xsl:choose>
-                    <xsl:when test="delta/text() = 'changed'">
-                      <b>Result 1</b>
-                      <p></p>
-                    </xsl:when>
-                  </xsl:choose>
-                  <b>Vulnerability Detection Result</b>
-                  <xsl:choose>
-                    <xsl:when test="string-length(description) &lt; 2">
-                      <p>
-                        Vulnerability was detected according to the Vulnerability Detection Method.
-                      </p>
-                    </xsl:when>
-                    <xsl:otherwise>
-                      <pre>
-                        <xsl:call-template name="wrap">
-                          <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
-                        </xsl:call-template>
-                      </pre>
-                    </xsl:otherwise>
-                  </xsl:choose>
-                </div>
-              </xsl:when>
-              <xsl:otherwise>
-                <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-                  <xsl:choose>
-                    <xsl:when test="delta/text() = 'changed'">
-                      <b>Result 1</b>
-                      <p></p>
-                    </xsl:when>
-                  </xsl:choose>
+            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+              <xsl:choose>
+                <xsl:when test="delta/text() = 'changed'">
+                  <b>Result 1</b>
+                  <p></p>
+                </xsl:when>
+              </xsl:choose>
+              <b>Vulnerability Detection Result</b>
+              <xsl:choose>
+                <xsl:when test="string-length(description) &lt; 2">
+                  <p>
+                    Vulnerability was detected according to the Vulnerability Detection Method.
+                  </p>
+                </xsl:when>
+                <xsl:otherwise>
                   <pre>
                     <xsl:call-template name="wrap">
                       <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
                     </xsl:call-template>
                   </pre>
-                </div>
-              </xsl:otherwise>
-            </xsl:choose>
+                </xsl:otherwise>
+              </xsl:choose>
+            </div>
           </xsl:otherwise>
         </xsl:choose>
 
-        <xsl:if test="openvas:newstyle-nvt (nvt)">
-          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-              <b>Impact</b>
-              <xsl:call-template name="structured-text">
-                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
-              </xsl:call-template>
-            </div>
-          </xsl:if>
+        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Impact</b>
+            <xsl:call-template name="structured-text">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+            </xsl:call-template>
+          </div>
+        </xsl:if>
 
-          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
-            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-            <b>Solution</b>
-              <xsl:call-template name="structured-text">
-                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
-              </xsl:call-template>
-            </div>
-          </xsl:if>
+        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+          <b>Solution</b>
+            <xsl:call-template name="structured-text">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+            </xsl:call-template>
+          </div>
+        </xsl:if>
 
-          <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-            <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
-              <b>Vulnerability Insight</b>
-              <xsl:call-template name="structured-text">
-                <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
-              </xsl:call-template>
-            </div>
-          </xsl:if>
+        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+          <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
+            <b>Vulnerability Insight</b>
+            <xsl:call-template name="structured-text">
+              <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+            </xsl:call-template>
+          </div>
         </xsl:if>
 
         <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">

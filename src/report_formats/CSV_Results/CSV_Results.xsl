@@ -160,23 +160,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </func:function>
 
-<func:function name="openvas:newstyle-nvt">
-  <xsl:param name="nvt"/>
-  <xsl:choose>
-    <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
-      <func:result select="1"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <func:result select="0"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</func:function>
-
 <xsl:param name="quote">"</xsl:param>
 <xsl:param name="two-quotes">""</xsl:param>
 
@@ -218,16 +201,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>","</xsl:text>
   <xsl:value-of select="str:replace ($summary, $quote, $two-quotes)"/>
   <xsl:text>","</xsl:text>
-  <xsl:if test="openvas:newstyle-nvt (nvt)">
-    <xsl:choose>
-      <xsl:when test="string-length (description) &lt; 2">
-        <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="str:replace (description, $quote, $two-quotes)"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="string-length (description) &lt; 2">
+      <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="str:replace (description, $quote, $two-quotes)"/>
+    </xsl:otherwise>
+  </xsl:choose>
   <xsl:text>",</xsl:text>
   <xsl:value-of select="nvt/@oid"/>
   <xsl:text>,"</xsl:text>
@@ -241,19 +222,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:text>,</xsl:text>
   <xsl:value-of select="@id"/>
   <xsl:text>,"</xsl:text>
-  <xsl:if test="openvas:newstyle-nvt (nvt) and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+  <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'impact'), $quote, $two-quotes)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="openvas:newstyle-nvt (nvt) and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+  <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'solution'), $quote, $two-quotes)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="openvas:newstyle-nvt (nvt) and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+  <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'insight'), $quote, $two-quotes)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
-  <xsl:if test="openvas:newstyle-nvt (nvt) and openvas:get-nvt-tag (nvt/tags, 'vuldetect') != 'N/A'">
+  <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'vuldetect') != 'N/A'">
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'vuldetect'), $quote, $two-quotes)"/>
     <xsl:call-template name="newline"/>
     <xsl:text>Details:</xsl:text>

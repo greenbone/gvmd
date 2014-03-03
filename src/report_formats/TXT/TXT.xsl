@@ -51,23 +51,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </xsl:choose>
 </func:function>
 
-<func:function name="openvas:newstyle-nvt">
-  <xsl:param name="nvt"/>
-  <xsl:choose>
-    <xsl:when test="string-length (openvas:get-nvt-tag ($nvt/tags, 'summary'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'affected'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'insight'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'vuldetect'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'impact'))
-                    and string-length (openvas:get-nvt-tag ($nvt/tags, 'solution'))">
-      <func:result select="1"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <func:result select="0"/>
-    </xsl:otherwise>
-  </xsl:choose>
-</func:function>
-
 <xsl:template name="newline">
     <xsl:text>
 </xsl:text>
@@ -498,7 +481,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:if>
 
     <!-- Summary -->
-    <xsl:if test="openvas:newstyle-nvt (nvt)">
+    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'summary')) &gt; 0">
       <xsl:text>Summary:</xsl:text>
       <xsl:call-template name="newline"/>
       <xsl:call-template name="wrap">
@@ -524,71 +507,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
-          <xsl:when test="openvas:newstyle-nvt (nvt)">
-            <xsl:choose>
-              <xsl:when test="delta/text() = 'changed'">
-                <xsl:text>Result 1:</xsl:text>
-                <xsl:call-template name="newline"/>
-              </xsl:when>
-            </xsl:choose>
-            <xsl:text>Vulnerability Detection Result:</xsl:text>
+          <xsl:when test="delta/text() = 'changed'">
+            <xsl:text>Result 1:</xsl:text>
             <xsl:call-template name="newline"/>
-            <xsl:choose>
-              <xsl:when test="string-length(description) &lt; 2">
-                <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
-                <xsl:call-template name="newline"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:call-template name="wrap">
-                  <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
-                </xsl:call-template>
-              </xsl:otherwise>
-            </xsl:choose>
+          </xsl:when>
+        </xsl:choose>
+        <xsl:text>Vulnerability Detection Result:</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:choose>
+          <xsl:when test="string-length(description) &lt; 2">
+            <xsl:text>Vulnerability was detected according to the Vulnerability Detection Method.</xsl:text>
             <xsl:call-template name="newline"/>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:choose>
-              <xsl:when test="delta/text() = 'changed'">
-                <xsl:text>Result 1:</xsl:text>
-                <xsl:call-template name="newline"/>
-              </xsl:when>
-            </xsl:choose>
             <xsl:call-template name="wrap">
               <xsl:with-param name="string"><xsl:value-of select="description"/></xsl:with-param>
             </xsl:call-template>
-            <xsl:call-template name="newline"/>
           </xsl:otherwise>
         </xsl:choose>
+        <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
 
-    <xsl:if test="openvas:newstyle-nvt (nvt)">
-      <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-        <xsl:text>Impact:</xsl:text>
-        <xsl:call-template name="newline"/>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
-        </xsl:call-template>
-        <xsl:call-template name="newline"/>
-      </xsl:if>
+    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
+      <xsl:text>Impact:</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="wrap">
+        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
+      </xsl:call-template>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
 
-      <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
-        <xsl:text>Solution:</xsl:text>
-        <xsl:call-template name="newline"/>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
-        </xsl:call-template>
-        <xsl:call-template name="newline"/>
-      </xsl:if>
+    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+      <xsl:text>Solution:</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="wrap">
+        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
+      </xsl:call-template>
+      <xsl:call-template name="newline"/>
+    </xsl:if>
 
-      <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-        <xsl:text>Vulnerability Insight:</xsl:text>
-        <xsl:call-template name="newline"/>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
-        </xsl:call-template>
-        <xsl:call-template name="newline"/>
-      </xsl:if>
+    <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
+      <xsl:text>Vulnerability Insight:</xsl:text>
+      <xsl:call-template name="newline"/>
+      <xsl:call-template name="wrap">
+        <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
+      </xsl:call-template>
+      <xsl:call-template name="newline"/>
     </xsl:if>
 
     <xsl:choose>
