@@ -1,3 +1,24 @@
+2014-03-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/lsc_user.c (lsc_user_all_create), src/manage.c
+	(severity_data_count, request_certificates, manage_cert_update_time),
+	src/manage_sql.c (task_user_iterator_task, task_user_iterator_user),
+	(task_group_iterator_task, task_group_iterator_group,
+	task_role_iterator_task, task_role_iterator_role, trash_task_count,
+	task_start_time, task_end_time, find_result,
+	prognosis_iterator_cvss_int, result_iterator_nvt_cvss_base_double,
+	manage_report_host_has_results, clear_task_results_cache, find_report,
+	task_file_iterator_length, nvts_size, nvt_family, config_family_count,
+	trash_config_family_count, config_nvt_count, trash_config_nvt_count,
+	init_task_preferences_iterator, task_preference_iterator_task_value,
+	find_agent, agent_name, find_note, find_override,
+	task_schedule_iterator_schedule, set_slave_host,
+	port_range_iterator_exclude, setting_dynamic_severity,
+	find_user_with_permission, find_tag, tag_name_count), src/otp.c
+	(print_port, port_protocol_name): Remove unused functions and code.
+
+	* src/lsc_user.h, src/manage.h: Delete removed functions prototypes.
+
 2014-03-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove new style NVT special casing from report formats.  All NVTs are

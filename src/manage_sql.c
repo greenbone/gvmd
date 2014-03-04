@@ -5033,34 +5033,6 @@ init_task_user_iterator (iterator_t *iterator, task_t task)
                  task);
 }
 
-/**
- * @brief Return the task from a task user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Task of the iterator or NULL if iteration is complete.
- */
-task_t
-task_user_iterator_task (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 1);
-}
-
-/**
- * @brief Return the user from a user user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return User of the iterator or NULL if iteration is complete.
- */
-user_t
-task_user_iterator_user (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 2);
-}
-
 DEF_ACCESS (task_user_iterator_name, 3);
 
 /**
@@ -5086,34 +5058,6 @@ init_task_group_iterator (iterator_t *iterator, task_t task)
                  " AND subject_type = 'group'"
                  " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
                  task);
-}
-
-/**
- * @brief Return the task from a task group iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Task of the iterator or NULL if iteration is complete.
- */
-task_t
-task_group_iterator_task (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 1);
-}
-
-/**
- * @brief Return the group from a group group iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Group of the iterator or NULL if iteration is complete.
- */
-group_t
-task_group_iterator_group (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 2);
 }
 
 DEF_ACCESS (task_group_iterator_name, 3);
@@ -5142,34 +5086,6 @@ init_task_role_iterator (iterator_t *iterator, task_t task)
                  " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
                  " AND subject_type = 'role'",
                  task);
-}
-
-/**
- * @brief Return the task from a task role iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Task of the iterator or NULL if iteration is complete.
- */
-task_t
-task_role_iterator_task (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 1);
-}
-
-/**
- * @brief Return the role from a role role iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Role of the iterator or NULL if iteration is complete.
- */
-role_t
-task_role_iterator_role (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 2);
 }
 
 DEF_ACCESS (task_role_iterator_name, 3);
@@ -11904,22 +11820,6 @@ task_count (const get_data_t *get)
 }
 
 /**
- * @brief Return the number of trash tasks associated with the current user.
- *
- * @return The number of trash tasks associated with the current user.
- */
-unsigned int
-trash_task_count ()
-{
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM tasks WHERE owner ="
-                                 " (SELECT ROWID FROM users"
-                                 "  WHERE users.uuid = '%s')"
-                                 " AND hidden = 2;",
-                                 current_credentials.uuid);
-}
-
-/**
  * @brief Return the identifier of a task.
  *
  * @param[in]  task  Task.
@@ -12531,22 +12431,6 @@ task_upload_progress (task_t task)
 }
 
 /**
- * @brief Return the most recent start time of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Task start time.
- */
-char*
-task_start_time (task_t task)
-{
-  return sql_string (0, 0,
-                     "SELECT iso_time (start_time)"
-                     " FROM tasks WHERE ROWID = %llu;",
-                     task);
-}
-
-/**
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
@@ -12576,21 +12460,6 @@ set_task_start_time_otp (task_t task, char* time)
        parse_otp_time (time),
        task);
   free (time);
-}
-
-/**
- * @brief Return the most recent end time of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Task end time.
- */
-char*
-task_end_time (task_t task)
-{
-  return sql_string (0, 0,
-                     "SELECT end_time FROM tasks WHERE ROWID = %llu;",
-                     task);
 }
 
 /**
@@ -13497,41 +13366,6 @@ make_task_rcfile (task_t task)
 /* Results. */
 
 /**
- * @brief Find a result given a UUID.
- *
- * @param[in]   uuid    UUID of result.
- * @param[out]  result  Result return, 0 if succesfully failed to find result.
- *
- * @return FALSE on success (including if failed to find result), TRUE on error.
- */
-gboolean
-find_result (const char* uuid, result_t* result)
-{
-  if (user_owns_result (uuid) == 0)
-    {
-      *result = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (result, 0, 0,
-                     "SELECT ROWID FROM results WHERE uuid = '%s';",
-                     uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in outcome of query. */
-        *result = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
-}
-
-/**
  * @brief Find a result for a set of permissions, given a UUID.
  *
  * @param[in]   uuid        UUID of result.
@@ -13877,20 +13711,6 @@ DEF_ACCESS (prognosis_iterator_cve, 0);
 DEF_ACCESS (prognosis_iterator_cvss, 1);
 DEF_ACCESS (prognosis_iterator_description, 2);
 DEF_ACCESS (prognosis_iterator_cpe, 3);
-
-/**
- * @brief Get the CVSS from a result iterator as an integer.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return CVSS.
- */
-int
-prognosis_iterator_cvss_int (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (int) sqlite3_column_int64 (iterator->stmt, 1);
-}
 
 /**
  * @brief Get the CVSS from a result iterator as a double.
@@ -16068,20 +15888,6 @@ result_iterator_report (iterator_t* iterator)
 }
 
 /**
- * @brief Get the CVSS base from a result iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return CVSS base of result NVT.
- */
-double
-result_iterator_nvt_cvss_base_double (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return sqlite3_column_double (iterator->stmt, 8);
-}
-
-/**
  * @brief Get the NVT version used during the scan from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -16528,29 +16334,6 @@ DEF_ACCESS (report_errors_iterator_scan_nvt_version, 6);
  *         Caller must use only before calling cleanup_iterator.
  */
 DEF_ACCESS (report_errors_iterator_severity, 7);
-
-/**
- * @brief Return whether a host has results on a report.
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host.
- *
- * @return 1 if host has results, else 0.
- */
-int
-manage_report_host_has_results (report_t report, const char *host)
-{
-  char *quoted_host = sql_quote ((gchar*) host);
-  int ret = sql_int (0, 0,
-                     "SELECT COUNT(*) > 0 FROM results, report_results"
-                     " WHERE report_results.report = %llu"
-                     " AND report_results.result = results.ROWID"
-                     " AND results.host = '%s';",
-                     report,
-                     quoted_host);
-  g_free (quoted_host);
-  return ret ? 1 : 0;
-}
 
 /**
  * @brief Initialise a report host details iterator.
@@ -25007,29 +24790,6 @@ delete_trash_tasks ()
 }
 
 /**
- * @brief Clear cached result counts for the last report of a specific task.
- *
- * @param[in]   task  Task to clear cache of.
- *
- * @return      0 if successful, -1 on error.
- */
-void
-clear_task_results_cache (task_t task)
-{
-  report_t report;
-
-  /* Get the last report ignoring the run status. */
-  sql_int64 (&report, 0, 0,
-             "SELECT ROWID FROM reports WHERE task = %llu"
-             " ORDER BY date DESC LIMIT 1;",
-             task);
-
-  if (report)
-    sql ("DELETE FROM report_counts WHERE report = %llu;",
-         report);
-}
-
-/**
  * @brief Append text to the comment associated with a task.
  *
  * @param[in]  task    A pointer to the task.
@@ -25179,41 +24939,6 @@ find_trash_task (const char* uuid, task_t* task)
         break;
       case 1:        /* Too few rows in result of query. */
         *task = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return TRUE;
-        break;
-    }
-
-  return FALSE;
-}
-
-/**
- * @brief Find a report given an identifier.
- *
- * @param[in]   uuid    A report identifier.
- * @param[out]  report  Report return, 0 if succesfully failed to find report.
- *
- * @return FALSE on success (including if failed to find report), TRUE on error.
- */
-gboolean
-find_report (const char* uuid, report_t* report)
-{
-  if (user_owns_uuid ("report", uuid, 0) == 0)
-    {
-      *report = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (report, 0, 0,
-                     "SELECT ROWID FROM reports WHERE uuid = '%s';",
-                     uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report = 0;
         break;
       default:       /* Programming error. */
         assert (0);
@@ -25382,23 +25107,6 @@ DEF_ACCESS (task_file_iterator_name, 0);
  */
 DEF_ACCESS (task_file_iterator_content, 1);
 
-/**
- * @brief Get the length from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Length.
- */
-int
-task_file_iterator_length (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 2);
-  return ret;
-}
-
-
 /* Targets. */
 
 /**
@@ -29453,18 +29161,6 @@ nvt_oid (const char *name)
 }
 
 /**
- * @brief Return number of plugins in the plugin cache.
- *
- * @return Number of plugins.
- */
-int
-nvts_size ()
-{
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM nvts WHERE family != 'Credentials';");
-}
-
-/**
  * @brief Return feed version of the plugins in the plugin cache.
  *
  * @return Number of plugins if the plugins are cached, else NULL.
@@ -29524,21 +29220,6 @@ find_nvt (const char* oid, nvt_t* nvt)
     }
 
   return FALSE;
-}
-
-/**
- * @brief Get the family of an NVT.
- *
- * @param[in]  nvt  NVT.
- *
- * @return Family name if set, else NULL.
- */
-char *
-nvt_family (nvt_t nvt)
-{
-  return sql_string (0, 0,
-                     "SELECT family FROM nvts WHERE ROWID = %llu LIMIT 1;",
-                     nvt);
 }
 
 /**
@@ -30540,74 +30221,6 @@ nvt_selector_iterator_type (iterator_t* iterator)
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt, 3);
   return ret;
-}
-
-/**
- * @brief Get the number of families included in a config.
- *
- * @param[in]  config  Config.
- *
- * @return Family count if known, else -1.
- */
-int
-config_family_count (config_t config)
-{
-  return sql_int (0, 0,
-                  "SELECT family_count FROM configs"
-                  " WHERE ROWID = %llu"
-                  " LIMIT 1;",
-                  config);
-}
-
-/**
- * @brief Get the number of families included in a trashcan config.
- *
- * @param[in]  config  Config.
- *
- * @return Family count if known, else -1.
- */
-int
-trash_config_family_count (config_t config)
-{
-  return sql_int (0, 0,
-                  "SELECT family_count FROM configs_trash"
-                  " WHERE ROWID = %llu"
-                  " LIMIT 1;",
-                  config);
-}
-
-/**
- * @brief Get the number of NVTs included in a config.
- *
- * @param[in]  config  Config.
- *
- * @return NVT count if known, else -1.
- */
-int
-config_nvt_count (config_t config)
-{
-  return sql_int (0, 0,
-                  "SELECT nvt_count FROM configs"
-                  " WHERE ROWID = %llu"
-                  " LIMIT 1;",
-                  config);
-}
-
-/**
- * @brief Get the number of NVTs included in a trashcan config.
- *
- * @param[in]  config  Config.
- *
- * @return NVT count if known, else -1.
- */
-int
-trash_config_nvt_count (config_t config)
-{
-  return sql_int (0, 0,
-                  "SELECT nvt_count FROM configs_trash"
-                  " WHERE ROWID = %llu"
-                  " LIMIT 1;",
-                  config);
 }
 
 /**
@@ -31889,21 +31502,6 @@ nvt_preference_count (const char *name)
 }
 
 /**
- * @brief Initialise a task preference iterator.
- *
- * @param[in]  iterator  Iterator.
- */
-void
-init_task_preference_iterator (iterator_t* iterator)
-{
-  init_iterator (iterator,
-                 "SELECT name, value FROM nvt_preferences"
-                 " WHERE (name = 'max_checks'"
-                 "        OR name = 'max_hosts')"
-                 " ORDER BY name ASC");
-}
-
-/**
  * @brief Get the name from an task preference iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -31922,36 +31520,6 @@ DEF_ACCESS (task_preference_iterator_name, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (task_preference_iterator_value, 1);
-
-/**
- * @brief Get the task value from a task preference iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  task      Task.
- *
- * @return Freshly allocated task value.
- */
-char*
-task_preference_iterator_task_value (iterator_t* iterator, task_t task)
-{
-  gchar *quoted_name, *value;
-  const char *ret;
-  if (iterator->done) return NULL;
-
-  quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
-  value = sql_string (0, 0,
-                      "SELECT value FROM task_preferences"
-                      " WHERE task = %llu"
-                      " AND name = '%s';",
-                      task,
-                      quoted_name);
-  g_free (quoted_name);
-  if (value) return value;
-
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
-  if (ret) return g_strdup (ret);
-  return NULL;
-}
 
 /**
  * @brief Get the value of a task preference.
@@ -33268,45 +32836,6 @@ DEF_ACCESS (lsc_credential_target_iterator_name, 1);
 /* Agents. */
 
 /**
- * @brief Find an agent given a name.
- *
- * @param[in]   uuid   UUID of agent.
- * @param[out]  agent  Agent return, 0 if succesfully failed to find agent.
- *
- * @return FALSE on success (including if failed to find agent), TRUE on error.
- */
-gboolean
-find_agent (const char* uuid, agent_t* agent)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("agent", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *agent = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (agent, 0, 0,
-                     "SELECT ROWID FROM agents WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *agent = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
  * @brief Find a agent for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of agent.
@@ -34558,62 +34087,8 @@ agent_count (const get_data_t *get)
                 AGENT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
 }
 
-/**
- * @brief Get the name of an agent.
- *
- * @param[in]  agent  Agent.
- *
- * @return Name.
- */
-char*
-agent_name (agent_t agent)
-{
-  return sql_string (0, 0,
-                     "SELECT name FROM agents WHERE ROWID = %llu;",
-                     agent);
-}
-
 
 /* Notes. */
-
-/**
- * @brief Find a note given a UUID.
- *
- * @param[in]   uuid  UUID of note.
- * @param[out]  note  Note return, 0 if succesfully failed to find note.
- *
- * @return FALSE on success (including if failed to find note), TRUE on error.
- */
-gboolean
-find_note (const char* uuid, note_t* note)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("note", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *note = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (note, 0, 0,
-                     "SELECT ROWID FROM notes WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *note = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
 
 /**
  * @brief Find a note for a specific permission, given a UUID.
@@ -35473,45 +34948,6 @@ DEF_ACCESS (note_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 13);
 
 
 /* Overrides. */
-
-/**
- * @brief Find an override given a UUID.
- *
- * @param[in]   uuid  UUID of override.
- * @param[out]  override  Override return, 0 if succesfully failed to find override.
- *
- * @return FALSE on success (including if failed to find override), TRUE on error.
- */
-gboolean
-find_override (const char* uuid, override_t* override)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("override", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *override = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (override, 0, 0,
-                     "SELECT ROWID FROM overrides WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *override = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
 
 /**
  * @brief Find a override for a specific permission, given a UUID.
@@ -37277,20 +36713,6 @@ task_schedule_iterator_task (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (task_schedule_iterator_task_uuid, 1);
-
-/**
- * @brief Get the schedule from a task schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return task.
- */
-schedule_t
-task_schedule_iterator_schedule (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (schedule_t) sqlite3_column_int64 (iterator->stmt, 2);
-}
 
 /**
  * @brief Get the next time from a task schedule iterator.
@@ -40839,25 +40261,6 @@ slave_port (slave_t slave)
 }
 
 /**
- * @brief Set the host associated with a slave.
- *
- * @param[in]  slave  Slave.
- * @param[in]  host   New value for host.
- */
-void
-set_slave_host (slave_t slave, const char *host)
-{
-  gchar* quoted_host;
-
-  assert (host);
-
-  quoted_host = sql_quote (host);
-  sql ("UPDATE slaves SET host = '%s' WHERE ROWID = %llu;",
-       quoted_host, slave);
-  g_free (quoted_host);
-}
-
-/**
  * @brief Return whether a slave is referenced by a task
  *
  * @param[in]  slave  Slave.
@@ -43968,23 +43371,6 @@ port_range_iterator_type_int (iterator_t* iterator)
 }
 
 /**
- * @brief Get the exclude flag from a port range iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The exclude flag of the range, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-int
-port_range_iterator_exclude (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = (int) sqlite3_column_int (iterator->stmt, 5);
-  return ret;
-}
-
-/**
  * @brief Initialise a port_range iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -46300,25 +45686,6 @@ setting_severity ()
 }
 
 /**
- * @brief Return the Dynamic Severity user setting.
- *
- * @return User Dynamic Severity in settings if it exists, "" otherwise.
- */
-char *
-setting_dynamic_severity ()
-{
-  return sql_string (0, 0,
-                     "SELECT value FROM settings"
-                     " WHERE name = 'Dynamic Severity'"
-                     " AND ((owner IS NULL)"
-                     "      OR (owner ="
-                     "          (SELECT ROWID FROM users"
-                     "           WHERE users.uuid = '%s')))"
-                     " ORDER BY owner DESC LIMIT 0,1;",
-                     current_credentials.uuid);
-}
-
-/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
@@ -48015,22 +47382,6 @@ find_user (const char *uuid, user_t *user)
 }
 
 /**
- * @brief Find a user for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of user.
- * @param[out]  user        User return, 0 if succesfully failed to find user.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-gboolean
-find_user_with_permission (const char* uuid, user_t* user,
-                           const char *permission)
-{
-  return find_resource_with_permission ("user", uuid, user, permission, 0);
-}
-
-/**
  * @brief Find a user given a name.
  *
  * @param[in]   name  A user name.
@@ -49077,20 +48428,6 @@ DEF_ACCESS (user_role_iterator_name, 2);
 /* Tags */
 
 /**
- * @brief Find a tag given a UUID.
- *
- * @param[in]   uuid    UUID of tag.
- * @param[out]  tag     Tag return, 0 if succesfully failed to find target.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_tag (const char* uuid, tag_t* tag)
-{
-  return find_resource ("tag", uuid, tag);
-}
-
-/**
  * @brief Find a tag for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of tag.
@@ -49580,21 +48917,6 @@ init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
-}
-
-/**
- * @brief Count number of tag names.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of tags in filtered set.
- */
-int
-tag_name_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
-  return count ("tag", get, TAG_NAME_ITERATOR_COLUMNS, NULL, extra_columns,
-                1, 0, 0, TRUE);
 }
 
 /**

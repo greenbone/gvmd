@@ -660,18 +660,6 @@ severity_data_add_count (severity_data_t* severity_data, double severity,
 }
 
 /**
- * @brief Get a severity count from severity_data_t.
- *
- * @param[in]   severity_data   The severity count struct get count from.
- * @param[in]   severity        The severity to get.
- */
-int
-severity_data_count (const severity_data_t* severity_data, double severity)
-{
-  return (severity_data->counts)[severity_data_index (severity)];
-}
-
-/**
  * @brief Calculate the total of severity counts in a range.
  *
  * @param[in]  severity_data   The severity data struct to get counts from.
@@ -3651,19 +3639,6 @@ resume_or_start_task (const char *task_id, char **report_id)
 /* Scanner messaging. */
 
 /**
- * @brief Request the list of certificates from the scanner.
- *
- * @return 0 on success, -1 if out of space in scanner output buffer.
- */
-int
-request_certificates ()
-{
-  if (send_to_server ("CLIENT <|> CERTIFICATES <|> CLIENT\n"))
-    return -1;
-  return 0;
-}
-
-/**
  * @brief Acknowledge a scanner BYE.
  *
  * @return 0 on success, -1 if out of space in scanner output buffer.
@@ -5563,47 +5538,6 @@ manage_scap_update_time ()
         {
           g_debug ("%s: failed to read %s: %s",
                    __FUNCTION__, SCAP_TIMESTAMP_FILENAME, error->message);
-          g_error_free (error);
-        }
-      return "";
-    }
-
-  memset (&update_time, 0, sizeof (struct tm));
-  if (strptime (content, "%Y%m%d%H%M", &update_time))
-    {
-      static char time_string[100];
-      strftime (time_string, 99, "%FT%T.000%z", &update_time);
-      return time_string;
-    }
-  return "";
-}
-
-/**
- * @brief GET CERT update time, as a string.
- *
- * @return Last update time as a static string, or "" on error.
- */
-char *
-manage_cert_update_time ()
-{
-  gchar *content;
-  GError *error;
-  gsize content_size;
-  struct tm update_time;
-
-  /* Read in the contents. */
-
-  error = NULL;
-  if (g_file_get_contents (CERT_TIMESTAMP_FILENAME,
-                           &content,
-                           &content_size,
-                           &error)
-      == FALSE)
-    {
-      if (error)
-        {
-          g_debug ("%s: failed to read %s: %s",
-                   __FUNCTION__, CERT_TIMESTAMP_FILENAME, error->message);
           g_error_free (error);
         }
       return "";

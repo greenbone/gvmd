@@ -486,9 +486,6 @@ extern /*@null@*/ report_t current_report;
 unsigned int
 task_count (const get_data_t *);
 
-unsigned int
-trash_task_count ();
-
 int
 init_task_iterator (iterator_t*, const get_data_t *);
 
@@ -594,17 +591,11 @@ task_current_report (task_t);
 int
 task_upload_progress (task_t);
 
-char*
-task_start_time (task_t);
-
 void
 set_task_start_time (task_t, char*);
 
 void
 set_task_start_time_otp (task_t, char*);
-
-char*
-task_end_time (task_t);
 
 void
 set_task_end_time (task_t task, char* time);
@@ -737,9 +728,6 @@ int
 delete_task_lock (task_t, int);
 
 void
-clear_task_results_cache (task_t);
-
-void
 append_to_task_comment (task_t, const char*, int);
 
 void
@@ -848,9 +836,6 @@ void
 severity_data_add_count (severity_data_t*, double, int);
 
 int
-severity_data_count (const severity_data_t*, double);
-
-int
 severity_data_range_count (const severity_data_t*, double, double);
 
 void
@@ -906,9 +891,6 @@ user_can_everything (const char *);
 /* Results. */
 
 gboolean
-find_result (const char*, result_t*);
-
-gboolean
 find_result_with_permission (const char*, result_t*, const char *);
 
 int
@@ -935,9 +917,6 @@ report_cache_counts (report_t);
 
 double
 report_severity (report_t, int);
-
-gboolean
-find_report (const char*, report_t*);
 
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
@@ -1177,9 +1156,6 @@ host_iterator_current_port (iterator_t*);
 
 int
 host_iterator_max_port (iterator_t*);
-
-int
-manage_report_host_has_results (report_t, const char *);
 
 int
 collate_message_type (void* data, int, const void*, int, const void*);
@@ -1495,18 +1471,6 @@ int
 config_nvts_growing (config_t);
 
 int
-config_family_count (config_t);
-
-int
-trash_config_family_count (config_t);
-
-int
-config_nvt_count (config_t);
-
-int
-trash_config_nvt_count (config_t);
-
-int
 manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
@@ -1534,9 +1498,6 @@ manage_nvt_name (nvt_t);
 
 char *
 nvt_oid (const char *);
-
-int
-nvts_size ();
 
 char*
 nvts_feed_version ();
@@ -1700,17 +1661,11 @@ nvt_preference_count (const char *);
 gchar*
 get_nvti_xml (iterator_t*, int, int, const char*, int);
 
-void
-init_task_preference_iterator (iterator_t*);
-
 const char*
 task_preference_iterator_name (iterator_t*);
 
 const char*
 task_preference_iterator_value (iterator_t*);
-
-char*
-task_preference_iterator_task_value (iterator_t*, task_t);
 
 char*
 task_preference_value (task_t, const char *);
@@ -1847,9 +1802,6 @@ lsc_credential_writable (lsc_credential_t);
 
 /* Agents. */
 
-gboolean
-find_agent (const char*, agent_t*);
-
 int
 create_agent (const char*, const char*, const char*, const char*, const char*,
               const char*, const char*, agent_t*);
@@ -1923,14 +1875,8 @@ agent_iterator_howto_install (iterator_t*);
 const char*
 agent_iterator_howto_use (iterator_t*);
 
-char*
-agent_name (lsc_credential_t);
-
 
 /* Notes. */
-
-gboolean
-find_note (const char*, note_t*);
 
 gboolean
 find_note_with_permission (const char*, note_t*, const char *);
@@ -2002,9 +1948,6 @@ note_iterator_severity (iterator_t *);
 
 
 /* Overrides. */
-
-gboolean
-find_override (const char*, override_t*);
 
 gboolean
 find_override_with_permission (const char*, override_t*, const char *);
@@ -2085,9 +2028,6 @@ override_iterator_new_severity (iterator_t *);
 
 
 /* Scanner messaging. */
-
-int
-request_certificates ();
 
 int
 acknowledge_bye ();
@@ -2777,9 +2717,6 @@ port_range_iterator_type (iterator_t*);
 port_protocol_t
 port_range_iterator_type_int (iterator_t* iterator);
 
-int
-port_range_iterator_exclude (iterator_t*);
-
 void
 init_port_list_target_iterator (iterator_t*, port_list_t, int);
 
@@ -3084,9 +3021,6 @@ ovaldef_info_iterator_cve_refs (iterator_t*);
 int
 manage_cert_loaded ();
 
-char *
-manage_cert_update_time ();
-
 /* DFN-CERT */
 
 int
@@ -3144,9 +3078,6 @@ setting_filter (const char *);
 
 char *
 setting_severity ();
-
-char *
-setting_dynamic_severity ();
 
 int
 setting_dynamic_severity_int ();
@@ -3301,9 +3232,6 @@ create_tag (const char *, const char *, const char *, const char *,
 int
 delete_tag (const char *, int);
 
-gboolean
-find_tag (const char*, tag_t*);
-
 int
 modify_tag (const char *, const char *, const char *, const char *,
             const char *, const char *, const char *);
@@ -3337,9 +3265,6 @@ init_tag_name_iterator (iterator_t*, const get_data_t*);
 
 const char*
 tag_name_iterator_name (iterator_t*);
-
-int
-tag_name_count (const get_data_t *get);
 
 int
 init_resource_tag_iterator (iterator_t*, const char*, const char*, int,

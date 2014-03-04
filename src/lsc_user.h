@@ -42,13 +42,4 @@ lsc_user_deb_recreate (const gchar *, const char *, gsize, void **, gsize *);
 int
 lsc_user_exe_recreate (const gchar *, const gchar *, void **, gsize *);
 
-int
-lsc_user_all_create (const gchar *,
-                     const gchar *,
-                     gchar **,
-                     gchar **,
-                     void **, gsize *,
-                     void **, gsize *,
-                     void **, gsize *);
-
 #endif /* _OPENVASMD_LSC_USER_H */
