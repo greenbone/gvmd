@@ -1,3 +1,11 @@
+2014-03-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c, src/manage.h (manage_scap_update_time): Constify
+	returned pointer.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO case,
+	remove repeated call to manage_scap_update_time() for every info entry.
+
 2014-03-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/lsc_user.c (lsc_user_all_create): Remove unused function.

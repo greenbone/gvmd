@@ -2910,7 +2910,7 @@ info_name_count (const gchar *, const gchar *);
 int
 manage_scap_loaded ();
 
-char *
+const char *
 manage_scap_update_time ();
 
 /* CPE. */

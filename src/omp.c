@@ -12316,6 +12316,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           int count, first, filtered, ret;
           int (*init_info_iterator) (iterator_t*, get_data_t *, const char *);
           int (*info_count) (const get_data_t *get);
+          const char *update_time;
           get_data_t *get;
 
           if (user_may ("get_info") == 0)
@@ -12535,6 +12536,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           count = 0;
           manage_filter_controls (get_info_data->get.filter, &first, NULL, NULL, NULL);
           SEND_GET_START ("info");
+          update_time = manage_scap_update_time ();
           while (next (&info))
             {
               GString *result;
@@ -12548,7 +12550,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
 
               SENDF_TO_CLIENT_OR_FAIL ("<update_time>%s</update_time>",
-                                       manage_scap_update_time ());
+                                       update_time);
 
               result = g_string_new ("");
 

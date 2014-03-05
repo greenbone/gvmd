@@ -5517,7 +5517,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
  *
  * @return Last update time as a static string, or "" on error.
  */
-char *
+const char *
 manage_scap_update_time ()
 {
   gchar *content;
