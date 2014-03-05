@@ -1,5 +1,19 @@
 2014-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Let Host Discovery fall back on more Ping Host defaults.  Hence increase
+	database version to 112.  Add database migration from version 111 to 112.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 112.
+
+	* src/manage_migrators.c (migrate_111_to_112): New function.
+
+	* src/manage_config_host_discovery.c (make_config_host_discovery): Take
+	out some Ping Host preferences so that the NVT defaults are used.
+
+	* doc/db.png: Update for version change.
+
+2014-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Prevent backslash in
 	password.
 

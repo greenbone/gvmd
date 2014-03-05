@@ -8238,6 +8238,48 @@ migrate_110_to_111 ()
 }
 
 /**
+ * @brief Migrate the database from version 111 to version 112.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_111_to_112 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 111. */
+
+  if (manage_db_version () != 111)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Some prefs were removed from config Host Discovery so that the NVT
+   * defaults will be used instead. */
+
+  sql ("DELETE FROM config_preferences"
+       " WHERE config = (SELECT ROWID FROM configs"
+       "                 WHERE uuid = '" CONFIG_UUID_HOST_DISCOVERY "')"
+       " AND (name = 'Ping Host[checkbox]:Do a TCP ping'"
+       "      OR name = 'Ping Host[checkbox]:Do an ICMP ping'"
+       "      OR name = 'Ping Host[checkbox]:Use ARP'"
+       "      OR name = 'Ping Host[checkbox]:Use nmap'"
+       "      OR name = 'Ping Host[checkbox]:nmap: try also with only -sP'"
+       "      OR name = 'Ping Host[entry]:nmap additional ports for -PA');");
+
+  /* Set the database version 112. */
+
+  set_db_version (112);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8353,6 +8395,7 @@ static migrator_t database_migrators[]
     {109, migrate_108_to_109},
     {110, migrate_109_to_110},
     {111, migrate_110_to_111},
+    {112, migrate_111_to_112},
     /* End marker. */
     {-1, NULL}};
 

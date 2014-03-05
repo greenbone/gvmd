@@ -78,20 +78,6 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%llu,"
        "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Do a TCP ping',"
-       "         'yes');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Do an ICMP ping',"
-       "         'yes');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        "         'yes');",
        config);
@@ -108,34 +94,6 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
        "         'no');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Use ARP',"
-       "         'yes');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:Use nmap',"
-       "         'yes');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[checkbox]:nmap: try also with only -sP',"
-       "         'no');",
-       config);
-
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%llu,"
-       "         'PLUGINS_PREFS',"
-       "         'Ping Host[entry]:nmap additional ports for -PA',"
-       "         '8080,3128');",
        config);
 
   sql ("COMMIT;");
