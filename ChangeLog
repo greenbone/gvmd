@@ -1,3 +1,8 @@
+2014-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_lsc_credential): Prevent backslash in
+	password.
+
 2014-03-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c, src/manage.h (manage_scap_update_time): Constify

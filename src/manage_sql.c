@@ -31907,7 +31907,11 @@ create_lsc_credential (const char* name, const char* comment,
 
   rand = g_rand_new ();
   for (i = 0; i < PASSWORD_LENGTH - 1; i++)
-    password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
+    {
+      password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
+      if (password[i] == '\\')
+        password[i] = '{';
+    }
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
