@@ -12,36 +12,36 @@ The OpenVAS Manager is a OTP client and adds various management functionalities 
 A related service is OpenVAS Administrator, openvasad(8) which among other tasks also manages user accounts for OpenVAS. 
 .SH OPTIONS
 .TP
-\fB-a, --listen=\fIADDRESS\fB\f1
+.BR -a ", " --listen= \fIADDRESS\fR
 Listen on ADDRESS.
 .TP
-\fB-l, --slisten=\fIADDRESS\fB\f1
-Connect to server (openvassd) at address ADDRESS.
+.BR -l ", " --slisten=\fIADDRESS\fR
+Connect to server (openvassd) at address \fIADDRESS\fR.
 .TP
-\fB-u, --update\f1
+.BR -u ", " --update
 Updates the database with information from a running scanner (openvassd) and exits.
 .TP
-\fB-p, --port=\fINUMBER\fB\f1
+.BR -p ", " --port=\fINUMBER\fR
 Listen on port number \fINUMBER\f1.
 .TP
-\fB--rebuild\f1
+.BR --rebuild
 Rebuild the database with information from a running scanner (openvassd) and exits.
 .TP
-\fB-s, --sport=\fINUMBER\fB\f1
+.BR -s ", " --sport=\fINUMBER\fR
 Connect to server (openvassd) on port number \fINUMBER\f1.
 .TP
-\fB--version\f1
+.BR --version
 Print version.
 .TP
-\fB-v, --verbose\f1
+.BR -v ", " --verbose
 Print progress messages.
 .TP
-\fB-?, --help\f1
+.BR -? ", " --help
 Show help.
 .SH SIGNALS
 SIGHUP causes openvasmd to rebuild the database with information from the Scanner (openvassd).
 .SH EXAMPLES
-openvasmd --port 1241 --sport 7772
+openvasmd \-\-port 1241 \-\-sport 7772
 
 Serve OMP clients on port 1241 and connect to a OTP server on 7772.
 .SH SEE ALSO
