@@ -1,3 +1,23 @@
+openvas-manager 5.0+beta8 (2014-03-06)
+
+This is the eighth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and its various user clients.
+
+This release adjusts the built-in Report Format Plugins (RFPs) to expect NVT
+information to be in the new style. It also removes sections of unused code,
+improves Host Discovery handling and fixes a password generation issue.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell and Michael Wiegand.
+
+Main changes since 5.0+beta7:
+* NVTs are expected to be in the new style by the built-in RFPs.
+* Host Discovery will now fall back on more Ping Host defaults.
+* An issue which resulted in unusable passwords for LSC credentials being
+  generated in rare circumstances has been fixed.
+
+
 openvas-manager 5.0+beta7 (2014-02-27)
 
 This is the seventh beta version of the upcoming 5.0 release of the OpenVAS

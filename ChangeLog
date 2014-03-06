@@ -1,3 +1,9 @@
+2014-03-06  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 5.0+beta8 release.
+
+	* CHANGES: Updated.
+
 2014-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Let Host Discovery fall back on more Ping Host defaults.  Hence increase
