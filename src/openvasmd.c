@@ -102,6 +102,7 @@
 #include <unistd.h>
 
 #include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/openvas_proctitle.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/base/pidfile.h>
 #include <openvas/base/pwpolicy.h>
@@ -1272,6 +1273,10 @@ main (int argc, char** argv)
       exit (EXIT_SUCCESS);
     }
 
+  /* Set process title. */
+  proctitle_init (argc, argv);
+  proctitle_set ("openvasmd: Initializing.");
+
   /* Switch to UTC for scheduling. */
 
   if (migrate_database
@@ -1897,6 +1902,7 @@ main (int argc, char** argv)
   /* Initialise the process for manage_schedule. */
 
   init_manage_process (0, database);
+  proctitle_set ("openvasmd");
 
   /* Enter the main forever-loop. */
 

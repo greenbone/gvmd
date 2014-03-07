@@ -1,3 +1,8 @@
+2014-03-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Set process title before and after
+	initialization.
+
 2014-03-06  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* doc/openvasmd.8: Fix typo reported by lintian
