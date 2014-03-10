@@ -1,5 +1,10 @@
 2014-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cache_report_counts): Weight max by a small safe
+	value in severity comparison, to prevent floating point errors.
+
+2014-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Use utf8 function
 	to truncate text, as strndup could truncate in the middle of a
 	character.

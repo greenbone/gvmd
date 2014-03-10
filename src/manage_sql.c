@@ -18030,7 +18030,10 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
         end_time = 0;
 
       severity = severity_data_value (i);
-      while (severity <= data->max && severity != SEVERITY_MISSING)
+      while (severity <= (data->max + (1.0
+                                       / SEVERITY_SUBDIVISIONS
+                                       / SEVERITY_SUBDIVISIONS))
+             && severity != SEVERITY_MISSING)
         {
           if (data->counts[i] > 0)
             {
