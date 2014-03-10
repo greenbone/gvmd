@@ -1,5 +1,10 @@
 2014-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_severity_data): Move comment.  Correct
+	indent.
+
+2014-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (cache_report_counts): Weight max by a small safe
 	value in severity comparison, to prevent floating point errors.
 

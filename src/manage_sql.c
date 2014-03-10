@@ -17425,8 +17425,6 @@ report_severity_data (report_t report, int override,
   gchar *select, *quoted_host, *severity_sql;
   int ret;
 
-  /* Prepare quick inner statement. */
-
   if (override
       && sql_int (0, 0,
                   "SELECT count(*)"
@@ -17439,6 +17437,8 @@ report_severity_data (report_t report, int override,
                   "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
     {
+      /* Prepare quick inner statement. */
+
       select = g_strdup_printf ("SELECT 1 FROM overrides"
                                 " WHERE (overrides.nvt = $nvt)"
                                 " AND ((overrides.owner IS NULL) OR (overrides.owner ="
@@ -17626,8 +17626,8 @@ report_severity_data (report_t report, int override,
                       else if (report_counts_match (&results, search_phrase,
                                                     search_phrase_exact,
                                                     min_cvss_base, 0))
-                          severity_data_add (filtered_severity_data,
-                                             SEVERITY_FP);
+                        severity_data_add (filtered_severity_data,
+                                           SEVERITY_FP);
                     }
                 }
             }
