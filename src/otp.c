@@ -58,6 +58,7 @@
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/nvt_categories.h>
+#include <openvas/misc/otp.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -970,7 +971,8 @@ parse_scanner_server (/*@dependent@*/ char** messages)
  *
  * @param[in]  progress  Function to mark progress, or NULL.
  *
- * @return 0 success, 1 received scanner BYE, 2 bad login, -1 error.
+ * @return 0 success, 1 received scanner BYE, 2 bad login, 3 scanner loading, -1
+ * error.
  */
 int
 process_otp_scanner_input (void (*progress) ())
@@ -1003,6 +1005,13 @@ process_otp_scanner_input (void (*progress) ())
         while (from_scanner_start < from_scanner_end
                && (messages[0] == ' ' || messages[0] == '\n'))
           from_scanner_start++, messages++;
+
+        if (!strncasecmp (OTP_LOADING "\n", messages, strlen (OTP_LOADING) + 1))
+          {
+            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
+                   "Scanner still loading.\n");
+            return 3;
+          }
         if (from_scanner_end - from_scanner_start < 17)
           {
             /* Need more input. */

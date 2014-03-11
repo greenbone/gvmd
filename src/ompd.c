@@ -1227,6 +1227,11 @@ serve_omp (gnutls_session_t* client_session,
                                    *client_credentials);
               return -1;
             }
+          else if (ret == 3)
+            {
+              /* XXX: Better reporting to client/gsa ? */
+              scanner_input_stalled = FALSE;
+            }
           else if (ret == -1)
            {
              /* Error. */
