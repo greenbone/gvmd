@@ -1,5 +1,9 @@
 2014-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_config_host_discovery.c: Correct description.
+
+2014-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new predefined config System Discovery.
 
 	* src/manage_sql.c (check_db): Make System Discovery config.

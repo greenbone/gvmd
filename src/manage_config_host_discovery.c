@@ -1,6 +1,6 @@
 /* OpenVAS Manager
  * $Id$
- * Description: Manage library: NVTs for "Discovery" scan configuration.
+ * Description: Manage library: NVTs for "Host Discovery" scan configuration.
  *
  * Authors:
  * Hani Benhabiles <hani.benhabiles@greenbone.net>
