@@ -8280,6 +8280,40 @@ migrate_111_to_112 ()
 }
 
 /**
+ * @brief Migrate the database from version 112 to version 113.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_112_to_113 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 112. */
+
+  if (manage_db_version () != 112)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Certain levels may have been missing from the result counts cache due
+   * to floating point approximation. */
+
+  sql ("DELETE FROM report_counts;");
+
+  /* Set the database version 113. */
+
+  set_db_version (113);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8396,6 +8430,7 @@ static migrator_t database_migrators[]
     {110, migrate_109_to_110},
     {111, migrate_110_to_111},
     {112, migrate_111_to_112},
+    {113, migrate_112_to_113},
     /* End marker. */
     {-1, NULL}};
 

@@ -1,3 +1,15 @@
+2014-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Increase database version to 113 in order to reset report count cache.
+	Add database migration from version 112 to 113.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 113.
+
+	* src/manage_migrators.c (migrate_112_to_113): New function.
+	(database_migrators): Add migrate_112_to_113.
+
+	* doc/db.png: Update for version change.
+
 2014-03-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_severity_data): Move comment.  Correct
@@ -43,6 +55,7 @@
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 112.
 
 	* src/manage_migrators.c (migrate_111_to_112): New function.
+	(database_migrators): Add migrate_111_to_112.
 
 	* src/manage_config_host_discovery.c (make_config_host_discovery): Take
 	out some Ping Host preferences so that the NVT defaults are used.
