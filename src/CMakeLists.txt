@@ -34,7 +34,7 @@ add_library (manage STATIC
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_acl.c manage_config_discovery.c
-             manage_config_host_discovery.c
+             manage_config_host_discovery.c manage_config_system_discovery.c
              manage_sql.c manage_migrators.c lsc_user.c lsc_crypt.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
@@ -157,6 +157,7 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_host_discovery.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_system_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_all_tcp_nmap_5_51_top_1000.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_2012.c"

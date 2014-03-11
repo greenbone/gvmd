@@ -1,3 +1,20 @@
+2014-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new predefined config System Discovery.
+
+	* src/manage_sql.c (check_db): Make System Discovery config.
+	(delete_config, config_in_use, delete_user): Add System Discovery
+	config.
+
+	* src/manage_sql.h (CONFIG_UUID_SYSTEM_DISCOVERY)
+	(MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY): New defines.
+
+	* src/manage_config_system_discovery.c: New file.
+
+	* src/CMakeLists.txt: Add manage_config_system_discovery.c to manage
+	library.
+	(C_FILES): Add config source files.
+
 2014-03-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Add check for process_otp_scanner_input()
@@ -1309,7 +1326,8 @@
 
 	* src/manage_config_host_discovery.c: New file.
 
-	* src/CMakeLists.txt: Add manage_config_discovery.c to manage library.
+	* src/CMakeLists.txt: Add manage_config_host_discovery.c to manage
+	library.
 	(C_FILES): Add config source files.
 
 2013-11-22  Matthew Mundell <matthew.mundell@greenbone.net>

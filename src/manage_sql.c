@@ -124,6 +124,9 @@ void
 make_config_host_discovery (char *const, const char * const);
 
 void
+make_config_system_discovery (char *const, const char * const);
+
+void
 check_config_host_discovery (const char *);
 
 
@@ -10706,6 +10709,14 @@ check_db ()
                                 MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY);
 
   check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM configs"
+               " WHERE uuid = '%s';",
+               CONFIG_UUID_SYSTEM_DISCOVERY)
+      == 0)
+    make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
+                                  MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
 
   /* Ensure the predefined port lists exist. */
 
@@ -27970,6 +27981,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE) == 0)
       || (strcmp (config_id, CONFIG_UUID_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_HOST_DISCOVERY) == 0)
+      || (strcmp (config_id, CONFIG_UUID_SYSTEM_DISCOVERY) == 0)
       || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
     return 1;
 
@@ -28356,7 +28368,8 @@ config_in_use (config_t config)
                   " WHERE ROWID = %i"
                   " AND (uuid = '" CONFIG_UUID_EMPTY "'"
                   "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-                  "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "');",
+                  "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
+                  "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
                   config))
     return 1;
 
@@ -47783,7 +47796,8 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
        " WHERE name IN (SELECT nvt_selector FROM configs WHERE owner = %llu)"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-       " AND name != '" MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY "';",
+       " AND name != '" MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY
+       " AND name != '" MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY "';",
        user);
   sql ("DELETE FROM config_preferences"
        " WHERE config IN (SELECT ROWID FROM configs WHERE owner = %llu);",
