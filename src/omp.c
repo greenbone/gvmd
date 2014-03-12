@@ -111,7 +111,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <openvas/base/certificate.h>
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>

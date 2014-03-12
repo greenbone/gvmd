@@ -34,7 +34,6 @@
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
-#include <openvas/base/certificate.h> /* for certificate_t */
 #include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
 #include <openvas/base/openvas_networking.h>

@@ -1,5 +1,9 @@
 2014-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.h, src/omp.c: Remove useless includes.
+
+2014-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove handling of CERTIFICATES otp command.
 
 	* src/manage.c (scanner): Adjust initialization.
