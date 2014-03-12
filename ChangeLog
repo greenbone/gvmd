@@ -1,3 +1,7 @@
+2014-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/CPE/CPE.xsl (report): Get CPEs from host details.
+
 2014-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h, src/omp.c: Remove useless includes.

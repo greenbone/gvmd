@@ -37,8 +37,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <xsl:apply-templates select="report"/>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:apply-templates
-        select="results/result[port='general/CPE-T']/description"/>
+      <xsl:for-each select="host/detail[name = 'App' or name = 'best_os_cpe']">
+        <xsl:sort select="value"/>
+        <xsl:value-of select="../ip"/>
+        <xsl:text>|</xsl:text>
+        <xsl:value-of select="value"/>
+        <xsl:text>
+</xsl:text>
+      </xsl:for-each>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
