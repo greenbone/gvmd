@@ -1,3 +1,24 @@
+openvas-manager 5.0+beta9 (2014-03-12)
+
+This is the ninth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and its various user clients.
+
+This release introduces the new "System Discovery" config, improves handling of
+the OpenVAS Scanner connection and fixes two issues related to UTF-8 encoded
+text in overrides and notes and to result counts.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell and Michael Wiegand.
+
+Main changes since 5.0+beta8:
+* A new predefined "System Discovery" config has been added.
+* The handling of the connection to the OpenVAS Scanner has been improved.
+* An issue which caused a segmentation fault due to incorrect truncation of
+  UTF-8 encoded text in overrides and notes has been fixed.
+* An issue which caused incorrect result counts has been fixed.
+
+
 openvas-manager 5.0+beta8 (2014-03-06)
 
 This is the eighth beta version of the upcoming 5.0 release of the OpenVAS
