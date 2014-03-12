@@ -53,7 +53,6 @@ typedef struct
  */
 typedef struct
 {
-  certificates_t* certificates;      ///< List of certificates.
   char* plugins_feed_version;        ///<  Feed version of plugins set.
   GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
 } scanner_t;

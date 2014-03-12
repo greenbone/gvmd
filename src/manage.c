@@ -144,7 +144,7 @@
 /**
  * @brief Information about the scanner.
  */
-scanner_t scanner = { NULL, NULL, NULL };
+scanner_t scanner = { NULL, NULL };
 
 
 /* Severity related functions. */

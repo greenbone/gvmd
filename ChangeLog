@@ -1,3 +1,19 @@
+2014-03-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove handling of CERTIFICATES otp command.
+
+	* src/manage.c (scanner): Adjust initialization.
+
+	* src/manage.h (scanner_t): Remove certificates element.
+
+	* src/otp.c (init_otp_data): Adjust initialization of scanner.
+	(scanner_state_t): Remove scanner states related to CERTIFICATES
+	command.
+	(current_certificates, current_certificate): Remove variables.
+	(parse_scanner_certificate_public_key): Remove function.
+	(parse_scanner_server, process_otp_scanner_input): Remove handling of
+	CERTIFICATES command.
+
 2014-03-12  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.

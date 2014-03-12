@@ -446,7 +446,6 @@ finish_current_scanner_plugin_dependency ()
 void
 init_otp_data ()
 {
-  scanner.certificates = NULL;
   scanner.plugins_feed_version = NULL;
 }
 
@@ -456,11 +455,6 @@ init_otp_data ()
 typedef enum
 {
   SCANNER_BYE,
-  SCANNER_CERTIFICATE_FINGERPRINT,
-  SCANNER_CERTIFICATE_LENGTH,
-  SCANNER_CERTIFICATE_OWNER,
-  SCANNER_CERTIFICATE_PUBLIC_KEY,
-  SCANNER_CERTIFICATE_TRUST_LEVEL,
   SCANNER_DONE,
   SCANNER_ERRMSG_DESCRIPTION,
   SCANNER_ERRMSG_HOST,
@@ -543,21 +537,6 @@ set_scanner_init_state (scanner_init_state_t state)
 }
 
 
-/* Scanner certificates. */
-
-/**
- * @brief The current certificates, during reading of scanner certificates.
- */
-/*@only@*/
-static certificates_t* current_certificates = NULL;
-
-/**
- * @brief The current certificate, during reading of scanner certificates.
- */
-/*@only@*/
-static certificate_t* current_certificate = NULL;
-
-
 /* OTP input processor. */
 
 /** @todo As with the OMP version, these should most likely be passed to and
@@ -618,43 +597,6 @@ sync_buffer ()
 #endif
     }
   return 0;
-}
-
-/**
- * @brief Parse the final field of a certificate in a certificate list.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return 0 success, -2 too few characters (need more input).
- */
-static int
-parse_scanner_certificate_public_key (char** messages)
-{
-  gchar *value;
-  char *end, *match;
-  assert (current_certificate != NULL);
-  end = *messages + from_scanner_end - from_scanner_start;
-  while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_scanner_start++; }
-  if ((match = memchr (*messages,
-                       (int) '\n',
-                       from_scanner_end - from_scanner_start)))
-    {
-      match[0] = '\0';
-      if (current_certificates && current_certificate)
-        {
-          value = g_strdup (*messages);
-          certificate_set_public_key (current_certificate, value);
-          certificates_add (current_certificates, current_certificate);
-          current_certificate = NULL;
-          g_free (value);
-        }
-      set_scanner_state (SCANNER_CERTIFICATE_FINGERPRINT);
-      from_scanner_start += match + 1 - *messages;
-      *messages = match + 1;
-      return 0;
-    }
-  return -2;
 }
 
 /**
@@ -901,24 +843,6 @@ parse_scanner_server (/*@dependent@*/ char** messages)
           return 0;
         }
       /** @todo Are there 12 characters available? */
-      if (strncasecmp ("CERTIFICATES", *messages, 12) == 0)
-        {
-          from_scanner_start += match + 1 - *messages;
-          *messages = match + 1;
-          /* current_certificates may be allocated already due to a
-           * request for the list before the end of the previous
-           * request.  In this case just let the responses mix.
-           */
-          /** @todo Investigate what the Scanner really does in this
-           *        multiple request situation. */
-          if (current_certificates == NULL)
-            {
-              current_certificates = certificates_create ();
-              if (current_certificates == NULL) abort ();
-            }
-          set_scanner_state (SCANNER_CERTIFICATE_FINGERPRINT);
-          return 0;
-        }
       newline = match;
       newline[0] = '\n';
       /* Check for a <|>. */
@@ -1060,14 +984,6 @@ process_otp_scanner_input (void (*progress) ())
               case 0: return 2;    /* Found bad login response. */
               case 1: break;
             }
-        else if (scanner_state == SCANNER_CERTIFICATE_PUBLIC_KEY)
-          switch (parse_scanner_certificate_public_key (&messages))
-            {
-              case -2:
-                /* Need more input. */
-                if (sync_buffer ()) return -1;
-                return 0;
-            }
         else if (scanner_state == SCANNER_DONE)
           switch (parse_scanner_done (&messages))
             {
@@ -1173,60 +1089,6 @@ process_otp_scanner_input (void (*progress) ())
                       goto return_need_more;
                   }
                 break;
-              case SCANNER_CERTIFICATE_FINGERPRINT:
-                {
-                  /* Use match[1] instead of field[1] for UTF-8 hack. */
-                  if (strlen (field) == 0 && match[1] == '|')
-                    {
-                      certificates_free (scanner.certificates);
-                      scanner.certificates = current_certificates;
-                      current_certificates = NULL;
-                      set_scanner_state (SCANNER_DONE);
-                      switch (parse_scanner_done (&messages))
-                        {
-                          case -1: goto return_error;
-                          case -2:
-                            /* Need more input. */
-                            if (sync_buffer ()) goto return_error;
-                            goto return_need_more;
-                        }
-                      break;
-                    }
-                  current_certificate = certificate_create ();
-                  if (current_certificate == NULL) abort ();
-                  if (certificate_set_fingerprint (current_certificate, field))
-                    abort ();
-                  set_scanner_state (SCANNER_CERTIFICATE_OWNER);
-                  break;
-                }
-              case SCANNER_CERTIFICATE_LENGTH:
-                {
-                  /* Read over the length. */
-                  /** @todo Consider using this to read the next field. */
-                  set_scanner_state (SCANNER_CERTIFICATE_PUBLIC_KEY);
-                  switch (parse_scanner_certificate_public_key (&messages))
-                    {
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
-                  break;
-                }
-              case SCANNER_CERTIFICATE_OWNER:
-                {
-                  if (certificate_set_owner (current_certificate, field))
-                    abort ();
-                  set_scanner_state (SCANNER_CERTIFICATE_TRUST_LEVEL);
-                  break;
-                }
-              case SCANNER_CERTIFICATE_TRUST_LEVEL:
-                {
-                  certificate_set_trusted (current_certificate,
-                                           strcasecmp (field, "trusted") == 0);
-                  set_scanner_state (SCANNER_CERTIFICATE_LENGTH);
-                  break;
-                }
               case SCANNER_ERRMSG_DESCRIPTION:
                 {
                   if (current_message)
