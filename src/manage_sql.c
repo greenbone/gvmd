@@ -47796,7 +47796,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
        " WHERE name IN (SELECT nvt_selector FROM configs WHERE owner = %llu)"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
-       " AND name != '" MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY
+       " AND name != '" MANAGE_NVT_SELECTOR_UUID_HOST_DISCOVERY "'"
        " AND name != '" MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY "';",
        user);
   sql ("DELETE FROM config_preferences"

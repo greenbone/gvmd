@@ -1,3 +1,7 @@
+2014-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_user): Add missing SQL quote.
+
 2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (spawn_reloader): Rename to rebuild_nvt_cache_retry.
