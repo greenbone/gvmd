@@ -99,6 +99,7 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <openvas/misc/openvas_logging.h>
@@ -1020,6 +1021,41 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     }
 }
 
+/*
+ * @brief Forks a child process to rebuild the nvt cache, retrying again if the
+ * child process reports that the scanner is still loading.
+ */
+static void
+spawn_reloader ()
+{
+  proctitle_set ("openvasmd: Reloading");
+
+  /* Don't ignore SIGCHLD, in order to wait for child process. */
+  signal (SIGCHLD, SIG_DFL);
+  while (1)
+    {
+      pid_t child_pid = fork ();
+      if (child_pid > 0)
+        {
+          /* Parent: Wait for child. */
+          int status = 0;
+          if (waitpid (child_pid, &status, 0) > 0 && WEXITSTATUS (status) != 2)
+            break;
+          /* Child exit status == 2 means that the scanner is still loading. */
+          sleep (10);
+        }
+      else if (child_pid == 0)
+        {
+          /* Child: Try reload. */
+          int ret = update_or_rebuild_nvt_cache (0, scanner_address_string,
+                                                 scanner_port, 0, NULL);
+
+          exit (ret);
+        }
+    }
+}
+
+
 /**
  * @brief Update the NVT cache in a child process.
  *
@@ -1048,12 +1084,7 @@ fork_update_nvt_cache ()
 
         infof ("   internal NVT cache update\n");
 
-        update_or_rebuild_nvt_cache (0,
-                                     scanner_address_string,
-                                     scanner_port,
-                                     0,
-                                     NULL);
-
+        spawn_reloader ();
         /* Exit. */
 
         cleanup_manage_process (FALSE);
