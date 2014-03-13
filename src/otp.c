@@ -934,6 +934,8 @@ process_otp_scanner_input (void (*progress) ())
           {
             g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
                    "Scanner still loading.\n");
+            from_scanner_start += (strlen (OTP_LOADING) + 1);
+            messages += (strlen (OTP_LOADING) + 1);
             return 3;
           }
         if (from_scanner_end - from_scanner_start < 17)

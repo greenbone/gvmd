@@ -1,3 +1,8 @@
+2014-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Advance buffer positions over
+	the OTP_LOADING message after seeing it.
+
 2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Return 2 in scanner still loading case.
