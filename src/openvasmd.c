@@ -884,6 +884,10 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /* Initialise OMP daemon. */
 
+  if (update_nvt_cache == 0)
+    proctitle_set ("openvasmd: Rebuilding");
+  else
+    proctitle_set ("openvasmd: Updating");
   switch (init_ompd (log_config,
                      update_nvt_cache ? -1 : -2,
                      database,
@@ -1002,13 +1006,17 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
       case 1:
         g_critical ("%s: failed to connect to scanner\n", __FUNCTION__);
 
+      case 2:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
+        return 2;
       default:
       case -1:
         openvas_server_free (scanner_socket,
                              scanner_session,
                              scanner_credentials);
         return EXIT_FAILURE;
-        break;
     }
 }
 
@@ -1516,6 +1524,7 @@ main (int argc, char** argv)
   if (update_nvt_cache || rebuild_nvt_cache)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
+      int ret;
 
       if (progress)
         {
@@ -1525,22 +1534,16 @@ main (int argc, char** argv)
             printf ("Rebuilding NVT cache... \\");
           fflush (stdout);
         }
-      if (update_or_rebuild_nvt_cache (update_nvt_cache,
-                                       scanner_address_string,
-                                       scanner_port,
-                                       1,
-                                       progress ? spin_progress : NULL)
-          == EXIT_SUCCESS)
+      ret = update_or_rebuild_nvt_cache (update_nvt_cache,
+                                         scanner_address_string, scanner_port,
+                                         1, progress ? spin_progress : NULL);
+      if (progress)
         {
-          if (progress)
-            {
-              putchar ('\b');
-              printf ("done.\n");
-              fflush (stdout);
-            }
-          return EXIT_SUCCESS;
+          putchar ('\b');
+          printf ("done.\n");
+          fflush (stdout);
         }
-      return EXIT_FAILURE;
+      return ret;
     }
 
   /* Run the standard manager. */

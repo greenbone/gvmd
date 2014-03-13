@@ -1,3 +1,11 @@
+2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): Return 2 in scanner still loading case.
+
+	* sr/openvasmd.c (update_or_rebuild_nvt_cache): Set process title
+	accordingly. Handle new serve_omp() return value.
+	(main): Handle update_or_rebuild_nvt_cache() return value.
+
 2014-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/CPE/CPE.xsl (report): Get CPEs from host details.

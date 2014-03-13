@@ -633,7 +633,7 @@ recreate_session (int server_socket,
  * @param[in]  progress             Function to mark progress, or NULL.
  *
  * @return 0 on success, 1 failed to connect to scanner for cache
- *         update/rebuild, -1 on error.
+ *         update/rebuild, 2 scanner still loading, -1 on error.
  */
 int
 serve_omp (gnutls_session_t* client_session,
@@ -1228,10 +1228,7 @@ serve_omp (gnutls_session_t* client_session,
               return -1;
             }
           else if (ret == 3)
-            {
-              /* XXX: Better reporting to client/gsa ? */
-              scanner_input_stalled = FALSE;
-            }
+            return 2;
           else if (ret == -1)
            {
              /* Error. */
