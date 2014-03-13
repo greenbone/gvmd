@@ -1,5 +1,9 @@
 2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/openvasmd.c (spawn_reloader): Rename to rebuild_nvt_cache_retry.
+
+2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/openvasmd.c (spawn_reloader): New function.
 	(fork_update_nvt_cache): Rebuild nvt cache by calling new functino.
 

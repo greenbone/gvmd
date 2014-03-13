@@ -1026,7 +1026,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
  * child process reports that the scanner is still loading.
  */
 static void
-spawn_reloader ()
+rebuild_nvt_cache_retry ()
 {
   proctitle_set ("openvasmd: Reloading");
 
@@ -1084,7 +1084,7 @@ fork_update_nvt_cache ()
 
         infof ("   internal NVT cache update\n");
 
-        spawn_reloader ();
+        rebuild_nvt_cache_retry ();
         /* Exit. */
 
         cleanup_manage_process (FALSE);
