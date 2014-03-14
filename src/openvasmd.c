@@ -1022,11 +1022,19 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 }
 
 /*
- * @brief Forks a child process to rebuild the nvt cache, retrying again if the
+ * @brief Rebuild NVT cache in forked child, retrying if scanner loading.
+ *
+ * Forks a child process to rebuild the nvt cache, retrying again if the
  * child process reports that the scanner is still loading.
+ *
+ * @param[in]  update_or_rebuild       Whether the nvt cache should be updated
+ *                                     (1) or rebuilt (0).
+ * @param[in]  register_cleanup        Whether to register cleanup with atexit.
+ *
+ * @return Exit status of child spawned to do rebuild.
  */
-static void
-rebuild_nvt_cache_retry ()
+static int
+rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup)
 {
   proctitle_set ("openvasmd: Reloading");
 
@@ -1040,15 +1048,17 @@ rebuild_nvt_cache_retry ()
           /* Parent: Wait for child. */
           int status = 0;
           if (waitpid (child_pid, &status, 0) > 0 && WEXITSTATUS (status) != 2)
-            break;
+            return WEXITSTATUS (status);
           /* Child exit status == 2 means that the scanner is still loading. */
           sleep (10);
         }
       else if (child_pid == 0)
         {
           /* Child: Try reload. */
-          int ret = update_or_rebuild_nvt_cache (0, scanner_address_string,
-                                                 scanner_port, 0, NULL);
+          int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
+                                                 scanner_address_string,
+                                                 scanner_port, register_cleanup,
+                                                 NULL);
 
           exit (ret);
         }
@@ -1084,7 +1094,8 @@ fork_update_nvt_cache ()
 
         infof ("   internal NVT cache update\n");
 
-        rebuild_nvt_cache_retry ();
+        rebuild_nvt_cache_retry (0, 0);
+
         /* Exit. */
 
         cleanup_manage_process (FALSE);
@@ -1565,13 +1576,14 @@ main (int argc, char** argv)
             printf ("Rebuilding NVT cache... \\");
           fflush (stdout);
         }
-      ret = update_or_rebuild_nvt_cache (update_nvt_cache,
-                                         scanner_address_string, scanner_port,
-                                         1, progress ? spin_progress : NULL);
+      ret = rebuild_nvt_cache_retry (update_nvt_cache, 1);
       if (progress)
         {
           putchar ('\b');
-          printf ("done.\n");
+          if (ret == EXIT_SUCCESS)
+            printf ("done.\n");
+          else
+            printf ("failed.\n");
           fflush (stdout);
         }
       return ret;

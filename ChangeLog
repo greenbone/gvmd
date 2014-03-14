@@ -1,5 +1,16 @@
 2014-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make --rebuild and --update wait for scanner when scanner is busy
+	loading NVTs.  This matches the behaviour when rebuild is called via
+	SIGHUP.
+
+	* src/openvasmd.c (rebuild_nvt_cache_retry): Add args for rebuild type
+	and cleanup.  Add return.
+	(fork_update_nvt_cache): Pass rebuild_nvt_cache_retry args.
+	(main): Call the forking retry function to do the rebuild.
+
+2014-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_user): Add missing SQL quote.
 
 2014-03-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
