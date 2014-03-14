@@ -1004,14 +1004,14 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
                              scanner_credentials);
         return EXIT_SUCCESS;
 
-      case 1:
-        g_critical ("%s: failed to connect to scanner\n", __FUNCTION__);
-
       case 2:
         openvas_server_free (scanner_socket,
                              scanner_session,
                              scanner_credentials);
         return 2;
+      case 1:
+        g_critical ("%s: failed to connect to scanner\n", __FUNCTION__);
+        /*@fallthrough@*/
       default:
       case -1:
         openvas_server_free (scanner_socket,
