@@ -881,6 +881,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>severity_class</e>
             <o><e>host_count</e></o>
             <e>task</e>
+            <e>scan</e>
             <e>ports</e>
             <e>results</e>
             <o><e>hosts</e></o>
@@ -1419,20 +1420,73 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>The name of the task</summary>
           <pattern><t>name</t></pattern>
         </ele>
+      </ele>
+      <ele>
+        <name>scan</name>
+        <summary>Info from scan time</summary>
+        <pattern>
+          <e>task</e>
+        </pattern>
         <ele>
-          <name>target</name>
-          <summary>The target of the task</summary>
+          <name>task</name>
           <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>trash</e>
+            <e>slave</e>
+            <e>preferences</e>
           </pattern>
           <ele>
-            <name>trash</name>
-            <pattern><t>boolean</t></pattern>
+            <name>slave</name>
+            <summary>The task slave</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>host</e>
+              <e>port</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>host</name>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>port</name>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>preferences</name>
+            <summary>Currently only "source_iface"</summary>
+            <pattern>
+              <any><e>preference</e></any>
+            </pattern>
+            <ele>
+              <name>preference</name>
+              <pattern>
+                <e>name</e>
+                <e>scanner_name</e>
+                <e>value</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Full name of preference, suitable for end users</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>scanner_name</name>
+                <summary>Compact name of preference, from scanner</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>value</name>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
           </ele>
         </ele>
       </ele>

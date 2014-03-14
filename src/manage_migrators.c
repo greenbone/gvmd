@@ -8314,6 +8314,43 @@ migrate_112_to_113 ()
 }
 
 /**
+ * @brief Migrate the database from version 113 to version 114.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_113_to_114 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 113. */
+
+  if (manage_db_version () != 113)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Reports got information from scan time. */
+
+  sql ("ALTER TABLE reports ADD COLUMN slave_uuid;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_name;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_host;");
+  sql ("ALTER TABLE reports ADD COLUMN slave_port;");
+  sql ("ALTER TABLE reports ADD COLUMN source_iface;");
+
+  /* Set the database version 114. */
+
+  set_db_version (114);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8431,6 +8468,7 @@ static migrator_t database_migrators[]
     {111, migrate_110_to_111},
     {112, migrate_111_to_112},
     {113, migrate_112_to_113},
+    {114, migrate_113_to_114},
     /* End marker. */
     {-1, NULL}};
 

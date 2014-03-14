@@ -2610,20 +2610,64 @@ result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>target</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The target of the task.</div>
+              &lt;<a href="#element_"><b>target</b></a>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>scan</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info from scan time.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>task</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>slave</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The task slave.</div>
 <ul style="list-style: none">
 <li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
-              &lt;<b>trash</b>&gt;
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>host</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>preferences</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Currently only "source_iface".</div>
+<ul style="list-style: none"><li>
+              &lt;<b>preference</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Full name of preference, suitable for end users.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scanner_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Compact name of preference, from scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
 </ul>
+</li></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>ports</b>&gt;
@@ -2804,6 +2848,7 @@ report_report
            &amp; report_report_severity_class
            &amp; report_report_host_count?
            &amp; report_report_task
+           &amp; report_report_scan
            &amp; report_report_ports
            &amp; report_report_results
            &amp; report_report_hosts?
@@ -3272,7 +3317,7 @@ report_report_task
      {
        attribute id { uuid }
        &amp; report_report_task_name
-       &amp; report_report_task_target
+       &amp; target
      }
 
 report_report_task_name
@@ -3281,17 +3326,76 @@ report_report_task_name
        name
      }
 
-report_report_task_target
- = element target
+report_report_scan
+ = element scan
      {
-       attribute id { uuid }
-       &amp; report_report_task_target_trash
+       report_report_scan_task
      }
 
-report_report_task_target_trash
- = element trash
+report_report_scan_task
+ = element task
      {
-       boolean
+       report_report_scan_task_slave
+       &amp; report_report_scan_task_preferences
+     }
+
+report_report_scan_task_slave
+ = element slave
+     {
+       attribute id { uuid }
+       &amp; report_report_scan_task_slave_name
+       &amp; report_report_scan_task_slave_host
+       &amp; report_report_scan_task_slave_port
+     }
+
+report_report_scan_task_slave_name
+ = element name
+     {
+       name
+     }
+
+report_report_scan_task_slave_host
+ = element host
+     {
+       text
+     }
+
+report_report_scan_task_slave_port
+ = element port
+     {
+       text
+     }
+
+report_report_scan_task_preferences
+ = element preferences
+     {
+       report_report_scan_task_preferences_preference*
+     }
+
+report_report_scan_task_preferences_preference
+ = element preference
+     {
+       report_report_scan_task_preferences_preference_name
+       &amp; report_report_scan_task_preferences_preference_scanner_name
+       &amp; report_report_scan_task_preferences_preference_value
+     }
+
+report_report_scan_task_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+report_report_scan_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+report_report_scan_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 report_report_ports

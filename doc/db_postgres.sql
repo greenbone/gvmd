@@ -343,7 +343,12 @@ CREATE TABLE reports (
     override_mediums integer,
     override_lows integer,
     override_logs integer,
-    override_fps integer);
+    override_fps integer,
+    slave_uuid text,
+    slave_name text,
+    slave_host text,
+    slave_port integer,
+    source_iface text);
 
 CREATE TABLE report_counts (
        id integer PRIMARY KEY,

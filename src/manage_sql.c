@@ -4168,7 +4168,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS reports"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"
-       "  scan_run_status INTEGER, slave_progress, slave_task_uuid);");
+       "  scan_run_status INTEGER, slave_progress, slave_task_uuid,"
+       "  slave_uuid, slave_name, slave_host, slave_port, source_iface);");
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, count, override, end_time INTEGER);");
@@ -14461,6 +14462,163 @@ report_task (report_t report, task_t *task)
 }
 
 /**
+ * @brief Return the UUID of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave UUID.
+ */
+char*
+report_slave_uuid (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT slave_uuid FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the name of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave name.
+ */
+char*
+report_slave_name (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT slave_name FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the host of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave UUID.
+ */
+char*
+report_slave_host (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT slave_host FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the host of a report's slave.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Slave UUID.
+ */
+char*
+report_slave_port (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT slave_port FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Return the source interface of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Source interface.
+ */
+char*
+report_source_iface (report_t report)
+{
+  return sql_string (0, 0,
+                     "SELECT source_iface FROM reports WHERE ROWID = %llu;",
+                     report);
+}
+
+/**
+ * @brief Set the UUID of the slave on a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  uuid    UUID.
+ */
+void
+report_set_slave_uuid (report_t report, const gchar *uuid)
+{
+  gchar *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+  sql ("UPDATE reports SET slave_uuid = '%s' WHERE ROWID = %llu;",
+       quoted_uuid,
+       report);
+  g_free (quoted_uuid);
+}
+
+/**
+ * @brief Set the name of the slave on a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  name    Name.
+ */
+void
+report_set_slave_name (report_t report, const gchar *name)
+{
+  gchar *quoted_name;
+  quoted_name = sql_quote (name);
+  sql ("UPDATE reports SET slave_name = '%s' WHERE ROWID = %llu;",
+       quoted_name,
+       report);
+  g_free (quoted_name);
+}
+
+/**
+ * @brief Set the host of the slave of a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  host    Host.
+ */
+void
+report_set_slave_host (report_t report, const gchar *host)
+{
+  gchar *quoted_host;
+  quoted_host = sql_quote (host);
+  sql ("UPDATE reports SET slave_host = '%s' WHERE ROWID = %llu;",
+       quoted_host,
+       report);
+  g_free (quoted_host);
+}
+
+/**
+ * @brief Set the port of the slave of a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  port    Port.
+ */
+void
+report_set_slave_port (report_t report, int port)
+{
+  sql ("UPDATE reports SET slave_port = %i WHERE ROWID = %llu;",
+       port,
+       report);
+}
+
+/**
+ * @brief Set the source interface of a report.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  iface   Source interface.
+ */
+void
+report_set_source_iface (report_t report, const gchar *iface)
+{
+  gchar *quoted_iface;
+  quoted_iface = sql_quote (iface);
+  sql ("UPDATE reports SET source_iface = '%s' WHERE ROWID = %llu;",
+       quoted_iface,
+       report);
+  g_free (quoted_iface);
+}
+
+/**
  * @brief Add a result to a report.
  *
  * @param[in]  report  The report.
@@ -21863,6 +22021,60 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
+
+      {
+        char *slave_uuid, *slave_name, *slave_host, *slave_port, *source_iface;
+
+        /* Info about the situation at the time of scan. */
+
+        PRINT (out,
+               "<scan>"
+               "<task>");
+
+        slave_uuid = report_slave_uuid (report);
+        slave_name = report_slave_name (report);
+        slave_host = report_slave_host (report);
+        slave_port = report_slave_port (report);
+
+        if (slave_uuid)
+          /* @id "" means no slave.  Missing SLAVE means we don't know. */
+          PRINT (out,
+                 "<slave id=\"%s\">"
+                 "<name>%s</name>"
+                 "<host>%s</host>"
+                 "<port>%s</port>"
+                 "</slave>",
+                 slave_uuid,
+                 slave_name ? slave_name : "",
+                 slave_host ? slave_host : "",
+                 slave_port ? slave_port : "");
+
+        free (slave_uuid);
+        free (slave_name);
+        free (slave_host);
+        free (slave_port);
+
+        source_iface = report_source_iface (report);
+
+        if (source_iface)
+          /* VALUE "" means preference was not set.  Missing PREFERENCE means
+           * we don't know. */
+          PRINT (out,
+                 "<preferences>"
+                 "<preference>"
+                 "<name>Network Source Interface</name>"
+                 "<scanner_name>source_iface</scanner_name>"
+                 "<value>%s</value>"
+                 "</preference>"
+                 "</preferences>",
+                 source_iface);
+
+        free (source_iface);
+
+        PRINT (out,
+               "</task>"
+               "</scan>");
+      }
     }
 
   if (type && (strcmp (type, "assets") == 0))

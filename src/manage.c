@@ -2722,7 +2722,7 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
                 report_t last_stopped_report)
 {
   slave_t slave;
-  char *host, *name;
+  char *host, *name, *uuid;
   int port, socket, ret;
   gnutls_session_t session;
 
@@ -2750,6 +2750,15 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
       free (host);
       return -1;
     }
+
+  uuid = slave_uuid (slave);
+  name = slave_name (slave);
+  report_set_slave_uuid (current_report, uuid);
+  report_set_slave_name (current_report, name);
+  report_set_slave_port (current_report, port);
+  report_set_slave_host (current_report, host);
+  free (uuid);
+  free (name);
 
   name = openvas_uuid_make ();
   if (name == NULL)
@@ -2958,6 +2967,14 @@ run_task (const char *task_id, char **report_id, int from,
 
   reset_task (task);
 
+  {
+    char *iface;
+    iface = task_preference_value (task, "source_iface");
+    if (iface)
+      report_set_source_iface (current_report, iface);
+    free (iface);
+  }
+
   if (task_slave (task))
     {
       if (run_slave_task (task, target, ssh_credential, smb_credential,
@@ -2970,6 +2987,11 @@ run_task (const char *task_id, char **report_id, int from,
         }
       exit (EXIT_SUCCESS);
     }
+
+  report_set_slave_uuid (current_report, "");
+  report_set_slave_name (current_report, "");
+  report_set_slave_port (current_report, 0);
+  report_set_slave_host (current_report, "");
 
   /* Send the preferences header. */
 

@@ -1,3 +1,41 @@
+2014-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add scan-time record of slave and source interface to reports.  Hence
+	increase database version to 114.  Add database migration from version
+	113 to 114.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 114.
+
+	* src/manage_migrators.c (migrate_113_to_114): New function.
+	(database_migrators): Add migrate_113_to_114.
+
+	* src/manage_sql.c (create_tables): Add slave and iface columns to
+	reports.
+	(report_slave_uuid, report_slave_name, report_slave_host)
+	(report_slave_port, report_source_iface, report_set_slave_uuid)
+	(report_set_slave_name, report_set_slave_host, report_set_slave_port)
+	(report_set_source_iface): New functions.
+	(print_report_xml): Add SCAN.
+
+	* src/manage.c (run_slave_task): Store slave info on report.
+	(run_task): Store source_iface and slave info on report.
+
+	* src/manage.h: Add headers accordingly.
+
+	* doc/db_postgres.sql (reports): Add new columns.
+
+	* doc/db.png: Update from source.
+
+	* src/schema_formats/XML/OMP.xml (report): Add SCAN.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Retrieve progress indication lost in last commit.
+
+	* src/openvasmd.c (rebuild_nvt_cache_retry): Add progress arg.  Call
+
 2014-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (update_or_rebuild_nvt_cache): Move switch case 1 down

@@ -1003,6 +1003,7 @@ report_report
            & report_report_severity_class
            & report_report_host_count?
            & report_report_task
+           & report_report_scan
            & report_report_ports
            & report_report_results
            & report_report_hosts?
@@ -1536,7 +1537,7 @@ report_report_task
      {
        attribute id { uuid }
        & report_report_task_name
-       & report_report_task_target
+       & target
      }
 
 # The name of the task.
@@ -1546,18 +1547,81 @@ report_report_task_name
        name
      }
 
-# The target of the task.
-report_report_task_target
- = element target
+# Info from scan time.
+report_report_scan
+ = element scan
      {
-       attribute id { uuid }
-       & report_report_task_target_trash
+       report_report_scan_task
      }
 
-report_report_task_target_trash
- = element trash
+report_report_scan_task
+ = element task
      {
-       boolean
+       report_report_scan_task_slave
+       & report_report_scan_task_preferences
+     }
+
+# The task slave.
+report_report_scan_task_slave
+ = element slave
+     {
+       attribute id { uuid }
+       & report_report_scan_task_slave_name
+       & report_report_scan_task_slave_host
+       & report_report_scan_task_slave_port
+     }
+
+report_report_scan_task_slave_name
+ = element name
+     {
+       name
+     }
+
+report_report_scan_task_slave_host
+ = element host
+     {
+       text
+     }
+
+report_report_scan_task_slave_port
+ = element port
+     {
+       text
+     }
+
+# Currently only "source_iface".
+report_report_scan_task_preferences
+ = element preferences
+     {
+       report_report_scan_task_preferences_preference*
+     }
+
+report_report_scan_task_preferences_preference
+ = element preference
+     {
+       report_report_scan_task_preferences_preference_name
+       & report_report_scan_task_preferences_preference_scanner_name
+       & report_report_scan_task_preferences_preference_value
+     }
+
+# Full name of preference, suitable for end users.
+report_report_scan_task_preferences_preference_name
+ = element name
+     {
+       text
+     }
+
+# Compact name of preference, from scanner.
+report_report_scan_task_preferences_preference_scanner_name
+ = element scanner_name
+     {
+       text
+     }
+
+report_report_scan_task_preferences_preference_value
+ = element value
+     {
+       text
      }
 
 report_report_ports
