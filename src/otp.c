@@ -78,19 +78,6 @@ extern buffer_size_t from_buffer_size;
 /* Helper functions. */
 
 /**
- * @brief Free a GSList.
- *
- * Wrapper for GHashTable.
- *
- * @param[in]  list  A pointer to a GSList.
- */
-static void
-free_g_slist (gpointer list)
-{
-  g_slist_free ((GSList*) list);
-}
-
-/**
  * @brief Return the number associated with a category name.
  *
  * @param  category  The category name.
@@ -345,97 +332,6 @@ static nvti_t* current_plugin = NULL;
 GList* scanner_plugins_list = NULL;
 
 
-/* Scanner plugin dependencies. */
-
-/**
- * @brief The current scanner plugin, during reading of scanner plugin dependencies.
- */
-/*@only@*/
-static char* current_scanner_plugin_dependency_name = NULL;
-
-/**
- * @brief The plugins required by the current scanner plugin.
- */
-/*@only@*/
-static GSList* current_scanner_plugin_dependency_dependencies = NULL;
-
-/**
- * @brief Make the scanner plugins dependencies.
- */
-static void
-make_scanner_plugins_dependencies ()
-{
-  if (scanner.plugins_dependencies)
-    {
-      g_hash_table_destroy (scanner.plugins_dependencies);
-      scanner.plugins_dependencies = NULL;
-    }
-  scanner.plugins_dependencies = g_hash_table_new_full (g_str_hash,
-                                                        g_str_equal,
-                                                        g_free,
-                                                        free_g_slist);
-}
-
-/**
- * @brief Add a plugin to the scanner dependencies.
- *
- * @param[in]  name          The name of the plugin.
- * @param[in]  requirements  The plugins required by the plugin.
- */
-static void
-add_scanner_plugins_dependency (/*@keep@*/ char* name,
-                                /*@keep@*/ GSList* requirements)
-{
-  assert (scanner.plugins_dependencies != NULL);
-  tracef ("   scanner new dependency name: %s\n", name);
-  g_hash_table_insert (scanner.plugins_dependencies, name, requirements);
-}
-
-/**
- * @brief Set the current plugin.
- *
- * @param[in]  name  The name of the plugin.  Used directly, freed by
- *                   maybe_free_current_scanner_plugin_dependency.
- */
-static void
-make_current_scanner_plugin_dependency (/*@only@*/ char* name)
-{
-  assert (current_scanner_plugin_dependency_name == NULL);
-  assert (current_scanner_plugin_dependency_dependencies == NULL);
-  current_scanner_plugin_dependency_name = name;
-  current_scanner_plugin_dependency_dependencies = NULL; /* Empty list. */
-}
-
-/**
- * @brief Append a requirement to the current plugin.
- *
- * @param[in]  requirement  The name of the required plugin.  Used directly,
- *                          freed when the dependencies are freed in
- *                          make_scanner_plugins_dependencies.
- */
-static void
-append_to_current_scanner_plugin_dependency (/*@keep@*/ char* requirement)
-{
-  tracef ("   scanner appending plugin requirement: %s\n", requirement);
-  current_scanner_plugin_dependency_dependencies
-    = g_slist_append (current_scanner_plugin_dependency_dependencies,
-                      requirement);
-}
-
-/**
- * @brief Add the current plugin to the scanner dependencies.
- */
-static void
-finish_current_scanner_plugin_dependency ()
-{
-  assert (current_scanner_plugin_dependency_name != NULL);
-  add_scanner_plugins_dependency (current_scanner_plugin_dependency_name,
-                                  current_scanner_plugin_dependency_dependencies);
-  current_scanner_plugin_dependency_name = NULL;
-  current_scanner_plugin_dependency_dependencies = NULL;
-}
-
-
 /* Scanner state. */
 
 /**
@@ -481,8 +377,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_SUMMARY,
   SCANNER_PLUGIN_LIST_TAGS,
   SCANNER_PLUGIN_LIST_XREFS,
-  SCANNER_PLUGIN_DEPENDENCY_NAME,
-  SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY,
   SCANNER_PREFERENCE_NAME,
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
@@ -753,60 +647,6 @@ parse_scanner_plugin_list_tags (char** messages)
 }
 
 /**
- * @brief Parse the dependency of a scanner plugin.
- *
- * @param  messages  A pointer into the OTP input buffer.
- *
- * @return TRUE if a <|> follows in the buffer, otherwise FALSE.
- */
-static gboolean
-parse_scanner_plugin_dependency_dependency (/*@dependent@*/ char** messages)
-{
-  /* Look for the end of dependency marker: a newline that comes before
-   * the next <|>. */
-  char *separator, *end, *match, *input;
-  buffer_size_t from_start, from_end;
-  separator = NULL;
-  /* Look for <|>. */
-  input = *messages;
-  from_start = from_scanner_start;
-  from_end = from_scanner_end;
-  while (from_start < from_end
-         && (match = memchr (input, (int) '<', from_end - from_start))
-            != NULL)
-    {
-      assert (match >= input);
-      if ((((match - input) + from_start + 1) < from_end)
-          && (match[1] == '|')
-          && (match[2] == '>'))
-        {
-          separator = match;
-          break;
-        }
-      from_start += match + 1 - input;
-      input = match + 1;
-    }
-  /* Look for newline. */
-  end = *messages + from_scanner_end - from_scanner_start;
-  while (*messages < end && ((*messages)[0] == ' '))
-    { (*messages)++; from_scanner_start++; }
-  if ((match = memchr (*messages,
-                       (int) '\n',
-                       from_scanner_end - from_scanner_start)))
-    {
-      /* Compare newline position to <|> position. */
-      if ((separator == NULL) || (match < separator))
-        {
-          finish_current_scanner_plugin_dependency ();
-          from_scanner_start += match + 1 - *messages;
-          *messages = match + 1;
-          set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_NAME);
-        }
-    }
-  return separator == NULL;
-}
-
-/**
  * @brief Parse the field following "SERVER <|>".
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -834,14 +674,6 @@ parse_scanner_server (/*@dependent@*/ char** messages)
       while (*messages < end && ((*messages)[0] == ' '))
         { (*messages)++; from_scanner_start++; }
       /** @todo Are there 20 characters available? */
-      if (strncasecmp ("PLUGINS_DEPENDENCIES", *messages, 20) == 0)
-        {
-          from_scanner_start += match + 1 - *messages;
-          *messages = match + 1;
-          make_scanner_plugins_dependencies ();
-          set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_NAME);
-          return 0;
-        }
       /** @todo Are there 12 characters available? */
       newline = match;
       newline[0] = '\n';
@@ -1028,13 +860,6 @@ process_otp_scanner_input (void (*progress) ())
               case -3: break;        /* Next <|> is before next \n. */
               case -4: break;        /* Failed to find \n, try for <|>. */
             }
-        else if (scanner_state == SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY
-                 && parse_scanner_plugin_dependency_dependency (&messages))
-          {
-            /* Need more input for a <|>. */
-            if (sync_buffer ()) return -1;
-            return 0;
-          }
         break;
     } /* switch (scanner_init_state) */
 
@@ -1307,47 +1132,6 @@ process_otp_scanner_input (void (*progress) ())
                         /* Need more input. */
                         if (sync_buffer ()) goto return_error;
                         goto return_need_more;
-                    }
-                  break;
-                }
-              case SCANNER_PLUGIN_DEPENDENCY_NAME:
-                {
-                  /* Use match[1] instead of field[1] for UTF-8 hack. */
-                  if (strlen (field) == 0 && match[1] == '|')
-                    {
-                      set_scanner_state (SCANNER_DONE);
-                      switch (parse_scanner_done (&messages))
-                        {
-                          case -1: goto return_error;
-                          case -2:
-                            /* Need more input. */
-                            if (sync_buffer ()) goto return_error;
-                            goto return_need_more;
-                        }
-                      break;
-                    }
-                  {
-                    char* name = g_strdup (field);
-                    make_current_scanner_plugin_dependency (name);
-                    set_scanner_state (SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY);
-                    if (parse_scanner_plugin_dependency_dependency (&messages))
-                      {
-                        /* Need more input for a <|>. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                      }
-                  }
-                  break;
-                }
-              case SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY:
-                {
-                  char* dep = g_strdup (field);
-                  append_to_current_scanner_plugin_dependency (dep);
-                  if (parse_scanner_plugin_dependency_dependency (&messages))
-                    {
-                      /* Need more input for a <|>. */
-                      if (sync_buffer ()) goto return_error;
-                      goto return_need_more;
                     }
                   break;
                 }

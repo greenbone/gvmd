@@ -53,7 +53,6 @@ typedef struct
 typedef struct
 {
   char* plugins_feed_version;        ///<  Feed version of plugins set.
-  GHashTable* plugins_dependencies;  ///< Dependencies between plugins.
 } scanner_t;
 
 /** @todo Exported for omp.c, manage.c and otp.c access to server info (

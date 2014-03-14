@@ -2238,27 +2238,6 @@ get_configs_data_reset (get_configs_data_t *data)
 }
 
 /**
- * @brief Command data for the get_dependencies command.
- */
-typedef struct
-{
-  char *nvt_oid;  ///< OID of single NVT whose  dependencies to get.
-} get_dependencies_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_dependencies_data_reset (get_dependencies_data_t *data)
-{
-  free (data->nvt_oid);
-
-  memset (data, 0, sizeof (get_dependencies_data_t));
-}
-
-/**
  * @brief Command data for the get_alerts command.
  */
 typedef struct
@@ -3934,7 +3913,6 @@ typedef union
   delete_user_data_t delete_user;                     ///< delete_user
   get_agents_data_t get_agents;                       ///< get_agents
   get_configs_data_t get_configs;                     ///< get_configs
-  get_dependencies_data_t get_dependencies;           ///< get_dependencies
   get_alerts_data_t get_alerts;                       ///< get_alerts
   get_filters_data_t get_filters;                     ///< get_filters
   get_groups_data_t get_groups;                       ///< get_groups
@@ -4247,12 +4225,6 @@ get_agents_data_t *get_agents_data
  */
 get_configs_data_t *get_configs_data
  = &(command_data.get_configs);
-
-/**
- * @brief Parser callback data for GET_DEPENDENCIES.
- */
-get_dependencies_data_t *get_dependencies_data
- = &(command_data.get_dependencies);
 
 /**
  * @brief Parser callback data for GET_ALERTS.
@@ -4975,7 +4947,6 @@ typedef enum
   CLIENT_GET_AGENTS,
   CLIENT_GET_ALERTS,
   CLIENT_GET_CONFIGS,
-  CLIENT_GET_DEPENDENCIES,
   CLIENT_GET_FILTERS,
   CLIENT_GET_GROUPS,
   CLIENT_GET_INFO,
@@ -6452,12 +6423,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_configs_data->preferences = 0;
 
             set_client_state (CLIENT_GET_CONFIGS);
-          }
-        else if (strcasecmp ("GET_DEPENDENCIES", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "nvt_oid",
-                              &get_dependencies_data->nvt_oid);
-            set_client_state (CLIENT_GET_DEPENDENCIES);
           }
         else if (strcasecmp ("GET_ALERTS", element_name) == 0)
           {
@@ -9338,86 +9303,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 }
 
 /**
- * @brief Send XML for a requirement of a plugin.
- *
- * @param[in]  element  The required plugin.
- * @param[in]  data     Array of two pointers: write_to_client and
- *                      write_to_client_data.
- *
- * @return 0 if out of space in to_client buffer, else 1.
- */
-static gint
-send_requirement (gconstpointer element, gconstpointer data)
-{
-  gboolean fail;
-  gchar* text = g_markup_escape_text ((char*) element,
-                                      strlen ((char*) element));
-  char* oid = nvt_oid (text);
-  gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name></nvt>",
-                                oid ? oid : "",
-                                text);
-  int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) *((void**)data);
-  void* write_to_client_data = *(((void**)data) + 1);
-
-  free (oid);
-  g_free (text);
-
-  fail = send_to_client (msg, write_to_client, write_to_client_data);
-  g_free (msg);
-  return fail ? 0 : 1;
-}
-
-/**
- * @brief Send XML for a plugin dependency.
- *
- * @param[in]  key    The dependency hashtable key.
- * @param[in]  value  The dependency hashtable value.
- * @param[in]  data   Array of two pointers: write_to_client and
- *                    write_to_client_data.
- *
- * @return TRUE if out of space in to_client buffer, else FALSE.
- */
-static gboolean
-send_dependency (gpointer key, gpointer value, gpointer data)
-{
-  gchar* key_text = g_markup_escape_text ((char*) key, strlen ((char*) key));
-  char *oid = nvt_oid (key_text);
-  gchar* msg = g_strdup_printf ("<nvt oid=\"%s\"><name>%s</name><requires>",
-                                oid ? oid : "",
-                                key_text);
-  int (*write_to_client) (const char *, void*)
-    = (int (*) (const char *, void*)) *((void**)data);
-  void* write_to_client_data = *(((void**)data) + 1);
-
-  g_free (oid);
-  g_free (key_text);
-
-  if (send_to_client (msg, write_to_client, write_to_client_data))
-    {
-      g_free (msg);
-      return TRUE;
-    }
-
-  if (g_slist_find_custom ((GSList*) value, data, send_requirement))
-    {
-      g_free (msg);
-      return TRUE;
-    }
-
-  if (send_to_client ("</requires></nvt>",
-                      write_to_client,
-                      write_to_client_data))
-    {
-      g_free (msg);
-      return TRUE;
-    }
-
-  g_free (msg);
-  return FALSE;
-}
-
-/**
  * @brief Send XML for an NVT.
  *
  * The caller must send the closing NVT tag.
@@ -12055,75 +11940,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
-
-      case CLIENT_GET_DEPENDENCIES:
-        if (user_may ("get_dependencies") == 0)
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("get_dependencies",
-                              "Permission denied"));
-        else if (scanner.plugins_dependencies)
-          {
-            nvt_t nvt = 0;
-
-            if (get_dependencies_data->nvt_oid
-                && find_nvt (get_dependencies_data->nvt_oid, &nvt))
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_dependencies"));
-            else if (get_dependencies_data->nvt_oid && nvt == 0)
-              {
-                if (send_find_error_to_client ("get_dependencies",
-                                               "NVT",
-                                               get_dependencies_data->nvt_oid,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-              }
-            else
-              {
-                void* data[2];
-
-                data[0] = (int (*) (void*)) write_to_client;
-                data[1] = (void*) write_to_client_data;
-
-                SEND_TO_CLIENT_OR_FAIL ("<get_dependencies_response"
-                                        " status=\"" STATUS_OK "\""
-                                        " status_text=\"" STATUS_OK_TEXT "\">");
-                if (nvt)
-                  {
-                    char *name = manage_nvt_name (nvt);
-
-                    if (name)
-                      {
-                        gpointer value;
-                        value = g_hash_table_lookup
-                                 (scanner.plugins_dependencies,
-                                  name);
-                        if (value && send_dependency (name, value, data))
-                          {
-                            g_free (name);
-                            error_send_to_client (error);
-                            return;
-                          }
-                        g_free (name);
-                      }
-                  }
-                else if (g_hash_table_find (scanner.plugins_dependencies,
-                                            send_dependency,
-                                            data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                SEND_TO_CLIENT_OR_FAIL ("</get_dependencies_response>");
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_dependencies"));
-        get_dependencies_data_reset (get_dependencies_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
 
       case CLIENT_GET_FILTERS:
         {

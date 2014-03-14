@@ -330,7 +330,6 @@ command_t omp_commands[]
     {"GET_AGENTS", "Get all agents."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_CONFIGS", "Get all configs."},
-    {"GET_DEPENDENCIES", "Get dependencies for all available NVTs."},
     {"GET_FILTERS", "Get all filters."},
     {"GET_GROUPS", "Get all groups."},
     {"GET_INFO", "Get raw information for a given item."},

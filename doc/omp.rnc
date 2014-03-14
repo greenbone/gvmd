@@ -49,7 +49,6 @@ command
     | empty_trashcan
     | get_agents
     | get_configs
-    | get_dependencies
     | get_alerts
     | get_filters
     | get_info
@@ -146,7 +145,6 @@ response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
-    | get_dependencies_response
     | get_alerts_response
     | get_filters_response
     | get_info_response
@@ -1902,7 +1900,6 @@ commands
            | get_agents
            | get_alerts
            | get_configs
-           | get_dependencies
            | get_filters
            | get_info
            | get_lsc_credentials
@@ -3438,17 +3435,6 @@ get_configs
        & attribute sort_field { text }?
        & # Whether to get tasks using this config.
        attribute tasks { boolean }?
-     }
-
-## Command get_dependencies
-##
-## Get dependencies for all available NVTs.
-
-get_dependencies
- = element get_dependencies
-     {
-       # ID of single NVT for which to get dependencies.
-       attribute nvt_oid { oid }?
      }
 
 ## Command get_alerts
@@ -5294,7 +5280,6 @@ commands_response
            | get_agents_response
            | get_alerts_response
            | get_configs_response
-           | get_dependencies_response
            | get_info_response
            | get_lsc_credentials_response
            | get_filters_response
@@ -6199,51 +6184,6 @@ get_configs_response_config_preferences_preference_value
  = element value
      {
        text
-     }
-
-## Response to get_dependencies
-
-get_dependencies_response
- = element get_dependencies_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_dependencies_response_nvt*
-     }
-
-get_dependencies_response_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_dependencies_response_nvt_name
-       & get_dependencies_response_nvt_requires
-     }
-
-# The name of the NVT.
-get_dependencies_response_nvt_name
- = element name
-     {
-       name
-     }
-
-get_dependencies_response_nvt_requires
- = element requires
-     {
-       get_dependencies_response_nvt_requires_nvt*
-     }
-
-get_dependencies_response_nvt_requires_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_dependencies_response_nvt_requires_nvt_name
-     }
-
-# The name of the NVT.
-get_dependencies_response_nvt_requires_nvt_name
- = element name
-     {
-       name
      }
 
 ## Response to get_alerts

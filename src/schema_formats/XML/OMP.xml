@@ -1833,7 +1833,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_agents</c>
           <c>get_alerts</c>
           <c>get_configs</c>
-          <c>get_dependencies</c>
           <c>get_filters</c>
           <c>get_info</c>
           <c>get_lsc_credentials</c>
@@ -1940,7 +1939,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_agents</r>
             <r>get_alerts</r>
             <r>get_configs</r>
-            <r>get_dependencies</r>
             <r>get_info</r>
             <r>get_lsc_credentials</r>
             <r>get_filters</r>
@@ -5762,113 +5760,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </config>
           <truncated>...</truncated>
         </get_configs_response>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>get_dependencies</name>
-    <summary>Get dependencies for all available NVTs</summary>
-    <description>
-      The client uses the get_dependencies command to request the
-      dependencies for one or all NVTs available through this manager.
-    </description>
-    <pattern>
-      <attrib>
-        <name>nvt_oid</name>
-        <summary>ID of single NVT for which to get dependencies</summary>
-        <type>oid</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>nvt</e></any>
-      </pattern>
-      <ele>
-        <name>nvt</name>
-        <pattern>
-          <attrib>
-            <name>oid</name>
-            <type>oid</type>
-            <required>1</required>
-          </attrib>
-          <e>name</e>
-          <e>requires</e>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the NVT</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-        <ele>
-          <name>requires</name>
-          <pattern>
-            <any><e>nvt</e></any>
-          </pattern>
-          <ele>
-            <name>nvt</name>
-            <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the NVT</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get dependencies for all NVTs</summary>
-      <request>
-        <get_dependencies></get_dependencies>
-      </request>
-      <response>
-        <get_dependencies_response status="200" status_text="OK">
-          <nvt oid="1.3.6.1.4.1.25623.1.0.114664">
-            <name>Dependency Test</name>
-            <requires>
-              <nvt oid="1.3.6.1.4.1.25623.1.0.114663">
-                <name>File Upload Test</name>
-              </nvt>
-            </requires>
-          </nvt>
-          <truncated>...</truncated>
-        </get_dependencies_response>
-      </response>
-    </example>
-    <example>
-      <summary>Get dependencies for a single NVT</summary>
-      <request>
-        <get_dependencies nvt_oid="1.3.6.1.4.1.25623.1.0.114664">
-        </get_dependencies>
-      </request>
-      <response>
-        <get_dependencies_response status="200" status_text="OK">
-          <nvt oid="1.3.6.1.4.1.25623.1.0.114664">
-            <name>Dependency Test</name>
-            <requires>
-              <nvt oid="1.3.6.1.4.1.25623.1.0.114663">
-                <name>File Upload Test</name>
-              </nvt>
-            </requires>
-          </nvt>
-        </get_dependencies_response>
       </response>
     </example>
   </command>
@@ -13321,7 +13212,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             EMPTY_TRASHCAN         Empty the trashcan.
             GET_AGENTS             Get all agents.
             GET_CONFIGS            Get all configs.
-            GET_DEPENDENCIES       Get dependencies for all available NVTs.
             GET_ALERTS             Get all alerts.
             GET_FILTERS            Get all filters.
             GET_GROUPS             Get all groups.

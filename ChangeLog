@@ -1,3 +1,41 @@
+2014-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove handling of PLUGINS_DEPENDENCIES OTP command and get_dependencies
+	OMP command.
+
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
+	documentation for removal of get_dependencies.
+
+	* src/manage.c (scanner): Adjust initialization.
+
+	* src/manage.h (scanner_t): Remove plugins_dependencies element.
+
+	* src/manage_sql.c (omp_commands): Delete GET_DEPENDENCIES command.
+
+	* src/omp.c (get_dependencies_data_t, get_dependencies_data): Remove
+	variables.
+	(command_data_t): Remove get_dependencies element;
+
+	(omp_xml_handle_start_element): Remove GET_DEPENDENCIES handling.
+	(send_requirement, get_dependencies_data_reset, send_dependency): Remove
+	functions.
+	(client_state_t, omp_xml_handle_end_element): Remove
+	CLIENT_GET_DEPENDENCIES state and its handling case.
+
+	* src/ompd.c: Remove irrelevant dead code.
+
+	* src/otp.c (free_g_slist, current_scanner_plugin_dependency_name)
+	(current_scanner_plugin_dependency_dependencies)
+	(make_scanner_plugins_dependencies, add_scanner_plugins_dependency)
+	(make_current_scanner_plugin_dependency)
+	(append_to_current_scanner_plugin_dependency)
+	(finish_current_scanner_plugin_dependency)
+	(parse_scanner_plugin_dependency_dependency)
+	(SCANNER_PLUGIN_DEPENDENCY_NAME, SCANNER_PLUGIN_DEPENDENCY_DEPENDENCY):
+	Remove unused functions, variables and scanner states.
+	(parse_scanner_server, process_otp_scanner_input): Remove handling of
+	PLUGINS_DEPENDENCIES server command and scanner states.
+
 2014-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add scan-time record of slave and source interface to reports.  Hence
