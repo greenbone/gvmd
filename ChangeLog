@@ -1,3 +1,12 @@
+2014-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Retrieve progress indication lost in last commit.
+
+	* src/openvasmd.c (rebuild_nvt_cache_retry): Add progress arg.  Call
+	while waiting for scanner.
+	(fork_update_nvt_cache, main): Pass progress arg to
+	rebuild_nvt_cache_retry.
+
 2014-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make --rebuild and --update wait for scanner when scanner is busy
