@@ -1,5 +1,12 @@
 2014-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Add compatibility change for
+	GET_DEPENDENCIES.
+
+	* doc/omp.html: Update from source.
+
+2014-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Also set source_iface on report when the
 	preference was left empty.
 

@@ -15763,6 +15763,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <change>
+    <command>GET_DEPENDENCIES</command>
+    <summary>
+      Command removed
+    </summary>
+    <description>
+      <p>
+        The command GET_DEPENDENCIES has been removed.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
+  <change>
     <command>MODIFY_TARGET</command>
     <summary>
       Missing elements now leave the associate target property alone
