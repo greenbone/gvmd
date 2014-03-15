@@ -58,7 +58,6 @@
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/misc/nvt_categories.h>
-#include <openvas/misc/otp.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -762,12 +761,12 @@ process_otp_scanner_input (void (*progress) ())
                && (messages[0] == ' ' || messages[0] == '\n'))
           from_scanner_start++, messages++;
 
-        if (!strncasecmp (OTP_LOADING "\n", messages, strlen (OTP_LOADING) + 1))
+        if (!strncasecmp ("SCANNER_LOADING\n", messages, strlen ("SCANNER_LOADING") + 1))
           {
             g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
                    "Scanner still loading.\n");
-            from_scanner_start += (strlen (OTP_LOADING) + 1);
-            messages += (strlen (OTP_LOADING) + 1);
+            from_scanner_start += (strlen ("SCANNER_LOADING") + 1);
+            messages += (strlen ("SCANNER_LOADING") + 1);
             return 3;
           }
         if (from_scanner_end - from_scanner_start < 17)

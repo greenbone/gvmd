@@ -1,3 +1,10 @@
+2014-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Use keyword
+	"SCANNER_RELOADING" directly instead of including a macro for it.
+	Any other keyword is used directly as well and also this way we
+	can drop the otp.h from libraries.
+
 2014-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Remove handling of PLUGINS_DEPENDENCIES OTP command and get_dependencies
