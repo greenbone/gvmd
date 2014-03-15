@@ -2972,6 +2972,8 @@ run_task (const char *task_id, char **report_id, int from,
     iface = task_preference_value (task, "source_iface");
     if (iface)
       report_set_source_iface (current_report, iface);
+    else
+      report_set_source_iface (current_report, "");
     free (iface);
   }
 

@@ -1,3 +1,8 @@
+2014-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): Also set source_iface on report when the
+	preference was left empty.
+
 2014-03-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/otp.c (process_otp_scanner_input): Use keyword
