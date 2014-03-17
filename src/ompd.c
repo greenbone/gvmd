@@ -1226,7 +1226,12 @@ serve_omp (gnutls_session_t* client_session,
               return -1;
             }
           else if (ret == 3)
-            return 2;
+            {
+              /* Calls via serve_client() should continue. */
+              if (ompd_nvt_cache_mode)
+                return 2;
+              scanner_input_stalled = FALSE;
+            }
           else if (ret == -1)
            {
              /* Error. */

@@ -1,5 +1,12 @@
 2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (serve_omp): Do not return early in scanner loading case
+	when not in nvt cache rebuilding case.
+
+	* src/otp.c (process_otp_scanner_input): Accept OTP version 2.0 only.
+
+2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (write_to_scanner): Always initialize with OTP 2.0. Send
 	NVT_INFO client command in nvt cache mode.
 

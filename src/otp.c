@@ -775,12 +775,10 @@ process_otp_scanner_input (void (*progress) ())
             if (sync_buffer ()) return -1;
             return 0;
           }
-        if (strncasecmp ("< OTP/2.0beta1 >\n", messages, 17)
-            && strncasecmp ("< OTP/2.1beta1 >\n", messages, 17))
+        if (strncasecmp ("< OTP/2.0beta1 >\n", messages, 17))
           {
             tracef ("   scanner fail: expected \"< OTP/2.0beta1 >\""
-                    " or \"< OTP/2.1beta1 >\", got \"%.17s\"\n\n",
-                    messages);
+                    "   got \"%.17s\"\n\n", messages);
             return -1;
           }
         from_scanner_start += 17;
