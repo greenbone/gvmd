@@ -1,3 +1,8 @@
+2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (write_to_scanner): Always initialize with OTP 2.0. Send
+	NVT_INFO client command in nvt cache mode.
+
 2014-03-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Add compatibility change for

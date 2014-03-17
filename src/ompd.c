@@ -456,24 +456,24 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         /*@fallthrough@*/
       case SCANNER_INIT_CONNECTED:
         {
-          char* string;
-
-          if (ompd_nvt_cache_mode)
-            /* Request OTP 2.0 only in cache mode, because in this case Scanner
-             * sends extra info that we use, like plugins preferences. */
-            string = "< OTP/2.0beta1 >\n";
-          else
-            /* Normal mode, request OTP 2.1, to skip extra info, for faster
-             * init with Scanner. */
-            string = "< OTP/2.1beta1 >\n";
+          char* string = "< OTP/2.0beta1 >\n";
 
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         string
                                                         + scanner_init_offset);
           if (scanner_init_offset == 0)
             set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
-          else
+          else if (scanner_init_offset == -1)
             {
+              scanner_init_offset = 0;
+              return -1;
+            }
+          if (ompd_nvt_cache_mode)
+            {
+              string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
+              scanner_init_offset = write_string_to_server
+                                     (scanner_session,
+                                      string + scanner_init_offset);
               if (scanner_init_offset == -1)
                 {
                   scanner_init_offset = 0;
