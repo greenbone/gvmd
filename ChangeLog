@@ -1,3 +1,7 @@
+2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (message_data_t): Remove unused struct.
+
 2014-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make --migrate succeed when the database has not yet been initialised.

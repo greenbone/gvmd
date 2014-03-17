@@ -221,15 +221,6 @@ set_message_oid (message_t* message, /*@only@*/ char* oid)
 }
 
 /**
- * @brief Pair of stream and type for write_messages.
- */
-typedef struct
-{
-  /*@temp@*/ FILE* stream;  ///< Destination stream.
-  /*@temp@*/ char* type;    ///< Type of message.
-} message_data_t;
-
-/**
  * @brief Write a message for g_ptr_array_foreach.
  *
  * @param[in]  task     The task with which to associate the message.
