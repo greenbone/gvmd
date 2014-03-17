@@ -4341,15 +4341,25 @@ manage_db_supported_version ()
 /**
  * @brief Return the database version of the actual database.
  *
- * @return Database version read from database if possible, else -1.
+ * @return Database version read from database, -2 if database is empty,
+ *         -1 on error.
  */
 int
 manage_db_version ()
 {
   int number;
-  char *version = sql_string (0, 0,
-                              "SELECT value FROM main.meta"
-                              " WHERE name = 'database_version' LIMIT 1;");
+  char *version;
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM main.sqlite_master"
+               " WHERE type = 'table'"
+               " AND name = 'meta';")
+      == 0)
+    return -2;
+
+  version = sql_string (0, 0,
+                        "SELECT value FROM main.meta"
+                        " WHERE name = 'database_version' LIMIT 1;");
   if (version)
     {
       number = atoi (version);

@@ -1,3 +1,13 @@
+2014-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make --migrate succeed when the database has not yet been initialised.
+
+	* src/manage_migrators (manage_migrate_needs_timezone): Account for
+	error returns in comparison.
+	(manage_migrate): Skip migrate when the tables are missing.
+
+	* src/manage_sql.c (manage_db_version): Check if the tables exist.
+
 2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Do not return early in scanner loading case

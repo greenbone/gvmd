@@ -8491,7 +8491,7 @@ manage_migrate_needs_timezone (GSList *log_config, const gchar *database)
   init_manage_process (0, database);
   db_version = manage_db_version ();
   cleanup_manage_process (TRUE);
-  return db_version < 52;
+  return db_version > 0 && db_version < 52;
 }
 
 /**
@@ -8555,7 +8555,12 @@ manage_migrate (GSList *log_config, const gchar *database)
       return -1;
     }
 
-  if (old_version == new_version)
+  if (old_version == -2)
+    {
+      g_warning ("%s: no task tables yet, run a --rebuild to create them.\n",
+                 __FUNCTION__);
+    }
+  else if (old_version == new_version)
     {
       version_current = 1;
     }
