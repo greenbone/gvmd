@@ -1228,6 +1228,7 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == 3)
             {
               /* Calls via serve_client() should continue. */
+              scanner_up = 0;
               if (ompd_nvt_cache_mode)
                 return 2;
               scanner_input_stalled = FALSE;

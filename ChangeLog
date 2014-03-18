@@ -1,3 +1,9 @@
+2014-03-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): Set scanner_up to 0 if scanner is still
+	loading. This prevents actions such as starting task from mistakenly
+	trying to send commands to the scanner.
+
 2014-03-18  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump
