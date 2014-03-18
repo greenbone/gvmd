@@ -1,3 +1,14 @@
+2014-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Switch the type check on the filters associated with alerts from
+	"report" to "result".  Alerts were migrated from "report" to "result"
+	in db version 92.
+
+	* src/manage_sql.c (create_alert, modify_alert, modify_filter): Switch
+	filter type check.
+
+	* src/omp.c (omp_xml_handle_end_element): Change messages accordingly.
+
 2014-03-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Set scanner_up to 0 if scanner is still
@@ -24,7 +35,7 @@
 
 	Make --migrate succeed when the database has not yet been initialised.
 
-	* src/manage_migrators (manage_migrate_needs_timezone): Account for
+	* src/manage_migrators.c (manage_migrate_needs_timezone): Account for
 	error returns in comparison.
 	(manage_migrate): Skip migrate when the tables are missing.
 

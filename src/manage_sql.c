@@ -5283,7 +5283,7 @@ validate_alert_condition_data (gchar *name, gchar* data,
  * @param[out] alert       Created alert on success.
  *
  * @return 0 success, 1 escalation exists already, 2 validation of email failed,
- *         3 failed to find filter, 4 type must be "report" if specified,
+ *         3 failed to find filter, 4 type must be "result" if specified,
  *         5 unexpected condition data name, 6 syntax error in condition data,
  *         99 permission denied, -1 error.
  */
@@ -5326,12 +5326,12 @@ create_alert (const char* name, const char* comment, const char* filter_id,
           return 3;
         }
 
-      /* Filter type must be report if specified. */
+      /* Filter type must be result if specified. */
 
       type = sql_string (0, 0,
                          "SELECT type FROM filters WHERE ROWID = %llu;",
                          filter);
-      if (type && strcasecmp (type, "report"))
+      if (type && strcasecmp (type, "result"))
         {
           free (type);
           sql ("ROLLBACK;");
@@ -5530,7 +5530,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
  *
  * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
  *         3 alert_id required, 4 failed to find filter, 5 filter type must be
- *         report if specified, 6 Provided email address not valid,
+ *         result if specified, 6 Provided email address not valid,
  *         7 unexpected condition data name, 8 syntax error in condition data,
  *         99 permission denied, -1 internal error.
  */
@@ -5616,7 +5616,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       type = sql_string (0, 0,
                          "SELECT type FROM filters WHERE ROWID = %llu;",
                          filter);
-      if (type && strcasecmp (type, "report"))
+      if (type && strcasecmp (type, "result"))
         {
           free (type);
           sql ("ROLLBACK;");
@@ -44441,7 +44441,7 @@ DEF_ACCESS (filter_alert_iterator_uuid, 1);
  *
  * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
  *         3 error in type name, 4 filter_id required, 5 filter is in use so
- *         type must be "report" if specified, 99 permission denied,
+ *         type must be "result" if specified, 99 permission denied,
  *         -1 internal error.
  */
 int
@@ -44484,7 +44484,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   /* If the filter is linked to an alert, check that the type is valid. */
   if (filter_in_use (filter)
       && type
-      && strcasecmp (type, "report"))
+      && strcasecmp (type, "result"))
     {
       sql ("ROLLBACK;");
       return 5;

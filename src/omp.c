@@ -17050,7 +17050,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   case 4:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("create_alert",
-                                        "Filter type must be report if"
+                                        "Filter type must be result if"
                                         " specified"));
                     log_event_fail ("alert", "Alert", NULL, "created");
                     break;
@@ -20624,7 +20624,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_alert",
-                                    "Filter type must be report if"
+                                    "Filter type must be result if"
                                     " specified"));
                 log_event_fail ("alert", "Alert", modify_alert_data->alert_id,
                                 "modified");
@@ -21222,7 +21222,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_filter",
                                     "Filter is used by an alert so type must be"
-                                    " 'report' if specified"));
+                                    " 'result' if specified"));
                 log_event_fail ("filter", "Filter",
                                 modify_filter_data->filter_id, "modified");
                 break;
