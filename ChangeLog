@@ -1,3 +1,9 @@
+2014-03-18  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Preparing the openvas-manager 5.0+beta10 release.
+
+	* CHANGES: Updated
+
 2014-03-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (message_data_t): Remove unused struct.

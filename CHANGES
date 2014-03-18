@@ -1,3 +1,28 @@
+openvas-manager 5.0+beta10 (2014-03-18)
+
+This is the tenth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. it is the ventral management service between the actual security
+scanner and its various user clients.
+
+This release Correct the behavior of the manager when called with --rebuild,
+--update or --migrate in order to produce a more consistent experience, as
+well as solve a number of small issues.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell and Jan-Oliver Wagner.
+
+Main changes since 5.0+beta9:
+* Remove handling of CERTIFICATES otp command.
+* Make --rebuild and --update wait for scanner when scanner is busy
+  loading NVTs.  This matches the behaviour when rebuild is called via
+  SIGHUP.
+* Add scan-time record of slave and source interface to reports.
+* Remove handling of PLUGINS_DEPENDENCIES OTP command and get_dependencies
+  OMP command.
+* Make --migrate succeed when the database has not yet been initialised.
+* Code cleanup.
+
+
 openvas-manager 5.0+beta9 (2014-03-12)
 
 This is the ninth beta version of the upcoming 5.0 release of the OpenVAS
