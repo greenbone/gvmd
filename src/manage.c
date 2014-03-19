@@ -6658,6 +6658,7 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @param[in]  params            Wizard params.  Array of name_value_t.
  * @param[in]  read_only         Whether to only allow wizards marked as
  *                               read only.
+ * @param[in]  mode              Name of the mode to run the wizard in.
  * @param[out] command_error     Address for error message from failed command
  *                               when return is 4, or NULL.
  * @param[out] ret_response      Address for response string of last command.
@@ -6665,7 +6666,8 @@ openvas_current_sync (const gchar * sync_script, gchar ** timestamp,
  * @return 0 success, 1 name error, 2 process forked to run task, -10 process
  *         forked to run task where task start failed, -2 to_scanner buffer
  *         full, 4 command in wizard failed, 5 wizard not read only,
- *         -1 internal error, 99 permission denied.
+ *         6 Parameter validation failed, -1 internal error,
+ *         99 permission denied.
  */
 int
 manage_run_wizard (const gchar *name,
@@ -6673,14 +6675,16 @@ manage_run_wizard (const gchar *name,
                    void *run_command_data,
                    array_t *params,
                    int read_only,
+                   const char *mode,
                    gchar **command_error,
                    gchar **ret_response)
 {
   gchar *file, *file_name, *response, *wizard;
   gsize wizard_len;
   GError *get_error;
-  entity_t entity, read_only_entity, step;
-  entities_t steps;
+  entity_t entity, mode_entity, params_entity, read_only_entity;
+  entity_t param_def, step;
+  entities_t modes, steps, param_defs;
   int ret, forked;
   const gchar *point;
 
@@ -6733,12 +6737,44 @@ manage_run_wizard (const gchar *name,
     }
   g_free (wizard);
 
+  /* Select mode */
+  if (mode && strcmp (mode, ""))
+    {
+    modes = entity->entities;
+    int mode_found = 0;
+    while (mode_found == 0 && (mode_entity = first_entity (modes)))
+      {
+        if (strcasecmp (entity_name (mode_entity), "mode") == 0)
+          {
+            entity_t name_entity;
+            name_entity = entity_child (mode_entity, "name");
+
+            if (strcmp (entity_text (name_entity), mode) == 0)
+              mode_found = 1;
+          }
+        modes = next_entities (modes);
+      }
+
+      if (mode_found == 0)
+        {
+          *command_error
+            = g_strdup_printf ("Wizard mode not found: '%s'",
+                               mode);
+          free_entity (entity);
+          return 6;
+        }
+    }
+  else
+    {
+      mode_entity = entity;
+    }
+
   /* If needed, check if wizard is marked as read only.
    * This does not check the actual commands.
    */
   if (read_only)
     {
-      read_only_entity = entity_child (entity, "read_only");
+      read_only_entity = entity_child (mode_entity, "read_only");
       if (read_only_entity == NULL)
         {
           free_entity (entity);
@@ -6746,11 +6782,100 @@ manage_run_wizard (const gchar *name,
         }
     }
 
+  /* Check params */
+  params_entity = entity_child (mode_entity, "params");
+  if (params_entity)
+    param_defs = params_entity->entities;
+
+  while (params_entity && (param_def = first_entity (param_defs)))
+    {
+      if (strcasecmp (entity_name (param_def), "param") == 0)
+        {
+          entity_t name_entity, regex_entity, optional_entity;
+          const char *name, *regex;
+          int optional;
+          int param_found = 0;
+
+          name_entity = entity_child (param_def, "name");
+          if ((name_entity == NULL)
+              || (strcmp (entity_text (name_entity), "") == 0))
+            {
+              g_warning ("%s: Wizard PARAM missing NAME\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              return -1;
+            }
+          else
+            name = entity_text (name_entity);
+
+          regex_entity = entity_child (param_def, "regex");
+          if ((regex_entity == NULL)
+              || (strcmp (entity_text (regex_entity), "") == 0))
+            {
+              g_warning ("%s: Wizard PARAM missing REGEX\n",
+                         __FUNCTION__);
+              free_entity (entity);
+              return -1;
+            }
+          else
+            regex = entity_text (regex_entity);
+
+          optional_entity = entity_child (param_def, "optional");
+          optional = (optional_entity
+                      && strcmp (entity_text (optional_entity), "")
+                      && strcmp (entity_text (optional_entity), "0"));
+
+          if (params)
+            {
+              guint index = params->len;
+              while (index--)
+                {
+                  name_value_t *pair;
+
+                  pair = (name_value_t*) g_ptr_array_index (params, index);
+
+                  if (pair == NULL)
+                    continue;
+
+                  if ((pair->name)
+                      && (pair->value)
+                      && (strcmp (pair->name, name) == 0))
+                    {
+                      index = 0; // end loop;
+                      param_found = 1;
+
+                      if (g_regex_match_simple (regex, pair->value, 0, 0) == 0)
+                        {
+                          *command_error
+                            = g_strdup_printf ("Value '%s' is not valid for"
+                                              " parameter '%s'.",
+                                              pair->value, name);
+                          free_entity (entity);
+                          return 6;
+                        }
+                    }
+                }
+            }
+
+          if (optional == 0 && param_found == 0)
+            {
+              *command_error = g_strdup_printf ("Mandatory wizard param '%s'"
+                                                " missing",
+                                                name);
+              free_entity (entity);
+              return 6;
+            }
+
+
+        }
+      param_defs = next_entities (param_defs);
+    }
+
   /* Run each step of the wizard. */
 
   response = NULL;
   ret = 0;
-  steps = entity->entities;
+  steps = mode_entity->entities;
   while ((step = first_entity (steps)))
     {
       if (strcasecmp (entity_name (step), "step") == 0)

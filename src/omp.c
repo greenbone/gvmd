@@ -3833,6 +3833,7 @@ verify_report_format_data_reset (verify_report_format_data_t *data)
  */
 typedef struct
 {
+  char *mode;          ///< Mode to run the wizard in.
   char *name;          ///< Name of the wizard.
   name_value_t *param; ///< Current param.
   array_t *params;     ///< Parameters.
@@ -3847,6 +3848,7 @@ typedef struct
 static void
 run_wizard_data_reset (run_wizard_data_t *data)
 {
+  free (data->mode);
   free (data->name);
   free (data->read_only);
   if (data->params)
@@ -5143,6 +5145,7 @@ typedef enum
   CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_RUN_WIZARD,
+  CLIENT_RUN_WIZARD_MODE,
   CLIENT_RUN_WIZARD_NAME,
   CLIENT_RUN_WIZARD_PARAMS,
   CLIENT_RUN_WIZARD_PARAMS_PARAM,
@@ -9249,7 +9252,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("modify_override");
 
       case CLIENT_RUN_WIZARD:
-        if (strcasecmp ("NAME", element_name) == 0)
+        if (strcasecmp ("MODE", element_name) == 0)
+          {
+            set_client_state (CLIENT_RUN_WIZARD_MODE);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
           {
             set_client_state (CLIENT_RUN_WIZARD_NAME);
           }
@@ -23796,6 +23803,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        omp_parser,
                                        run_wizard_data->params,
                                        read_only,
+                                       run_wizard_data->mode,
                                        &command_error,
                                        &response))
               {
@@ -23853,6 +23861,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   }
 
                 case 4:
+                case 6:
                   {
                     gchar *msg;
                     msg = g_strdup_printf
@@ -23946,6 +23955,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      CLOSE (CLIENT_RUN_WIZARD, MODE);
       CLOSE (CLIENT_RUN_WIZARD, NAME);
       CLOSE (CLIENT_RUN_WIZARD, PARAMS);
       CLOSE (CLIENT_RUN_WIZARD_PARAMS_PARAM, NAME);
@@ -25351,6 +25361,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &modify_target_data->ssh_port);
 
+
+      APPEND (CLIENT_RUN_WIZARD_MODE,
+              &run_wizard_data->mode);
 
       APPEND (CLIENT_RUN_WIZARD_NAME,
               &run_wizard_data->name);

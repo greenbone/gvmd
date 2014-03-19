@@ -1,3 +1,23 @@
+2014-03-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Added regex-based parameter validation and support of alternative run
+	modes, e.g. an init mode to get resource lists to display in the
+	client, to wizards.
+
+	* src/manage.c (manage_run_wizard): Add mode parameter to run steps
+	from a "mode" element in the wizard XML instead of the "wizard"
+	root element. Add regex-based validation of parameters defined in the
+	wizard XML.
+
+	* src/manage.h (manage_run_wizard): Add mode parameter.
+
+	* src/omp.c (run_wizard_data_t, run_wizard_data_reset): Add mode
+	parameter.
+	(client_state_t): Add CLIENT_RUN_WIZARD_MODE.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new mode element of run_wizard and new
+	return value of manage_run_wizard.
+
 2014-03-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (scanner_is_loading, parse_scanner_loading): New functions.
