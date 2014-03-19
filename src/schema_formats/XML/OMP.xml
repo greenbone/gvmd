@@ -15465,6 +15465,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
+      <o><e>mode</e></o>
       <e>name</e>
       <e>params</e>
       <attrib>
@@ -15474,6 +15475,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>0</required>
       </attrib>
     </pattern>
+    <ele>
+      <name>mode</name>
+      <summary>The mode to run the wizard in</summary>
+      <pattern><t>text</t></pattern>
+    </ele>
     <ele>
       <name>name</name>
       <summary>The name of the wizard</summary>

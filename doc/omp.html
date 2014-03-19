@@ -24355,6 +24355,11 @@ modify_user_sources
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
+              &lt;<b>mode</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The mode to run the wizard in.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the wizard.</div>
 <ul style="list-style: none"></ul>
@@ -24408,9 +24413,16 @@ modify_user_sources
 <i>Command</i><div style="margin-left: 5%"><pre>run_wizard
  = element run_wizard
      {
-       run_wizard_name
+       run_wizard_mode?
+       &amp; run_wizard_name
        &amp; run_wizard_params
        &amp; attribute read_only { boolean }?
+     }
+
+run_wizard_mode
+ = element mode
+     {
+       text
      }
 
 run_wizard_name

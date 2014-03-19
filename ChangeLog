@@ -1,5 +1,12 @@
 2014-03-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (run_wizard): Add mode element to
+	command.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2014-03-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Added regex-based parameter validation and support of alternative run
 	modes, e.g. an init mode to get resource lists to display in the
 	client, to wizards.
