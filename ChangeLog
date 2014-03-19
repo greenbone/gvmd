@@ -1,3 +1,14 @@
+2014-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Report scanner loading progress to client/GSA.
+
+	* src/omp.c (SEND_XML_SERVICE_DOWN): New macro.
+	(XML_SERVICE_DOWN): Delete macro.
+	(omp_xml_handle_end_element): Replace usage of XML_SERVICE_DOWN and
+	SEND_TO_CLIENT_OR_FAIL with new macro.
+
+	* src/otp.h: Export scanner_current_loading and scanner_total_loading.
+
 2014-03-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (run_wizard): Add mode element to
@@ -25,7 +36,7 @@
 	(omp_xml_handle_text): Handle new mode element of run_wizard and new
 	return value of manage_run_wizard.
 
-2014-03-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2014-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (scanner_is_loading, parse_scanner_loading): New functions.
 	(process_otp_scanner_input): Parse SCANNER_LOADING and adjust logging

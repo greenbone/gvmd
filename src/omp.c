@@ -5424,16 +5424,25 @@ make_xml_error_syntax (const char *tag, const char *text)
  " status_text=\"" STATUS_INTERNAL_ERROR_TEXT "\"/>"
 
 /**
- * @brief Expand to XML for a STATUS_SERVICE_DOWN response.
+ * @brief Sends XML for a STATUS_SERVICE_DOWN response.
  *
  * @param  tag  Name of the command generating the response.
  */
-#define XML_SERVICE_DOWN(tag)                            \
- "<" tag "_response"                                     \
- " status=\"" STATUS_SERVICE_DOWN "\""                   \
- " status_text=\"" STATUS_SERVICE_DOWN_TEXT "\"/>"
-
-/** @cond STATIC */
+#define SEND_XML_SERVICE_DOWN(tag)                                            \
+  do {                                                                        \
+    char *str;                                                                \
+    if (scanner_current_loading && scanner_total_loading)                     \
+      str = g_strdup_printf ("<%s_response status='%s' "                      \
+                             "status_text='Scanner loading nvts (%d/%d)'/>",  \
+                             tag, STATUS_SERVICE_DOWN,                        \
+                             scanner_current_loading, scanner_total_loading); \
+    else                                                                      \
+      str = g_strdup_printf ("<%s_response status='%s' status_text='%s'/>",   \
+                             tag, STATUS_SERVICE_DOWN,                        \
+                             STATUS_SERVICE_DOWN_TEXT);                       \
+    SEND_TO_CLIENT_OR_FAIL(str);                                              \
+    g_free (str);                                                             \
+  } while (0);
 
 /**
  * @brief Send start of GET response.
@@ -10972,7 +10981,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   abort ();
                   break;
                 case -5:
-                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("delete_task"));
+                  SEND_XML_SERVICE_DOWN ("delete_task");
                   log_event_fail ("task", "Task",
                                   delete_task_data->task_id,
                                   "deleted");
@@ -12911,7 +12920,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "</get_nvt_feed_version_response>");
             }
           else
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvt_feed_version"));
+            SEND_XML_SERVICE_DOWN ("get_nvt_feed_version");
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -13091,7 +13100,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else
-            SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("get_nvts"));
+            SEND_XML_SERVICE_DOWN ("get_nvts");
         }
         get_nvts_data_reset (get_nvts_data);
         set_client_state (CLIENT_AUTHENTIC);
@@ -23361,7 +23370,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
                   break;
                 case -5:
-                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("pause_task"));
+                  SEND_XML_SERVICE_DOWN ("pause_task");
                   log_event_fail ("task", "Task", pause_task_data->task_id,
                                   "paused");
                   break;
@@ -23555,8 +23564,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "started");
                       break;
                     case -5:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_SERVICE_DOWN ("resume_or_start_task"));
+                      SEND_XML_SERVICE_DOWN ("resume_or_start_task");
                       log_event_fail ("task", "Task",
                                       resume_or_start_task_data->task_id,
                                       "started");
@@ -23617,8 +23625,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "resumed");
                   break;
                 case -5:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_SERVICE_DOWN ("resume_paused_task"));
+                  SEND_XML_SERVICE_DOWN ("resume_paused_task");
                   log_event_fail ("task", "Task",
                                   resume_paused_task_data->task_id,
                                   "started");
@@ -23761,8 +23768,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "resumed");
                       break;
                     case -5:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_SERVICE_DOWN ("resume_stopped_task"));
+                      SEND_XML_SERVICE_DOWN ("resume_stopped_task");
                       log_event_fail ("task", "Task",
                                       resume_stopped_task_data->task_id,
                                       "resumed");
@@ -24081,7 +24087,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "started");
                       break;
                     case -5:
-                      SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("start_task"));
+                      SEND_XML_SERVICE_DOWN ("start_task");
                       log_event_fail ("task", "Task",
                                       start_task_data->task_id,
                                       "started");
@@ -24139,7 +24145,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "stopped");
                   break;
                 case -5:
-                  SEND_TO_CLIENT_OR_FAIL (XML_SERVICE_DOWN ("stop_task"));
+                  SEND_XML_SERVICE_DOWN ("stop_task");
                   log_event_fail ("task", "Task",
                                   stop_task_data->task_id,
                                   "stopped");
