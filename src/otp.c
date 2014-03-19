@@ -411,6 +411,16 @@ scanner_init_state_t scanner_init_state = SCANNER_INIT_TOP;
 int scanner_init_offset = 0;
 
 /**
+ * @brief Scanner current number of loaded plugins, when still loading.
+ */
+int scanner_current_loading = 0;
+
+/**
+ * @brief Scanner total number of plugins to be loaded, when still loading.
+ */
+int scanner_total_loading = 0;
+
+/**
  * @brief Set the scanner initialisation state, \ref scanner_init_state.
  */
 void
@@ -697,6 +707,41 @@ parse_scanner_server (/*@dependent@*/ char** messages)
   return -4;
 }
 
+static int
+scanner_is_loading (char *messages)
+{
+  if (!strncasecmp ("SCANNER_LOADING ", messages, strlen ("SCANNER_LOADING ")))
+    return 1;
+  return 0;
+}
+
+/*
+ * @brief Parses SCANNER_LOADING response, updating scanner_current_loading and
+ *        scanner_total_loading values.
+ */
+static void
+parse_scanner_loading (char *messages)
+{
+  char *str;
+
+  str = strstr (messages, " <|> ");
+  if (str == NULL)
+    return;
+  str += 5;
+  scanner_current_loading = atoi (str);
+  if (!scanner_current_loading)
+    return;
+
+  str = strstr (str, " <|> ");
+  if (str == NULL)
+    return;
+  str += 5;
+  scanner_total_loading = atoi (str);
+  str = strchr (str, '\n');
+  if (str)
+    from_scanner_start += str - messages;
+}
+
 /**
  * @brief Process any lines available in \ref from_scanner.
  *
@@ -752,12 +797,16 @@ process_otp_scanner_input (void (*progress) ())
                && (messages[0] == ' ' || messages[0] == '\n'))
           from_scanner_start++, messages++;
 
-        if (!strncasecmp ("SCANNER_LOADING\n", messages, strlen ("SCANNER_LOADING") + 1))
+        if (scanner_is_loading (messages))
           {
-            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
-                   "Scanner still loading.\n");
-            from_scanner_start += (strlen ("SCANNER_LOADING") + 1);
-            messages += (strlen ("SCANNER_LOADING") + 1);
+            parse_scanner_loading (messages);
+            if (scanner_current_loading && scanner_total_loading)
+              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
+                     "Scanner loading: %d / %d nvts.\n",
+                     scanner_current_loading, scanner_total_loading);
+            else
+              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE,
+                     "Scanner loading: No information provided. %s\n", messages);
             return 3;
           }
         if (from_scanner_end - from_scanner_start < 17)

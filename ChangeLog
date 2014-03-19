@@ -1,3 +1,9 @@
+2014-03-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (scanner_is_loading, parse_scanner_loading): New functions.
+	(process_otp_scanner_input): Parse SCANNER_LOADING and adjust logging
+	for progress accordingly.
+
 2014-03-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Switch the type check on the filters associated with alerts from
