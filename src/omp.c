@@ -23839,8 +23839,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       }
                     g_free (msg);
                     g_free (response);
-                    log_event ("wizard", "Wizard", run_wizard_data->name,
-                               "run");
+                    if (run_wizard_data->read_only == 0)
+                      log_event ("wizard", "Wizard", run_wizard_data->name,
+                                "run");
                     break;
                   }
 

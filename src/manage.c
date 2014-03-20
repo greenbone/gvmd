@@ -6757,11 +6757,13 @@ manage_run_wizard (const gchar *name,
 
       if (mode_found == 0)
         {
-          *command_error
-            = g_strdup_printf ("Wizard mode not found: '%s'",
-                               mode);
           free_entity (entity);
-          return 6;
+          *ret_response = g_strdup ("");
+
+          if (forked)
+            return 3;
+          else
+            return 0;
         }
     }
   else

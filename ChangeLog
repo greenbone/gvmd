@@ -1,5 +1,14 @@
 2014-03-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage.c (manage_run_wizard): Return successfully with empty
+	response if mode does not exist.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_RUN_WIZARD
+	do not log event messages if wizard is run successfully with
+	read_only option.
+
+2014-03-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* CMakeLists.txt: Add new wizard quick_task.xml.
 
 	* src/wizards/quick_task.xml: New wizard for creating new tasks
