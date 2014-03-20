@@ -370,6 +370,7 @@ install (FILES src/wizards/quick_first_scan.xml
                src/wizards/get_tasks_deep.xml
                src/wizards/delete_task_deep.xml
                src/wizards/quick_auth_scan.xml
+               src/wizards/quick_task.xml
                src/wizards/reset_task.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/wizards/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

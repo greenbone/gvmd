@@ -1,3 +1,10 @@
+2014-03-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* CMakeLists.txt: Add new wizard quick_task.xml.
+
+	* src/wizards/quick_task.xml: New wizard for creating new tasks
+	with additional options compared to quick_first_scan.
+
 2014-03-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Report scanner loading progress to client/GSA.
