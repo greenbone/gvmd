@@ -1216,6 +1216,22 @@ serve_and_schedule ()
   /*@notreached@*/
 }
 
+/*
+ * @brief Sets the GnuTLS priorities for a given session.
+ *
+ * @param[in]   session     Session for which to set the priorities.
+ * @param[in]   priority    Priority string.
+ */
+static void
+set_gnutls_priority (gnutls_session_t *session, const char *priority)
+{
+  const char *errp = NULL;
+  if (gnutls_priority_set_direct (*session, priority, &errp)
+      == GNUTLS_E_INVALID_REQUEST)
+    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "Invalid GnuTLS priority: %s\n",
+           errp);
+}
+
 /* Main. */
 
 /**
@@ -1256,6 +1272,7 @@ main (int argc, char** argv)
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
   static gchar *user = NULL;
+  static gchar *gnutls_priorities = "NORMAL";
   static gchar *new_password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
@@ -1303,6 +1320,7 @@ main (int argc, char** argv)
         { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --modify-password.", "<username>" },
+        { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &gnutls_priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print tracing messages.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
@@ -1803,6 +1821,7 @@ main (int argc, char** argv)
                   __FUNCTION__);
       exit (EXIT_FAILURE);
     }
+  set_gnutls_priority (&client_session, gnutls_priorities);
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the connection between `select' and `accept'. */
