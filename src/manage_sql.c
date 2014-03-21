@@ -21395,11 +21395,13 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {
               if (sql_int (0, 0,
-                           "SELECT"
-                           " (CAST (cvss_base AS REAL))"
-                           " >= CAST (%s AS REAL)"
-                           " FROM nvts"
-                           " WHERE nvts.oid = '%s';",
+                           "SELECT EXISTS (SELECT ROWID FROM nvts"
+                           "               WHERE nvts.oid = '%s')"
+                           "       AND (SELECT (CAST (cvss_base AS REAL))"
+                           "                   >= CAST (%s AS REAL)"
+                           "            FROM nvts"
+                           "            WHERE nvts.oid = '%s');",
+                           sqlite3_column_text (results->stmt, 1),
                            /* Assume valid SQL string. */
                            min_cvss_base,
                            sqlite3_column_text (results->stmt, 1)))
@@ -21421,11 +21423,13 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {
               if (sql_int (0, 0,
-                           "SELECT"
-                           " (CAST (cvss_base AS REAL))"
-                           " >= CAST (%s AS REAL)"
-                           " FROM nvts"
-                           " WHERE nvts.oid = '%s';",
+                           "SELECT EXISTS (SELECT ROWID FROM nvts"
+                           "               WHERE nvts.oid = '%s')"
+                           "       AND (SELECT (CAST (cvss_base AS REAL))"
+                           "                   >= CAST (%s AS REAL)"
+                           "            FROM nvts"
+                           "            WHERE nvts.oid = '%s');",
+                           sqlite3_column_text (results->stmt, 1),
                            /* Assume valid SQL string. */
                            min_cvss_base,
                            sqlite3_column_text (results->stmt, 1)))
@@ -21438,11 +21442,13 @@ report_counts_match (iterator_t *results, const char *search_phrase,
   else if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
     {
       if (sql_int (0, 0,
-                   "SELECT"
-                   " (CAST (cvss_base AS REAL))"
-                   " >= CAST (%s AS REAL)"
-                   " FROM nvts"
-                   " WHERE nvts.oid = '%s';",
+                   "SELECT EXISTS (SELECT ROWID FROM nvts"
+                   "               WHERE nvts.oid = '%s')"
+                   "       AND (SELECT (CAST (cvss_base AS REAL))"
+                   "                   >= CAST (%s AS REAL)"
+                   "            FROM nvts"
+                   "            WHERE nvts.oid = '%s');",
+                   sqlite3_column_text (results->stmt, 1),
                    /* Assume valid SQL string. */
                    min_cvss_base,
                    sqlite3_column_text (results->stmt, 1)))
