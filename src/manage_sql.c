@@ -25634,13 +25634,13 @@ alive_test_from_string (const char* alive_tests)
       || strcmp (alive_tests, "Scan Config Default") == 0)
     alive_test = 0;
   else if (strcmp (alive_tests, "ICMP, TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+    alive_test = ALIVE_TEST_TCP_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
   else if (strcmp (alive_tests, "TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE & ALIVE_TEST_ARP;
+    alive_test = ALIVE_TEST_TCP_SERVICE | ALIVE_TEST_ARP;
   else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_ARP;
+    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
   else if (strcmp (alive_tests, "ICMP & TCP Service Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP & ALIVE_TEST_TCP_SERVICE;
+    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_SERVICE;
   else if (strcmp (alive_tests, "ARP Ping") == 0)
     alive_test = ALIVE_TEST_ARP;
   else if (strcmp (alive_tests, "TCP Service Ping") == 0)

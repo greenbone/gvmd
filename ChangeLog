@@ -1,3 +1,8 @@
+2014-03-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (alive_test_from_string): Use | instead of & so that
+	the values are combined.
+
 2014-03-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (manage_run_wizard): Return successfully with empty
