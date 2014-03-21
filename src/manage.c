@@ -1739,6 +1739,21 @@ send_alive_test_preferences (target_t target)
                            : "no"))
     return -1;
 
+  if (target_alive_test (target, ALIVE_TEST_CONSIDER_ALIVE))
+    {
+      if (sendf_to_server ("Ping Host[checkbox]:"
+                           "Mark unrechable Hosts as dead (not scanning)"
+                           " <|> %s\n",
+                           target_alive_test (target, ALIVE_TEST_CONSIDER_ALIVE)
+                           == 1
+                            ? "no"
+                            : "yes"))
+        return -1;
+      /* Also select a method, otherwise Ping Host logs a warning. */
+      if (sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> yes\n"))
+        return -1;
+    }
+
   return 0;
 }
 

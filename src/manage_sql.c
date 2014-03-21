@@ -25647,6 +25647,8 @@ alive_test_from_string (const char* alive_tests)
     alive_test = ALIVE_TEST_TCP_SERVICE;
   else if (strcmp (alive_tests, "ICMP Ping") == 0)
     alive_test = ALIVE_TEST_ICMP;
+  else if (strcmp (alive_tests, "Consider Alive") == 0)
+    alive_test = ALIVE_TEST_CONSIDER_ALIVE;
   else
     return -1;
   return alive_test;
@@ -26807,6 +26809,8 @@ target_iterator_alive_tests (iterator_t* iterator)
     return "TCP Service Ping";
   if (tests & ALIVE_TEST_ICMP)
     return "ICMP Ping";
+  if (tests & ALIVE_TEST_CONSIDER_ALIVE)
+    return "Consider Alive";
   return "Scan Config Default";
 }
 

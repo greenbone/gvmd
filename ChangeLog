@@ -1,3 +1,14 @@
+2014-03-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add alive test "Consider Alive".
+
+	* src/manage.c (send_alive_test_preferences): Add Consider Alive case.
+
+	* src/manage.h (alive_test_t): Add ALIVE_TEST_CONSIDER_ALIVE.
+
+	* src/manage_sql.c (alive_test_from_string)
+	(target_iterator_alive_tests): Add Consider Alive.
+
 2014-03-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add --gnutls-priorities option to Manager.
