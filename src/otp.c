@@ -360,7 +360,6 @@ typedef enum
   SCANNER_PLUGIN_LIST_COPYRIGHT,
   SCANNER_PLUGIN_LIST_CVE_ID,
   SCANNER_PLUGIN_LIST_FAMILY,
-  SCANNER_PLUGIN_LIST_FPRS,
   SCANNER_PLUGIN_LIST_NAME,
   SCANNER_PLUGIN_LIST_OID,
   SCANNER_PLUGIN_LIST_PLUGIN_VERSION,
@@ -1258,12 +1257,6 @@ process_otp_scanner_input (void (*progress) ())
               case SCANNER_PLUGIN_LIST_XREFS:
                 {
                   nvti_set_xref (current_plugin, field);
-                  set_scanner_state (SCANNER_PLUGIN_LIST_FPRS);
-                  break;
-                }
-              case SCANNER_PLUGIN_LIST_FPRS:
-                {
-                  nvti_set_sign_key_ids (current_plugin, field);
                   set_scanner_state (SCANNER_PLUGIN_LIST_TAGS);
                   switch (parse_scanner_plugin_list_tags (&messages))
                     {

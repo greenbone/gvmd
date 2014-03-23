@@ -1,3 +1,10 @@
+2014-03-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Don't handle
+	SCANNER_PLUGIN_LIST_FPRS anymore. These are not send anymore
+	by the OTP Server.
+	(scanner_state_t): Remove SCANNER_PLUGIN_LIST_FPRS.
+
 2014-03-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add alive test "Consider Alive".
