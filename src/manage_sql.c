@@ -10529,6 +10529,36 @@ check_db ()
   if (sql_int (0, 0,
                "SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.810002';")
+      == 0)
+    {
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 1, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "CPE Inventory" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.810002', 'Service detection');");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
+               " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+               " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.810003';")
+      == 0)
+    {
+      sql ("INSERT into nvt_selectors"
+           " (name, exclude, type, family_or_nvt, family)"
+           " VALUES ('" MANAGE_NVT_SELECTOR_UUID_ALL "', 1, "
+           G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
+           /* OID of the "Host Summary" NVT. */
+           " '1.3.6.1.4.1.25623.1.0.810003', 'General');");
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
+               " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                " AND family_or_nvt = 'Port scanners';")
       == 0)

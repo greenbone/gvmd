@@ -8401,6 +8401,42 @@ migrate_114_to_115 ()
 }
 
 /**
+ * @brief Migrate the database from version 115 to version 116.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_115_to_116 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 115. */
+
+  if (manage_db_version () != 115)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* NVT "CPE Inventory" was removed from config "Discovery". */
+
+  sql ("DELETE FROM nvt_selectors"
+       " WHERE name = '" MANAGE_NVT_SELECTOR_UUID_DISCOVERY "'"
+       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
+       " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.810002'");
+
+  /* Set the database version to 116. */
+
+  set_db_version (116);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8520,6 +8556,7 @@ static migrator_t database_migrators[]
     {113, migrate_112_to_113},
     {114, migrate_113_to_114},
     {115, migrate_114_to_115},
+    {116, migrate_115_to_116},
     /* End marker. */
     {-1, NULL}};
 

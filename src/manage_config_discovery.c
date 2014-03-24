@@ -476,7 +476,6 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801266", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800643", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.801421", "Service detection");
-  NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.810002", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800568", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800802", "Service detection");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.800564", "Service detection");

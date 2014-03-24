@@ -1,3 +1,23 @@
+2014-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove NVTs 810002 "CPE Inventory" and 810003 "Host Summary" from
+	predefined configs.  Hence increase database version to 116.  Add
+	database migration from version 115 to 116.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 116.
+
+	* src/manage_migrators.c (migrate_115_to_116): New function.  Adds
+	exclude rule to config "Discovery" for "CPE Inventory".
+	(database_migrators): Add migrate_115_to_116.
+
+	* src/manage_config_discovery.c (make_config_discovery): Remove "CPE
+	Inventory".
+
+	* src/manage_sql.c (check_db): Ensure the "All" NVT selector excludes
+	"CPE Inventory" and "Host Summary".  This covers the Full and * configs.
+
+	* doc/db.png: Update for version change.
+
 2014-03-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Drop sign_key_ids column from nvts table.  Hence increase database
