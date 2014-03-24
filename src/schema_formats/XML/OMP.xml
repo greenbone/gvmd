@@ -8062,7 +8062,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>cert_refs</e>
               <e>bugtraq_id</e>
               <e>xrefs</e>
-              <e>fingerprints</e>
               <e>tags</e>
               <o><e>preference_count</e></o>
               <o><e>timeout</e></o>
@@ -8205,10 +8204,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>fingerprints</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
           <name>tags</name>
           <pattern>text</pattern>
         </ele>
@@ -8302,7 +8297,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <bugtraq_id>NOBID</bugtraq_id>
             <cert_refs/>
             <xrefs>NOXREF</xrefs>
-            <fingerprints>NOSIGNKEYS</fingerprints>
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
             <timeout></timeout>

@@ -5484,7 +5484,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<bugtraq_id>%s</bugtraq_id>"
                              "<cert_refs>%s</cert_refs>"
                              "<xrefs>%s</xrefs>"
-                             "<fingerprints>%s</fingerprints>"
                              "<tags>%s</tags>"
                              "<preference_count>%i</preference_count>"
                              "<timeout>%s</timeout>"
@@ -5514,7 +5513,6 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              nvt_iterator_bid (nvts),
                              cert_refs_str->str,
                              xref_text,
-                             nvt_iterator_sign_key_ids (nvts),
                              tag_text,
                              pref_count,
                              timeout ? timeout : "",

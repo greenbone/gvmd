@@ -1567,9 +1567,6 @@ nvt_iterator_xref (iterator_t*);
 const char*
 nvt_iterator_tag (iterator_t*);
 
-const char*
-nvt_iterator_sign_key_ids (iterator_t*);
-
 int
 nvt_iterator_category (iterator_t*);
 

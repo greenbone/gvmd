@@ -29477,7 +29477,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_sign_key_ids;
+  gchar *quoted_cvss_base;
   gchar *quoted_family, *quoted_original_tag;
 
   if (remove)
@@ -29554,15 +29554,12 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
-  quoted_sign_key_ids = sql_quote (nvti_sign_key_ids (nvti)
-                                   ? nvti_sign_key_ids (nvti)
-                                   : "");
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
-       " cve, bid, xref, tag, sign_key_ids, category, family, cvss_base,"
+       " cve, bid, xref, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid)"
-       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
+       " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
        " parse_time (tag ('%s', 'last_modification')), '%s');",
        nvti_oid (nvti),
@@ -29574,7 +29571,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        quoted_bid,
        quoted_xref,
        quoted_tag,
-       quoted_sign_key_ids,
        nvti_category (nvti),
        quoted_family,
        quoted_cvss_base,
@@ -29595,7 +29591,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_original_tag);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
-  g_free (quoted_sign_key_ids);
   g_free (quoted_family);
 
   return sqlite3_last_insert_rowid (task_db);
@@ -29613,7 +29608,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS                                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
-  " summary, copyright, cve, bid, xref, tag, sign_key_ids,"    \
+  " summary, copyright, cve, bid, xref, tag,"    \
   " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
@@ -29622,7 +29617,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
   " nvts.name, summary, copyright, cve, bid, xref, tag,"         \
-  " sign_key_ids, category, nvts.family, cvss_base, cvss_base AS severity,"   \
+  " category, nvts.family, cvss_base, cvss_base AS severity,"   \
   " cvss_base AS cvss"
 
 /**
@@ -29884,16 +29879,6 @@ DEF_ACCESS (nvt_iterator_xref, GET_ITERATOR_COLUMN_COUNT + 7);
 DEF_ACCESS (nvt_iterator_tag, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /**
- * @brief Get the sign_key_ids from an NVT iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Sign_key_ids, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (nvt_iterator_sign_key_ids, GET_ITERATOR_COLUMN_COUNT + 9);
-
-/**
  * @brief Get the category from an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -29906,7 +29891,7 @@ nvt_iterator_category (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = (int) sqlite3_column_int (iterator->stmt,
-                                  GET_ITERATOR_COLUMN_COUNT + 10);
+                                  GET_ITERATOR_COLUMN_COUNT + 9);
   return ret;
 }
 
@@ -29918,7 +29903,7 @@ nvt_iterator_category (iterator_t* iterator)
  * @return Family, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 11);
+DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 10);
 
 /**
  * @brief Get the cvss_base from an NVT iterator.
@@ -29928,7 +29913,7 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 11);
  * @return Cvss_base, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 12);
+DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
  * @brief Get the number of NVTs in one or all families.

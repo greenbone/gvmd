@@ -1,3 +1,18 @@
+2014-03-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (get_nvti_xml): Remove fingerprint element.
+
+	* src/manage_sql.c (make_nvt_from_nvti): Don't store empty sign key id.
+	(NVT_ITERATOR_COLUMNS, NVT_ITERATOR_COLUMNS_NVTS): Don't iterate over
+	unused sign_key_ids column.
+	(nvt_iterator_sign_key_ids): Remove function.
+	(nvt_iterator_category, nvt_iterator_family, nvt_iterator_cvss_base):
+	Adjust accessed column index.
+
+	* src/schema_formats/XML/OMP.xml: Update documnetation.
+
+	* src/manage.h: Delete removed function prototype.
+
 2014-03-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/otp.c (process_otp_scanner_input): Don't handle
