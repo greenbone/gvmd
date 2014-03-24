@@ -15763,6 +15763,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <change>
+    <command>GET_NVTS</command>
+    <summary>
+      fingerprint element removed.
+    </summary>
+    <description>
+      <p>
+        The fingerprint element has been removed as signature keys aren't sent
+        by the scanner anymore and thus, aren't stored in Manager DB anymore.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
+  <change>
     <command>GET_DEPENDENCIES</command>
     <summary>
       Command removed

@@ -13488,10 +13488,6 @@ get_notes_response_note_result_description
               <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>fingerprints</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>tags</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -13589,7 +13585,6 @@ get_nvts_response_nvt
            &amp; get_nvts_response_nvt_cert_refs
            &amp; get_nvts_response_nvt_bugtraq_id
            &amp; get_nvts_response_nvt_xrefs
-           &amp; get_nvts_response_nvt_fingerprints
            &amp; get_nvts_response_nvt_tags
            &amp; get_nvts_response_nvt_preference_count?
            &amp; get_nvts_response_nvt_timeout?
@@ -13740,12 +13735,6 @@ get_nvts_response_nvt_xrefs
        text
      }
 
-get_nvts_response_nvt_fingerprints
- = element fingerprints
-     {
-       text
-     }
-
 get_nvts_response_nvt_tags
  = element tags
      {
@@ -13859,7 +13848,6 @@ get_nvts_response_nvt_preferences_preference_default
      &lt;bugtraq_id&gt;NOBID&lt;/bugtraq_id&gt;
      &lt;cert_refs/&gt;
      &lt;xrefs&gt;NOXREF&lt;/xrefs&gt;
-     &lt;fingerprints&gt;NOSIGNKEYS&lt;/fingerprints&gt;
      &lt;tags&gt;NOTAG&lt;/tags&gt;
      &lt;preference_count&gt;-1&lt;/preference_count&gt;
      &lt;timeout/&gt;
@@ -24787,6 +24775,16 @@ run_wizard_response_response
       5.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>GET_NVTS</tt>
+</h3></div>
+<p>In short: fingerprint element removed..</p>
+<p>
+        The fingerprint element has been removed as signature keys aren't sent
+        by the scanner anymore and thus, aren't stored in Manager DB anymore.
+      </p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>GET_DEPENDENCIES</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -24795,7 +24793,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>MODIFY_TARGET</tt>
 </h3></div>
 <p>In short: Missing elements now leave the associate target property alone.</p>

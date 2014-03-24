@@ -8351,6 +8351,56 @@ migrate_113_to_114 ()
 }
 
 /**
+ * @brief Migrate the database from version 114 to version 115.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_114_to_115 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 114. */
+
+  if (manage_db_version () != 114)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Rename nvts tables. */
+  sql ("ALTER TABLE nvts RENAME TO nvts_114;");
+
+  /* Create new one without sign_key_ids column. */
+  sql ("CREATE TABLE IF NOT EXISTS nvts"
+       " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+       "  creation_time, modification_time);");
+
+  /* Migrate old nvts data to new table. */
+  sql ("INSERT INTO nvts"
+       " (id, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag,"
+       "  category, family, cvss_base, creation_time, modification_time)"
+       " SELECT id, uuid, oid, version, name, comment, summary,"
+       "  copyright, cve, bid, xref, tag,"
+       "  category, family, cvss_base, creation_time, modification_time"
+       "  FROM nvts_114;");
+
+  /* Delete old nvts table. */
+  sql ("DROP TABLE nvts_114;");
+
+
+  /* Set the database version 115. */
+
+  set_db_version (115);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8469,6 +8519,7 @@ static migrator_t database_migrators[]
     {112, migrate_111_to_112},
     {113, migrate_112_to_113},
     {114, migrate_113_to_114},
+    {115, migrate_114_to_115},
     /* End marker. */
     {-1, NULL}};
 

@@ -1,5 +1,26 @@
 2014-03-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Drop sign_key_ids column from nvts table.  Hence increase database
+	version to 115.  Add database migration from version
+	114 to 115.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 115.
+
+	* src/manage_migrators.c (migrate_114_to_115): New function.
+	(database_migrators): Add migrate_114_to_115.
+
+	* src/manage_sql.c (create_tables): Remove sign_key_ids from nvts table
+	creation.
+
+	* doc/db_postgres.sql (nvts): Remove sign_key_ids column.
+
+	* doc/db.png, doc/omp.html, doc/omp.rnc: Update from source.
+
+	* src/schema_formats/XML/OMP.xml: Add compatibility change for
+	GET_NVTS.
+
+2014-03-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (get_nvti_xml): Remove fingerprint element.
 
 	* src/manage_sql.c (make_nvt_from_nvti): Don't store empty sign key id.

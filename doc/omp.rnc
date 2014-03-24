@@ -7711,7 +7711,6 @@ get_nvts_response_nvt
            & get_nvts_response_nvt_cert_refs
            & get_nvts_response_nvt_bugtraq_id
            & get_nvts_response_nvt_xrefs
-           & get_nvts_response_nvt_fingerprints
            & get_nvts_response_nvt_tags
            & get_nvts_response_nvt_preference_count?
            & get_nvts_response_nvt_timeout?
@@ -7871,12 +7870,6 @@ get_nvts_response_nvt_cert_refs_warning
 
 get_nvts_response_nvt_xrefs
  = element xrefs
-     {
-       text
-     }
-
-get_nvts_response_nvt_fingerprints
- = element fingerprints
      {
        text
      }

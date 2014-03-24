@@ -4077,9 +4077,8 @@ create_tables ()
        " ON nvt_selectors (type, family_or_nvt);");
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
-       "  copyright, cve, bid, xref, tag, sign_key_ids,"
-       "  category INTEGER, family, cvss_base, creation_time,"
-       "  modification_time);");
+       "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
+       "  creation_time, modification_time);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
        " ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name"

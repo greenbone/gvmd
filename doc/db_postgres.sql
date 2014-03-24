@@ -464,7 +464,6 @@ CREATE TABLE nvts (
     bid text,
     xref text,
     tag text,
-    sign_key_ids text,
     category text,
     family text,
     cvss_base text,
