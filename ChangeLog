@@ -1,3 +1,10 @@
+2014-03-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (alert_condition_description), src/manage_sql.c
+	(escalate_2, event_applies, delete_user), src/omp.c
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Remove
+	useless break statements following return statements.
+
 2014-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove NVTs 810002 "CPE Inventory" and 810003 "Host Summary" from

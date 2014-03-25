@@ -7884,7 +7884,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_free (report_content);
 
           return ret;
-          break;
         }
       case ALERT_METHOD_SYSLOG:
         {
@@ -7908,7 +7907,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_free (message);
 
           return 0;
-          break;
         }
       case ALERT_METHOD_VERINICE:
         {
@@ -7980,7 +7978,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           g_free (report_content);
 
           return ret;
-          break;
         }
       case ALERT_METHOD_ERROR:
       default:
@@ -8093,11 +8090,9 @@ event_applies (event_t event, const void *event_data, task_t task,
                     == 0);
           free (alert_event_data);
           return ret;
-          break;
         }
       default:
         return 0;
-        break;
     }
 }
 
@@ -47998,7 +47993,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
             current_credentials.uuid = current_uuid;
             sql ("ROLLBACK;");
             return 4;
-            break;
           }
         default:
           break;

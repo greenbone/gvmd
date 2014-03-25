@@ -856,7 +856,6 @@ alert_condition_description (alert_condition_t condition,
                                         level);
           free (level);
           return ret;
-          break;
         }
       case ALERT_CONDITION_SEVERITY_CHANGED:
         {
@@ -865,7 +864,6 @@ alert_condition_description (alert_condition_t condition,
           gchar *ret = g_strdup_printf ("Task severity %s", direction);
           free (direction);
           return ret;
-          break;
         }
       default:
         return g_strdup ("Internal Error");

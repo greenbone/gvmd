@@ -7281,7 +7281,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
           }
         ELSE_ERROR ("authenticate");
-        break;
+
       case CLIENT_AUTHENTICATE_CREDENTIALS:
         if (strcasecmp ("USERNAME", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME);
@@ -14254,7 +14254,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     get_reports_data_reset (get_reports_data);
                     set_client_state (CLIENT_AUTHENTIC);
                     return;
-                    break;
                   }
                 else
                   {
