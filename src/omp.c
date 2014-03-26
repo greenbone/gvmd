@@ -1444,6 +1444,33 @@ create_report_format_data_reset (create_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_role command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *copy;                    ///< UUID of resource to copy.
+  char *name;                    ///< Name of new role.
+  char *users;                   ///< Users belonging to new role.
+} create_role_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_role_data_reset (create_role_data_t *data)
+{
+  free (data->comment);
+  free (data->copy);
+  free (data->name);
+  free (data->users);
+
+  memset (data, 0, sizeof (create_role_data_t));
+}
+
+/**
  * @brief Command data for the create_schedule command.
  */
 typedef struct
@@ -3888,6 +3915,7 @@ typedef union
   create_port_range_data_t create_port_range;         ///< create_port_range
   create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
+  create_role_data_t create_role;                     ///< create_role
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_slave_data_t create_slave;                   ///< create_slave
   create_tag_data_t create_tag;                       ///< create_tag
@@ -4053,6 +4081,12 @@ create_port_list_data_t *create_port_list_data
  */
 create_port_range_data_t *create_port_range_data
  = (create_port_range_data_t*) &(command_data.create_port_range);
+
+/**
+ * @brief Parser callback data for CREATE_ROLE.
+ */
+create_role_data_t *create_role_data
+ = (create_role_data_t*) &(command_data.create_role);
 
 /**
  * @brief Parser callback data for CREATE_REPORT.
@@ -4843,6 +4877,11 @@ typedef enum
   CLIENT_CREATE_REPORT_TASK,
   CLIENT_CREATE_REPORT_TASK_COMMENT,
   CLIENT_CREATE_REPORT_TASK_NAME,
+  CLIENT_CREATE_ROLE,
+  CLIENT_CREATE_ROLE_COMMENT,
+  CLIENT_CREATE_ROLE_COPY,
+  CLIENT_CREATE_ROLE_NAME,
+  CLIENT_CREATE_ROLE_USERS,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -6107,6 +6146,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&create_group_data->users, "");
             set_client_state (CLIENT_CREATE_GROUP);
+          }
+        else if (strcasecmp ("CREATE_ROLE", element_name) == 0)
+          {
+            openvas_append_string (&create_role_data->users, "");
+            set_client_state (CLIENT_CREATE_ROLE);
           }
         else if (strcasecmp ("CREATE_LSC_CREDENTIAL", element_name) == 0)
           {
@@ -8462,6 +8506,20 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_PORT_RANGE_TYPE);
         ELSE_ERROR ("create_port_range");
+
+      case CLIENT_CREATE_ROLE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ROLE_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ROLE_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&create_role_data->name, "");
+            set_client_state (CLIENT_CREATE_ROLE_NAME);
+          }
+        else if (strcasecmp ("USERS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_ROLE_USERS);
+        ELSE_ERROR ("create_role");
 
       case CLIENT_CREATE_REPORT:
         if (strcasecmp ("REPORT", element_name) == 0)
@@ -19028,6 +19086,123 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MAX);
       CLOSE (CLIENT_CRF_GRFR_REPORT_FORMAT_PARAM_TYPE, MIN);
 
+      case CLIENT_CREATE_ROLE:
+        {
+          role_t new_role;
+
+          assert (strcasecmp ("CREATE_ROLE", element_name) == 0);
+          assert (create_role_data->users != NULL);
+
+          if (create_role_data->copy)
+            switch (copy_role (create_role_data->name,
+                                create_role_data->comment,
+                                create_role_data->copy,
+                                &new_role))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = role_uuid (new_role);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_role"),
+                                             uuid);
+                    log_event ("role", "Role", uuid, "created");
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_role",
+                                      "Role exists already"));
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_role",
+                                                 "role",
+                                                 create_role_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_role",
+                                      "Permission denied"));
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_role",
+                                      "Syntax error in role name"));
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+                case -1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_role"));
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+              }
+          else if (create_role_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_role",
+                                "CREATE_ROLE requires a NAME"));
+          else if (strlen (create_role_data->name) == 0)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_role",
+                                "CREATE_ROLE name must be at"
+                                " least one character long"));
+          else switch (create_role
+                        (create_role_data->name,
+                         create_role_data->comment,
+                         create_role_data->users,
+                         &new_role))
+            {
+              case 0:
+                {
+                  char *uuid = role_uuid (new_role);
+                  SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_role"),
+                                           uuid);
+                  log_event ("role", "Role", NULL, "created");
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_role",
+                                    "Role exists already"));
+                log_event_fail ("role", "Role", NULL, "created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_role",
+                                    "Type must be a valid OMP type"));
+                log_event_fail ("role", "Role", NULL, "created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_role",
+                                    "Permission denied"));
+                log_event_fail ("role", "Role", NULL, "created");
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_role"));
+                log_event_fail ("role", "Role", NULL, "created");
+                break;
+            }
+
+          create_role_data_reset (create_role_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_ROLE, COMMENT);
+      CLOSE (CLIENT_CREATE_ROLE, COPY);
+      CLOSE (CLIENT_CREATE_ROLE, NAME);
+      CLOSE (CLIENT_CREATE_ROLE, USERS);
+
       case CLIENT_CREATE_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -24950,6 +25125,19 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       case CLIENT_CRF_GRFR_REPORT_FORMAT_TRUST:
         break;
+
+
+      APPEND (CLIENT_CREATE_ROLE_COMMENT,
+              &create_role_data->comment);
+
+      APPEND (CLIENT_CREATE_ROLE_COPY,
+              &create_role_data->copy);
+
+      APPEND (CLIENT_CREATE_ROLE_NAME,
+              &create_role_data->name);
+
+      APPEND (CLIENT_CREATE_ROLE_USERS,
+              &create_role_data->users);
 
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,

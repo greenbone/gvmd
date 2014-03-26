@@ -1,3 +1,19 @@
+2014-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP CREATE_ROLE.
+
+	* src/omp.c (create_role_data_t): New type.
+	(create_role_data_reset): New function.
+	(command_data_t, client_state_t): Add CREATE_ROLE entry.
+	(create_role_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add CREATE_ROLE.
+
+	* src/manage_sql.c (omp_commands): Add CREATE_ROLE.
+	(copy_role, create_role): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
 2014-03-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (alert_condition_description), src/manage_sql.c

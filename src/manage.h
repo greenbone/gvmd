@@ -2742,6 +2742,15 @@ port_list_target_iterator_name (iterator_t*);
 int
 init_role_iterator (iterator_t *, const get_data_t *);
 
+int
+copy_role (const char *, const char *, const char *, role_t *);
+
+int
+create_role (const char *, const char *, const char *, role_t *);
+
+char*
+role_uuid (role_t);
+
 gchar *
 role_users (role_t);
 
