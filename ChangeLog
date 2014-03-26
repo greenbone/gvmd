@@ -1,5 +1,10 @@
 2014-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_config_system_discovery.c
+	(make_config_system_discovery): Correct comment.
+
+2014-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP CREATE_ROLE.
 
 	* src/omp.c (create_role_data_t): New type.

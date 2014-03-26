@@ -56,7 +56,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 
   config = sqlite3_last_insert_rowid (task_db);
 
-  /* Add the Ping Host NVT to the config. */
+  /* Add NVTs to the config. */
 
   sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
        " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT) ","
