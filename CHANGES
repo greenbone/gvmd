@@ -1,7 +1,45 @@
+openvas-manager 5.0+beta11 (2014-03-26)
+
+This is the eleventh beta version of the upcoming 5.0 release of the OpenVAS
+Manager. it is the central management service between the actual security
+scanner and its various user clients.
+
+This release adds a --gnutls-priorities option to specify the cipher priority
+as well as adds a CREATE_ROLE OMP command and solve a number of small issues.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Jan-Oliver Wagner
+
+Main changes since 5.0+beta10:
+* Get tags for resources by ROWID instead of UUID. Make iterator functions for
+  active and orphan fields return int.
+* Rename "attach_id" to "resource_uuid", "attach_type" to "resource_type" add
+  resource rowid "resource" and "resource_location" to tags tables. Hence
+  increase database version to 117.  Add database migration from version 116 to
+  117.
+* Change tag OMP elements accordingly and make them more consistent with the
+  resource in permissions overall. Allow tags to be attached to resources in
+  trash. Rename "orphaned" in tags to "orphan".
+* Add OMP CREATE_ROLE.
+* Remove NVTs 810002 "CPE Inventory" and 810003 "Host Summary" from predefined
+  configs.  Hence increase database version to 116.  Add database migration
+  from version 115 to 116.
+* Drop sign_key_ids column from nvts table.  Hence increase database version to
+  115.  Add database migration from version 114 to 115.
+* Add alive test "Consider Alive".
+* Add --gnutls-priorities option to Manager.
+* Report scanner loading progress to client/GSA.
+* Added regex-based parameter validation and support of alternative run modes,
+  e.g. an init mode to get resource lists to display in the client, to wizards.
+* Switch the type check on the filters associated with alerts from "report" to
+  "result".  Alerts were migrated from "report" to "result" in db version 92.
+* Code cleanup.
+
+
 openvas-manager 5.0+beta10 (2014-03-18)
 
 This is the tenth beta version of the upcoming 5.0 release of the OpenVAS
-Manager. it is the ventral management service between the actual security
+Manager. it is the central management service between the actual security
 scanner and its various user clients.
 
 This release Correct the behavior of the manager when called with --rebuild,
