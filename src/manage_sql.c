@@ -22023,13 +22023,13 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       PRINT (out,
             "<user_tags>"
             "<count>%i</count>",
-            resource_tag_count ("report", uuid, 1));
+            resource_tag_count ("report", report, 1));
 
       if (get->details || get->id)
         {
           iterator_t tags;
 
-          init_resource_tag_iterator (&tags, "report", uuid, 1, NULL, 1);
+          init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
 
           while (next (&tags))
             {
@@ -49682,7 +49682,15 @@ tag_iterator_resource_location (iterator_t* iterator)
  *
  * @return Whether a tag is active (0 = inactive, 1 = active).
  */
-DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 4);
+int
+tag_iterator_active (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 4);
+  return ret;
+}
 
 /**
  * @brief Get the value from a Tag iterator.
@@ -49700,7 +49708,15 @@ DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 5);
  *
  * @return Whether a tag is orphaned.
  */
-DEF_ACCESS (tag_iterator_orphan, GET_ITERATOR_COLUMN_COUNT + 6);
+int
+tag_iterator_orphan (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 6);
+  return ret;
+}
 
 /**
  * @brief Get the resource_name from a Tag iterator.
@@ -49752,7 +49768,7 @@ DEF_ACCESS (tag_name_iterator_name, 0);
  *
  * @param[in]  iterator         Iterator.
  * @param[in]  type             Resource type.
- * @param[in]  id               Resource ID.
+ * @param[in]  resource         Resource ROWID.
  * @param[in]  active_only      Whether to select only active tags.
  * @param[in]  sort_field       Field to sort by.
  * @param[in]  ascending        Whether to sort in ascending order.
@@ -49761,29 +49777,25 @@ DEF_ACCESS (tag_name_iterator_name, 0);
  */
 int
 init_resource_tag_iterator (iterator_t* iterator, const char* type,
-                            const char* id, int active_only,
+                            resource_t resource, int active_only,
                             const char* sort_field,
                             int ascending)
 {
-  gchar *quoted_id;
-
   assert (type);
-  assert (id);
+  assert (resource);
 
-  quoted_id = sql_quote (id);
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, value, comment, active"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
-                 "   AND resource_uuid = '%s'"
+                 "   AND resource = %llu"
                  "   %s"
                  " ORDER BY %s %s;",
                  type,
-                 quoted_id,
+                 resource,
                  active_only ? "AND active=1": "",
                  sort_field ? sort_field : "active DESC, name",
                  ascending ? "ASC" : "DESC");
-  g_free (quoted_id);
 
   return 0;
 }
@@ -49841,25 +49853,22 @@ DEF_ACCESS (resource_tag_iterator_active, 5);
  * @return Total number of tags attached to the resource.
  */
 int
-resource_tag_count (const char* type, const char* id, int active_only)
+resource_tag_count (const char* type, resource_t resource, int active_only)
 {
   int ret;
-  gchar *quoted_id;
 
   assert (type);
-  assert (id);
+  assert (resource);
 
-  quoted_id = sql_quote (id);
   ret = sql_int (0, 0,
                  "SELECT count (ROWID)"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
-                 "   AND resource_uuid = '%s'"
+                 "   AND resource = %llu"
                  "   %s;",
                  type,
-                 quoted_id,
+                 resource,
                  active_only ? "AND active=1": "");
-  g_free (quoted_id);
 
   return ret;
 }

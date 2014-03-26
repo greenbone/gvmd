@@ -3276,7 +3276,7 @@ tag_iterator_resource_uuid (iterator_t*);
 int
 tag_iterator_resource_location (iterator_t*);
 
-const char*
+int
 tag_iterator_active (iterator_t*);
 
 const char*
@@ -3285,7 +3285,7 @@ tag_iterator_value (iterator_t*);
 const char*
 tag_iterator_resource_name (iterator_t*);
 
-const char*
+int
 tag_iterator_orphan (iterator_t*);
 
 int
@@ -3295,7 +3295,7 @@ const char*
 tag_name_iterator_name (iterator_t*);
 
 int
-init_resource_tag_iterator (iterator_t*, const char*, const char*, int,
+init_resource_tag_iterator (iterator_t*, const char*, resource_t, int,
                             const char*, int);
 
 const char*
@@ -3314,7 +3314,7 @@ const char*
 resource_tag_iterator_active (iterator_t*);
 
 int
-resource_tag_count (const char*, const char*, int);
+resource_tag_count (const char*, resource_t, int);
 
 int
 tag_in_use (tag_t);

@@ -5432,12 +5432,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_string_append_printf (tags_str,
                               "<count>%i</count>",
                               resource_tag_count ("nvt",
-                                                  get_iterator_uuid
+                                                  get_iterator_resource
                                                     (nvts),
                                                   1));
 
       init_resource_tag_iterator (&tags, "nvt",
-                                  get_iterator_uuid (nvts),
+                                  get_iterator_resource (nvts),
                                   1, NULL, 1);
       while (next (&tags))
         {
@@ -5540,7 +5540,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                            oid,
                            name_text,
                            resource_tag_count ("nvt",
-                                                get_iterator_uuid
+                                                get_iterator_resource
                                                   (nvts),
                                                 1));
   g_free (name_text);

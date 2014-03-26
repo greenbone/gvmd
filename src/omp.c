@@ -5625,11 +5625,12 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                 "<user_tags>"
                                 "<count>%i</count>",
                                 resource_tag_count (tag_type,
-                                                    get_iterator_uuid
+                                                    get_iterator_resource
                                                       (iterator),
                                                     1));
 
-      init_resource_tag_iterator (&tags, tag_type, get_iterator_uuid (iterator),
+      init_resource_tag_iterator (&tags, tag_type,
+                                  get_iterator_resource (iterator),
                                   1, NULL, 1);
 
       while (next (&tags))
@@ -5658,7 +5659,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                                 "<count>%i</count>"
                                 "</user_tags>",
                                 resource_tag_count (tag_type,
-                                                    get_iterator_uuid
+                                                    get_iterator_resource
                                                       (iterator),
                                                     1));
     }
@@ -9645,7 +9646,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                      || (note_iterator_result (notes)
                                          && (uuid_result == NULL))),
                                     resource_tag_count ("note",
-                                                        get_iterator_uuid
+                                                        get_iterator_resource
                                                           (notes),
                                                         1));
           g_free (excerpt);
@@ -9746,11 +9747,12 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<user_tags>"
                                     "<count>%i</count>",
                                     resource_tag_count ("note",
-                                                        get_iterator_uuid
+                                                        get_iterator_resource
                                                           (notes),
                                                         1));
 
-          init_resource_tag_iterator (&tags, "note", get_iterator_uuid (notes),
+          init_resource_tag_iterator (&tags, "note",
+                                      get_iterator_resource (notes),
                                       1, NULL, 1);
 
           while (next (&tags))
@@ -9893,7 +9895,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                      || (override_iterator_result (overrides)
                                          && (uuid_result == NULL))),
                                     resource_tag_count ("override",
-                                                        get_iterator_uuid
+                                                        get_iterator_resource
                                                           (overrides),
                                                         1));
           g_free (excerpt);
@@ -9994,12 +9996,12 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<user_tags>"
                                     "<count>%i</count>",
                                     resource_tag_count ("override",
-                                                        get_iterator_uuid
+                                                        get_iterator_resource
                                                           (overrides),
                                                         1));
 
           init_resource_tag_iterator (&tags, "override",
-                                      get_iterator_uuid (overrides),
+                                      get_iterator_resource (overrides),
                                       1, NULL, 1);
 
           while (next (&tags))
@@ -10406,13 +10408,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       buffer_xml_append_printf (buffer,
                                 "<user_tags>"
                                 "<count>%i</count>",
-                                resource_tag_count ("result", uuid, 1));
+                                resource_tag_count ("result", result, 1));
 
       if (include_tags_details)
         {
           iterator_t tags;
 
-          init_resource_tag_iterator (&tags, "result", uuid, 1, NULL, 1);
+          init_resource_tag_iterator (&tags, "result", result, 1, NULL, 1);
 
           while (next (&tags))
             {
@@ -15371,8 +15373,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<trash>%d</trash>"
                                            "</resource>"
                                            "<value>%s</value>"
-                                           "<active>%s</active>"
-                                           "<orphan>%s</orphan>"
+                                           "<active>%d</active>"
+                                           "<orphan>%d</orphan>"
                                            "</tag>",
                                            tag_iterator_resource_uuid (&tags),
                                            tag_iterator_resource_type (&tags),

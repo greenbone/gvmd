@@ -1,5 +1,30 @@
 2014-03-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Get tags for resources by ROWID instead of UUID. Make iterator
+	functions for active and orphan fields return int.
+
+	* src/manage_sql.c (print_report_xml): Use ROWID of report instead of
+	UUID when getting tags.
+	(tag_iterator_active, tag_iterator_orphan): Change return type to int.
+	(init_resource_tag_iterator, resource_tag_count): Use ROWID of resource
+	instead of UUID  when getting tags.
+
+	* src/manage.c (get_nvti_xml): Use ROWID of NVT instead of UUID when
+	getting tags.
+
+	* src/manage.h (tag_iterator_active, tag_iterator_orphan): Change
+	return type to int.
+	(init_resource_tag_iterator, resource_tag_count): Change type of
+	resource parameter to resource_t.
+
+	* src/omp.c (send_get_common, buffer_notes_xml, buffer_overrides_xml)
+	(buffer_results_xml): Use ROWID of resource instead of UUID when
+	getting tags.
+	(xml_handle_end_element): In case CLIENT_GET_TAGS adjust elements
+	to new return type of tag_iterator_active and tag_iterator_orphan.
+
+2014-03-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Rename "attach_id" to "resource_uuid", "attach_type" to "resource_type"
 	add resource rowid "resource" and "resource_location" to tags tables.
 	Hence increase database version to 117.  Add database migration from
