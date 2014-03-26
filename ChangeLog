@@ -1,4 +1,4 @@
-2014-03-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+2014-03-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Rename "attach_id" to "resource_uuid", "attach_type" to "resource_type"
 	add resource rowid "resource" and "resource_location" to tags tables.
