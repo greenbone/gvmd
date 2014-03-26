@@ -6921,17 +6921,17 @@ create_slave_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>attach</b>&gt;
+              &lt;<b>resource</b>&gt;
               <div style="margin-left: 15px; display: inline;">Identifies a resource the tag is to be attached to.</div>
 <ul style="list-style: none">
 <li>
+          @<b>id</b>
+          ()
+          ID of the resource the tag is to be attached to.
+          </li>
+<li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">OMP type of the resource the tag is to be attached to.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>id</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -6981,7 +6981,7 @@ create_slave_password
  = element create_tag
      {
        create_tag_name
-       &amp; create_tag_attach
+       &amp; create_tag_resource
        &amp; create_tag_copy?
        &amp; create_tag_value?
        &amp; create_tag_comment?
@@ -6994,21 +6994,15 @@ create_tag_name
        text
      }
 
-create_tag_attach
- = element attach
+create_tag_resource
+ = element resource
      {
-       create_tag_attach_type
-       &amp; create_tag_attach_id?
+       attribute id {  }?
+       &amp; create_tag_resource_type
      }
 
-create_tag_attach_type
+create_tag_resource_type
  = element type
-     {
-       text
-     }
-
-create_tag_attach_id
- = element id
      {
        text
      }
@@ -7050,10 +7044,9 @@ create_tag_active
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_tag&gt;
    &lt;name&gt;geo:long&lt;/name&gt;
-   &lt;attach&gt;
+   &lt;resource id="b493b7a8-7489-11df-a3ec-002264764cea"&gt;
      &lt;type&gt;target&lt;/type&gt;
-     &lt;id&gt;b493b7a8-7489-11df-a3ec-002264764cea&lt;/id&gt;
-   &lt;/attach&gt;
+   &lt;/resource&gt;
    &lt;value&gt;52.2788&lt;/value&gt;
  &lt;/create_tag&gt;
 </pre></div>
@@ -18134,22 +18127,27 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>attach</b>&gt;
+              &lt;<b>resource</b>&gt;
               <div style="margin-left: 15px; display: inline;">Identifies a resource the tag is attached to.</div>
 <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          ()
+          ID of the resource the tag is attached to.
+          </li>
 <li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">OMP type of the resource the tag is attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>id</b>&gt;
-              <div style="margin-left: 15px; display: inline;">ID of the resource the tag is attached to.</div>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the attach resource if available, empty otherwise.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the attach resource if available, empty otherwise.</div>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the resource is in the trashcan.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -18165,7 +18163,7 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>orphaned</b>&gt;
+              &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the tag is attached to a nonexistent resource.</div>
 <ul style="list-style: none"></ul>
 </li>
@@ -18265,10 +18263,10 @@ get_tags_response_tag
            &amp; get_tags_response_tag_modification_time
            &amp; get_tags_response_tag_writable
            &amp; get_tags_response_tag_in_use
-           &amp; get_tags_response_tag_attach
+           &amp; get_tags_response_tag_resource
            &amp; get_tags_response_tag_value
            &amp; get_tags_response_tag_active
-           &amp; get_tags_response_tag_orphaned )?
+           &amp; get_tags_response_tag_orphan )?
      }
 
 get_tags_response_tag_name
@@ -18307,30 +18305,31 @@ get_tags_response_tag_in_use
        boolean
      }
 
-get_tags_response_tag_attach
- = element attach
+get_tags_response_tag_resource
+ = element resource
      {
-       get_tags_response_tag_attach_type
-       &amp; get_tags_response_tag_attach_id
-       &amp; get_tags_response_tag_attach_name
+       attribute id {  }
+       &amp; get_tags_response_tag_resource_type
+       &amp; get_tags_response_tag_resource_name
+       &amp; get_tags_response_tag_resource_trash
      }
 
-get_tags_response_tag_attach_type
+get_tags_response_tag_resource_type
  = element type
      {
        text
      }
 
-get_tags_response_tag_attach_id
- = element id
+get_tags_response_tag_resource_name
+ = element name
      {
        text
      }
 
-get_tags_response_tag_attach_name
- = element name
+get_tags_response_tag_resource_trash
+ = element trash
      {
-       text
+       boolean
      }
 
 get_tags_response_tag_value
@@ -18345,8 +18344,8 @@ get_tags_response_tag_active
        boolean
      }
 
-get_tags_response_tag_orphaned
- = element orphaned
+get_tags_response_tag_orphan
+ = element orphan
      {
        boolean
      }
@@ -18423,11 +18422,11 @@ get_tags_response_tag_count_page
      &lt;modification_time&gt;Fri Apr 12 08:49:43 2013&lt;/modification_time&gt;
      &lt;writable&gt;1&lt;/writable&gt;
      &lt;in_use&gt;0&lt;/in_use&gt;
-     &lt;attach&gt;
+     &lt;resource id="b493b7a8-7489-11df-a3ec-002264764cea"&gt;
        &lt;type&gt;target&lt;/type&gt;
-       &lt;id&gt;b493b7a8-7489-11df-a3ec-002264764cea&lt;/id&gt;
        &lt;name&gt;Server 1&lt;/name&gt;
-     &lt;/attach&gt;
+       &lt;trash&gt;0&lt;/trash&gt;
+     &lt;/resource&gt;
      &lt;value&gt;52.2788&lt;/value&gt;
      &lt;active&gt;1&lt;/active&gt;
      &lt;orphaned&gt;0&lt;/orphaned&gt;
@@ -23592,17 +23591,17 @@ modify_target_reverse_lookup_unify
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>attach</b>&gt;
+              &lt;<b>resource</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Identifies a resource the tag is to be attached to.</div>
 <ul style="list-style: none">
 <li>
+          @<b>id</b>
+          ()
+          ID of the resource the tag is to be attached to.
+          </li>
+<li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">OMP type of the resource the tag is to be attached to.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>id</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">ID of the resource the tag is to be attached to.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -23644,7 +23643,7 @@ modify_target_reverse_lookup_unify
      {
        attribute tag_id { uuid }
        &amp; modify_tag_name?
-       &amp; modify_tag_attach?
+       &amp; modify_tag_resource?
        &amp; modify_tag_value?
        &amp; modify_tag_comment?
        &amp; modify_tag_active?
@@ -23656,21 +23655,15 @@ modify_tag_name
        text
      }
 
-modify_tag_attach
- = element attach
+modify_tag_resource
+ = element resource
      {
-       modify_tag_attach_type
-       &amp; modify_tag_attach_id?
+       attribute id {  }?
+       &amp; modify_tag_resource_type
      }
 
-modify_tag_attach_type
+modify_tag_resource_type
  = element type
-     {
-       text
-     }
-
-modify_tag_attach_id
- = element id
      {
        text
      }

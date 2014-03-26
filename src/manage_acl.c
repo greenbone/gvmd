@@ -236,6 +236,12 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 
   if (strcmp (type, "result") == 0)
     return user_owns_result (uuid);
+  if ((strcmp (type, "nvt") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "cpe") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0))
+    return 1;
 
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM %ss%s"

@@ -2804,7 +2804,7 @@ create_tag
  = element create_tag
      {
        create_tag_name
-       & create_tag_attach
+       & create_tag_resource
        & create_tag_copy?
        & create_tag_value?
        & create_tag_comment?
@@ -2819,23 +2819,17 @@ create_tag_name
      }
 
 # Identifies a resource the tag is to be attached to.
-create_tag_attach
- = element attach
+create_tag_resource
+ = element resource
      {
-       create_tag_attach_type
-       & create_tag_attach_id?
+       # ID of the resource the tag is to be attached to.
+       attribute id {  }?
+       & create_tag_resource_type
      }
 
 # OMP type of the resource the tag is to be attached to.
-create_tag_attach_type
+create_tag_resource_type
  = element type
-     {
-       text
-     }
-
-# ID of the resource the tag is to be attached to.
-create_tag_attach_id
- = element id
      {
        text
      }
@@ -4851,7 +4845,7 @@ modify_tag
      {
        attribute tag_id { uuid }
        & modify_tag_name?
-       & modify_tag_attach?
+       & modify_tag_resource?
        & modify_tag_value?
        & modify_tag_comment?
        & modify_tag_active?
@@ -4865,23 +4859,17 @@ modify_tag_name
      }
 
 # Identifies a resource the tag is to be attached to.
-modify_tag_attach
- = element attach
+modify_tag_resource
+ = element resource
      {
-       modify_tag_attach_type
-       & modify_tag_attach_id?
+       # ID of the resource the tag is to be attached to.
+       attribute id {  }?
+       & modify_tag_resource_type
      }
 
 # OMP type of the resource the tag is to be attached to.
-modify_tag_attach_type
+modify_tag_resource_type
  = element type
-     {
-       text
-     }
-
-# ID of the resource the tag is to be attached to.
-modify_tag_attach_id
- = element id
      {
        text
      }
@@ -9633,10 +9621,10 @@ get_tags_response_tag
            & get_tags_response_tag_modification_time
            & get_tags_response_tag_writable
            & get_tags_response_tag_in_use
-           & get_tags_response_tag_attach
+           & get_tags_response_tag_resource
            & get_tags_response_tag_value
            & get_tags_response_tag_active
-           & get_tags_response_tag_orphaned )?
+           & get_tags_response_tag_orphan )?
      }
 
 # Name of the tag (usually namespace:predicate).
@@ -9682,33 +9670,35 @@ get_tags_response_tag_in_use
      }
 
 # Identifies a resource the tag is attached to.
-get_tags_response_tag_attach
- = element attach
+get_tags_response_tag_resource
+ = element resource
      {
-       get_tags_response_tag_attach_type
-       & get_tags_response_tag_attach_id
-       & get_tags_response_tag_attach_name
+       # ID of the resource the tag is attached to.
+       attribute id {  }
+       & get_tags_response_tag_resource_type
+       & get_tags_response_tag_resource_name
+       & get_tags_response_tag_resource_trash
      }
 
 # OMP type of the resource the tag is attached to.
-get_tags_response_tag_attach_type
+get_tags_response_tag_resource_type
  = element type
      {
        text
      }
 
-# ID of the resource the tag is attached to.
-get_tags_response_tag_attach_id
- = element id
+# Name of the attach resource if available, empty otherwise.
+get_tags_response_tag_resource_name
+ = element name
      {
        text
      }
 
-# Name of the attach resource if available, empty otherwise.
-get_tags_response_tag_attach_name
- = element name
+# Whether the resource is in the trashcan.
+get_tags_response_tag_resource_trash
+ = element trash
      {
-       text
+       boolean
      }
 
 # Value associated with the tag.
@@ -9726,8 +9716,8 @@ get_tags_response_tag_active
      }
 
 # Whether the tag is attached to a nonexistent resource.
-get_tags_response_tag_orphaned
- = element orphaned
+get_tags_response_tag_orphan
+ = element orphan
      {
        boolean
      }

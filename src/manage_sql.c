@@ -245,6 +245,13 @@ permissions_set_subjects (const char *, resource_t, resource_t, int);
 static resource_t
 permission_resource (permission_t);
 
+void
+tags_set_locations (const char *, resource_t, resource_t, int);
+
+void
+tags_set_orphans (const char *, resource_t, int);
+
+
 
 /* Variables. */
 
@@ -2510,8 +2517,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name = '%s'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = allinfo.uuid"
-                                        "   AND tags.attach_type = allinfo.type"
+                                        "   AND tags.resource_uuid"
+                                        "         = allinfo.uuid"
+                                        "   AND tags.resource_type"
+                                        "         = allinfo.type"
                                         "   %s%s%s))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
@@ -2534,8 +2543,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name = '%s'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = %ss.uuid"
-                                        "   AND tags.attach_type = '%s'"
+                                        "   AND tags.resource_uuid = %ss.uuid"
+                                        "   AND tags.resource_type = '%s'"
                                         "   %s%s%s))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
@@ -2563,8 +2572,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name LIKE '%%%%%s%%%%'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = allinfo.uuid"
-                                        "   AND tags.attach_type = allinfo.type"
+                                        "   AND tags.resource_uuid"
+                                        "         = allinfo.uuid"
+                                        "   AND tags.resource_type"
+                                        "         = allinfo.type"
                                         "   AND tags.value LIKE '%%%%%s%%%%'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
@@ -2577,8 +2588,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name LIKE '%%%%%s%%%%'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = %ss.uuid"
-                                        "   AND tags.attach_type = '%s'"
+                                        "   AND tags.resource_uuid = %ss.uuid"
+                                        "   AND tags.resource_type = '%s'"
                                         "   AND tags.value LIKE '%%%%%s%%%%'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
@@ -2596,8 +2607,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name REGEXP '%s'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = allinfo.uuid"
-                                        "   AND tags.attach_type = allinfo.type"
+                                        "   AND tags.resource_uuid"
+                                        "         = allinfo.uuid"
+                                        "   AND tags.resource_type"
+                                        "         = allinfo.type"
                                         "   AND tags.value"
                                         "       REGEXP '%s'))",
                                         get_join (first_keyword, last_was_and,
@@ -2611,8 +2624,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                         "  (SELECT * FROM tags"
                                         "   WHERE tags.name REGEXP '%s'"
                                         "   AND tags.active != 0"
-                                        "   AND tags.attach_id = %ss.uuid"
-                                        "   AND tags.attach_type = '%s'"
+                                        "   AND tags.resource_uuid = %ss.uuid"
+                                        "   AND tags.resource_type = '%s'"
                                         "   AND tags.value"
                                         "       REGEXP '%s'))",
                                         get_join (first_keyword, last_was_and,
@@ -3693,7 +3706,14 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " WHERE uuid = '%s';",
                         type,
                         uuid);
-  else
+  else if ((strcmp (type, "nvt"))
+           && (strcmp (type, "cpe"))
+           && (strcmp (type, "cve"))
+           && (strcmp (type, "ovaldef"))
+           && (strcmp (type, "dfn_cert_adv"))
+           && (strcmp (type, "report"))
+           && (strcmp (type, "result"))
+           && (strcmp (type, "user")))
     *name = sql_string (0, 0,
                         "SELECT name"
                         " FROM %ss%s"
@@ -4209,18 +4229,18 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment, value);");
   sql ("CREATE TABLE IF NOT EXISTS tags"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-       "  creation_time, modification_time, attach_type, attach_id,"
-       "  active, value);");
-  sql ("CREATE INDEX IF NOT EXISTS tags_by_attach"
-       " ON tags (attach_type, attach_id);");
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value);");
+  sql ("CREATE INDEX IF NOT EXISTS tags_by_resource"
+       " ON tags (resource_type, resource);");
   sql ("CREATE INDEX IF NOT EXISTS tags_by_name"
        " ON tags (name);");
   sql ("CREATE UNIQUE INDEX IF NOT EXISTS tags_by_uuid"
        " ON tags (uuid);");
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-       "  creation_time, modification_time, attach_type, attach_id,"
-       "  active, value);");
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value);");
   /* port_range in the following two is actually a port list.  Migrating a
    * column rename is lots of work. */
   sql ("CREATE TABLE IF NOT EXISTS targets"
@@ -5803,6 +5823,7 @@ delete_alert (const char *alert_id, int ultimate)
         }
 
       permissions_set_orphans ("alert", alert, LOCATION_TRASH);
+      tags_set_orphans ("alert", alert, LOCATION_TRASH);
 
       sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
            alert);
@@ -5874,6 +5895,8 @@ delete_alert (const char *alert_id, int ultimate)
 
       permissions_set_locations ("alert", alert, trash_alert,
                                  LOCATION_TRASH);
+      tags_set_locations ("alert", alert, trash_alert,
+                          LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM task_alerts"
@@ -5885,7 +5908,10 @@ delete_alert (const char *alert_id, int ultimate)
       return 1;
     }
   else
-    permissions_set_orphans ("alert", alert, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("alert", alert, LOCATION_TABLE);
+      tags_set_orphans ("alert", alert, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM alert_condition_data WHERE alert = %llu;",
        alert);
@@ -11804,12 +11830,12 @@ resource_count (const char *type, const get_data_t *get)
 }
 
 /**
- * @brief Return if a resource of the given type and unique ID exists.
+ * @brief Test whether a resource of the given type and unique ID exists.
  *
  * @param[in]  type  Type.
  * @param[in]  id    Unique ID.
  *
- * @return The number of resources associated with the current user.
+ * @return 1 if the resource exists, 0 otherwise.
  */
 int
 resource_id_exists (const char *type, const char * id)
@@ -11817,9 +11843,47 @@ resource_id_exists (const char *type, const char * id)
   return !!sql_int (0, 0,
                     "SELECT count(*)"
                     " FROM %ss"
-                    " WHERE uuid='%s';",
+                    " WHERE uuid='%s'"
+                    " %s;",
                     type,
-                    id);
+                    id,
+                    (strcmp (type, "task") == 0) ? "AND hidden=0" : "");
+}
+
+/**
+ * @brief Test Whether a resource of the given type and ID exists in the trash.
+ *
+ * @param[in]  type  Type.
+ * @param[in]  id    Unique ID.
+ *
+ * @return 1 if the resource exists, 0 otherwise.
+ */
+int
+trash_id_exists (const char *type, const char * id)
+{
+  if ((strcmp (type, "nvt") == 0)
+      || (strcmp (type, "cpe") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0)
+      || (strcmp (type, "report") == 0)
+      || (strcmp (type, "result") == 0)
+      || (strcmp (type, "user") == 0))
+    return 0;
+  else if (strcmp (type, "task"))
+    return !!sql_int (0, 0,
+                      "SELECT count(*)"
+                      " FROM %ss_trash"
+                      " WHERE uuid='%s';",
+                      type,
+                      id);
+  else
+    return !!sql_int (0, 0,
+                      "SELECT count(*)"
+                      " FROM tasks"
+                      " WHERE uuid='%s'"
+                      " AND hidden=2;",
+                      id);
 }
 
 /**
@@ -18524,13 +18588,26 @@ delete_report_internal (report_t report)
        report);
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
+
+  sql ("UPDATE tags"
+       " SET resource = 0, resource_location = 0"
+       " WHERE resource IN"
+       "   (SELECT ROWID FROM results WHERE report = %llu);",
+       report);
+  sql ("UPDATE tags_trash"
+       " SET resource = 0, resource_location = 0"
+       " WHERE resource IN"
+       "   (SELECT ROWID FROM results WHERE report = %llu);",
+       report);
   sql ("DELETE FROM results WHERE report = %llu;", report);
+
   sql ("DELETE FROM report_counts WHERE report = %llu;", report);
   sql ("DELETE FROM reports WHERE ROWID = %llu;", report);
 
   /* Adjust permissions. */
 
   permissions_set_orphans ("report", report, LOCATION_TABLE);
+  tags_set_orphans ("report", report, LOCATION_TABLE);
 
   /* Update the task state. */
 
@@ -24867,6 +24944,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
         }
 
       permissions_set_orphans ("task", task, LOCATION_TRASH);
+      tags_set_orphans ("task", task, LOCATION_TRASH);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
@@ -24960,6 +25038,10 @@ delete_task (task_t task, int ultimate)
                                task_in_trash (task)
                                 ? LOCATION_TRASH
                                 : LOCATION_TABLE);
+      tags_set_orphans ("task", task,
+                        task_in_trash (task)
+                          ? LOCATION_TRASH
+                          : LOCATION_TABLE);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
       sql ("DELETE FROM tasks WHERE ROWID = %llu;", task);
@@ -24970,6 +25052,7 @@ delete_task (task_t task, int ultimate)
   else
     {
       permissions_set_locations ("task", task, task, LOCATION_TRASH);
+      tags_set_locations ("task", task, task, LOCATION_TRASH);
       sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
     }
 
@@ -26023,6 +26106,7 @@ delete_target (const char *target_id, int ultimate)
         }
 
       permissions_set_orphans ("target", target, LOCATION_TRASH);
+      tags_set_orphans ("target", target, LOCATION_TRASH);
 
       sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", target);
       sql ("COMMIT;");
@@ -26070,6 +26154,9 @@ delete_target (const char *target_id, int ultimate)
       permissions_set_locations ("target", target,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("target", target,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -26081,7 +26168,10 @@ delete_target (const char *target_id, int ultimate)
       return 1;
     }
   else
-    permissions_set_orphans ("target", target, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("target", target, LOCATION_TABLE);
+      tags_set_orphans ("target", target, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM targets WHERE ROWID = %llu;", target);
 
@@ -28283,6 +28373,7 @@ delete_config (const char *config_id, int ultimate)
         }
 
       permissions_set_orphans ("config", config, LOCATION_TRASH);
+      tags_set_orphans ("config", config, LOCATION_TRASH);
 
       sql ("DELETE FROM nvt_selectors WHERE name ="
            " (SELECT nvt_selector FROM configs_trash WHERE ROWID = %llu);",
@@ -28312,6 +28403,7 @@ delete_config (const char *config_id, int ultimate)
            config);
 
       permissions_set_orphans ("config", config, LOCATION_TABLE);
+      tags_set_orphans ("config", config, LOCATION_TABLE);
     }
   else
     {
@@ -28357,6 +28449,8 @@ delete_config (const char *config_id, int ultimate)
 
       permissions_set_locations ("config", config, trash_config,
                                  LOCATION_TRASH);
+      tags_set_locations ("config", config, trash_config,
+                          LOCATION_TRASH);
     }
 
   sql ("DELETE FROM config_preferences WHERE config = %llu;", config);
@@ -32428,6 +32522,8 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 
       permissions_set_orphans ("lsc_credential", lsc_credential,
                                LOCATION_TRASH);
+      tags_set_orphans ("lsc_credential", lsc_credential,
+                        LOCATION_TRASH);
 
       sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", lsc_credential);
       sql ("COMMIT;");
@@ -32474,9 +32570,16 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
       permissions_set_locations ("lsc_credential", lsc_credential,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("lsc_credential", lsc_credential,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("lsc_credential", lsc_credential, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("lsc_credential", lsc_credential,
+                               LOCATION_TABLE);
+      tags_set_orphans ("lsc_credential", lsc_credential, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM lsc_credentials WHERE ROWID = %llu;", lsc_credential);
 
@@ -33796,6 +33899,7 @@ delete_agent (const char *agent_id, int ultimate)
         }
 
       permissions_set_orphans ("agent", agent, LOCATION_TRASH);
+      tags_set_orphans ("agent", agent, LOCATION_TRASH);
 
       sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", agent);
       sql ("COMMIT;");
@@ -33820,9 +33924,15 @@ delete_agent (const char *agent_id, int ultimate)
       permissions_set_locations ("agent", agent,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("agent", agent,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("agent", agent, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("agent", agent, LOCATION_TABLE);
+      tags_set_orphans ("agent", agent, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM agents WHERE ROWID = %llu;", agent);
   sql ("COMMIT;");
@@ -34552,6 +34662,7 @@ delete_note (const char *note_id, int ultimate)
         }
 
       permissions_set_orphans ("note", note, LOCATION_TRASH);
+      tags_set_orphans ("note", note, LOCATION_TRASH);
 
       sql ("DELETE FROM notes_trash WHERE ROWID = %llu;", note);
       sql ("COMMIT;");
@@ -34571,9 +34682,15 @@ delete_note (const char *note_id, int ultimate)
       permissions_set_locations ("note", note,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("note", note,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("note", note, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("note", note, LOCATION_TABLE);
+      tags_set_orphans ("note", note, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM notes WHERE ROWID = %llu;", note);
 
@@ -35482,6 +35599,7 @@ delete_override (const char *override_id, int ultimate)
         }
 
       permissions_set_orphans ("override", override, LOCATION_TRASH);
+      tags_set_orphans ("override", override, LOCATION_TRASH);
 
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", override);
       sql ("COMMIT;");
@@ -35502,9 +35620,15 @@ delete_override (const char *override_id, int ultimate)
       permissions_set_locations ("override", override,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("override", override,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("override", override, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("override", override, LOCATION_TABLE);
+      tags_set_orphans ("override", override, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM overrides WHERE ROWID = %llu;", override);
 
@@ -36432,6 +36556,7 @@ delete_schedule (const char *schedule_id, int ultimate)
         }
 
       permissions_set_orphans ("schedule", schedule, LOCATION_TRASH);
+      tags_set_orphans ("schedule", schedule, LOCATION_TRASH);
 
       sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", schedule);
       sql ("COMMIT;");
@@ -36473,6 +36598,9 @@ delete_schedule (const char *schedule_id, int ultimate)
       permissions_set_locations ("schedule", schedule,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("schedule", schedule,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -36484,7 +36612,10 @@ delete_schedule (const char *schedule_id, int ultimate)
       return 1;
     }
   else
-    permissions_set_orphans ("schedule", schedule, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("schedule", schedule, LOCATION_TABLE);
+      tags_set_orphans ("schedule", schedule, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM schedules WHERE ROWID = %llu;", schedule);
 
@@ -38450,6 +38581,7 @@ delete_report_format (const char *report_format_id, int ultimate)
       /* Remove entirely. */
 
       permissions_set_orphans ("report_format", report_format, LOCATION_TRASH);
+      tags_set_orphans ("report_format", report_format, LOCATION_TRASH);
 
       sql ("DELETE FROM report_formats_trash WHERE ROWID = %llu;",
            report_format);
@@ -38505,6 +38637,7 @@ delete_report_format (const char *report_format_id, int ultimate)
   if (ultimate)
     {
       permissions_set_orphans ("report_format", report_format, LOCATION_TABLE);
+      tags_set_orphans ("report_format", report_format, LOCATION_TABLE);
 
       /* Remove directory. */
 
@@ -38581,6 +38714,8 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       permissions_set_locations ("report_format", report_format,
                                  trash_report_format, LOCATION_TRASH);
+      tags_set_locations ("report_format", report_format,
+                          trash_report_format, LOCATION_TRASH);
     }
 
   /* Remove from "real" tables. */
@@ -40163,6 +40298,7 @@ delete_slave (const char *slave_id, int ultimate)
         }
 
       permissions_set_orphans ("slave", slave, LOCATION_TRASH);
+      tags_set_orphans ("slave", slave, LOCATION_TRASH);
 
       sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", slave);
       sql ("COMMIT;");
@@ -40203,6 +40339,9 @@ delete_slave (const char *slave_id, int ultimate)
       permissions_set_locations ("slave", slave,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("slave", slave,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else if (sql_int (0, 0,
            "SELECT count(*) FROM tasks"
@@ -40214,7 +40353,10 @@ delete_slave (const char *slave_id, int ultimate)
       return 1;
     }
   else
-    permissions_set_orphans ("slave", slave, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("slave", slave, LOCATION_TABLE);
+      tags_set_orphans ("slave", slave, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM slaves WHERE ROWID = %llu;", slave);
   sql ("COMMIT;");
@@ -41913,22 +42055,30 @@ delete_permission (const char *permission_id, int ultimate)
           return 0;
         }
 
+      tags_set_orphans ("permission", permission, LOCATION_TRASH);
       sql ("DELETE FROM permissions_trash WHERE ROWID = %llu;", permission);
       sql ("COMMIT;");
       return 0;
     }
 
   if (ultimate == 0)
-    sql ("INSERT INTO permissions_trash"
-         " (uuid, owner, name, comment, resource_type, resource,"
-         "  resource_uuid, resource_location, subject_type, subject,"
-         "  subject_location, creation_time, modification_time)"
-         " SELECT uuid, owner, name, comment, resource_type, resource,"
-         "  resource_uuid, resource_location, subject_type, subject,"
-         "  subject_location, creation_time, modification_time"
-         " FROM permissions"
-         " WHERE ROWID = %llu;",
-         permission);
+    {
+      sql ("INSERT INTO permissions_trash"
+          " (uuid, owner, name, comment, resource_type, resource,"
+          "  resource_uuid, resource_location, subject_type, subject,"
+          "  subject_location, creation_time, modification_time)"
+          " SELECT uuid, owner, name, comment, resource_type, resource,"
+          "  resource_uuid, resource_location, subject_type, subject,"
+          "  subject_location, creation_time, modification_time"
+          " FROM permissions"
+          " WHERE ROWID = %llu;",
+          permission);
+      tags_set_locations ("permission", permission,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
+    }
+  else
+    tags_set_orphans ("permission", permission, LOCATION_TABLE);
 
   sql ("DELETE FROM permissions WHERE ROWID = %llu;", permission);
 
@@ -43032,6 +43182,7 @@ delete_port_list (const char *port_list_id, int ultimate)
         }
 
       permissions_set_orphans ("port_list", port_list, LOCATION_TRASH);
+      tags_set_orphans ("port_list", port_list, LOCATION_TRASH);
 
       sql ("DELETE FROM port_lists_trash WHERE ROWID = %llu;", port_list);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
@@ -43079,9 +43230,14 @@ delete_port_list (const char *port_list_id, int ultimate)
 
       permissions_set_locations ("port_list", port_list, trash_port_list,
                                  LOCATION_TRASH);
+      tags_set_locations ("port_list", port_list, trash_port_list,
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("port_list", port_list, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("port_list", port_list, LOCATION_TABLE);
+      tags_set_orphans ("port_list", port_list, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM port_lists WHERE ROWID = %llu;", port_list);
   sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
@@ -44424,6 +44580,7 @@ delete_filter (const char *filter_id, int ultimate)
         }
 
       permissions_set_orphans ("filter", filter, LOCATION_TRASH);
+      tags_set_orphans ("filter", filter, LOCATION_TRASH);
 
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", filter);
       sql ("COMMIT;");
@@ -44466,9 +44623,15 @@ delete_filter (const char *filter_id, int ultimate)
       permissions_set_locations ("filter", filter,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TRASH);
+      tags_set_locations ("filter", filter,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("filter", filter, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("filter", filter, LOCATION_TABLE);
+      tags_set_orphans ("filter", filter, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM filters WHERE ROWID = %llu;", filter);
 
@@ -45058,6 +45221,9 @@ manage_restore (const char *id)
       permissions_set_locations ("agent", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("agent", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM agents_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45118,6 +45284,8 @@ manage_restore (const char *id)
 
       permissions_set_locations ("config", resource, config,
                                  LOCATION_TABLE);
+      tags_set_locations ("config", resource, config,
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM config_preferences_trash WHERE config = %llu;",
            resource);
@@ -45203,6 +45371,8 @@ manage_restore (const char *id)
 
       permissions_set_locations ("alert", resource, alert,
                                  LOCATION_TABLE);
+      tags_set_locations ("alert", resource, alert,
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
            resource);
@@ -45259,6 +45429,9 @@ manage_restore (const char *id)
       permissions_set_locations ("filter", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("filter", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM filters_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45307,6 +45480,7 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("group", resource, group, LOCATION_TABLE);
+      tags_set_locations ("group", resource, group, LOCATION_TABLE);
 
       permissions_set_subjects ("group", resource, group, LOCATION_TABLE);
 
@@ -45369,6 +45543,8 @@ manage_restore (const char *id)
 
       permissions_set_locations ("lsc_credential", resource, credential,
                                  LOCATION_TABLE);
+      tags_set_locations ("lsc_credential", resource, credential,
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM lsc_credentials_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45394,6 +45570,9 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("note", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+      tags_set_locations ("note", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
 
@@ -45424,6 +45603,9 @@ manage_restore (const char *id)
       permissions_set_locations ("override", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("override", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM overrides_trash WHERE ROWID = %llu;", resource);
       reports_clear_count_cache (1);
@@ -45451,6 +45633,10 @@ manage_restore (const char *id)
            " FROM permissions_trash"
            " WHERE ROWID = %llu;",
            resource);
+
+      tags_set_locations ("permission", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM permissions_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45508,6 +45694,9 @@ manage_restore (const char *id)
 
       permissions_set_locations ("port_list", resource, table_port_list,
                                  LOCATION_TABLE);
+      tags_set_locations ("port_list", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM port_lists_trash WHERE ROWID = %llu;", resource);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
@@ -45601,6 +45790,8 @@ manage_restore (const char *id)
 
       permissions_set_locations ("report_format", resource, report_format,
                                  LOCATION_TABLE);
+      tags_set_locations ("report_format", resource, report_format,
+                          LOCATION_TABLE);
 
       /* Remove from trash tables. */
 
@@ -45711,6 +45902,9 @@ manage_restore (const char *id)
       permissions_set_locations ("schedule", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("schedule", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM schedules_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45761,6 +45955,9 @@ manage_restore (const char *id)
       permissions_set_locations ("slave", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("slave", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM slaves_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45779,9 +45976,11 @@ manage_restore (const char *id)
     {
       sql ("INSERT INTO tags"
            " (uuid, owner, name, comment, creation_time,"
-           "  modification_time, attach_type, attach_id, active, value)"
+           "  modification_time, resource_type, resource, resource_uuid,"
+           "  resource_location, active, value)"
            " SELECT uuid, owner, name, comment, creation_time,"
-           "        modification_time, attach_type, attach_id, active, value"
+           "        modification_time, resource_type, resource, resource_uuid,"
+           "        resource_location, active, value"
            " FROM tags_trash WHERE ROWID = %llu;",
            resource);
 
@@ -45853,6 +46052,9 @@ manage_restore (const char *id)
       permissions_set_locations ("target", resource,
                                  sqlite3_last_insert_rowid (task_db),
                                  LOCATION_TABLE);
+      tags_set_locations ("target", resource,
+                          sqlite3_last_insert_rowid (task_db),
+                          LOCATION_TABLE);
 
       sql ("DELETE FROM targets_trash WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45886,6 +46088,7 @@ manage_restore (const char *id)
         }
 
       permissions_set_locations ("task", resource, resource, LOCATION_TABLE);
+      tags_set_locations ("task", resource, resource, LOCATION_TABLE);
 
       sql ("UPDATE tasks SET hidden = 0 WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -45941,6 +46144,13 @@ manage_empty_trashcan ()
       sql ("ROLLBACK;");
       return -1;
     }
+
+  sql ("UPDATE tags"
+       " SET resource = 0, resource_location = 0"
+       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
+  sql ("UPDATE tags_trash"
+       " SET resource = 0, resource_location = 0"
+       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
 
   sql ("DELETE FROM report_formats_trash;");
 
@@ -48936,33 +49146,35 @@ copy_tag (const char* name, const char* comment, const char *tag_id,
           tag_t* new_tag)
 {
   return copy_resource ("tag", name, comment, tag_id,
-                        "value, attach_type, attach_id, active",
+                        "value, resource_type, resource, resource_location,"
+                        " resource_uuid, active",
                         1, new_tag);
 }
 
 /**
  * @brief Create a tag.
  *
- * @param[in]  name        Name of the tag.
- * @param[in]  comment     Comment for the tag.
- * @param[in]  value       Value of the tag.
- * @param[in]  attach_type Resource type to attach the tag to.
- * @param[in]  attach_id   Unique ID of the resource to attach the tag to.
- * @param[in]  active      0 for inactive, NULL or any other value for active.
- * @param[out] note        Created tag.
+ * @param[in]  name          Name of the tag.
+ * @param[in]  comment       Comment for the tag.
+ * @param[in]  value         Value of the tag.
+ * @param[in]  resource_type Resource type to attach the tag to.
+ * @param[in]  resource_uuid Unique ID of the resource to attach the tag to.
+ * @param[in]  active        0 for inactive, NULL or any other value for active.
+ * @param[out] tag          Created tag.
  *
  * @return 0 success, 99 permission denied, -1 error.
  */
 int
 create_tag (const char * name, const char * comment, const char * value,
-            const char * attach_type, const char * attach_id,
+            const char * resource_type, const char * resource_uuid,
             const char * active, tag_t * tag)
 {
   gchar *quoted_name, *quoted_comment, *quoted_value;
-  gchar *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+  gchar *lc_resource_type, *quoted_resource_type, *quoted_resource_uuid;
+  int resource_location = 0;
 
-  if (name == NULL || attach_type == NULL)
-    return -1;
+  gchar *resource_permission = NULL;
+  resource_t resource;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -48972,35 +49184,77 @@ create_tag (const char * name, const char * comment, const char * value,
       return 99;
     }
 
-  lc_attach_type = g_ascii_strdown (attach_type, -1);
-  if (strcmp (lc_attach_type, "")
-      && valid_db_resource_type (lc_attach_type) == 0)
+  lc_resource_type = g_ascii_strdown (resource_type, -1);
+  if (strcmp (lc_resource_type, "")
+      && valid_db_resource_type (lc_resource_type) == 0)
     {
-      g_free (lc_attach_type);
+      g_free (lc_resource_type);
       sql ("ROLLBACK;");
       return -1;
     }
+
+  if ((strcmp (lc_resource_type, "cpe") == 0)
+      || (strcmp (lc_resource_type, "cve") == 0)
+      || (strcmp (lc_resource_type, "ovaldef") == 0)
+      || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
+    resource_permission = g_strdup ("get_info");
+  else
+    resource_permission = g_strdup_printf ("get_%ss", resource_type);
+
+  if (find_resource_with_permission (resource_type, resource_uuid,
+                                     &resource, resource_permission, 0))
+    {
+      sql ("ROLLBACK;");
+      g_free (lc_resource_type);
+      g_free (resource_permission);
+      return -1;
+    }
+  else if (resource == 0
+           && (strcmp (lc_resource_type, "nvt"))
+           && (strcmp (lc_resource_type, "cve"))
+           && (strcmp (lc_resource_type, "cpe"))
+           && (strcmp (lc_resource_type, "ovaldef"))
+           && (strcmp (lc_resource_type, "dfn_cert_adv"))
+           && (strcmp (lc_resource_type, "report"))
+           && (strcmp (lc_resource_type, "result"))
+           && (strcmp (lc_resource_type, "user")))
+    {
+      if (find_resource_with_permission (resource_type, resource_uuid,
+                                         &resource, resource_permission, 1))
+        {
+          sql ("ROLLBACK;");
+          g_free (lc_resource_type);
+          g_free (resource_permission);
+          return -1;
+        }
+      else if (resource != 0)
+        resource_location = 1;
+    }
+
   quoted_name = sql_insert (name);
-  quoted_attach_type = sql_insert (lc_attach_type);
-  quoted_attach_id = attach_id ? sql_insert (attach_id) : g_strdup ("''");
+  quoted_resource_type = sql_insert (lc_resource_type);
+  quoted_resource_uuid = resource_uuid ? sql_insert (resource_uuid)
+                                       : g_strdup ("''");
 
   quoted_comment = sql_insert (comment ? comment : "");
   quoted_value = sql_insert (value ? value : "");
-
   sql ("INSERT INTO tags"
       " (uuid, owner, creation_time, modification_time, name, comment,"
-      "  value, attach_type, attach_id, active)"
+      "  value, resource_type, resource_uuid, resource, resource_location,"
+      "  active)"
       " VALUES"
       " (make_uuid (), (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-      "  %i, %i, %s, %s, %s, %s, %s, %i);",
+      "  %i, %i, %s, %s, %s, %s, %s, %llu, %d, %i);",
       current_credentials.uuid,
       time (NULL),
       time (NULL),
       quoted_name,
       quoted_comment,
       quoted_value,
-      quoted_attach_type,
-      quoted_attach_id,
+      quoted_resource_type,
+      quoted_resource_uuid,
+      resource,
+      resource_location,
       active
        ? (strcmp (active, "0") == 0
            ? 0
@@ -49008,9 +49262,9 @@ create_tag (const char * name, const char * comment, const char * value,
        : 1);
 
   g_free (quoted_name);
-  g_free (lc_attach_type);
-  g_free (quoted_attach_type);
-  g_free (quoted_attach_id);
+  g_free (lc_resource_type);
+  g_free (quoted_resource_type);
+  g_free (quoted_resource_uuid);
   g_free (quoted_comment);
   g_free (quoted_value);
 
@@ -49079,9 +49333,11 @@ delete_tag (const char *tag_id, int ultimate)
     {
       sql ("INSERT INTO tags_trash"
            " (uuid, owner, name, comment, creation_time,"
-           "  modification_time, attach_type, attach_id, active, value)"
+           "  modification_time, resource_type, resource, resource_uuid,"
+           "  resource_location, active, value)"
            " SELECT uuid, owner, name, comment, creation_time,"
-           "        modification_time, attach_type, attach_id, active, value"
+           "        modification_time, resource_type, resource, resource_uuid,"
+           "        resource_location, active, value"
            " FROM tags WHERE ROWID = %llu;",
            tag);
 
@@ -49090,7 +49346,10 @@ delete_tag (const char *tag_id, int ultimate)
                                  LOCATION_TRASH);
     }
   else
-    permissions_set_orphans ("tag", tag, LOCATION_TABLE);
+    {
+      permissions_set_orphans ("tag", tag, LOCATION_TABLE);
+      tags_set_orphans ("tag", tag, LOCATION_TABLE);
+    }
 
   sql ("DELETE FROM tags WHERE ROWID = %llu;", tag);
   sql ("COMMIT;");
@@ -49101,24 +49360,24 @@ delete_tag (const char *tag_id, int ultimate)
 /**
  * @brief Modify a tag.
  *
- * @param[in]   tag_id      UUID of tag.
- * @param[in]   name        New name of the tag or NULL.
- * @param[in]   comment     New comment for the tag or NULL.
- * @param[in]   value       New value of the tag or NULL.
- * @param[in]   attach_type New resource type to attach the tag to or NULL.
- * @param[in]   attach_id   New Unique ID of the resource to attach or NULL.
- * @param[in]   active      0 for inactive, any other for active or NULL.
+ * @param[in]   tag_id        UUID of tag.
+ * @param[in]   name          New name of the tag or NULL.
+ * @param[in]   comment       New comment for the tag or NULL.
+ * @param[in]   value         New value of the tag or NULL.
+ * @param[in]   resource_type New resource type to attach the tag to or NULL.
+ * @param[in]   resource_uuid New Unique ID of the resource to attach or NULL.
+ * @param[in]   active        0 for inactive, any other for active or NULL.
  *
  * @return 0 success, 1 failed to find tag, 2 tag_id required, 99 permission
  *         denied, -1 internal error.
  */
 int
 modify_tag (const char *tag_id, const char *name, const char *comment,
-            const char *value, const char *attach_type, const char *attach_id,
-            const char *active)
+            const char *value, const char *resource_type,
+            const char *resource_uuid, const char *active)
 {
   gchar *quoted_name, *quoted_comment, *quoted_value;
-  gchar *lc_attach_type, *quoted_attach_type, *quoted_attach_id;
+  gchar *lc_resource_type, *quoted_resource_type, *quoted_resource_uuid;
   tag_t tag;
 
   if (tag_id == NULL)
@@ -49147,19 +49406,19 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       return 1;
     }
 
-  lc_attach_type = (attach_type
-                     ? g_ascii_strdown (attach_type, -1)
-                     : g_strdup (""));
-  if (strcmp (lc_attach_type, "")
-      && valid_db_resource_type (lc_attach_type) == 0)
+  lc_resource_type = (resource_type
+                      ? g_ascii_strdown (resource_type, -1)
+                      : g_strdup (""));
+  if (strcmp (lc_resource_type, "")
+      && valid_db_resource_type (lc_resource_type) == 0)
     {
       sql ("ROLLBACK;");
       return -1;
     }
-  quoted_attach_type = sql_insert (lc_attach_type);
 
+  quoted_resource_type = sql_insert (lc_resource_type);
   quoted_name = sql_insert (name ? name : "");
-  quoted_attach_id = sql_insert (attach_id ? attach_id : "");
+  quoted_resource_uuid = sql_insert (resource_uuid ? resource_uuid : "");
   quoted_comment = sql_insert (comment ? comment : "");
   quoted_value = sql_insert (value ? value : "");
 
@@ -49172,21 +49431,67 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
            tag);
     }
 
-  if (attach_type)
+  if (resource_type)
     {
       sql ("UPDATE tags SET"
-           " attach_type = %s"
+           " resource_type = %s"
            " WHERE ROWID = %llu;",
-           quoted_attach_type,
+           quoted_resource_type,
            tag);
     }
 
-  if (attach_id)
+  if (resource_uuid)
     {
+      resource_t resource;
+      gchar *resource_permission;
+      int resource_location = 0;
+
+      if ((strcmp (lc_resource_type, "cpe") == 0)
+          || (strcmp (lc_resource_type, "cve") == 0)
+          || (strcmp (lc_resource_type, "ovaldef") == 0)
+          || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
+        resource_permission = g_strdup ("get_info");
+      else
+        resource_permission = g_strdup_printf ("get_%ss", resource_type);
+
+      if (find_resource_with_permission (resource_type, resource_uuid,
+                                         &resource, resource_permission, 0))
+        {
+          sql ("ROLLBACK;");
+          g_free (lc_resource_type);
+          g_free (resource_permission);
+          return -1;
+        }
+      else if (resource == 0
+              && (strcmp (lc_resource_type, "nvt"))
+              && (strcmp (lc_resource_type, "cve"))
+              && (strcmp (lc_resource_type, "cpe"))
+              && (strcmp (lc_resource_type, "ovaldef"))
+              && (strcmp (lc_resource_type, "dfn_cert_adv"))
+              && (strcmp (lc_resource_type, "report"))
+              && (strcmp (lc_resource_type, "result"))
+              && (strcmp (lc_resource_type, "user")))
+        {
+          if (find_resource_with_permission (resource_type, resource_uuid,
+                                             &resource, resource_permission, 1))
+            {
+              sql ("ROLLBACK;");
+              g_free (lc_resource_type);
+              g_free (resource_permission);
+              return -1;
+            }
+          else if (resource != 0)
+            resource_location = 1;
+        }
+
       sql ("UPDATE tags SET"
-           " attach_id = %s"
+           " resource_uuid = %s,"
+           " resource = %llu,"
+           " resource_location = %d"
            " WHERE ROWID = %llu;",
-           quoted_attach_id,
+           quoted_resource_uuid,
+           resource,
+           resource_location,
            tag);
     }
 
@@ -49224,9 +49529,9 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
        tag);
 
   g_free (quoted_name);
-  g_free (lc_attach_type);
-  g_free (quoted_attach_type);
-  g_free (quoted_attach_id);
+  g_free (lc_resource_type);
+  g_free (quoted_resource_type);
+  g_free (quoted_resource_uuid);
   g_free (quoted_comment);
   g_free (quoted_value);
 
@@ -49239,32 +49544,35 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 /**
  * @brief Filter columns for Tag iterator.
  */
-#define TAG_ITERATOR_FILTER_COLUMNS                         \
- { GET_ITERATOR_FILTER_COLUMNS, "attach_type", "attach_id", \
-   "active", "value", "orphaned", "attach_name", NULL }
+#define TAG_ITERATOR_FILTER_COLUMNS                                           \
+ { GET_ITERATOR_FILTER_COLUMNS, "resource_type", "resource", "resource_uuid", \
+   "resource_location", "active", "value", "orphan", "resource_name", NULL }
 
 /**
  * @brief Tag iterator columns.
  */
 #define TAG_ITERATOR_COLUMNS                                                  \
-  GET_ITERATOR_COLUMNS (tags) ", attach_type, attach_id,"                     \
-  " active, value,"                                                           \
-  " NOT resource_exists (attach_type, attach_id) AS orphaned,"                \
-  " resource_name (attach_type, attach_id, " G_STRINGIFY (LOCATION_TABLE) ")" \
-  " AS attach_name"
+  GET_ITERATOR_COLUMNS (tags) ", resource_type, resource, resource_uuid,"     \
+  " resource_location, active, value,"                                        \
+  " (resource = 0) AS orphan,"                                               \
+  " resource_name (resource_type, resource_uuid, resource_location)"\
+  " AS resource_name"
 
 /**
  * @brief Tag iterator trash columns.
  */
-#define TAG_ITERATOR_TRASH_COLUMNS                                 \
-  GET_ITERATOR_COLUMNS (tags_trash) ", attach_type, attach_id,"    \
-  "active, value"
+#define TAG_ITERATOR_TRASH_COLUMNS                                            \
+  GET_ITERATOR_COLUMNS (tags_trash) ", resource_type, resource,"              \
+  " resource_uuid, resource_location, active, value,"                         \
+  " (resource = 0) AS orphan,"                                                \
+  " resource_name (resource_type, resource_uuid, resource_location)"          \
+  " AS resource_name"
 
 /**
  * @brief Filter columns for Tag name iterator.
  */
 #define TAG_NAME_ITERATOR_FILTER_COLUMNS                         \
- { "name", "attach_type", NULL }
+ { "name", "resource_type", NULL }
 
 /**
  * @brief Tag name iterator columns.
@@ -49316,22 +49624,56 @@ tag_count (const get_data_t *get)
 }
 
 /**
- * @brief Get the attach_type from a Tag iterator.
+ * @brief Get the resource_type from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The resource type attached to a tag.
  */
-DEF_ACCESS (tag_iterator_attach_type, GET_ITERATOR_COLUMN_COUNT);
+DEF_ACCESS (tag_iterator_resource_type, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the attach_id from a Tag iterator.
+ * @brief Get the resource from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The ID of the resource attached to a tag.
+ * @return The ROWID of the resource attached to a tag.
  */
-DEF_ACCESS (tag_iterator_attach_id, GET_ITERATOR_COLUMN_COUNT + 1);
+resource_t
+tag_iterator_resource (iterator_t* iterator)
+{
+  resource_t ret;
+  if (iterator->done) return -1;
+  ret = (resource_t) sqlite3_column_int64 (iterator->stmt,
+                                           GET_ITERATOR_COLUMN_COUNT + 1);
+  return ret;
+}
+
+/**
+ * @brief Get the resource_uuid from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The UUID of the resource attached to a tag.
+ */
+DEF_ACCESS (tag_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the resource_location from a Tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Location of the resource of a tag (0 = normal table, 1 = trashcan).
+ */
+int
+tag_iterator_resource_location (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = (int) sqlite3_column_int (iterator->stmt,
+                                  GET_ITERATOR_COLUMN_COUNT + 3);
+  return ret;
+}
 
 /**
  * @brief Get if a tag is active from a Tag iterator.
@@ -49340,7 +49682,7 @@ DEF_ACCESS (tag_iterator_attach_id, GET_ITERATOR_COLUMN_COUNT + 1);
  *
  * @return Whether a tag is active (0 = inactive, 1 = active).
  */
-DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 4);
 
 /**
  * @brief Get the value from a Tag iterator.
@@ -49349,25 +49691,25 @@ DEF_ACCESS (tag_iterator_active, GET_ITERATOR_COLUMN_COUNT + 2);
  *
  * @return The value associated with a tag.
  */
-DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (tag_iterator_value, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
- * @brief Get the orphaned from a Tag iterator.
+ * @brief Get if a tag is orphaned from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return Whether a tag is orphaned.
  */
-DEF_ACCESS (tag_iterator_orphaned, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (tag_iterator_orphan, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
- * @brief Get the attach_name from a Tag iterator.
+ * @brief Get the resource_name from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The name of the resource attached to a tag.
  */
-DEF_ACCESS (tag_iterator_attach_name, GET_ITERATOR_COLUMN_COUNT + 5);
+DEF_ACCESS (tag_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 7);
 
 /**
  * @brief Initialise a iterator of tag names.
@@ -49432,8 +49774,8 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
   init_iterator (iterator,
                  "SELECT ROWID, uuid, name, value, comment, active"
                  " FROM tags"
-                 " WHERE attach_type = '%s'"
-                 "   AND attach_id = '%s'"
+                 " WHERE resource_type = '%s'"
+                 "   AND resource_uuid = '%s'"
                  "   %s"
                  " ORDER BY %s %s;",
                  type,
@@ -49511,8 +49853,8 @@ resource_tag_count (const char* type, const char* id, int active_only)
   ret = sql_int (0, 0,
                  "SELECT count (ROWID)"
                  " FROM tags"
-                 " WHERE attach_type = '%s'"
-                 "   AND attach_id = '%s'"
+                 " WHERE resource_type = '%s'"
+                 "   AND resource_uuid = '%s'"
                  "   %s;",
                  type,
                  quoted_id,
@@ -49574,3 +49916,55 @@ trash_tag_writable (tag_t tag)
   return 0;
 }
 
+/**
+ * @brief Adjust location of resource in tags.
+ *
+ * @param[in]   type  Type.
+ * @param[in]   old   Resource ID in old table.
+ * @param[in]   new   Resource ID in new table.
+ * @param[in]   to    Destination, trash or table.
+ */
+void
+tags_set_locations (const char *type, resource_t old, resource_t new,
+                    int to)
+{
+  sql ("UPDATE tags SET resource_location = %i, resource = %llu"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       to,
+       new,
+       type,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+  sql ("UPDATE tags_trash SET resource_location = %i, resource = %llu"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       to,
+       new,
+       type,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+}
+
+/**
+ * @brief Set tags to orphan.
+ *
+ * @param[in]   type      Type.
+ * @param[in]   resource  Resource ID.
+ */
+void
+tags_set_orphans (const char *type, resource_t resource, int location)
+{
+  sql ("UPDATE tags SET resource = 0, resource_location = 0"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       type,
+       resource,
+       location);
+  sql ("UPDATE tags_trash SET resource = 0, resource_location = 0"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       type,
+       resource,
+       location);
+}

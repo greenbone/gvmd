@@ -3485,7 +3485,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <e>name</e>
-      <e>attach</e>
+      <e>resource</e>
       <o><e>copy</e></o>
       <o><e>value</e></o>
       <o><e>comment</e></o>
@@ -3497,20 +3497,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>attach</name>
+      <name>resource</name>
       <summary>Identifies a resource the tag is to be attached to</summary>
       <pattern>
+        <attrib>
+          <name>id</name>
+          <summary>ID of the resource the tag is to be attached to</summary>
+          <pattern><t>text</t></pattern>
+          <required>0</required>
+        </attrib>
         <e>type</e>
-        <o><e>id</e></o>
       </pattern>
       <ele>
         <name>type</name>
         <summary>OMP type of the resource the tag is to be attached to</summary>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>id</name>
-        <summary>ID of the resource the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>
@@ -3558,10 +3558,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <create_tag>
           <name>geo:long</name>
-          <attach>
+          <resource id="b493b7a8-7489-11df-a3ec-002264764cea">
             <type>target</type>
-            <id>b493b7a8-7489-11df-a3ec-002264764cea</id>
-          </attach>
+          </resource>
           <value>52.2788</value>
         </create_tag>
       </request>
@@ -11241,7 +11240,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>id</name>
             <summary>uuid of the tag (omitted when using names_only)</summary>
             <type>uuid</type>
-            <required>0</required>
           </attrib>
           <e>name</e>
           <o>
@@ -11251,10 +11249,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>modification_time</e>
               <e>writable</e>
               <e>in_use</e>
-              <e>attach</e>
+              <e>resource</e>
               <e>value</e>
               <e>active</e>
-              <e>orphaned</e>
+              <e>orphan</e>
             </g>
           </o>
         </pattern>
@@ -11289,12 +11287,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
-          <name>attach</name>
+          <name>resource</name>
           <summary>Identifies a resource the tag is attached to</summary>
           <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the resource the tag is attached to</summary>
+              <pattern><t>text</t></pattern>
+              <required>1</required>
+            </attrib>
             <e>type</e>
-            <e>id</e>
             <e>name</e>
+            <e>trash</e>
           </pattern>
           <ele>
             <name>type</name>
@@ -11302,14 +11306,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>text</pattern>
           </ele>
           <ele>
-            <name>id</name>
-            <summary>ID of the resource the tag is attached to</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
             <name>name</name>
             <summary>Name of the attach resource if available, empty otherwise</summary>
             <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the resource is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -11323,7 +11327,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>boolean</pattern>
         </ele>
         <ele>
-          <name>orphaned</name>
+          <name>orphan</name>
           <summary>Whether the tag is attached to a nonexistent resource</summary>
           <pattern>boolean</pattern>
         </ele>
@@ -11418,11 +11422,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <modification_time>Fri Apr 12 08:49:43 2013</modification_time>
             <writable>1</writable>
             <in_use>0</in_use>
-            <attach>
+            <resource id="b493b7a8-7489-11df-a3ec-002264764cea">
               <type>target</type>
-              <id>b493b7a8-7489-11df-a3ec-002264764cea</id>
               <name>Server 1</name>
-            </attach>
+              <trash>0</trash>
+            </resource>
             <value>52.2788</value>
             <active>1</active>
             <orphaned>0</orphaned>
@@ -14930,7 +14934,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <o><e>name</e></o>
-      <o><e>attach</e></o>
+      <o><e>resource</e></o>
       <o><e>value</e></o>
       <o><e>comment</e></o>
       <o><e>active</e></o>
@@ -14941,20 +14945,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>text</pattern>
     </ele>
     <ele>
-      <name>attach</name>
+      <name>resource</name>
       <summary>Identifies a resource the tag is to be attached to</summary>
       <pattern>
+        <attrib>
+          <name>id</name>
+          <summary>ID of the resource the tag is to be attached to</summary>
+          <pattern><t>text</t></pattern>
+          <required>0</required>
+        </attrib>
         <e>type</e>
-        <o><e>id</e></o>
       </pattern>
       <ele>
         <name>type</name>
         <summary>OMP type of the resource the tag is to be attached to</summary>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>id</name>
-        <summary>ID of the resource the tag is to be attached to</summary>
         <pattern>text</pattern>
       </ele>
     </ele>

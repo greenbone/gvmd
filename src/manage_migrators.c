@@ -8436,6 +8436,190 @@ migrate_115_to_116 ()
   return 0;
 }
 
+#define ID_WHEN_WITH_TRASH(type)                                 \
+ " WHEN '" G_STRINGIFY (type) "' THEN"                           \
+ "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
+ "               WHERE uuid = attach_id),"                       \
+ "             (SELECT ROWID FROM " G_STRINGIFY (type) "s_trash" \
+ "               WHERE uuid = attach_id),"                       \
+ "             0)"
+
+#define ID_WHEN_WITHOUT_TRASH(type)                              \
+ " WHEN '" G_STRINGIFY (type) "' THEN"                           \
+ "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
+ "                WHERE uuid = attach_id),"                      \
+ "             0)"
+
+#define RESOURCE_TRASH(type)                                     \
+ " WHEN 'alert' THEN"                                            \
+ "   EXISTS (SELECT * FROM alerts_trash WHERE uuid = attach_id)"
+
+/**
+ * @brief Migrate the database from version 116 to version 115.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_116_to_117 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 116. */
+
+  if (manage_db_version () != 116)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename attach_[...] columns in tags to resource_[...], reference
+     resources by ROWID and add new column for resource UUID */
+
+  sql ("ALTER TABLE tags RENAME TO tags_117;");
+  sql ("ALTER TABLE tags_trash RENAME TO tags_trash_117;");
+
+  sql ("CREATE TABLE IF NOT EXISTS tags"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value);");
+
+  sql ("INSERT INTO tags"
+       " (id, uuid, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value)"
+       " SELECT"
+       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
+       "  attach_type,"
+       "  (SELECT CASE attach_type"
+       ID_WHEN_WITH_TRASH (agent)
+       ID_WHEN_WITH_TRASH (alert)
+       ID_WHEN_WITHOUT_TRASH (cpe)
+       ID_WHEN_WITHOUT_TRASH (cve)
+       ID_WHEN_WITH_TRASH (config)
+       ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
+       ID_WHEN_WITH_TRASH (filter)
+       ID_WHEN_WITH_TRASH (group)
+       ID_WHEN_WITH_TRASH (lsc_credential)
+       ID_WHEN_WITH_TRASH (note)
+       ID_WHEN_WITHOUT_TRASH (nvt)
+       ID_WHEN_WITH_TRASH (override)
+       ID_WHEN_WITHOUT_TRASH (ovaldef)
+       ID_WHEN_WITH_TRASH (permission)
+       ID_WHEN_WITH_TRASH (port_list)
+       ID_WHEN_WITH_TRASH (report_format)
+       ID_WHEN_WITHOUT_TRASH (report)
+       ID_WHEN_WITHOUT_TRASH (result)
+       ID_WHEN_WITHOUT_TRASH (role)
+       ID_WHEN_WITH_TRASH (schedule)
+       ID_WHEN_WITH_TRASH (slave)
+       ID_WHEN_WITH_TRASH (target)
+       ID_WHEN_WITHOUT_TRASH (task) // uses attribute "hidden" for trash
+       ID_WHEN_WITHOUT_TRASH (user)
+       "   ELSE -1 END),"
+       " attach_id,"
+       " (SELECT CASE attach_type"
+       RESOURCE_TRASH (alert)
+       RESOURCE_TRASH (config)
+       RESOURCE_TRASH (filter)
+       RESOURCE_TRASH (group)
+       RESOURCE_TRASH (lsc_credential)
+       RESOURCE_TRASH (note)
+       RESOURCE_TRASH (override)
+       RESOURCE_TRASH (permission)
+       RESOURCE_TRASH (port_list)
+       RESOURCE_TRASH (report_format)
+       RESOURCE_TRASH (schedule)
+       RESOURCE_TRASH (slave)
+       RESOURCE_TRASH (target)
+       "  WHEN 'task' THEN"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN 1 ELSE 0 END"
+       "               FROM tasks WHERE uuid = attach_id),"
+       "               0)"
+       "  ELSE 0 END),"
+       " active, value"
+       " FROM tags_117;");
+
+  sql ("DROP TABLE tags_117;");
+
+  /* Rename attach_[...] columns in tags_trash to resource_[...], reference
+     resources by ROWID and add new column for resource UUID */
+  sql ("CREATE TABLE IF NOT EXISTS tags_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value);");
+
+  sql ("INSERT INTO tags_trash"
+       " (id, uuid, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value)"
+       " SELECT"
+       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
+       "  attach_type,"
+       "  (SELECT CASE attach_type"
+       ID_WHEN_WITH_TRASH (agent)
+       ID_WHEN_WITH_TRASH (alert)
+       ID_WHEN_WITHOUT_TRASH (cpe)
+       ID_WHEN_WITHOUT_TRASH (cve)
+       ID_WHEN_WITH_TRASH (config)
+       ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
+       ID_WHEN_WITH_TRASH (filter)
+       ID_WHEN_WITH_TRASH (group)
+       ID_WHEN_WITH_TRASH (lsc_credential)
+       ID_WHEN_WITH_TRASH (note)
+       ID_WHEN_WITHOUT_TRASH (nvt)
+       ID_WHEN_WITH_TRASH (override)
+       ID_WHEN_WITHOUT_TRASH (ovaldef)
+       ID_WHEN_WITH_TRASH (permission)
+       ID_WHEN_WITH_TRASH (port_list)
+       ID_WHEN_WITH_TRASH (report_format)
+       ID_WHEN_WITHOUT_TRASH (report)
+       ID_WHEN_WITHOUT_TRASH (result)
+       ID_WHEN_WITHOUT_TRASH (role)
+       ID_WHEN_WITH_TRASH (schedule)
+       ID_WHEN_WITH_TRASH (slave)
+       ID_WHEN_WITH_TRASH (target)
+       ID_WHEN_WITHOUT_TRASH (task) // uses attribute "hidden" for trash
+       ID_WHEN_WITHOUT_TRASH (user)
+       "   ELSE 0 END),"
+       " attach_id,"
+       " (SELECT CASE attach_type"
+       RESOURCE_TRASH (alert)
+       RESOURCE_TRASH (config)
+       RESOURCE_TRASH (filter)
+       RESOURCE_TRASH (group)
+       RESOURCE_TRASH (lsc_credential)
+       RESOURCE_TRASH (note)
+       RESOURCE_TRASH (override)
+       RESOURCE_TRASH (permission)
+       RESOURCE_TRASH (port_list)
+       RESOURCE_TRASH (report_format)
+       RESOURCE_TRASH (schedule)
+       RESOURCE_TRASH (slave)
+       RESOURCE_TRASH (target)
+       "  WHEN 'task' THEN"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN 1 ELSE 0 END"
+       "               FROM tasks WHERE uuid = attach_id),"
+       "               0)"
+       "  ELSE 0 END),"
+       " active, value"
+       " FROM tags_trash_117;");
+
+  sql ("DROP TABLE tags_trash_117;");
+
+  /* Set the database version 117. */
+
+  set_db_version (117);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+#undef ID_WHEN_WITH_TRASH
+#undef ID_WHEN_WITHOUT_TRASH
+#undef RESOURCE_TRASH
+
 /**
  * @brief Array of database version migrators.
  */
@@ -8557,6 +8741,7 @@ static migrator_t database_migrators[]
     {114, migrate_113_to_114},
     {115, migrate_114_to_115},
     {116, migrate_115_to_116},
+    {117, migrate_116_to_117},
     /* End marker. */
     {-1, NULL}};
 

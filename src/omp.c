@@ -1606,14 +1606,13 @@ create_target_data_reset (create_target_data_t *data)
  */
 typedef struct
 {
-  char *active;       ///< Whether the tag is active.
-  char *attach_id;    ///< ID of the resource to which to attach the tag.
-  char *attach_type;  ///< Type of the resource to which to attach the tag.
-  char *comment;      ///< Comment to add to the tag.
-  char *name;         ///< Name of the tag.
-  char *value;        ///< Value of the tag.
-  char *copy;         ///< UUID of resource to copy.
-  int  attach_count;  ///< Number of attach tags.
+  char *active;        ///< Whether the tag is active.
+  char *resource_id;   ///< ID of the resource to which to attach the tag.
+  char *resource_type; ///< Type of the resource to which to attach the tag.
+  char *comment;       ///< Comment to add to the tag.
+  char *name;          ///< Name of the tag.
+  char *value;         ///< Value of the tag.
+  char *copy;          ///< UUID of resource to copy.
 } create_tag_data_t;
 
 /**
@@ -1625,8 +1624,8 @@ static void
 create_tag_data_reset (create_tag_data_t *data)
 {
   free (data->active);
-  free (data->attach_type);
-  free (data->attach_id);
+  free (data->resource_type);
+  free (data->resource_id);
   free (data->comment);
   free (data->name);
   free (data->value);
@@ -3348,14 +3347,14 @@ modify_slave_data_reset (modify_slave_data_t *data)
  */
 typedef struct
 {
-  char *tag_id;       ///< UUID of the tag.
-  char *active;       ///< Whether the tag is active.
-  char *attach_id;    ///< ID of the resource to which to attach the tag.
-  char *attach_type;  ///< Type of the resource to which to attach the tag.
-  char *comment;      ///< Comment to add to the tag.
-  char *name;         ///< Name of the tag.
-  char *value;        ///< Value of the tag.
-  int  attach_count;  ///< Number of attach tags.
+  char *tag_id;         ///< UUID of the tag.
+  char *active;         ///< Whether the tag is active.
+  char *resource_id;    ///< ID of the resource to which to attach the tag.
+  char *resource_type;  ///< Type of the resource to which to attach the tag.
+  char *comment;        ///< Comment to add to the tag.
+  char *name;           ///< Name of the tag.
+  char *value;          ///< Value of the tag.
+  int  resource_count;  ///< Number of attach tags.
 } modify_tag_data_t;
 
 /**
@@ -3368,8 +3367,8 @@ modify_tag_data_reset (modify_tag_data_t *data)
 {
   free (data->tag_id);
   free (data->active);
-  free (data->attach_type);
-  free (data->attach_id);
+  free (data->resource_type);
+  free (data->resource_id);
   free (data->comment);
   free (data->name);
   free (data->value);
@@ -4907,12 +4906,11 @@ typedef enum
   CLIENT_CREATE_SLAVE_PORT,
   CLIENT_CREATE_TAG,
   CLIENT_CREATE_TAG_ACTIVE,
-  CLIENT_CREATE_TAG_ATTACH,
-  CLIENT_CREATE_TAG_ATTACH_ID,
-  CLIENT_CREATE_TAG_ATTACH_TYPE,
   CLIENT_CREATE_TAG_COMMENT,
   CLIENT_CREATE_TAG_COPY,
   CLIENT_CREATE_TAG_NAME,
+  CLIENT_CREATE_TAG_RESOURCE,
+  CLIENT_CREATE_TAG_RESOURCE_TYPE,
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
@@ -5129,11 +5127,10 @@ typedef enum
   CLIENT_MODIFY_SLAVE_PORT,
   CLIENT_MODIFY_TAG,
   CLIENT_MODIFY_TAG_ACTIVE,
-  CLIENT_MODIFY_TAG_ATTACH,
-  CLIENT_MODIFY_TAG_ATTACH_ID,
-  CLIENT_MODIFY_TAG_ATTACH_TYPE,
   CLIENT_MODIFY_TAG_COMMENT,
   CLIENT_MODIFY_TAG_NAME,
+  CLIENT_MODIFY_TAG_RESOURCE,
+  CLIENT_MODIFY_TAG_RESOURCE_TYPE,
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
@@ -7780,10 +7777,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_tag_data->active, "");
             set_client_state (CLIENT_MODIFY_TAG_ACTIVE);
           }
-        else if (strcasecmp ("ATTACH", element_name) == 0)
+        else if (strcasecmp ("RESOURCE", element_name) == 0)
           {
-            modify_tag_data->attach_count ++;
-            set_client_state (CLIENT_MODIFY_TAG_ATTACH);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_tag_data->resource_id);
+            set_client_state (CLIENT_MODIFY_TAG_RESOURCE);
           }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -7802,16 +7800,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         ELSE_ERROR ("modify_tag");
 
-      case CLIENT_MODIFY_TAG_ATTACH:
-        if (strcasecmp ("ID", element_name) == 0)
+      case CLIENT_MODIFY_TAG_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
           {
-            openvas_append_string (&modify_tag_data->attach_id, "");
-            set_client_state (CLIENT_MODIFY_TAG_ATTACH_ID);
-          }
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            openvas_append_string (&modify_tag_data->attach_type, "");
-            set_client_state (CLIENT_MODIFY_TAG_ATTACH_TYPE);
+            openvas_append_string (&modify_tag_data->resource_type, "");
+            set_client_state (CLIENT_MODIFY_TAG_RESOURCE_TYPE);
           }
         ELSE_ERROR ("modify_tag");
 
@@ -8958,10 +8951,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_tag_data->active, "");
             set_client_state (CLIENT_CREATE_TAG_ACTIVE);
           }
-        else if (strcasecmp ("ATTACH", element_name) == 0)
+        else if (strcasecmp ("RESOURCE", element_name) == 0)
           {
-            create_tag_data->attach_count ++;
-            set_client_state (CLIENT_CREATE_TAG_ATTACH);
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_tag_data->resource_id);
+            set_client_state (CLIENT_CREATE_TAG_RESOURCE);
           }
         else if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -8985,16 +8979,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         ELSE_ERROR ("create_tag");
 
-      case CLIENT_CREATE_TAG_ATTACH:
-        if (strcasecmp ("ID", element_name) == 0)
+      case CLIENT_CREATE_TAG_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
           {
-            openvas_append_string (&create_tag_data->attach_id, "");
-            set_client_state (CLIENT_CREATE_TAG_ATTACH_ID);
-          }
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            openvas_append_string (&create_tag_data->attach_type, "");
-            set_client_state (CLIENT_CREATE_TAG_ATTACH_TYPE);
+            openvas_append_string (&create_tag_data->resource_type, "");
+            set_client_state (CLIENT_CREATE_TAG_RESOURCE_TYPE);
           }
         ELSE_ERROR ("create_tag");
 
@@ -15376,21 +15365,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_GET_COMMON (tag, &get_tags_data->get, &tags);
 
-                  SENDF_TO_CLIENT_OR_FAIL ("<attach>"
+                  SENDF_TO_CLIENT_OR_FAIL ("<resource id=\"%s\">"
                                            "<type>%s</type>"
-                                           "<id>%s</id>"
                                            "<name>%s</name>"
-                                           "</attach>"
+                                           "<trash>%d</trash>"
+                                           "</resource>"
                                            "<value>%s</value>"
                                            "<active>%s</active>"
-                                           "<orphaned>%s</orphaned>"
+                                           "<orphan>%s</orphan>"
                                            "</tag>",
-                                           tag_iterator_attach_type (&tags),
-                                           tag_iterator_attach_id (&tags),
-                                           tag_iterator_attach_name (&tags),
+                                           tag_iterator_resource_uuid (&tags),
+                                           tag_iterator_resource_type (&tags),
+                                           tag_iterator_resource_name (&tags),
+                                           tag_iterator_resource_location (
+                                             &tags),
                                            value,
                                            tag_iterator_active (&tags),
-                                           tag_iterator_orphaned (&tags));
+                                           tag_iterator_orphan (&tags));
                   g_free (value);
                 }
               count++;
@@ -19580,41 +19571,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_tag",
                                 "CREATE_TAG name must be"
                                 " at least one character long"));
-          else if (create_tag_data->attach_count != 1)
+          else if (create_tag_data->resource_id == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
                                 "CREATE_TAG requires"
-                                " a single ATTACH element"));
-          else if (create_tag_data->attach_type == NULL)
+                                " a RESOURCE element with id attribute"));
+          else if (create_tag_data->resource_type == NULL)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH in CREATE_TAG requires"
+                                "RESOURCE in CREATE_TAG requires"
                                 " a TYPE element"));
-          else if (valid_db_resource_type (create_tag_data->attach_type) == 0)
+          else if (valid_db_resource_type (create_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE in CREATE_TAG/ATTACH must be"
+                                "TYPE in CREATE_TAG/RESOURCE must be"
                                 " a valid resource type."));
-          else if (strcasecmp (create_tag_data->attach_type, "tag") == 0)
+          else if (strcasecmp (create_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "TYPE type in CREATE_TAG/ATTACH must not"
+                                "TYPE type in CREATE_TAG/RESOURCE must not"
                                 " be 'tag'."));
-          else if (create_tag_data->attach_id
-                   && strlen (create_tag_data->attach_id) > 0
-                   && resource_id_exists (create_tag_data->attach_type,
-                                          create_tag_data->attach_id) == 0)
+          else if (create_tag_data->resource_id
+                   && strlen (create_tag_data->resource_id) > 0
+                   && resource_id_exists (create_tag_data->resource_type,
+                                          create_tag_data->resource_id) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_tag",
-                                "ATTACH attach_id must refer to an existing"
+                                "RESOURCE id must refer to an existing"
                                 " resource or be empty."));
           else
             {
               switch (create_tag (create_tag_data->name,
                                   create_tag_data->comment,
                                   create_tag_data->value,
-                                  create_tag_data->attach_type,
-                                  create_tag_data->attach_id,
+                                  create_tag_data->resource_type,
+                                  create_tag_data->resource_id,
                                   create_tag_data->active,
                                   &new_tag))
                 {
@@ -19650,14 +19641,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_CREATE_TAG, ACTIVE);
-      CLOSE (CLIENT_CREATE_TAG, ATTACH);
+      CLOSE (CLIENT_CREATE_TAG, RESOURCE);
       CLOSE (CLIENT_CREATE_TAG, COPY);
       CLOSE (CLIENT_CREATE_TAG, COMMENT);
       CLOSE (CLIENT_CREATE_TAG, NAME);
       CLOSE (CLIENT_CREATE_TAG, VALUE);
 
-      CLOSE (CLIENT_CREATE_TAG_ATTACH, ID);
-      CLOSE (CLIENT_CREATE_TAG_ATTACH, TYPE);
+      CLOSE (CLIENT_CREATE_TAG_RESOURCE, TYPE);
 
       case CLIENT_CREATE_TARGET:
         {
@@ -22551,42 +22541,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_tag",
                                 "name in MODIFY_TAG must be at least one"
                                 " character long or omitted completely"));
-          else if (modify_tag_data->attach_count > 1)
+          else if (modify_tag_data->resource_type &&
+                   valid_db_resource_type (modify_tag_data->resource_type) == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "MODIFY_TAG can have only one ATTACH element"));
-          else if (modify_tag_data->attach_count > 0
-                   && modify_tag_data->attach_type == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH in MODIFY_TAG requires"
-                                " a TYPE element"));
-          else if (modify_tag_data->attach_type &&
-                   valid_db_resource_type (modify_tag_data->attach_type) == 0)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE in MODIFY_TAG/ATTACH must be"
+                                "TYPE in MODIFY_TAG/RESOURCE must be"
                                 " a valid resource type."));
-          else if (modify_tag_data->attach_type
-                   && strcasecmp (modify_tag_data->attach_type, "tag") == 0)
+          else if (modify_tag_data->resource_type
+                   && strcasecmp (modify_tag_data->resource_type, "tag") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "TYPE type in MODIFY_TAG/ATTACH must not"
+                                "TYPE type in MODIFY_TAG/RESOURCE must not"
                                 " be 'tag'."));
-          else if (modify_tag_data->attach_id
-                   && strlen (modify_tag_data->attach_id) > 0
-                   && resource_id_exists (modify_tag_data->attach_type,
-                                          modify_tag_data->attach_id) == 0)
+          else if (modify_tag_data->resource_id
+                   && strlen (modify_tag_data->resource_id) > 0
+                   && (resource_id_exists (modify_tag_data->resource_type,
+                                           modify_tag_data->resource_id) == 0)
+                   && (trash_id_exists (modify_tag_data->resource_type,
+                                        modify_tag_data->resource_id) == 0))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_tag",
-                                "ATTACH attach_id must refer to an existing"
-                                " resource or be empty."));
+                                "RESOURCE id must refer to an"
+                                " existing resource or be empty."));
           else switch (modify_tag (modify_tag_data->tag_id,
                                    modify_tag_data->name,
                                    modify_tag_data->comment,
                                    modify_tag_data->value,
-                                   modify_tag_data->attach_type,
-                                   modify_tag_data->attach_id,
+                                   modify_tag_data->resource_type,
+                                   modify_tag_data->resource_id,
                                    modify_tag_data->active))
             {
               case 0:
@@ -22634,13 +22616,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       CLOSE (CLIENT_MODIFY_TAG, ACTIVE);
-      CLOSE (CLIENT_MODIFY_TAG, ATTACH);
+      CLOSE (CLIENT_MODIFY_TAG, RESOURCE);
       CLOSE (CLIENT_MODIFY_TAG, COMMENT);
       CLOSE (CLIENT_MODIFY_TAG, NAME);
       CLOSE (CLIENT_MODIFY_TAG, VALUE);
 
-      CLOSE (CLIENT_MODIFY_TAG_ATTACH, ID);
-      CLOSE (CLIENT_MODIFY_TAG_ATTACH, TYPE);
+      CLOSE (CLIENT_MODIFY_TAG_RESOURCE, TYPE);
 
       case CLIENT_MODIFY_TARGET:
         {
@@ -25205,11 +25186,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TAG_ACTIVE,
               &create_tag_data->active);
 
-      APPEND (CLIENT_CREATE_TAG_ATTACH_ID,
-              &create_tag_data->attach_id);
-
-      APPEND (CLIENT_CREATE_TAG_ATTACH_TYPE,
-              &create_tag_data->attach_type);
+      APPEND (CLIENT_CREATE_TAG_RESOURCE_TYPE,
+              &create_tag_data->resource_type);
 
       APPEND (CLIENT_CREATE_TAG_COPY,
               &create_tag_data->copy);
@@ -25506,11 +25484,8 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TAG_ACTIVE,
               &modify_tag_data->active);
 
-      APPEND (CLIENT_MODIFY_TAG_ATTACH_ID,
-              &modify_tag_data->attach_id);
-
-      APPEND (CLIENT_MODIFY_TAG_ATTACH_TYPE,
-              &modify_tag_data->attach_type);
+      APPEND (CLIENT_MODIFY_TAG_RESOURCE_TYPE,
+              &modify_tag_data->resource_type);
 
       APPEND (CLIENT_MODIFY_TAG_COMMENT,
               &modify_tag_data->comment);

@@ -1,3 +1,89 @@
+2014-03-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Rename "attach_id" to "resource_uuid", "attach_type" to "resource_type"
+	add resource rowid "resource" and "resource_location" to tags tables.
+	Hence increase database version to 117.  Add database migration from
+	version 116 to 117.
+	Change tag OMP elements accordingly and make them more consistent with
+	the resource in permissions overall. Allow tags to be attached to
+	resources in trash. Rename "orphaned" in tags to "orphan".
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 117.
+
+	* src/manage_migrators.c (migrate_116_to_117): New function.
+	Renames and add tags table columns for consistency with permissions.
+	(database_migrators): Add migrate_116_to_117.
+
+	* src/manage_acl.c (user_owns_uuid): Add special case for SecInfo as
+	they do not have an owner.
+
+	* src/manage_sql.c (tags_set_locations, tags_set_orphans): New
+	functions and prototypes analogous to permissions_set_... functions.
+	(filter_clause): Rename tag resource columns.
+	(resource_name): Check if type is one without a trash table.
+	(create_tables): Rename tag resource columns.
+	(delete_alert): Call tags_set_locations and tags_set_orphans.
+	(resource_id_exists): Add case for tasks.
+	(trash_id_exists): New function. Trash version of resource_id_exists.
+	(delete_report_internal): Set tag resource_location and resource fields.
+	(request_delete_task_uuid, delete_target, delete_config)
+	(delete_lsc_credential, delete_agent, delete_note, delete_override)
+	(delete_schedule, delete_report_format, delete_slave, delete_permission)
+	(delete_port_list, delete_filter, manage_restore): Call
+	tags_set_locations and tags_set_orphans.
+	(manage_empty_trashcan): Update tag resources and resource locations.
+	(create_tag, delete_tag, modify_tag, TAG_ITERATOR_FILTER_COLUMNS)
+	(TAG_ITERATOR_COLUMNS, TAG_ITERATOR_TRASH_COLUMNS)
+	(TAG_NAME_ITERATOR_FILTER_COLUMNS): Rename and add resource columns,
+	including resource_name for trash columns.
+	(tag_iterator_attach_type): Remove. Replaced with
+	tag_iterator_resource_type.
+	(tag_iterator_resource_type): New function.
+	(tag_iterator_attach_id): Remove. Replaced with tag_iterator_resource
+	and tag_iterator_resource_uuid.
+	(tag_iterator_resource_uuid, tag_iterator_resource)
+	(tag_iterator_resource_location): New functions.
+	(tag_iterator_active, tag_iterator_value): Adjust column number.
+	(tag_iterator_orphaned): Remove. Replaced with tag_iterator_orphan.
+	(tag_iterator_orphan): New function.
+	(tag_iterator_attach_name): Remove. Replaced with
+	tag_iterator_resource_name.
+	(init_resource_tag_iterator, resource_tag_count): Rename resource
+	columns.
+
+	* src/manage.h (trash_id_exists): New function prototype.
+	(tag_iterator_attach_type): Remove. Replaced with
+	tag_iterator_resource_type.
+	(tag_iterator_resource_type): New function.
+	(tag_iterator_attach_id): Remove. Replaced with tag_iterator_resource
+	and tag_iterator_resource_uuid.
+	(tag_iterator_resource_uuid, tag_iterator_resource)
+	(tag_iterator_resource_location): New functions.
+	(tag_iterator_active, tag_iterator_value): Adjust column number.
+	(tag_iterator_orphaned): Remove. Replaced with tag_iterator_orphan.
+	(tag_iterator_orphan): New function.
+	(tag_iterator_attach_name): Remove. Replaced with
+	tag_iterator_resource_name.
+
+	* src/omp.c (create_tag_data_t, create_tag_data_reset)
+	(modify_tag_data_t, modify_tag_data_reset): Rename attach_id to
+	resource_id and attach_type to resource_type.
+	(client_state_t): Remove CLIENT_CREATE_TAG_ATTACH_ID and
+	CLIENT_MODIFY_TAG_ATTACH_ID. Rename ATTACH elements to their RESOURCE
+	equivalents.
+	(omp_xml_handle_start_element): In cases for create_tag and modify_tags
+	rename ATTACH elements to RESOURCE and make the resource ID an
+	attribute.
+	(omp_xml_handle_start_element): In cases for get_tags, create_tag and
+	modify_tag rename ATTACH elements to RESOURCE and make the resource ID
+	an attribute. Rename ORPHANED element to ORPHAN.
+
+	* src/schema_formats/XML/OMP.xml (create_tag, get_tags, modify_tag):
+	Rename "attach" and "orphaned" elements to "resource" and "orphan" and
+	make them more consistent with the ones in permissions.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_config_system_discovery.c

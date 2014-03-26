@@ -303,6 +303,9 @@ resource_count (const char *, const get_data_t *);
 int
 resource_id_exists (const char *, const char *);
 
+int
+trash_id_exists (const char *, const char *);
+
 
 /* Events and Alerts. */
 
@@ -3262,10 +3265,16 @@ int
 tag_count (const get_data_t *get);
 
 const char*
-tag_iterator_attach_type (iterator_t*);
+tag_iterator_resource_type (iterator_t*);
+
+resource_t
+tag_iterator_resource (iterator_t*);
 
 const char*
-tag_iterator_attach_id (iterator_t*);
+tag_iterator_resource_uuid (iterator_t*);
+
+int
+tag_iterator_resource_location (iterator_t*);
 
 const char*
 tag_iterator_active (iterator_t*);
@@ -3274,10 +3283,10 @@ const char*
 tag_iterator_value (iterator_t*);
 
 const char*
-tag_iterator_attach_name (iterator_t*);
+tag_iterator_resource_name (iterator_t*);
 
 const char*
-tag_iterator_orphaned (iterator_t*);
+tag_iterator_orphan (iterator_t*);
 
 int
 init_tag_name_iterator (iterator_t*, const get_data_t*);
