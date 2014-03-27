@@ -1,6 +1,11 @@
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* doc/db.png: Update for
+	* src/manage_sql.c (create_tables): Remove ANALYZE which is done later
+	in check_db anyway, to save a few seconds on startup.
+
+2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/db.png: Update for version change.
 
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
