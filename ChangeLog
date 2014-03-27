@@ -1,3 +1,8 @@
+2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Check return of
+	init_report_format_file_iterator in CLIENT_GET_REPORT_FORMATS.
+
 2014-03-26  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump

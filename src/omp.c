@@ -14528,9 +14528,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_report_formats_data->get.details)
                     {
                       file_iterator_t files;
-                      init_report_format_file_iterator
-                       (&files,
-                        report_format_iterator_report_format (&report_formats));
+                      if (init_report_format_file_iterator
+                           (&files,
+                            report_format_iterator_report_format
+                             (&report_formats)))
+                        {
+                          cleanup_iterator (&report_formats);
+                          error_send_to_client (error);
+                          return;
+                        }
                       while (next_file (&files))
                         {
                           gchar *content = file_iterator_content_64 (&files);
