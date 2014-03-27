@@ -4283,6 +4283,9 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  password, timezone, hosts, hosts_allow, ifaces, ifaces_allow,"
        "  method, creation_time, modification_time);");
+
+  if (progress)
+    progress ();
 }
 
 

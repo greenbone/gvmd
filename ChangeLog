@@ -1,5 +1,10 @@
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_tables): Put one progress back from last
+	commit, because it is still a progress point.
+
+2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_tables): Remove ANALYZE which is done later
 	in check_db anyway, to save a few seconds on startup.
 
