@@ -2018,6 +2018,28 @@ delete_report_format_data_reset (delete_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the delete_role command.
+ */
+typedef struct
+{
+  char *role_id;     ///< ID of role to delete.
+  int ultimate;      ///< Dummy field for generic macros.
+} delete_role_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_role_data_reset (delete_role_data_t *data)
+{
+  free (data->role_id);
+
+  memset (data, 0, sizeof (delete_role_data_t));
+}
+
+/**
  * @brief Command data for the delete_schedule command.
  */
 typedef struct
@@ -3934,6 +3956,7 @@ typedef union
   delete_port_range_data_t delete_port_range;         ///< delete_port_range
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
+  delete_role_data_t delete_role;                     ///< delete_role
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
   delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_tag_data_t delete_tag;                       ///< delete_tag
@@ -4212,6 +4235,12 @@ delete_report_data_t *delete_report_data
  */
 delete_report_format_data_t *delete_report_format_data
  = (delete_report_format_data_t*) &(command_data.delete_report_format);
+
+/**
+ * @brief Parser callback data for DELETE_ROLE.
+ */
+delete_role_data_t *delete_role_data
+ = (delete_role_data_t*) &(command_data.delete_role);
 
 /**
  * @brief Parser callback data for DELETE_SCHEDULE.
@@ -4972,6 +5001,7 @@ typedef enum
   CLIENT_DELETE_PORT_RANGE,
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
+  CLIENT_DELETE_ROLE,
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TAG,
@@ -6355,6 +6385,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_report_format_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_REPORT_FORMAT);
+          }
+        else if (strcasecmp ("DELETE_ROLE", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values, "role_id",
+                              &delete_role_data->role_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_role_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_role_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ROLE);
           }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
@@ -10972,6 +11014,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
       CASE_DELETE (REPORT, report, "Report");
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
+      CASE_DELETE (ROLE, role, "Role");
       CASE_DELETE (SCHEDULE, schedule, "Schedule");
       CASE_DELETE (SLAVE, slave, "Slave");
       CASE_DELETE (TAG, tag, "Tag");

@@ -1,5 +1,26 @@
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add OMP DELETE_ROLE.
+
+	* src/manage_sql.c (omp_commands): Add DELETE_ROLE.
+	(create_tables): Add roles_trash and role_users_trash.
+	(role_is_predefined, delete_role): New functions.
+	(role_writable, trash_role_writable): Make roles writable.
+	(ROLE_ITERATOR_TRASH_COLUMNS): New define.
+	(role_count, init_role_iterator): Pass trash columns.
+	(manage_restore): Add roles.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (delete_role_data_t): New type.
+	(delete_role_data_reset): New function.
+	(command_data_t, client_state_t): Add DELETE_ROLE entry.
+	(delete_role_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	DELETE_ROLE.
+
+2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Check return of
 	init_report_format_file_iterator in CLIENT_GET_REPORT_FORMATS.
 

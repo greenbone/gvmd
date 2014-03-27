@@ -327,6 +327,7 @@ command_t omp_commands[]
     {"DELETE_PORT_RANGE", "Delete a port range."},
     {"DELETE_REPORT", "Delete a report."},
     {"DELETE_REPORT_FORMAT", "Delete a report format."},
+    {"DELETE_ROLE", "Delete a role."},
     {"DELETE_SCHEDULE", "Delete a schedule."},
     {"DELETE_SLAVE", "Delete a slave."},
     {"DELETE_TAG", "Delete a tag."},
@@ -4209,7 +4210,12 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS roles"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS roles_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS role_users"
+       " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS role_users_trash"
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
@@ -44060,6 +44066,151 @@ create_role (const char *role_name, const char *comment, const char *users,
 }
 
 /**
+ * @brief Return whether a role is predefined.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+role_is_predefined (role_t role)
+{
+  return sql_int (0, 0,
+                  "SELECT COUNT (*) FROM roles"
+                  " WHERE ROWID = %llu"
+                  " AND (uuid = '" ROLE_UUID_ADMIN "'"
+                  "      OR uuid = '" ROLE_UUID_USER "'"
+                  "      OR uuid = '" ROLE_UUID_OBSERVER "');",
+                  role)
+         != 0;
+}
+
+/**
+ * @brief Delete a role.
+ *
+ * @param[in]  role_id   UUID of role.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because a task refers to the role, 2 failed
+ *         to find role, 3 predefined role, -1 error.
+ */
+int
+delete_role (const char *role_id, int ultimate)
+{
+  role_t role = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_role") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  /* Roles are owned collectively by the admins, hence no permission check. */
+  if (find_role (role_id, &role))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (role == 0)
+    {
+      if (find_trash ("role", role_id, &role))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (role == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      if (trash_role_in_use (role))
+        {
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+
+      sql ("DELETE FROM roles_trash WHERE ROWID = %llu;", role);
+      sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (role_is_predefined (role))
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
+
+  if (role_in_use (role))
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  if (ultimate == 0)
+    {
+      role_t trash_role;
+
+      sql ("INSERT INTO roles_trash"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time"
+           " FROM roles WHERE ROWID = %llu;",
+           role);
+
+      trash_role = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO role_users_trash"
+           " (`role`, user)"
+           " SELECT `role`, user"
+           " FROM role_users WHERE `role` = %llu;",
+           role);
+
+      permissions_set_subjects ("role", role, trash_role, LOCATION_TRASH);
+    }
+  else
+    {
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           role);
+    }
+
+  sql ("DELETE FROM roles WHERE ROWID = %llu;", role);
+  sql ("DELETE FROM role_users WHERE `role` = %llu;", role);
+
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
  * @brief Find a role given a UUID.
  *
  * @param[in]   uuid   UUID of role.
@@ -44130,7 +44281,9 @@ role_users (role_t role)
 int
 role_writable (role_t role)
 {
-  return 0;
+  if (role_is_predefined (role))
+    return 0;
+  return 1;
 }
 
 /**
@@ -44143,7 +44296,7 @@ role_writable (role_t role)
 int
 trash_role_writable (role_t role)
 {
-  return 0;
+  return 1;
 }
 
 /**
@@ -44185,6 +44338,12 @@ trash_role_in_use (role_t role)
   GET_ITERATOR_COLUMNS (roles)
 
 /**
+ * @brief Role iterator columns for trash case.
+ */
+#define ROLE_ITERATOR_TRASH_COLUMNS                                          \
+  GET_ITERATOR_COLUMNS (roles_trash)
+
+/**
  * @brief Count number of roles.
  *
  * @param[in]  get  GET params.
@@ -44195,8 +44354,8 @@ int
 role_count (const get_data_t *get)
 {
   static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  return count ("role", get, ROLE_ITERATOR_COLUMNS, NULL, extra_columns,
-                0, 0, 0, TRUE);
+  return count ("role", get, ROLE_ITERATOR_COLUMNS, ROLE_ITERATOR_TRASH_COLUMNS,
+                extra_columns, 0, 0, 0, TRUE);
 }
 
 /**
@@ -44219,7 +44378,7 @@ init_role_iterator (iterator_t* iterator, const get_data_t *get)
                             /* Columns. */
                             ROLE_ITERATOR_COLUMNS,
                             /* Columns for trashcan. */
-                            NULL,
+                            ROLE_ITERATOR_TRASH_COLUMNS,
                             role_columns,
                             0,
                             NULL,
@@ -45853,6 +46012,58 @@ manage_restore (const char *id)
       g_free (dir);
       g_free (trash_dir);
 
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  /* Role. */
+
+  if (find_trash ("role", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      role_t role;
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM roles"
+                   " WHERE name ="
+                   " (SELECT name FROM roles_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO roles"
+           " (uuid, owner, name, comment, creation_time,"
+           "  modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time"
+           " FROM roles_trash WHERE ROWID = %llu;",
+           resource);
+
+      role = sqlite3_last_insert_rowid (task_db);
+
+      sql ("INSERT INTO role_users"
+           " (role, user)"
+           " SELECT role, user"
+           " FROM role_users_trash WHERE role = %llu;",
+           resource);
+
+      permissions_set_locations ("role", resource, role, LOCATION_TABLE);
+      tags_set_locations ("role", resource, role, LOCATION_TABLE);
+
+      permissions_set_subjects ("role", resource, role, LOCATION_TABLE);
+
+      sql ("DELETE FROM roles_trash WHERE ROWID = %llu;", resource);
+      sql ("DELETE FROM role_users_trash WHERE role = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
