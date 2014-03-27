@@ -41680,6 +41680,13 @@ permission_resource (permission_t permission)
   return resource;
 }
 
+/**
+ * @brief Return whether a permission is predefined.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if predefined, else 0.
+ */
 int
 permission_is_predefined (permission_t permission)
 {

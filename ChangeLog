@@ -1,5 +1,9 @@
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (permission_is_predefined): Add doc.
+
+2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP DELETE_ROLE.
 
 	* src/manage_sql.c (omp_commands): Add DELETE_ROLE.
