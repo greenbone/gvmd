@@ -4,12 +4,13 @@ This is the twelfth beta version of the upcoming 5.0 release of the OpenVAS
 Manager. it is the central management service between the actual security
 scanner and its various user clients.
 
-This release add an OMP DELETE_ROLE commands and a --dh-params command-line option to specify Diffie-Hellman ciphers parameters.
+This release add an OMP DELETE_ROLE commands and a --dh-params command-line
+option to specify Diffie-Hellman ciphers parameters.
 
 Many thanks to everyone who contributed to this release:
 Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Jan-Oliver Wagner
 
-Main changes since 5.0+beta10:
+Main changes since 5.0+beta11:
 * Add OMP DELETE_ROLE.
 * Add --dh-params command-line option.
 * code cleanup

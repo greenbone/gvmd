@@ -1,5 +1,11 @@
 2014-03-28  Benoît Allard  <benoit.allard@greenbone.net>
 
+	Post release version bump.
+
+	* CMakeLists.txt, CHANGES: 5.0+beta13
+
+2014-03-28  Benoît Allard  <benoit.allard@greenbone.net>
+
 	Prepare release of manager-5.0+beta12
 
 	* CHANGES: Update
