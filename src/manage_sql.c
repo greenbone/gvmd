@@ -43904,9 +43904,18 @@ copy_role (const char *name, const char *comment, const char *role_id,
       return ret;
     }
 
-  sql ("INSERT INTO role_users (role, user)"
-       " SELECT %llu, user FROM role_users"
-       " WHERE role = %llu;",
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " SELECT make_uuid (), owner, name, comment, resource_type,"
+       "        resource_uuid, resource, resource_location, subject_type, %llu,"
+       "        subject_location, now (), now ()"
+       " FROM permissions"
+       " WHERE subject_type = 'role'"
+       " AND subject = %llu"
+       " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+       " AND resource = 0;",
        new_role,
        old_role);
 

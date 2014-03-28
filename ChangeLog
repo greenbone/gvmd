@@ -1,3 +1,9 @@
+2014-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_role): Copy command-level permissions too.
+	Don't copy the users, otherwise permissions may accidentally be granted
+	during editing.
+
 2014-03-28  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump.
