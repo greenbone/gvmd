@@ -11454,8 +11454,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
 {
   int ret;
 
+  /* The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255" */
   if ((max_ips_per_target <= 0)
-      || (max_ips_per_target > 40000))
+      || (max_ips_per_target > 70000))
     return -4;
 
   max_hosts = max_ips_per_target;

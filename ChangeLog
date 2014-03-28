@@ -1,3 +1,10 @@
+2014-03-28  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Increased the max value
+	for IPs per target that could be specified via --max-ips-per-target
+	to 70000 to at least cover all of 192.168 network, a typical case
+	for host discovery.
+
 2014-03-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_tables): Put one progress back from last
