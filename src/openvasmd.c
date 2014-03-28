@@ -1273,6 +1273,7 @@ main (int argc, char** argv)
   static gchar *delete_user = NULL;
   static gchar *user = NULL;
   static gchar *gnutls_priorities = "NORMAL";
+  static gchar *dh_params = NULL;
   static gchar *new_password = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
@@ -1321,6 +1322,7 @@ main (int argc, char** argv)
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --modify-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &gnutls_priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
+        { "dh-params", '\0', 0, G_OPTION_ARG_STRING, &dh_params, "Diffie-Hellman parameters file", "<file>" },
         { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "Print tracing messages.", NULL },
         { "version", '\0', 0, G_OPTION_ARG_NONE, &print_version, "Print version and exit.", NULL },
         { NULL }
@@ -1822,6 +1824,8 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
   set_gnutls_priority (&client_session, gnutls_priorities);
+  if (dh_params && set_gnutls_dhparams (client_credentials, dh_params))
+    g_warning ("Couldn't set DH parameters from %s\n", dh_params);
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
    * error" removes the connection between `select' and `accept'. */

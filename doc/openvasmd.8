@@ -34,6 +34,10 @@ Connect to server (openvassd) on port number \fINUMBER\f1.
 .BR --gnutls-priorities=\fISTRING\fR
 Sets the GnuTLS priorities string to \fISTRING\f1.
 .TP
+.BR --dh-params=\fISTRING\fR
+Path to file containing Diffie-Hellman parameters which are needed for Perfect
+Forward Secrecy. This file could be generated using openssl or certtool.
+.TP
 .BR --version
 Print version.
 .TP

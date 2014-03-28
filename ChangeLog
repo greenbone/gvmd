@@ -1,3 +1,10 @@
+2014-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Add --dh-params command-line option. Call
+	set_gnutls_dhparams() accordingly.
+
+	* doc/openvasmd.8: Update documentation.
+
 2014-03-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (copy_resource_lock): Additionally copy tags
