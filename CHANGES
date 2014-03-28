@@ -1,3 +1,20 @@
+openvas-manager 5.0+beta12 (2014-03-28)
+
+This is the twelfth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. it is the central management service between the actual security
+scanner and its various user clients.
+
+This release add an OMP DELETE_ROLE commands and a --dh-params command-line option to specify Diffie-Hellman ciphers parameters.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Jan-Oliver Wagner
+
+Main changes since 5.0+beta10:
+* Add OMP DELETE_ROLE.
+* Add --dh-params command-line option.
+* code cleanup
+
+
 openvas-manager 5.0+beta11 (2014-03-26)
 
 This is the eleventh beta version of the upcoming 5.0 release of the OpenVAS

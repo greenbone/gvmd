@@ -1,3 +1,9 @@
+2014-03-28  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Prepare release of manager-5.0+beta12
+
+	* CHANGES: Update
+
 2014-03-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (main): Add --dh-params command-line option. Call
