@@ -3450,6 +3450,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   int named, admin_type;
   user_t owner;
   resource_t resource;
+  resource_t new;
 
   if (resource_id == NULL)
     return -1;
@@ -3581,8 +3582,29 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
          type,
          quoted_uuid);
 
+  new = sqlite3_last_insert_rowid (task_db);
+
+  /* Copy attached tags */
+  sql ("INSERT INTO tags"
+       " (uuid, owner, name, comment, creation_time, modification_time,"
+       "  resource_type, resource, resource_uuid, resource_location,"
+       "  active, value)"
+       " SELECT make_uuid (), %s%s%s, name, comment, now (), now (),"
+       "        resource_type, %llu, (SELECT uuid FROM %ss WHERE ROWID=%llu),"
+       "        resource_location, active, value"
+       " FROM tags WHERE resource_type = '%s' AND resource = %llu"
+       "           AND resource_location = 0;",
+       admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
+       admin_type ? "NULL" : current_credentials.uuid,
+       admin_type ? "" : "')",
+       new,
+       type,
+       new,
+       type,
+       resource);
+
   if (new_resource)
-    *new_resource = sqlite3_last_insert_rowid (task_db);
+    *new_resource = new;
 
   if (old_resource)
     *old_resource = resource;
