@@ -5062,14 +5062,14 @@ collate_role (void* data,
  * @param[in]  name  Name of accessor.
  * @param[in]  col   Column number to access.
  */
-#define DEF_ACCESS(name, col) \
-const char* \
-name (iterator_t* iterator) \
-{ \
-  const char *ret; \
-  if (iterator->done) return NULL; \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col); \
-  return ret; \
+#define DEF_ACCESS(name, col)                                     \
+const char*                                                       \
+name (iterator_t* iterator)                                       \
+{                                                                 \
+  const char *ret;                                                \
+  if (iterator->done) return NULL;                                \
+  ret = (const char*) sqlite3_column_text (iterator->stmt, col);  \
+  return ret;                                                     \
 }
 
 /**
@@ -6027,7 +6027,7 @@ alert_method (alert_t alert)
  * @brief Alert iterator columns.
  */
 #define ALERT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter, "         \
+  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter, "        \
   G_STRINGIFY (LOCATION_TABLE)
 
 /**
@@ -8380,7 +8380,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Filter columns for task iterator.
  */
-#define TASK_ITERATOR_FILTER_COLUMNS                   \
+#define TASK_ITERATOR_FILTER_COLUMNS                                          \
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
    "trend", "severity", NULL }
 
@@ -29757,7 +29757,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS                                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
-  " summary, copyright, cve, bid, xref, tag,"    \
+  " summary, copyright, cve, bid, xref, tag,"                               \
   " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
@@ -29765,8 +29765,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
-  " nvts.name, summary, copyright, cve, bid, xref, tag,"         \
-  " category, nvts.family, cvss_base, cvss_base AS severity,"   \
+  " nvts.name, summary, copyright, cve, bid, xref, tag,"                      \
+  " category, nvts.family, cvss_base, cvss_base AS severity,"                 \
   " cvss_base AS cvss"
 
 /**
@@ -34168,7 +34168,7 @@ agent_uuid (agent_t agent)
 /**
  * @brief Filter columns for agent iterator.
  */
-#define AGENT_ITERATOR_FILTER_COLUMNS          \
+#define AGENT_ITERATOR_FILTER_COLUMNS                                 \
  { GET_ITERATOR_FILTER_COLUMNS, "trust", NULL }
 
 /**
@@ -41228,7 +41228,7 @@ trash_group_in_use (group_t group)
 /**
  * @brief Group iterator columns for trash case.
  */
-#define GROUP_ITERATOR_TRASH_COLUMNS                         \
+#define GROUP_ITERATOR_TRASH_COLUMNS                                          \
   GET_ITERATOR_COLUMNS (groups_trash)
 
 /**
@@ -43342,7 +43342,7 @@ delete_port_range (const char *port_range_id, int dummy)
 /**
  * @brief Filter columns for Port List iterator.
  */
-#define PORT_LIST_ITERATOR_FILTER_COLUMNS                                     \
+#define PORT_LIST_ITERATOR_FILTER_COLUMNS                                       \
  { GET_ITERATOR_FILTER_COLUMNS,  "total", "tcp", "udp", NULL }
 
 /**
@@ -47225,9 +47225,9 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief CPE iterator columns.
  */
-#define CPE_INFO_ITERATOR_COLUMNS                           \
+#define CPE_INFO_ITERATOR_COLUMNS                                    \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, status,"  \
-  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id,"   \
+  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id,"           \
   " max_cvss as severity"
 
 /**
@@ -47235,13 +47235,13 @@ modify_setting (const gchar *uuid, const gchar *name,
  */
 #define OVALDEF_INFO_ITERATOR_FILTER_COLUMNS                \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "deprecated",    \
-   "class", "title", "description", "file",         \
+   "class", "title", "description", "file",                 \
    "status", "max_cvss", "cves", "severity", NULL }
 
 /**
  * @brief OVALDEF iterator columns.
  */
-#define OVALDEF_INFO_ITERATOR_COLUMNS                                \
+#define OVALDEF_INFO_ITERATOR_COLUMNS                                     \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, version, deprecated," \
   " def_class AS class, title, description, xml_file AS file, status,"    \
   " max_cvss, cve_refs as cves, max_cvss as severity"
@@ -47263,7 +47263,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief Filter columns for All SecInfo iterator.
  */
-#define ALL_INFO_ITERATOR_FILTER_COLUMNS                \
+#define ALL_INFO_ITERATOR_FILTER_COLUMNS                               \
  { GET_ITERATOR_FILTER_COLUMNS, "type", "extra", "severity", NULL }
 
 /**
@@ -49274,7 +49274,7 @@ trash_user_writable (user_t user)
 /**
  * @brief User columns for user iterator.
  */
-#define USER_ITERATOR_FILTER_COLUMNS                        \
+#define USER_ITERATOR_FILTER_COLUMNS                                  \
  { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", "hosts", \
    "ifaces", NULL }
 
@@ -49288,7 +49288,7 @@ trash_user_writable (user_t user)
   "            WHERE user = users.ROWID"                                   \
   "            ORDER BY name ASC),"                                        \
   "           '')"                                                         \
-  " AS roles,"                                                              \
+  " AS roles,"                                                             \
   " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
   "            JOIN groups ON `group` = groups.ROWID"                      \
   "            WHERE user = users.ROWID"                                   \
@@ -49300,7 +49300,7 @@ trash_user_writable (user_t user)
 /**
  * @brief User iterator columns for trash case.
  */
-#define USER_ITERATOR_TRASH_COLUMNS                         \
+#define USER_ITERATOR_TRASH_COLUMNS                                     \
   GET_ITERATOR_COLUMNS (users_trash) ", method, hosts, hosts_allow,"    \
   " ifaces, ifaces_allow"
 
@@ -49917,8 +49917,8 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 #define TAG_ITERATOR_COLUMNS                                                  \
   GET_ITERATOR_COLUMNS (tags) ", resource_type, resource, resource_uuid,"     \
   " resource_location, active, value,"                                        \
-  " (resource = 0) AS orphan,"                                               \
-  " resource_name (resource_type, resource_uuid, resource_location)"\
+  " (resource = 0) AS orphan,"                                                \
+  " resource_name (resource_type, resource_uuid, resource_location)"          \
   " AS resource_name"
 
 /**

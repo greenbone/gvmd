@@ -1,5 +1,9 @@
 2014-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Line up newline escapes nicely.
+
+2014-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add OMP MODIFY_ROLE.
 
 	* src/manage_sql.c (omp_commands): Add MODIFY_ROLE.
