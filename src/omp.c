@@ -3287,6 +3287,33 @@ modify_report_format_data_reset (modify_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_role command.
+ */
+typedef struct
+{
+  char *comment;                 ///< Comment.
+  char *name;                    ///< Name of role.
+  char *role_id;                 ///< Role UUID.
+  char *users;                   ///< Users for role.
+} modify_role_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_role_data_reset (modify_role_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->role_id);
+  free (data->users);
+
+  memset (data, 0, sizeof (modify_role_data_t));
+}
+
+/**
  * @brief Command data for the modify_schedule command.
  */
 typedef struct
@@ -4001,6 +4028,7 @@ typedef union
   modify_port_list_data_t modify_port_list;           ///< modify_port_list
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
+  modify_role_data_t modify_role;                     ///< modify_role
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
   modify_slave_data_t modify_slave;                   ///< modify_slave
@@ -4523,6 +4551,12 @@ modify_report_data_t *modify_report_data
  */
 modify_report_format_data_t *modify_report_format_data
  = &(command_data.modify_report_format);
+
+/**
+ * @brief Parser callback data for MODIFY_ROLE.
+ */
+modify_role_data_t *modify_role_data
+ = &(command_data.modify_role);
 
 /**
  * @brief Parser callback data for MODIFY_SCHEDULE.
@@ -5131,6 +5165,10 @@ typedef enum
   CLIENT_MODIFY_REPORT_FORMAT_PARAM_NAME,
   CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE,
   CLIENT_MODIFY_REPORT_FORMAT_SUMMARY,
+  CLIENT_MODIFY_ROLE,
+  CLIENT_MODIFY_ROLE_COMMENT,
+  CLIENT_MODIFY_ROLE_NAME,
+  CLIENT_MODIFY_ROLE_USERS,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -7221,6 +7259,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_report_format_data->report_format_id);
             set_client_state (CLIENT_MODIFY_REPORT_FORMAT);
           }
+        else if (strcasecmp ("MODIFY_ROLE", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "role_id",
+                              &modify_role_data->role_id);
+            set_client_state (CLIENT_MODIFY_ROLE);
+          }
         else if (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "schedule_id",
@@ -7724,6 +7768,24 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_MODIFY_REPORT_FORMAT_PARAM_VALUE);
         ELSE_ERROR ("modify_report_format");
+
+      case CLIENT_MODIFY_ROLE:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_role_data->comment, "");
+            set_client_state (CLIENT_MODIFY_ROLE_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_role_data->name, "");
+            set_client_state (CLIENT_MODIFY_ROLE_NAME);
+          }
+        else if (strcasecmp ("USERS", element_name) == 0)
+          {
+            openvas_append_string (&modify_role_data->users, "");
+            set_client_state (CLIENT_MODIFY_ROLE_USERS);
+          }
+        ELSE_ERROR ("modify_role");
 
       case CLIENT_MODIFY_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -21517,6 +21579,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_group_data->group_id, "modified");
                 break;
               case 3:
+                // FIX "group_id required"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
                                     "Error in type name"));
@@ -21524,6 +21587,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_group_data->group_id, "modified");
                 break;
               case 4:
+                // FIX "user name validation falied"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
                                     "MODIFY_GROUP requires a group_id"));
@@ -22286,6 +22350,88 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT, PARAM);
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, NAME);
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
+
+      case CLIENT_MODIFY_ROLE:
+        {
+          assert (strcasecmp ("MODIFY_ROLE", element_name) == 0);
+
+          switch (modify_role
+                   (modify_role_data->role_id,
+                    modify_role_data->name,
+                    modify_role_data->comment,
+                    modify_role_data->users))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_role"));
+                log_event ("role", "Role", modify_role_data->role_id,
+                           "modified");
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_role",
+                                               "role",
+                                               modify_role_data->role_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_role",
+                                    "Failed to find user"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              case 3:
+                // FIX "role_id required"
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_role",
+                                    "Error in type name"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              case 4:
+                // FIX "user name validation falied"
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_role",
+                                    "MODIFY_ROLE requires a role_id"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_role",
+                                    "Role is used by an alert so type must be"
+                                    " 'report' if specified"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_role",
+                                    "Permission denied"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_role"));
+                log_event_fail ("role", "Role",
+                                modify_role_data->role_id, "modified");
+                break;
+            }
+
+          modify_role_data_reset (modify_role_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_ROLE, COMMENT);
+      CLOSE (CLIENT_MODIFY_ROLE, NAME);
+      CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCHEDULE:
         {
@@ -25474,6 +25620,16 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_PORT_LIST_NAME,
               &modify_port_list_data->name);
+
+
+      APPEND (CLIENT_MODIFY_ROLE_COMMENT,
+              &modify_role_data->comment);
+
+      APPEND (CLIENT_MODIFY_ROLE_NAME,
+              &modify_role_data->name);
+
+      APPEND (CLIENT_MODIFY_ROLE_USERS,
+              &modify_role_data->users);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,

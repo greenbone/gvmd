@@ -1,3 +1,21 @@
+2014-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add OMP MODIFY_ROLE.
+
+	* src/manage_sql.c (omp_commands): Add MODIFY_ROLE.
+	(role_add_users): New function.  Body from create_role.
+	(create_role): Call role_add_users to add users.
+	(modify_role): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (modify_role_data_t): New type.
+	(modify_role_data_reset): New function.
+	(command_data_t, client_state_t): Add MODIFY_ROLE entries.
+	(modify_role_data): New variable.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add MODIFY_ROLE.
+
 2014-03-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_role): Copy command-level permissions too.

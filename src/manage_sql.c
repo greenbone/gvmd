@@ -382,6 +382,7 @@ command_t omp_commands[]
     {"MODIFY_PORT_LIST", "Modify an existing port list."},
     {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
+    {"MODIFY_ROLE", "Modify an existing role."},
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
     {"MODIFY_SLAVE", "Modify an existing slave."},
@@ -43926,6 +43927,133 @@ copy_role (const char *name, const char *comment, const char *role_id,
 }
 
 /**
+ * @brief Add users to a role.
+ *
+ * Caller must take care of transaction.
+ *
+ * @param[in]  role  Role.
+ * @param[in]  users  List of users.
+ *
+ * @return 0 success, 2 failed to find user, 4 user name validation failed,
+ *         -1 error.
+ */
+static int
+role_add_users (role_t role, const char *users)
+{
+  if (users)
+    {
+      gchar **split, **point;
+      GList *added;
+
+      /* Add each user. */
+
+      added = NULL;
+      split = g_strsplit_set (users, " ,", 0);
+      point = split;
+
+      while (*point)
+        {
+          user_t user;
+          gchar *name;
+
+          name = *point;
+
+          g_strstrip (name);
+
+          if (strcmp (name, "") == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
+            {
+              point++;
+              continue;
+            }
+
+          added = g_list_prepend (added, name);
+
+          if (openvas_user_exists (name) == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return 2;
+            }
+
+          if (find_user_by_name (name, &user))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              gchar *uuid;
+
+              /** @todo Similar to validate_user in openvas-administrator. */
+              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return 4;
+                }
+
+              uuid = openvas_user_uuid (name);
+
+              if (uuid == NULL)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+
+              if (sql_int (0, 0,
+                           "SELECT count(*) FROM users WHERE uuid = '%s';",
+                           uuid)
+                  == 0)
+                {
+                  gchar *quoted_name;
+                  quoted_name = sql_quote (name);
+                  sql ("INSERT INTO users"
+                       " (uuid, name, creation_time, modification_time)"
+                       " VALUES"
+                       " ('%s', '%s', now (), now ());",
+                       uuid,
+                       quoted_name);
+                  g_free (quoted_name);
+
+                  user = sqlite3_last_insert_rowid (task_db);
+                }
+              else
+                {
+                  /* user_find should have found it. */
+                  assert (0);
+                  g_free (uuid);
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+
+              g_free (uuid);
+            }
+
+          sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
+               role,
+               user);
+
+          point++;
+        }
+
+      g_list_free (added);
+      g_strfreev (split);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Create a role.
  *
  * @param[in]   role_name       Role.
@@ -43941,6 +44069,7 @@ int
 create_role (const char *role_name, const char *comment, const char *users,
               role_t* role)
 {
+  int ret;
   gchar *quoted_role_name, *quoted_comment;
 
   assert (current_credentials.uuid);
@@ -43981,124 +44110,14 @@ create_role (const char *role_name, const char *comment, const char *users,
   if (role)
     *role = sqlite3_last_insert_rowid (task_db);
 
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
+  ret = role_add_users (*role, users);
 
-      /* Add each user. */
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
 
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (openvas_user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              sql ("ROLLBACK;");
-              return 2;
-            }
-
-          if (find_user_by_name (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              sql ("ROLLBACK;");
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return 4;
-                }
-
-              uuid = openvas_user_uuid (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-
-              if (sql_int (0, 0,
-                           "SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users"
-                       " (uuid, name, creation_time, modification_time)"
-                       " VALUES"
-                       " ('%s', '%s', now (), now ());",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sqlite3_last_insert_rowid (task_db);
-                }
-              else
-                {
-                  /* user_find should have found it. */
-                  assert (0);
-                  g_free (uuid);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-
-              g_free (uuid);
-            }
-
-          sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
-               *role,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  sql ("COMMIT;");
-
-  return 0;
+  return ret;
 }
 
 /**
@@ -44359,6 +44378,103 @@ int
 trash_role_in_use (role_t role)
 {
   return 0;
+}
+
+/**
+ * @brief Modify a role.
+ *
+ * @param[in]   role_id  UUID of role.
+ * @param[in]   name     Name of role.
+ * @param[in]   comment  Comment on role.
+ * @param[in]   users    Role users.
+ *
+ * @return 0 success, 1 failed to find role, 2 failed to find user, 3 role_id
+ *         required, 4 user name validation failed, 5 role with new name
+ *         exists, 99 permission denied, -1 internal error.
+ */
+int
+modify_role (const char *role_id, const char *name, const char *comment,
+             const char *users)
+{
+  int ret;
+  gchar *quoted_name, *quoted_comment;
+  role_t role;
+
+  assert (current_credentials.uuid);
+
+  if (role_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("modify_role") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  role = 0;
+
+  /* Roles are owned collectively by the admins, so no permission check. */
+  if (find_role (role_id, &role))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (role == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a role with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM roles"
+                   " WHERE name = '%s'"
+                   " AND ROWID != %llu"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.ROWID FROM users"
+                   "                   WHERE users.uuid = '%s')));",
+                   quoted_name,
+                   role,
+                   current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 5;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE roles SET"
+       " name = '%s',"
+       " comment = '%s',"
+       " modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       quoted_name,
+       quoted_comment,
+       role);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("DELETE FROM role_users WHERE `role` = %llu;", role);
+
+  ret = role_add_users (role, users);
+
+  if (ret)
+    sql ("ROLLBACK;");
+  else
+    sql ("COMMIT;");
+
+  return ret;
 }
 
 /**

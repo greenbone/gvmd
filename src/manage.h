@@ -2775,6 +2775,9 @@ role_writable (role_t);
 int
 role_count (const get_data_t*);
 
+int
+modify_role (const char *, const char *, const char *, const char *);
+
 
 /* Filter Utilities. */
 
