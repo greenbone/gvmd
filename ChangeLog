@@ -1,3 +1,8 @@
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (permissions_set_subjects): Use the type arg, to
+	consider roles as well as groups.
+
 2014-04-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Rebuild the resource_location column in the tags and tags_trash tables
