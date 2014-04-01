@@ -21579,26 +21579,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_group_data->group_id, "modified");
                 break;
               case 3:
-                // FIX "group_id required"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
-                                    "Error in type name"));
+                                    "MODIFY_GROUP requires a group_id"
+                                    " attribute"));
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
               case 4:
-                // FIX "user name validation falied"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
-                                    "MODIFY_GROUP requires a group_id"));
+                                    "Error in user name"));
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_group",
-                                    "Group is used by an alert so type must be"
-                                    " 'report' if specified"));
+                                    "Group with new name exists already"));
                 log_event_fail ("group", "Group",
                                 modify_group_data->group_id, "modified");
                 break;
@@ -22387,26 +22385,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 modify_role_data->role_id, "modified");
                 break;
               case 3:
-                // FIX "role_id required"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_role",
-                                    "Error in type name"));
+                                    "MODIFY_ROLE requires a role_id"
+                                    " attribute"));
                 log_event_fail ("role", "Role",
                                 modify_role_data->role_id, "modified");
                 break;
               case 4:
-                // FIX "user name validation falied"
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_role",
-                                    "MODIFY_ROLE requires a role_id"));
+                                    "Error in user name"));
                 log_event_fail ("role", "Role",
                                 modify_role_data->role_id, "modified");
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_role",
-                                    "Role is used by an alert so type must be"
-                                    " 'report' if specified"));
+                                    "Role with new name exists already"));
                 log_event_fail ("role", "Role",
                                 modify_role_data->role_id, "modified");
                 break;

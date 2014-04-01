@@ -1,5 +1,10 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Correct MODIFY_GROUP and
+	MODIFY_ROLE error responses.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db.png: Update for version change.
 
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
