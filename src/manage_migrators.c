@@ -7726,8 +7726,7 @@ migrate_98_to_99 ()
   sql ("DELETE FROM config_preferences_trash"
        " WHERE name = 'slice_network_addresses';");
 
-
-  /* Set the database version 99. */
+  /* Set the database version to 99. */
 
   set_db_version (99);
 
@@ -7774,7 +7773,7 @@ migrate_99_to_100 ()
   /* Delete old results table. */
   sql ("DROP TABLE results_99;");
 
-  /* Set the database version 100. */
+  /* Set the database version to 100. */
 
   set_db_version (100);
 
@@ -7828,7 +7827,7 @@ migrate_100_to_101 ()
        "        ELSE data END"
        " WHERE name = 'level';");
 
-  /* Set the database version 101. */
+  /* Set the database version to 101. */
 
   set_db_version (101);
 
@@ -7880,7 +7879,7 @@ migrate_101_to_102 ()
   /* Delete old nvts table. */
   sql ("DROP TABLE nvts_101;");
 
-  /* Set the database version 102. */
+  /* Set the database version to 102. */
 
   set_db_version (102);
 
@@ -7924,7 +7923,7 @@ migrate_102_to_103 ()
        "            ELSE NULL END"
        " WHERE severity = 'NULL' OR severity = '' OR severity IS NULL;");
 
-  /* Set the database version 103. */
+  /* Set the database version to 103. */
 
   set_db_version (103);
 
@@ -7957,7 +7956,7 @@ migrate_103_to_104 ()
   sql ("ALTER TABLE tasks ADD column alterable;");
   sql ("UPDATE tasks SET alterable = 0;");
 
-  /* Set the database version 104. */
+  /* Set the database version to 104. */
 
   set_db_version (104);
 
@@ -8006,7 +8005,7 @@ migrate_104_to_105 ()
   sql ("DELETE FROM report_counts"
        " WHERE end_time != 0 AND end_time <= now()");
 
-  /* Set the database version 105. */
+  /* Set the database version to 105. */
 
   set_db_version (105);
 
@@ -8039,7 +8038,7 @@ migrate_105_to_106 ()
   sql ("ALTER TABLE users ADD COLUMN ifaces_allow;");
   sql ("UPDATE users SET ifaces = '', ifaces_allow = 2");
 
-  /* Set the database version 106. */
+  /* Set the database version to 106. */
 
   set_db_version (106);
 
@@ -8072,7 +8071,7 @@ migrate_106_to_107 ()
   sql ("UPDATE results"
        " SET task = (SELECT task FROM reports WHERE reports.ROWID = report);");
 
-  /* Set the database version 107. */
+  /* Set the database version to 107. */
 
   set_db_version (107);
 
@@ -8107,7 +8106,7 @@ migrate_107_to_108 ()
   sql ("UPDATE users"
        " SET ifaces = '', ifaces_allow = 0 WHERE ifaces_allow = 2;");
 
-  /* Set the database version 108. */
+  /* Set the database version to 108. */
 
   set_db_version (108);
 
@@ -8154,7 +8153,7 @@ migrate_108_to_109 ()
        " WHERE name = 'modify';");
   sql ("DELETE FROM permissions WHERE name = 'modify_';");
 
-  /* Set the database version 109. */
+  /* Set the database version to 109. */
 
   set_db_version (109);
 
@@ -8191,7 +8190,7 @@ migrate_109_to_110 ()
   sql ("ALTER TABLE permissions_trash ADD COLUMN subject_location;");
   sql ("UPDATE permissions_trash SET subject_location = 0;");
 
-  /* Set the database version 110. */
+  /* Set the database version to 110. */
 
   set_db_version (110);
 
@@ -8228,7 +8227,7 @@ migrate_110_to_111 ()
   sql ("ALTER TABLE targets_trash ADD COLUMN alive_test;");
   sql ("UPDATE targets_trash SET alive_test = 0;");
 
-  /* Set the database version 111. */
+  /* Set the database version to 111. */
 
   set_db_version (111);
 
@@ -8270,7 +8269,7 @@ migrate_111_to_112 ()
        "      OR name = 'Ping Host[checkbox]:nmap: try also with only -sP'"
        "      OR name = 'Ping Host[entry]:nmap additional ports for -PA');");
 
-  /* Set the database version 112. */
+  /* Set the database version to 112. */
 
   set_db_version (112);
 
@@ -8304,7 +8303,7 @@ migrate_112_to_113 ()
 
   sql ("DELETE FROM report_counts;");
 
-  /* Set the database version 113. */
+  /* Set the database version to 113. */
 
   set_db_version (113);
 
@@ -8341,7 +8340,7 @@ migrate_113_to_114 ()
   sql ("ALTER TABLE reports ADD COLUMN slave_port;");
   sql ("ALTER TABLE reports ADD COLUMN source_iface;");
 
-  /* Set the database version 114. */
+  /* Set the database version to 114. */
 
   set_db_version (114);
 
@@ -8390,8 +8389,7 @@ migrate_114_to_115 ()
   /* Delete old nvts table. */
   sql ("DROP TABLE nvts_114;");
 
-
-  /* Set the database version 115. */
+  /* Set the database version to 115. */
 
   set_db_version (115);
 
@@ -8660,7 +8658,7 @@ migrate_116_to_117 ()
 
   sql ("DROP TABLE tags_trash_117;");
 
-  /* Set the database version 117. */
+  /* Set the database version to 117. */
 
   set_db_version (117);
 
@@ -8792,7 +8790,7 @@ migrate_117_to_118 ()
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
 
-  /* Set the database version 118. */
+  /* Set the database version to 118. */
 
   set_db_version (118);
 

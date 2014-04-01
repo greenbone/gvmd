@@ -1,5 +1,10 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (migrate_98_to_99): Make "Set the database" comments
+	all the same.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_role): Expect role, as in create_group.
 
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
