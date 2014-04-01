@@ -40982,10 +40982,10 @@ add_users (const gchar *type, resource_t resource, const char *users)
 /**
  * @brief Create a group.
  *
- * @param[in]   group_name       Group.
+ * @param[in]   group_name       Group name.
  * @param[in]   comment          Comment on group.
  * @param[in]   users            Users group applies to.
- * @param[in]   resource_id      UUID of resource.
+ * @param[out]  group            Group return.
  *
  * @return 0 success, 1 group exists already, 2 failed to find user, 4 user
  *         name validation failed, 99 permission denied, -1 error.

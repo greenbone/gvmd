@@ -1,5 +1,13 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_group): Correct param doc.
+
+	* src/omp.c (omp_xml_handle_end_element): Add missing create_group
+	and create_role return cases.  Order copy_group and copy_role return
+	cases better.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (group_add_users, role_add_users): Remove.
 	(add_users): New function.  Body from group_add_users.
 	(create_group, modify_group, create_role, modify_role): Call add_users

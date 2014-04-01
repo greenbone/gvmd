@@ -17509,16 +17509,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   log_event_fail ("group", "Group", NULL, "created");
                   break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_group",
-                                      "Permission denied"));
-                  log_event_fail ("group", "Group", NULL, "created");
-                  break;
                 case 4:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_group",
                                       "Syntax error in group name"));
+                  log_event_fail ("group", "Group", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_group",
+                                      "Permission denied"));
                   log_event_fail ("group", "Group", NULL, "created");
                   break;
                 case -1:
@@ -17562,6 +17562,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_group",
                                     "Failed to find user"));
+                log_event_fail ("group", "Group", NULL, "created");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_group",
+                                    "Error in user name"));
                 log_event_fail ("group", "Group", NULL, "created");
                 break;
               case 99:
@@ -19231,16 +19237,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     }
                   log_event_fail ("role", "Role", NULL, "created");
                   break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_role",
-                                      "Permission denied"));
-                  log_event_fail ("role", "Role", NULL, "created");
-                  break;
                 case 4:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_role",
                                       "Syntax error in role name"));
+                  log_event_fail ("role", "Role", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_role",
+                                      "Permission denied"));
                   log_event_fail ("role", "Role", NULL, "created");
                   break;
                 case -1:
@@ -19284,6 +19290,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_role",
                                     "Type must be a valid OMP type"));
                 log_event_fail ("role", "Role", NULL, "created");
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_role",
+                                    "Error in user name"));
+                log_event_fail ("group", "Group", NULL, "created");
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
