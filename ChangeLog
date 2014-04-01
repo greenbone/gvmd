@@ -1,5 +1,12 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (valid_db_resource_type): Add role.
+
+	* src/manage_sql.c (delete_group, delete_role): Set orphans and
+	locations of tags.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (permissions_set_subjects): Use the type arg, to
 	consider roles as well as groups.
 

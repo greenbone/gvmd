@@ -41101,6 +41101,8 @@ delete_group (const char *group_id, int ultimate)
            " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            group);
 
+      tags_set_orphans ("group", group, LOCATION_TRASH);
+
       sql ("DELETE FROM groups_trash WHERE ROWID = %llu;", group);
       sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", group);
       sql ("COMMIT;");
@@ -41132,6 +41134,7 @@ delete_group (const char *group_id, int ultimate)
            " FROM group_users WHERE `group` = %llu;",
            group);
 
+      tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
       permissions_set_subjects ("group", group, trash_group, LOCATION_TRASH);
     }
   else
@@ -41147,6 +41150,8 @@ delete_group (const char *group_id, int ultimate)
            " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            group);
     }
+
+  tags_set_orphans ("group", group, LOCATION_TABLE);
 
   sql ("DELETE FROM groups WHERE ROWID = %llu;", group);
   sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
@@ -44236,6 +44241,8 @@ delete_role (const char *role_id, int ultimate)
            " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            role);
 
+      tags_set_orphans ("role", role, LOCATION_TRASH);
+
       sql ("DELETE FROM roles_trash WHERE ROWID = %llu;", role);
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
       sql ("COMMIT;");
@@ -44273,6 +44280,7 @@ delete_role (const char *role_id, int ultimate)
            " FROM role_users WHERE `role` = %llu;",
            role);
 
+      tags_set_locations ("role", role, trash_role, LOCATION_TRASH);
       permissions_set_subjects ("role", role, trash_role, LOCATION_TRASH);
     }
   else
@@ -44287,6 +44295,7 @@ delete_role (const char *role_id, int ultimate)
            " AND subject = %llu"
            " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            role);
+      tags_set_orphans ("role", role, LOCATION_TABLE);
     }
 
   sql ("DELETE FROM roles WHERE ROWID = %llu;", role);
