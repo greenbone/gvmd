@@ -43970,10 +43970,10 @@ copy_role (const char *name, const char *comment, const char *role_id,
 /**
  * @brief Create a role.
  *
- * @param[in]   role_name       Role.
+ * @param[in]   role_name        Role name.
  * @param[in]   comment          Comment on role.
  * @param[in]   users            Users role applies to.
- * @param[in]   resource_id      UUID of resource.
+ * @param[in]   role             Role return.
  *
  * @return 0 success, 1 role exists already, 2 failed to find user, 3 failed
  *         to find resource, 4 user name validation failed, 99 permission
@@ -43981,13 +43981,14 @@ copy_role (const char *name, const char *comment, const char *role_id,
  */
 int
 create_role (const char *role_name, const char *comment, const char *users,
-              role_t* role)
+             role_t* role)
 {
   int ret;
   gchar *quoted_role_name, *quoted_comment;
 
   assert (current_credentials.uuid);
   assert (role_name);
+  assert (role);
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -44021,9 +44022,7 @@ create_role (const char *role_name, const char *comment, const char *users,
   g_free (quoted_comment);
   g_free (quoted_role_name);
 
-  if (role)
-    *role = sqlite3_last_insert_rowid (task_db);
-
+  *role = sqlite3_last_insert_rowid (task_db);
   ret = add_users ("role", *role, users);
 
   if (ret)

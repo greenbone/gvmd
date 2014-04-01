@@ -1,5 +1,9 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_role): Expect role, as in create_group.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_group): Correct param doc.
 
 	* src/omp.c (omp_xml_handle_end_element): Add missing create_group
