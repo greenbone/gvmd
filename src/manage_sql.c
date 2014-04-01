@@ -592,9 +592,11 @@ array_add_new_string (array_t *array, const gchar *string)
  *
  * @param[in]   type      Type of resource.
  * @param[in]   uuid      UUID of resource.
- * @param[out]  resource  Resource return, 0 if succesfully failed to find resource.
+ * @param[out]  resource  Resource return, 0 if succesfully failed to find
+ *                        resource.
  *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
  */
 static gboolean
 find_trash (const char *type, const char *uuid, resource_t *resource)
