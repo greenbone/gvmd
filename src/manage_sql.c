@@ -3594,7 +3594,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
        "        resource_type, %llu, (SELECT uuid FROM %ss WHERE ROWID=%llu),"
        "        resource_location, active, value"
        " FROM tags WHERE resource_type = '%s' AND resource = %llu"
-       "           AND resource_location = 0;",
+       "           AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ";",
        admin_type ? "" : "(SELECT ROWID FROM users where users.uuid = '",
        admin_type ? "NULL" : current_credentials.uuid,
        admin_type ? "" : "')",
@@ -18617,12 +18617,12 @@ delete_report_internal (report_t report)
   sql ("DELETE FROM report_results WHERE report = %llu;", report);
 
   sql ("UPDATE tags"
-       " SET resource = 0, resource_location = 0"
+       " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource IN"
        "   (SELECT ROWID FROM results WHERE report = %llu);",
        report);
   sql ("UPDATE tags_trash"
-       " SET resource = 0, resource_location = 0"
+       " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource IN"
        "   (SELECT ROWID FROM results WHERE report = %llu);",
        report);
@@ -25080,6 +25080,32 @@ delete_task (task_t task, int ultimate)
     {
       permissions_set_locations ("task", task, task, LOCATION_TRASH);
       tags_set_locations ("task", task, task, LOCATION_TRASH);
+      sql ("UPDATE tags SET resource_location = "
+           G_STRINGIFY (LOCATION_TRASH)
+           " WHERE resource_type = 'report'"
+           " AND resource IN (SELECT ROWID FROM reports"
+           "                  WHERE reports.task = %llu);",
+           task);
+      sql ("UPDATE tags SET resource_location = "
+           G_STRINGIFY (LOCATION_TRASH)
+           " WHERE resource_type = 'result'"
+           " AND resource IN (SELECT results.ROWID FROM results"
+           "                  WHERE results.task = %llu);",
+           task);
+
+      sql ("UPDATE tags_trash SET resource_location = "
+           G_STRINGIFY (LOCATION_TRASH)
+           " WHERE resource_type = 'report'"
+           " AND resource IN (SELECT ROWID FROM reports"
+           "                  WHERE reports.task = %llu);",
+           task);
+      sql ("UPDATE tags_trash SET resource_location = "
+           G_STRINGIFY (LOCATION_TRASH)
+           " WHERE resource_type = 'result'"
+           " AND resource IN (SELECT results.ROWID FROM results"
+           "                  WHERE results.task = %llu);",
+           task);
+
       sql ("UPDATE tasks SET hidden = 2 WHERE ROWID = %llu;", task);
     }
 
@@ -46452,6 +46478,31 @@ manage_restore (const char *id)
 
       permissions_set_locations ("task", resource, resource, LOCATION_TABLE);
       tags_set_locations ("task", resource, resource, LOCATION_TABLE);
+      sql ("UPDATE tags SET resource_location = "
+           G_STRINGIFY (LOCATION_TABLE)
+           " WHERE resource_type = 'report'"
+           " AND resource IN (SELECT ROWID FROM reports"
+           "                  WHERE reports.task = %llu);",
+           resource);
+      sql ("UPDATE tags SET resource_location = "
+           G_STRINGIFY (LOCATION_TABLE)
+           " WHERE resource_type = 'result'"
+           " AND resource IN (SELECT results.ROWID FROM results"
+           "                  WHERE results.task = %llu);",
+           resource);
+
+      sql ("UPDATE tags_trash SET resource_location = "
+           G_STRINGIFY (LOCATION_TABLE)
+           " WHERE resource_type = 'report'"
+           " AND resource IN (SELECT ROWID FROM reports"
+           "                  WHERE reports.task = %llu);",
+           resource);
+      sql ("UPDATE tags_trash SET resource_location = "
+           G_STRINGIFY (LOCATION_TABLE)
+           " WHERE resource_type = 'result'"
+           " AND resource IN (SELECT results.ROWID FROM results"
+           "                  WHERE results.task = %llu);",
+           resource);
 
       sql ("UPDATE tasks SET hidden = 0 WHERE ROWID = %llu;", resource);
       sql ("COMMIT;");
@@ -46509,10 +46560,10 @@ manage_empty_trashcan ()
     }
 
   sql ("UPDATE tags"
-       " SET resource = 0, resource_location = 0"
+       " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
   sql ("UPDATE tags_trash"
-       " SET resource = 0, resource_location = 0"
+       " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
 
   sql ("DELETE FROM report_formats_trash;");
@@ -49534,7 +49585,7 @@ create_tag (const char * name, const char * comment, const char * value,
 {
   gchar *quoted_name, *quoted_comment, *quoted_value;
   gchar *lc_resource_type, *quoted_resource_type, *quoted_resource_uuid;
-  int resource_location = 0;
+  int resource_location = LOCATION_TABLE;
 
   gchar *resource_permission = NULL;
   resource_t resource;
@@ -49591,7 +49642,7 @@ create_tag (const char * name, const char * comment, const char * value,
           return -1;
         }
       else if (resource != 0)
-        resource_location = 1;
+        resource_location = LOCATION_TRASH;
     }
 
   quoted_name = sql_insert (name);
@@ -49807,7 +49858,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
     {
       resource_t resource;
       gchar *resource_permission;
-      int resource_location = 0;
+      int resource_location = LOCATION_TABLE;
 
       if ((strcmp (lc_resource_type, "cpe") == 0)
           || (strcmp (lc_resource_type, "cve") == 0)
@@ -49844,7 +49895,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
               return -1;
             }
           else if (resource != 0)
-            resource_location = 1;
+            resource_location = LOCATION_TRASH;
         }
 
       sql ("UPDATE tags SET"
@@ -50327,13 +50378,15 @@ tags_set_locations (const char *type, resource_t old, resource_t new,
 void
 tags_set_orphans (const char *type, resource_t resource, int location)
 {
-  sql ("UPDATE tags SET resource = 0, resource_location = 0"
+  sql ("UPDATE tags SET resource = 0, resource_location = "
+       G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource_type = '%s' AND resource = %llu"
        " AND resource_location = %i;",
        type,
        resource,
        location);
-  sql ("UPDATE tags_trash SET resource = 0, resource_location = 0"
+  sql ("UPDATE tags_trash SET resource = 0, resource_location = "
+       G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource_type = '%s' AND resource = %llu"
        " AND resource_location = %i;",
        type,

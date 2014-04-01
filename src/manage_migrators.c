@@ -8451,11 +8451,15 @@ migrate_115_to_116 ()
  "             0)"
 
 #define RESOURCE_TRASH(type)                                     \
- " WHEN 'alert' THEN"                                            \
- "   EXISTS (SELECT * FROM alerts_trash WHERE uuid = attach_id)"
+ " WHEN '" G_STRINGIFY (type) "' THEN"                           \
+ "  (SELECT CASE WHEN "                                          \
+ "    (EXISTS (SELECT * FROM " G_STRINGIFY (type) "s_trash"      \
+ "             WHERE uuid = attach_id))"                         \
+ "     THEN " G_STRINGIFY (LOCATION_TRASH)                       \
+ "     ELSE " G_STRINGIFY (LOCATION_TABLE) " END)"
 
 /**
- * @brief Migrate the database from version 116 to version 115.
+ * @brief Migrate the database from version 116 to version 117.
  *
  * @return 0 success, -1 error.
  */
@@ -8534,10 +8538,34 @@ migrate_116_to_117 ()
        RESOURCE_TRASH (slave)
        RESOURCE_TRASH (target)
        "  WHEN 'task' THEN"
-       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN 1 ELSE 0 END"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
        "               FROM tasks WHERE uuid = attach_id),"
-       "               0)"
-       "  ELSE 0 END),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'report' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM reports"
+       "                     WHERE reports.uuid = attach_id) AS report_task"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'result' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM results"
+       "                     WHERE results.uuid = attach_id) AS result_task"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
        " FROM tags_117;");
 
@@ -8599,10 +8627,34 @@ migrate_116_to_117 ()
        RESOURCE_TRASH (slave)
        RESOURCE_TRASH (target)
        "  WHEN 'task' THEN"
-       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN 1 ELSE 0 END"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
        "               FROM tasks WHERE uuid = attach_id),"
-       "               0)"
-       "  ELSE 0 END),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'report' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM reports"
+       "                     WHERE reports.uuid = attach_id) AS report_task"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'result' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM results"
+       "                     WHERE results.uuid = attach_id) AS result_task"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
        " FROM tags_trash_117;");
 
@@ -8618,6 +8670,136 @@ migrate_116_to_117 ()
 }
 #undef ID_WHEN_WITH_TRASH
 #undef ID_WHEN_WITHOUT_TRASH
+#undef RESOURCE_TRASH
+
+
+#define RESOURCE_TRASH(type)                                     \
+ " WHEN '" G_STRINGIFY (type) "' THEN"                           \
+ "  (SELECT CASE WHEN "                                          \
+ "    (EXISTS (SELECT * FROM " G_STRINGIFY (type) "s_trash"      \
+ "             WHERE uuid = resource_uuid))"                     \
+ "     THEN " G_STRINGIFY (LOCATION_TRASH)                       \
+ "     ELSE " G_STRINGIFY (LOCATION_TABLE) " END)"
+
+/**
+ * @brief Migrate the database from version 117 to version 118.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_117_to_118 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 117. */
+
+  if (manage_db_version () != 117)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rebuild the resource_location column in tags and tags_trash */
+  sql ("UPDATE tags SET resource_location = "
+       " (SELECT CASE resource_type"
+       RESOURCE_TRASH (alert)
+       RESOURCE_TRASH (config)
+       RESOURCE_TRASH (filter)
+       RESOURCE_TRASH (group)
+       RESOURCE_TRASH (lsc_credential)
+       RESOURCE_TRASH (note)
+       RESOURCE_TRASH (override)
+       RESOURCE_TRASH (permission)
+       RESOURCE_TRASH (port_list)
+       RESOURCE_TRASH (report_format)
+       RESOURCE_TRASH (schedule)
+       RESOURCE_TRASH (slave)
+       RESOURCE_TRASH (target)
+       "  WHEN 'task' THEN"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM tasks WHERE uuid = resource_uuid),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'report' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM reports"
+       "                     WHERE reports.uuid = resource_uuid) AS report_task"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'result' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM results"
+       "                     WHERE results.uuid = resource_uuid) AS result_task"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
+
+  sql ("UPDATE tags_trash SET resource_location = "
+       " (SELECT CASE resource_type"
+       RESOURCE_TRASH (alert)
+       RESOURCE_TRASH (config)
+       RESOURCE_TRASH (filter)
+       RESOURCE_TRASH (group)
+       RESOURCE_TRASH (lsc_credential)
+       RESOURCE_TRASH (note)
+       RESOURCE_TRASH (override)
+       RESOURCE_TRASH (permission)
+       RESOURCE_TRASH (port_list)
+       RESOURCE_TRASH (report_format)
+       RESOURCE_TRASH (schedule)
+       RESOURCE_TRASH (slave)
+       RESOURCE_TRASH (target)
+       "  WHEN 'task' THEN"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM tasks WHERE uuid = resource_uuid),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'report' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM reports"
+       "                     WHERE reports.uuid = resource_uuid) AS report_task"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'result' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM results"
+       "                     WHERE results.uuid = resource_uuid) AS result_task"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
+
+  /* Set the database version 118. */
+
+  set_db_version (118);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
 #undef RESOURCE_TRASH
 
 /**
@@ -8742,6 +8924,7 @@ static migrator_t database_migrators[]
     {115, migrate_114_to_115},
     {116, migrate_115_to_116},
     {117, migrate_116_to_117},
+    {118, migrate_117_to_118},
     /* End marker. */
     {-1, NULL}};
 

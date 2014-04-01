@@ -1,3 +1,29 @@
+2014-04-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Rebuild the resource_location column in the tags and tags_trash tables
+	to find correct locations for all resource types. Apply the location
+	of a task to its reports and results as well. Also use defines
+	LOCATION_TABLE and LOCATION_TRASH for the resource_location values.
+	Hence increase database version to 118. Add database migration from
+	version 117 to 118.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 118.
+
+	* src/manage_migrators.c (RESOURCE_TRASH): Use type parameter correctly
+	and use defines LOCATION_TABLE and LOCATION_TRASH for the values.
+	(migrate_116_to_117): Fix typo in comment, use defines and set location
+	for tags on reports and results.
+	(migrate_117_to_118): New function. Rebuilds resource_location column
+	in the tags and tags_trash tables.
+	(database_migrators): Add migrate_117_to_118.
+
+	* src/manage_sql.c (copy_resource_lock, delete_report_internal): Use
+	defines LOCATION_TABLE and LOCATION_TRASH to specify location.
+	(delete_task, manage_restore): Update resource_location of tags on
+	associated reports and results.
+	(create_tag, modify_tag, tags_set_orphans): Use defines LOCATION_TABLE
+	and LOCATION_TRASH to specify location.
+
 2014-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Line up newline escapes nicely.
