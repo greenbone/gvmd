@@ -40854,14 +40854,15 @@ copy_group (const char *name, const char *comment, const char *group_id,
  *
  * Caller must take care of transaction.
  *
- * @param[in]  group  Group.
- * @param[in]  users  List of users.
+ * @param[in]  type      Type.
+ * @param[in]  resource  Group or role.
+ * @param[in]  users     List of users.
  *
  * @return 0 success, 2 failed to find user, 4 user name validation failed,
  *         -1 error.
  */
 static int
-group_add_users (group_t group, const char *users)
+add_users (const gchar *type, resource_t resource, const char *users)
 {
   if (users)
     {
@@ -40962,8 +40963,10 @@ group_add_users (group_t group, const char *users)
               g_free (uuid);
             }
 
-          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
-               group,
+          sql ("INSERT INTO %s_users (`%s`, user) VALUES (%llu, %llu);",
+               type,
+               type,
+               resource,
                user);
 
           point++;
@@ -41028,7 +41031,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   g_free (quoted_group_name);
 
   *group = sqlite3_last_insert_rowid (task_db);
-  ret = group_add_users (*group, users);
+  ret = add_users ("group", *group, users);
 
   if (ret)
     sql ("ROLLBACK;");
@@ -41395,7 +41398,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
   sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
 
-  ret = group_add_users (group, users);
+  ret = add_users ("group", group, users);
 
   if (ret)
     sql ("ROLLBACK;");
@@ -43965,133 +43968,6 @@ copy_role (const char *name, const char *comment, const char *role_id,
 }
 
 /**
- * @brief Add users to a role.
- *
- * Caller must take care of transaction.
- *
- * @param[in]  role  Role.
- * @param[in]  users  List of users.
- *
- * @return 0 success, 2 failed to find user, 4 user name validation failed,
- *         -1 error.
- */
-static int
-role_add_users (role_t role, const char *users)
-{
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
-
-      /* Add each user. */
-
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (openvas_user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 2;
-            }
-
-          if (find_user_by_name (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              /** @todo Similar to validate_user in openvas-administrator. */
-              if (g_regex_match_simple ("^[[:alnum:]-_]+$", name, 0, 0) == 0)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return 4;
-                }
-
-              uuid = openvas_user_uuid (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              if (sql_int (0, 0,
-                           "SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users"
-                       " (uuid, name, creation_time, modification_time)"
-                       " VALUES"
-                       " ('%s', '%s', now (), now ());",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sqlite3_last_insert_rowid (task_db);
-                }
-              else
-                {
-                  /* user_find should have found it. */
-                  assert (0);
-                  g_free (uuid);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              g_free (uuid);
-            }
-
-          sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
-               role,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  return 0;
-}
-
-/**
  * @brief Create a role.
  *
  * @param[in]   role_name       Role.
@@ -44148,7 +44024,7 @@ create_role (const char *role_name, const char *comment, const char *users,
   if (role)
     *role = sqlite3_last_insert_rowid (task_db);
 
-  ret = role_add_users (*role, users);
+  ret = add_users ("role", *role, users);
 
   if (ret)
     sql ("ROLLBACK;");
@@ -44509,7 +44385,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 
   sql ("DELETE FROM role_users WHERE `role` = %llu;", role);
 
-  ret = role_add_users (role, users);
+  ret = add_users ("role", role, users);
 
   if (ret)
     sql ("ROLLBACK;");

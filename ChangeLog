@@ -1,5 +1,12 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (group_add_users, role_add_users): Remove.
+	(add_users): New function.  Body from group_add_users.
+	(create_group, modify_group, create_role, modify_role): Call add_users
+	instead of type-specific functions.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_trash): Make doc lines shorter.
 
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
