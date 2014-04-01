@@ -1,7 +1,14 @@
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (migrate_98_to_99): Make "Set the database" comments
-	all the same.
+	* src/schema_formats/XML/OMP.xml (create_role, delete_role)
+	(modify_role): New commands.
+	(help): Update example to match actual response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c: Make "Set the database" comments all the same.
 
 2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 

@@ -22,6 +22,7 @@ command
     | create_port_range
     | create_report
     | create_report_format
+    | create_role
     | create_schedule
     | create_slave
     | create_tag
@@ -39,6 +40,7 @@ command
     | delete_port_list
     | delete_port_range
     | delete_report_format
+    | delete_role
     | delete_schedule
     | delete_slave
     | delete_tag
@@ -85,6 +87,7 @@ command
     | modify_port_list
     | modify_report
     | modify_report_format
+    | modify_role
     | modify_schedule
     | modify_setting
     | modify_slave
@@ -118,6 +121,7 @@ response
     | create_port_range_response
     | create_report_response
     | create_report_format_response
+    | create_role_response
     | create_schedule_response
     | create_slave_response
     | create_tag_response
@@ -135,6 +139,7 @@ response
     | delete_port_list_response
     | delete_port_range_response
     | delete_report_format_response
+    | delete_role_response
     | delete_schedule_response
     | delete_slave_response
     | delete_tag_response
@@ -181,6 +186,7 @@ response
     | modify_port_list_response
     | modify_report_response
     | modify_report_format_response
+    | modify_role_response
     | modify_schedule_response
     | modify_setting_response
     | modify_slave_response
@@ -1872,6 +1878,7 @@ commands
            | create_port_list
            | create_port_range
            | create_report_format
+           | create_role
            | create_schedule
            | create_slave
            | create_tag
@@ -1887,6 +1894,7 @@ commands
            | delete_override
            | delete_report
            | delete_report_format
+           | delete_role
            | delete_port_list
            | delete_port_range
            | delete_schedule
@@ -1934,6 +1942,7 @@ commands
            | modify_override
            | modify_port_list
            | modify_report
+           | modify_role
            | modify_schedule
            | modify_setting
            | modify_slave
@@ -2634,6 +2643,39 @@ create_report_format
        get_report_formats_response
      }
 
+## Command create_role
+##
+## Create a role.
+
+create_role
+ = element create_role
+     {
+       create_role_name
+       & create_role_comment?
+       & create_role_users
+     }
+
+# A name for the role.
+create_role_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the role.
+create_role_comment
+ = element comment
+     {
+       text
+     }
+
+# Comma separated list of user names.
+create_role_users
+ = element users
+     {
+       text
+     }
+
 ## Command create_schedule
 ##
 ## Create a schedule.
@@ -3282,6 +3324,18 @@ delete_report_format
  = element delete_report_format
      {
        attribute report_format_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
+## Command delete_role
+##
+## Delete a role.
+
+delete_role
+ = element delete_role
+     {
+       attribute role_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
      }
@@ -4541,6 +4595,41 @@ modify_report_format_param_value
        base64
      }
 
+## Command modify_role
+##
+## Modify an existing role.
+
+modify_role
+ = element modify_role
+     {
+       # ID of role to modify.
+       attribute role_id { uuid }
+       & modify_role_name?
+       & modify_role_comment?
+       & modify_role_users?
+     }
+
+# Name of role.
+modify_role_name
+ = element name
+     {
+       name
+     }
+
+# Comment on role.
+modify_role_comment
+ = element comment
+     {
+       text
+     }
+
+# Comma separated list of user names.
+modify_role_users
+ = element users
+     {
+       text
+     }
+
 ## Command modify_schedule
 ##
 ## Modify an existing schedule.
@@ -5248,6 +5337,7 @@ commands_response
            | create_override_response
            | create_port_list_response
            | create_port_range_response
+           | create_role_response
            | create_schedule_response
            | create_slave_response
            | create_tag_response
@@ -5265,6 +5355,7 @@ commands_response
            | delete_port_range_response
            | delete_report_response
            | delete_report_format_response
+           | delete_role_response
            | delete_schedule_response
            | delete_slave_response
            | delete_tag_response
@@ -5310,6 +5401,7 @@ commands_response
            | modify_override_response
            | modify_port_list_response
            | modify_report_response
+           | modify_role_response
            | modify_schedule_response
            | modify_setting_response
            | modify_slave_response
@@ -5436,6 +5528,13 @@ create_report_format_response
        attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
+     }
+
+## Response to create_role
+
+create_role_response
+ = element create_role_response
+     {
      }
 
 ## Response to create_schedule
@@ -5592,6 +5691,15 @@ delete_port_range_response
 
 delete_report_format_response
  = element delete_report_format_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_role
+
+delete_role_response
+ = element delete_role_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -11162,6 +11270,13 @@ modify_report_format_response
      {
        attribute status { status }
        & attribute status_text { text }
+     }
+
+## Response to modify_role
+
+modify_role_response
+ = element modify_role_response
+     {
      }
 
 ## Response to modify_schedule

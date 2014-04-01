@@ -1805,6 +1805,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_port_list</c>
           <c>create_port_range</c>
           <c>create_report_format</c>
+          <c>create_role</c>
           <c>create_schedule</c>
           <c>create_slave</c>
           <c>create_tag</c>
@@ -1820,6 +1821,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_override</c>
           <c>delete_report</c>
           <c>delete_report_format</c>
+          <c>delete_role</c>
           <c>delete_port_list</c>
           <c>delete_port_range</c>
           <c>delete_schedule</c>
@@ -1867,6 +1869,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_override</c>
           <c>modify_port_list</c>
           <c>modify_report</c>
+          <c>modify_role</c>
           <c>modify_schedule</c>
           <c>modify_setting</c>
           <c>modify_slave</c>
@@ -1911,6 +1914,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_override</r>
             <r>create_port_list</r>
             <r>create_port_range</r>
+            <r>create_role</r>
             <r>create_schedule</r>
             <r>create_slave</r>
             <r>create_tag</r>
@@ -1928,6 +1932,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_port_range</r>
             <r>delete_report</r>
             <r>delete_report_format</r>
+            <r>delete_role</r>
             <r>delete_schedule</r>
             <r>delete_slave</r>
             <r>delete_tag</r>
@@ -1973,6 +1978,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_override</r>
             <r>modify_port_list</r>
             <r>modify_report</r>
+            <r>modify_role</r>
             <r>modify_schedule</r>
             <r>modify_setting</r>
             <r>modify_slave</r>
@@ -3237,6 +3243,55 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                       status_text="OK, resource created"
                                       id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_role</name>
+    <summary>Create a role</summary>
+    <description>
+      <p>
+        The client uses the create_role command to create a new
+        role.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>users</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the role</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the role</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>users</name>
+      <summary>Comma separated list of user names</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <example>
+      <summary>Create a role</summary>
+      <request>
+        <create_role>
+          <name>SCAP Observer</name>
+          <users>sarah, bob</users>
+        </create_role>
+      </request>
+      <response>
+        <create_role_response status="201"
+                               status_text="OK, resource created"
+                               id="b64c81b2-b9de-11e3-a2e9-406186ea4fc5">
+        </create_role_response>
       </response>
     </example>
   </command>
@@ -4562,6 +4617,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_report_format_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_role</name>
+    <summary>Delete a role</summary>
+    <description>
+      <p>
+        The client uses the delete_role command to delete an existing
+        role.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>role_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a role</summary>
+      <request>
+        <delete_role role_id="b64c81b2-b9de-11e3-a2e9-406186ea4fc5">
+        </delete_role>
+      </request>
+      <response>
+        <delete_role_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -13169,8 +13276,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             AUTHENTICATE           Authenticate with the manager.
             COMMANDS               Run a list of commands.
             CREATE_AGENT           Create an agent.
-            CREATE_CONFIG          Create a config.
             CREATE_ALERT           Create an alert.
+            CREATE_CONFIG          Create a config.
             CREATE_FILTER          Create a filter.
             CREATE_GROUP           Create a group.
             CREATE_LSC_CREDENTIAL  Create a local security check credential.
@@ -13179,8 +13286,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_PERMISSION      Create a permission.
             CREATE_PORT_LIST       Create a port list.
             CREATE_PORT_RANGE      Create a port range in a port list.
-            CREATE_REPORT_FORMAT   Create a report format.
             CREATE_REPORT          Create a report.
+            CREATE_REPORT_FORMAT   Create a report format.
+            CREATE_ROLE            Create a role.
             CREATE_SCHEDULE        Create a schedule.
             CREATE_SLAVE           Create a slave.
             CREATE_TAG             Create a tag.
@@ -13188,8 +13296,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             CREATE_TASK            Create a task.
             CREATE_USER            Create a new user.
             DELETE_AGENT           Delete an agent.
-            DELETE_CONFIG          Delete a config.
             DELETE_ALERT           Delete an alert.
+            DELETE_CONFIG          Delete a config.
             DELETE_FILTER          Delete a filter.
             DELETE_GROUP           Delete a group.
             DELETE_LSC_CREDENTIAL  Delete a local security check credential.
@@ -13200,6 +13308,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_PORT_RANGE      Delete a port range.
             DELETE_REPORT          Delete a report.
             DELETE_REPORT_FORMAT   Delete a report format.
+            DELETE_ROLE            Delete a role.
             DELETE_SCHEDULE        Delete a schedule.
             DELETE_SLAVE           Delete a slave.
             DELETE_TAG             Delete a tag.
@@ -13207,12 +13316,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DELETE_TASK            Delete a task.
             DELETE_USER            Delete an existing user.
             DESCRIBE_AUTH          Get details about the used authentication methods.
+            DESCRIBE_CERT          Get details of the CERT feed this Manager uses.
+            DESCRIBE_FEED          Get details of the NVT feed this Manager uses.
+            DESCRIBE_SCAP          Get details of the SCAP feed this Manager uses.
             EMPTY_TRASHCAN         Empty the trashcan.
             GET_AGENTS             Get all agents.
-            GET_CONFIGS            Get all configs.
             GET_ALERTS             Get all alerts.
+            GET_CONFIGS            Get all configs.
             GET_FILTERS            Get all filters.
             GET_GROUPS             Get all groups.
+            GET_INFO               Get raw information for a given item.
             GET_LSC_CREDENTIALS    Get all local security check credentials.
             GET_NOTES              Get all notes.
             GET_NVTS               Get one or all available NVTs.
@@ -13225,6 +13338,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_REPORTS            Get all reports.
             GET_REPORT_FORMATS     Get all report formats.
             GET_RESULTS            Get results.
+            GET_ROLES              Get all roles.
             GET_SCHEDULES          Get all schedules.
             GET_SETTINGS           Get all settings.
             GET_SLAVES             Get all slaves.
@@ -13235,20 +13349,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_TASKS              Get all tasks.
             GET_USERS              Get all users.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
-            GET_INFO               Get raw information for a given item.
             HELP                   Get this help text.
             MODIFY_AGENT           Modify an existing agent.
             MODIFY_ALERT           Modify an existing alert.
             MODIFY_AUTH            Modify the authentication methods.
             MODIFY_CONFIG          Update an existing config.
-            MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
             MODIFY_FILTER          Modify an existing filter.
             MODIFY_GROUP           Modify an existing group.
+            MODIFY_LSC_CREDENTIAL  Modify an existing LSC credential.
             MODIFY_NOTE            Modify an existing note.
             MODIFY_OVERRIDE        Modify an existing override.
+            MODIFY_PERMISSION      Modify an existing permission.
             MODIFY_PORT_LIST       Modify an existing port list.
             MODIFY_REPORT          Modify an existing report.
             MODIFY_REPORT_FORMAT   Modify an existing report format.
+            MODIFY_ROLE            Modify an existing role.
             MODIFY_SCHEDULE        Modify an existing schedule.
             MODIFY_SETTING         Modify an existing setting.
             MODIFY_SLAVE           Modify an existing slave.
@@ -13264,6 +13379,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
+            SYNC_CERT              Synchronize with a CERT feed.
+            SYNC_FEED              Synchronize with an NVT feed.
+            SYNC_SCAP              Synchronize with a SCAP feed.
             TEST_ALERT             Run an alert.
             VERIFY_AGENT           Verify an agent.
             VERIFY_REPORT_FORMAT   Verify a report format.
@@ -14507,6 +14625,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_report_format_response status="200" status_text="OK">
         </modify_report_format_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_role</name>
+    <summary>Modify an existing role</summary>
+    <description>
+      <p>
+        The client uses the modify_role command to change an existing role.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>role_id</name>
+        <summary>ID of role to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>users</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of role</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on role</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>users</name>
+      <summary>Comma separated list of user names</summary>
+      <pattern>text</pattern>
+    </ele>
+    <example>
+      <summary>Modify the name of a role</summary>
+      <request>
+        <modify_role role_id='914b59f8-25f5-4c8f-832c-2379cd625236'>
+          <name>SCAP User</name>
+        </modify_role>
+      </request>
+      <response>
+        <modify_role_response status="200" status_text="OK">
+        </modify_role_response>
       </response>
     </example>
   </command>
