@@ -1,3 +1,8 @@
+2014-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (ALL_INFO_UNIION_COLUMNS): Indent under SELECT
+	consistently.
+
 2014-04-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/openvasmd.c (main): Make description consistent with option

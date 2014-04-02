@@ -47215,8 +47215,8 @@ modify_setting (const gchar *uuid, const gchar *name,
  */
 #define ALL_INFO_UNION_COLUMNS                                                 \
   "(SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, 'cve' AS type," \
-  "                  description as extra, cvss as severity"                   \
-  "          FROM cves"                                                        \
+  "        description as extra, cvss as severity"                             \
+  " FROM cves"                                                                 \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
   "                  'cpe' AS type, title as extra, max_cvss as severity"      \
   "           FROM cpes"                                                       \
