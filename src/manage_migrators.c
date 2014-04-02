@@ -8464,6 +8464,8 @@ migrate_115_to_116 ()
 int
 migrate_116_to_117 ()
 {
+  int scap_loaded = manage_scap_loaded ();
+  int cert_loaded = manage_cert_loaded ();
   sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 116. */
@@ -8497,106 +8499,16 @@ migrate_116_to_117 ()
        "  (SELECT CASE attach_type"
        ID_WHEN_WITH_TRASH (agent)
        ID_WHEN_WITH_TRASH (alert)
-       ID_WHEN_WITHOUT_TRASH (cpe)
-       ID_WHEN_WITHOUT_TRASH (cve)
+       "%s" // CPE and CVE
        ID_WHEN_WITH_TRASH (config)
-       ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
+       "%s" // DFN_CERT_ADV
        ID_WHEN_WITH_TRASH (filter)
        ID_WHEN_WITH_TRASH (group)
        ID_WHEN_WITH_TRASH (lsc_credential)
        ID_WHEN_WITH_TRASH (note)
        ID_WHEN_WITHOUT_TRASH (nvt)
        ID_WHEN_WITH_TRASH (override)
-       ID_WHEN_WITHOUT_TRASH (ovaldef)
-       ID_WHEN_WITH_TRASH (permission)
-       ID_WHEN_WITH_TRASH (port_list)
-       ID_WHEN_WITH_TRASH (report_format)
-       ID_WHEN_WITHOUT_TRASH (report)
-       ID_WHEN_WITHOUT_TRASH (result)
-       ID_WHEN_WITHOUT_TRASH (role)
-       ID_WHEN_WITH_TRASH (schedule)
-       ID_WHEN_WITH_TRASH (slave)
-       ID_WHEN_WITH_TRASH (target)
-       ID_WHEN_WITHOUT_TRASH (task) // uses attribute "hidden" for trash
-       ID_WHEN_WITHOUT_TRASH (user)
-       "   ELSE -1 END),"
-       " attach_id,"
-       " (SELECT CASE attach_type"
-       RESOURCE_TRASH (alert)
-       RESOURCE_TRASH (config)
-       RESOURCE_TRASH (filter)
-       RESOURCE_TRASH (group)
-       RESOURCE_TRASH (lsc_credential)
-       RESOURCE_TRASH (note)
-       RESOURCE_TRASH (override)
-       RESOURCE_TRASH (permission)
-       RESOURCE_TRASH (port_list)
-       RESOURCE_TRASH (report_format)
-       RESOURCE_TRASH (schedule)
-       RESOURCE_TRASH (slave)
-       RESOURCE_TRASH (target)
-       "  WHEN 'task' THEN"
-       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
-                       G_STRINGIFY (LOCATION_TRASH)
-       "               ELSE "
-                       G_STRINGIFY (LOCATION_TABLE)
-       "               END"
-       "               FROM tasks WHERE uuid = attach_id),"
-                       G_STRINGIFY (LOCATION_TABLE) ")"
-       "  WHEN 'report' THEN"
-       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
-                       G_STRINGIFY (LOCATION_TRASH)
-       "               ELSE "
-                       G_STRINGIFY (LOCATION_TABLE)
-       "               END"
-       "               FROM (SELECT task FROM reports"
-       "                     WHERE reports.uuid = attach_id) AS report_task"
-       "               JOIN tasks ON tasks.ROWID = report_task.task),"
-                       G_STRINGIFY (LOCATION_TABLE) ")"
-       "  WHEN 'result' THEN"
-       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
-                       G_STRINGIFY (LOCATION_TRASH)
-       "               ELSE "
-                       G_STRINGIFY (LOCATION_TABLE)
-       "               END"
-       "               FROM (SELECT task FROM results"
-       "                     WHERE results.uuid = attach_id) AS result_task"
-       "               JOIN tasks ON tasks.ROWID = result_task.task),"
-                       G_STRINGIFY (LOCATION_TABLE) ")"
-       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
-       " active, value"
-       " FROM tags_117;");
-
-  sql ("DROP TABLE tags_117;");
-
-  /* Rename attach_[...] columns in tags_trash to resource_[...], reference
-     resources by ROWID and add new column for resource UUID */
-  sql ("CREATE TABLE IF NOT EXISTS tags_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
-       "  creation_time, modification_time, resource_type, resource,"
-       "  resource_uuid, resource_location, active, value);");
-
-  sql ("INSERT INTO tags_trash"
-       " (id, uuid, owner, name, comment,"
-       "  creation_time, modification_time, resource_type, resource,"
-       "  resource_uuid, resource_location, active, value)"
-       " SELECT"
-       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
-       "  attach_type,"
-       "  (SELECT CASE attach_type"
-       ID_WHEN_WITH_TRASH (agent)
-       ID_WHEN_WITH_TRASH (alert)
-       ID_WHEN_WITHOUT_TRASH (cpe)
-       ID_WHEN_WITHOUT_TRASH (cve)
-       ID_WHEN_WITH_TRASH (config)
-       ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
-       ID_WHEN_WITH_TRASH (filter)
-       ID_WHEN_WITH_TRASH (group)
-       ID_WHEN_WITH_TRASH (lsc_credential)
-       ID_WHEN_WITH_TRASH (note)
-       ID_WHEN_WITHOUT_TRASH (nvt)
-       ID_WHEN_WITH_TRASH (override)
-       ID_WHEN_WITHOUT_TRASH (ovaldef)
+       "%s" // OVALDEF
        ID_WHEN_WITH_TRASH (permission)
        ID_WHEN_WITH_TRASH (port_list)
        ID_WHEN_WITH_TRASH (report_format)
@@ -8654,7 +8566,109 @@ migrate_116_to_117 ()
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
-       " FROM tags_trash_117;");
+       " FROM tags_117;",
+       scap_loaded ? ID_WHEN_WITHOUT_TRASH (cpe)
+                     ID_WHEN_WITHOUT_TRASH (cve)
+                   : "",
+       cert_loaded ? ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
+                   : "",
+       scap_loaded ? ID_WHEN_WITHOUT_TRASH (ovaldef)
+                   : "");
+
+  sql ("DROP TABLE tags_117;");
+
+  /* Rename attach_[...] columns in tags_trash to resource_[...], reference
+     resources by ROWID and add new column for resource UUID */
+  sql ("CREATE TABLE IF NOT EXISTS tags_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value);");
+
+  sql ("INSERT INTO tags_trash"
+       " (id, uuid, owner, name, comment,"
+       "  creation_time, modification_time, resource_type, resource,"
+       "  resource_uuid, resource_location, active, value)"
+       " SELECT"
+       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
+       "  attach_type,"
+       "  (SELECT CASE attach_type"
+       ID_WHEN_WITH_TRASH (agent)
+       ID_WHEN_WITH_TRASH (alert)
+       "%s" // CPE and CVE
+       ID_WHEN_WITH_TRASH (config)
+       "%s" // DFN_CERT_ADV
+       ID_WHEN_WITH_TRASH (filter)
+       ID_WHEN_WITH_TRASH (group)
+       ID_WHEN_WITH_TRASH (lsc_credential)
+       ID_WHEN_WITH_TRASH (note)
+       ID_WHEN_WITHOUT_TRASH (nvt)
+       ID_WHEN_WITH_TRASH (override)
+       "%s" // OVALDEF
+       ID_WHEN_WITH_TRASH (permission)
+       ID_WHEN_WITH_TRASH (port_list)
+       ID_WHEN_WITH_TRASH (report_format)
+       ID_WHEN_WITHOUT_TRASH (report)
+       ID_WHEN_WITHOUT_TRASH (result)
+       ID_WHEN_WITHOUT_TRASH (role)
+       ID_WHEN_WITH_TRASH (schedule)
+       ID_WHEN_WITH_TRASH (slave)
+       ID_WHEN_WITH_TRASH (target)
+       ID_WHEN_WITHOUT_TRASH (task) // uses attribute "hidden" for trash
+       ID_WHEN_WITHOUT_TRASH (user)
+       "   ELSE 0 END),"
+       " attach_id,"
+       " (SELECT CASE attach_type"
+       RESOURCE_TRASH (alert)
+       RESOURCE_TRASH (config)
+       RESOURCE_TRASH (filter)
+       RESOURCE_TRASH (group)
+       RESOURCE_TRASH (lsc_credential)
+       RESOURCE_TRASH (note)
+       RESOURCE_TRASH (override)
+       RESOURCE_TRASH (permission)
+       RESOURCE_TRASH (port_list)
+       RESOURCE_TRASH (report_format)
+       RESOURCE_TRASH (schedule)
+       RESOURCE_TRASH (slave)
+       RESOURCE_TRASH (target)
+       "  WHEN 'task' THEN"
+       "    COALESCE ((SELECT CASE WHEN hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM tasks WHERE uuid = attach_id),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'report' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM reports"
+       "                     WHERE reports.uuid = attach_id) AS report_task"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  WHEN 'result' THEN"
+       "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
+                       G_STRINGIFY (LOCATION_TRASH)
+       "               ELSE "
+                       G_STRINGIFY (LOCATION_TABLE)
+       "               END"
+       "               FROM (SELECT task FROM results"
+       "                     WHERE results.uuid = attach_id) AS result_task"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+                       G_STRINGIFY (LOCATION_TABLE) ")"
+       "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
+       " active, value"
+       " FROM tags_trash_117;",
+       scap_loaded ? ID_WHEN_WITHOUT_TRASH (cpe)
+                     ID_WHEN_WITHOUT_TRASH (cve)
+                   : "",
+       cert_loaded ? ID_WHEN_WITHOUT_TRASH (dfn_cert_adv)
+                   : "",
+       scap_loaded ? ID_WHEN_WITHOUT_TRASH (ovaldef)
+                   : "");
 
   sql ("DROP TABLE tags_trash_117;");
 
