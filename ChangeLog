@@ -1,3 +1,8 @@
+2014-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c: Revert doxygen "@cond STATIC" Hani removed in r19030, at
+	least to keep the @endcond company.
+
 2014-04-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_migrators.c (migrate_116_to_117): Only try to get ROWIDs

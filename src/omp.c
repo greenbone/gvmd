@@ -5548,6 +5548,8 @@ make_xml_error_syntax (const char *tag, const char *text)
     g_free (str);                                                             \
   } while (0);
 
+/** @cond STATIC */
+
 /**
  * @brief Send start of GET response.
  *
