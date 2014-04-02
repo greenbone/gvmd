@@ -1799,6 +1799,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_alert</c>
           <c>create_config</c>
           <c>create_filter</c>
+          <c>create_group</c>
           <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
@@ -1816,6 +1817,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_alert</c>
           <c>delete_config</c>
           <c>delete_filter</c>
+          <c>delete_group</c>
           <c>delete_lsc_credential</c>
           <c>delete_note</c>
           <c>delete_override</c>
@@ -1864,6 +1866,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_auth</c>
           <c>modify_config</c>
           <c>modify_filter</c>
+          <c>modify_group</c>
           <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
@@ -1909,6 +1912,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_alert</r>
             <r>create_config</r>
             <r>create_filter</r>
+            <r>create_group</r>
             <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
@@ -1925,6 +1929,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_alert</r>
             <r>delete_config</r>
             <r>delete_filter</r>
+            <r>delete_group</r>
             <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
@@ -1973,6 +1978,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_auth</r>
             <r>modify_config</r>
             <r>modify_filter</r>
+            <r>modify_group</r>
             <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
@@ -2484,6 +2490,55 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <create_filter_response status="201" status_text="OK, resource created"
                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c7">
         </create_filter_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_group</name>
+    <summary>Create a group</summary>
+    <description>
+      <p>
+        The client uses the create_group command to create a new
+        group.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <e>users</e>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the group</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the group</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>users</name>
+      <summary>Comma separated list of user names</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <example>
+      <summary>Create a group</summary>
+      <request>
+        <create_group>
+          <name>Managers</name>
+          <users>sarah, bob</users>
+        </create_group>
+      </request>
+      <response>
+        <create_group_response status="201"
+                               status_text="OK, resource created"
+                               id="d94211b6-ba40-11e3-bcb1-406186ea4fc5">
+        </create_group_response>
       </response>
     </example>
   </command>
@@ -4262,6 +4317,58 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <delete_filter_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_group</name>
+    <summary>Delete a group</summary>
+    <description>
+      <p>
+        The client uses the delete_group command to delete an existing
+        group.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>group_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a group</summary>
+      <request>
+        <delete_group group_id="d94211b6-ba40-11e3-bcb1-406186ea4fc5">
+        </delete_group>
+      </request>
+      <response>
+        <delete_group_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -14085,6 +14192,53 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_filter_response status="200" status_text="OK">
         </modify_filter_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_group</name>
+    <summary>Modify an existing group</summary>
+    <description>
+      <p>
+        The client uses the modify_group command to change an existing group.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>group_id</name>
+        <summary>ID of group to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>users</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of group</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on group</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>users</name>
+      <summary>Comma separated list of user names</summary>
+      <pattern>text</pattern>
+    </ele>
+    <example>
+      <summary>Modify the name of a group</summary>
+      <request>
+        <modify_group group_id='d94211b6-ba40-11e3-bcb1-406186ea4fc5'>
+          <name>Line Managers</name>
+        </modify_group>
+      </request>
+      <response>
+        <modify_group_response status="200" status_text="OK">
+        </modify_group_response>
       </response>
     </example>
   </command>

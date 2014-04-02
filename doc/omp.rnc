@@ -15,6 +15,7 @@ command
     | create_config
     | create_alert
     | create_filter
+    | create_group
     | create_lsc_credential
     | create_note
     | create_override
@@ -33,6 +34,7 @@ command
     | delete_config
     | delete_alert
     | delete_filter
+    | delete_group
     | delete_lsc_credential
     | delete_note
     | delete_override
@@ -81,6 +83,7 @@ command
     | modify_auth
     | modify_config
     | modify_filter
+    | modify_group
     | modify_lsc_credential
     | modify_note
     | modify_override
@@ -114,6 +117,7 @@ response
     | create_config_response
     | create_alert_response
     | create_filter_response
+    | create_group_response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
@@ -132,6 +136,7 @@ response
     | delete_config_response
     | delete_alert_response
     | delete_filter_response
+    | delete_group_response
     | delete_lsc_credential_response
     | delete_note_response
     | delete_override_response
@@ -180,6 +185,7 @@ response
     | modify_auth_response
     | modify_config_response
     | modify_filter_response
+    | modify_group_response
     | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
@@ -1872,6 +1878,7 @@ commands
            | create_alert
            | create_config
            | create_filter
+           | create_group
            | create_lsc_credential
            | create_note
            | create_override
@@ -1889,6 +1896,7 @@ commands
            | delete_alert
            | delete_config
            | delete_filter
+           | delete_group
            | delete_lsc_credential
            | delete_note
            | delete_override
@@ -1937,6 +1945,7 @@ commands
            | modify_auth
            | modify_config
            | modify_filter
+           | modify_group
            | modify_lsc_credential
            | modify_note
            | modify_override
@@ -2218,6 +2227,39 @@ create_filter_term
 # Resource type.
 create_filter_type
  = element type
+     {
+       text
+     }
+
+## Command create_group
+##
+## Create a group.
+
+create_group
+ = element create_group
+     {
+       create_group_name
+       & create_group_comment?
+       & create_group_users
+     }
+
+# A name for the group.
+create_group_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the group.
+create_group_comment
+ = element comment
+     {
+       text
+     }
+
+# Comma separated list of user names.
+create_group_users
+ = element users
      {
        text
      }
@@ -3242,6 +3284,18 @@ delete_filter
  = element delete_filter
      {
        attribute filter_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
+## Command delete_group
+##
+## Delete a group.
+
+delete_group
+ = element delete_group
+     {
+       attribute group_id { uuid }
        & # Whether to remove entirely, or to the trashcan.
        attribute ultimate { boolean }
      }
@@ -4279,6 +4333,41 @@ modify_filter_term
 # Resource type filter applies to.
 modify_filter_type
  = element type
+     {
+       text
+     }
+
+## Command modify_group
+##
+## Modify an existing group.
+
+modify_group
+ = element modify_group
+     {
+       # ID of group to modify.
+       attribute group_id { uuid }
+       & modify_group_name?
+       & modify_group_comment?
+       & modify_group_users?
+     }
+
+# Name of group.
+modify_group_name
+ = element name
+     {
+       name
+     }
+
+# Comment on group.
+modify_group_comment
+ = element comment
+     {
+       text
+     }
+
+# Comma separated list of user names.
+modify_group_users
+ = element users
      {
        text
      }
@@ -5332,6 +5421,7 @@ commands_response
            | create_alert_response
            | create_config_response
            | create_filter_response
+           | create_group_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
@@ -5348,6 +5438,7 @@ commands_response
            | delete_alert_response
            | delete_config_response
            | delete_filter_response
+           | delete_group_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
@@ -5396,6 +5487,7 @@ commands_response
            | modify_auth_response
            | modify_config_response
            | modify_filter_response
+           | modify_group_response
            | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
@@ -5458,6 +5550,13 @@ create_filter_response
        attribute status { status }
        & attribute status_text { text }
        & attribute id { uuid }
+     }
+
+## Response to create_group
+
+create_group_response
+ = element create_group_response
+     {
      }
 
 ## Response to create_lsc_credential
@@ -5628,6 +5727,15 @@ delete_alert_response
 
 delete_filter_response
  = element delete_filter_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_group
+
+delete_group_response
+ = element delete_group_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -11216,6 +11324,13 @@ modify_filter_response
      {
        attribute status { status }
        & attribute status_text { text }
+     }
+
+## Response to modify_group
+
+modify_group_response
+ = element modify_group_response
+     {
      }
 
 ## Response to modify_lsc_credential
