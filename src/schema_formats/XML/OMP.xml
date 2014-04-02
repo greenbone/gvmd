@@ -1872,6 +1872,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_override</c>
           <c>modify_port_list</c>
           <c>modify_report</c>
+          <c>modify_report_format</c>
           <c>modify_role</c>
           <c>modify_schedule</c>
           <c>modify_setting</c>
@@ -1984,6 +1985,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_override</r>
             <r>modify_port_list</r>
             <r>modify_report</r>
+            <r>modify_report_format</r>
             <r>modify_role</r>
             <r>modify_schedule</r>
             <r>modify_setting</r>

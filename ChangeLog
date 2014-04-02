@@ -1,5 +1,11 @@
 2014-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (commands): Add modify_report_format.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (create_group, delete_group)
 	(modify_group): New commands.
 

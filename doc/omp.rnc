@@ -1951,6 +1951,7 @@ commands
            | modify_override
            | modify_port_list
            | modify_report
+           | modify_report_format
            | modify_role
            | modify_schedule
            | modify_setting
@@ -5493,6 +5494,7 @@ commands_response
            | modify_override_response
            | modify_port_list_response
            | modify_report_response
+           | modify_report_format_response
            | modify_role_response
            | modify_schedule_response
            | modify_setting_response
