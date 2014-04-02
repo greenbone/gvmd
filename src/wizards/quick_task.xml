@@ -141,7 +141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           encoding="UTF-8"/>
         <xsl:template match="/">
           <commands>
-            <xsl:if test="/wizard/params/param[name='alert_email']/value">
+            <xsl:if test="/wizard/params/param[name='alert_email']/value != ''">
               <create_alert>
                 <name>
                   <xsl:text>Email Alert for </xsl:text>
@@ -292,9 +292,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             method="xml"
             encoding="UTF-8"/>
           <xsl:template match="/">
+            <help format="xml" type="brief"/>
+          </xsl:template>
+        </xsl:stylesheet>
+      </command>
+    </step>
+    <step>
+      <command>
+        <xsl:stylesheet
+            version="1.0"
+            xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+          <xsl:output
+            method="xml"
+            encoding="UTF-8"/>
+          <xsl:template match="/">
             <commands>
               <get_configs details="0"/>
-              <get_slaves details="0"/>
+              <xsl:if test="count(/wizard/previous/response/help_response/schema/command[name = 'GET_SLAVES'])">
+                <get_slaves details="0"/>
+              </xsl:if>
               <get_lsc_credentials details="0"/>
             </commands>
           </xsl:template>
