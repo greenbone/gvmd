@@ -46440,6 +46440,8 @@ manage_empty_trashcan ()
   sql ("DELETE FROM permissions_trash;");
   sql ("DELETE FROM port_ranges_trash;");
   sql ("DELETE FROM port_lists_trash;");
+  sql ("DELETE FROM roles_trash;");
+  sql ("DELETE FROM role_users_trash;");
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
   sql ("DELETE FROM tags_trash;");

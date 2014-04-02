@@ -1,3 +1,7 @@
+2014-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_empty_trashcan): Delete roles.
+
 2014-04-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/wizards/quick_task.xml: Do not try to create alert if email
