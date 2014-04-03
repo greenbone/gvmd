@@ -1,6 +1,15 @@
+2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19160.  Run ANALYZE after migrate instead of on startup, to
+	speed up startup.
+
+	* src/manage_sql.c (manage_migrate): Run ANALYZE if any migration
+	happens.
+	(init_manage, manage_complete_nvt_cache_update): Remove ANALYZE.
+
 2014-03-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
-	Backport r18529 orginally committed by Matthew Mundell.
+	Backport r18529 originally committed by Matthew Mundell.
 
 	* src/manage_sql.c (report_counts_match): Also check whether the NVT
 	exists, in the SQL, otherwise sql_int aborts if the NVT has been removed

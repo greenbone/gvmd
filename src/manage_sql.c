@@ -9781,6 +9781,12 @@ manage_migrate (GSList *log_config, const gchar *database)
       migrators++;
     }
 
+  /* We now run ANALYZE after migrating, instead of on every startup.  ANALYZE
+   * made startup too slow, especially for large databases.  Running it here
+   * is preferred over removing it entirely, because users may have very
+   * different use patterns of the database. */
+  sql ("ANALYZE;");
+
   cleanup_manage_process (TRUE);
   return 0;
 }
@@ -15921,10 +15927,6 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                __FUNCTION__, sqlite3_changes (task_db));
       sql ("UPDATE reports SET highs = -1");
     }
-
-  /* Run ANALYZE because there may have been big changes since create_tables. */
-
-  sql ("ANALYZE;");
 
   /* Load the NVT cache into memory. */
 
@@ -33792,9 +33794,6 @@ manage_complete_nvt_cache_update (int mode)
   update_all_config_caches ();
   refresh_nvt_cves ();
   if (mode == -2) sql ("COMMIT;");
-
-  /* Run ANALYZE because there may have been big changes during the update. */
-  sql ("ANALYZE;");
 }
 
 
