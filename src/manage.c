@@ -4357,6 +4357,7 @@ set_scheduled_user_uuid (gchar* user_uuid)
  * @param[in]  fork_connection  Function that forks a child which is connected
  *                              to the Manager.  Must return 0 in parent, PID
  *                              in child, or -1 on error.
+ * @param[in]  run_tasks        Whether to run scheduled tasks.
  *
  * @return 0 success, 1 failed to get lock, -1 error.
  */
@@ -4364,13 +4365,17 @@ int
 manage_schedule (int (*fork_connection) (int *,
                                          gnutls_session_t *,
                                          gnutls_certificate_credentials_t *,
-                                         gchar*))
+                                         gchar*),
+                 gboolean run_tasks)
 {
   iterator_t schedules;
   GSList *starts = NULL, *stops = NULL;
   int ret;
 
   manage_update_nvti_cache ();
+
+  if (run_tasks == 0)
+    return 0;
 
   /* Assemble "starts" and "stops" list containing task uuid and owner name
    * for each (scheduled) task to start or stop. */

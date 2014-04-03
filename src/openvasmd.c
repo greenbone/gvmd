@@ -279,6 +279,10 @@ static gchar **disabled_commands = NULL;
  */
 gboolean disable_encrypted_credentials;
 
+/**
+ * @brief Flag indicating that task scheduling is enabled.
+ */
+gboolean scheduling_enabled;
 
 
 /* Forking, serving the client. */
@@ -1162,7 +1166,9 @@ serve_and_schedule ()
               fork_update_nvt_cache ();
             }
 
-          if (manage_schedule (fork_connection_for_schedular) < 0)
+          if (manage_schedule (fork_connection_for_schedular,
+                               scheduling_enabled)
+              < 0)
             exit (EXIT_FAILURE);
 
           last_schedule_time = time (NULL);
@@ -1202,7 +1208,8 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2);
         }
 
-      if (manage_schedule (fork_connection_for_schedular) < 0)
+      if (manage_schedule (fork_connection_for_schedular, scheduling_enabled)
+          < 0)
         exit (EXIT_FAILURE);
 
       if (sighup_update_nvt_cache)
@@ -1262,6 +1269,7 @@ main (int argc, char** argv)
   static gboolean decrypt_all_credentials = FALSE;
   static gboolean create_cred_enc_key = FALSE;
   static gboolean disable_password_policy = FALSE;
+  static gboolean disable_scheduling = FALSE;
   static gboolean list_users = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
@@ -1296,6 +1304,7 @@ main (int argc, char** argv)
         {"disable-password-policy", '\0', 0, G_OPTION_ARG_NONE,
          &disable_password_policy, "Do not restrict passwords to the policy.",
          NULL},
+        { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE, &disable_scheduling, "Disable task scheduling.", NULL },
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
@@ -1731,10 +1740,12 @@ main (int argc, char** argv)
 
   if (pidfile_create ("openvasmd")) exit (EXIT_FAILURE);
 
-  /* Setup variable for disabling OMP commands. */
+  /* Setup global variables. */
 
   if (disable)
     disabled_commands = g_strsplit (disable, ",", 0);
+
+  scheduling_enabled = (disable_scheduling == FALSE);
 
   /* Create the manager socket(s). */
 

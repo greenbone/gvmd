@@ -1,5 +1,17 @@
 2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add option --disable-scheduling.
+
+	* src/manage.c (manage_schedule): Add arg run_tasks.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/openvasmd.c (scheduling_enabled): New variable.
+	(serve_and_schedule): Pass scheduling_enabled to manage_schedule.
+	(main): Add --disable-scheduling.
+
+2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Run ANALYZE after migrate instead of on startup, to speed up startup.
 
 	* src/manage_migrators.c (manage_migrate): Run ANALYZE if any migration
