@@ -9027,6 +9027,7 @@ manage_migrate (GSList *log_config, const gchar *database)
     {
       g_warning ("%s: no task tables yet, run a --rebuild to create them.\n",
                  __FUNCTION__);
+      version_current = 1;
     }
   else if (old_version == new_version)
     {
@@ -9149,9 +9150,18 @@ manage_migrate (GSList *log_config, const gchar *database)
         }
     }
 
-  cleanup_manage_process (TRUE);
   if (version_current && scap_version_current && cert_version_current)
-    return 1;
-  else
-    return 0;
+    {
+      cleanup_manage_process (TRUE);
+      return 1;
+    }
+
+  /* We now run ANALYZE after migrating, instead of on every startup.  ANALYZE
+   * made startup too slow, especially for large databases.  Running it here
+   * is preferred over removing it entirely, because users may have very
+   * different use patterns of the database. */
+  sql ("ANALYZE;");
+
+  cleanup_manage_process (TRUE);
+  return 0;
 }

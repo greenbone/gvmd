@@ -11364,11 +11364,6 @@ check_db ()
       reports_clear_count_cache (1);
     }
 
-  /* Run ANALYZE because there may have been big changes since create_tables. */
-
-  if (progress)
-    progress ();
-  sql ("ANALYZE;");
   if (progress)
     progress ();
 
@@ -30293,11 +30288,6 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
   refresh_nvt_cves ();
 
   if (mode == -2) sql ("COMMIT;");
-
-  /* Run ANALYZE because there may have been big changes during the update. */
-  if (progress)
-    progress ();
-  sql ("ANALYZE;");
 
   if (progress)
     progress ();

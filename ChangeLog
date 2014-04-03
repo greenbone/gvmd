@@ -1,3 +1,13 @@
+2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Run ANALYZE after migrate instead of on startup, to speed up startup.
+
+	* src/manage_migrators.c (manage_migrate): Run ANALYZE if any migration
+	happens.
+
+	* src/manage_sql.c (check_db, manage_complete_nvt_cache_update): Remove
+	ANALYZE.
+
 2014-04-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (ALL_INFO_UNIION_COLUMNS): Indent under SELECT
