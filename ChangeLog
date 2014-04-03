@@ -1,5 +1,12 @@
 2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19094.
+
+	* src/manage_sql.c (create_tables): Remove ANALYZE which is done later
+	in check_db anyway, to save a few seconds on startup.
+
+2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19160.  Run ANALYZE after migrate instead of on startup, to
 	speed up startup.
 
