@@ -41821,6 +41821,9 @@ trash_permission_writable (permission_t permission)
   "        WHERE groups_trash.ROWID = subject)"                             \
   "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
+  "  THEN (SELECT uuid FROM roles_trash"                                    \
+  "        WHERE roles_trash.ROWID = subject)"                              \
   "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS subject_uuid,"                                                 \
   " (CASE"                                                                  \
@@ -41832,6 +41835,9 @@ trash_permission_writable (permission_t permission)
   "        WHERE groups_trash.ROWID = subject)"                             \
   "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
+  "  THEN (SELECT name FROM roles_trash"                                    \
+  "        WHERE roles_trash.ROWID = subject)"                              \
   "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS _subject,"                                                     \
   " subject_location = " G_STRINGIFY (LOCATION_TRASH)
@@ -41859,6 +41865,9 @@ trash_permission_writable (permission_t permission)
   "        WHERE groups_trash.ROWID = subject)"                             \
   "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT uuid FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
+  "  THEN (SELECT uuid FROM roles_trash"                                    \
+  "        WHERE roles_trash.ROWID = subject)"                              \
   "  ELSE (SELECT uuid FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS subject_uuid,"                                                 \
   " (CASE"                                                                  \
@@ -41870,6 +41879,9 @@ trash_permission_writable (permission_t permission)
   "        WHERE groups_trash.ROWID = subject)"                             \
   "  WHEN subject_type = 'group'"                                           \
   "  THEN (SELECT name FROM groups WHERE groups.ROWID = subject)"           \
+  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
+  "  THEN (SELECT name FROM roles_trash"                                    \
+  "        WHERE roles_trash.ROWID = subject)"                              \
   "  ELSE (SELECT name FROM roles WHERE roles.ROWID = subject)"             \
   "  END) AS _subject,"                                                     \
   " subject_location = " G_STRINGIFY (LOCATION_TRASH)
