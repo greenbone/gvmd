@@ -11351,19 +11351,6 @@ check_db ()
       sql ("COMMIT;");
     }
 
-  /* Clean up orphaned results */
-
-  sql ("DELETE FROM results"
-       " WHERE NOT EXISTS (SELECT * FROM report_results"
-       "                   WHERE report_results.result = results.id);");
-  if (sqlite3_changes (task_db) > 0)
-    {
-      g_debug ("%s: Removed %d orphaned result(s).",
-               __FUNCTION__, sqlite3_changes (task_db));
-      reports_clear_count_cache (0);
-      reports_clear_count_cache (1);
-    }
-
   if (progress)
     progress ();
 

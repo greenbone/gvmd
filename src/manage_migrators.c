@@ -8815,6 +8815,48 @@ migrate_117_to_118 ()
 #undef RESOURCE_TRASH
 
 /**
+ * @brief Migrate the database from version 118 to version 119.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_118_to_119 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 118. */
+
+  if (manage_db_version () != 118)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Cleaning up of orphaned results was removed from startup. */
+
+  sql ("DELETE FROM results"
+       " WHERE NOT EXISTS (SELECT * FROM report_results"
+       "                   WHERE report_results.result = results.id);");
+  if (sqlite3_changes (task_db) > 0)
+    {
+      g_debug ("%s: Removed %d orphaned result(s).",
+               __FUNCTION__, sqlite3_changes (task_db));
+      sql ("DELETE FROM report_counts WHERE override = 0;");
+      sql ("DELETE FROM report_counts WHERE override = 1;");
+    }
+
+  /* Set the database version to 119. */
+
+  set_db_version (119);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8937,6 +8979,7 @@ static migrator_t database_migrators[]
     {116, migrate_115_to_116},
     {117, migrate_116_to_117},
     {118, migrate_117_to_118},
+    {119, migrate_118_to_119},
     /* End marker. */
     {-1, NULL}};
 

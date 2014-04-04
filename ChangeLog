@@ -1,3 +1,18 @@
+2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove "Clean up orphaned results" from startup.  Hence increase
+	database version to 119.  Add database migration from version 118 to
+	119.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 119.
+
+	* src/manage_migrators.c (migrate_118_to_119): New function.
+	(database_migrators): Add migrate_118_to_119.
+
+	* src/manage_sql.c (check_db): Remove "Clean up orphaned results".
+
+	* doc/db.png: Update for version change.
+
 2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add option --disable-scheduling.
