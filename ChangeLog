@@ -1,5 +1,9 @@
 2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sqlv): Free formatted in "gave up" case.
+
+2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Recover from the deficiency in manage_empty_trashcan which was rectified
 	in last commit.  Hence increase database version to 120.  Add database
 	migration from version 119 to 120.

@@ -170,6 +170,7 @@ sqlv (int retry, char* sql, va_list args)
             continue;
           if (retries--)
             continue;
+          g_free (formatted);
           return 1;
         }
       g_free (formatted);
