@@ -1,5 +1,12 @@
 2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_empty_trashcan): Delete permissions of
+	trashcan groups and roles.  Update orphan state or permissions resources
+	that were in the trashcan.  Remove tags_trash update because tags_trash
+	has just been emptied.
+
+2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PERMISSION_ITERATOR_COLUMNS)
 	(PERMISSION_ITERATOR_TRASH_COLUMNS): Add roles trash cases for subject
 	UUID and name.

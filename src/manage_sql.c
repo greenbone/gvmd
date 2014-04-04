@@ -46416,6 +46416,10 @@ manage_empty_trashcan ()
        " (SELECT nvt_selector FROM configs_trash);");
   sql ("DELETE FROM config_preferences_trash;");
   sql ("DELETE FROM configs_trash;");
+  sql ("DELETE FROM permissions"
+       " WHERE subject_type = 'group'"
+       " AND subject IN (SELECT ROWID from groups_trash)"
+       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
   sql ("DELETE FROM groups_trash;");
   sql ("DELETE FROM group_users_trash;");
   sql ("DELETE FROM alert_condition_data_trash;");
@@ -46429,6 +46433,10 @@ manage_empty_trashcan ()
   sql ("DELETE FROM permissions_trash;");
   sql ("DELETE FROM port_ranges_trash;");
   sql ("DELETE FROM port_lists_trash;");
+  sql ("DELETE FROM permissions"
+       " WHERE subject_type = 'role'"
+       " AND subject IN (SELECT ROWID from roles_trash)"
+       " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
   sql ("DELETE FROM roles_trash;");
   sql ("DELETE FROM role_users_trash;");
   sql ("DELETE FROM schedules_trash;");
@@ -46441,12 +46449,13 @@ manage_empty_trashcan ()
       return -1;
     }
 
+  sql ("UPDATE permissions"
+       " SET resource = -1"
+       " WHERE resource > 0"
+       " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";");
   sql ("UPDATE tags"
        " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
-       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
-  sql ("UPDATE tags_trash"
-       " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
-       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH));
+       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH) ";");
 
   sql ("DELETE FROM report_formats_trash;");
 
