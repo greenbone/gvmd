@@ -1,5 +1,24 @@
 2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Recover from the deficiency in manage_empty_trashcan which was rectified
+	in last commit.  Hence increase database version to 120.  Add database
+	migration from version 119 to 120.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 120.
+
+	* src/manage_migrators.c (migrate_119_to_120): New function.
+	(database_migrators): Add migrate_119_to_120.
+
+	* src/manage_sql.c (resource_exists): New function.
+	(init_manage_process): Increase resource_exists args.
+
+	* src/sql.c (sql_resource_exists): Add location to SQL args.  Take ID
+	instead of UUID as second SQL arg.  Use resource_exists to do the check.
+
+	* doc/db.png: Update for version change.
+
+2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_empty_trashcan): Delete permissions of
 	trashcan groups and roles.  Update orphan state or permissions resources
 	that were in the trashcan.  Remove tags_trash update because tags_trash

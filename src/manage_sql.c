@@ -3658,6 +3658,33 @@ copy_resource (const char *type, const char *name, const char *comment,
 }
 
 /**
+ * @brief Get whether a resource exists.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  resource  Resource.
+ * @param[in]  location  Location.
+ *
+ * @return 1 yes, 0 no, -1 error in type.
+ */
+int
+resource_exists (const char *type, resource_t resource, int location)
+{
+  if (valid_db_resource_type (type) == 0)
+    return -1;
+
+  if (location == LOCATION_TABLE)
+    return sql_int (0, 0,
+                    "SELECT EXISTS (SELECT ROWID FROM %ss WHERE ROWID = %llu);",
+                    type,
+                    resource);
+  return sql_int (0, 0,
+                  "SELECT EXISTS (SELECT ROWID FROM %ss%s WHERE ROWID = %llu);",
+                  type,
+                  strcmp (type, "task") ? "_trash" : "",
+                  resource);
+}
+
+/**
  * @brief Get the name of a resource.
  *
  * @param[in]  type      Type.
@@ -9202,7 +9229,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   if (sqlite3_create_function (task_db,
                                "resource_exists",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_resource_exists,

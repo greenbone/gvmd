@@ -8857,6 +8857,48 @@ migrate_118_to_119 ()
 }
 
 /**
+ * @brief Migrate the database from version 119 to version 120.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_119_to_120 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 119. */
+
+  if (manage_db_version () != 119)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* An omission in manage_empty_trashcan was leaving permissions referring to
+   * removed resources. */
+
+  sql ("DELETE FROM permissions"
+       " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH)
+       " AND resource > 0"
+       " AND resource_exists (resource_type, resource, resource_location) == 0;");
+
+  sql ("DELETE FROM permissions"
+       " WHERE subject_location = " G_STRINGIFY (LOCATION_TRASH)
+       " AND subject > 0"
+       " AND resource_exists (subject_type, subject, subject_location) == 0;");
+
+  /* Set the database version to 120. */
+
+  set_db_version (120);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -8980,6 +9022,7 @@ static migrator_t database_migrators[]
     {117, migrate_116_to_117},
     {118, migrate_117_to_118},
     {119, migrate_118_to_119},
+    {120, migrate_119_to_120},
     /* End marker. */
     {-1, NULL}};
 

@@ -52,6 +52,9 @@ user_can_everything (const char *);
 int
 resource_name (const char *, const char *, int, gchar **);
 
+int
+resource_exists (const char *, resource_t, int);
+
 
 /* Variables */
 
@@ -1808,7 +1811,10 @@ sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Get if a resource exists by its type and ID.
  *
- * This is a callback for a scalar SQL function of two arguments.
+ * This is a callback for a scalar SQL function of three arguments.
+ *
+ * Used by migrate_119_to_120 to check if a permission refers to a resource
+ * that has been removed.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1817,59 +1823,43 @@ sql_run_status_name (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_resource_exists (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  const unsigned char *type, *id;
-  sqlite3_stmt *stmt;
-  int ret;
-  int exists;
+  const char *type;
+  resource_t resource;
+  int location, exists;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
-  type = sqlite3_value_text (argv[0]);
+  type = (char*) sqlite3_value_text (argv[0]);
   if (type == NULL)
     {
-      sqlite3_result_null (context);
+      sqlite3_result_int (context, 0);
       return;
     }
-  if (valid_db_resource_type ((char*)type) == 0)
+  if (valid_db_resource_type ((char*) type) == 0)
     {
       sqlite3_result_error (context, "Invalid resource type argument", -1);
       return;
     }
 
-  id = sqlite3_value_text (argv[1]);
-  if (id == NULL)
+  resource = sqlite3_value_int64 (argv[1]);
+  if (resource == 0)
     {
-      sqlite3_result_null (context);
+      sqlite3_result_int (context, 0);
       return;
     }
 
-  stmt = sql_prepare ("SELECT EXISTS ("
-                      " SELECT ROWID"
-                      "  FROM %ss"
-                      "  WHERE uuid = '%s'"
-                      ");",
-                      type,
-                      id);
+  location = sqlite3_value_int (argv[2]);
 
-  do
+  exists = resource_exists (type, resource, location);
+  if (exists == -1)
     {
-      ret = sqlite3_step (stmt);
-    }
-  while (ret == SQLITE_BUSY);
-
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-    {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-      g_warning ("%s: sqlite3_step failed: %s",
-                  __FUNCTION__,
-                  sqlite3_errmsg (task_db));
-      sqlite3_finalize (stmt);
+      gchar *msg;
+      msg = g_strdup_printf ("Invalid resource type argument: %s", type);
+      sqlite3_result_error (context, msg, -1);
+      g_free (msg);
       return;
     }
-
-  exists = sqlite3_column_int (stmt, 0);
   sqlite3_result_int (context, exists);
-  sqlite3_finalize (stmt);
   return;
 }
 
