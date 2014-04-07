@@ -8489,6 +8489,14 @@ migrate_116_to_117 ()
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value);");
 
+  sql ("CREATE TABLE IF NOT EXISTS groups_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  type, term, creation_time, modification_time);");
+
+  sql ("CREATE TABLE IF NOT EXISTS roles_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
+       "  creation_time, modification_time);");
+
   sql ("INSERT INTO tags"
        " (id, uuid, owner, name, comment,"
        "  creation_time, modification_time, resource_type, resource,"

@@ -1,3 +1,8 @@
+2014-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_116_to_117): Ensure tables exist
+	before using them.
+
 2014-04-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql.c (sqlv): Free formatted in "gave up" case.
