@@ -1716,48 +1716,48 @@ send_task_file (task_t task, const char* file)
 static int
 send_alive_test_preferences (target_t target)
 {
-  if ((target_alive_test (target, ALIVE_TEST_TCP_ACK_SERVICE)
-       || target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE))
-      && sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> %s\n",
-                          target_alive_test (target, ALIVE_TEST_TCP_ACK_SERVICE)
-                          == 1
-                           ? "yes"
-                           : "no"))
+  alive_test_t alive_test;
+
+  alive_test = target_alive_tests (target);
+
+  if (alive_test == 0)
+    return 0;
+
+  if (sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> %s\n",
+                       alive_test & ALIVE_TEST_TCP_ACK_SERVICE
+                       || alive_test & ALIVE_TEST_TCP_SYN_SERVICE
+                        ? "yes"
+                        : "no"))
     return -1;
 
-  if (target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE)
-      && sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
-                          " <|> %s\n",
-                          target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE)
-                          == 1
-                           ? "yes"
-                           : "no"))
+  if (sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
+                       " <|> %s\n",
+                       alive_test & ALIVE_TEST_TCP_SYN_SERVICE
+                        ? "yes"
+                        : "no"))
     return -1;
 
-  if (target_alive_test (target, ALIVE_TEST_ICMP)
-      && sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping <|> %s\n",
-                          target_alive_test (target, ALIVE_TEST_ICMP) == 1
-                           ? "yes"
-                           : "no"))
+  if (sendf_to_server ("Ping Host[checkbox]:Do an ICMP ping <|> %s\n",
+                       alive_test & ALIVE_TEST_ICMP
+                        ? "yes"
+                        : "no"))
     return -1;
 
-  if (target_alive_test (target, ALIVE_TEST_ARP)
-      && sendf_to_server ("Ping Host[checkbox]:Use ARP <|> %s\n",
-                          target_alive_test (target, ALIVE_TEST_ARP) == 1
-                           ? "yes"
-                           : "no"))
+  if (sendf_to_server ("Ping Host[checkbox]:Use ARP <|> %s\n",
+                       alive_test & ALIVE_TEST_ARP
+                        ? "yes"
+                        : "no"))
     return -1;
 
-  if (target_alive_test (target, ALIVE_TEST_CONSIDER_ALIVE))
+  if (sendf_to_server ("Ping Host[checkbox]:"
+                       "Mark unrechable Hosts as dead (not scanning) <|> %s\n",
+                       alive_test & ALIVE_TEST_CONSIDER_ALIVE
+                        ? "no"
+                        : "yes"))
+    return -1;
+
+  if (alive_test == ALIVE_TEST_CONSIDER_ALIVE)
     {
-      if (sendf_to_server ("Ping Host[checkbox]:"
-                           "Mark unrechable Hosts as dead (not scanning)"
-                           " <|> %s\n",
-                           target_alive_test (target, ALIVE_TEST_CONSIDER_ALIVE)
-                           == 1
-                            ? "no"
-                            : "yes"))
-        return -1;
       /* Also select a method, otherwise Ping Host logs a warning. */
       if (sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> yes\n"))
         return -1;

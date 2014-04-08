@@ -1366,9 +1366,6 @@ trash_target_writable (target_t);
 char*
 target_lsc_credential_name (const char *);
 
-int
-target_alive_test (const target_t, alive_test_t);
-
 void
 init_target_task_iterator (iterator_t*, target_t);
 

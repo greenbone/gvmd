@@ -27341,23 +27341,19 @@ target_port_range (target_t target)
 }
 
 /**
- * @brief Return whether an alive test is associated with a target.
+ * @brief Return a target's alive tests.
  *
  * @param[in]  target  Target.
  * @param[in]  test    Alive test.
  *
- * @return 0 use config value, 1 set to "yes", -1 set to "no".
+ * @return Alive test bitfield.
  */
-int
-target_alive_test (const target_t target, alive_test_t test)
+alive_test_t
+target_alive_tests (target_t target)
 {
-  alive_test_t alive_test;
-  alive_test = sql_int (0, 0,
-                        "SELECT alive_test FROM targets WHERE ROWID = %llu;",
-                        target);
-  if (alive_test == 0)
-    return 0;
-  return (alive_test & test) ? 1 : -1;
+  return sql_int (0, 0,
+                  "SELECT alive_test FROM targets WHERE ROWID = %llu;",
+                  target);
 }
 
 /**

@@ -1,5 +1,20 @@
 2014-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Correct errors in the OTP sent for alive tests.
+
+	* src/manage.c (send_alive_test_preferences): Get the alive tests as a
+	bitfield, in order to check if only "Consider Alive" was selected.  If
+	so, set "Do a TCP ping" to yes.  This prevents the "Consider Alive" case
+	from always setting "Do a TCP ping" to yes.  In the process add a
+	missing SYN check to the main "Do a TCP ping" case.
+
+	* src/manage_sql.c (target_alive_tests): New function.
+	(target_alive_test): Remove.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
+2014-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename alive test "TCP Service Ping" to "TCP-ACK Service Ping".  Add
 	alive test "TCP-SYN Service Ping".
 
