@@ -29047,7 +29047,7 @@ manage_count_hosts (const char *given_hosts)
                 return -1;
               else
                 {
-                  gchar **host_split, **host_point;
+                  gchar **host_split, **host_point, *check;
 
                   /* IPv4. */
 
@@ -29099,6 +29099,28 @@ manage_count_hosts (const char *given_hosts)
                       errno = 0;
                       mask = strtol (slash, NULL, 10);
                       if (errno == ERANGE || mask < 8 || mask > 32) return -1;
+                    }
+
+                  /* Check for junk after the netmask. */
+
+                  check = slash;
+                  while (*check)
+                    if (isspace (*check) || isdigit (*check))
+                      check++;
+                    else
+                      return -1;
+
+                  /* Check for anything after a space after the netmask. */
+
+                  check = strchr (slash, ' ');
+                  if (check)
+                    {
+                      check++;
+                      while (*check)
+                        if (isspace (*check))
+                          check++;
+                        else
+                          return -1;
                     }
 
                   /* Calculate number of hosts. */

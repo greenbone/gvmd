@@ -1,3 +1,9 @@
+2014-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_count_hosts): Add more checks to the netmask
+	case.  This includes the case where the user forgets the comma between
+	the hosts.
+
 2014-04-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19094.
