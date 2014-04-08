@@ -1,3 +1,16 @@
+2014-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Rename alive test "TCP Service Ping" to "TCP-ACK Service Ping".  Add
+	alive test "TCP-SYN Service Ping".
+
+	* src/manage.c (send_alive_test_preferences): Add TCP SYN Ping.
+
+	* src/manage.h (alive_test_t): Add ACK to TCP ping.  Add TCP SYN Ping.
+
+	* src/manage_sql.c (alive_test_from_string)
+	(target_iterator_alive_tests): Add ACK to TCP service ping name.  Add
+	TCP SYN Ping.
+
 2014-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_116_to_117): Ensure tables exist

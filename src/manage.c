@@ -1716,9 +1716,20 @@ send_task_file (task_t task, const char* file)
 static int
 send_alive_test_preferences (target_t target)
 {
-  if (target_alive_test (target, ALIVE_TEST_TCP_SERVICE)
+  if ((target_alive_test (target, ALIVE_TEST_TCP_ACK_SERVICE)
+       || target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE))
       && sendf_to_server ("Ping Host[checkbox]:Do a TCP ping <|> %s\n",
-                          target_alive_test (target, ALIVE_TEST_TCP_SERVICE) == 1
+                          target_alive_test (target, ALIVE_TEST_TCP_ACK_SERVICE)
+                          == 1
+                           ? "yes"
+                           : "no"))
+    return -1;
+
+  if (target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE)
+      && sendf_to_server ("Ping Host[checkbox]:TCP ping tries also TCP-SYN ping"
+                          " <|> %s\n",
+                          target_alive_test (target, ALIVE_TEST_TCP_SYN_SERVICE)
+                          == 1
                            ? "yes"
                            : "no"))
     return -1;

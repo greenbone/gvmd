@@ -204,10 +204,11 @@ typedef enum
  */
 typedef enum
 {
-  ALIVE_TEST_TCP_SERVICE = 1,
+  ALIVE_TEST_TCP_ACK_SERVICE = 1,
   ALIVE_TEST_ICMP = 2,
   ALIVE_TEST_ARP = 4,
-  ALIVE_TEST_CONSIDER_ALIVE = 8
+  ALIVE_TEST_CONSIDER_ALIVE = 8,
+  ALIVE_TEST_TCP_SYN_SERVICE = 16
 } alive_test_t;
 
 typedef long long int agent_t;

@@ -25808,18 +25808,20 @@ alive_test_from_string (const char* alive_tests)
       || strcmp (alive_tests, "") == 0
       || strcmp (alive_tests, "Scan Config Default") == 0)
     alive_test = 0;
-  else if (strcmp (alive_tests, "ICMP, TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE | ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "ICMP, TCP-ACK Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
+  else if (strcmp (alive_tests, "TCP-ACK Service & ARP Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ARP;
   else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
     alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & TCP Service Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "ICMP & TCP-ACK Service Ping") == 0)
+    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_ACK_SERVICE;
   else if (strcmp (alive_tests, "ARP Ping") == 0)
     alive_test = ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SERVICE;
+  else if (strcmp (alive_tests, "TCP-ACK Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_ACK_SERVICE;
+  else if (strcmp (alive_tests, "TCP-SYN Service Ping") == 0)
+    alive_test = ALIVE_TEST_TCP_SYN_SERVICE;
   else if (strcmp (alive_tests, "ICMP Ping") == 0)
     alive_test = ALIVE_TEST_ICMP;
   else if (strcmp (alive_tests, "Consider Alive") == 0)
@@ -26972,23 +26974,25 @@ target_iterator_alive_tests (iterator_t* iterator)
   if (iterator->done) return "";
   tests = (int) sqlite3_column_int (iterator->stmt,
                                     GET_ITERATOR_COLUMN_COUNT + 13);
-  if ((tests & ALIVE_TEST_TCP_SERVICE)
+  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
       && (tests & ALIVE_TEST_ICMP)
       && (tests & ALIVE_TEST_ARP))
-    return "ICMP, TCP Service & ARP Ping";
-  if ((tests & ALIVE_TEST_TCP_SERVICE)
+    return "ICMP, TCP-ACK Service & ARP Ping";
+  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
       && (tests & ALIVE_TEST_ARP))
-    return "TCP Service & ARP Ping";
+    return "TCP-ACK Service & ARP Ping";
   if ((tests & ALIVE_TEST_ICMP)
       && (tests & ALIVE_TEST_ARP))
     return "ICMP & ARP Ping";
   if ((tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_TCP_SERVICE))
-    return "ICMP & TCP Service Ping";
+      && (tests & ALIVE_TEST_TCP_ACK_SERVICE))
+    return "ICMP & TCP-ACK Service Ping";
   if (tests & ALIVE_TEST_ARP)
     return "ARP Ping";
-  if (tests & ALIVE_TEST_TCP_SERVICE)
-    return "TCP Service Ping";
+  if (tests & ALIVE_TEST_TCP_ACK_SERVICE)
+    return "TCP-ACK Service Ping";
+  if (tests & ALIVE_TEST_TCP_SYN_SERVICE)
+    return "TCP-SYN Service Ping";
   if (tests & ALIVE_TEST_ICMP)
     return "ICMP Ping";
   if (tests & ALIVE_TEST_CONSIDER_ALIVE)
