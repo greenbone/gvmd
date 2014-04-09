@@ -19,6 +19,7 @@ command
     | create_lsc_credential
     | create_note
     | create_override
+    | create_permission
     | create_port_list
     | create_port_range
     | create_report
@@ -39,6 +40,7 @@ command
     | delete_note
     | delete_override
     | delete_report
+    | delete_permission
     | delete_port_list
     | delete_port_range
     | delete_report_format
@@ -50,11 +52,15 @@ command
     | delete_task
     | delete_user
     | describe_auth
+    | describe_cert
+    | describe_feed
+    | describe_scap
     | empty_trashcan
     | get_agents
     | get_configs
     | get_alerts
     | get_filters
+    | get_groups
     | get_info
     | get_lsc_credentials
     | get_notes
@@ -62,6 +68,7 @@ command
     | get_nvt_families
     | get_nvt_feed_version
     | get_overrides
+    | get_permissions
     | get_port_lists
     | get_preferences
     | get_reports
@@ -106,6 +113,9 @@ command
     | run_wizard
     | start_task
     | stop_task
+    | sync_cert
+    | sync_feed
+    | sync_scap
     | test_alert
     | verify_agent
     | verify_report_format
@@ -121,6 +131,7 @@ response
     | create_lsc_credential_response
     | create_note_response
     | create_override_response
+    | create_permission_response
     | create_port_list_response
     | create_port_range_response
     | create_report_response
@@ -141,6 +152,7 @@ response
     | delete_note_response
     | delete_override_response
     | delete_report_response
+    | delete_permission_response
     | delete_port_list_response
     | delete_port_range_response
     | delete_report_format_response
@@ -152,11 +164,15 @@ response
     | delete_task_response
     | delete_user_response
     | describe_auth_response
+    | describe_cert_response
+    | describe_feed_response
+    | describe_scap_response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
     | get_alerts_response
     | get_filters_response
+    | get_groups_response
     | get_info_response
     | get_lsc_credentials_response
     | get_notes_response
@@ -164,6 +180,7 @@ response
     | get_nvt_families_response
     | get_nvt_feed_version_response
     | get_overrides_response
+    | get_permissions_response
     | get_port_lists_response
     | get_preferences_response
     | get_reports_response
@@ -208,6 +225,9 @@ response
     | run_wizard_response
     | start_task_response
     | stop_task_response
+    | sync_cert_response
+    | sync_feed_response
+    | sync_scap_response
     | test_alert_response
     | verify_agent_response
     | verify_report_format_response
@@ -1882,6 +1902,7 @@ commands
            | create_lsc_credential
            | create_note
            | create_override
+           | create_permission
            | create_port_list
            | create_port_range
            | create_report_format
@@ -1912,11 +1933,15 @@ commands
            | delete_task
            | delete_user
            | describe_auth
+           | describe_cert
+           | describe_feed
+           | describe_scap
            | empty_trashcan
            | get_agents
            | get_alerts
            | get_configs
            | get_filters
+           | get_groups
            | get_info
            | get_lsc_credentials
            | get_notes
@@ -1924,6 +1949,7 @@ commands
            | get_nvt_families
            | get_nvt_feed_version
            | get_overrides
+           | get_permissions
            | get_port_lists
            | get_preferences
            | get_reports
@@ -1968,6 +1994,9 @@ commands
            | run_wizard
            | start_task
            | stop_task
+           | sync_feed
+           | sync_scap
+           | sync_cert
            | test_alert )*
      }
 
@@ -2544,6 +2573,63 @@ create_override_threat
  = element threat
      {
        threat
+     }
+
+## Command create_permission
+##
+## Create a permission.
+
+create_permission
+ = element create_permission
+     {
+       create_permission_name
+       & create_permission_subject
+       & create_permission_resource?
+       & create_permission_copy?
+       & create_permission_comment?
+     }
+
+# A permission name, currently the name of a command.
+create_permission_name
+ = element name
+     {
+       text
+     }
+
+# A subject to whom the permission is granted.
+create_permission_subject
+ = element subject
+     {
+       attribute id { uuid }?
+       & create_permission_subject_type
+     }
+
+# OMP type of the subject: user, group or role.
+create_permission_subject_type
+ = element type
+     {
+       text
+     }
+
+# A resource to which the permission applies.
+create_permission_resource
+ = element resource
+     {
+       attribute id { uuid }?
+     }
+
+# UUID of an existing permission to copy.
+create_permission_copy
+ = element copy
+     {
+       uuid
+     }
+
+# Comment on the permission.
+create_permission_comment
+ = element comment
+     {
+       text
      }
 
 ## Command create_port_list
@@ -3347,6 +3433,18 @@ delete_report
        attribute report_id { uuid }
      }
 
+## Command delete_permission
+##
+## Delete a permission.
+
+delete_permission
+ = element delete_permission
+     {
+       attribute permission_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
 ## Command delete_port_list
 ##
 ## Delete a port list.
@@ -3478,10 +3576,40 @@ delete_user_name
 
 ## Command describe_auth
 ##
-## Describe an auth.
+## Describe authentication methods.
 
 describe_auth
  = element describe_auth
+     {
+       ""
+     }
+
+## Command describe_cert
+##
+## Describe the CERT feed.
+
+describe_cert
+ = element describe_cert
+     {
+       ""
+     }
+
+## Command describe_feed
+##
+## Describe the NVT feed.
+
+describe_feed
+ = element describe_feed
+     {
+       ""
+     }
+
+## Command describe_scap
+##
+## Describe the SCAP feed.
+
+describe_scap
+ = element describe_scap
      {
        ""
      }
@@ -3574,6 +3702,23 @@ get_filters
        attribute trash { boolean }?
        & # Whether to include list of alerts that use the filter.
        attribute alerts { boolean }?
+     }
+
+## Command get_groups
+##
+## Get all groups.
+
+get_groups
+ = element get_groups
+     {
+       # ID of single group to get.
+       attribute group_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan groups instead.
+       attribute trash { boolean }?
      }
 
 ## Command get_info
@@ -3699,6 +3844,25 @@ get_overrides
        & attribute result { boolean }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
+     }
+
+## Command get_permissions
+##
+## Get all permissions.
+
+get_permissions
+ = element get_permissions
+     {
+       # ID of single permission to get.
+       attribute permission_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan permissions instead.
+       attribute trash { boolean }?
+       & # ID of resource to restrict permission to.
+       attribute resource_id { uuid }?
      }
 
 ## Command get_port_lists
@@ -5353,6 +5517,36 @@ stop_task
        attribute task_id { uuid }
      }
 
+## Command sync_cert
+##
+## Synchronize with a CERT feed.
+
+sync_cert
+ = element sync_cert
+     {
+       ""
+     }
+
+## Command sync_feed
+##
+## Synchronize with an NVT feed.
+
+sync_feed
+ = element sync_feed
+     {
+       ""
+     }
+
+## Command sync_scap
+##
+## Synchronize with a SCAP feed.
+
+sync_scap
+ = element sync_scap
+     {
+       ""
+     }
+
 ## Command test_alert
 ##
 ## Run an alert.
@@ -5426,6 +5620,7 @@ commands_response
            | create_lsc_credential_response
            | create_note_response
            | create_override_response
+           | create_permission_response
            | create_port_list_response
            | create_port_range_response
            | create_role_response
@@ -5455,10 +5650,14 @@ commands_response
            | delete_task_response
            | delete_user_response
            | describe_auth_response
+           | describe_cert_response
+           | describe_feed_response
+           | describe_scap_response
            | empty_trashcan_response
            | get_agents_response
            | get_alerts_response
            | get_configs_response
+           | get_groups_response
            | get_info_response
            | get_lsc_credentials_response
            | get_filters_response
@@ -5467,6 +5666,7 @@ commands_response
            | get_nvt_families_response
            | get_nvt_feed_version_response
            | get_overrides_response
+           | get_permissions_response
            | get_port_lists_response
            | get_preferences_response
            | get_reports_response
@@ -5511,6 +5711,9 @@ commands_response
            | run_wizard_response
            | start_task_response
            | stop_task_response
+           | sync_feed_response
+           | sync_scap_response
+           | sync_cert_response
            | test_alert_response )*
      }
 
@@ -5585,6 +5788,16 @@ create_note_response
 
 create_override_response
  = element create_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
+     }
+
+## Response to create_permission
+
+create_permission_response
+ = element create_permission_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -5779,6 +5992,15 @@ delete_report_response
        & attribute status_text { text }
      }
 
+## Response to delete_permission
+
+delete_permission_response
+ = element delete_permission_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
 ## Response to delete_port_list
 
 delete_port_list_response
@@ -5892,6 +6114,234 @@ describe_auth_response_group_auth_conf_setting
      {
        attribute key { text }
        & attribute value { text }
+     }
+
+## Response to describe_cert
+
+describe_cert_response
+ = element describe_cert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & describe_cert_response_cert
+     }
+
+describe_cert_response_cert
+ = element cert
+     {
+       describe_cert_response_cert_name
+       & describe_cert_response_cert_version
+       & describe_cert_response_cert_description
+       & describe_cert_response_cert_sync_not_available?
+       & describe_cert_response_cert_currently_syncing?
+     }
+
+# The name of the CERT feed.
+describe_cert_response_cert_name
+ = element name
+     {
+       text
+     }
+
+# The version of the CERT feed.
+describe_cert_response_cert_version
+ = element version
+     {
+       text
+     }
+
+# A description of the CERT feed.
+describe_cert_response_cert_description
+ = element description
+     {
+       text
+     }
+
+# Present if CERT syncing is not available.
+describe_cert_response_cert_sync_not_available
+ = element sync_not_available
+     {
+       describe_cert_response_cert_sync_not_available_error
+     }
+
+# Description of why sync is not available.
+describe_cert_response_cert_sync_not_available_error
+ = element error
+     {
+     }
+
+# Present if a CERT sync is underway.
+describe_cert_response_cert_currently_syncing
+ = element currently_syncing
+     {
+       describe_cert_response_cert_currently_syncing_timestamp
+       & describe_cert_response_cert_currently_syncing_user
+     }
+
+# Time sync started.
+describe_cert_response_cert_currently_syncing_timestamp
+ = element timestamp
+     {
+       text
+     }
+
+# Name of user who is performing sync.
+describe_cert_response_cert_currently_syncing_user
+ = element user
+     {
+       text
+     }
+
+## Response to describe_feed
+
+describe_feed_response
+ = element describe_feed_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & describe_feed_response_feed
+     }
+
+describe_feed_response_feed
+ = element feed
+     {
+       describe_feed_response_feed_name
+       & describe_feed_response_feed_version
+       & describe_feed_response_feed_description
+       & describe_feed_response_feed_sync_not_available?
+       & describe_feed_response_feed_currently_syncing?
+     }
+
+# The name of the feed.
+describe_feed_response_feed_name
+ = element name
+     {
+       text
+     }
+
+# The version of the feed.
+describe_feed_response_feed_version
+ = element version
+     {
+       text
+     }
+
+# A description of the feed.
+describe_feed_response_feed_description
+ = element description
+     {
+       text
+     }
+
+# Present if CERT syncing is not available.
+describe_feed_response_feed_sync_not_available
+ = element sync_not_available
+     {
+       describe_feed_response_feed_sync_not_available_error
+     }
+
+# Description of why sync is not available.
+describe_feed_response_feed_sync_not_available_error
+ = element error
+     {
+     }
+
+# Present if an NVT sync is underway.
+describe_feed_response_feed_currently_syncing
+ = element currently_syncing
+     {
+       describe_feed_response_feed_currently_syncing_timestamp
+       & describe_feed_response_feed_currently_syncing_user
+     }
+
+# Time sync started.
+describe_feed_response_feed_currently_syncing_timestamp
+ = element timestamp
+     {
+       text
+     }
+
+# Name of user who is performing sync.
+describe_feed_response_feed_currently_syncing_user
+ = element user
+     {
+       text
+     }
+
+## Response to describe_scap
+
+describe_scap_response
+ = element describe_scap_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & describe_scap_response_scap
+     }
+
+describe_scap_response_scap
+ = element scap
+     {
+       describe_scap_response_scap_name
+       & describe_scap_response_scap_version
+       & describe_scap_response_scap_description
+       & describe_scap_response_scap_sync_not_available?
+       & describe_scap_response_scap_currently_syncing?
+     }
+
+# The name of the scap feed.
+describe_scap_response_scap_name
+ = element name
+     {
+       text
+     }
+
+# The version of the scap feed.
+describe_scap_response_scap_version
+ = element version
+     {
+       text
+     }
+
+# A description of the scap feed.
+describe_scap_response_scap_description
+ = element description
+     {
+       text
+     }
+
+# Present if CERT syncing is not available.
+describe_scap_response_scap_sync_not_available
+ = element sync_not_available
+     {
+       describe_scap_response_scap_sync_not_available_error
+     }
+
+# Description of why sync is not available.
+describe_scap_response_scap_sync_not_available_error
+ = element error
+     {
+     }
+
+# Present if a CERT sync is underway.
+describe_scap_response_scap_currently_syncing
+ = element currently_syncing
+     {
+       describe_scap_response_scap_currently_syncing_timestamp
+       & describe_scap_response_scap_currently_syncing_user
+     }
+
+# Time sync started.
+describe_scap_response_scap_currently_syncing_timestamp
+ = element timestamp
+     {
+       text
+     }
+
+# Name of user who is performing sync.
+describe_scap_response_scap_currently_syncing_user
+ = element user
+     {
+       text
      }
 
 ## Response to empty_trashcan
@@ -6818,6 +7268,193 @@ get_filters_response_filter_count_filtered
 
 # Number of filters on current page.
 get_filters_response_filter_count_page
+ = element page
+     {
+       integer
+     }
+
+## Response to get_groups
+
+get_groups_response
+ = element get_groups_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_groups_response_group*
+       & get_groups_response_filters
+       & get_groups_response_sort
+       & get_groups_response_groups
+       & get_groups_response_group_count
+     }
+
+get_groups_response_group
+ = element group
+     {
+       get_groups_response_group_name
+       & get_groups_response_group_comment
+       & get_groups_response_group_creation_time
+       & get_groups_response_group_modification_time
+       & get_groups_response_group_writable
+       & get_groups_response_group_in_use
+       & get_groups_response_group_user_tags
+       & get_groups_response_group_users
+     }
+
+# The name of the group.
+get_groups_response_group_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the group.
+get_groups_response_group_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the group was created.
+get_groups_response_group_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the group was last modified.
+get_groups_response_group_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# A list of the users in the group.
+get_groups_response_group_users
+ = element users
+     {
+       text
+     }
+
+# Whether the group is writable.
+get_groups_response_group_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether the group is in use.
+get_groups_response_group_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Info on tags attached to the group.
+get_groups_response_group_user_tags
+ = element user_tags
+     {
+       get_groups_response_group_user_tags_count
+       & get_groups_response_group_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_groups_response_group_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_groups_response_group_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_groups_response_group_user_tags_tag_name
+       & get_groups_response_group_user_tags_tag_value
+       & get_groups_response_group_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_groups_response_group_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_groups_response_group_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_groups_response_group_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_groups_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_groups_response_filters_term
+     }
+
+# Filter term.
+get_groups_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_groups_response_sort
+ = element sort
+     {
+       text
+       & get_groups_response_sort_field
+     }
+
+get_groups_response_sort_field
+ = element field
+     {
+       get_groups_response_sort_field_order
+     }
+
+get_groups_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_groups_response_groups
+ = element groups
+     {
+       # First group.
+       attribute start { number }
+       & # Maximum number of groups.
+       attribute max { number }
+     }
+
+get_groups_response_group_count
+ = element group_count
+     {
+       get_groups_response_group_count_filtered
+       & get_groups_response_group_count_page
+     }
+
+# Number of groups after filtering.
+get_groups_response_group_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of groups on current page.
+get_groups_response_group_count_page
  = element page
      {
        integer
@@ -8565,6 +9202,264 @@ get_overrides_response_override_result_description
  = element description
      {
        text
+     }
+
+## Response to get_permissions
+
+get_permissions_response
+ = element get_permissions_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_permissions_response_permission*
+       & get_permissions_response_filters
+       & get_permissions_response_sort
+       & get_permissions_response_permissions
+       & get_permissions_response_permission_count
+     }
+
+get_permissions_response_permission
+ = element permission
+     {
+       get_permissions_response_permission_name
+       & get_permissions_response_permission_comment
+       & get_permissions_response_permission_creation_time
+       & get_permissions_response_permission_modification_time
+       & get_permissions_response_permission_writable
+       & get_permissions_response_permission_in_use
+       & get_permissions_response_permission_user_tags
+       & get_permissions_response_permission_resource
+       & get_permissions_response_permission_subject
+     }
+
+# The name of the permission.
+get_permissions_response_permission_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the permission.
+get_permissions_response_permission_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the permission was created.
+get_permissions_response_permission_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the permission was last modified.
+get_permissions_response_permission_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# The resource the permission applies to.
+get_permissions_response_permission_resource
+ = element resource
+     {
+       # UUID if permission applies to a resource, else 0.
+       attribute id { uuid }?
+       & get_permissions_response_permission_resource_name
+       & get_permissions_response_permission_resource_type
+       & get_permissions_response_permission_resource_trash
+       & get_permissions_response_permission_resource_deleted
+     }
+
+get_permissions_response_permission_resource_name
+ = element name
+     {
+       text
+     }
+
+# The OMP type of the resource.
+get_permissions_response_permission_resource_type
+ = element type
+     {
+       text
+     }
+
+# Whether the resource is in the trash.
+get_permissions_response_permission_resource_trash
+ = element trash
+     {
+       boolean
+     }
+
+# Whether the resource has been deleted.
+get_permissions_response_permission_resource_deleted
+ = element deleted
+     {
+       boolean
+     }
+
+# The subject the permission applies to.
+get_permissions_response_permission_subject
+ = element subject
+     {
+       # UUID of the subject.
+       attribute id { uuid }?
+       & get_permissions_response_permission_subject_name
+       & get_permissions_response_permission_subject_type
+       & get_permissions_response_permission_subject_trash
+     }
+
+get_permissions_response_permission_subject_name
+ = element name
+     {
+       text
+     }
+
+# The OMP type of the subject: group, role or user.
+get_permissions_response_permission_subject_type
+ = element type
+     {
+       text
+     }
+
+# Whether the subject is in the trash.
+get_permissions_response_permission_subject_trash
+ = element trash
+     {
+       boolean
+     }
+
+# Whether the subject has been deleted.
+get_permissions_response_permission_subject_deleted
+ = element deleted
+     {
+       boolean
+     }
+
+# Whether the permission is writable.
+get_permissions_response_permission_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether the permission is in use.
+get_permissions_response_permission_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Info on tags attached to the permission.
+get_permissions_response_permission_user_tags
+ = element user_tags
+     {
+       get_permissions_response_permission_user_tags_count
+       & get_permissions_response_permission_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_permissions_response_permission_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_permissions_response_permission_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_permissions_response_permission_user_tags_tag_name
+       & get_permissions_response_permission_user_tags_tag_value
+       & get_permissions_response_permission_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_permissions_response_permission_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_permissions_response_permission_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_permissions_response_permission_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_permissions_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_permissions_response_filters_term
+     }
+
+# Filter term.
+get_permissions_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_permissions_response_sort
+ = element sort
+     {
+       text
+       & get_permissions_response_sort_field
+     }
+
+get_permissions_response_sort_field
+ = element field
+     {
+       get_permissions_response_sort_field_order
+     }
+
+get_permissions_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_permissions_response_permissions
+ = element permissions
+     {
+       # First permission.
+       attribute start { number }
+       & # Maximum number of permissions.
+       attribute max { number }
+     }
+
+get_permissions_response_permission_count
+ = element permission_count
+     {
+       get_permissions_response_permission_count_filtered
+       & get_permissions_response_permission_count_page
+     }
+
+# Number of permissions after filtering.
+get_permissions_response_permission_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of permissions on current page.
+get_permissions_response_permission_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_port_lists
@@ -11534,6 +12429,33 @@ start_task_response
 
 stop_task_response
  = element stop_task_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to sync_cert
+
+sync_cert_response
+ = element sync_cert_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to sync_feed
+
+sync_feed_response
+ = element sync_feed_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to sync_scap
+
+sync_scap_response
+ = element sync_scap_response
      {
        attribute status { status }
        & attribute status_text { text }

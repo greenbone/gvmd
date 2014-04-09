@@ -1,3 +1,14 @@
+2014-04-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add some missing commands to OMP doc.
+
+	* src/schema_formats/XML/OMP.xml (create_permission, describe_cert)
+	(describe_feed, describe_scap, get_groups, get_permissions, sync_feed)
+	(sync_scap, sync_cert): New commands.
+	(describe_auth): Update slightly.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Correct errors in the OTP sent for alive tests.

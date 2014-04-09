@@ -1803,6 +1803,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>create_lsc_credential</c>
           <c>create_note</c>
           <c>create_override</c>
+          <c>create_permission</c>
           <c>create_port_list</c>
           <c>create_port_range</c>
           <c>create_report_format</c>
@@ -1833,11 +1834,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_task</c>
           <c>delete_user</c>
           <c>describe_auth</c>
+          <c>describe_cert</c>
+          <c>describe_feed</c>
+          <c>describe_scap</c>
           <c>empty_trashcan</c>
           <c>get_agents</c>
           <c>get_alerts</c>
           <c>get_configs</c>
           <c>get_filters</c>
+          <c>get_groups</c>
           <c>get_info</c>
           <c>get_lsc_credentials</c>
           <c>get_notes</c>
@@ -1845,6 +1850,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_nvt_families</c>
           <c>get_nvt_feed_version</c>
           <c>get_overrides</c>
+          <c>get_permissions</c>
           <c>get_port_lists</c>
           <c>get_preferences</c>
           <c>get_reports</c>
@@ -1889,6 +1895,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>run_wizard</c>
           <c>start_task</c>
           <c>stop_task</c>
+          <c>sync_feed</c>
+          <c>sync_scap</c>
+          <c>sync_cert</c>
           <c>test_alert</c>
         </or>
       </any>
@@ -1917,6 +1926,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>create_lsc_credential</r>
             <r>create_note</r>
             <r>create_override</r>
+            <r>create_permission</r>
             <r>create_port_list</r>
             <r>create_port_range</r>
             <r>create_role</r>
@@ -1946,10 +1956,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_task</r>
             <r>delete_user</r>
             <r>describe_auth</r>
+            <r>describe_cert</r>
+            <r>describe_feed</r>
+            <r>describe_scap</r>
             <r>empty_trashcan</r>
             <r>get_agents</r>
             <r>get_alerts</r>
             <r>get_configs</r>
+            <r>get_groups</r>
             <r>get_info</r>
             <r>get_lsc_credentials</r>
             <r>get_filters</r>
@@ -1958,6 +1972,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_nvt_families</r>
             <r>get_nvt_feed_version</r>
             <r>get_overrides</r>
+            <r>get_permissions</r>
             <r>get_port_lists</r>
             <r>get_preferences</r>
             <r>get_reports</r>
@@ -2002,6 +2017,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>run_wizard</r>
             <r>start_task</r>
             <r>stop_task</r>
+            <r>sync_feed</r>
+            <r>sync_scap</r>
+            <r>sync_cert</r>
             <r>test_alert</r>
           </or>
         </any>
@@ -2966,6 +2984,120 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                                    status_text="OK, resource created"
                                    id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_override_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>create_permission</name>
+    <summary>Create a permission</summary>
+    <description>
+      <p>
+        The client uses the create_permission command to create a new permission.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <e>subject</e>
+      <o><e>resource</e></o>
+      <o><e>copy</e></o>
+      <o><e>comment</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A permission name, currently the name of a command</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>subject</name>
+      <summary>A subject to whom the permission is granted</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>0</required>
+        </attrib>
+        <e>type</e>
+      </pattern>
+      <ele>
+        <name>type</name>
+        <summary>OMP type of the subject: user, group or role</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>resource</name>
+      <summary>A resource to which the permission applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>0</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>UUID of an existing permission to copy</summary>
+      <pattern><t>uuid</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on the permission</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Grant a user permission to view a target</summary>
+      <request>
+        <create_permission>
+          <name>get_target</name>
+          <resource id="b493b7a8-7489-11df-a3ec-002264764cea">
+          </resource>
+          <subject id="66abe5ce-c011-11e3-b96e-406186ea4fc5">
+            <type>user</type>
+          </subject>
+        </create_permission>
+      </request>
+      <response>
+        <create_permission_response status="201"
+                                    status_text="OK, resource created"
+                                    id="7ee79232-c011-11e3-b560-406186ea4fc5">
+        </create_permission_response>
+      </response>
+    </example>
+    <example>
+      <summary>Grant a role permission to create users</summary>
+      <request>
+        <create_permission>
+          <name>create_user</name>
+          <subject id="9b0cbd98-c011-11e3-a26e-406186ea4fc5">
+            <type>role</type>
+          </subject>
+        </create_permission>
+      </request>
+      <response>
+        <create_permission_response status="201"
+                                    status_text="OK, resource created"
+                                    id="b98ad69c-c011-11e3-b001-406186ea4fc5">
+        </create_permission_response>
       </response>
     </example>
   </command>
@@ -4574,6 +4706,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>delete_permission</name>
+    <summary>Delete a permission</summary>
+    <description>
+      <p>
+        The client uses the delete_permission command to delete an existing permission.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>permission_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a permission</summary>
+      <request>
+        <delete_permission permission_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_permission>
+      </request>
+      <response>
+        <delete_permission_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_port_list</name>
     <summary>Delete a port list</summary>
     <description>
@@ -4883,7 +5066,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
-    <command>
+  <command>
     <name>delete_tag</name>
     <summary>Delete a tag</summary>
     <description>
@@ -5098,14 +5281,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>describe_auth</name>
-    <summary>Describe an auth</summary>
+    <summary>Describe authentication methods</summary>
     <description>
       <p>
         The client uses the "describe_auth" command to get details about the
         used authentication methods.
       </p>
       <p>
-        The administrator will reply with a list of all used authentication
+        The Manager will reply with a list of all used authentication
         methods if such a list is available.
       </p>
     </description>
@@ -5165,6 +5348,318 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <auth_conf_setting key="Bar" value="Baz"/>
           </group>
         </describe_auth_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>describe_cert</name>
+    <summary>Describe the CERT feed</summary>
+    <description>
+      <p>
+        The client uses the "describe_cert" command to get details about
+        the CERT feed used by the Manager.
+      </p>
+      <p>
+        The Manager will reply with a cert element containing
+        information about the CERT feed.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>cert</e>
+      </pattern>
+      <ele>
+        <name>cert</name>
+        <pattern>
+          <e>name</e>
+          <e>version</e>
+          <e>description</e>
+          <o><e>sync_not_available</e></o>
+          <o><e>currently_syncing</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the CERT feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>The version of the CERT feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>A description of the CERT feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>sync_not_available</name>
+          <summary>Present if CERT syncing is not available</summary>
+          <pattern>
+            <e>error</e>
+          </pattern>
+          <ele>
+            <name>error</name>
+            <summary>Description of why sync is not available</summary>
+          </ele>
+        </ele>
+        <ele>
+          <name>currently_syncing</name>
+          <summary>Present if a CERT sync is underway</summary>
+          <pattern>
+            <e>timestamp</e>
+            <e>user</e>
+          </pattern>
+          <ele>
+            <name>timestamp</name>
+            <summary>Time sync started</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>user</name>
+            <summary>Name of user who is performing sync</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Describe the CERT feed</summary>
+      <request>
+        <describe_cert>
+        </describe_cert>
+      </request>
+      <response>
+        <describe_cert_response status="200" status_text="OK">
+          <cert>
+            <name>OpenVAS CERT Feed</name>
+            <version>201301040805</version>
+            <description>
+              The 'OpenVAS CERT Feed' is provided by 'The OpenVAS Project'.
+              <truncated>...</truncated>
+            </description>
+          </cert>
+        </describe_cert_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>describe_feed</name>
+    <summary>Describe the NVT feed</summary>
+    <description>
+      <p>
+        The client uses the "describe_feed" command to get details about
+        the NVT feed used by the Manager.
+      </p>
+      <p>
+        The Manager will reply with a feed element containing
+        information about the NVT feed.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>feed</e>
+      </pattern>
+      <ele>
+        <name>feed</name>
+        <pattern>
+          <e>name</e>
+          <e>version</e>
+          <e>description</e>
+          <o><e>sync_not_available</e></o>
+          <o><e>currently_syncing</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>The version of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>A description of the feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>sync_not_available</name>
+          <summary>Present if CERT syncing is not available</summary>
+          <pattern>
+            <e>error</e>
+          </pattern>
+          <ele>
+            <name>error</name>
+            <summary>Description of why sync is not available</summary>
+          </ele>
+        </ele>
+        <ele>
+          <name>currently_syncing</name>
+          <summary>Present if an NVT sync is underway</summary>
+          <pattern>
+            <e>timestamp</e>
+            <e>user</e>
+          </pattern>
+          <ele>
+            <name>timestamp</name>
+            <summary>Time sync started</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>user</name>
+            <summary>Name of user who is performing sync</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Describe the feed</summary>
+      <request>
+        <describe_feed>
+        </describe_feed>
+      </request>
+      <response>
+        <describe_feed_response status="200" status_text="OK">
+          <feed>
+            <name>OpenVAS NVT Feed</name>
+            <version>201011221324</version>
+            <description>
+              The 'OpenVAS NVT Feed' is provided by 'The OpenVAS Project'.
+              <truncated>...</truncated>
+            </description>
+          </feed>
+        </describe_feed_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>describe_scap</name>
+    <summary>Describe the SCAP feed</summary>
+    <description>
+      <p>
+        The client uses the "describe_scap" command to get details about
+        the SCAP feed used by the Manager.
+      </p>
+      <p>
+        The Manager will reply with a scap element containing
+        information about the SCAP feed.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>scap</e>
+      </pattern>
+      <ele>
+        <name>scap</name>
+        <pattern>
+          <e>name</e>
+          <e>version</e>
+          <e>description</e>
+          <o><e>sync_not_available</e></o>
+          <o><e>currently_syncing</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the scap feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>The version of the scap feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>A description of the scap feed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>sync_not_available</name>
+          <summary>Present if CERT syncing is not available</summary>
+          <pattern>
+            <e>error</e>
+          </pattern>
+          <ele>
+            <name>error</name>
+            <summary>Description of why sync is not available</summary>
+          </ele>
+        </ele>
+        <ele>
+          <name>currently_syncing</name>
+          <summary>Present if a CERT sync is underway</summary>
+          <pattern>
+            <e>timestamp</e>
+            <e>user</e>
+          </pattern>
+          <ele>
+            <name>timestamp</name>
+            <summary>Time sync started</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>user</name>
+            <summary>Name of user who is performing sync</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Describe the scap feed</summary>
+      <request>
+        <describe_scap>
+        </describe_scap>
+      </request>
+      <response>
+        <describe_scap_response status="200" status_text="OK">
+          <scap>
+            <name>OpenVAS NVT SCAP</name>
+            <version>201011221324</version>
+            <description>
+              The 'OpenVAS SCAP Feed' is provided by 'The OpenVAS Project'.
+              <truncated>...</truncated>
+            </description>
+          </scap>
+        </describe_scap_response>
       </response>
     </example>
   </command>
@@ -6571,6 +7066,271 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </alerts>
           </filter>
         </get_filters_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_groups</name>
+    <summary>Get all groups</summary>
+    <description>
+      The client uses the get_groups command to get group information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>group_id</name>
+        <summary>ID of single group to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan groups instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>group</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>groups</e>
+        <e>group_count</e>
+      </pattern>
+      <ele>
+        <name>group</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>user_tags</e>
+          <e>users</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the group</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the group</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the group was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the group was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>users</name>
+          <summary>A list of the users in the group</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the group is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the group is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the group</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>groups</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First group</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of groups</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>group_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of groups after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of groups on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all groups</summary>
+      <request>
+        <get_groups></get_groups>
+      </request>
+      <response>
+        <get_groups_response status="200" status_text="OK">
+          <group id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Management</name>
+            <comment>Managers</comment>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <users>sarah, frank</users>
+          </group>
+          <truncated>...</truncated>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <groups max="-1" start="1"></groups>
+          <group_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </group_count>
+        </get_groups_response>
       </response>
     </example>
   </command>
@@ -9162,6 +9922,337 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </override>
           <truncated>...</truncated>
         </get_overrides_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_permissions</name>
+    <summary>Get all permissions</summary>
+    <description>
+      The client uses the get_permissions command to get permission information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>permission_id</name>
+        <summary>ID of single permission to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan permissions instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>resource_id</name>
+        <summary>ID of resource to restrict permission to</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>permission</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>permissions</e>
+        <e>permission_count</e>
+      </pattern>
+      <ele>
+        <name>permission</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>user_tags</e>
+          <e>resource</e>
+          <e>subject</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the permission</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the permission</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the permission was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the permission was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>resource</name>
+          <summary>The resource the permission applies to</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID if permission applies to a resource, else 0</summary>
+            </attrib>
+            <e>name</e>
+            <e>type</e>
+            <e>trash</e>
+            <e>deleted</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The OMP type of the resource</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the resource is in the trash</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>deleted</name>
+            <summary>Whether the resource has been deleted</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>subject</name>
+          <summary>The subject the permission applies to</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the subject</summary>
+            </attrib>
+            <e>name</e>
+            <e>type</e>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The OMP type of the subject: group, role or user</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the subject is in the trash</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>deleted</name>
+            <summary>Whether the subject has been deleted</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the permission is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the permission is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the permission</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>permissions</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First permission</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of permissions</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>permission_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of permissions after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of permissions on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all permissions</summary>
+      <request>
+        <get_permissions></get_permissions>
+      </request>
+      <response>
+        <get_permissions_response status="200" status_text="OK">
+          <permission id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Management</name>
+            <comment>Managers</comment>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <users>sarah, frank</users>
+          </permission>
+          <truncated>...</truncated>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <permissions max="-1" start="1"></permissions>
+          <permission_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </permission_count>
+        </get_permissions_response>
       </response>
     </example>
   </command>
@@ -15949,6 +17040,114 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <stop_task_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>sync_cert</name>
+    <summary>Synchronize with a CERT feed</summary>
+    <description>
+      <p>
+        The client uses the "sync_cert" command to request a
+        synchronization with the CERT feed service the Manager uses.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Sync the feed</summary>
+      <request>
+        <sync_cert>
+        </sync_cert>
+      </request>
+      <response>
+        <sync_cert_response status="202" status_text="OK, request submitted"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>sync_feed</name>
+    <summary>Synchronize with an NVT feed</summary>
+    <description>
+      <p>
+        The client uses the "sync_feed" command to request a
+        synchronization with the NVT feed service the Manager uses.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Sync the feed</summary>
+      <request>
+        <sync_feed>
+        </sync_feed>
+      </request>
+      <response>
+        <sync_feed_response status="202" status_text="OK, request submitted"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>sync_scap</name>
+    <summary>Synchronize with a SCAP feed</summary>
+    <description>
+      <p>
+        The client uses the "sync_scap" command to request a
+        synchronization with the SCAP feed service the Manager uses.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Sync the feed</summary>
+      <request>
+        <sync_scap>
+        </sync_scap>
+      </request>
+      <response>
+        <sync_scap_response status="202" status_text="OK, request submitted"/>
       </response>
     </example>
   </command>
