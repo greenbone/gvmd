@@ -11294,15 +11294,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<describe_feed_response" " status=\""
-                                           STATUS_OK "\"" " status_text=\""
-                                           STATUS_OK_TEXT "\">" "<feed>"
-                                           "<name>%s</name>"
-                                           "<version>%s</version>"
-                                           "<description>%s</description>",
-                                           ident[3], feed_version,
-                                           feed_description);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<describe_feed_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<feed>"
+                    "<name>%s</name>"
+                    "<version>%s</version>"
+                    "<description>%s</description>",
+                    ident[3], feed_version,
+                    feed_description);
                   g_strfreev (ident);
                   if (openvas_sync_script_perform_selftest
                       (sync_script, &selftest_result) == FALSE)
@@ -11326,7 +11327,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_free (timestamp);
                       g_free (user);
                     }
-                  SEND_TO_CLIENT_OR_FAIL ("</feed>" "</describe_feed_response>");
+                  SEND_TO_CLIENT_OR_FAIL ("</feed>"
+                                          "</describe_feed_response>");
                 }
 
               g_free (feed_identification);
@@ -11334,9 +11336,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
-              SEND_TO_CLIENT_OR_FAIL ("<describe_feed_response" " status=\""
-                                      STATUS_OK "\"" " status_text=\""
-                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<describe_feed_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
               SEND_TO_CLIENT_OR_FAIL ("<feed>");
               SEND_TO_CLIENT_OR_FAIL ("<name></name>");
               SEND_TO_CLIENT_OR_FAIL ("<description></description>");
@@ -11386,15 +11388,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<describe_scap_response" " status=\""
-                                           STATUS_OK "\"" " status_text=\""
-                                           STATUS_OK_TEXT "\">" "<scap>"
-                                           "<name>%s</name>"
-                                           "<version>%s</version>"
-                                           "<description>%s</description>",
-                                           ident[3], scap_version,
-                                           scap_description);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<describe_scap_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<scap>"
+                    "<name>%s</name>"
+                    "<version>%s</version>"
+                    "<description>%s</description>",
+                    ident[3], scap_version,
+                    scap_description);
                   g_strfreev (ident);
                   if (openvas_sync_script_perform_selftest
                       (scap_script, &selftest_result) == FALSE)
@@ -11418,7 +11421,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_free (timestamp);
                       g_free (user);
                     }
-                  SEND_TO_CLIENT_OR_FAIL ("</scap>" "</describe_scap_response>");
+                  SEND_TO_CLIENT_OR_FAIL ("</scap>"
+                                          "</describe_scap_response>");
                 }
 
               g_free (scap_identification);
@@ -11426,9 +11430,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
-              SEND_TO_CLIENT_OR_FAIL ("<describe_scap_response" " status=\""
-                                      STATUS_OK "\"" " status_text=\""
-                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<describe_scap_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
               SEND_TO_CLIENT_OR_FAIL ("<scap>");
               SEND_TO_CLIENT_OR_FAIL ("<name></name>");
               SEND_TO_CLIENT_OR_FAIL ("<description></description>");
@@ -11457,7 +11461,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          if (openvas_get_sync_script_description (cert_script, &cert_description)
+          if (openvas_get_sync_script_description (cert_script,
+                                                   &cert_description)
               && openvas_get_sync_script_identification (cert_script,
                                                          &cert_identification,
                                                          CERT_FEED)
@@ -11478,15 +11483,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-
-                  SENDF_TO_CLIENT_OR_FAIL ("<describe_cert_response" " status=\""
-                                           STATUS_OK "\"" " status_text=\""
-                                           STATUS_OK_TEXT "\">" "<cert>"
-                                           "<name>%s</name>"
-                                           "<version>%s</version>"
-                                           "<description>%s</description>",
-                                           ident[3], cert_version,
-                                           cert_description);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<describe_cert_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<cert>"
+                    "<name>%s</name>"
+                    "<version>%s</version>"
+                    "<description>%s</description>",
+                    ident[3], cert_version,
+                    cert_description);
                   g_strfreev (ident);
                   if (openvas_sync_script_perform_selftest
                       (cert_script, &selftest_result) == FALSE)
@@ -11494,8 +11500,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       SENDF_TO_CLIENT_OR_FAIL ("<sync_not_available>"
                                                "<error>%s</error>"
                                                "</sync_not_available>",
-                                               selftest_result ? selftest_result :
-                                               "");
+                                               selftest_result
+                                                ? selftest_result
+                                                : "");
                       g_free (selftest_result);
                     }
 
@@ -11510,7 +11517,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_free (timestamp);
                       g_free (user);
                     }
-                  SEND_TO_CLIENT_OR_FAIL ("</cert>" "</describe_cert_response>");
+                  SEND_TO_CLIENT_OR_FAIL ("</cert>"
+                                          "</describe_cert_response>");
                 }
 
               g_free (cert_identification);
@@ -11518,9 +11526,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
           else
             {
-              SEND_TO_CLIENT_OR_FAIL ("<describe_cert_response" " status=\""
-                                      STATUS_OK "\"" " status_text=\""
-                                      STATUS_OK_TEXT "\">");
+              SEND_TO_CLIENT_OR_FAIL ("<describe_cert_response"
+                                      " status=\"" STATUS_OK "\""
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
               SEND_TO_CLIENT_OR_FAIL ("<cert>");
               SEND_TO_CLIENT_OR_FAIL ("<name></name>");
               SEND_TO_CLIENT_OR_FAIL ("<description></description>");
