@@ -23444,7 +23444,35 @@ get_tasks_response_task_preferences_preference_value
 <li>
               &lt;<b>role</b>&gt;
               *<div style="margin-left: 15px; display: inline;">The role of the user.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of role.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>groups</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The groups the user belongs to.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>group</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of group.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>hosts</b>&gt;
@@ -23525,6 +23553,7 @@ get_users_response_user
        attribute id { uuid }
        &amp; get_users_response_user_name
        &amp; get_users_response_user_role*
+       &amp; get_users_response_user_groups
        &amp; get_users_response_user_hosts
        &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
@@ -23539,7 +23568,33 @@ get_users_response_user_name
 get_users_response_user_role
  = element role
      {
-       xsd:token { pattern = "Admin|User|Observer" }
+       attribute id { uuid }
+       &amp; get_users_response_user_role_name
+     }
+
+get_users_response_user_role_name
+ = element name
+     {
+       name
+     }
+
+get_users_response_user_groups
+ = element groups
+     {
+       get_users_response_user_groups_group
+     }
+
+get_users_response_user_groups_group
+ = element group
+     {
+       attribute id { uuid }
+       &amp; get_users_response_user_groups_group_name
+     }
+
+get_users_response_user_groups_group_name
+ = element name
+     {
+       name
      }
 
 get_users_response_user_hosts
@@ -27987,6 +28042,20 @@ run_wizard_response_response
       5.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>GET_USERS</tt>
+</h3></div>
+<p>In short: ROLE is optional, and role name has moved into NAME.</p>
+<p>
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+<p>
+        With the new role management, zero or more ROLEs may be present in
+        USER.  The name of the role is now in ROLE/NAME instead of directly
+        in the text of ROLE.
+      </p>
+</div>
+<div>
+<div><h3>8.2
           Change in <tt>GET_NVTS</tt>
 </h3></div>
 <p>In short: Fingerprint element removed.</p>
@@ -27996,7 +28065,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>GET_DEPENDENCIES</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -28005,7 +28074,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>MODIFY_TARGET</tt>
 </h3></div>
 <p>In short: Missing elements now leave the associate target property alone.</p>

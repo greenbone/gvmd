@@ -14524,6 +14524,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </attrib>
           <e>name</e>
           <any><e>role</e></any>
+          <e>groups</e>
           <e>hosts</e>
           <e>user_tags</e>
           <e>sources</e>
@@ -14537,14 +14538,41 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>role</name>
           <summary>The role of the user</summary>
           <pattern>
-            <t>
-              <alts>
-                <alt>Admin</alt>
-                <alt>User</alt>
-                <alt>Observer</alt>
-              </alts>
-            </t>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
           </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of role</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>groups</name>
+          <summary>The groups the user belongs to</summary>
+          <pattern>
+            <e>group</e>
+          </pattern>
+          <ele>
+            <name>group</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of group</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>hosts</name>
@@ -17697,6 +17725,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_USERS</command>
+    <summary>ROLE is optional, and role name has moved into NAME</summary>
+    <description>
+      <p>
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+      <p>
+        With the new role management, zero or more ROLEs may be present in
+        USER.  The name of the role is now in ROLE/NAME instead of directly
+        in the text of ROLE.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
   <change>
     <command>GET_NVTS</command>
     <summary>Fingerprint element removed</summary>

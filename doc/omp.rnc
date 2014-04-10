@@ -12276,6 +12276,7 @@ get_users_response_user
        attribute id { uuid }
        & get_users_response_user_name
        & get_users_response_user_role*
+       & get_users_response_user_groups
        & get_users_response_user_hosts
        & get_users_response_user_user_tags
        & get_users_response_user_sources
@@ -12292,7 +12293,36 @@ get_users_response_user_name
 get_users_response_user_role
  = element role
      {
-       xsd:token { pattern = "Admin|User|Observer" }
+       attribute id { uuid }
+       & get_users_response_user_role_name
+     }
+
+# Name of role.
+get_users_response_user_role_name
+ = element name
+     {
+       name
+     }
+
+# The groups the user belongs to.
+get_users_response_user_groups
+ = element groups
+     {
+       get_users_response_user_groups_group
+     }
+
+get_users_response_user_groups_group
+ = element group
+     {
+       attribute id { uuid }
+       & get_users_response_user_groups_group_name
+     }
+
+# Name of group.
+get_users_response_user_groups_group_name
+ = element name
+     {
+       name
      }
 
 # Host access rule for the user.
