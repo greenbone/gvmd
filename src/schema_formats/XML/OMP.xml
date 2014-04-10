@@ -2784,7 +2784,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>threat</name>
       <summary>
-        Threat level to which note applies. Will be converted to severity.
+        Threat level to which note applies. Will be converted to severity
       </summary>
       <pattern>
         <t>threat</t>
@@ -3802,7 +3802,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Create a tag attached to a target.</summary>
+      <summary>Create a tag attached to a target</summary>
       <request>
         <create_tag>
           <name>geo:long</name>
@@ -6847,7 +6847,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>type</name>
-          <summary>Resource type filter applies to.  Blank for all.</summary>
+          <summary>Resource type filter applies to.  Blank for all</summary>
           <pattern>
             text
           </pattern>
@@ -7717,7 +7717,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>warning</name>
-              <summary>A warning message, e.g. when the database is not.</summary>
+              <summary>A warning message, e.g. when the database is not</summary>
               <pattern>
                 text
               </pattern>
@@ -7837,7 +7837,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>file</name>
-            <summary>Path to the source xml file, relative to the SCAP data directory.</summary>
+            <summary>Path to the source xml file, relative to the SCAP data directory</summary>
             <pattern>
               text
             </pattern>
@@ -7864,24 +7864,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>extra</e>
             <e>severity</e>
           </pattern>
-          <summary>A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.</summary>
+          <summary>A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory</summary>
           <ele>
             <name>type</name>
-            <summary>Type of SecInfo entry.</summary>
+            <summary>Type of SecInfo entry</summary>
             <pattern>
               <t>text</t>
             </pattern>
           </ele>
           <ele>
             <name>extra</name>
-            <summary>Extra information from the entry like title or description.</summary>
+            <summary>Extra information from the entry like title or description</summary>
             <pattern>
               <t>text</t>
             </pattern>
           </ele>
           <ele>
             <name>severity</name>
-            <summary>Severity rating (CVSS score) of the entry.</summary>
+            <summary>Severity rating (CVSS score) of the entry</summary>
             <pattern>
               <t>severity</t>
             </pattern>
@@ -8488,7 +8488,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>filt_id</name>
-        <summary>ID of filter to use to filter query.</summary>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -9174,7 +9174,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
           <ele>
             <name>warning</name>
-            <summary>A warning message, e.g. when the database is not.</summary>
+            <summary>A warning message, e.g. when the database is not</summary>
             <pattern>
               text
             </pattern>
@@ -9411,7 +9411,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_nvt_feed_version</name>
-    <summary>Get NVT Feed version.</summary>
+    <summary>Get NVT Feed version</summary>
     <description>
       <p>
         The client uses the get_nvt_feed_version command to request a
@@ -9441,7 +9441,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>version</name>
-        <summary>NVT Feed version.</summary>
+        <summary>NVT Feed version</summary>
         <type>integer</type>
       </ele>
     </response>
@@ -9478,7 +9478,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>filt_id</name>
-        <summary>ID of filter to use to filter query.</summary>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -10850,7 +10850,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>host_search_phrase</name>
         <summary>
-          For "assets" or "prognostic", the search phrase to limit hosts to.
+          For "assets" or "prognostic", the search phrase to limit hosts to
         </summary>
         <type>text</type>
       </attrib>
@@ -10874,7 +10874,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>autofp</name>
         <summary>
-          Whether to trust vendor security updates.  1 full match, 2 partial.
+          Whether to trust vendor security updates.  1 full match, 2 partial
         </summary>
         <pattern>xsd:token { pattern = "0|1|2" }</pattern>
       </attrib>
@@ -13087,7 +13087,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </attrib>
       <attrib>
         <name>filt_id</name>
-        <summary>ID of filter to use to filter query.</summary>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -16765,7 +16765,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Deactivate a tag.</summary>
+      <summary>Deactivate a tag</summary>
       <request>
         <modify_tag tag_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
           <active>0</active>
@@ -17649,9 +17649,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <change>
     <command>GET_NVTS</command>
-    <summary>
-      fingerprint element removed.
-    </summary>
+    <summary>Fingerprint element removed</summary>
     <description>
       <p>
         The fingerprint element has been removed as signature keys aren't sent

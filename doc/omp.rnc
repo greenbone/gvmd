@@ -2461,7 +2461,7 @@ create_note_task
        attribute id { uuid }
      }
 
-# Threat level to which note applies. Will be converted to severity..
+# Threat level to which note applies. Will be converted to severity.
 create_note_threat
  = element threat
      {
@@ -3777,7 +3777,7 @@ get_notes
        attribute note_id { uuid }?
        & # Filter term to use to filter query.
        attribute filter { uuid }?
-       & # ID of filter to use to filter query..
+       & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
@@ -3824,7 +3824,7 @@ get_nvt_families
 
 ## Command get_nvt_feed_version
 ##
-## Get NVT Feed version..
+## Get NVT Feed version.
 
 get_nvt_feed_version
  = element get_nvt_feed_version
@@ -3842,7 +3842,7 @@ get_overrides
        attribute override_id { uuid }?
        & # Filter term to use to filter query.
        attribute filter { uuid }?
-       & # ID of filter to use to filter query..
+       & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & attribute nvt_oid { oid }?
        & attribute task_id { uuid }?
@@ -3953,7 +3953,7 @@ get_reports
        attribute host_max_results { integer }?
        & # For "assets" or "prognostic", which threat levels to include in hosts.
        attribute host_levels { levels }?
-       & # For "assets" or "prognostic", the search phrase to limit hosts to..
+       & # For "assets" or "prognostic", the search phrase to limit hosts to.
        attribute host_search_phrase { text }?
        & # For type "assets", position of report used, from end.
        attribute pos { integer }?
@@ -3961,7 +3961,7 @@ get_reports
        attribute delta_report_id { uuid }?
        & # Letters for results to include: c)hanged, g)one, n)ew, s)ame.
        attribute delta_states {  }?
-       & # Whether to trust vendor security updates. 1 full match, 2 partial..
+       & # Whether to trust vendor security updates. 1 full match, 2 partial.
        attribute autofp {  }?
        & # Whether to include the Closed CVEs host detail in the report.
        attribute show_closed_cves { boolean }?
@@ -4140,7 +4140,7 @@ get_targets
        attribute target_id { uuid }?
        & # Filter term to use to filter query.
        attribute filter { uuid }?
-       & # ID of filter to use to filter query..
+       & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan targets instead.
        attribute trash { boolean }?
@@ -7182,7 +7182,7 @@ get_filters_response_filter_term
        text
      }
 
-# Resource type filter applies to. Blank for all..
+# Resource type filter applies to. Blank for all.
 get_filters_response_filter_type
  = element type
      {
@@ -7870,7 +7870,7 @@ get_info_response_info_cve_cert_cert_ref_title
        text
      }
 
-# A warning message, e.g. when the database is not..
+# A warning message, e.g. when the database is not.
 get_info_response_info_cve_cert_warning
  = element warning
      {
@@ -7995,7 +7995,7 @@ get_info_response_info_ovaldef_cve_refs
        integer
      }
 
-# Path to the source xml file, relative to the SCAP data directory..
+# Path to the source xml file, relative to the SCAP data directory.
 get_info_response_info_ovaldef_file
  = element file
      {
@@ -8016,7 +8016,7 @@ get_info_response_info_ovaldef_raw_data
        text
      }
 
-# A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory..
+# A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.
 get_info_response_info_allinfo
  = element allinfo
      {
@@ -8025,21 +8025,21 @@ get_info_response_info_allinfo
        & get_info_response_info_allinfo_severity
      }
 
-# Type of SecInfo entry..
+# Type of SecInfo entry.
 get_info_response_info_allinfo_type
  = element type
      {
        text
      }
 
-# Extra information from the entry like title or description..
+# Extra information from the entry like title or description.
 get_info_response_info_allinfo_extra
  = element extra
      {
        text
      }
 
-# Severity rating (CVSS score) of the entry..
+# Severity rating (CVSS score) of the entry.
 get_info_response_info_allinfo_severity
  = element severity
      {
@@ -8780,7 +8780,7 @@ get_nvts_response_nvt_cert_refs_cert_ref
        attribute type { text }?
      }
 
-# A warning message, e.g. when the database is not..
+# A warning message, e.g. when the database is not.
 get_nvts_response_nvt_cert_refs_warning
  = element warning
      {
@@ -8925,7 +8925,7 @@ get_nvt_feed_version_response
        & get_nvt_feed_version_response_version
      }
 
-# NVT Feed version..
+# NVT Feed version.
 get_nvt_feed_version_response_version
  = element version    # type integer
      {
