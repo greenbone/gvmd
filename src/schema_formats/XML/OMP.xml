@@ -1856,6 +1856,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_reports</c>
           <c>get_report_formats</c>
           <c>get_results</c>
+          <c>get_roles</c>
           <c>get_schedules</c>
           <c>get_settings</c>
           <c>get_slaves</c>
@@ -1876,6 +1877,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_lsc_credential</c>
           <c>modify_note</c>
           <c>modify_override</c>
+          <c>modify_permission</c>
           <c>modify_port_list</c>
           <c>modify_report</c>
           <c>modify_report_format</c>
@@ -1978,6 +1980,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_reports</r>
             <r>get_report_formats</r>
             <r>get_results</r>
+            <r>get_roles</r>
             <r>get_slaves</r>
             <r>get_schedules</r>
             <r>get_settings</r>
@@ -1998,6 +2001,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_lsc_credential</r>
             <r>modify_note</r>
             <r>modify_override</r>
+            <r>modify_permission</r>
             <r>modify_port_list</r>
             <r>modify_report</r>
             <r>modify_report_format</r>
@@ -7149,7 +7153,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>users</name>
-          <summary>A list of the users in the group</summary>
+          <summary>
+            A comma-separated list of the users in the group
+          </summary>
           <pattern>
             text
           </pattern>
@@ -11774,6 +11780,273 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
+    <name>get_roles</name>
+    <summary>Get all roles</summary>
+    <description>
+      The client uses the get_roles command to get role information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>role_id</name>
+        <summary>ID of single role to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan roles instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>role</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>roles</e>
+        <e>role_count</e>
+      </pattern>
+      <ele>
+        <name>role</name>
+        <pattern>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>user_tags</e>
+          <e>users</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the role</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the role</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the role was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the role was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>users</name>
+          <summary>
+            A comma-separated list of the users who have this role
+          </summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the role is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the role is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the role</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>roles</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First role</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of roles</summary>
+            <type>number</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>role_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of roles after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of roles on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all roles</summary>
+      <request>
+        <get_roles></get_roles>
+      </request>
+      <response>
+        <get_roles_response status="200" status_text="OK">
+          <role id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Management</name>
+            <comment>Managers</comment>
+            <creation_time>Sun Jun 27 08:49:43 2010</creation_time>
+            <modification_time>Sun Jun 27 08:49:43 2010</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <users>sarah, frank</users>
+          </role>
+          <truncated>...</truncated>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <roles max="-1" start="1"></roles>
+          <role_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </role_count>
+        </get_roles_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_schedules</name>
     <summary>Get all schedules</summary>
     <description>
@@ -15663,6 +15936,94 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <response>
         <modify_override_response status="200" status_text="OK">
         </modify_override_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_permission</name>
+    <summary>Modify a permission</summary>
+    <description>
+      <p>
+        The client uses the modify_permission command to change an existing permission.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>permission_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>resource</e></o>
+      <o><e>subject</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Permission name, currently the name of a command</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>The comment on the permission</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>resource</name>
+      <summary>A resource to which the permission applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <summary>UUID if permission applies to resource, else 0</summary>
+          <type>uuid</type>
+          <required>0</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>subject</name>
+      <summary>A subject to whom the permission is granted</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>0</required>
+        </attrib>
+        <e>type</e>
+      </pattern>
+      <ele>
+        <name>type</name>
+        <summary>OMP type of the subject: user, group or role</summary>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Change user of a permission</summary>
+      <request>
+        <modify_permission permission_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <subject id="76e47468-c095-11e3-9285-406186ea4fc5">
+            <type>user</type>
+          </subject>
+        </modify_permission>
+      </request>
+      <response>
+        <modify_permission_response status="200"
+                             status_text="OK">
+        </modify_permission_response>
       </response>
     </example>
   </command>

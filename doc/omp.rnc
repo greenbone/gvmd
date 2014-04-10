@@ -74,6 +74,7 @@ command
     | get_reports
     | get_report_formats
     | get_results
+    | get_roles
     | get_schedules
     | get_settings
     | get_slaves
@@ -94,6 +95,7 @@ command
     | modify_lsc_credential
     | modify_note
     | modify_override
+    | modify_permission
     | modify_port_list
     | modify_report
     | modify_report_format
@@ -186,6 +188,7 @@ response
     | get_reports_response
     | get_report_formats_response
     | get_results_response
+    | get_roles_response
     | get_schedules_response
     | get_settings_response
     | get_slaves_response
@@ -206,6 +209,7 @@ response
     | modify_lsc_credential_response
     | modify_note_response
     | modify_override_response
+    | modify_permission_response
     | modify_port_list_response
     | modify_report_response
     | modify_report_format_response
@@ -1955,6 +1959,7 @@ commands
            | get_reports
            | get_report_formats
            | get_results
+           | get_roles
            | get_schedules
            | get_settings
            | get_slaves
@@ -1975,6 +1980,7 @@ commands
            | modify_lsc_credential
            | modify_note
            | modify_override
+           | modify_permission
            | modify_port_list
            | modify_report
            | modify_report_format
@@ -4007,6 +4013,23 @@ get_results
        attribute details { boolean }?
      }
 
+## Command get_roles
+##
+## Get all roles.
+
+get_roles
+ = element get_roles
+     {
+       # ID of single role to get.
+       attribute role_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan roles instead.
+       attribute trash { boolean }?
+     }
+
 ## Command get_schedules
 ##
 ## Get all schedules.
@@ -4744,6 +4767,57 @@ modify_override_result
  = element result
      {
        attribute id { uuid }
+     }
+
+## Command modify_permission
+##
+## Modify a permission.
+
+modify_permission
+ = element modify_permission
+     {
+       attribute permission_id { uuid }
+       & modify_permission_name?
+       & modify_permission_comment?
+       & modify_permission_resource?
+       & modify_permission_subject?
+     }
+
+# Permission name, currently the name of a command.
+modify_permission_name
+ = element name
+     {
+       text
+     }
+
+# The comment on the permission.
+modify_permission_comment
+ = element comment
+     {
+       text
+     }
+
+# A resource to which the permission applies.
+modify_permission_resource
+ = element resource
+     {
+       # UUID if permission applies to resource, else 0.
+       attribute id { uuid }?
+     }
+
+# A subject to whom the permission is granted.
+modify_permission_subject
+ = element subject
+     {
+       attribute id { uuid }?
+       & modify_permission_subject_type
+     }
+
+# OMP type of the subject: user, group or role.
+modify_permission_subject_type
+ = element type
+     {
+       text
      }
 
 ## Command modify_port_list
@@ -5672,6 +5746,7 @@ commands_response
            | get_reports_response
            | get_report_formats_response
            | get_results_response
+           | get_roles_response
            | get_slaves_response
            | get_schedules_response
            | get_settings_response
@@ -5692,6 +5767,7 @@ commands_response
            | modify_lsc_credential_response
            | modify_note_response
            | modify_override_response
+           | modify_permission_response
            | modify_port_list_response
            | modify_report_response
            | modify_report_format_response
@@ -7328,7 +7404,7 @@ get_groups_response_group_modification_time
        iso_time
      }
 
-# A list of the users in the group.
+# A comma-separated list of the users in the group.
 get_groups_response_group_users
  = element users
      {
@@ -10255,6 +10331,193 @@ get_results_response_results_result_overrides
        result_overrides_override*
      }
 
+## Response to get_roles
+
+get_roles_response
+ = element get_roles_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_roles_response_role*
+       & get_roles_response_filters
+       & get_roles_response_sort
+       & get_roles_response_roles
+       & get_roles_response_role_count
+     }
+
+get_roles_response_role
+ = element role
+     {
+       get_roles_response_role_name
+       & get_roles_response_role_comment
+       & get_roles_response_role_creation_time
+       & get_roles_response_role_modification_time
+       & get_roles_response_role_writable
+       & get_roles_response_role_in_use
+       & get_roles_response_role_user_tags
+       & get_roles_response_role_users
+     }
+
+# The name of the role.
+get_roles_response_role_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the role.
+get_roles_response_role_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the role was created.
+get_roles_response_role_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the role was last modified.
+get_roles_response_role_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# A comma-separated list of the users who have this role.
+get_roles_response_role_users
+ = element users
+     {
+       text
+     }
+
+# Whether the role is writable.
+get_roles_response_role_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether the role is in use.
+get_roles_response_role_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Info on tags attached to the role.
+get_roles_response_role_user_tags
+ = element user_tags
+     {
+       get_roles_response_role_user_tags_count
+       & get_roles_response_role_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_roles_response_role_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_roles_response_role_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_roles_response_role_user_tags_tag_name
+       & get_roles_response_role_user_tags_tag_value
+       & get_roles_response_role_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_roles_response_role_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_roles_response_role_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_roles_response_role_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_roles_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_roles_response_filters_term
+     }
+
+# Filter term.
+get_roles_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_roles_response_sort
+ = element sort
+     {
+       text
+       & get_roles_response_sort_field
+     }
+
+get_roles_response_sort_field
+ = element field
+     {
+       get_roles_response_sort_field_order
+     }
+
+get_roles_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_roles_response_roles
+ = element roles
+     {
+       # First role.
+       attribute start { number }
+       & # Maximum number of roles.
+       attribute max { number }
+     }
+
+get_roles_response_role_count
+ = element role_count
+     {
+       get_roles_response_role_count_filtered
+       & get_roles_response_role_count_page
+     }
+
+# Number of roles after filtering.
+get_roles_response_role_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of roles on current page.
+get_roles_response_role_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_schedules
 
 get_schedules_response
@@ -12252,6 +12515,15 @@ modify_note_response
 
 modify_override_response
  = element modify_override_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to modify_permission
+
+modify_permission_response
+ = element modify_permission_response
      {
        attribute status { status }
        & attribute status_text { text }

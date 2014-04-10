@@ -1,3 +1,13 @@
+2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add last two missing commands to OMP doc.
+
+	* src/schema_formats/XML/OMP.xml (get_roles, modify_permission): New
+	commands.
+	(get_groups): Clarify user list.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-04-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
