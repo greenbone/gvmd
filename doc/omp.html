@@ -2371,6 +2371,11 @@ result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>timestamp</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The time the scan was requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scan_start</b>&gt;
               <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
 <ul style="list-style: none"></ul>
@@ -2891,6 +2896,11 @@ result_overrides
 </ul>
 </li>
 <li>
+              &lt;<b>timestamp</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The time the scan was requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scan_start</b>&gt;
               <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
 <ul style="list-style: none"></ul>
@@ -2955,6 +2965,7 @@ report_report
            &amp; report_report_results
            &amp; report_report_hosts?
            &amp; report_report_host*
+           &amp; report_report_timestamp
            &amp; report_report_scan_start
            &amp; report_report_host_start*
            &amp; report_report_host_end*
@@ -2997,6 +3008,7 @@ report_report_delta_report
      {
        attribute id { uuid }
        &amp; report_report_delta_report_scan_run_status
+       &amp; report_report_delta_report_timestamp
        &amp; report_report_delta_report_scan_start
        &amp; report_report_delta_report_scan_end
      }
@@ -3005,6 +3017,12 @@ report_report_delta_report_scan_run_status
  = element scan_run_status
      {
        task_status
+     }
+
+report_report_delta_report_timestamp
+ = element timestamp
+     {
+       iso_time
      }
 
 report_report_delta_report_scan_start
@@ -3643,6 +3661,12 @@ report_report_host_detail_source_description
  = element description
      {
        text
+     }
+
+report_report_timestamp
+ = element timestamp
+     {
+       iso_time
      }
 
 report_report_scan_start

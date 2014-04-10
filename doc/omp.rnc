@@ -1042,6 +1042,7 @@ report_report
            & report_report_results
            & report_report_hosts?
            & report_report_host*
+           & report_report_timestamp
            & report_report_scan_start
            & report_report_host_start*
            & report_report_host_end*
@@ -1088,6 +1089,7 @@ report_report_delta_report
      {
        attribute id { uuid }
        & report_report_delta_report_scan_run_status
+       & report_report_delta_report_timestamp
        & report_report_delta_report_scan_start
        & report_report_delta_report_scan_end
      }
@@ -1097,6 +1099,13 @@ report_report_delta_report_scan_run_status
  = element scan_run_status
      {
        task_status
+     }
+
+# The time the scan was requested.
+report_report_delta_report_timestamp
+ = element timestamp
+     {
+       iso_time
      }
 
 # Start time of scan.
@@ -1812,6 +1821,13 @@ report_report_host_detail_source_description
  = element description
      {
        text
+     }
+
+# The time the scan was requested.
+report_report_timestamp
+ = element timestamp
+     {
+       iso_time
      }
 
 # Start time of scan.

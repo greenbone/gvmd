@@ -886,6 +886,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>results</e>
             <o><e>hosts</e></o>
             <any><e>host</e></any>
+            <e>timestamp</e>
             <e>scan_start</e>
             <any><e>host_start</e></any>
             <any><e>host_end</e></any>
@@ -936,6 +937,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>scan_run_status</e>
+            <e>timestamp</e>
             <e>scan_start</e>
             <e>scan_end</e>
           </pattern>
@@ -943,6 +945,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>scan_run_status</name>
             <summary>Run status of task scan at time of report</summary>
             <pattern><t>task_status</t></pattern>
+          </ele>
+          <ele>
+            <name>timestamp</name>
+            <summary>The time the scan was requested</summary>
+            <pattern><t>iso_time</t></pattern>
           </ele>
           <ele>
             <name>scan_start</name>
@@ -1639,6 +1646,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
           </ele>
         </ele>
+      </ele>
+      <ele>
+        <name>timestamp</name>
+        <summary>The time the scan was requested</summary>
+        <pattern><t>iso_time</t></pattern>
       </ele>
       <ele>
         <name>scan_start</name>
