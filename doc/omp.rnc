@@ -3000,7 +3000,7 @@ create_tag_resource
  = element resource
      {
        # ID of the resource the tag is to be attached to.
-       attribute id {  }?
+       attribute id { uuid }?
        & create_tag_resource_type
      }
 
@@ -5280,7 +5280,7 @@ modify_tag_resource
  = element resource
      {
        # ID of the resource the tag is to be attached to.
-       attribute id {  }?
+       attribute id { uuid }?
        & modify_tag_resource_type
      }
 
@@ -11050,7 +11050,7 @@ get_tags_response_tag_resource
  = element resource
      {
        # ID of the resource the tag is attached to.
-       attribute id {  }
+       attribute id { uuid }
        & get_tags_response_tag_resource_type
        & get_tags_response_tag_resource_name
        & get_tags_response_tag_resource_trash

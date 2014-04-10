@@ -7565,7 +7565,7 @@ create_slave_password
 <ul style="list-style: none">
 <li>
           @<b>id</b>
-          ()
+          (<a href="#type_uuid">uuid</a>)
           ID of the resource the tag is to be attached to.
           </li>
 <li>
@@ -7636,7 +7636,7 @@ create_tag_name
 create_tag_resource
  = element resource
      {
-       attribute id {  }?
+       attribute id { uuid }?
        &amp; create_tag_resource_type
      }
 
@@ -20808,7 +20808,7 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none">
 <li>
           @<b>id</b>
-          ()
+          (<a href="#type_uuid">uuid</a>)
           ID of the resource the tag is attached to.
           </li>
 <li>
@@ -20984,7 +20984,7 @@ get_tags_response_tag_in_use
 get_tags_response_tag_resource
  = element resource
      {
-       attribute id {  }
+       attribute id { uuid }
        &amp; get_tags_response_tag_resource_type
        &amp; get_tags_response_tag_resource_name
        &amp; get_tags_response_tag_resource_trash
@@ -26576,7 +26576,7 @@ modify_target_reverse_lookup_unify
 <ul style="list-style: none">
 <li>
           @<b>id</b>
-          ()
+          (<a href="#type_uuid">uuid</a>)
           ID of the resource the tag is to be attached to.
           </li>
 <li>
@@ -26638,7 +26638,7 @@ modify_tag_name
 modify_tag_resource
  = element resource
      {
-       attribute id {  }?
+       attribute id { uuid }?
        &amp; modify_tag_resource_type
      }
 

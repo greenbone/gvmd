@@ -3751,7 +3751,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <attrib>
           <name>id</name>
           <summary>ID of the resource the tag is to be attached to</summary>
-          <pattern>text</pattern>
+          <type>uuid</type>
           <required>0</required>
         </attrib>
         <e>type</e>
@@ -3765,7 +3765,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>copy</name>
       <summary>UUID of an existing tag to copy</summary>
-      <pattern>uuid</pattern>
+      <pattern><t>uuid</t></pattern>
     </ele>
     <ele>
       <name>value</name>
@@ -12873,7 +12873,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <attrib>
               <name>id</name>
               <summary>ID of the resource the tag is attached to</summary>
-              <pattern>text</pattern>
+              <type>uuid</type>
               <required>1</required>
             </attrib>
             <e>type</e>
@@ -16724,7 +16724,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <attrib>
           <name>id</name>
           <summary>ID of the resource the tag is to be attached to</summary>
-          <pattern>text</pattern>
+          <type>uuid</type>
           <required>0</required>
         </attrib>
         <e>type</e>

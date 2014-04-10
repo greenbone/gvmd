@@ -1,5 +1,13 @@
 2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (create_tag): Use TYPE instead of
+	PATTERN for attribute.  Add T around "uuid" in PATTERN.
+	(get_tags, modify_tag): Use TYPE instead of PATTERN for attribute.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Remove Ts placed around "text" in
 	PATTERNs.  "text" is not a type, but signifies free text.
 
