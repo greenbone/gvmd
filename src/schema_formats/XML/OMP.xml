@@ -13838,7 +13838,45 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>observers</name>
           <summary>Users allowed to observe this task</summary>
-          <pattern><t>user_list</t></pattern>
+          <pattern>
+            <t>user_list</t>
+            <any><e>group</e></any>
+            <any><e>role</e></any>
+          </pattern>
+          <ele>
+            <name>group</name>
+            <summary>Group allowed to observe this task</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the group</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>role</name>
+            <summary>Role allowed to observe this task</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the role</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>schedule</name>
@@ -14485,7 +14523,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
-          <e>role</e>
+          <any><e>role</e></any>
           <e>hosts</e>
           <e>user_tags</e>
           <e>sources</e>

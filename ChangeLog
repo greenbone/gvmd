@@ -1,5 +1,13 @@
 2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_tasks): Add GROUP and ROLE to
+	TASK/OBSERVERS.
+	(get_users): Add ANY now that users can have any number of roles.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (report): Add REPORT/TIMESTAMP and
 	REPORT/DELTA/TIMESTAMP.
 

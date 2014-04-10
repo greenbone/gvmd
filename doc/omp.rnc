@@ -11814,7 +11814,39 @@ get_tasks_response_task_alert_trash
 get_tasks_response_task_observers
  = element observers
      {
-       user_list
+       text # RNC limitation: user_list
+       & get_tasks_response_task_observers_group*
+       & get_tasks_response_task_observers_role*
+     }
+
+# Group allowed to observe this task.
+get_tasks_response_task_observers_group
+ = element group
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_observers_group_name
+     }
+
+# The name of the group.
+get_tasks_response_task_observers_group_name
+ = element name
+     {
+       name
+     }
+
+# Role allowed to observe this task.
+get_tasks_response_task_observers_role
+ = element role
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_observers_role_name
+     }
+
+# The name of the role.
+get_tasks_response_task_observers_role_name
+ = element name
+     {
+       name
      }
 
 # When the task will run.
@@ -12243,7 +12275,7 @@ get_users_response_user
        # ID of user.
        attribute id { uuid }
        & get_users_response_user_name
-       & get_users_response_user_role
+       & get_users_response_user_role*
        & get_users_response_user_hosts
        & get_users_response_user_user_tags
        & get_users_response_user_sources

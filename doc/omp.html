@@ -22124,7 +22124,38 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>observers</b>&gt;
               <div style="margin-left: 15px; display: inline;">Users allowed to observe this task.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>group</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Group allowed to observe this task.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the group.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>role</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Role allowed to observe this task.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the role.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>schedule</b>&gt;
@@ -22689,7 +22720,35 @@ get_tasks_response_task_alert_trash
 get_tasks_response_task_observers
  = element observers
      {
-       user_list
+       text # RNC limitation: user_list
+       &amp; get_tasks_response_task_observers_group*
+       &amp; get_tasks_response_task_observers_role*
+     }
+
+get_tasks_response_task_observers_group
+ = element group
+     {
+       attribute id { uuid }
+       &amp; get_tasks_response_task_observers_group_name
+     }
+
+get_tasks_response_task_observers_group_name
+ = element name
+     {
+       name
+     }
+
+get_tasks_response_task_observers_role
+ = element role
+     {
+       attribute id { uuid }
+       &amp; get_tasks_response_task_observers_role_name
+     }
+
+get_tasks_response_task_observers_role_name
+ = element name
+     {
+       name
      }
 
 get_tasks_response_task_schedule
@@ -23384,7 +23443,7 @@ get_tasks_response_task_preferences_preference_value
 </li>
 <li>
               &lt;<b>role</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The role of the user.</div>
+              *<div style="margin-left: 15px; display: inline;">The role of the user.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -23465,7 +23524,7 @@ get_users_response_user
      {
        attribute id { uuid }
        &amp; get_users_response_user_name
-       &amp; get_users_response_user_role
+       &amp; get_users_response_user_role*
        &amp; get_users_response_user_hosts
        &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
