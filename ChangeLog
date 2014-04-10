@@ -1,5 +1,10 @@
 2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Remove Ts placed around "text" in
+	PATTERNs.  "text" is not a type, but signifies free text.
+
+2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Clean up strings in
 	CLIENT_DESCRIBE_FEED, CLIENT_DESCRIBE_SCAP and CLIENT_DESCRIBE_CERT.
 

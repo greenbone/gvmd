@@ -1347,7 +1347,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>full_name</name>
-          <pattern><t>text</t></pattern>
+          <pattern>text</pattern>
           <summary>Full severity class name</summary>
         </ele>
         <ele>
@@ -3751,7 +3751,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <attrib>
           <name>id</name>
           <summary>ID of the resource the tag is to be attached to</summary>
-          <pattern><t>text</t></pattern>
+          <pattern>text</pattern>
           <required>0</required>
         </attrib>
         <e>type</e>
@@ -12873,7 +12873,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <attrib>
               <name>id</name>
               <summary>ID of the resource the tag is attached to</summary>
-              <pattern><t>text</t></pattern>
+              <pattern>text</pattern>
               <required>1</required>
             </attrib>
             <e>type</e>
@@ -16724,7 +16724,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <attrib>
           <name>id</name>
           <summary>ID of the resource the tag is to be attached to</summary>
-          <pattern><t>text</t></pattern>
+          <pattern>text</pattern>
           <required>0</required>
         </attrib>
         <e>type</e>
@@ -17249,7 +17249,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>mode</name>
       <summary>The mode to run the wizard in</summary>
-      <pattern><t>text</t></pattern>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>name</name>
