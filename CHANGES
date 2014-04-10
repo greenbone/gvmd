@@ -1,3 +1,29 @@
+openvas-manager 5.0+beta13 (2014-04-10)
+
+This is the thirteenth beta version of the upcoming 5.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanner and its various user clients.
+
+This release further improves role management and adds the MODIFY_ROLE OMP
+command. It also features an improved startup speed and an updated OMP
+documentation as well as improvements to the alive test and wizard
+functionalities.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes since 5.0+beta12:
+* The OMP command MODIFY_ROLE has been added.
+* Role management has been improved.
+* The OMP documentation has been updated.
+* The handling of unavailable commands in the quick_task wizard has been
+  improved.
+* The command line parameter "--disable-scheduling" has been added.
+* Startup speed has been improved.
+* The alive test "TCP Service Ping" has been renamed to "TCP-ACK Service Ping".
+* The alive test "TCP-SYN Service Ping" has been added.
+
+
 openvas-manager 5.0+beta12 (2014-03-28)
 
 This is the twelfth beta version of the upcoming 5.0 release of the OpenVAS
