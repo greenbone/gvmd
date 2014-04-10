@@ -1,5 +1,12 @@
 2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Remove Ts placed inside TYPEs.  T is
+	for the type of a PATTERN.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Remove fullstops from summaries.
 	It's up to the generator to add these to the final format.
 

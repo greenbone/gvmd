@@ -6621,9 +6621,9 @@ get_agents_response_agents
  = element agents
      {
        # First agent.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of agents.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_agents_response_agent_count
@@ -7323,9 +7323,9 @@ get_filters_response_filters
  = element filters
      {
        # First filter.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of filters.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_filters_response_filter_count
@@ -8332,9 +8332,9 @@ get_notes_response_notes
  = element notes
      {
        # First note.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of notes.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_notes_response_note_count
@@ -8983,9 +8983,9 @@ get_overrides_response_overrides
  = element overrides
      {
        # First override.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of overrides.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_overrides_response_override_count
@@ -11136,9 +11136,9 @@ get_tags_response_tags
  = element tags
      {
        # First tag.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of tags.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_tags_response_tag_count
@@ -11485,9 +11485,9 @@ get_targets_response_targets
  = element targets
      {
        # First target.
-       attribute start {  }
+       attribute start { number }
        & # Maximum number of targets.
-       attribute max {  }
+       attribute max { number }
      }
 
 get_targets_response_target_count

@@ -5966,13 +5966,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First agent</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of agents</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -6989,13 +6989,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First filter</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of filters</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -8581,13 +8581,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First note</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of notes</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -9571,13 +9571,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First override</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of overrides</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -12959,13 +12959,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First tag</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of tags</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -13411,13 +13411,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First target</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of targets</summary>
-            <type><t>number</t></type>
+            <type>number</type>
             <required>1</required>
           </attrib>
         </pattern>
