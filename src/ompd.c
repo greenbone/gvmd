@@ -456,7 +456,7 @@ write_to_scanner (int scanner_socket, gnutls_session_t* scanner_session)
         /*@fallthrough@*/
       case SCANNER_INIT_CONNECTED:
         {
-          char* string = "< OTP/2.0beta1 >\n";
+          char* string = "< OTP/2.0 >\n";
 
           scanner_init_offset = write_string_to_server (scanner_session,
                                                         string

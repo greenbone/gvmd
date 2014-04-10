@@ -1,3 +1,8 @@
+2014-04-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/ompd.c (write_to_scanner), src/otp.c (process_otp_scanner_input):
+	Remove "beta" from OTP identifer.
+
 2014-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml (get_users): Add GROUPS.  Update ROLE
