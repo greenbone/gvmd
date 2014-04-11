@@ -2500,8 +2500,20 @@ result_overrides
 </ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the report.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Info on tags attached to the reprt.</div>
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the report.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>count</b>&gt;
@@ -2953,6 +2965,7 @@ report_report
        &amp; report_report_delta?
        &amp; ( report_report_sort
            &amp; report_report_filters
+           &amp; report_report_permissions
            &amp; report_report_user_tags
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
@@ -3178,6 +3191,24 @@ report_report_filters_delta_same
  = element same
      {
        boolean
+     }
+
+report_report_permissions
+ = element permissions
+     {
+       report_report_permissions_permission*
+     }
+
+report_report_permissions_permission
+ = element permission
+     {
+       report_report_permissions_permission_name
+     }
+
+report_report_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 report_report_user_tags
@@ -10595,6 +10626,18 @@ describe_scap_response_scap_currently_syncing_user
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the agent.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the agent.</div>
 <ul style="list-style: none">
@@ -10753,6 +10796,7 @@ get_agents_response_agent
        &amp; get_agents_response_agent_modification_time
        &amp; get_agents_response_agent_in_use
        &amp; get_agents_response_agent_writable
+       &amp; get_agents_response_agent_permissions
        &amp; get_agents_response_agent_user_tags
        &amp; ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
@@ -10792,6 +10836,24 @@ get_agents_response_agent_writable
  = element writable
      {
        boolean
+     }
+
+get_agents_response_agent_permissions
+ = element permissions
+     {
+       get_agents_response_agent_permissions_permission*
+     }
+
+get_agents_response_agent_permissions_permission
+ = element permission
+     {
+       get_agents_response_agent_permissions_permission_name
+     }
+
+get_agents_response_agent_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_agents_response_agent_user_tags
@@ -11129,6 +11191,18 @@ get_agents_response_agent_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the target.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the config.</div>
 <ul style="list-style: none">
@@ -11293,6 +11367,7 @@ get_configs_response_config
        &amp; get_configs_response_config_known_nvt_count
        &amp; get_configs_response_config_in_use
        &amp; get_configs_response_config_writable
+       &amp; get_configs_response_config_permissions
        &amp; get_configs_response_config_user_tags
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
@@ -11371,6 +11446,24 @@ get_configs_response_config_writable
  = element writable
      {
        boolean
+     }
+
+get_configs_response_config_permissions
+ = element permissions
+     {
+       get_configs_response_config_permissions_permission*
+     }
+
+get_configs_response_config_permissions_permission
+ = element permission
+     {
+       get_configs_response_config_permissions_permission_name
+     }
+
+get_configs_response_config_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_configs_response_config_user_tags
@@ -11690,6 +11783,18 @@ get_configs_response_config_preferences_preference_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the alert.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the alert.</div>
 <ul style="list-style: none">
@@ -11818,6 +11923,7 @@ get_alerts_response_alert
        &amp; get_alerts_response_alert_modification_time
        &amp; get_alerts_response_alert_in_use
        &amp; get_alerts_response_alert_writable
+       &amp; get_alerts_response_alert_permissions
        &amp; get_alerts_response_alert_user_tags
        &amp; get_alerts_response_alert_condition
        &amp; get_alerts_response_alert_event
@@ -11859,6 +11965,24 @@ get_alerts_response_alert_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+get_alerts_response_alert_permissions
+ = element permissions
+     {
+       get_alerts_response_alert_permissions_permission*
+     }
+
+get_alerts_response_alert_permissions_permission
+ = element permission
+     {
+       get_alerts_response_alert_permissions_permission_name
+     }
+
+get_alerts_response_alert_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_alerts_response_alert_user_tags
@@ -12126,6 +12250,18 @@ get_alerts_response_alert_filter_trash
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the filter.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the filter.</div>
 <ul style="list-style: none">
@@ -12295,6 +12431,7 @@ get_filters_response_filter
        &amp; get_filters_response_filter_modification_time
        &amp; get_filters_response_filter_in_use
        &amp; get_filters_response_filter_writable
+       &amp; get_filters_response_filter_permissions
        &amp; get_filters_response_filter_user_tags
        &amp; get_filters_response_filter_alerts?
      }
@@ -12345,6 +12482,24 @@ get_filters_response_filter_writable
  = element writable
      {
        boolean
+     }
+
+get_filters_response_filter_permissions
+ = element permissions
+     {
+       get_filters_response_filter_permissions_permission*
+     }
+
+get_filters_response_filter_permissions_permission
+ = element permission
+     {
+       get_filters_response_filter_permissions_permission_name
+     }
+
+get_filters_response_filter_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_filters_response_filter_user_tags
@@ -12596,6 +12751,18 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the group.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the group.</div>
 <ul style="list-style: none">
@@ -12729,6 +12896,7 @@ get_groups_response_group
        &amp; get_groups_response_group_modification_time
        &amp; get_groups_response_group_writable
        &amp; get_groups_response_group_in_use
+       &amp; get_groups_response_group_permissions
        &amp; get_groups_response_group_user_tags
        &amp; get_groups_response_group_users
      }
@@ -12773,6 +12941,24 @@ get_groups_response_group_in_use
  = element in_use
      {
        boolean
+     }
+
+get_groups_response_group_permissions
+ = element permissions
+     {
+       get_groups_response_group_permissions_permission*
+     }
+
+get_groups_response_group_permissions_permission
+ = element permission
+     {
+       get_groups_response_group_permissions_permission_name
+     }
+
+get_groups_response_group_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_groups_response_group_user_tags
@@ -13005,6 +13191,18 @@ get_groups_response_group_count_page
               &lt;<b>modification_time</b>&gt;
               <div style="margin-left: 15px; display: inline;">Date and time the info was last modified.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the info.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>user_tags</b>&gt;
@@ -13413,6 +13611,7 @@ get_info_response_info
        &amp; get_info_response_info_comment
        &amp; get_info_response_info_creation_time
        &amp; get_info_response_info_modification_time
+       &amp; get_info_response_info_permissions
        &amp; get_info_response_info_user_tags
        &amp; get_info_response_info_update_time
        &amp; get_info_response_info_cpe?
@@ -13451,6 +13650,24 @@ get_info_response_info_update_time
  = element update_time
      {
        iso_time
+     }
+
+get_info_response_info_permissions
+ = element permissions
+     {
+       get_info_response_info_permissions_permission*
+     }
+
+get_info_response_info_permissions_permission
+ = element permission
+     {
+       get_info_response_info_permissions_permission_name
+     }
+
+get_info_response_info_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_info_response_info_user_tags
@@ -14148,6 +14365,18 @@ get_info_response_details
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the LSC credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the credential.</div>
 <ul style="list-style: none">
@@ -14255,6 +14484,7 @@ get_lsc_credentials_response_lsc_credential
        &amp; get_lsc_credentials_response_lsc_credential_modification_time
        &amp; get_lsc_credentials_response_lsc_credential_writable
        &amp; get_lsc_credentials_response_lsc_credential_in_use
+       &amp; get_lsc_credentials_response_lsc_credential_permissions
        &amp; get_lsc_credentials_response_lsc_credential_user_tags
        &amp; get_lsc_credentials_response_lsc_credential_type
        &amp; get_lsc_credentials_response_lsc_credential_targets
@@ -14302,6 +14532,24 @@ get_lsc_credentials_response_lsc_credential_in_use
  = element in_use
      {
        boolean
+     }
+
+get_lsc_credentials_response_lsc_credential_permissions
+ = element permissions
+     {
+       get_lsc_credentials_response_lsc_credential_permissions_permission*
+     }
+
+get_lsc_credentials_response_lsc_credential_permissions_permission
+ = element permission
+     {
+       get_lsc_credentials_response_lsc_credential_permissions_permission_name
+     }
+
+get_lsc_credentials_response_lsc_credential_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_lsc_credentials_response_lsc_credential_user_tags
@@ -14571,6 +14819,18 @@ get_lsc_credentials_response_lsc_credential_package
               &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>user_tags</b>&gt;
@@ -14872,6 +15132,7 @@ get_notes_response_note
        get_notes_response_note_nvt
        &amp; get_notes_response_note_text
        &amp; get_notes_response_note_orphan
+       &amp; get_notes_response_note_permissions
        &amp; get_notes_response_note_user_tags
        &amp; ( get_notes_response_note_creation_time
            &amp; get_notes_response_note_modification_time
@@ -14909,6 +15170,24 @@ get_notes_response_note_orphan
  = element orphan
      {
        boolean
+     }
+
+get_notes_response_note_permissions
+ = element permissions
+     {
+       get_notes_response_note_permissions_permission*
+     }
+
+get_notes_response_note_permissions_permission
+ = element permission
+     {
+       get_notes_response_note_permissions_permission_name
+     }
+
+get_notes_response_note_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_notes_response_note_user_tags
@@ -15283,6 +15562,18 @@ get_notes_response_note_result_description
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the nvt.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the NVT.</div>
 <ul style="list-style: none">
@@ -15477,6 +15768,7 @@ get_nvts_response_nvt
        &amp; get_nvts_response_nvt_checksum
        &amp; get_nvts_response_nvt_creation_time
        &amp; get_nvts_response_nvt_modification_time
+       &amp; get_nvts_response_nvt_permissions
        &amp; get_nvts_response_nvt_user_tags
        &amp; ( get_nvts_response_nvt_category
            &amp; get_nvts_response_nvt_copyright
@@ -15518,6 +15810,24 @@ get_nvts_response_nvt_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+get_nvts_response_nvt_permissions
+ = element permissions
+     {
+       get_nvts_response_nvt_permissions_permission*
+     }
+
+get_nvts_response_nvt_permissions_permission
+ = element permission
+     {
+       get_nvts_response_nvt_permissions_permission_name
+     }
+
+get_nvts_response_nvt_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_nvts_response_nvt_user_tags
@@ -16124,6 +16434,18 @@ get_nvt_feed_version_response_version
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the override.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the override.</div>
 <ul style="list-style: none">
@@ -16413,6 +16735,7 @@ get_overrides_response_override
        &amp; get_overrides_response_override_new_threat
        &amp; get_overrides_response_override_new_severity
        &amp; get_overrides_response_override_orphan
+       &amp; get_overrides_response_override_permissions
        &amp; get_overrides_response_override_user_tags
        &amp; ( get_overrides_response_override_hosts
            &amp; get_overrides_response_override_port
@@ -16494,6 +16817,24 @@ get_overrides_response_override_orphan
  = element orphan
      {
        boolean
+     }
+
+get_overrides_response_override_permissions
+ = element permissions
+     {
+       get_overrides_response_override_permissions_permission*
+     }
+
+get_overrides_response_override_permissions_permission
+ = element permission
+     {
+       get_overrides_response_override_permissions_permission_name
+     }
+
+get_overrides_response_override_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_overrides_response_override_user_tags
@@ -16797,6 +17138,18 @@ get_overrides_response_override_result_description
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the permission.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the permission.</div>
 <ul style="list-style: none">
@@ -16981,6 +17334,7 @@ get_permissions_response_permission
        &amp; get_permissions_response_permission_modification_time
        &amp; get_permissions_response_permission_writable
        &amp; get_permissions_response_permission_in_use
+       &amp; get_permissions_response_permission_permissions
        &amp; get_permissions_response_permission_user_tags
        &amp; get_permissions_response_permission_resource
        &amp; get_permissions_response_permission_subject
@@ -17087,6 +17441,24 @@ get_permissions_response_permission_in_use
  = element in_use
      {
        boolean
+     }
+
+get_permissions_response_permission_permissions
+ = element permissions
+     {
+       get_permissions_response_permission_permissions_permission*
+     }
+
+get_permissions_response_permission_permissions_permission
+ = element permission
+     {
+       get_permissions_response_permission_permissions_permission_name
+     }
+
+get_permissions_response_permission_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_permissions_response_permission_user_tags
@@ -17324,6 +17696,18 @@ get_permissions_response_permission_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the port list.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the port list.</div>
 <ul style="list-style: none">
@@ -17470,6 +17854,7 @@ get_port_lists_response_port_list
        &amp; get_port_lists_response_port_list_modification_time
        &amp; get_port_lists_response_port_list_writable
        &amp; get_port_lists_response_port_list_in_use
+       &amp; get_port_lists_response_port_list_permissions
        &amp; get_port_lists_response_port_list_user_tags
        &amp; get_port_lists_response_port_list_port_count
        &amp; ( get_port_lists_response_port_list_port_ranges
@@ -17510,6 +17895,24 @@ get_port_lists_response_port_list_in_use
  = element in_use
      {
        boolean
+     }
+
+get_port_lists_response_port_list_permissions
+ = element permissions
+     {
+       get_port_lists_response_port_list_permissions_permission*
+     }
+
+get_port_lists_response_port_list_permissions_permission
+ = element permission
+     {
+       get_port_lists_response_port_list_permissions_permission_name
+     }
+
+get_port_lists_response_port_list_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_port_lists_response_port_list_user_tags
@@ -18348,6 +18751,18 @@ get_reports_response_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the report format.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the report format.</div>
 <ul style="list-style: none">
@@ -18410,7 +18825,8 @@ get_reports_response_report
 </li>
 <li>
               &lt;<b>alerts</b>&gt;
-              <ul style="list-style: none"><li>
+              <div style="margin-left: 15px; display: inline;">Alerts using the report format.</div>
+<ul style="list-style: none"><li>
               &lt;<b>alert</b>&gt;
               *<ul style="list-style: none">
 <li>
@@ -18420,7 +18836,7 @@ get_reports_response_report
           </li>
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
+              <div style="margin-left: 15px; display: inline;">Name of the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -18552,6 +18968,7 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_modification_time
        &amp; get_report_formats_response_report_format_writable
        &amp; get_report_formats_response_report_format_in_use
+       &amp; get_report_formats_response_report_format_permissions
        &amp; get_report_formats_response_report_format_user_tags
        &amp; get_report_formats_response_report_format_extension
        &amp; get_report_formats_response_report_format_content_type
@@ -18595,6 +19012,24 @@ get_report_formats_response_report_format_in_use
  = element in_use
      {
        boolean
+     }
+
+get_report_formats_response_report_format_permissions
+ = element permissions
+     {
+       get_report_formats_response_report_format_permissions_permission*
+     }
+
+get_report_formats_response_report_format_permissions_permission
+ = element permission
+     {
+       get_report_formats_response_report_format_permissions_permission_name
+     }
+
+get_report_formats_response_report_format_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_report_formats_response_report_format_user_tags
@@ -18940,6 +19375,18 @@ get_report_formats_response_report_format_active
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the agent.</div>
 <ul style="list-style: none">
@@ -19147,6 +19594,7 @@ get_results_response_results_result
  = element result
      {
        attribute id { uuid }
+       &amp; get_results_response_results_result_permissions
        &amp; get_results_response_results_result_user_tags
        &amp; get_results_response_results_result_report?
        &amp; get_results_response_results_result_task?
@@ -19160,6 +19608,24 @@ get_results_response_results_result
        &amp; get_results_response_results_result_original_severity?
        &amp; get_results_response_results_result_notes?
        &amp; get_results_response_results_result_overrides?
+     }
+
+get_results_response_results_result_permissions
+ = element permissions
+     {
+       get_results_response_results_result_permissions_permission*
+     }
+
+get_results_response_results_result_permissions_permission
+ = element permission
+     {
+       get_results_response_results_result_permissions_permission_name
+     }
+
+get_results_response_results_result_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_results_response_results_result_user_tags
@@ -19500,6 +19966,18 @@ get_results_response_results_result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the role.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the role.</div>
 <ul style="list-style: none">
@@ -19633,6 +20111,7 @@ get_roles_response_role
        &amp; get_roles_response_role_modification_time
        &amp; get_roles_response_role_writable
        &amp; get_roles_response_role_in_use
+       &amp; get_roles_response_role_permissions
        &amp; get_roles_response_role_user_tags
        &amp; get_roles_response_role_users
      }
@@ -19677,6 +20156,24 @@ get_roles_response_role_in_use
  = element in_use
      {
        boolean
+     }
+
+get_roles_response_role_permissions
+ = element permissions
+     {
+       get_roles_response_role_permissions_permission*
+     }
+
+get_roles_response_role_permissions_permission
+ = element permission
+     {
+       get_roles_response_role_permissions_permission_name
+     }
+
+get_roles_response_role_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_roles_response_role_user_tags
@@ -19908,6 +20405,18 @@ get_roles_response_role_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the schedule.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the schedule.</div>
 <ul style="list-style: none">
@@ -20044,6 +20553,7 @@ get_schedules_response_schedule
        &amp; get_schedules_response_schedule_modification_time
        &amp; get_schedules_response_schedule_writable
        &amp; get_schedules_response_schedule_in_use
+       &amp; get_schedules_response_schedule_permissions
        &amp; get_schedules_response_schedule_user_tags
        &amp; get_schedules_response_schedule_first_time
        &amp; get_schedules_response_schedule_next_time
@@ -20090,6 +20600,24 @@ get_schedules_response_schedule_in_use
  = element in_use
      {
        boolean
+     }
+
+get_schedules_response_schedule_permissions
+ = element permissions
+     {
+       get_schedules_response_schedule_permissions_permission*
+     }
+
+get_schedules_response_schedule_permissions_permission
+ = element permission
+     {
+       get_schedules_response_schedule_permissions_permission_name
+     }
+
+get_schedules_response_schedule_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_schedules_response_schedule_user_tags
@@ -20493,6 +21021,18 @@ get_settings_response_settings_setting_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the slave.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the slave.</div>
 <ul style="list-style: none">
@@ -20596,6 +21136,7 @@ get_slaves_response_slave
        &amp; get_slaves_response_slave_modification_time
        &amp; get_slaves_response_slave_writable
        &amp; get_slaves_response_slave_in_use
+       &amp; get_slaves_response_slave_permissions
        &amp; get_slaves_response_slave_user_tags
        &amp; get_slaves_response_slave_host
        &amp; get_slaves_response_slave_port
@@ -20637,6 +21178,24 @@ get_slaves_response_slave_in_use
  = element in_use
      {
        boolean
+     }
+
+get_slaves_response_slave_permissions
+ = element permissions
+     {
+       get_slaves_response_slave_permissions_permission*
+     }
+
+get_slaves_response_slave_permissions_permission
+ = element permission
+     {
+       get_slaves_response_slave_permissions_permission_name
+     }
+
+get_slaves_response_slave_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_slaves_response_slave_user_tags
@@ -21478,6 +22037,18 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the target.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the target.</div>
 <ul style="list-style: none">
@@ -21566,6 +22137,18 @@ get_target_locators_response_target_locator_name
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the target.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>port_range</b>&gt;
@@ -21719,11 +22302,13 @@ get_targets_response_target
        &amp; get_targets_response_target_modification_time
        &amp; get_targets_response_target_writable
        &amp; get_targets_response_target_in_use
+       &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_user_tags
        &amp; get_targets_response_target_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_ssh_lsc_credential
        &amp; get_targets_response_target_smb_lsc_credential
+       &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_port_list
        &amp; get_targets_response_target_alive_tests
@@ -21778,6 +22363,24 @@ get_targets_response_target_in_use
  = element in_use
      {
        boolean
+     }
+
+get_targets_response_target_permissions
+ = element permissions
+     {
+       get_targets_response_target_permissions_permission*
+     }
+
+get_targets_response_target_permissions_permission
+ = element permission
+     {
+       get_targets_response_target_permissions_permission_name
+     }
+
+get_targets_response_target_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_targets_response_target_user_tags
@@ -22166,6 +22769,18 @@ get_targets_response_target_count_page
               &lt;<b>in_use</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether this task is currently in use.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the task.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>user_tags</b>&gt;
@@ -22689,6 +23304,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_modification_time
        &amp; get_tasks_response_task_writable
        &amp; get_tasks_response_task_in_use
+       &amp; get_tasks_response_task_permissions
        &amp; get_tasks_response_task_user_tags
        &amp; get_tasks_response_task_owner
        &amp; get_tasks_response_task_status
@@ -22745,6 +23361,24 @@ get_tasks_response_task_in_use
  = element in_use
      {
        boolean
+     }
+
+get_tasks_response_task_permissions
+ = element permissions
+     {
+       get_tasks_response_task_permissions_permission*
+     }
+
+get_tasks_response_task_permissions_permission
+ = element permission
+     {
+       get_tasks_response_task_permissions_permission_name
+     }
+
+get_tasks_response_task_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_tasks_response_task_user_tags
@@ -23658,6 +24292,18 @@ get_tasks_response_task_preferences_preference_value
           </li></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the user.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the user.</div>
 <ul style="list-style: none">
@@ -23729,6 +24375,7 @@ get_users_response_user
        &amp; get_users_response_user_role*
        &amp; get_users_response_user_groups
        &amp; get_users_response_user_hosts
+       &amp; get_users_response_user_permissions
        &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
      }
@@ -23776,6 +24423,24 @@ get_users_response_user_hosts
      {
        text
        &amp; attribute allow { xsd:token { pattern = "0|1|2|3" } }
+     }
+
+get_users_response_user_permissions
+ = element permissions
+     {
+       get_users_response_user_permissions_permission*
+     }
+
+get_users_response_user_permissions_permission
+ = element permission
+     {
+       get_users_response_user_permissions_permission_name
+     }
+
+get_users_response_user_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_users_response_user_user_tags

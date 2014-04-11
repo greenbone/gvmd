@@ -874,6 +874,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <g>
             <e>sort</e>
             <e>filters</e>
+            <e>permissions</e>
             <e>user_tags</e>
             <e>scan_run_status</e>
             <e>result_count</e>
@@ -1137,8 +1138,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
       </ele>
       <ele>
+        <name>permissions</name>
+        <summary>Permissions that the current user has on the report</summary>
+        <pattern>
+          <any><e>permission</e></any>
+        </pattern>
+        <ele>
+          <name>permission</name>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the permission</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
         <name>user_tags</name>
-        <summary>Info on tags attached to the reprt</summary>
+        <summary>Info on tags attached to the report</summary>
         <pattern>
           <e>count</e>
           <any><e>tag</e></any>
@@ -5900,6 +5919,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <or>
             <e>installer</e>
@@ -5935,6 +5955,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>writable</name>
           <summary>Whether the agent is writable</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the agent</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -6255,6 +6293,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>known_nvt_count</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>tasks</e>
           <o><e>families</e></o>
@@ -6336,6 +6375,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             Whether any tasks are using the config, including trashcan tasks
           </summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the target</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -6635,6 +6692,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>condition</e>
           <e>event</e>
@@ -6672,6 +6730,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>modification_time</name>
           <summary>Last time the alert was modified</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the alert</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -6927,6 +7003,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>in_use</e>
           <e>writable</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <o><e>alerts</e></o>
         </pattern>
@@ -6973,6 +7050,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>writable</name>
           <summary>Whether the filter is writable</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the filter</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -7230,6 +7325,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>users</e>
         </pattern>
@@ -7271,6 +7367,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether the group is in use</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the group</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -7514,6 +7628,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>comment</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>update_time</e>
           <o><e>cpe</e></o>
@@ -7547,6 +7662,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>update_time</name>
           <summary>Date and time the source of the info was read</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the info</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -8323,6 +8456,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>type</e>
           <e>targets</e>
@@ -8363,6 +8497,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any targets are using the LSC credential</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the LSC credential
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -8717,6 +8871,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>nvt</e>
           <e>text</e>
           <e>orphan</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <o>
             <g>
@@ -8765,6 +8920,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the note is an orphan</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the note</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -9130,6 +9303,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>checksum</e>
           <e>creation_time</e>
           <e>modification_time</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <o>
             <g>
@@ -9168,6 +9342,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>modification_time</name>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the nvt</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -9715,6 +9907,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>new_threat</e>
           <e>new_severity</e>
           <e>orphan</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <o>
             <g>
@@ -9805,6 +9998,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the override is an orphan</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the override
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -10093,6 +10306,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>resource</e>
           <e>subject</e>
@@ -10193,6 +10407,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether the permission is in use</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the permission
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -10431,6 +10665,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>port_count</e>
           <o>
@@ -10467,6 +10702,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any targets are using the port list</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the port list
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -11204,6 +11459,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>extension</e>
           <e>content_type</e>
@@ -11246,6 +11502,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any alerts are using the report format</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the report format
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -11612,6 +11888,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <type>uuid</type>
               <required>1</required>
             </attrib>
+            <e>permissions</e>
             <e>user_tags</e>
             <o><e>report</e></o>
             <o><e>task</e></o>
@@ -11626,6 +11903,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <o><e>notes</e></o>
             <o><e>overrides</e></o>
           </pattern>
+          <ele>
+            <name>permissions</name>
+            <summary>
+              Permissions that the current user has on the result
+            </summary>
+            <pattern>
+              <any><e>permission</e></any>
+            </pattern>
+            <ele>
+              <name>permission</name>
+              <pattern>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the permission</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
+            </ele>
+          </ele>
           <ele>
             <name>user_tags</name>
             <summary>Info on tags attached to the agent</summary>
@@ -11961,6 +12258,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>users</e>
         </pattern>
@@ -12002,6 +12300,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether the role is in use</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the role</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -12234,6 +12550,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>first_time</e>
           <e>next_time</e>
@@ -12278,6 +12595,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any tasks are using the schedule</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the schedule
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -12604,6 +12941,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>host</e>
           <e>port</e>
@@ -12639,6 +12977,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any slaves are using the slave</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the slave
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -13263,11 +13621,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>hosts</e>
           <e>max_hosts</e>
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
+          <e>permissions</e>
           <e>port_range</e>
           <e>port_list</e>
           <e>alive_tests</e>
@@ -13318,6 +13678,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether any tasks are using the target</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the target
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -13742,6 +14122,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>owner</e>
           <e>status</e>
@@ -13792,6 +14173,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>in_use</name>
           <summary>Whether this task is currently in use</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the task
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -14641,6 +15042,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <any><e>role</e></any>
           <e>groups</e>
           <e>hosts</e>
+          <e>permissions</e>
           <e>user_tags</e>
           <e>sources</e>
         </pattern>
@@ -14708,6 +15110,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </attrib>
             text
           </pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the user
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>user_tags</name>

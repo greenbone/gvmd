@@ -1030,6 +1030,7 @@ report_report
        & report_report_delta?
        & ( report_report_sort
            & report_report_filters
+           & report_report_permissions
            & report_report_user_tags
            & report_report_scan_run_status
            & report_report_result_count
@@ -1286,7 +1287,27 @@ report_report_filters_delta_same
        boolean
      }
 
-# Info on tags attached to the reprt.
+# Permissions that the current user has on the report.
+report_report_permissions
+ = element permissions
+     {
+       report_report_permissions_permission*
+     }
+
+report_report_permissions_permission
+ = element permission
+     {
+       report_report_permissions_permission_name
+     }
+
+# The name of the permission.
+report_report_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Info on tags attached to the report.
 report_report_user_tags
  = element user_tags
      {
@@ -6557,6 +6578,7 @@ get_agents_response_agent
        & get_agents_response_agent_modification_time
        & get_agents_response_agent_in_use
        & get_agents_response_agent_writable
+       & get_agents_response_agent_permissions
        & get_agents_response_agent_user_tags
        & ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
@@ -6602,6 +6624,26 @@ get_agents_response_agent_writable
  = element writable
      {
        boolean
+     }
+
+# Permissions that the current user has on the agent.
+get_agents_response_agent_permissions
+ = element permissions
+     {
+       get_agents_response_agent_permissions_permission*
+     }
+
+get_agents_response_agent_permissions_permission
+ = element permission
+     {
+       get_agents_response_agent_permissions_permission_name
+     }
+
+# The name of the permission.
+get_agents_response_agent_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the agent.
@@ -6774,6 +6816,7 @@ get_configs_response_config
        & get_configs_response_config_known_nvt_count
        & get_configs_response_config_in_use
        & get_configs_response_config_writable
+       & get_configs_response_config_permissions
        & get_configs_response_config_user_tags
        & get_configs_response_config_tasks
        & get_configs_response_config_families?
@@ -6864,6 +6907,26 @@ get_configs_response_config_writable
  = element writable
      {
        boolean
+     }
+
+# Permissions that the current user has on the target.
+get_configs_response_config_permissions
+ = element permissions
+     {
+       get_configs_response_config_permissions_permission*
+     }
+
+get_configs_response_config_permissions_permission
+ = element permission
+     {
+       get_configs_response_config_permissions_permission_name
+     }
+
+# The name of the permission.
+get_configs_response_config_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the config.
@@ -7049,6 +7112,7 @@ get_alerts_response_alert
        & get_alerts_response_alert_modification_time
        & get_alerts_response_alert_in_use
        & get_alerts_response_alert_writable
+       & get_alerts_response_alert_permissions
        & get_alerts_response_alert_user_tags
        & get_alerts_response_alert_condition
        & get_alerts_response_alert_event
@@ -7096,6 +7160,26 @@ get_alerts_response_alert_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+# Permissions that the current user has on the alert.
+get_alerts_response_alert_permissions
+ = element permissions
+     {
+       get_alerts_response_alert_permissions_permission*
+     }
+
+get_alerts_response_alert_permissions_permission
+ = element permission
+     {
+       get_alerts_response_alert_permissions_permission_name
+     }
+
+# The name of the permission.
+get_alerts_response_alert_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the alert.
@@ -7261,6 +7345,7 @@ get_filters_response_filter
        & get_filters_response_filter_modification_time
        & get_filters_response_filter_in_use
        & get_filters_response_filter_writable
+       & get_filters_response_filter_permissions
        & get_filters_response_filter_user_tags
        & get_filters_response_filter_alerts?
      }
@@ -7319,6 +7404,26 @@ get_filters_response_filter_writable
  = element writable
      {
        boolean
+     }
+
+# Permissions that the current user has on the filter.
+get_filters_response_filter_permissions
+ = element permissions
+     {
+       get_filters_response_filter_permissions_permission*
+     }
+
+get_filters_response_filter_permissions_permission
+ = element permission
+     {
+       get_filters_response_filter_permissions_permission_name
+     }
+
+# The name of the permission.
+get_filters_response_filter_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the filter.
@@ -7476,6 +7581,7 @@ get_groups_response_group
        & get_groups_response_group_modification_time
        & get_groups_response_group_writable
        & get_groups_response_group_in_use
+       & get_groups_response_group_permissions
        & get_groups_response_group_user_tags
        & get_groups_response_group_users
      }
@@ -7527,6 +7633,26 @@ get_groups_response_group_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the group.
+get_groups_response_group_permissions
+ = element permissions
+     {
+       get_groups_response_group_permissions_permission*
+     }
+
+get_groups_response_group_permissions_permission
+ = element permission
+     {
+       get_groups_response_group_permissions_permission_name
+     }
+
+# The name of the permission.
+get_groups_response_group_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the group.
@@ -7663,6 +7789,7 @@ get_info_response_info
        & get_info_response_info_comment
        & get_info_response_info_creation_time
        & get_info_response_info_modification_time
+       & get_info_response_info_permissions
        & get_info_response_info_user_tags
        & get_info_response_info_update_time
        & get_info_response_info_cpe?
@@ -7706,6 +7833,26 @@ get_info_response_info_update_time
  = element update_time
      {
        iso_time
+     }
+
+# Permissions that the current user has on the info.
+get_info_response_info_permissions
+ = element permissions
+     {
+       get_info_response_info_permissions_permission*
+     }
+
+get_info_response_info_permissions_permission
+ = element permission
+     {
+       get_info_response_info_permissions_permission_name
+     }
+
+# The name of the permission.
+get_info_response_info_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the info.
@@ -8240,6 +8387,7 @@ get_lsc_credentials_response_lsc_credential
        & get_lsc_credentials_response_lsc_credential_modification_time
        & get_lsc_credentials_response_lsc_credential_writable
        & get_lsc_credentials_response_lsc_credential_in_use
+       & get_lsc_credentials_response_lsc_credential_permissions
        & get_lsc_credentials_response_lsc_credential_user_tags
        & get_lsc_credentials_response_lsc_credential_type
        & get_lsc_credentials_response_lsc_credential_targets
@@ -8294,6 +8442,26 @@ get_lsc_credentials_response_lsc_credential_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the LSC credential.
+get_lsc_credentials_response_lsc_credential_permissions
+ = element permissions
+     {
+       get_lsc_credentials_response_lsc_credential_permissions_permission*
+     }
+
+get_lsc_credentials_response_lsc_credential_permissions_permission
+ = element permission
+     {
+       get_lsc_credentials_response_lsc_credential_permissions_permission_name
+     }
+
+# The name of the permission.
+get_lsc_credentials_response_lsc_credential_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the credential.
@@ -8468,6 +8636,7 @@ get_notes_response_note
        get_notes_response_note_nvt
        & get_notes_response_note_text
        & get_notes_response_note_orphan
+       & get_notes_response_note_permissions
        & get_notes_response_note_user_tags
        & ( get_notes_response_note_creation_time
            & get_notes_response_note_modification_time
@@ -8507,6 +8676,26 @@ get_notes_response_note_orphan
  = element orphan
      {
        boolean
+     }
+
+# Permissions that the current user has on the note.
+get_notes_response_note_permissions
+ = element permissions
+     {
+       get_notes_response_note_permissions_permission*
+     }
+
+get_notes_response_note_permissions_permission
+ = element permission
+     {
+       get_notes_response_note_permissions_permission_name
+     }
+
+# The name of the permission.
+get_notes_response_note_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the note.
@@ -8721,6 +8910,7 @@ get_nvts_response_nvt
        & get_nvts_response_nvt_checksum
        & get_nvts_response_nvt_creation_time
        & get_nvts_response_nvt_modification_time
+       & get_nvts_response_nvt_permissions
        & get_nvts_response_nvt_user_tags
        & ( get_nvts_response_nvt_category
            & get_nvts_response_nvt_copyright
@@ -8763,6 +8953,26 @@ get_nvts_response_nvt_modification_time
  = element modification_time
      {
        iso_time
+     }
+
+# Permissions that the current user has on the nvt.
+get_nvts_response_nvt_permissions
+ = element permissions
+     {
+       get_nvts_response_nvt_permissions_permission*
+     }
+
+get_nvts_response_nvt_permissions_permission
+ = element permission
+     {
+       get_nvts_response_nvt_permissions_permission_name
+     }
+
+# The name of the permission.
+get_nvts_response_nvt_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the NVT.
@@ -9127,6 +9337,7 @@ get_overrides_response_override
        & get_overrides_response_override_new_threat
        & get_overrides_response_override_new_severity
        & get_overrides_response_override_orphan
+       & get_overrides_response_override_permissions
        & get_overrides_response_override_user_tags
        & ( get_overrides_response_override_hosts
            & get_overrides_response_override_port
@@ -9214,6 +9425,26 @@ get_overrides_response_override_orphan
  = element orphan
      {
        boolean
+     }
+
+# Permissions that the current user has on the override.
+get_overrides_response_override_permissions
+ = element permissions
+     {
+       get_overrides_response_override_permissions_permission*
+     }
+
+get_overrides_response_override_permissions_permission
+ = element permission
+     {
+       get_overrides_response_override_permissions_permission_name
+     }
+
+# The name of the permission.
+get_overrides_response_override_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the override.
@@ -9407,6 +9638,7 @@ get_permissions_response_permission
        & get_permissions_response_permission_modification_time
        & get_permissions_response_permission_writable
        & get_permissions_response_permission_in_use
+       & get_permissions_response_permission_permissions
        & get_permissions_response_permission_user_tags
        & get_permissions_response_permission_resource
        & get_permissions_response_permission_subject
@@ -9529,6 +9761,26 @@ get_permissions_response_permission_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the permission.
+get_permissions_response_permission_permissions
+ = element permissions
+     {
+       get_permissions_response_permission_permissions_permission*
+     }
+
+get_permissions_response_permission_permissions_permission
+ = element permission
+     {
+       get_permissions_response_permission_permissions_permission_name
+     }
+
+# The name of the permission.
+get_permissions_response_permission_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the permission.
@@ -9662,6 +9914,7 @@ get_port_lists_response_port_list
        & get_port_lists_response_port_list_modification_time
        & get_port_lists_response_port_list_writable
        & get_port_lists_response_port_list_in_use
+       & get_port_lists_response_port_list_permissions
        & get_port_lists_response_port_list_user_tags
        & get_port_lists_response_port_list_port_count
        & ( get_port_lists_response_port_list_port_ranges
@@ -9706,6 +9959,26 @@ get_port_lists_response_port_list_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the port list.
+get_port_lists_response_port_list_permissions
+ = element permissions
+     {
+       get_port_lists_response_port_list_permissions_permission*
+     }
+
+get_port_lists_response_port_list_permissions_permission
+ = element permission
+     {
+       get_port_lists_response_port_list_permissions_permission_name
+     }
+
+# The name of the permission.
+get_port_lists_response_port_list_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the port list.
@@ -9954,6 +10227,7 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_modification_time
        & get_report_formats_response_report_format_writable
        & get_report_formats_response_report_format_in_use
+       & get_report_formats_response_report_format_permissions
        & get_report_formats_response_report_format_user_tags
        & get_report_formats_response_report_format_extension
        & get_report_formats_response_report_format_content_type
@@ -10000,6 +10274,26 @@ get_report_formats_response_report_format_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the report format.
+get_report_formats_response_report_format_permissions
+ = element permissions
+     {
+       get_report_formats_response_report_format_permissions_permission*
+     }
+
+get_report_formats_response_report_format_permissions_permission
+ = element permission
+     {
+       get_report_formats_response_report_format_permissions_permission_name
+     }
+
+# The name of the permission.
+get_report_formats_response_report_format_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the report format.
@@ -10085,6 +10379,7 @@ get_report_formats_response_report_format_predefined
        boolean
      }
 
+# Alerts using the report format.
 get_report_formats_response_report_format_alerts
  = element alerts
      {
@@ -10099,7 +10394,7 @@ get_report_formats_response_report_format_alerts_alert
        & get_report_formats_response_report_format_alerts_alert_name
      }
 
-# The name of the alert.
+# Name of the alert.
 get_report_formats_response_report_format_alerts_alert_name
  = element name
      {
@@ -10232,6 +10527,7 @@ get_results_response_results_result
  = element result
      {
        attribute id { uuid }
+       & get_results_response_results_result_permissions
        & get_results_response_results_result_user_tags
        & get_results_response_results_result_report?
        & get_results_response_results_result_task?
@@ -10245,6 +10541,26 @@ get_results_response_results_result
        & get_results_response_results_result_original_severity?
        & get_results_response_results_result_notes?
        & get_results_response_results_result_overrides?
+     }
+
+# Permissions that the current user has on the result.
+get_results_response_results_result_permissions
+ = element permissions
+     {
+       get_results_response_results_result_permissions_permission*
+     }
+
+get_results_response_results_result_permissions_permission
+ = element permission
+     {
+       get_results_response_results_result_permissions_permission_name
+     }
+
+# The name of the permission.
+get_results_response_results_result_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the agent.
@@ -10480,6 +10796,7 @@ get_roles_response_role
        & get_roles_response_role_modification_time
        & get_roles_response_role_writable
        & get_roles_response_role_in_use
+       & get_roles_response_role_permissions
        & get_roles_response_role_user_tags
        & get_roles_response_role_users
      }
@@ -10531,6 +10848,26 @@ get_roles_response_role_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the role.
+get_roles_response_role_permissions
+ = element permissions
+     {
+       get_roles_response_role_permissions_permission*
+     }
+
+get_roles_response_role_permissions_permission
+ = element permission
+     {
+       get_roles_response_role_permissions_permission_name
+     }
+
+# The name of the permission.
+get_roles_response_role_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the role.
@@ -10664,6 +11001,7 @@ get_schedules_response_schedule
        & get_schedules_response_schedule_modification_time
        & get_schedules_response_schedule_writable
        & get_schedules_response_schedule_in_use
+       & get_schedules_response_schedule_permissions
        & get_schedules_response_schedule_user_tags
        & get_schedules_response_schedule_first_time
        & get_schedules_response_schedule_next_time
@@ -10714,6 +11052,26 @@ get_schedules_response_schedule_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the schedule.
+get_schedules_response_schedule_permissions
+ = element permissions
+     {
+       get_schedules_response_schedule_permissions_permission*
+     }
+
+get_schedules_response_schedule_permissions_permission
+ = element permission
+     {
+       get_schedules_response_schedule_permissions_permission_name
+     }
+
+# The name of the permission.
+get_schedules_response_schedule_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the schedule.
@@ -10922,6 +11280,7 @@ get_slaves_response_slave
        & get_slaves_response_slave_modification_time
        & get_slaves_response_slave_writable
        & get_slaves_response_slave_in_use
+       & get_slaves_response_slave_permissions
        & get_slaves_response_slave_user_tags
        & get_slaves_response_slave_host
        & get_slaves_response_slave_port
@@ -10967,6 +11326,26 @@ get_slaves_response_slave_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the slave.
+get_slaves_response_slave_permissions
+ = element permissions
+     {
+       get_slaves_response_slave_permissions_permission*
+     }
+
+get_slaves_response_slave_permissions_permission
+ = element permission
+     {
+       get_slaves_response_slave_permissions_permission_name
+     }
+
+# The name of the permission.
+get_slaves_response_slave_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the slave.
@@ -11334,11 +11713,13 @@ get_targets_response_target
        & get_targets_response_target_modification_time
        & get_targets_response_target_writable
        & get_targets_response_target_in_use
+       & get_targets_response_target_permissions
        & get_targets_response_target_user_tags
        & get_targets_response_target_hosts
        & get_targets_response_target_max_hosts
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
+       & get_targets_response_target_permissions
        & get_targets_response_target_port_range
        & get_targets_response_target_port_list
        & get_targets_response_target_alive_tests
@@ -11401,6 +11782,26 @@ get_targets_response_target_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the target.
+get_targets_response_target_permissions
+ = element permissions
+     {
+       get_targets_response_target_permissions_permission*
+     }
+
+get_targets_response_target_permissions_permission
+ = element permission
+     {
+       get_targets_response_target_permissions_permission_name
+     }
+
+# The name of the permission.
+get_targets_response_target_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the target.
@@ -11690,6 +12091,7 @@ get_tasks_response_task
        & get_tasks_response_task_modification_time
        & get_tasks_response_task_writable
        & get_tasks_response_task_in_use
+       & get_tasks_response_task_permissions
        & get_tasks_response_task_user_tags
        & get_tasks_response_task_owner
        & get_tasks_response_task_status
@@ -11752,6 +12154,26 @@ get_tasks_response_task_in_use
  = element in_use
      {
        boolean
+     }
+
+# Permissions that the current user has on the task.
+get_tasks_response_task_permissions
+ = element permissions
+     {
+       get_tasks_response_task_permissions_permission*
+     }
+
+get_tasks_response_task_permissions_permission
+ = element permission
+     {
+       get_tasks_response_task_permissions_permission_name
+     }
+
+# The name of the permission.
+get_tasks_response_task_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the task.
@@ -12388,6 +12810,7 @@ get_users_response_user
        & get_users_response_user_role*
        & get_users_response_user_groups
        & get_users_response_user_hosts
+       & get_users_response_user_permissions
        & get_users_response_user_user_tags
        & get_users_response_user_sources
      }
@@ -12442,6 +12865,26 @@ get_users_response_user_hosts
        text
        & # 0 forbidden, 1 allowed, 2 all allowed, 3 custom.
        attribute allow { xsd:token { pattern = "0|1|2|3" } }
+     }
+
+# Permissions that the current user has on the user.
+get_users_response_user_permissions
+ = element permissions
+     {
+       get_users_response_user_permissions_permission*
+     }
+
+get_users_response_user_permissions_permission
+ = element permission
+     {
+       get_users_response_user_permissions_permission_name
+     }
+
+# The name of the permission.
+get_users_response_user_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Info on tags attached to the user.
