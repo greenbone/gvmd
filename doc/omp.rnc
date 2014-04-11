@@ -12884,6 +12884,11 @@ get_users_response_user
        # ID of user.
        attribute id { uuid }
        & get_users_response_user_name
+       & get_users_response_user_comment
+       & get_users_response_user_creation_time
+       & get_users_response_user_modification_time
+       & get_users_response_user_writable
+       & get_users_response_user_in_use
        & get_users_response_user_role*
        & get_users_response_user_groups
        & get_users_response_user_hosts
@@ -12897,6 +12902,41 @@ get_users_response_user_name
  = element name
      {
        text
+     }
+
+# The comment on the user.
+get_users_response_user_comment
+ = element comment
+     {
+       text
+     }
+
+# Creation time of the user.
+get_users_response_user_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Last time the user was modified.
+get_users_response_user_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the user is writable.
+get_users_response_user_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether this user is currently in use.
+get_users_response_user_in_use
+ = element in_use
+     {
+       boolean
      }
 
 # The role of the user.

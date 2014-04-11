@@ -15088,6 +15088,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
           <any><e>role</e></any>
           <e>groups</e>
           <e>hosts</e>
@@ -15099,6 +15104,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>name</name>
           <summary>The name of the user</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the user</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the user</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last time the user was modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the user is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this user is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>role</name>

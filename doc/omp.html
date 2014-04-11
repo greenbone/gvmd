@@ -24358,6 +24358,31 @@ get_tasks_response_task_preferences_preference_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the user.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Creation time of the user.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Last time the user was modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the user is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether this user is currently in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>role</b>&gt;
               *<div style="margin-left: 15px; display: inline;">The role of the user.</div>
 <ul style="list-style: none">
@@ -24480,6 +24505,11 @@ get_users_response_user
      {
        attribute id { uuid }
        &amp; get_users_response_user_name
+       &amp; get_users_response_user_comment
+       &amp; get_users_response_user_creation_time
+       &amp; get_users_response_user_modification_time
+       &amp; get_users_response_user_writable
+       &amp; get_users_response_user_in_use
        &amp; get_users_response_user_role*
        &amp; get_users_response_user_groups
        &amp; get_users_response_user_hosts
@@ -24492,6 +24522,36 @@ get_users_response_user_name
  = element name
      {
        text
+     }
+
+get_users_response_user_comment
+ = element comment
+     {
+       text
+     }
+
+get_users_response_user_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_users_response_user_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_users_response_user_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_users_response_user_in_use
+ = element in_use
+     {
+       boolean
      }
 
 get_users_response_user_role
