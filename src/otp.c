@@ -770,6 +770,8 @@ process_otp_scanner_input (void (*progress) ())
   /*@dependent@*/ char* match = NULL;
   /*@dependent@*/ char* messages = from_scanner + from_scanner_start;
   /*@dependent@*/ char* input;
+  const char *ver_str = "< OTP/2.0 >\n";
+  size_t ver_len = sizeof (ver_str);
   buffer_size_t from_start, from_end;
   //tracef ("   consider %.*s\n", from_scanner_end - from_scanner_start, messages);
 
@@ -808,20 +810,20 @@ process_otp_scanner_input (void (*progress) ())
                      "Scanner loading: No information provided. %s\n", messages);
             return 3;
           }
-        if (from_scanner_end - from_scanner_start < 17)
+        if (from_scanner_end - from_scanner_start < ver_len)
           {
             /* Need more input. */
             if (sync_buffer ()) return -1;
             return 0;
           }
-        if (strncasecmp ("< OTP/2.0 >\n", messages, 17))
+        if (strncasecmp (ver_str, messages, ver_len))
           {
-            tracef ("   scanner fail: expected \"< OTP/2.0 >\""
-                    "   got \"%.17s\"\n\n", messages);
+            tracef ("   scanner fail: expected \"%s\""
+                    "   got \"%.12s\"\n\n", ver_str, messages);
             return -1;
           }
-        from_scanner_start += 17;
-        messages += 17;
+        from_scanner_start += ver_len;
+        messages += ver_len;
         set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
       case SCANNER_INIT_GOT_FEED_VERSION:

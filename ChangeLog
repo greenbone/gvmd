@@ -1,3 +1,8 @@
+2014-04-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Fix hard-coded version string
+	length left from r19226. Improve code style.
+
 2014-04-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/ompd.c (write_to_scanner), src/otp.c (process_otp_scanner_input):
