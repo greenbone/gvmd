@@ -1018,7 +1018,70 @@ report
        & attribute extension { text }
        & attribute content_type { text }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_owner
+       & report_name
+       & report_comment
+       & report_creation_time
+       & report_modification_time
+       & report_writable
+       & report_in_use
        & report_report
+     }
+
+# Owner of the report.
+report_owner
+ = element owner
+     {
+       report_owner_name
+     }
+
+# The name of the owner.
+report_owner_name
+ = element name
+     {
+       name
+     }
+
+# Empty compatibility placeholder.
+report_name
+ = element name
+     {
+       ""
+     }
+
+# The comment on the report.
+report_comment
+ = element comment
+     {
+       text
+     }
+
+# Date and time the report was created.
+report_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the report was last modified.
+report_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the report is in use.
+report_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the report is writable.
+report_writable
+ = element writable
+     {
+       boolean
      }
 
 report_report
@@ -2819,6 +2882,13 @@ create_report_report
        & attribute extension { text }
        & attribute content_type { text }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_owner
+       & report_name
+       & report_comment
+       & report_creation_time
+       & report_modification_time
+       & report_writable
+       & report_in_use
        & report_report
      }
 
@@ -10205,6 +10275,13 @@ get_reports_response_report
        & attribute extension { text }
        & attribute content_type { text }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_owner
+       & report_name
+       & report_comment
+       & report_creation_time
+       & report_modification_time
+       & report_writable
+       & report_in_use
        & report_report
      }
 

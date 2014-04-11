@@ -849,8 +849,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </type>
       </attrib>
       <t>base64</t>
+      <e>owner</e>
+      <e>name</e>
+      <e>comment</e>
+      <e>creation_time</e>
+      <e>modification_time</e>
+      <e>writable</e>
+      <e>in_use</e>
       <e>report</e>
     </pattern>
+    <ele>
+      <name>owner</name>
+      <summary>Owner of the report</summary>
+      <pattern>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the owner</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>name</name>
+      <summary>Empty compatibility placeholder</summary>
+      <pattern></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>The comment on the report</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>creation_time</name>
+      <summary>Date and time the report was created</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>modification_time</name>
+      <summary>Date and time the report was last modified</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>in_use</name>
+      <summary>Whether the report is in use</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>writable</name>
+      <summary>Whether the report is writable</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
     <ele>
       <name>report</name>
       <pattern>

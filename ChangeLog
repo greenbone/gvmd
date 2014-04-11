@@ -1,5 +1,12 @@
 2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (report): Add the standard GET
+	elements.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (report, get_agents, get_targets)
 	(get_alerts, get_filters, get_groups, get_infos, get_lsc_credentials)
 	(get_notes, get_nvts, get_overrides, get_permissions, get_port_lists)

@@ -2326,6 +2326,45 @@ result_overrides
           ("scan" or "assets")
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the report.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Empty compatibility placeholder.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the report was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the report was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the report is writable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the report is in use.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>report</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -2953,7 +2992,62 @@ result_overrides
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_owner
+       &amp; report_name
+       &amp; report_comment
+       &amp; report_creation_time
+       &amp; report_modification_time
+       &amp; report_writable
+       &amp; report_in_use
        &amp; report_report
+     }
+
+report_owner
+ = element owner
+     {
+       report_owner_name
+     }
+
+report_owner_name
+ = element name
+     {
+       name
+     }
+
+report_name
+ = element name
+     {
+       ""
+     }
+
+report_comment
+ = element comment
+     {
+       text
+     }
+
+report_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+report_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+report_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+report_writable
+ = element writable
+     {
+       boolean
      }
 
 report_report
@@ -7073,6 +7167,13 @@ create_report_report
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_owner
+       &amp; report_name
+       &amp; report_comment
+       &amp; report_creation_time
+       &amp; report_modification_time
+       &amp; report_writable
+       &amp; report_in_use
        &amp; report_report
      }
 
@@ -18530,6 +18631,13 @@ get_reports_response_report
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_owner
+       &amp; report_name
+       &amp; report_comment
+       &amp; report_creation_time
+       &amp; report_modification_time
+       &amp; report_writable
+       &amp; report_in_use
        &amp; report_report
      }
 </pre></div>
