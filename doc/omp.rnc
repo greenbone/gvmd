@@ -2032,6 +2032,7 @@ create_agent
        create_agent_installer
        & create_agent_name
        & create_agent_comment?
+       & create_agent_copy?
        & create_agent_howto_install?
        & create_agent_howto_use?
      }
@@ -2063,6 +2064,13 @@ create_agent_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing agent.
+create_agent_copy
+ = element copy
+     {
+       uuid
      }
 
 # A file that describes how to install the agent.
@@ -2130,6 +2138,7 @@ create_alert
      {
        create_alert_name
        & create_alert_comment?
+       & create_alert_copy?
        & create_alert_condition
        & create_alert_event
        & create_alert_method
@@ -2148,6 +2157,13 @@ create_alert_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing alert.
+create_alert_copy
+ = element copy
+     {
+       uuid
      }
 
 # The condition that must be satisfied for the alert to occur.
@@ -2292,6 +2308,7 @@ create_group
      {
        create_group_name
        & create_group_comment?
+       & create_group_copy?
        & create_group_users
      }
 
@@ -2307,6 +2324,13 @@ create_group_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing group.
+create_group_copy
+ = element copy
+     {
+       uuid
      }
 
 # Comma separated list of user names.
@@ -2325,6 +2349,7 @@ create_lsc_credential
      {
        create_lsc_credential_name
        & create_lsc_credential_comment?
+       & create_lsc_credential_copy?
        & create_lsc_credential_key?
        & create_lsc_credential_login
        & create_lsc_credential_password?
@@ -2342,6 +2367,13 @@ create_lsc_credential_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing LSC credential.
+create_lsc_credential_copy
+ = element copy
+     {
+       uuid
      }
 
 create_lsc_credential_key
@@ -2663,6 +2695,7 @@ create_port_list
      {
        create_port_list_name
        & create_port_list_comment?
+       & create_port_list_copy?
        & create_port_list_port_range
        & get_port_lists_response
      }
@@ -2679,6 +2712,13 @@ create_port_list_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing agent.
+create_port_list_copy
+ = element copy
+     {
+       uuid
      }
 
 # Comma or newline separated list of ranges.
@@ -2791,7 +2831,15 @@ create_report_task_comment
 create_report_format
  = element create_report_format
      {
-       get_report_formats_response
+       ( create_report_format_copy
+           | get_report_formats_response )
+     }
+
+# The UUID of an existing report format.
+create_report_format_copy
+ = element copy
+     {
+       uuid
      }
 
 ## Command create_role
@@ -2803,6 +2851,7 @@ create_role
      {
        create_role_name
        & create_role_comment?
+       & create_role_copy?
        & create_role_users
      }
 
@@ -2818,6 +2867,13 @@ create_role_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing role.
+create_role_copy
+ = element copy
+     {
+       uuid
      }
 
 # Comma separated list of user names.
@@ -2836,6 +2892,7 @@ create_schedule
      {
        create_schedule_name
        & create_schedule_comment?
+       & create_schedule_copy?
        & create_schedule_first_time?
        & create_schedule_duration?
        & create_schedule_period?
@@ -2854,6 +2911,13 @@ create_schedule_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing schedule.
+create_schedule_copy
+ = element copy
+     {
+       uuid
      }
 
 # The first time the schedule will run.
@@ -2941,6 +3005,7 @@ create_slave
      {
        create_slave_name
        & create_slave_comment?
+       & create_slave_copy?
        & create_slave_host
        & create_slave_port
        & create_slave_login
@@ -2959,6 +3024,13 @@ create_slave_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing slave.
+create_slave_copy
+ = element copy
+     {
+       uuid
      }
 
 # The host that the slave Manager is running on.
@@ -3200,6 +3272,7 @@ create_task
      {
        create_task_name
        & create_task_comment?
+       & create_task_copy?
        & create_task_alterable?
        & create_task_config
        & create_task_target
@@ -3223,6 +3296,13 @@ create_task_comment
  = element comment
      {
        text
+     }
+
+# The UUID of an existing task.
+create_task_copy
+ = element copy
+     {
+       uuid
      }
 
 # Whether the task is alterable.
@@ -3315,6 +3395,7 @@ create_user
  = element create_user
      {
        create_user_name
+       & create_user_copy?
        & create_user_hosts?
        & create_user_password?
        & create_user_role?
@@ -3325,6 +3406,13 @@ create_user_name
  = element name
      {
        text
+     }
+
+# The UUID of an existing user.
+create_user_copy
+ = element copy
+     {
+       uuid
      }
 
 # User access rules: a textual list of hosts.

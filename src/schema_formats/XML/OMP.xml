@@ -2054,6 +2054,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>installer</e>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>howto_install</e></o>
       <o><e>howto_use</e></o>
     </pattern>
@@ -2080,6 +2081,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the agent</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing agent</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -2275,6 +2283,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>condition</e>
       <e>event</e>
       <e>method</e>
@@ -2290,6 +2299,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the alert</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing alert</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -2541,6 +2557,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>users</e>
     </pattern>
     <ele>
@@ -2553,6 +2570,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the group</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing group</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -2596,6 +2620,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>key</e></o>
       <e>login</e>
       <o><e>password</e></o>
@@ -2610,6 +2635,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the LSC credential</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing LSC credential</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3133,6 +3165,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>port_range</e>
       <r>get_port_lists</r>
     </pattern>
@@ -3148,6 +3181,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the port list</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing agent</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3397,8 +3437,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
-      <r>get_report_formats</r>
+      <or>
+        <e>copy</e>
+        <r>get_report_formats</r>
+      </or>
     </pattern>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing report format</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
     <response>
       <pattern>
         <attrib>
@@ -3463,6 +3513,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>users</e>
     </pattern>
     <ele>
@@ -3475,6 +3526,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the role</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing role</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3511,6 +3569,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>first_time</e></o>
       <o><e>duration</e></o>
       <o><e>period</e></o>
@@ -3526,6 +3585,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the schedule</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing schedule</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -3650,6 +3716,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <e>host</e>
       <e>port</e>
       <e>login</e>
@@ -3665,6 +3732,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the slave</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing slave</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -4031,6 +4105,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>copy</e></o>
       <o><e>alterable</e></o>
       <e>config</e>
       <e>target</e>
@@ -4051,6 +4126,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>A comment on the task</summary>
       <pattern>
         text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing task</summary>
+      <pattern>
+        <t>uuid</t>
       </pattern>
     </ele>
     <ele>
@@ -4194,6 +4276,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </description>
     <pattern>
       <e>name</e>
+      <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>password</e></o>
       <o><e>role</e></o>
@@ -4202,6 +4285,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>name</name>
       <summary>The name of the user to be created</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing user</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
     </ele>
     <ele>
       <name>hosts</name>

@@ -5218,6 +5218,11 @@ authenticate_response_timezone
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>howto_install</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A file that describes how to install the agent.</div>
 <ul style="list-style: none"></ul>
@@ -5254,6 +5259,7 @@ authenticate_response_timezone
        create_agent_installer
        &amp; create_agent_name
        &amp; create_agent_comment?
+       &amp; create_agent_copy?
        &amp; create_agent_howto_install?
        &amp; create_agent_howto_use?
      }
@@ -5281,6 +5287,12 @@ create_agent_comment
  = element comment
      {
        text
+     }
+
+create_agent_copy
+ = element copy
+     {
+       uuid
      }
 
 create_agent_howto_install
@@ -5509,6 +5521,11 @@ create_config_name
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>condition</b>&gt;
               <div style="margin-left: 15px; display: inline;">The condition that must be satisfied for the alert to occur.</div>
 <ul style="list-style: none"><li>
@@ -5581,6 +5598,7 @@ create_config_name
      {
        create_alert_name
        &amp; create_alert_comment?
+       &amp; create_alert_copy?
        &amp; create_alert_condition
        &amp; create_alert_event
        &amp; create_alert_method
@@ -5597,6 +5615,12 @@ create_alert_comment
  = element comment
      {
        text
+     }
+
+create_alert_copy
+ = element copy
+     {
+       uuid
      }
 
 create_alert_condition
@@ -5868,6 +5892,11 @@ create_filter_type
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing group.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>users</b>&gt;
               <div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
 <ul style="list-style: none"></ul>
@@ -5883,6 +5912,7 @@ create_filter_type
      {
        create_group_name
        &amp; create_group_comment?
+       &amp; create_group_copy?
        &amp; create_group_users
      }
 
@@ -5896,6 +5926,12 @@ create_group_comment
  = element comment
      {
        text
+     }
+
+create_group_copy
+ = element copy
+     {
+       uuid
      }
 
 create_group_users
@@ -5950,6 +5986,11 @@ create_group_users
 <li>
               &lt;<b>comment</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A comment on the LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing LSC credential.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -6008,6 +6049,7 @@ create_group_users
      {
        create_lsc_credential_name
        &amp; create_lsc_credential_comment?
+       &amp; create_lsc_credential_copy?
        &amp; create_lsc_credential_key?
        &amp; create_lsc_credential_login
        &amp; create_lsc_credential_password?
@@ -6023,6 +6065,12 @@ create_lsc_credential_comment
  = element comment
      {
        text
+     }
+
+create_lsc_credential_copy
+ = element copy
+     {
+       uuid
      }
 
 create_lsc_credential_key
@@ -6701,6 +6749,11 @@ create_permission_comment
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing agent.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>port_range</b>&gt;
               <div style="margin-left: 15px; display: inline;">Comma or newline separated list of ranges.</div>
 <ul style="list-style: none"></ul>
@@ -6736,6 +6789,7 @@ create_permission_comment
      {
        create_port_list_name
        &amp; create_port_list_comment?
+       &amp; create_port_list_copy?
        &amp; create_port_list_port_range
        &amp; get_port_lists_response
      }
@@ -6750,6 +6804,12 @@ create_port_list_comment
  = element comment
      {
        text
+     }
+
+create_port_list_copy
+ = element copy
+     {
+       uuid
      }
 
 create_port_list_port_range
@@ -7060,9 +7120,18 @@ create_report_task_comment
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+              &lt;<b>copy</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The UUID of an existing report format.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
           &lt;<b>get_report_formats_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_report_formats">get_report_formats</a> command.
           </div>
+</li>
+</ul>
 </li></ul>
 </li>
 <li style="margin-top: 15px;">
@@ -7087,7 +7156,14 @@ create_report_task_comment
 <i>Command</i><div style="margin-left: 5%"><pre>create_report_format
  = element create_report_format
      {
-       get_report_formats_response
+       ( create_report_format_copy
+           | get_report_formats_response )
+     }
+
+create_report_format_copy
+ = element copy
+     {
+       uuid
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_report_format_response
@@ -7153,6 +7229,11 @@ create_report_task_comment
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing role.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>users</b>&gt;
               <div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
 <ul style="list-style: none"></ul>
@@ -7168,6 +7249,7 @@ create_report_task_comment
      {
        create_role_name
        &amp; create_role_comment?
+       &amp; create_role_copy?
        &amp; create_role_users
      }
 
@@ -7181,6 +7263,12 @@ create_role_comment
  = element comment
      {
        text
+     }
+
+create_role_copy
+ = element copy
+     {
+       uuid
      }
 
 create_role_users
@@ -7228,6 +7316,11 @@ create_role_users
 <li>
               &lt;<b>comment</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A comment on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing schedule.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -7305,6 +7398,7 @@ create_role_users
      {
        create_schedule_name
        &amp; create_schedule_comment?
+       &amp; create_schedule_copy?
        &amp; create_schedule_first_time?
        &amp; create_schedule_duration?
        &amp; create_schedule_period?
@@ -7321,6 +7415,12 @@ create_schedule_comment
  = element comment
      {
        text
+     }
+
+create_schedule_copy
+ = element copy
+     {
+       uuid
      }
 
 create_schedule_first_time
@@ -7452,6 +7552,11 @@ create_schedule_timezone
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>host</b>&gt;
               <div style="margin-left: 15px; display: inline;">The host that the slave Manager is running on.</div>
 <ul style="list-style: none"></ul>
@@ -7497,6 +7602,7 @@ create_schedule_timezone
      {
        create_slave_name
        &amp; create_slave_comment?
+       &amp; create_slave_copy?
        &amp; create_slave_host
        &amp; create_slave_port
        &amp; create_slave_login
@@ -7513,6 +7619,12 @@ create_slave_comment
  = element comment
      {
        text
+     }
+
+create_slave_copy
+ = element copy
+     {
+       uuid
      }
 
 create_slave_host
@@ -8013,6 +8125,11 @@ create_target_port_list
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>alterable</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Whether the task is alterable.</div>
 <ul style="list-style: none"></ul>
@@ -8110,6 +8227,7 @@ create_target_port_list
      {
        create_task_name
        &amp; create_task_comment?
+       &amp; create_task_copy?
        &amp; create_task_alterable?
        &amp; create_task_config
        &amp; create_task_target
@@ -8131,6 +8249,12 @@ create_task_comment
  = element comment
      {
        text
+     }
+
+create_task_copy
+ = element copy
+     {
+       uuid
      }
 
 create_task_alterable
@@ -8248,6 +8372,11 @@ create_task_rcfile
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>copy</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The UUID of an existing user.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>hosts</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">User access rules: a textual list of hosts.</div>
 <ul style="list-style: none"><li>
@@ -8290,6 +8419,7 @@ create_task_rcfile
  = element create_user
      {
        create_user_name
+       &amp; create_user_copy?
        &amp; create_user_hosts?
        &amp; create_user_password?
        &amp; create_user_role?
@@ -8299,6 +8429,12 @@ create_user_name
  = element name
      {
        text
+     }
+
+create_user_copy
+ = element copy
+     {
+       uuid
      }
 
 create_user_hosts
