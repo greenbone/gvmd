@@ -771,7 +771,7 @@ process_otp_scanner_input (void (*progress) ())
   /*@dependent@*/ char* messages = from_scanner + from_scanner_start;
   /*@dependent@*/ char* input;
   const char *ver_str = "< OTP/2.0 >\n";
-  size_t ver_len = sizeof (ver_str);
+  size_t ver_len = strlen (ver_str);
   buffer_size_t from_start, from_end;
   //tracef ("   consider %.*s\n", from_scanner_end - from_scanner_start, messages);
 

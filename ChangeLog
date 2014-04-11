@@ -1,3 +1,8 @@
+2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (process_otp_scanner_input): Use strlen to get ver_str
+	length.
+
 2014-04-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.c (process_otp_scanner_input): Fix hard-coded version string
