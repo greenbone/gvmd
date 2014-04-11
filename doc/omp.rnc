@@ -9961,6 +9961,7 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_description
        & get_report_formats_response_report_format_global
        & get_report_formats_response_report_format_predefined
+       & get_report_formats_response_report_format_alerts
        & ( ( get_report_formats_response_report_format_file*
            & get_report_formats_response_report_format_signature )
            | ( get_report_formats_response_report_format_trust
@@ -10082,6 +10083,27 @@ get_report_formats_response_report_format_predefined
  = element predefined
      {
        boolean
+     }
+
+get_report_formats_response_report_format_alerts
+ = element alerts
+     {
+       get_report_formats_response_report_format_alerts_alert*
+     }
+
+get_report_formats_response_report_format_alerts_alert
+ = element alert
+     {
+       # UUID of the alert.
+       attribute id { uuid }
+       & get_report_formats_response_report_format_alerts_alert_name
+     }
+
+# The name of the alert.
+get_report_formats_response_report_format_alerts_alert_name
+ = element name
+     {
+       name
      }
 
 get_report_formats_response_report_format_param

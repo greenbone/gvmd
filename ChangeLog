@@ -1,5 +1,11 @@
 2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_report_formats): Add ALERTS.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (create_agent, create_alert)
 	(create_group, create_lsc_credential, create_port_list)
 	(create_port_range, create_report_format, create_role)

@@ -11211,6 +11211,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>description</e>
           <e>global</e>
           <e>predefined</e>
+          <e>alerts</e>
           <or>
             <g>
               <any><e>file</e></any>
@@ -11315,6 +11316,30 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>predefined</name>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>alerts</name>
+          <summary>Alerts using the report format</summary>
+          <pattern>
+            <any><e>alert</e></any>
+          </pattern>
+          <ele>
+            <name>alert</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the alert</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the alert</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
         </ele>
         <ele>
           <name>param</name>
