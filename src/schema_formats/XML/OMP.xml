@@ -5962,6 +5962,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -5975,6 +5976,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>package</e>
           </or>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the agent</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the agent</summary>
@@ -6332,6 +6345,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>config</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -6348,6 +6367,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>families</e></o>
           <o><e>preferences</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the config</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the config</summary>
@@ -6735,6 +6766,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>alert</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -6748,6 +6785,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>method</e>
           <e>filter</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the alert</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the alert</summary>
@@ -7044,6 +7093,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>filter</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>term</e>
@@ -7056,6 +7111,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <o><e>alerts</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the filter</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the filter</summary>
@@ -7368,6 +7435,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>group</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -7378,6 +7451,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>users</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the group</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the group</summary>
@@ -7673,6 +7758,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>integer</type>
             <summary>A unique number identifying this info, if available</summary>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -7687,6 +7773,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>nvt</e></o>
           <o><e>allinfo</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the info</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the info</summary>
@@ -8498,6 +8596,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>login</e>
           <e>comment</e>
@@ -8512,6 +8611,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>public_key</e></o>
           <o><e>package</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the LSC credential</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the LSC credential</summary>
@@ -8924,6 +9035,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <o>
             <g>
+              <e>owner</e>
               <e>creation_time</e>
               <e>modification_time</e>
               <e>hosts</e>
@@ -9035,11 +9147,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
+          <name>owner</name>
+          <summary>Owner of the note</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>creation_time</name>
+          <summary>Date and time the note was created</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
+          <summary>Date and time the note was last modified</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
@@ -9946,6 +10072,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>override</name>
         <pattern>
           <e>nvt</e>
+          <e>owner</e>
           <e>creation_time</e>
           <e>modification_time</e>
           <e>writable</e>
@@ -9998,11 +10125,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
         </ele>
         <ele>
+          <name>owner</name>
+          <summary>Owner of the override</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>creation_time</name>
+          <summary>Date and time the override was created</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
+          <summary>Date and time the override was last modified</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
@@ -10349,8 +10490,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>permission</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
+
           <e>creation_time</e>
           <e>modification_time</e>
           <e>writable</e>
@@ -10360,6 +10508,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>resource</e>
           <e>subject</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the permission</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the permission</summary>
@@ -10708,6 +10868,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -10724,6 +10885,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </g>
           </o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the port list</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the port list</summary>
@@ -11503,6 +11676,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>creation_time</e>
           <e>modification_time</e>
@@ -11529,6 +11703,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </or>
           <any><e>param</e></any>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report format</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the report format</summary>
@@ -12301,6 +12487,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>role</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -12311,6 +12503,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>users</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the role</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the role</summary>
@@ -12593,6 +12797,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -12615,6 +12820,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </g>
           </o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the schedule</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the schedule</summary>
@@ -12984,6 +13201,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -12997,6 +13215,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>login</e>
           <o><e>tasks</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the slave</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the slave</summary>
@@ -13355,6 +13585,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>uuid of the tag (omitted when using names_only)</summary>
             <type>uuid</type>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <o>
             <g>
@@ -13370,6 +13601,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </g>
           </o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the tag</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>Name of the tag (usually namespace:predicate)</summary>
@@ -13664,6 +13907,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>target</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -13684,6 +13933,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>reverse_lookup_unify</e>
           <o><e>tasks</e></o>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the target</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the target</summary>
@@ -14165,6 +14426,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>task</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -14173,7 +14440,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>in_use</e>
           <e>permissions</e>
           <e>user_tags</e>
-          <e>owner</e>
           <e>status</e>
           <e>progress</e>
           <e>alterable</e>
@@ -14193,6 +14459,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <any><e>reports</e></any>
           <e>preferences</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the task</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the task</summary>
@@ -14312,18 +14590,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>host</name>
               <pattern>text</pattern>
             </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the task</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -15087,6 +15353,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>uuid</type>
             <required>1</required>
           </attrib>
+          <e>owner</e>
           <e>name</e>
           <e>comment</e>
           <e>creation_time</e>
@@ -15100,6 +15367,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>sources</e>
         </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the user</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>name</name>
           <summary>The name of the user</summary>

@@ -10697,6 +10697,15 @@ describe_scap_response_scap_currently_syncing_user
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the agent.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the agent.</div>
 <ul style="list-style: none"></ul>
@@ -10891,6 +10900,7 @@ get_agents_response_agent
  = element agent
      {
        attribute id { uuid }
+       &amp; get_agents_response_agent_owner
        &amp; get_agents_response_agent_name
        &amp; get_agents_response_agent_comment
        &amp; get_agents_response_agent_creation_time
@@ -10901,6 +10911,18 @@ get_agents_response_agent
        &amp; get_agents_response_agent_user_tags
        &amp; ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
+     }
+
+get_agents_response_agent_owner
+ = element owner
+     {
+       get_agents_response_agent_owner_name
+     }
+
+get_agents_response_agent_owner_name
+ = element name
+     {
+       name
      }
 
 get_agents_response_agent_name
@@ -11234,6 +11256,19 @@ get_agents_response_agent_count_page
               &lt;<b>config</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the config.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the config.</div>
 <ul style="list-style: none"></ul>
@@ -11458,7 +11493,9 @@ get_agents_response_agent_count_page
 get_configs_response_config
  = element config
      {
-       get_configs_response_config_name
+       attribute id { uuid }
+       &amp; get_configs_response_config_owner
+       &amp; get_configs_response_config_name
        &amp; get_configs_response_config_comment
        &amp; get_configs_response_config_creation_time
        &amp; get_configs_response_config_modification_time
@@ -11473,6 +11510,18 @@ get_configs_response_config
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
        &amp; get_configs_response_config_preferences?
+     }
+
+get_configs_response_config_owner
+ = element owner
+     {
+       get_configs_response_config_owner_name
+     }
+
+get_configs_response_config_owner_name
+ = element name
+     {
+       name
      }
 
 get_configs_response_config_name
@@ -11854,6 +11903,19 @@ get_configs_response_config_preferences_preference_value
               &lt;<b>alert</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the alert.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
 <ul style="list-style: none"></ul>
@@ -12018,7 +12080,9 @@ get_configs_response_config_preferences_preference_value
 get_alerts_response_alert
  = element alert
      {
-       get_alerts_response_alert_name
+       attribute id { uuid }
+       &amp; get_alerts_response_alert_owner
+       &amp; get_alerts_response_alert_name
        &amp; get_alerts_response_alert_comment
        &amp; get_alerts_response_alert_creation_time
        &amp; get_alerts_response_alert_modification_time
@@ -12030,6 +12094,18 @@ get_alerts_response_alert
        &amp; get_alerts_response_alert_event
        &amp; get_alerts_response_alert_method
        &amp; get_alerts_response_alert_filter
+     }
+
+get_alerts_response_alert_owner
+ = element owner
+     {
+       get_alerts_response_alert_owner_name
+     }
+
+get_alerts_response_alert_owner_name
+ = element name
+     {
+       name
      }
 
 get_alerts_response_alert_name
@@ -12311,6 +12387,19 @@ get_alerts_response_alert_filter_trash
               &lt;<b>filter</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the filter.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the filter.</div>
 <ul style="list-style: none"></ul>
@@ -12524,7 +12613,9 @@ get_alerts_response_alert_filter_trash
 get_filters_response_filter
  = element filter
      {
-       get_filters_response_filter_name
+       attribute id { uuid }
+       &amp; get_filters_response_filter_owner
+       &amp; get_filters_response_filter_name
        &amp; get_filters_response_filter_comment
        &amp; get_filters_response_filter_term
        &amp; get_filters_response_filter_type
@@ -12535,6 +12626,18 @@ get_filters_response_filter
        &amp; get_filters_response_filter_permissions
        &amp; get_filters_response_filter_user_tags
        &amp; get_filters_response_filter_alerts?
+     }
+
+get_filters_response_filter_owner
+ = element owner
+     {
+       get_filters_response_filter_owner_name
+     }
+
+get_filters_response_filter_owner_name
+ = element name
+     {
+       name
      }
 
 get_filters_response_filter_name
@@ -12822,6 +12925,19 @@ get_filters_response_filter_count_page
               &lt;<b>group</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the group.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the group.</div>
 <ul style="list-style: none"></ul>
@@ -12991,7 +13107,9 @@ get_filters_response_filter_count_page
 get_groups_response_group
  = element group
      {
-       get_groups_response_group_name
+       attribute id { uuid }
+       &amp; get_groups_response_group_owner
+       &amp; get_groups_response_group_name
        &amp; get_groups_response_group_comment
        &amp; get_groups_response_group_creation_time
        &amp; get_groups_response_group_modification_time
@@ -13000,6 +13118,18 @@ get_groups_response_group
        &amp; get_groups_response_group_permissions
        &amp; get_groups_response_group_user_tags
        &amp; get_groups_response_group_users
+     }
+
+get_groups_response_group_owner
+ = element owner
+     {
+       get_groups_response_group_owner_name
+     }
+
+get_groups_response_group_owner_name
+ = element name
+     {
+       name
      }
 
 get_groups_response_group_name
@@ -13273,6 +13403,15 @@ get_groups_response_group_count_page
           (<a href="#type_integer">integer</a>)
           A unique number identifying this info, if available.
           </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the info.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the info.</div>
@@ -13708,6 +13847,7 @@ get_info_response_info
  = element info
      {
        attribute id { integer }?
+       &amp; get_info_response_info_owner
        &amp; get_info_response_info_name
        &amp; get_info_response_info_comment
        &amp; get_info_response_info_creation_time
@@ -13721,6 +13861,18 @@ get_info_response_info
        &amp; get_info_response_info_ovaldef?
        &amp; get_info_response_info_nvt?
        &amp; get_info_response_info_allinfo?
+     }
+
+get_info_response_info_owner
+ = element owner
+     {
+       get_info_response_info_owner_name
+     }
+
+get_info_response_info_owner_name
+ = element name
+     {
+       name
      }
 
 get_info_response_info_name
@@ -14431,6 +14583,15 @@ get_info_response_details
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the LSC credential.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the LSC credential.</div>
 <ul style="list-style: none"></ul>
@@ -14578,6 +14739,7 @@ get_lsc_credentials_response_lsc_credential
  = element lsc_credential
      {
        attribute id { uuid }
+       &amp; get_lsc_credentials_response_lsc_credential_owner
        &amp; get_lsc_credentials_response_lsc_credential_name
        &amp; get_lsc_credentials_response_lsc_credential_login
        &amp; get_lsc_credentials_response_lsc_credential_comment
@@ -14591,6 +14753,18 @@ get_lsc_credentials_response_lsc_credential
        &amp; get_lsc_credentials_response_lsc_credential_targets
        &amp; get_lsc_credentials_response_lsc_credential_public_key?
        &amp; get_lsc_credentials_response_lsc_credential_package?
+     }
+
+get_lsc_credentials_response_lsc_credential_owner
+ = element owner
+     {
+       get_lsc_credentials_response_lsc_credential_owner_name
+     }
+
+get_lsc_credentials_response_lsc_credential_owner_name
+ = element name
+     {
+       name
      }
 
 get_lsc_credentials_response_lsc_credential_name
@@ -14973,12 +15147,23 @@ get_lsc_credentials_response_lsc_credential_package
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>creation_time</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Date and time the note was created.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>modification_time</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Date and time the note was last modified.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>hosts</b>&gt;
@@ -15235,7 +15420,8 @@ get_notes_response_note
        &amp; get_notes_response_note_orphan
        &amp; get_notes_response_note_permissions
        &amp; get_notes_response_note_user_tags
-       &amp; ( get_notes_response_note_creation_time
+       &amp; ( get_notes_response_note_owner
+           &amp; get_notes_response_note_creation_time
            &amp; get_notes_response_note_modification_time
            &amp; get_notes_response_note_hosts
            &amp; get_notes_response_note_port
@@ -15329,6 +15515,18 @@ get_notes_response_note_user_tags_tag_comment
  = element comment
      {
        text
+     }
+
+get_notes_response_note_owner
+ = element owner
+     {
+       get_notes_response_note_owner_name
+     }
+
+get_notes_response_note_owner_name
+ = element name
+     {
+       name
      }
 
 get_notes_response_note_creation_time
@@ -16486,12 +16684,23 @@ get_nvt_feed_version_response_version
 </ul>
 </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the override.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>creation_time</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Date and time the override was created.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>modification_time</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Date and time the override was last modified.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>writable</b>&gt;
@@ -16826,6 +17035,7 @@ get_overrides_response_override
  = element override
      {
        get_overrides_response_override_nvt
+       &amp; get_overrides_response_override_owner
        &amp; get_overrides_response_override_creation_time
        &amp; get_overrides_response_override_modification_time
        &amp; get_overrides_response_override_writable
@@ -16864,6 +17074,18 @@ get_overrides_response_override_text
      {
        text
        &amp; attribute excerpt { boolean }
+     }
+
+get_overrides_response_override_owner
+ = element owner
+     {
+       get_overrides_response_override_owner_name
+     }
+
+get_overrides_response_override_owner_name
+ = element name
+     {
+       name
      }
 
 get_overrides_response_override_creation_time
@@ -17209,6 +17431,19 @@ get_overrides_response_override_result_description
               &lt;<b>permission</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the permission.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
 <ul style="list-style: none"></ul>
@@ -17429,7 +17664,9 @@ get_overrides_response_override_result_description
 get_permissions_response_permission
  = element permission
      {
-       get_permissions_response_permission_name
+       attribute id { uuid }
+       &amp; get_permissions_response_permission_owner
+       &amp; get_permissions_response_permission_name
        &amp; get_permissions_response_permission_comment
        &amp; get_permissions_response_permission_creation_time
        &amp; get_permissions_response_permission_modification_time
@@ -17439,6 +17676,18 @@ get_permissions_response_permission
        &amp; get_permissions_response_permission_user_tags
        &amp; get_permissions_response_permission_resource
        &amp; get_permissions_response_permission_subject
+     }
+
+get_permissions_response_permission_owner
+ = element owner
+     {
+       get_permissions_response_permission_owner_name
+     }
+
+get_permissions_response_permission_owner_name
+ = element name
+     {
+       name
      }
 
 get_permissions_response_permission_name
@@ -17769,6 +18018,15 @@ get_permissions_response_permission_count_page
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the port list.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the port list.</div>
 <ul style="list-style: none"></ul>
@@ -17949,6 +18207,7 @@ get_port_lists_response_port_list
  = element port_list
      {
        attribute id { uuid }
+       &amp; get_port_lists_response_port_list_owner
        &amp; get_port_lists_response_port_list_name
        &amp; get_port_lists_response_port_list_comment
        &amp; get_port_lists_response_port_list_creation_time
@@ -17960,6 +18219,18 @@ get_port_lists_response_port_list
        &amp; get_port_lists_response_port_list_port_count
        &amp; ( get_port_lists_response_port_list_port_ranges
            &amp; get_port_lists_response_port_list_targets )?
+     }
+
+get_port_lists_response_port_list_owner
+ = element owner
+     {
+       get_port_lists_response_port_list_owner_name
+     }
+
+get_port_lists_response_port_list_owner_name
+ = element name
+     {
+       name
      }
 
 get_port_lists_response_port_list_name
@@ -18836,6 +19107,15 @@ get_reports_response_report
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the report format.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the report format.</div>
 <ul style="list-style: none"></ul>
@@ -19071,6 +19351,7 @@ get_report_formats_response_report_format
  = element report_format
      {
        attribute id { uuid }
+       &amp; get_report_formats_response_report_format_owner
        &amp; get_report_formats_response_report_format_name
        &amp; get_report_formats_response_report_format_creation_time
        &amp; get_report_formats_response_report_format_modification_time
@@ -19090,6 +19371,18 @@ get_report_formats_response_report_format
            | ( get_report_formats_response_report_format_trust
            &amp; get_report_formats_response_report_format_active ) )
        &amp; get_report_formats_response_report_format_param*
+     }
+
+get_report_formats_response_report_format_owner
+ = element owner
+     {
+       get_report_formats_response_report_format_owner_name
+     }
+
+get_report_formats_response_report_format_owner_name
+ = element name
+     {
+       name
      }
 
 get_report_formats_response_report_format_name
@@ -20044,6 +20337,19 @@ get_results_response_results_result_overrides
               &lt;<b>role</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the role.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the role.</div>
 <ul style="list-style: none"></ul>
@@ -20213,7 +20519,9 @@ get_results_response_results_result_overrides
 get_roles_response_role
  = element role
      {
-       get_roles_response_role_name
+       attribute id { uuid }
+       &amp; get_roles_response_role_owner
+       &amp; get_roles_response_role_name
        &amp; get_roles_response_role_comment
        &amp; get_roles_response_role_creation_time
        &amp; get_roles_response_role_modification_time
@@ -20222,6 +20530,18 @@ get_roles_response_role
        &amp; get_roles_response_role_permissions
        &amp; get_roles_response_role_user_tags
        &amp; get_roles_response_role_users
+     }
+
+get_roles_response_role_owner
+ = element owner
+     {
+       get_roles_response_role_owner_name
+     }
+
+get_roles_response_role_owner_name
+ = element name
+     {
+       name
      }
 
 get_roles_response_role_name
@@ -20485,6 +20805,15 @@ get_roles_response_role_count_page
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the schedule.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the schedule.</div>
 <ul style="list-style: none"></ul>
@@ -20655,6 +20984,7 @@ get_schedules_response_schedule
  = element schedule
      {
        attribute id { uuid }
+       &amp; get_schedules_response_schedule_owner
        &amp; get_schedules_response_schedule_name
        &amp; get_schedules_response_schedule_comment
        &amp; get_schedules_response_schedule_creation_time
@@ -20672,6 +21002,18 @@ get_schedules_response_schedule
        &amp; get_schedules_response_schedule_duration
        &amp; get_schedules_response_schedule_simple_duration
        &amp; ( get_schedules_response_schedule_tasks )?
+     }
+
+get_schedules_response_schedule_owner
+ = element owner
+     {
+       get_schedules_response_schedule_owner_name
+     }
+
+get_schedules_response_schedule_owner_name
+ = element name
+     {
+       name
      }
 
 get_schedules_response_schedule_name
@@ -21101,6 +21443,15 @@ get_settings_response_settings_setting_value
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the slave.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the slave.</div>
 <ul style="list-style: none"></ul>
@@ -21238,6 +21589,7 @@ get_slaves_response_slave
  = element slave
      {
        attribute id { uuid }
+       &amp; get_slaves_response_slave_owner
        &amp; get_slaves_response_slave_name
        &amp; get_slaves_response_slave_comment
        &amp; get_slaves_response_slave_creation_time
@@ -21250,6 +21602,18 @@ get_slaves_response_slave
        &amp; get_slaves_response_slave_port
        &amp; get_slaves_response_slave_login
        &amp; get_slaves_response_slave_tasks?
+     }
+
+get_slaves_response_slave_owner
+ = element owner
+     {
+       get_slaves_response_slave_owner_name
+     }
+
+get_slaves_response_slave_owner_name
+ = element name
+     {
+       name
      }
 
 get_slaves_response_slave_name
@@ -21636,6 +22000,15 @@ get_system_reports_response_system_report_report
           uuid of the tag (omitted when using names_only).
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the tag.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
 <ul style="list-style: none"></ul>
@@ -21798,6 +22171,7 @@ get_tags_response_tag
  = element tag
      {
        attribute id { uuid }?
+       &amp; get_tags_response_tag_owner
        &amp; get_tags_response_tag_name
        &amp; ( get_tags_response_tag_comment
            &amp; get_tags_response_tag_creation_time
@@ -21808,6 +22182,18 @@ get_tags_response_tag
            &amp; get_tags_response_tag_value
            &amp; get_tags_response_tag_active
            &amp; get_tags_response_tag_orphan )?
+     }
+
+get_tags_response_tag_owner
+ = element owner
+     {
+       get_tags_response_tag_owner_name
+     }
+
+get_tags_response_tag_owner_name
+ = element name
+     {
+       name
      }
 
 get_tags_response_tag_name
@@ -22115,6 +22501,19 @@ get_target_locators_response_target_locator_name
               &lt;<b>target</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the target.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the target.</div>
 <ul style="list-style: none"></ul>
@@ -22404,7 +22803,9 @@ get_target_locators_response_target_locator_name
 get_targets_response_target
  = element target
      {
-       get_targets_response_target_name
+       attribute id { uuid }
+       &amp; get_targets_response_target_owner
+       &amp; get_targets_response_target_name
        &amp; get_targets_response_target_comment
        &amp; get_targets_response_target_creation_time
        &amp; get_targets_response_target_modification_time
@@ -22423,6 +22824,18 @@ get_targets_response_target
        &amp; get_targets_response_target_reverse_lookup_only
        &amp; get_targets_response_target_reverse_lookup_unify
        &amp; get_targets_response_target_tasks?
+     }
+
+get_targets_response_target_owner
+ = element owner
+     {
+       get_targets_response_target_owner_name
+     }
+
+get_targets_response_target_owner_name
+ = element name
+     {
+       name
      }
 
 get_targets_response_target_name
@@ -22849,6 +23262,19 @@ get_targets_response_target_count_page
               &lt;<b>task</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the task.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
 <ul style="list-style: none"></ul>
@@ -22926,15 +23352,6 @@ get_targets_response_target_count_page
 </ul>
 </li>
 </ul>
-</li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the task.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
 </li>
 <li>
               &lt;<b>status</b>&gt;
@@ -23406,7 +23823,9 @@ get_tasks_response_apply_overrides
 get_tasks_response_task
  = element task
      {
-       get_tasks_response_task_name
+       attribute id { uuid }
+       &amp; get_tasks_response_task_owner
+       &amp; get_tasks_response_task_name
        &amp; get_tasks_response_task_comment
        &amp; get_tasks_response_task_creation_time
        &amp; get_tasks_response_task_modification_time
@@ -23414,7 +23833,6 @@ get_tasks_response_task
        &amp; get_tasks_response_task_in_use
        &amp; get_tasks_response_task_permissions
        &amp; get_tasks_response_task_user_tags
-       &amp; get_tasks_response_task_owner
        &amp; get_tasks_response_task_status
        &amp; get_tasks_response_task_progress
        &amp; get_tasks_response_task_alterable
@@ -23433,6 +23851,18 @@ get_tasks_response_task
        &amp; get_tasks_response_task_rcfile?
        &amp; get_tasks_response_task_reports*
        &amp; get_tasks_response_task_preferences
+     }
+
+get_tasks_response_task_owner
+ = element owner
+     {
+       get_tasks_response_task_owner_name
+     }
+
+get_tasks_response_task_owner_name
+ = element name
+     {
+       name
      }
 
 get_tasks_response_task_name
@@ -23553,18 +23983,6 @@ get_tasks_response_task_progress_host_progress_host
  = element host
      {
        text
-     }
-
-get_tasks_response_task_owner
- = element owner
-     {
-       get_tasks_response_task_owner_name
-     }
-
-get_tasks_response_task_owner_name
- = element name
-     {
-       name
      }
 
 get_tasks_response_task_alterable
@@ -24353,6 +24771,15 @@ get_tasks_response_task_preferences_preference_value
           ID of user.
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the user.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the user.</div>
 <ul style="list-style: none"></ul>
@@ -24504,6 +24931,7 @@ get_users_response_user
  = element user
      {
        attribute id { uuid }
+       &amp; get_users_response_user_owner
        &amp; get_users_response_user_name
        &amp; get_users_response_user_comment
        &amp; get_users_response_user_creation_time
@@ -24516,6 +24944,18 @@ get_users_response_user
        &amp; get_users_response_user_permissions
        &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
+     }
+
+get_users_response_user_owner
+ = element owner
+     {
+       get_users_response_user_owner_name
+     }
+
+get_users_response_user_owner_name
+ = element name
+     {
+       name
      }
 
 get_users_response_user_name

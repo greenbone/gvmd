@@ -6642,6 +6642,7 @@ get_agents_response_agent
  = element agent
      {
        attribute id { uuid }
+       & get_agents_response_agent_owner
        & get_agents_response_agent_name
        & get_agents_response_agent_comment
        & get_agents_response_agent_creation_time
@@ -6652,6 +6653,20 @@ get_agents_response_agent
        & get_agents_response_agent_user_tags
        & ( get_agents_response_agent_installer
            | get_agents_response_agent_package )
+     }
+
+# Owner of the agent.
+get_agents_response_agent_owner
+ = element owner
+     {
+       get_agents_response_agent_owner_name
+     }
+
+# The name of the owner.
+get_agents_response_agent_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the agent.
@@ -6876,7 +6891,9 @@ get_configs_response
 get_configs_response_config
  = element config
      {
-       get_configs_response_config_name
+       attribute id { uuid }
+       & get_configs_response_config_owner
+       & get_configs_response_config_name
        & get_configs_response_config_comment
        & get_configs_response_config_creation_time
        & get_configs_response_config_modification_time
@@ -6891,6 +6908,20 @@ get_configs_response_config
        & get_configs_response_config_tasks
        & get_configs_response_config_families?
        & get_configs_response_config_preferences?
+     }
+
+# Owner of the config.
+get_configs_response_config_owner
+ = element owner
+     {
+       get_configs_response_config_owner_name
+     }
+
+# The name of the owner.
+get_configs_response_config_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the config.
@@ -7176,7 +7207,9 @@ get_alerts_response
 get_alerts_response_alert
  = element alert
      {
-       get_alerts_response_alert_name
+       attribute id { uuid }
+       & get_alerts_response_alert_owner
+       & get_alerts_response_alert_name
        & get_alerts_response_alert_comment
        & get_alerts_response_alert_creation_time
        & get_alerts_response_alert_modification_time
@@ -7188,6 +7221,20 @@ get_alerts_response_alert
        & get_alerts_response_alert_event
        & get_alerts_response_alert_method
        & get_alerts_response_alert_filter
+     }
+
+# Owner of the alert.
+get_alerts_response_alert_owner
+ = element owner
+     {
+       get_alerts_response_alert_owner_name
+     }
+
+# The name of the owner.
+get_alerts_response_alert_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the alert.
@@ -7407,7 +7454,9 @@ get_filters_response
 get_filters_response_filter
  = element filter
      {
-       get_filters_response_filter_name
+       attribute id { uuid }
+       & get_filters_response_filter_owner
+       & get_filters_response_filter_name
        & get_filters_response_filter_comment
        & get_filters_response_filter_term
        & get_filters_response_filter_type
@@ -7418,6 +7467,20 @@ get_filters_response_filter
        & get_filters_response_filter_permissions
        & get_filters_response_filter_user_tags
        & get_filters_response_filter_alerts?
+     }
+
+# Owner of the filter.
+get_filters_response_filter_owner
+ = element owner
+     {
+       get_filters_response_filter_owner_name
+     }
+
+# The name of the owner.
+get_filters_response_filter_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the filter.
@@ -7645,7 +7708,9 @@ get_groups_response
 get_groups_response_group
  = element group
      {
-       get_groups_response_group_name
+       attribute id { uuid }
+       & get_groups_response_group_owner
+       & get_groups_response_group_name
        & get_groups_response_group_comment
        & get_groups_response_group_creation_time
        & get_groups_response_group_modification_time
@@ -7654,6 +7719,20 @@ get_groups_response_group
        & get_groups_response_group_permissions
        & get_groups_response_group_user_tags
        & get_groups_response_group_users
+     }
+
+# Owner of the group.
+get_groups_response_group_owner
+ = element owner
+     {
+       get_groups_response_group_owner_name
+     }
+
+# The name of the owner.
+get_groups_response_group_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the group.
@@ -7855,6 +7934,7 @@ get_info_response_info
      {
        # A unique number identifying this info, if available.
        attribute id { integer }?
+       & get_info_response_info_owner
        & get_info_response_info_name
        & get_info_response_info_comment
        & get_info_response_info_creation_time
@@ -7868,6 +7948,20 @@ get_info_response_info
        & get_info_response_info_ovaldef?
        & get_info_response_info_nvt?
        & get_info_response_info_allinfo?
+     }
+
+# Owner of the info.
+get_info_response_info_owner
+ = element owner
+     {
+       get_info_response_info_owner_name
+     }
+
+# The name of the owner.
+get_info_response_info_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the info.
@@ -8450,6 +8544,7 @@ get_lsc_credentials_response_lsc_credential
  = element lsc_credential
      {
        attribute id { uuid }
+       & get_lsc_credentials_response_lsc_credential_owner
        & get_lsc_credentials_response_lsc_credential_name
        & get_lsc_credentials_response_lsc_credential_login
        & get_lsc_credentials_response_lsc_credential_comment
@@ -8463,6 +8558,20 @@ get_lsc_credentials_response_lsc_credential
        & get_lsc_credentials_response_lsc_credential_targets
        & get_lsc_credentials_response_lsc_credential_public_key?
        & get_lsc_credentials_response_lsc_credential_package?
+     }
+
+# Owner of the LSC credential.
+get_lsc_credentials_response_lsc_credential_owner
+ = element owner
+     {
+       get_lsc_credentials_response_lsc_credential_owner_name
+     }
+
+# The name of the owner.
+get_lsc_credentials_response_lsc_credential_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the LSC credential.
@@ -8708,7 +8817,8 @@ get_notes_response_note
        & get_notes_response_note_orphan
        & get_notes_response_note_permissions
        & get_notes_response_note_user_tags
-       & ( get_notes_response_note_creation_time
+       & ( get_notes_response_note_owner
+           & get_notes_response_note_creation_time
            & get_notes_response_note_modification_time
            & get_notes_response_note_hosts
            & get_notes_response_note_port
@@ -8815,12 +8925,28 @@ get_notes_response_note_user_tags_tag_comment
        text
      }
 
+# Owner of the note.
+get_notes_response_note_owner
+ = element owner
+     {
+       get_notes_response_note_owner_name
+     }
+
+# The name of the owner.
+get_notes_response_note_owner_name
+ = element name
+     {
+       name
+     }
+
+# Date and time the note was created.
 get_notes_response_note_creation_time
  = element creation_time
      {
        iso_time
      }
 
+# Date and time the note was last modified.
 get_notes_response_note_modification_time
  = element modification_time
      {
@@ -9397,6 +9523,7 @@ get_overrides_response_override
  = element override
      {
        get_overrides_response_override_nvt
+       & get_overrides_response_override_owner
        & get_overrides_response_override_creation_time
        & get_overrides_response_override_modification_time
        & get_overrides_response_override_writable
@@ -9438,12 +9565,28 @@ get_overrides_response_override_text
        & attribute excerpt { boolean }
      }
 
+# Owner of the override.
+get_overrides_response_override_owner
+ = element owner
+     {
+       get_overrides_response_override_owner_name
+     }
+
+# The name of the owner.
+get_overrides_response_override_owner_name
+ = element name
+     {
+       name
+     }
+
+# Date and time the override was created.
 get_overrides_response_override_creation_time
  = element creation_time
      {
        iso_time
      }
 
+# Date and time the override was last modified.
 get_overrides_response_override_modification_time
  = element modification_time
      {
@@ -9702,7 +9845,9 @@ get_permissions_response
 get_permissions_response_permission
  = element permission
      {
-       get_permissions_response_permission_name
+       attribute id { uuid }
+       & get_permissions_response_permission_owner
+       & get_permissions_response_permission_name
        & get_permissions_response_permission_comment
        & get_permissions_response_permission_creation_time
        & get_permissions_response_permission_modification_time
@@ -9712,6 +9857,20 @@ get_permissions_response_permission
        & get_permissions_response_permission_user_tags
        & get_permissions_response_permission_resource
        & get_permissions_response_permission_subject
+     }
+
+# Owner of the permission.
+get_permissions_response_permission_owner
+ = element owner
+     {
+       get_permissions_response_permission_owner_name
+     }
+
+# The name of the owner.
+get_permissions_response_permission_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the permission.
@@ -9978,6 +10137,7 @@ get_port_lists_response_port_list
  = element port_list
      {
        attribute id { uuid }
+       & get_port_lists_response_port_list_owner
        & get_port_lists_response_port_list_name
        & get_port_lists_response_port_list_comment
        & get_port_lists_response_port_list_creation_time
@@ -9989,6 +10149,20 @@ get_port_lists_response_port_list
        & get_port_lists_response_port_list_port_count
        & ( get_port_lists_response_port_list_port_ranges
            & get_port_lists_response_port_list_targets )?
+     }
+
+# Owner of the port list.
+get_port_lists_response_port_list_owner
+ = element owner
+     {
+       get_port_lists_response_port_list_owner_name
+     }
+
+# The name of the owner.
+get_port_lists_response_port_list_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the port list.
@@ -10299,6 +10473,7 @@ get_report_formats_response_report_format
  = element report_format
      {
        attribute id { uuid }
+       & get_report_formats_response_report_format_owner
        & get_report_formats_response_report_format_name
        & get_report_formats_response_report_format_creation_time
        & get_report_formats_response_report_format_modification_time
@@ -10318,6 +10493,20 @@ get_report_formats_response_report_format
            | ( get_report_formats_response_report_format_trust
            & get_report_formats_response_report_format_active ) )
        & get_report_formats_response_report_format_param*
+     }
+
+# Owner of the report format.
+get_report_formats_response_report_format_owner
+ = element owner
+     {
+       get_report_formats_response_report_format_owner_name
+     }
+
+# The name of the owner.
+get_report_formats_response_report_format_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the report format.
@@ -10867,7 +11056,9 @@ get_roles_response
 get_roles_response_role
  = element role
      {
-       get_roles_response_role_name
+       attribute id { uuid }
+       & get_roles_response_role_owner
+       & get_roles_response_role_name
        & get_roles_response_role_comment
        & get_roles_response_role_creation_time
        & get_roles_response_role_modification_time
@@ -10876,6 +11067,20 @@ get_roles_response_role
        & get_roles_response_role_permissions
        & get_roles_response_role_user_tags
        & get_roles_response_role_users
+     }
+
+# Owner of the role.
+get_roles_response_role_owner
+ = element owner
+     {
+       get_roles_response_role_owner_name
+     }
+
+# The name of the owner.
+get_roles_response_role_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the role.
@@ -11072,6 +11277,7 @@ get_schedules_response_schedule
  = element schedule
      {
        attribute id { uuid }
+       & get_schedules_response_schedule_owner
        & get_schedules_response_schedule_name
        & get_schedules_response_schedule_comment
        & get_schedules_response_schedule_creation_time
@@ -11089,6 +11295,20 @@ get_schedules_response_schedule
        & get_schedules_response_schedule_duration
        & get_schedules_response_schedule_simple_duration
        & ( get_schedules_response_schedule_tasks )?
+     }
+
+# Owner of the schedule.
+get_schedules_response_schedule_owner
+ = element owner
+     {
+       get_schedules_response_schedule_owner_name
+     }
+
+# The name of the owner.
+get_schedules_response_schedule_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the schedule.
@@ -11351,6 +11571,7 @@ get_slaves_response_slave
  = element slave
      {
        attribute id { uuid }
+       & get_slaves_response_slave_owner
        & get_slaves_response_slave_name
        & get_slaves_response_slave_comment
        & get_slaves_response_slave_creation_time
@@ -11363,6 +11584,20 @@ get_slaves_response_slave
        & get_slaves_response_slave_port
        & get_slaves_response_slave_login
        & get_slaves_response_slave_tasks?
+     }
+
+# Owner of the slave.
+get_slaves_response_slave_owner
+ = element owner
+     {
+       get_slaves_response_slave_owner_name
+     }
+
+# The name of the owner.
+get_slaves_response_slave_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the slave.
@@ -11573,6 +11808,7 @@ get_tags_response_tag
      {
        # uuid of the tag (omitted when using names_only).
        attribute id { uuid }?
+       & get_tags_response_tag_owner
        & get_tags_response_tag_name
        & ( get_tags_response_tag_comment
            & get_tags_response_tag_creation_time
@@ -11583,6 +11819,20 @@ get_tags_response_tag
            & get_tags_response_tag_value
            & get_tags_response_tag_active
            & get_tags_response_tag_orphan )?
+     }
+
+# Owner of the tag.
+get_tags_response_tag_owner
+ = element owner
+     {
+       get_tags_response_tag_owner_name
+     }
+
+# The name of the owner.
+get_tags_response_tag_owner_name
+ = element name
+     {
+       name
      }
 
 # Name of the tag (usually namespace:predicate).
@@ -11784,7 +12034,9 @@ get_targets_response
 get_targets_response_target
  = element target
      {
-       get_targets_response_target_name
+       attribute id { uuid }
+       & get_targets_response_target_owner
+       & get_targets_response_target_name
        & get_targets_response_target_comment
        & get_targets_response_target_creation_time
        & get_targets_response_target_modification_time
@@ -11803,6 +12055,20 @@ get_targets_response_target
        & get_targets_response_target_reverse_lookup_only
        & get_targets_response_target_reverse_lookup_unify
        & get_targets_response_target_tasks?
+     }
+
+# Owner of the target.
+get_targets_response_target_owner
+ = element owner
+     {
+       get_targets_response_target_owner_name
+     }
+
+# The name of the owner.
+get_targets_response_target_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the target.
@@ -12162,7 +12428,9 @@ get_tasks_response_apply_overrides
 get_tasks_response_task
  = element task
      {
-       get_tasks_response_task_name
+       attribute id { uuid }
+       & get_tasks_response_task_owner
+       & get_tasks_response_task_name
        & get_tasks_response_task_comment
        & get_tasks_response_task_creation_time
        & get_tasks_response_task_modification_time
@@ -12170,7 +12438,6 @@ get_tasks_response_task
        & get_tasks_response_task_in_use
        & get_tasks_response_task_permissions
        & get_tasks_response_task_user_tags
-       & get_tasks_response_task_owner
        & get_tasks_response_task_status
        & get_tasks_response_task_progress
        & get_tasks_response_task_alterable
@@ -12189,6 +12456,20 @@ get_tasks_response_task
        & get_tasks_response_task_rcfile?
        & get_tasks_response_task_reports*
        & get_tasks_response_task_preferences
+     }
+
+# Owner of the task.
+get_tasks_response_task_owner
+ = element owner
+     {
+       get_tasks_response_task_owner_name
+     }
+
+# The name of the owner.
+get_tasks_response_task_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the task.
@@ -12327,20 +12608,6 @@ get_tasks_response_task_progress_host_progress_host
  = element host
      {
        text
-     }
-
-# Owner of the task.
-get_tasks_response_task_owner
- = element owner
-     {
-       get_tasks_response_task_owner_name
-     }
-
-# The name of the owner.
-get_tasks_response_task_owner_name
- = element name
-     {
-       name
      }
 
 # Whether the task is an Alterable Task.
@@ -12883,6 +13150,7 @@ get_users_response_user
      {
        # ID of user.
        attribute id { uuid }
+       & get_users_response_user_owner
        & get_users_response_user_name
        & get_users_response_user_comment
        & get_users_response_user_creation_time
@@ -12895,6 +13163,20 @@ get_users_response_user
        & get_users_response_user_permissions
        & get_users_response_user_user_tags
        & get_users_response_user_sources
+     }
+
+# Owner of the user.
+get_users_response_user_owner
+ = element owner
+     {
+       get_users_response_user_owner_name
+     }
+
+# The name of the owner.
+get_users_response_user_owner_name
+ = element name
+     {
+       name
      }
 
 # The name of the user.
