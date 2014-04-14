@@ -6322,6 +6322,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan configs instead</summary>
         <type>boolean</type>
@@ -6868,13 +6878,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan alerts instead</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>filter</name>
-        <summary>Whether to get the alerts filters</summary>
+        <name>tasks</name>
+        <summary>Whether to get the tasks using the alerts</summary>
         <type>boolean</type>
       </attrib>
     </pattern>
@@ -8765,6 +8785,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>lsc_credential_id</name>
         <summary>ID of single LSC credential to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -11249,6 +11279,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>details</name>
         <summary>Whether to include full port list details</summary>
         <type>boolean</type>
@@ -12277,6 +12317,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>report_format_id</name>
         <summary>ID of single report format to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -13556,6 +13606,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan schedules instead</summary>
         <type>boolean</type>
@@ -14100,6 +14160,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>slave_id</name>
         <summary>ID of single slave to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
@@ -15460,6 +15530,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>trash</name>
         <summary>Whether to get the trashcan tasks instead</summary>
         <type>boolean</type>
@@ -16522,6 +16602,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>user_id</name>
         <summary>ID of single user to get</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>name</name>
+        <summary>Name of single user to get</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan users instead</summary>
+        <type>boolean</type>
       </attrib>
     </pattern>
     <response>

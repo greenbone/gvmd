@@ -1,5 +1,13 @@
 2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml: Ensure all relevant GET commands have
+	filter attributes.
+	(get_users): Add other missing attributes too.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Remove sort_field and sort_order
 	attributes from all relevant GET responses.  Add compatibility change
 	for 4.0 about these attributes.

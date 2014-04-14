@@ -3854,6 +3854,10 @@ get_configs
      {
        # ID of single config to get.
        attribute config_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan configs instead.
        attribute trash { boolean }?
        & # Whether to get config families, preferences, nvt selectors and tasks.
@@ -3874,10 +3878,14 @@ get_alerts
      {
        # ID of single alert to get.
        attribute alert_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan alerts instead.
        attribute trash { boolean }?
-       & # Whether to get the alerts filters.
-       attribute filter { boolean }?
+       & # Whether to get the tasks using the alerts.
+       attribute tasks { boolean }?
      }
 
 ## Command get_filters
@@ -3946,6 +3954,10 @@ get_lsc_credentials
      {
        # ID of single LSC credential to get.
        attribute lsc_credential_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan LSC credentials instead.
        attribute trash { boolean }?
        & # Whether to include a list of targets using the credentials.
@@ -4063,6 +4075,10 @@ get_port_lists
      {
        # ID of single port list to get.
        attribute port_list_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to include full port list details.
        attribute details { boolean }?
        & # Whether to include targets using this port list.
@@ -4157,6 +4173,10 @@ get_report_formats
      {
        # ID of single report format to get.
        attribute report_format_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan report formats instead.
        attribute trash { boolean }?
        & # Whether to include alerts that use the report format.
@@ -4218,6 +4238,10 @@ get_schedules
      {
        # ID of single schedule to get.
        attribute schedule_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan schedules instead.
        attribute trash { boolean }?
        & # Whether to include tasks using the schedules.
@@ -4252,6 +4276,10 @@ get_slaves
      {
        # ID of single slave to get.
        attribute slave_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan slaves instead.
        attribute trash { boolean }?
        & # Whether to include a list of tasks using the slave.
@@ -4332,6 +4360,10 @@ get_tasks
      {
        # ID of single task to get.
        attribute task_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
        & # Whether to get the trashcan tasks instead.
        attribute trash { boolean }?
        & # Whether to include full task details.
@@ -4351,6 +4383,14 @@ get_users
      {
        # ID of single user to get.
        attribute user_id { uuid }?
+       & # Name of single user to get.
+       attribute name { text }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan users instead.
+       attribute trash { boolean }?
      }
 
 ## Command get_version

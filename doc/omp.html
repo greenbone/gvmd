@@ -11255,6 +11255,16 @@ get_agents_response_agent_count_page
           ID of single config to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan configs instead.
@@ -11592,6 +11602,8 @@ get_agents_response_agent_count_page
  = element get_configs
      {
        attribute config_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute export { boolean }?
@@ -12085,14 +12097,24 @@ get_configs_response_config_count_page
           ID of single alert to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan alerts instead.
           </li>
 <li>
-          @<b>filter</b>
+          @<b>tasks</b>
           (<a href="#type_boolean">boolean</a>)
-          Whether to get the alerts filters.
+          Whether to get the tasks using the alerts.
           </li>
 </ul>
 </li>
@@ -12270,8 +12292,10 @@ get_configs_response_config_count_page
  = element get_alerts
      {
        attribute alert_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
-       &amp; attribute filter { boolean }?
+       &amp; attribute tasks { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_alerts_response
@@ -14931,6 +14955,16 @@ get_info_response_details
           ID of single LSC credential to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan LSC credentials instead.
@@ -15180,6 +15214,8 @@ get_info_response_details
  = element get_lsc_credentials
      {
        attribute lsc_credential_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
@@ -18688,6 +18724,16 @@ get_permissions_response_permission_count_page
           ID of single port list to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include full port list details.
@@ -18971,6 +19017,8 @@ get_permissions_response_permission_count_page
  = element get_port_lists
      {
        attribute port_list_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute details { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute trash { boolean }?
@@ -20118,6 +20166,16 @@ get_reports_response_report_count_page
           ID of single report format to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan report formats instead.
@@ -20460,6 +20518,8 @@ get_reports_response_report_count_page
  = element get_report_formats
      {
        attribute report_format_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute alerts { boolean }?
        &amp; attribute params { boolean }?
@@ -22051,6 +22111,16 @@ get_roles_response_role_count_page
           ID of single schedule to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan schedules instead.
@@ -22320,6 +22390,8 @@ get_roles_response_role_count_page
  = element get_schedules
      {
        attribute schedule_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
      }
@@ -22915,6 +22987,16 @@ get_settings_response_setting_count_page
           ID of single slave to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan slaves instead.
@@ -23151,6 +23233,8 @@ get_settings_response_setting_count_page
  = element get_slaves
      {
        attribute slave_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
      }
@@ -24984,6 +25068,16 @@ get_targets_response_target_count_page
           ID of single task to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan tasks instead.
@@ -25610,6 +25704,8 @@ get_targets_response_target_count_page
  = element get_tasks
      {
        attribute task_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute rcfile { boolean }?
@@ -26654,11 +26750,33 @@ get_tasks_response_task_count_page
 <h4>7.75.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
           @<b>user_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of single user to get.
-          </li></ul>
+          </li>
+<li>
+          @<b>name</b>
+          (text)
+          Name of single user to get.
+          </li>
+<li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
+          @<b>trash</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to get the trashcan users instead.
+          </li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -26904,6 +27022,10 @@ get_tasks_response_task_count_page
  = element get_users
      {
        attribute user_id { uuid }?
+       &amp; attribute name { text }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
+       &amp; attribute trash { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_users_response
