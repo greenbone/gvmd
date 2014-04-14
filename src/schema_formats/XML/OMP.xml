@@ -6197,13 +6197,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First agent</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of agents</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -6749,13 +6749,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First config</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of configs</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -7488,13 +7488,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First filter</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of filters</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -7837,13 +7837,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First group</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of groups</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -9114,13 +9114,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First LSC credential</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of LSC credentials</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -9387,13 +9387,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First note</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of notes</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -10459,13 +10459,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First override</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of overrides</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -11187,13 +11187,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First permission</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of permissions</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -11624,13 +11624,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First port list</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of port lists</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -12150,13 +12150,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First report</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of reports</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -12745,13 +12745,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First report format</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of report formats</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -13515,13 +13515,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First role</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of roles</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -13944,13 +13944,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First schedule</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of schedules</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -14082,13 +14082,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First setting</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of settings</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -14459,13 +14459,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First slave</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of slaves</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -14893,13 +14893,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First tag</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of tags</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -15414,13 +15414,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First target</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of targets</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -16314,13 +16314,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First task</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of tasks</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>
@@ -16918,13 +16918,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <attrib>
             <name>start</name>
             <summary>First user</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
           <attrib>
             <name>max</name>
             <summary>Maximum number of users</summary>
-            <type>number</type>
+            <type>integer</type>
             <required>1</required>
           </attrib>
         </pattern>

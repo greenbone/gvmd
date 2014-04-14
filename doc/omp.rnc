@@ -6905,9 +6905,9 @@ get_agents_response_agents
  = element agents
      {
        # First agent.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of agents.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_agents_response_agent_count
@@ -7328,9 +7328,9 @@ get_configs_response_configs
  = element configs
      {
        # First config.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of configs.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_configs_response_config_count
@@ -7864,9 +7864,9 @@ get_filters_response_filters
  = element filters
      {
        # First filter.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of filters.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_filters_response_filter_count
@@ -8127,9 +8127,9 @@ get_groups_response_groups
  = element groups
      {
        # First group.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of groups.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_groups_response_group_count
@@ -9080,9 +9080,9 @@ get_lsc_credentials_response_lsc_credentials
  = element lsc_credentials
      {
        # First LSC credential.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of LSC credentials.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_lsc_credentials_response_lsc_credential_count
@@ -9197,9 +9197,9 @@ get_notes_response_notes
  = element notes
      {
        # First note.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of notes.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_notes_response_note_count
@@ -9946,9 +9946,9 @@ get_overrides_response_overrides
  = element overrides
      {
        # First override.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of overrides.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_overrides_response_override_count
@@ -10589,9 +10589,9 @@ get_permissions_response_permissions
  = element permissions
      {
        # First permission.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of permissions.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_permissions_response_permission_count
@@ -10939,9 +10939,9 @@ get_port_lists_response_port_lists
  = element port_lists
      {
        # First port list.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of port lists.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_port_lists_response_port_list_count
@@ -11139,9 +11139,9 @@ get_reports_response_reports
  = element reports
      {
        # First report.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of reports.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_reports_response_report_count
@@ -11560,9 +11560,9 @@ get_report_formats_response_report_formats
  = element report_formats
      {
        # First report format.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of report formats.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_report_formats_response_report_format_count
@@ -12089,9 +12089,9 @@ get_roles_response_roles
  = element roles
      {
        # First role.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of roles.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_roles_response_role_count
@@ -12441,9 +12441,9 @@ get_schedules_response_schedules
  = element schedules
      {
        # First schedule.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of schedules.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_schedules_response_schedule_count
@@ -12497,9 +12497,9 @@ get_settings_response_settings
  = element settings
      {
        # First setting.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of settings.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_settings_response_setting
@@ -12821,9 +12821,9 @@ get_slaves_response_slaves
  = element slaves
      {
        # First slave.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of slaves.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_slaves_response_slave_count
@@ -13106,9 +13106,9 @@ get_tags_response_tags
  = element tags
      {
        # First tag.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of tags.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_tags_response_tag_count
@@ -13532,9 +13532,9 @@ get_targets_response_targets
  = element targets
      {
        # First target.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of targets.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_targets_response_target_count
@@ -14366,9 +14366,9 @@ get_tasks_response_tasks
  = element tasks
      {
        # First task.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of tasks.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_tasks_response_task_count
@@ -14677,9 +14677,9 @@ get_users_response_users
  = element users
      {
        # First user.
-       attribute start { number }
+       attribute start { integer }
        & # Maximum number of users.
-       attribute max { number }
+       attribute max { integer }
      }
 
 get_users_response_user_count
