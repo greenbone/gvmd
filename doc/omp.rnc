@@ -6820,11 +6820,50 @@ get_agents_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_agents_response_filters_term
+       & get_agents_response_filters_keywords
      }
 
 # Filter term.
 get_agents_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_agents_response_filters_keywords
+ = element keywords
+     {
+       get_agents_response_filters_keywords_keyword*
+     }
+
+get_agents_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_agents_response_filters_keywords_keyword_column
+       & get_agents_response_filters_keywords_keyword_relation
+       & get_agents_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_agents_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_agents_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_agents_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -6886,6 +6925,10 @@ get_configs_response
        attribute status { status }
        & attribute status_text { text }
        & get_configs_response_config*
+       & get_configs_response_filters
+       & get_configs_response_sort
+       & get_configs_response_configs
+       & get_configs_response_config_count
      }
 
 get_configs_response_config
@@ -7192,6 +7235,109 @@ get_configs_response_config_preferences_preference_value
  = element value
      {
        text
+     }
+
+get_configs_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_configs_response_filters_term
+       & get_configs_response_filters_keywords
+     }
+
+# Filter term.
+get_configs_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_configs_response_filters_keywords
+ = element keywords
+     {
+       get_configs_response_filters_keywords_keyword*
+     }
+
+get_configs_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_configs_response_filters_keywords_keyword_column
+       & get_configs_response_filters_keywords_keyword_relation
+       & get_configs_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_configs_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_configs_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_configs_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_configs_response_sort
+ = element sort
+     {
+       text
+       & get_configs_response_sort_field
+     }
+
+get_configs_response_sort_field
+ = element field
+     {
+       get_configs_response_sort_field_order
+     }
+
+get_configs_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_configs_response_configs
+ = element configs
+     {
+       # First config.
+       attribute start { number }
+       & # Maximum number of configs.
+       attribute max { number }
+     }
+
+get_configs_response_config_count
+ = element config_count
+     {
+       get_configs_response_config_count_filtered
+       & get_configs_response_config_count_page
+     }
+
+# Number of configs after filtering.
+get_configs_response_config_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of configs on current page.
+get_configs_response_config_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_alerts
@@ -7633,11 +7779,50 @@ get_filters_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_filters_response_filters_term
+       & get_filters_response_filters_keywords
      }
 
 # Filter term.
 get_filters_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_filters_response_filters_keywords
+ = element keywords
+     {
+       get_filters_response_filters_keywords_keyword*
+     }
+
+get_filters_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_filters_response_filters_keywords_keyword_column
+       & get_filters_response_filters_keywords_keyword_relation
+       & get_filters_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_filters_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_filters_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_filters_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -7857,11 +8042,50 @@ get_groups_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_groups_response_filters_term
+       & get_groups_response_filters_keywords
      }
 
 # Filter term.
 get_groups_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_groups_response_filters_keywords
+ = element keywords
+     {
+       get_groups_response_filters_keywords_keyword*
+     }
+
+get_groups_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_groups_response_filters_keywords_keyword_column
+       & get_groups_response_filters_keywords_keyword_relation
+       & get_groups_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_groups_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_groups_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_groups_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -8467,12 +8691,51 @@ get_info_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_info_response_filters_term
+       & get_info_response_filters_keywords
      }
 
 # Filter term.
 get_info_response_filters_term
  = element term    # type text
      {
+     }
+
+# Filter broken down into keywords.
+get_info_response_filters_keywords
+ = element keywords
+     {
+       get_info_response_filters_keywords_keyword*
+     }
+
+get_info_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_info_response_filters_keywords_keyword_column
+       & get_info_response_filters_keywords_keyword_relation
+       & get_info_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_info_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_info_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_info_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
      }
 
 get_info_response_sort
@@ -8492,15 +8755,6 @@ get_info_response_sort_field_order
  = element order
      {
        xsd:token { pattern = "ascending|descending" }
-     }
-
-get_info_response_filters
- = element filters
-     {
-       # First filter.
-       attribute start { integer }
-       & # Maximum number of filters.
-       attribute max { integer }
      }
 
 get_info_response_info_count
@@ -8538,6 +8792,10 @@ get_lsc_credentials_response
        attribute status { status }
        & attribute status_text { text }
        & get_lsc_credentials_response_lsc_credential*
+       & get_lsc_credentials_response_filters
+       & get_lsc_credentials_response_sort
+       & get_lsc_credentials_response_lsc_credentials
+       & get_lsc_credentials_response_lsc_credential_count
      }
 
 get_lsc_credentials_response_lsc_credential
@@ -8731,6 +8989,109 @@ get_lsc_credentials_response_lsc_credential_package
        & attribute format { xsd:token { pattern = "rpm|deb|exe" } }
      }
 
+get_lsc_credentials_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_lsc_credentials_response_filters_term
+       & get_lsc_credentials_response_filters_keywords
+     }
+
+# Filter term.
+get_lsc_credentials_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_lsc_credentials_response_filters_keywords
+ = element keywords
+     {
+       get_lsc_credentials_response_filters_keywords_keyword*
+     }
+
+get_lsc_credentials_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_lsc_credentials_response_filters_keywords_keyword_column
+       & get_lsc_credentials_response_filters_keywords_keyword_relation
+       & get_lsc_credentials_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_lsc_credentials_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_lsc_credentials_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_lsc_credentials_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_lsc_credentials_response_sort
+ = element sort
+     {
+       text
+       & get_lsc_credentials_response_sort_field
+     }
+
+get_lsc_credentials_response_sort_field
+ = element field
+     {
+       get_lsc_credentials_response_sort_field_order
+     }
+
+get_lsc_credentials_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_lsc_credentials_response_lsc_credentials
+ = element lsc_credentials
+     {
+       # First LSC credential.
+       attribute start { number }
+       & # Maximum number of LSC credentials.
+       attribute max { number }
+     }
+
+get_lsc_credentials_response_lsc_credential_count
+ = element lsc_credential_count
+     {
+       get_lsc_credentials_response_lsc_credential_count_filtered
+       & get_lsc_credentials_response_lsc_credential_count_page
+     }
+
+# Number of LSC credentials after filtering.
+get_lsc_credentials_response_lsc_credential_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of LSC credentials on current page.
+get_lsc_credentials_response_lsc_credential_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_notes
 
 get_notes_response
@@ -8751,11 +9112,50 @@ get_notes_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_notes_response_filters_term
+       & get_notes_response_filters_keywords
      }
 
 # Filter term.
 get_notes_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_notes_response_filters_keywords
+ = element keywords
+     {
+       get_notes_response_filters_keywords_keyword*
+     }
+
+get_notes_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_notes_response_filters_keywords_keyword_column
+       & get_notes_response_filters_keywords_keyword_relation
+       & get_notes_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_notes_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_notes_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_notes_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -9461,11 +9861,50 @@ get_overrides_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_overrides_response_filters_term
+       & get_overrides_response_filters_keywords
      }
 
 # Filter term.
 get_overrides_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_overrides_response_filters_keywords
+ = element keywords
+     {
+       get_overrides_response_filters_keywords_keyword*
+     }
+
+get_overrides_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_overrides_response_filters_keywords_keyword_column
+       & get_overrides_response_filters_keywords_keyword_relation
+       & get_overrides_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_overrides_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_overrides_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_overrides_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -10065,11 +10504,50 @@ get_permissions_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_permissions_response_filters_term
+       & get_permissions_response_filters_keywords
      }
 
 # Filter term.
 get_permissions_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_permissions_response_filters_keywords
+ = element keywords
+     {
+       get_permissions_response_filters_keywords_keyword*
+     }
+
+get_permissions_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_permissions_response_filters_keywords_keyword_column
+       & get_permissions_response_filters_keywords_keyword_relation
+       & get_permissions_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_permissions_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_permissions_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_permissions_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -10131,6 +10609,10 @@ get_port_lists_response
        attribute status { status }
        & attribute status_text { text }
        & get_port_lists_response_port_list*
+       & get_port_lists_response_filters
+       & get_port_lists_response_sort
+       & get_port_lists_response_port_lists
+       & get_port_lists_response_port_list_count
      }
 
 get_port_lists_response_port_list
@@ -10366,6 +10848,109 @@ get_port_lists_response_port_list_targets_target_name
        name
      }
 
+get_port_lists_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_port_lists_response_filters_term
+       & get_port_lists_response_filters_keywords
+     }
+
+# Filter term.
+get_port_lists_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_port_lists_response_filters_keywords
+ = element keywords
+     {
+       get_port_lists_response_filters_keywords_keyword*
+     }
+
+get_port_lists_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_port_lists_response_filters_keywords_keyword_column
+       & get_port_lists_response_filters_keywords_keyword_relation
+       & get_port_lists_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_port_lists_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_port_lists_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_port_lists_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_port_lists_response_sort
+ = element sort
+     {
+       text
+       & get_port_lists_response_sort_field
+     }
+
+get_port_lists_response_sort_field
+ = element field
+     {
+       get_port_lists_response_sort_field_order
+     }
+
+get_port_lists_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_port_lists_response_port_lists
+ = element port_lists
+     {
+       # First port list.
+       attribute start { number }
+       & # Maximum number of port lists.
+       attribute max { number }
+     }
+
+get_port_lists_response_port_list_count
+ = element port_list_count
+     {
+       get_port_lists_response_port_list_count_filtered
+       & get_port_lists_response_port_list_count_page
+     }
+
+# Number of port lists after filtering.
+get_port_lists_response_port_list_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of port lists on current page.
+get_port_lists_response_port_list_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_preferences
 
 get_preferences_response
@@ -10437,6 +11022,10 @@ get_reports_response
        attribute status { status }
        & attribute status_text { text }
        & get_reports_response_report*
+       & ( get_reports_response_filters
+           & get_reports_response_sort
+           & get_reports_response_reports
+           & get_reports_response_report_count )?
      }
 
 # Actually attributes and either base64 or a report.
@@ -10459,6 +11048,109 @@ get_reports_response_report
        & report_report
      }
 
+get_reports_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_reports_response_filters_term
+       & get_reports_response_filters_keywords
+     }
+
+# Filter term.
+get_reports_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_reports_response_filters_keywords
+ = element keywords
+     {
+       get_reports_response_filters_keywords_keyword*
+     }
+
+get_reports_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_reports_response_filters_keywords_keyword_column
+       & get_reports_response_filters_keywords_keyword_relation
+       & get_reports_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_reports_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_reports_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_reports_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_reports_response_sort
+ = element sort
+     {
+       text
+       & get_reports_response_sort_field
+     }
+
+get_reports_response_sort_field
+ = element field
+     {
+       get_reports_response_sort_field_order
+     }
+
+get_reports_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_reports_response_reports
+ = element reports
+     {
+       # First report.
+       attribute start { number }
+       & # Maximum number of reports.
+       attribute max { number }
+     }
+
+get_reports_response_report_count
+ = element report_count
+     {
+       get_reports_response_report_count_filtered
+       & get_reports_response_report_count_page
+     }
+
+# Number of reports after filtering.
+get_reports_response_report_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of reports on current page.
+get_reports_response_report_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_report_formats
 
 get_report_formats_response
@@ -10467,6 +11159,10 @@ get_report_formats_response
        attribute status { status }
        & attribute status_text { text }
        & get_report_formats_response_report_format*
+       & get_report_formats_response_filters
+       & get_report_formats_response_sort
+       & get_report_formats_response_report_formats
+       & get_report_formats_response_report_format_count
      }
 
 get_report_formats_response_report_format
@@ -10771,6 +11467,109 @@ get_report_formats_response_report_format_active
  = element active
      {
        boolean
+     }
+
+get_report_formats_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_report_formats_response_filters_term
+       & get_report_formats_response_filters_keywords
+     }
+
+# Filter term.
+get_report_formats_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_report_formats_response_filters_keywords
+ = element keywords
+     {
+       get_report_formats_response_filters_keywords_keyword*
+     }
+
+get_report_formats_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_report_formats_response_filters_keywords_keyword_column
+       & get_report_formats_response_filters_keywords_keyword_relation
+       & get_report_formats_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_report_formats_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_report_formats_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_report_formats_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_report_formats_response_sort
+ = element sort
+     {
+       text
+       & get_report_formats_response_sort_field
+     }
+
+get_report_formats_response_sort_field
+ = element field
+     {
+       get_report_formats_response_sort_field_order
+     }
+
+get_report_formats_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_report_formats_response_report_formats
+ = element report_formats
+     {
+       # First report format.
+       attribute start { number }
+       & # Maximum number of report formats.
+       attribute max { number }
+     }
+
+get_report_formats_response_report_format_count
+ = element report_format_count
+     {
+       get_report_formats_response_report_format_count_filtered
+       & get_report_formats_response_report_format_count_page
+     }
+
+# Number of report formats after filtering.
+get_report_formats_response_report_format_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of report formats on current page.
+get_report_formats_response_report_format_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_results
@@ -11205,11 +12004,50 @@ get_roles_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_roles_response_filters_term
+       & get_roles_response_filters_keywords
      }
 
 # Filter term.
 get_roles_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_roles_response_filters_keywords
+ = element keywords
+     {
+       get_roles_response_filters_keywords_keyword*
+     }
+
+get_roles_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_roles_response_filters_keywords_keyword_column
+       & get_roles_response_filters_keywords_keyword_relation
+       & get_roles_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_roles_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_roles_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_roles_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -11271,6 +12109,10 @@ get_schedules_response
        attribute status { status }
        & attribute status_text { text }
        & get_schedules_response_schedule*
+       & get_schedules_response_filters
+       & get_schedules_response_sort
+       & get_schedules_response_schedules
+       & get_schedules_response_schedule_count
      }
 
 get_schedules_response_schedule
@@ -11508,6 +12350,109 @@ get_schedules_response_schedule_tasks_task_name
        name
      }
 
+get_schedules_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_schedules_response_filters_term
+       & get_schedules_response_filters_keywords
+     }
+
+# Filter term.
+get_schedules_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_schedules_response_filters_keywords
+ = element keywords
+     {
+       get_schedules_response_filters_keywords_keyword*
+     }
+
+get_schedules_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_schedules_response_filters_keywords_keyword_column
+       & get_schedules_response_filters_keywords_keyword_relation
+       & get_schedules_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_schedules_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_schedules_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_schedules_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_schedules_response_sort
+ = element sort
+     {
+       text
+       & get_schedules_response_sort_field
+     }
+
+get_schedules_response_sort_field
+ = element field
+     {
+       get_schedules_response_sort_field_order
+     }
+
+get_schedules_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_schedules_response_schedules
+ = element schedules
+     {
+       # First schedule.
+       attribute start { number }
+       & # Maximum number of schedules.
+       attribute max { number }
+     }
+
+get_schedules_response_schedule_count
+ = element schedule_count
+     {
+       get_schedules_response_schedule_count_filtered
+       & get_schedules_response_schedule_count_page
+     }
+
+# Number of schedules after filtering.
+get_schedules_response_schedule_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of schedules on current page.
+get_schedules_response_schedule_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_settings
 
 get_settings_response
@@ -11517,6 +12462,8 @@ get_settings_response
        & attribute status_text { text }
        & get_settings_response_filters
        & get_settings_response_settings
+       & get_settings_response_setting*
+       & get_settings_response_setting_count
      }
 
 get_settings_response_filters
@@ -11535,26 +12482,57 @@ get_settings_response_filters_term
 get_settings_response_settings
  = element settings
      {
-       get_settings_response_settings_setting
+       # First setting.
+       attribute start { number }
+       & # Maximum number of settings.
+       attribute max { number }
      }
 
-get_settings_response_settings_setting
+get_settings_response_setting
  = element setting
      {
-       get_settings_response_settings_setting_name
-       & get_settings_response_settings_setting_value
+       get_settings_response_setting_name
+       & get_settings_response_setting_comment
+       & get_settings_response_setting_value
      }
 
-get_settings_response_settings_setting_name
+get_settings_response_setting_name
  = element name
      {
        text
      }
 
-get_settings_response_settings_setting_value
+get_settings_response_setting_comment
+ = element comment
+     {
+       text
+     }
+
+get_settings_response_setting_value
  = element value
      {
        text
+     }
+
+get_settings_response_setting_count
+ = element setting_count
+     {
+       get_settings_response_setting_count_filtered
+       & get_settings_response_setting_count_page
+     }
+
+# Number of settings after filtering.
+get_settings_response_setting_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of settings on current page.
+get_settings_response_setting_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_slaves
@@ -11565,6 +12543,10 @@ get_slaves_response
        attribute status { status }
        & attribute status_text { text }
        & get_slaves_response_slave*
+       & get_slaves_response_filters
+       & get_slaves_response_sort
+       & get_slaves_response_slaves
+       & get_slaves_response_slave_count
      }
 
 get_slaves_response_slave
@@ -11746,6 +12728,109 @@ get_slaves_response_slave_tasks_task_name
  = element name
      {
        name
+     }
+
+get_slaves_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_slaves_response_filters_term
+       & get_slaves_response_filters_keywords
+     }
+
+# Filter term.
+get_slaves_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_slaves_response_filters_keywords
+ = element keywords
+     {
+       get_slaves_response_filters_keywords_keyword*
+     }
+
+get_slaves_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_slaves_response_filters_keywords_keyword_column
+       & get_slaves_response_filters_keywords_keyword_relation
+       & get_slaves_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_slaves_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_slaves_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_slaves_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_slaves_response_sort
+ = element sort
+     {
+       text
+       & get_slaves_response_sort_field
+     }
+
+get_slaves_response_sort_field
+ = element field
+     {
+       get_slaves_response_sort_field_order
+     }
+
+get_slaves_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_slaves_response_slaves
+ = element slaves
+     {
+       # First slave.
+       attribute start { number }
+       & # Maximum number of slaves.
+       attribute max { number }
+     }
+
+get_slaves_response_slave_count
+ = element slave_count
+     {
+       get_slaves_response_slave_count_filtered
+       & get_slaves_response_slave_count_page
+     }
+
+# Number of slaves after filtering.
+get_slaves_response_slave_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of slaves on current page.
+get_slaves_response_slave_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_system_reports
@@ -11936,11 +13021,50 @@ get_tags_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_tags_response_filters_term
+       & get_tags_response_filters_keywords
      }
 
 # Filter term.
 get_tags_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_tags_response_filters_keywords
+ = element keywords
+     {
+       get_tags_response_filters_keywords_keyword*
+     }
+
+get_tags_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_tags_response_filters_keywords_keyword_column
+       & get_tags_response_filters_keywords_keyword_relation
+       & get_tags_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_tags_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_tags_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_tags_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -12323,11 +13447,50 @@ get_targets_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_targets_response_filters_term
+       & get_targets_response_filters_keywords
      }
 
 # Filter term.
 get_targets_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_targets_response_filters_keywords
+ = element keywords
+     {
+       get_targets_response_filters_keywords_keyword*
+     }
+
+get_targets_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_targets_response_filters_keywords_keyword_column
+       & get_targets_response_filters_keywords_keyword_relation
+       & get_targets_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_targets_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_targets_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_targets_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -12388,35 +13551,12 @@ get_tasks_response
      {
        attribute status { status }
        & attribute status_text { text }
-       & get_tasks_response_task_count
-       & get_tasks_response_sort
        & get_tasks_response_apply_overrides
        & get_tasks_response_task*
-     }
-
-get_tasks_response_task_count
- = element task_count
-     {
-       integer
-     }
-
-get_tasks_response_sort
- = element sort
-     {
-       get_tasks_response_sort_field*
-     }
-
-get_tasks_response_sort_field
- = element field
-     {
-       text
-       & get_tasks_response_sort_field_order
-     }
-
-get_tasks_response_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
+       & get_tasks_response_filters
+       & get_tasks_response_sort
+       & get_tasks_response_tasks
+       & get_tasks_response_task_count
      }
 
 get_tasks_response_apply_overrides
@@ -13135,6 +14275,109 @@ get_tasks_response_task_preferences_preference_value
        text
      }
 
+get_tasks_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_tasks_response_filters_term
+       & get_tasks_response_filters_keywords
+     }
+
+# Filter term.
+get_tasks_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_tasks_response_filters_keywords
+ = element keywords
+     {
+       get_tasks_response_filters_keywords_keyword*
+     }
+
+get_tasks_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_tasks_response_filters_keywords_keyword_column
+       & get_tasks_response_filters_keywords_keyword_relation
+       & get_tasks_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_tasks_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_tasks_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_tasks_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_tasks_response_sort
+ = element sort
+     {
+       text
+       & get_tasks_response_sort_field
+     }
+
+get_tasks_response_sort_field
+ = element field
+     {
+       get_tasks_response_sort_field_order
+     }
+
+get_tasks_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_tasks_response_tasks
+ = element tasks
+     {
+       # First task.
+       attribute start { number }
+       & # Maximum number of tasks.
+       attribute max { number }
+     }
+
+get_tasks_response_task_count
+ = element task_count
+     {
+       get_tasks_response_task_count_filtered
+       & get_tasks_response_task_count_page
+     }
+
+# Number of tasks after filtering.
+get_tasks_response_task_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of tasks on current page.
+get_tasks_response_task_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_users
 
 get_users_response
@@ -13143,6 +14386,10 @@ get_users_response
        attribute status { status }
        & attribute status_text { text }
        & get_users_response_user*
+       & get_users_response_filters
+       & get_users_response_sort
+       & get_users_response_users
+       & get_users_response_user_count
      }
 
 get_users_response_user
@@ -13337,6 +14584,109 @@ get_users_response_user_user_tags_tag_comment
 get_users_response_user_sources
  = element sources    # type sources
      {
+     }
+
+get_users_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_users_response_filters_term
+       & get_users_response_filters_keywords
+     }
+
+# Filter term.
+get_users_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_users_response_filters_keywords
+ = element keywords
+     {
+       get_users_response_filters_keywords_keyword*
+     }
+
+get_users_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_users_response_filters_keywords_keyword_column
+       & get_users_response_filters_keywords_keyword_relation
+       & get_users_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_users_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_users_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_users_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_users_response_sort
+ = element sort
+     {
+       text
+       & get_users_response_sort_field
+     }
+
+get_users_response_sort_field
+ = element field
+     {
+       get_users_response_sort_field_order
+     }
+
+get_users_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_users_response_users
+ = element users
+     {
+       # First user.
+       attribute start { number }
+       & # Maximum number of users.
+       attribute max { number }
+     }
+
+get_users_response_user_count
+ = element user_count
+     {
+       get_users_response_user_count_filtered
+       & get_users_response_user_count_page
+     }
+
+# Number of users after filtering.
+get_users_response_user_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of users on current page.
+get_users_response_user_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_version

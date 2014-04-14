@@ -1,7 +1,17 @@
+2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml: Ensure all relevant GET responses
+	include FILTERS, SORT and the count elements like TARGETS and
+	TARGET_COUNT.  Ensure that these FILTERS all include KEYWORDS.
+	(get_info): Remove extra FILTERS.
+	(get_settings): Match to code.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-04-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/schema_formats/XML/OMP.xml: Ensure all GET responsed include
-	OWNER.
+	* src/schema_formats/XML/OMP.xml: Ensure all relevant GET responses
+	include OWNER.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 

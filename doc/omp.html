@@ -10824,6 +10824,30 @@ describe_scap_response_scap_currently_syncing_user
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -11056,10 +11080,45 @@ get_agents_response_filters
      {
        attribute id { uuid }
        &amp; get_agents_response_filters_term
+       &amp; get_agents_response_filters_keywords
      }
 
 get_agents_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_agents_response_filters_keywords
+ = element keywords
+     {
+       get_agents_response_filters_keywords_keyword*
+     }
+
+get_agents_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_agents_response_filters_keywords_keyword_column
+       &amp; get_agents_response_filters_keywords_keyword_relation
+       &amp; get_agents_response_filters_keywords_keyword_value
+     }
+
+get_agents_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_agents_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_agents_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -11463,6 +11522,85 @@ get_agents_response_agent_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>configs</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First config.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of configs.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>config_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of configs after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of configs on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -11488,6 +11626,10 @@ get_agents_response_agent_count_page
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_configs_response_config*
+       &amp; get_configs_response_filters
+       &amp; get_configs_response_sort
+       &amp; get_configs_response_configs
+       &amp; get_configs_response_config_count
      }
 
 get_configs_response_config
@@ -11758,6 +11900,99 @@ get_configs_response_config_preferences_preference_value
  = element value
      {
        text
+     }
+
+get_configs_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_configs_response_filters_term
+       &amp; get_configs_response_filters_keywords
+     }
+
+get_configs_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_configs_response_filters_keywords
+ = element keywords
+     {
+       get_configs_response_filters_keywords_keyword*
+     }
+
+get_configs_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_configs_response_filters_keywords_keyword_column
+       &amp; get_configs_response_filters_keywords_keyword_relation
+       &amp; get_configs_response_filters_keywords_keyword_value
+     }
+
+get_configs_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_configs_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_configs_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_configs_response_sort
+ = element sort
+     {
+       text
+       &amp; get_configs_response_sort_field
+     }
+
+get_configs_response_sort_field
+ = element field
+     {
+       get_configs_response_sort_field_order
+     }
+
+get_configs_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_configs_response_configs
+ = element configs
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_configs_response_config_count
+ = element config_count
+     {
+       get_configs_response_config_count_filtered
+       &amp; get_configs_response_config_count_page
+     }
+
+get_configs_response_config_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_configs_response_config_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -12522,6 +12757,30 @@ get_alerts_response_alert_filter_trash
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
           @<b>start</b>
           (<a href="#type_number">number</a>)
           First filter.
@@ -12555,6 +12814,30 @@ get_alerts_response_alert_filter_trash
               &lt;<b>term</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 <li>
           @<b>start</b>
@@ -12770,10 +13053,45 @@ get_filters_response_filters
      {
        attribute id { uuid }
        &amp; get_filters_response_filters_term
+       &amp; get_filters_response_filters_keywords
      }
 
 get_filters_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_filters_response_filters_keywords
+ = element keywords
+     {
+       get_filters_response_filters_keywords_keyword*
+     }
+
+get_filters_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_filters_response_filters_keywords_keyword_column
+       &amp; get_filters_response_filters_keywords_keyword_relation
+       &amp; get_filters_response_filters_keywords_keyword_value
+     }
+
+get_filters_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_filters_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_filters_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -13036,6 +13354,30 @@ get_filters_response_filter_count_page
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -13237,10 +13579,45 @@ get_groups_response_filters
      {
        attribute id { uuid }
        &amp; get_groups_response_filters_term
+       &amp; get_groups_response_filters_keywords
      }
 
 get_groups_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_groups_response_filters_keywords
+ = element keywords
+     {
+       get_groups_response_filters_keywords_keyword*
+     }
+
+get_groups_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_groups_response_filters_keywords_keyword_column
+       &amp; get_groups_response_filters_keywords_keyword_relation
+       &amp; get_groups_response_filters_keywords_keyword_value
+     }
+
+get_groups_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_groups_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_groups_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -13773,15 +14150,29 @@ get_groups_response_group_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-          @<b>start</b>
-          (<a href="#type_integer">integer</a>)
-          First filter.
-          </li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
 <li>
-          @<b>max</b>
-          (<a href="#type_integer">integer</a>)
-          Maximum number of filters.
-          </li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -14311,11 +14702,46 @@ get_info_response_filters
      {
        attribute id { uuid }
        &amp; get_info_response_filters_term
+       &amp; get_info_response_filters_keywords
      }
 
 get_info_response_filters_term
  = element term    # type text
      {
+     }
+
+get_info_response_filters_keywords
+ = element keywords
+     {
+       get_info_response_filters_keywords_keyword*
+     }
+
+get_info_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_info_response_filters_keywords_keyword_column
+       &amp; get_info_response_filters_keywords_keyword_relation
+       &amp; get_info_response_filters_keywords_keyword_value
+     }
+
+get_info_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_info_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_info_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
      }
 
 get_info_response_sort
@@ -14335,13 +14761,6 @@ get_info_response_sort_field_order
  = element order
      {
        xsd:token { pattern = "ascending|descending" }
-     }
-
-get_info_response_filters
- = element filters
-     {
-       attribute start { integer }
-       &amp; attribute max { integer }
      }
 
 get_info_response_info_count
@@ -14711,6 +15130,85 @@ get_info_response_details
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>lsc_credentials</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First LSC credential.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of LSC credentials.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>lsc_credential_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of LSC credentials after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of LSC credentials on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -14733,6 +15231,10 @@ get_info_response_details
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_lsc_credentials_response_lsc_credential*
+       &amp; get_lsc_credentials_response_filters
+       &amp; get_lsc_credentials_response_sort
+       &amp; get_lsc_credentials_response_lsc_credentials
+       &amp; get_lsc_credentials_response_lsc_credential_count
      }
 
 get_lsc_credentials_response_lsc_credential
@@ -14903,6 +15405,99 @@ get_lsc_credentials_response_lsc_credential_package
      {
        base64
        &amp; attribute format { xsd:token { pattern = "rpm|deb|exe" } }
+     }
+
+get_lsc_credentials_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_lsc_credentials_response_filters_term
+       &amp; get_lsc_credentials_response_filters_keywords
+     }
+
+get_lsc_credentials_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_lsc_credentials_response_filters_keywords
+ = element keywords
+     {
+       get_lsc_credentials_response_filters_keywords_keyword*
+     }
+
+get_lsc_credentials_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_lsc_credentials_response_filters_keywords_keyword_column
+       &amp; get_lsc_credentials_response_filters_keywords_keyword_relation
+       &amp; get_lsc_credentials_response_filters_keywords_keyword_value
+     }
+
+get_lsc_credentials_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_lsc_credentials_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_lsc_credentials_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_lsc_credentials_response_sort
+ = element sort
+     {
+       text
+       &amp; get_lsc_credentials_response_sort_field
+     }
+
+get_lsc_credentials_response_sort_field
+ = element field
+     {
+       get_lsc_credentials_response_sort_field_order
+     }
+
+get_lsc_credentials_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_lsc_credentials_response_lsc_credentials
+ = element lsc_credentials
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_lsc_credentials_response_lsc_credential_count
+ = element lsc_credential_count
+     {
+       get_lsc_credentials_response_lsc_credential_count_filtered
+       &amp; get_lsc_credentials_response_lsc_credential_count_page
+     }
+
+get_lsc_credentials_response_lsc_credential_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_lsc_credentials_response_lsc_credential_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -15281,6 +15876,30 @@ get_lsc_credentials_response_lsc_credential_package
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -15359,10 +15978,45 @@ get_notes_response_filters
      {
        attribute id { uuid }
        &amp; get_notes_response_filters_term
+       &amp; get_notes_response_filters_keywords
      }
 
 get_notes_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_notes_response_filters_keywords
+ = element keywords
+     {
+       get_notes_response_filters_keywords_keyword*
+     }
+
+get_notes_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_notes_response_filters_keywords_keyword_column
+       &amp; get_notes_response_filters_keywords_keyword_relation
+       &amp; get_notes_response_filters_keywords_keyword_value
+     }
+
+get_notes_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_notes_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_notes_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -16900,6 +17554,30 @@ get_nvt_feed_version_response_version
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -16978,10 +17656,45 @@ get_overrides_response_filters
      {
        attribute id { uuid }
        &amp; get_overrides_response_filters_term
+       &amp; get_overrides_response_filters_keywords
      }
 
 get_overrides_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_overrides_response_filters_keywords
+ = element keywords
+     {
+       get_overrides_response_filters_keywords_keyword*
+     }
+
+get_overrides_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_overrides_response_filters_keywords_keyword_column
+       &amp; get_overrides_response_filters_keywords_keyword_relation
+       &amp; get_overrides_response_filters_keywords_keyword_value
+     }
+
+get_overrides_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_overrides_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_overrides_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -17592,6 +18305,30 @@ get_overrides_response_override_result_description
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -17856,10 +18593,45 @@ get_permissions_response_filters
      {
        attribute id { uuid }
        &amp; get_permissions_response_filters_term
+       &amp; get_permissions_response_filters_keywords
      }
 
 get_permissions_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_permissions_response_filters_keywords
+ = element keywords
+     {
+       get_permissions_response_filters_keywords_keyword*
+     }
+
+get_permissions_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_permissions_response_filters_keywords_keyword_column
+       &amp; get_permissions_response_filters_keywords_keyword_relation
+       &amp; get_permissions_response_filters_keywords_keyword_value
+     }
+
+get_permissions_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_permissions_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_permissions_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -18179,6 +18951,85 @@ get_permissions_response_permission_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>port_lists</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First port list.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of port lists.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>port_list_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of port lists after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of port lists on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -18201,6 +19052,10 @@ get_permissions_response_permission_count_page
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_port_lists_response_port_list*
+       &amp; get_port_lists_response_filters
+       &amp; get_port_lists_response_sort
+       &amp; get_port_lists_response_port_lists
+       &amp; get_port_lists_response_port_list_count
      }
 
 get_port_lists_response_port_list
@@ -18410,6 +19265,99 @@ get_port_lists_response_port_list_targets_target_name
  = element name
      {
        name
+     }
+
+get_port_lists_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_port_lists_response_filters_term
+       &amp; get_port_lists_response_filters_keywords
+     }
+
+get_port_lists_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_port_lists_response_filters_keywords
+ = element keywords
+     {
+       get_port_lists_response_filters_keywords_keyword*
+     }
+
+get_port_lists_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_port_lists_response_filters_keywords_keyword_column
+       &amp; get_port_lists_response_filters_keywords_keyword_relation
+       &amp; get_port_lists_response_filters_keywords_keyword_value
+     }
+
+get_port_lists_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_port_lists_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_port_lists_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_port_lists_response_sort
+ = element sort
+     {
+       text
+       &amp; get_port_lists_response_sort_field
+     }
+
+get_port_lists_response_sort_field
+ = element field
+     {
+       get_port_lists_response_sort_field_order
+     }
+
+get_port_lists_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_port_lists_response_port_lists
+ = element port_lists
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_port_lists_response_port_list_count
+ = element port_list_count
+     {
+       get_port_lists_response_port_list_count_filtered
+       &amp; get_port_lists_response_port_list_count_page
+     }
+
+get_port_lists_response_port_list_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_port_lists_response_port_list_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -18847,6 +19795,89 @@ get_preferences_response_preference_default
 <div style="margin-left: 15px; display: inline;">Actually attributes and either base64 or a report.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>reports</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First report.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of reports.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>report_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of reports after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of reports on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -18891,6 +19922,10 @@ get_preferences_response_preference_default
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_reports_response_report*
+       &amp; ( get_reports_response_filters
+           &amp; get_reports_response_sort
+           &amp; get_reports_response_reports
+           &amp; get_reports_response_report_count )?
      }
 
 get_reports_response_report
@@ -18910,6 +19945,99 @@ get_reports_response_report
        &amp; report_writable
        &amp; report_in_use
        &amp; report_report
+     }
+
+get_reports_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_reports_response_filters_term
+       &amp; get_reports_response_filters_keywords
+     }
+
+get_reports_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_reports_response_filters_keywords
+ = element keywords
+     {
+       get_reports_response_filters_keywords_keyword*
+     }
+
+get_reports_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_reports_response_filters_keywords_keyword_column
+       &amp; get_reports_response_filters_keywords_keyword_relation
+       &amp; get_reports_response_filters_keywords_keyword_value
+     }
+
+get_reports_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_reports_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_reports_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_reports_response_sort
+ = element sort
+     {
+       text
+       &amp; get_reports_response_sort_field
+     }
+
+get_reports_response_sort_field
+ = element field
+     {
+       get_reports_response_sort_field_order
+     }
+
+get_reports_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_reports_response_reports
+ = element reports
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_reports_response_report_count
+ = element report_count
+     {
+       get_reports_response_report_count_filtered
+       &amp; get_reports_response_report_count_page
+     }
+
+get_reports_response_report_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_reports_response_report_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -19322,6 +20450,85 @@ get_reports_response_report
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>report_formats</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First report format.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of report formats.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>report_format_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of report formats after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of report formats on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -19345,6 +20552,10 @@ get_reports_response_report
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_report_formats_response_report_format*
+       &amp; get_report_formats_response_filters
+       &amp; get_report_formats_response_sort
+       &amp; get_report_formats_response_report_formats
+       &amp; get_report_formats_response_report_format_count
      }
 
 get_report_formats_response_report_format
@@ -19619,6 +20830,99 @@ get_report_formats_response_report_format_active
  = element active
      {
        boolean
+     }
+
+get_report_formats_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_report_formats_response_filters_term
+       &amp; get_report_formats_response_filters_keywords
+     }
+
+get_report_formats_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_report_formats_response_filters_keywords
+ = element keywords
+     {
+       get_report_formats_response_filters_keywords_keyword*
+     }
+
+get_report_formats_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_report_formats_response_filters_keywords_keyword_column
+       &amp; get_report_formats_response_filters_keywords_keyword_relation
+       &amp; get_report_formats_response_filters_keywords_keyword_value
+     }
+
+get_report_formats_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_report_formats_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_report_formats_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_report_formats_response_sort
+ = element sort
+     {
+       text
+       &amp; get_report_formats_response_sort_field
+     }
+
+get_report_formats_response_sort_field
+ = element field
+     {
+       get_report_formats_response_sort_field_order
+     }
+
+get_report_formats_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_report_formats_response_report_formats
+ = element report_formats
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_report_formats_response_report_format_count
+ = element report_format_count
+     {
+       get_report_formats_response_report_format_count_filtered
+       &amp; get_report_formats_response_report_format_count_page
+     }
+
+get_report_formats_response_report_format_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_report_formats_response_report_format_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -20448,6 +21752,30 @@ get_results_response_results_result_overrides
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -20649,10 +21977,45 @@ get_roles_response_filters
      {
        attribute id { uuid }
        &amp; get_roles_response_filters_term
+       &amp; get_roles_response_filters_keywords
      }
 
 get_roles_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_roles_response_filters_keywords
+ = element keywords
+     {
+       get_roles_response_filters_keywords_keyword*
+     }
+
+get_roles_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_roles_response_filters_keywords_keyword_column
+       &amp; get_roles_response_filters_keywords_keyword_relation
+       &amp; get_roles_response_filters_keywords_keyword_value
+     }
+
+get_roles_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_roles_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_roles_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -20957,6 +22320,85 @@ get_roles_response_role_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>schedules</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First schedule.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of schedules.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>schedule_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of schedules after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of schedules on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -20978,6 +22420,10 @@ get_roles_response_role_count_page
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_schedules_response_schedule*
+       &amp; get_schedules_response_filters
+       &amp; get_schedules_response_sort
+       &amp; get_schedules_response_schedules
+       &amp; get_schedules_response_schedule_count
      }
 
 get_schedules_response_schedule
@@ -21190,6 +22636,99 @@ get_schedules_response_schedule_tasks_task_name
      {
        name
      }
+
+get_schedules_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_schedules_response_filters_term
+       &amp; get_schedules_response_filters_keywords
+     }
+
+get_schedules_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_schedules_response_filters_keywords
+ = element keywords
+     {
+       get_schedules_response_filters_keywords_keyword*
+     }
+
+get_schedules_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_schedules_response_filters_keywords_keyword_column
+       &amp; get_schedules_response_filters_keywords_keyword_relation
+       &amp; get_schedules_response_filters_keywords_keyword_value
+     }
+
+get_schedules_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_schedules_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_schedules_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_schedules_response_sort
+ = element sort
+     {
+       text
+       &amp; get_schedules_response_sort_field
+     }
+
+get_schedules_response_sort_field
+ = element field
+     {
+       get_schedules_response_sort_field_order
+     }
+
+get_schedules_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_schedules_response_schedules
+ = element schedules
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_schedules_response_schedule_count
+ = element schedule_count
+     {
+       get_schedules_response_schedule_count_filtered
+       &amp; get_schedules_response_schedule_count_page
+     }
+
+get_schedules_response_schedule_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_schedules_response_schedule_count_page
+ = element page
+     {
+       integer
+     }
 </pre></div>
 </div>
 <h4>7.67.3 Example: Get full details of a single schedule</h4>
@@ -21295,11 +22834,28 @@ get_schedules_response_schedule_tasks_task_name
 </li>
 <li>
               &lt;<b>settings</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>setting</b>&gt;
               <ul style="list-style: none">
 <li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First setting.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of settings.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>setting</b>&gt;
+              *<ul style="list-style: none">
+<li>
               &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -21307,7 +22863,21 @@ get_schedules_response_schedule_tasks_task_name
               <ul style="list-style: none"></ul>
 </li>
 </ul>
-</li></ul>
+</li>
+<li>
+              &lt;<b>setting_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of settings after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of settings on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -21332,6 +22902,8 @@ get_schedules_response_schedule_tasks_task_name
        &amp; attribute status_text { text }
        &amp; get_settings_response_filters
        &amp; get_settings_response_settings
+       &amp; get_settings_response_setting*
+       &amp; get_settings_response_setting_count
      }
 
 get_settings_response_filters
@@ -21349,26 +22921,53 @@ get_settings_response_filters_term
 get_settings_response_settings
  = element settings
      {
-       get_settings_response_settings_setting
+       attribute start { number }
+       &amp; attribute max { number }
      }
 
-get_settings_response_settings_setting
+get_settings_response_setting
  = element setting
      {
-       get_settings_response_settings_setting_name
-       &amp; get_settings_response_settings_setting_value
+       get_settings_response_setting_name
+       &amp; get_settings_response_setting_comment
+       &amp; get_settings_response_setting_value
      }
 
-get_settings_response_settings_setting_name
+get_settings_response_setting_name
  = element name
      {
        text
      }
 
-get_settings_response_settings_setting_value
+get_settings_response_setting_comment
+ = element comment
+     {
+       text
+     }
+
+get_settings_response_setting_value
  = element value
      {
        text
+     }
+
+get_settings_response_setting_count
+ = element setting_count
+     {
+       get_settings_response_setting_count_filtered
+       &amp; get_settings_response_setting_count_page
+     }
+
+get_settings_response_setting_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_settings_response_setting_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -21562,6 +23161,85 @@ get_settings_response_settings_setting_value
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>slaves</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First slave.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of slaves.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>slave_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of slaves after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of slaves on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -21583,6 +23261,10 @@ get_settings_response_settings_setting_value
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_slaves_response_slave*
+       &amp; get_slaves_response_filters
+       &amp; get_slaves_response_sort
+       &amp; get_slaves_response_slaves
+       &amp; get_slaves_response_slave_count
      }
 
 get_slaves_response_slave
@@ -21745,6 +23427,99 @@ get_slaves_response_slave_tasks_task_name
  = element name
      {
        name
+     }
+
+get_slaves_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_slaves_response_filters_term
+       &amp; get_slaves_response_filters_keywords
+     }
+
+get_slaves_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_slaves_response_filters_keywords
+ = element keywords
+     {
+       get_slaves_response_filters_keywords_keyword*
+     }
+
+get_slaves_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_slaves_response_filters_keywords_keyword_column
+       &amp; get_slaves_response_filters_keywords_keyword_relation
+       &amp; get_slaves_response_filters_keywords_keyword_value
+     }
+
+get_slaves_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_slaves_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_slaves_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_slaves_response_sort
+ = element sort
+     {
+       text
+       &amp; get_slaves_response_sort_field
+     }
+
+get_slaves_response_sort_field
+ = element field
+     {
+       get_slaves_response_sort_field_order
+     }
+
+get_slaves_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_slaves_response_slaves
+ = element slaves
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_slaves_response_slave_count
+ = element slave_count
+     {
+       get_slaves_response_slave_count_filtered
+       &amp; get_slaves_response_slave_count_page
+     }
+
+get_slaves_response_slave_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_slaves_response_slave_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -22098,6 +23873,30 @@ get_system_reports_response_system_report_report
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -22282,10 +24081,45 @@ get_tags_response_filters
      {
        attribute id { uuid }
        &amp; get_tags_response_filters_term
+       &amp; get_tags_response_filters_keywords
      }
 
 get_tags_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_tags_response_filters_keywords
+ = element keywords
+     {
+       get_tags_response_filters_keywords_keyword*
+     }
+
+get_tags_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_tags_response_filters_keywords_keyword_column
+       &amp; get_tags_response_filters_keywords_keyword_relation
+       &amp; get_tags_response_filters_keywords_keyword_value
+     }
+
+get_tags_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_tags_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_tags_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -22729,6 +24563,30 @@ get_target_locators_response_target_locator_name
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -23059,10 +24917,45 @@ get_targets_response_filters
      {
        attribute id { uuid }
        &amp; get_targets_response_filters_term
+       &amp; get_targets_response_filters_keywords
      }
 
 get_targets_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_targets_response_filters_keywords
+ = element keywords
+     {
+       get_targets_response_filters_keywords_keyword*
+     }
+
+get_targets_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_targets_response_filters_keywords_keyword_column
+       &amp; get_targets_response_filters_keywords_keyword_relation
+       &amp; get_targets_response_filters_keywords_keyword_value
+     }
+
+get_targets_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_targets_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_targets_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -23240,20 +25133,6 @@ get_targets_response_target_count_page
           @<b>status_text</b>
           (text)
           </li>
-<li>
-              &lt;<b>task_count</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>sort</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>field</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>order</b>&gt;
-              <ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
 <li>
               &lt;<b>apply_overrides</b>&gt;
               <ul style="list-style: none"></ul>
@@ -23761,6 +25640,85 @@ get_targets_response_target_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>tasks</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First task.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of tasks.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>task_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of tasks after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of tasks on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -23783,35 +25741,12 @@ get_targets_response_target_count_page
      {
        attribute status { status }
        &amp; attribute status_text { text }
-       &amp; get_tasks_response_task_count
-       &amp; get_tasks_response_sort
        &amp; get_tasks_response_apply_overrides
        &amp; get_tasks_response_task*
-     }
-
-get_tasks_response_task_count
- = element task_count
-     {
-       integer
-     }
-
-get_tasks_response_sort
- = element sort
-     {
-       get_tasks_response_sort_field*
-     }
-
-get_tasks_response_sort_field
- = element field
-     {
-       text
-       &amp; get_tasks_response_sort_field_order
-     }
-
-get_tasks_response_sort_field_order
- = element order
-     {
-       xsd:token { pattern = "ascending|descending" }
+       &amp; get_tasks_response_filters
+       &amp; get_tasks_response_sort
+       &amp; get_tasks_response_tasks
+       &amp; get_tasks_response_task_count
      }
 
 get_tasks_response_apply_overrides
@@ -24475,6 +26410,99 @@ get_tasks_response_task_preferences_preference_value
      {
        text
      }
+
+get_tasks_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_tasks_response_filters_term
+       &amp; get_tasks_response_filters_keywords
+     }
+
+get_tasks_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_tasks_response_filters_keywords
+ = element keywords
+     {
+       get_tasks_response_filters_keywords_keyword*
+     }
+
+get_tasks_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_tasks_response_filters_keywords_keyword_column
+       &amp; get_tasks_response_filters_keywords_keyword_relation
+       &amp; get_tasks_response_filters_keywords_keyword_value
+     }
+
+get_tasks_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_tasks_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_tasks_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_tasks_response_sort
+ = element sort
+     {
+       text
+       &amp; get_tasks_response_sort_field
+     }
+
+get_tasks_response_sort_field
+ = element field
+     {
+       get_tasks_response_sort_field_order
+     }
+
+get_tasks_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_tasks_response_tasks
+ = element tasks
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_tasks_response_task_count
+ = element task_count
+     {
+       get_tasks_response_task_count_filtered
+       &amp; get_tasks_response_task_count_page
+     }
+
+get_tasks_response_task_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_tasks_response_task_count_page
+ = element page
+     {
+       integer
+     }
 </pre></div>
 </div>
 <h4>7.74.3 Example: Get all tasks</h4>
@@ -24908,6 +26936,85 @@ get_tasks_response_task_preferences_preference_value
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>users</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_number">number</a>)
+          First user.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_number">number</a>)
+          Maximum number of users.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>user_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of users after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of users on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -24925,6 +27032,10 @@ get_tasks_response_task_preferences_preference_value
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_users_response_user*
+       &amp; get_users_response_filters
+       &amp; get_users_response_sort
+       &amp; get_users_response_users
+       &amp; get_users_response_user_count
      }
 
 get_users_response_user
@@ -25094,6 +27205,99 @@ get_users_response_user_user_tags_tag_comment
 get_users_response_user_sources
  = element sources    # type sources
      {
+     }
+
+get_users_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_users_response_filters_term
+       &amp; get_users_response_filters_keywords
+     }
+
+get_users_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_users_response_filters_keywords
+ = element keywords
+     {
+       get_users_response_filters_keywords_keyword*
+     }
+
+get_users_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_users_response_filters_keywords_keyword_column
+       &amp; get_users_response_filters_keywords_keyword_relation
+       &amp; get_users_response_filters_keywords_keyword_value
+     }
+
+get_users_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_users_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_users_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_users_response_sort
+ = element sort
+     {
+       text
+       &amp; get_users_response_sort_field
+     }
+
+get_users_response_sort_field
+ = element field
+     {
+       get_users_response_sort_field_order
+     }
+
+get_users_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_users_response_users
+ = element users
+     {
+       attribute start { number }
+       &amp; attribute max { number }
+     }
+
+get_users_response_user_count
+ = element user_count
+     {
+       get_users_response_user_count_filtered
+       &amp; get_users_response_user_count_page
+     }
+
+get_users_response_user_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_users_response_user_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
