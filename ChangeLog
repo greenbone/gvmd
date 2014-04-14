@@ -1,5 +1,19 @@
 2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove all traces of old GET_USERS attributes.
+
+	* src/omp.c (get_users_data_t, get_users_data_reset): Remove name and
+	sort_order.
+	(omp_xml_handle_start_element): Remove GET_USERS attributes.
+
+	* src/schema_formats/XML/OMP.xml: Add compatibility change for
+	GET_USERS.
+	(get_users): Remove name attribute.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml: Ensure all relevant GET commands have
 	filter attributes.
 	(get_users): Add other missing attributes too.

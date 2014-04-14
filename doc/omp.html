@@ -26757,11 +26757,6 @@ get_tasks_response_task_count_page
           ID of single user to get.
           </li>
 <li>
-          @<b>name</b>
-          (text)
-          Name of single user to get.
-          </li>
-<li>
           @<b>filter</b>
           (<a href="#type_uuid">uuid</a>)
           Filter term to use to filter query.
@@ -27022,7 +27017,6 @@ get_tasks_response_task_count_page
  = element get_users
      {
        attribute user_id { uuid }?
-       &amp; attribute name { text }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
@@ -31697,6 +31691,20 @@ run_wizard_response_response
 <div><h3>8.1
           Change in <tt>GET_USERS</tt>
 </h3></div>
+<p>In short: Attributes name and sort_order removed.</p>
+<p>
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+<p>
+        The attributes name and sort_order have been remove from the
+        GET_USERS in OpenVAS Manager.  Equivalent functionality is available
+        using filters (with the filter and filt_id attributes).
+      </p>
+</div>
+<div>
+<div><h3>8.2
+          Change in <tt>GET_USERS</tt>
+</h3></div>
 <p>In short: ROLE is optional, and role name has moved into NAME.</p>
 <p>
         In OMP 4.0 this command was served by OpenVAS Administrator.
@@ -31708,7 +31716,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.3
           Change in <tt>GET_NVTS</tt>
 </h3></div>
 <p>In short: Fingerprint element removed.</p>
@@ -31718,7 +31726,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.4
           Change in <tt>GET_DEPENDENCIES</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -31727,7 +31735,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.5
           Change in <tt>MODIFY_TARGET</tt>
 </h3></div>
 <p>In short: Missing elements now leave the associate target property alone.</p>

@@ -2848,8 +2848,6 @@ get_targets_data_reset (get_targets_data_t *data)
 typedef struct
 {
   get_data_t get;    ///< Get args.
-  gchar *name;       ///< User name.
-  int sort_order;
 } get_users_data_t;
 
 /**
@@ -2859,7 +2857,6 @@ static void
 get_users_data_reset (get_users_data_t * data)
 {
   get_data_reset (&data->get);
-  g_free (data->name);
   memset (data, 0, sizeof (get_users_data_t));
 }
 
@@ -7132,18 +7129,9 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
-            const gchar *attribute;
             get_data_parse_attributes (&get_users_data->get, "user",
                                        attribute_names,
                                        attribute_values);
-            if (find_attribute
-                (attribute_names, attribute_values, "name", &attribute))
-              openvas_append_string (&get_users_data->name, attribute);
-            if (find_attribute
-                (attribute_names, attribute_values, "sort_order", &attribute))
-              get_users_data->sort_order = strcmp (attribute, "descending");
-            else
-              get_users_data->sort_order = 1;
             set_client_state (CLIENT_GET_USERS);
           }
         else if (strcasecmp ("GET_INFO", element_name) == 0)

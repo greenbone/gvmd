@@ -16604,11 +16604,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
-        <name>name</name>
-        <summary>Name of single user to get</summary>
-        <type>text</type>
-      </attrib>
-      <attrib>
         <name>filter</name>
         <summary>Filter term to use to filter query</summary>
         <type>uuid</type>
@@ -20030,6 +20025,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_USERS</command>
+    <summary>Attributes name and sort_order removed</summary>
+    <description>
+      <p>
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+      <p>
+        The attributes name and sort_order have been remove from the
+        GET_USERS in OpenVAS Manager.  Equivalent functionality is available
+        using filters (with the filter and filt_id attributes).
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
   <change>
     <command>GET_USERS</command>
     <summary>ROLE is optional, and role name has moved into NAME</summary>

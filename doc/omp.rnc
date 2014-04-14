@@ -4383,8 +4383,6 @@ get_users
      {
        # ID of single user to get.
        attribute user_id { uuid }?
-       & # Name of single user to get.
-       attribute name { text }?
        & # Filter term to use to filter query.
        attribute filter { uuid }?
        & # ID of filter to use to filter query.
