@@ -3843,8 +3843,6 @@ get_agents
        & # Whether to include agents package information when no format was provided.
        attribute details { boolean }?
        & attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_configs
@@ -3863,8 +3861,6 @@ get_configs
        & attribute export { boolean }?
        & attribute families { boolean }?
        & attribute preferences { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
        & # Whether to get tasks using this config.
        attribute tasks { boolean }?
      }
@@ -3882,8 +3878,6 @@ get_alerts
        attribute trash { boolean }?
        & # Whether to get the alerts filters.
        attribute filter { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_filters
@@ -3957,8 +3951,6 @@ get_lsc_credentials
        & # Whether to include a list of targets using the credentials.
        attribute targets { boolean }?
        & attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_notes
@@ -3978,8 +3970,6 @@ get_notes
        & attribute task_id { uuid }?
        & attribute details { boolean }?
        & attribute result { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_nvts
@@ -4043,8 +4033,6 @@ get_overrides
        & attribute task_id { uuid }?
        & attribute details { boolean }?
        & attribute result { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_permissions
@@ -4081,8 +4069,6 @@ get_port_lists
        attribute targets { boolean }?
        & # Whether to get the trashcan port lists instead.
        attribute trash { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_preferences
@@ -4179,8 +4165,6 @@ get_report_formats
        attribute params { boolean }?
        & # Include report format file, signature and parameters.
        attribute details { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_results
@@ -4238,8 +4222,6 @@ get_schedules
        attribute trash { boolean }?
        & # Whether to include tasks using the schedules.
        attribute tasks { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_settings
@@ -4274,8 +4256,6 @@ get_slaves
        attribute trash { boolean }?
        & # Whether to include a list of tasks using the slave.
        attribute tasks { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_system_reports
@@ -4341,8 +4321,6 @@ get_targets
        attribute trash { boolean }?
        & # Whether to include list of tasks that use the target.
        attribute tasks { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_tasks
@@ -4362,8 +4340,6 @@ get_tasks
        attribute rcfile { boolean }?
        & # Whether to override result threat levels.
        attribute apply_overrides { boolean }?
-       & attribute sort_order { sort_order }?
-       & attribute sort_field { text }?
      }
 
 ## Command get_users

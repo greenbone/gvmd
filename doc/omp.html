@@ -10669,14 +10669,6 @@ describe_scap_response_scap_currently_syncing_user
           @<b>format</b>
           ("installer", "howto_install" or "howto_use")
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -10904,8 +10896,6 @@ describe_scap_response_scap_currently_syncing_user
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
        &amp; attribute format { xsd:token { pattern = "installer|howto_install|howto_use" } }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_agents_response
@@ -11287,14 +11277,6 @@ get_agents_response_agent_count_page
           (<a href="#type_boolean">boolean</a>)
           </li>
 <li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
-<li>
           @<b>tasks</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get tasks using this config.
@@ -11615,8 +11597,6 @@ get_agents_response_agent_count_page
        &amp; attribute export { boolean }?
        &amp; attribute families { boolean }?
        &amp; attribute preferences { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
        &amp; attribute tasks { boolean }?
      }
 </pre></div>
@@ -12114,14 +12094,6 @@ get_configs_response_config_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to get the alerts filters.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -12300,8 +12272,6 @@ get_configs_response_config_count_page
        attribute alert_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute filter { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_alerts_response
@@ -14974,14 +14944,6 @@ get_info_response_details
           @<b>format</b>
           ("key", "rpm", "deb" or "exe")
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -15221,8 +15183,6 @@ get_info_response_details
        &amp; attribute trash { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute format { xsd:token { pattern = "key|rpm|deb|exe" } }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_lsc_credentials_response
@@ -15641,14 +15601,6 @@ get_lsc_credentials_response_lsc_credential_count_page
           @<b>result</b>
           (<a href="#type_boolean">boolean</a>)
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -15957,8 +15909,6 @@ get_lsc_credentials_response_lsc_credential_count_page
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
        &amp; attribute result { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_notes_response
@@ -17301,14 +17251,6 @@ get_nvt_feed_version_response_version
           @<b>result</b>
           (<a href="#type_boolean">boolean</a>)
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -17635,8 +17577,6 @@ get_nvt_feed_version_response_version
        &amp; attribute task_id { uuid }?
        &amp; attribute details { boolean }?
        &amp; attribute result { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_overrides_response
@@ -18762,14 +18702,6 @@ get_permissions_response_permission_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan port lists instead.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -19042,8 +18974,6 @@ get_permissions_response_permission_count_page
        &amp; attribute details { boolean }?
        &amp; attribute targets { boolean }?
        &amp; attribute trash { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_port_lists_response
@@ -20207,14 +20137,6 @@ get_reports_response_report_count_page
           (<a href="#type_boolean">boolean</a>)
           Include report format file, signature and parameters.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -20542,8 +20464,6 @@ get_reports_response_report_count_page
        &amp; attribute alerts { boolean }?
        &amp; attribute params { boolean }?
        &amp; attribute details { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_report_formats_response
@@ -22140,14 +22060,6 @@ get_roles_response_role_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to include tasks using the schedules.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -22410,8 +22322,6 @@ get_roles_response_role_count_page
        attribute schedule_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_schedules_response
@@ -23014,14 +22924,6 @@ get_settings_response_setting_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to include a list of tasks using the slave.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -23251,8 +23153,6 @@ get_settings_response_setting_count_page
        attribute slave_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_slaves_response
@@ -24311,14 +24211,6 @@ get_target_locators_response_target_locator_name
           (<a href="#type_boolean">boolean</a>)
           Whether to include list of tasks that use the target.
           </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -24642,8 +24534,6 @@ get_target_locators_response_target_locator_name
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute tasks { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_targets_response
@@ -25112,14 +25002,6 @@ get_targets_response_target_count_page
           @<b>apply_overrides</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to override result threat levels.
-          </li>
-<li>
-          @<b>sort_order</b>
-          (<a href="#type_sort_order">sort_order</a>)
-          </li>
-<li>
-          @<b>sort_field</b>
-          (text)
           </li>
 </ul>
 </li>
@@ -25732,8 +25614,6 @@ get_targets_response_target_count_page
        &amp; attribute details { boolean }?
        &amp; attribute rcfile { boolean }?
        &amp; attribute apply_overrides { boolean }?
-       &amp; attribute sort_order { sort_order }?
-       &amp; attribute sort_field { text }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_tasks_response

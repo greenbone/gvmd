@@ -5927,14 +5927,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alts>
         </type>
       </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -6350,14 +6342,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>preferences</name>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
       <attrib>
         <name>tasks</name>
@@ -6892,14 +6876,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>filter</name>
         <summary>Whether to get the alerts filters</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -8812,14 +8788,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alts>
         </type>
       </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -9285,14 +9253,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>result</name>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -10366,14 +10326,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>result</name>
         <type>boolean</type>
       </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -11310,14 +11262,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>trash</name>
         <summary>Whether to get the trashcan port lists instead</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -12354,14 +12298,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>details</name>
         <summary>Include report format file, signature and parameters</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -13629,14 +13565,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include tasks using the schedules</summary>
         <type>boolean</type>
       </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -14183,14 +14111,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>tasks</name>
         <summary>Whether to include a list of tasks using the slave</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -15044,14 +14964,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include list of tasks that use the target</summary>
         <type>boolean</type>
       </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -15566,14 +15478,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>apply_overrides</name>
         <summary>Whether to override result threat levels</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>sort_order</name>
-        <type>sort_order</type>
-      </attrib>
-      <attrib>
-        <name>sort_field</name>
-        <type>text</type>
       </attrib>
     </pattern>
     <response>
@@ -20087,7 +19991,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <version>5.0</version>
   </change>
   <change>
-    <command>All GET commands</command>
+    <command>All standard GET commands</command>
     <summary>Attribute "actions" replaced with owner filtering</summary>
     <description>
       <p>
@@ -20097,6 +20001,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         GET_TASKS command would include tasks that other users had made
         visible to the caller.  The new way to do this is to include
         "owner=any" in the filter.
+      </p>
+    </description>
+    <version>4.0</version>
+  </change>
+  <change>
+    <command>All standard GET commands</command>
+    <summary>
+      Attributes "sort_field" and "sort_order" replaced by filtering
+    </summary>
+    <description>
+      <p>
+        The attributes "sort_field" and "sort_order" have been removed from
+        the standard GET commands.  The new way to do this is to include
+        keywords like "sort=name" and "sort-reverse=name" in the filter.
       </p>
     </description>
     <version>4.0</version>
