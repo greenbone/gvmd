@@ -1,5 +1,9 @@
 2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* README: Update usage.
+
+2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/lsc_crypt.c, src/manage_acl.c, src/manage.c,
 	src/manage_config_discovery.c, src/manage_config_host_discovery.c,
 	src/manage_config_system_discovery.c, src/manage_sql.c, src/omp.c,
