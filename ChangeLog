@@ -1,3 +1,9 @@
+2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (commands): Add delete_permission.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-04-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Replace "number" with "integer" as

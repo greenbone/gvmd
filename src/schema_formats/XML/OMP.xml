@@ -1902,6 +1902,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>delete_lsc_credential</c>
           <c>delete_note</c>
           <c>delete_override</c>
+          <c>delete_permission</c>
           <c>delete_report</c>
           <c>delete_report_format</c>
           <c>delete_role</c>
@@ -2026,6 +2027,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>delete_lsc_credential</r>
             <r>delete_note</r>
             <r>delete_override</r>
+            <r>delete_permission</r>
             <r>delete_port_list</r>
             <r>delete_port_range</r>
             <r>delete_report</r>

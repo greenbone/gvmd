@@ -2025,6 +2025,7 @@ commands
            | delete_lsc_credential
            | delete_note
            | delete_override
+           | delete_permission
            | delete_report
            | delete_report_format
            | delete_role
@@ -5921,6 +5922,7 @@ commands_response
            | delete_lsc_credential_response
            | delete_note_response
            | delete_override_response
+           | delete_permission_response
            | delete_port_list_response
            | delete_port_range_response
            | delete_report_response
