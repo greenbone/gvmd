@@ -38,7 +38,7 @@ add_library (manage STATIC
              manage_sql.c manage_migrators.c lsc_user.c lsc_crypt.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
-target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${UUID_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 add_library (omp STATIC omp.c)
 set_target_properties (omp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
@@ -126,7 +126,7 @@ if (SBINDIR)
 endif (SBINDIR)
 
 set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${UUID_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+                       "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Install
 

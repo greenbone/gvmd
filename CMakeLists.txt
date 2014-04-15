@@ -190,7 +190,6 @@ pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=7.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
 pkg_check_modules (SQLITE3 REQUIRED sqlite3)
-pkg_check_modules (UUID REQUIRED uuid)
 
 message (STATUS "Looking for pcap...")
 find_library (PCAP pcap)
@@ -232,13 +231,6 @@ execute_process (COMMAND pkg-config --cflags sqlite3
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process (COMMAND pkg-config --libs sqlite3
   OUTPUT_VARIABLE SQLITE3_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND pkg-config --cflags uuid
-  OUTPUT_VARIABLE UUID_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs uuid
-  OUTPUT_VARIABLE UUID_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 ## Version

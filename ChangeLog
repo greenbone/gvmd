@@ -1,3 +1,12 @@
+2014-04-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* CMakeLists.txt, src/CMakeLists.txt: Remove useless linking against
+	libuuid.
+
+	* INSTALL: Remove libuuid dependency.
+
+	* src/manage.c: Remove uuid include.
+
 2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml: Add compatibility change about
