@@ -4349,7 +4349,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
       <o><e>password</e></o>
-      <o><e>role</e></o>
+      <any><e>role</e></any>
     </pattern>
     <ele>
       <name>name</name>
@@ -4381,15 +4381,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>role</name>
-      <summary>The role of the user</summary>
+      <summary>A role of the user</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>Administrator</alt>
-            <alt>User</alt>
-            <alt>Observer</alt>
-          </alts>
-        </t>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
       </pattern>
     </ele>
     <response>
@@ -4417,7 +4415,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <create_user>
           <name>foobar</name>
           <password>f00bar</password>
-          <role>User</role>
+          <role id="8d453140-b74d-11e2-b0be-406186ea4fc5"></role>
         </create_user>
       </request>
       <response>
@@ -16958,7 +16956,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <get_users_response status="200" status_text="OK">
           <user>
             <name>foobar</name>
-            <role>User</role>
+            <role id="8d453140-b74d-11e2-b0be-406186ea4fc5">
+              <name>User</name>
+            </role>
             <hosts allow="2"></hosts>
             <user_tags>
               <count>0</count>
@@ -19327,7 +19327,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <e>name</e>
       <o><e>password</e></o>
-      <e>role</e>
+      <any><e>role</e></any>
       <o><e>hosts</e></o>
       <o><e>sources</e></o>
     </pattern>
@@ -19357,15 +19357,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>role</name>
-      <summary>The role of the user</summary>
+      <summary>A role of the user</summary>
       <pattern>
-        <t>
-          <alts>
-            <alt>Administrator</alt>
-            <alt>User</alt>
-            <alt>Observer</alt>
-          </alts>
-        </t>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
       </pattern>
     </ele>
     <ele>
@@ -19393,7 +19391,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <modify_user>
           <name>Foobar</name>
           <password modify="0"></password>
-          <role>Admin</role>
+          <role id="8d453140-b74d-11e2-b0be-406186ea4fc5"></role>
           <hosts allow="0"></hosts>
         </modify_user>
       </request>
@@ -20027,6 +20025,38 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</command>
+    <summary>Filter type "report" is now "result"</summary>
+    <description>
+      <p>
+        The filter type "report" has been renamed to "result".  Filters of
+        this type apply to the results in a report, as used for example on
+        the GSA "Report: Results" page.
+      </p>
+      <p>
+        The name "report" is now used for a new filter type.  This filter
+        type applies to lists of reports, as used for example on the GSA
+        "Reports" page.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
+  <change>
+    <command>CREATE_USER, MODIFY_USER</command>
+    <summary>ROLE is identified by "id" attribute</summary>
+    <description>
+      <p>
+        In OMP 4.0 these commands were served by OpenVAS Administrator.
+      </p>
+      <p>
+        The attribute "id" is now used to specify a user's role, in the
+        ROLE element.  Previously this was done using the NAME element inside
+        ROLE.
+      </p>
+    </description>
+    <version>5.0</version>
+  </change>
   <change>
     <command>GET_USERS</command>
     <summary>Attributes name and sort_order removed</summary>

@@ -1,6 +1,10 @@
 2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/schema_formats/XML/OMP.xml (commands): Add delete_permission.
+	* src/schema_formats/XML/OMP.xml: Add compatibility change about
+	renaming filter type "report" to "result".
+	(create_user, modifyuser): Allow multiple roles, identified by UUID.
+	Add compatibility change about UUID.
+	(get_users): Correct ROLE in example.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
 
@@ -4440,6 +4444,7 @@
 
 	* src/openvasmd.c (handle_sigabrt, handle_sigterm, handle_sighup)
 	(handle_sighup_update): Use signal parameter for debug logging.
+
 2013-08-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_result_iterator, result_iterator_severity)

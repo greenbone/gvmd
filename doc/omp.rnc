@@ -3490,7 +3490,7 @@ create_user
        & create_user_copy?
        & create_user_hosts?
        & create_user_password?
-       & create_user_role?
+       & create_user_role*
      }
 
 # The name of the user to be created.
@@ -3522,11 +3522,11 @@ create_user_password
        text
      }
 
-# The role of the user.
+# A role of the user.
 create_user_role
  = element role
      {
-       xsd:token { pattern = "Administrator|User|Observer" }
+       attribute id { uuid }
      }
 
 ## Command delete_agent
@@ -5635,7 +5635,7 @@ modify_user
      {
        modify_user_name
        & modify_user_password?
-       & modify_user_role
+       & modify_user_role*
        & modify_user_hosts?
        & modify_user_sources?
      }
@@ -5662,11 +5662,11 @@ modify_user_password
        text
      }
 
-# The role of the user.
+# A role of the user.
 modify_user_role
  = element role
      {
-       xsd:token { pattern = "Administrator|User|Observer" }
+       attribute id { uuid }
      }
 
 # List of authentication sources for this user (if omitted, no changes).

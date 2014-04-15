@@ -8535,8 +8535,11 @@ create_task_rcfile
 </li>
 <li>
               &lt;<b>role</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The role of the user.</div>
-<ul style="list-style: none"></ul>
+              *<div style="margin-left: 15px; display: inline;">A role of the user.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
 </li>
 </ul>
 </li>
@@ -8566,7 +8569,7 @@ create_task_rcfile
        &amp; create_user_copy?
        &amp; create_user_hosts?
        &amp; create_user_password?
-       &amp; create_user_role?
+       &amp; create_user_role*
      }
 
 create_user_name
@@ -8597,7 +8600,7 @@ create_user_password
 create_user_role
  = element role
      {
-       xsd:token { pattern = "Administrator|User|Observer" }
+       attribute id { uuid }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_user_response
@@ -8614,7 +8617,7 @@ create_user_role
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_user&gt;
    &lt;name&gt;foobar&lt;/name&gt;
    &lt;password&gt;f00bar&lt;/password&gt;
-   &lt;role&gt;User&lt;/role&gt;
+   &lt;role id="8d453140-b74d-11e2-b0be-406186ea4fc5"/&gt;
  &lt;/create_user&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_user_response status="201"
@@ -27317,7 +27320,9 @@ get_users_response_user_count_page
                      status_text="OK"&gt;
    &lt;user&gt;
      &lt;name&gt;foobar&lt;/name&gt;
-     &lt;role&gt;User&lt;/role&gt;
+     &lt;role id="8d453140-b74d-11e2-b0be-406186ea4fc5"&gt;
+       &lt;name&gt;User&lt;/name&gt;
+     &lt;/role&gt;
      &lt;hosts allow="2"/&gt;
      &lt;user_tags&gt;
        &lt;count&gt;0&lt;/count&gt;
@@ -30730,8 +30735,11 @@ modify_task_file
 </li>
 <li>
               &lt;<b>role</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The role of the user.</div>
-<ul style="list-style: none"></ul>
+              *<div style="margin-left: 15px; display: inline;">A role of the user.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
 </li>
 <li>
               &lt;<b>hosts</b>&gt;
@@ -30769,7 +30777,7 @@ modify_task_file
      {
        modify_user_name
        &amp; modify_user_password?
-       &amp; modify_user_role
+       &amp; modify_user_role*
        &amp; modify_user_hosts?
        &amp; modify_user_sources?
      }
@@ -30796,7 +30804,7 @@ modify_user_password
 modify_user_role
  = element role
      {
-       xsd:token { pattern = "Administrator|User|Observer" }
+       attribute id { uuid }
      }
 
 modify_user_sources
@@ -30817,7 +30825,7 @@ modify_user_sources
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_user&gt;
    &lt;name&gt;Foobar&lt;/name&gt;
    &lt;password modify="0"/&gt;
-   &lt;role&gt;Admin&lt;/role&gt;
+   &lt;role id="8d453140-b74d-11e2-b0be-406186ea4fc5"/&gt;
    &lt;hosts allow="0"/&gt;
  &lt;/modify_user&gt;
 </pre></div>
@@ -31701,6 +31709,36 @@ run_wizard_response_response
       5.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</tt>
+</h3></div>
+<p>In short: Filter type "report" is now "result".</p>
+<p>
+        The filter type "report" has been renamed to "result".  Filters of
+        this type apply to the results in a report, as used for example on
+        the GSA "Report: Results" page.
+      </p>
+<p>
+        The name "report" is now used for a new filter type.  This filter
+        type applies to lists of reports, as used for example on the GSA
+        "Reports" page.
+      </p>
+</div>
+<div>
+<div><h3>8.2
+          Change in <tt>CREATE_USER, MODIFY_USER</tt>
+</h3></div>
+<p>In short: ROLE is identified by "id" attribute.</p>
+<p>
+        In OMP 4.0 these commands were served by OpenVAS Administrator.
+      </p>
+<p>
+        The attribute "id" is now used to specify a user's role, in the
+        ROLE element.  Previously this was done using the NAME element inside
+        ROLE.
+      </p>
+</div>
+<div>
+<div><h3>8.3
           Change in <tt>GET_USERS</tt>
 </h3></div>
 <p>In short: Attributes name and sort_order removed.</p>
@@ -31714,7 +31752,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.2
+<div><h3>8.4
           Change in <tt>GET_USERS</tt>
 </h3></div>
 <p>In short: ROLE is optional, and role name has moved into NAME.</p>
@@ -31728,7 +31766,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.3
+<div><h3>8.5
           Change in <tt>GET_NVTS</tt>
 </h3></div>
 <p>In short: Fingerprint element removed.</p>
@@ -31738,7 +31776,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.6
           Change in <tt>GET_DEPENDENCIES</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -31747,7 +31785,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.5
+<div><h3>8.7
           Change in <tt>MODIFY_TARGET</tt>
 </h3></div>
 <p>In short: Missing elements now leave the associate target property alone.</p>
