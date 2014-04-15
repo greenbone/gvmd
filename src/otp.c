@@ -551,11 +551,11 @@ parse_scanner_bad_login (char** messages)
   return 1;
 }
 
-/** @todo Update doc. */
 /**
- * @brief Parse the final SERVER field of an OTP message.
+ * @brief Parse preference value.
  *
  * @param  messages  A pointer into the OTP input buffer.
+ * @param  progress  Callback to update progress.
  *
  * @return 0 success, -2 too few characters (need more input).
  */
@@ -590,7 +590,7 @@ parse_scanner_preference_value (char** messages, void (*progress) ())
 }
 
 /**
- * @brief Parse the final field of a plugin in a plugin list.
+ * @brief Parse the tags of a plugin list.
  *
  * @param  messages  A pointer into the OTP input buffer.
  *

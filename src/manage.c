@@ -463,7 +463,6 @@ severity_to_level (double severity, int mode)
  * @brief Get the message type matching a severity score.
  *
  * @param[in] severity  severity score
- * @param[in] type      message type
  *
  * @return the message type as a static string
  */
@@ -1552,8 +1551,9 @@ finished_hosts_str (report_t stopped_report)
 /**
  * @brief Send some scanner preferences to the scanner.
  *
- * @param[in]  task     Task.
- * @param[in]  target   Scan target.
+ * @param[in]  task            Task.
+ * @param[in]  target          Scan target.
+ * @param[in]  stopped_report  Previously stoppped report, if any, else 0.
  *
  * @return 0 on success, -1 on failure.
  */
@@ -1977,6 +1977,7 @@ void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
  *
  * @param[in]   slave    Slave.
  * @param[in]   host     Host.
+ * @param[out]  port     Port.
  * @param[out]  socket   Socket.
  * @param[out]  session  Session.
  *
@@ -2060,9 +2061,6 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
  * @param[in]   host        Slave host.
  * @param[in]   port        Slave host port.
  * @param[in]   task        The task.
- * @param[out]  report_id   The report ID.
- * @param[in]   from        0 start from beginning, 1 continue from stopped, 2
- *                          continue if stopped else start from beginning.
  * @param[out]  target      Task target.
  * @param[out]  target_ssh_credential    Target SSH credential.
  * @param[out]  target_smb_credential    Target SMB credential.
@@ -2831,7 +2829,7 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task       The task.
+ * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
  * @param[in]   from       0 start from beginning, 1 continue from stopped, 2
  *                         continue if stopped else start from beginning.
@@ -3444,7 +3442,7 @@ run_task (const char *task_id, char **report_id, int from,
  *
  * Only one task can run at a time in a process.
  *
- * @param[in]   task       The task.
+ * @param[in]   task_id    The task ID.
  * @param[out]  report_id  The report ID.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
@@ -5701,7 +5699,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 /* Users. */
 
 /**
- * @brief Produce an stripped-down xml representation of a keyfile.
+ * @brief Produce a stripped-down xml representation of a keyfile.
  *
  * For
  * @code
@@ -5720,7 +5718,6 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
  * <group name="empty group">
  * </group>
  * @endcode
- * .
  *
  * @param[in]  filename  Keyfile to read.
  *

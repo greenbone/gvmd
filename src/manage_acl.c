@@ -42,7 +42,7 @@
 /**
  * @brief Test whether a user may perform an operation.
  *
- * @param[in]  operations  Name of operation.
+ * @param[in]  operation  Name of operation.
  *
  * @return 1 if user has permission, else 0.
  */

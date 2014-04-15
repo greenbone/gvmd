@@ -41,7 +41,8 @@
  *
  * Caller must lock the db.
  *
- * @param[in] nvt_selector_name Name of nvt selector to use.
+ * @param[in]  uuid           UUID for new scan config.
+ * @param[in]  selector_name  Name of NVT selector to use.
  */
 void
 make_config_discovery (char *const uuid, char *const selector_name)

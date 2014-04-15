@@ -10822,7 +10822,9 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
 /**
  * @brief Insert DELETE case for omp_xml_handle_end_element.
  *
- * @param[in]  type  Resource type.
+ * @param[in]  upper    Resource type in uppercase.
+ * @param[in]  type     Resource type.
+ * @param[in]  capital  Resource type capitalised.
  */
 #define CASE_DELETE(upper, type, capital)                                   \
   case CLIENT_DELETE_ ## upper :                                            \

@@ -163,7 +163,7 @@ get32 (const void *buffer)
 /**
  * @brief Log function with extra gpg-error style output
  *
- * If @ref err is not 0, the appropriate error string is appended to
+ * If \p err is not 0, the appropriate error string is appended to
  * the output.  It takes care to only add the error source string if
  * it makes sense.
  *
@@ -339,9 +339,9 @@ find_the_key (lsc_crypt_ctx_t ctx, gboolean no_create)
  * Encrypt the given plaintext using the standard credential key and
  * return a base 64 encoded ciphertext.
  *
- * @param ctx  An initialized encryption context
+ * @param[in] ctx          An initialized encryption context
  * @param[in] plaintext    The data to be encrypted
- * @param[in] plaintextlen The length in bytes of @ref plaintext
+ * @param[in] plaintextlen The length in bytes of \p plaintext
  *
  * @return A base64 encoded ciphertext to be released by the caller.
  *         NULL is returned on error.

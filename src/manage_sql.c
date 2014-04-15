@@ -3958,6 +3958,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
  * @param[in]  type              Type of resource.
  * @param[in]  get               GET params.
  * @param[in]  iterator_columns  Iterator columns.
+ * @param[in]  trash_columns     Iterator columns for trashcan.
  * @param[in]  extra_columns     Extra columns.
  * @param[in]  distinct          Whether the query should be distinct.  Skipped
  *                               for trash and single resource.
@@ -5304,7 +5305,7 @@ validate_email (const char* address)
 /**
  * @brief Validate condition data for an alert.
  *
- * @param
+ * @param[in]  name      Name.
  * @param[in]  data      Data to validate.
  * @param[in]  condition The condition.
  *
@@ -11615,8 +11616,9 @@ manage_user_hash (const gchar *username)
  * @brief Get user uuid.
  *
  * @param[in]  username  User name.
+ * @param[in]  method    Authentication method.
  *
- * @return Uuid.
+ * @return UUID.
  */
 gchar *
 manage_user_uuid (const gchar *username, auth_method_t method)
@@ -16538,6 +16540,7 @@ DEF_ACCESS (host_iterator_report_uuid, 8);
 /**
  * @brief Initialise a report errors iterator.
  *
+ * @param[in]  iterator  Iterator.
  * @param[in]  report   The report.
  */
 void
@@ -17714,16 +17717,16 @@ report_counts_match (iterator_t *results, const char *search_phrase,
  *                            results if NULL.
  * @param[in]  search_phrase  Phrase that filtered results must include.  All results
  *                            if NULL or "".
- * @param[in]  search_phrase_exact  Whether search phrase is exact.
- * @param[in]  autofp         Whether to apply the auto FP filter.
- * @param[out]  severity_data The severity data struct to store counts in.
+ * @param[in]  search_phrase_exact     Whether search phrase is exact.
+ * @param[in]  autofp                  Whether to apply the auto FP filter.
+ * @param[out] severity_data           The severity data struct to store counts in.
+ * @param[out] filtered_severity_data  The severity data struct to store counts in.
  */
 void
 report_severity_data (report_t report, int override,
                       const char *host, const char *min_cvss_base,
                       const char *search_phrase, int search_phrase_exact,
-                      int autofp,
-                      severity_data_t* severity_data,
+                      int autofp, severity_data_t* severity_data,
                       severity_data_t* filtered_severity_data)
 {
   iterator_t results;
@@ -20609,7 +20612,7 @@ print_report_errors_xml (report_t report, FILE *stream)
  *                              indexed.
  * @param[in]  max_results      The maximum number of results returned.
  * @param[in]  levels           String describing threat levels (message types)
- * @param[in]  search_pharse    Phrase that results must include.
+ * @param[in]  search_phrase    Phrase that results must include.
  * @param[in]  pos              Position of report from end.
  * @param[in]  get              GET command data.
  * @param[in]  apply_overrides  Whether to apply overrides.
@@ -21066,7 +21069,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
  *                              indexed.
  * @param[in]  max_results      The maximum number of results returned.
  * @param[in]  levels           String describing threat levels (message types)
- * @param[in]  search_pharse    Phrase that results must include.
+ * @param[in]  search_phrase    Phrase that results must include.
  * @param[in]  pos              Position of report from end.
  * @param[in]  get              GET command data.
  * @param[in]  apply_overrides  Whether to apply overrides.
@@ -24380,7 +24383,7 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
  * @param[in]  holes_b   Number of holes on later report.
  * @param[in]  warns_b   Number of warnings on later report.
  * @param[in]  infos_b   Number of infos on later report.
- * @param[in]  severtity_b Severity score of later report.
+ * @param[in]  severity_b  Severity score of later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
@@ -25791,12 +25794,9 @@ validate_results_port (const char *port)
 }
 
 /**
- * @brief Create a target.
+ * @brief Convert alive test name to alive test bitfield.
  *
- * The \param hosts and \param target_locator parameters are mutually
- * exclusive, if target_locator is not NULL, always try to import from source.
- *
- * @param[in]   name            Name of target.
+ * @param[in]  alive_tests  Name of alive test.
  *
  * @return Alive test, or -1 on error.
  */
@@ -25839,6 +25839,7 @@ alive_test_from_string (const char* alive_tests)
  *
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
+ * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   port_range      Port range of target.
@@ -25849,6 +25850,8 @@ alive_test_from_string (const char* alive_tests)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
+ * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
+ * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
  * @param[in]   make_name_unique  Whether to make name unique.
  * @param[out]  target          Created target.
@@ -26254,6 +26257,7 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   target_id       UUID of target.
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
+ * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
  * @param[in]   comment         Comment on target.
  * @param[in]   port_list_id    Port list of target (overrides \p port_range).
  * @param[in]   ssh_lsc_credential_id  SSH LSC credential.
@@ -26263,6 +26267,8 @@ delete_target (const char *target_id, int ultimate)
  *                              from.
  * @param[in]   username        Username to authenticate with against source.
  * @param[in]   password        Password for user \p username.
+ * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
+ * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -27344,7 +27350,6 @@ target_port_range (target_t target)
  * @brief Return a target's alive tests.
  *
  * @param[in]  target  Target.
- * @param[in]  test    Alive test.
  *
  * @return Alive test bitfield.
  */
@@ -33342,7 +33347,7 @@ get_sysconf_gpghome ()
 /**
  * @brief Return the name of the trusted keys file name.
  *
- * We currently use the name @file pubring.gpg to be compatible with
+ * We currently use the name pubring.gpg to be compatible with
  * previous installations.  That file should best be installed
  * read-only so that it is not accidentally accessed while we are
  * running a verification.  All files in that keyring are assumed to
@@ -36432,6 +36437,7 @@ find_schedule_with_permission (const char* uuid, schedule_t* schedule,
  * @param[in]   period_months  The months part of the period.
  * @param[in]   duration    The length of the time window the action will run
  *                          in.  0 means entire duration of action.
+ * @param[out]  timezone    Timezone.
  * @param[out]  schedule    Created schedule.
  *
  * @return 0 success, 1 schedule exists already, 99 permission denied.
@@ -38503,9 +38509,12 @@ copy_report_format (const char* name, const char* source_uuid,
 /**
  * @brief Modify a report format.
  *
- * @param[in]   report_format_id        UUID of report format.
- * @param[in]   name            Name of report format.
- * @param[in]   comment         Comment on report format.
+ * @param[in]  report_format_id  UUID of report format.
+ * @param[in]  name              Name of report format.
+ * @param[in]  summary           Summary of report format.
+ * @param[in]  active            Active flag.
+ * @param[in]  param_name        Parameter to modify.
+ * @param[in]  param_value       Value of parameter.
  *
  * @return 0 success, 1 failed to find report format, 2 report format_id
  * required, 3 failed to find report format parameter, 4 parameter value
@@ -39149,7 +39158,7 @@ report_format_content_type (report_format_t report_format)
 /**
  * @brief Return whether a report format is referenced by an alert
  *
- * @param[in]  report format  Report Format.
+ * @param[in]  report_format  Report Format.
  *
  * @return 1 if in use, else 0.
  */
@@ -40819,7 +40828,7 @@ find_group (const char* uuid, group_t* group)
  * @param[in]  name       Name of new group.  NULL to copy from existing.
  * @param[in]  comment    Comment on new group.  NULL to copy from existing.
  * @param[in]  group_id   UUID of existing group.
- * @param[out] new_group  New group.
+ * @param[out] new_group_return  New group.
  *
  * @return 0 success, 1 group exists already, 2 failed to find existing
  *         group, 99 permission denied, -1 error.
@@ -41448,8 +41457,9 @@ permissions_set_locations (const char *type, resource_t old, resource_t new,
 /**
  * @brief Set permissions to orphan.
  *
- * @param[in]   type      Type.
- * @param[in]   resource  Resource ID.
+ * @param[in]  type      Type.
+ * @param[in]  resource  Resource ID.
+ * @param[in]  location  Location: table or trash.
  */
 void
 permissions_set_orphans (const char *type, resource_t resource, int location)
@@ -41674,7 +41684,6 @@ create_permission (const char *name_arg, const char *comment,
 /**
  * @brief Create a permission from an existing permission.
  *
- * @param[in]  name        Name of new permission.  NULL to copy from existing.
  * @param[in]  comment     Comment on new permission.  NULL to copy from existing.
  * @param[in]  permission_id   UUID of existing permission.
  * @param[out] new_permission  New permission.
@@ -42057,7 +42066,7 @@ permission_iterator_subject_in_trash (iterator_t* iterator)
  * @brief Find a permission with a given permission, given a UUID.
  *
  * @param[in]   uuid        UUID of permission.
- * @param[out]  permission  Permission return, 0 if succesfully failed to find
+ * @param[out]  resource    Permission return, 0 if succesfully failed to find
  *                          permission.
  * @param[in]   permission  Required permission, for example "delete".
  *
@@ -43936,8 +43945,8 @@ DEF_ACCESS (port_list_target_iterator_name, 1);
  *
  * @param[in]  name       Name of new role.  NULL to copy from existing.
  * @param[in]  comment    Comment on new role.  NULL to copy from existing.
- * @param[in]  role_id   UUID of existing role.
- * @param[out] new_role  New role.
+ * @param[in]  role_id    UUID of existing role.
+ * @param[out] new_role_return  New role.
  *
  * @return 0 success, 1 role exists already, 2 failed to find existing
  *         role, 99 permission denied, -1 error.
@@ -47932,7 +47941,7 @@ DEF_ACCESS (dfn_cert_adv_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 3);
  * @brief Initialise CVE iterator, for CVEs referenced by a DFN-CERT advisory.
  *
  * @param[in]  iterator    Iterator.
- * @param[in]  adv         Name of the DFN-CERT advisory.
+ * @param[in]  cve         Name of the CVE.
  * @param[in]  ascending   Whether to sort ascending or descending.
  * @param[in]  sort_field  Field to sort on, or NULL for "ROWID".
  */
@@ -48423,8 +48432,9 @@ find_user_by_name (const char* name, user_t *user)
  * @param[in]  password     The password of the new user.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
- * @param[in]  directory    The directory containing the user directories.  It
- *                          will be created if it does not exist already.
+ * @param[in]  ifaces       Interfaces the user is allowed/forbidden to scan.
+ * @param[in]  ifaces_allow     Whether ifaces is allow or forbid.
+ * @param[in]  allowed_methods  Allowed login methods.
  * @param[in]  groups       Groups.
  * @param[out] group_id_return  ID of group on "failed to find" error.
  * @param[in]  roles        Roles.
@@ -48432,7 +48442,7 @@ find_user_by_name (const char* name, user_t *user)
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
- * @param[out] user         Created user.
+ * @param[out] new_user     Created user.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find role, 99 permission denied, -1 on error, -2 if
@@ -48673,9 +48683,9 @@ copy_user (const char* name, const char* comment, const char *user_id,
 /**
  * @brief Delete a user.
  *
- * @param[in]  user_id    UUID of user.
- * @param[in]  name       Name of user.  Overridden by user_id.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ * @param[in]  user_id_arg  UUID of user.
+ * @param[in]  name_arg     Name of user.  Overridden by user_id.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         5 attempted suicide, 99 permission denied, -1 error.
@@ -48917,13 +48927,16 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
  * @param[in]  hosts_allow  Whether hosts is allow or forbid.
- * @param[in]  directory    The directory containing the user directories.  It
- *                          will be created if it does not exist already.
+ * @param[in]  ifaces       Interfaces the user is allowed/forbidden to scan.
+ * @param[in]  ifaces_allow     Whether ifaces is allow or forbid.
+ * @param[in]  allowed_methods  Allowed login methods.
+ * @param[in]  groups           Groups.
+ * @param[out] group_id_return  ID of group on "failed to find" error.
+ * @param[in]  roles            Roles.
+ * @param[out] role_id_return   ID of role on "failed to find" error.
  * @param[out] r_errdesc    If not NULL the address of a variable to receive
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
- * @param[in]  groups       Groups.
- * @param[out] group_id_return  ID of group on "failed to find" error.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find user, 3 success and user gained admin, 4 success
@@ -50180,7 +50193,9 @@ DEF_ACCESS (resource_tag_iterator_active, 5);
 /**
  * @brief Count number of tags attached to a resource.
  *
- * @param[in]  get  GET params.
+ * @param[in]  type         Resource type.
+ * @param[in]  resource     Resource.
+ * @param[in]  active_only  Whether to count only active tags.
  *
  * @return Total number of tags attached to the resource.
  */
@@ -50290,8 +50305,9 @@ tags_set_locations (const char *type, resource_t old, resource_t new,
 /**
  * @brief Set tags to orphan.
  *
- * @param[in]   type      Type.
- * @param[in]   resource  Resource ID.
+ * @param[in]  type      Type.
+ * @param[in]  resource  Resource.
+ * @param[in]  location  Location: table or trash.
  */
 void
 tags_set_orphans (const char *type, resource_t resource, int location)
