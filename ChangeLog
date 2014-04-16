@@ -1,3 +1,8 @@
+2014-04-16  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* CMakeLists.txt: Install openvas-lsc-rpm-creator.sh
+	* tools/openvas-lsc-rpm-creator.sh: Moved from openvas-libraries here.
+
 2014-04-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* README: Update usage.
