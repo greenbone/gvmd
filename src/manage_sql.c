@@ -11388,6 +11388,7 @@ check_db ()
             add_role_permission (ROLE_UUID_OBSERVER, command[0].name);
           command++;
         }
+      add_role_permission (ROLE_UUID_OBSERVER, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_OBSERVER, "HELP");
       add_role_permission (ROLE_UUID_OBSERVER, "GET_SETTINGS");
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");

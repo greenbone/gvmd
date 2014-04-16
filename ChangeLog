@@ -1,5 +1,19 @@
 2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Give the Observer role AUTHENTICATE permission.  Hence increase database
+	version to 121.  Add database migration from version 120 to 121.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 121.
+
+	* src/manage_migrators.c (migrate_120_to_121): New function.
+	(database_migrators): Add migrate_120_to_121.
+
+	* src/manage_sql.c (check_db): Give Observer AUTHENTICATE permission.
+
+	* doc/db.png: Update for version change.
+
+2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Only allow users to AUTHENTICATE if they have permission.
 
 	* src/manage_sql.c (authenticate): Add permission check.

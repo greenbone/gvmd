@@ -8907,6 +8907,56 @@ migrate_119_to_120 ()
 }
 
 /**
+ * @brief Migrate the database from version 120 to version 121.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_120_to_121 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 120. */
+
+  if (manage_db_version () != 120)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Observers were missing the AUTHENTICATE permission. */
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM permissions"
+               " WHERE subject = 'role'"
+               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_OBSERVER "')"
+               " AND name = 'authenticate'"
+               " AND resource = 0;")
+      == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
+         " VALUES"
+         " (make_uuid (), NULL, 'authenticate', '', '',"
+         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_OBSERVER "'),"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+
+  /* Set the database version to 121. */
+
+  set_db_version (121);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9031,6 +9081,7 @@ static migrator_t database_migrators[]
     {118, migrate_117_to_118},
     {119, migrate_118_to_119},
     {120, migrate_119_to_120},
+    {121, migrate_120_to_121},
     /* End marker. */
     {-1, NULL}};
 
