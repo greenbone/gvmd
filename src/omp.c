@@ -11221,8 +11221,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           /* Get base 64 encoded content of the auth configuration file. */
-          config_file = g_build_filename (OPENVAS_STATE_DIR, "auth.conf",
-                                          NULL);
+          config_file = g_build_filename (OPENVAS_STATE_DIR, "openvasmd",
+                                          "auth.conf", NULL);
           content = keyfile_to_auth_conf_settings_xml (config_file);
           g_free (config_file);
           if (content == NULL)
