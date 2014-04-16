@@ -1,5 +1,10 @@
 2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Raise version in libopenvas dependency, for auth.conf
+	path change.
+
+2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Add openvasmd to auth.conf
 	path.
 
