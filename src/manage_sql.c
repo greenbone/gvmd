@@ -11792,7 +11792,8 @@ manage_user_exists (const gchar *name, auth_method_t method)
  *
  * @param[in]  credentials  Credentials.
  *
- * @return 0 authentication success, 1 authentication failure, -1 error.
+ * @return 0 authentication success, 1 authentication failure, 99 permission
+ *         denied, -1 error.
  */
 int
 authenticate (credentials_t* credentials)
@@ -11846,6 +11847,14 @@ authenticate (credentials_t* credentials)
                                  ? "User"
                                  : "")));
 
+          if (user_may ("authenticate") == 0)
+            {
+              free (credentials->uuid);
+              credentials->uuid = NULL;
+              g_free (credentials->role);
+              credentials->role = NULL;
+              return 99;
+            }
 
           return 0;
         }

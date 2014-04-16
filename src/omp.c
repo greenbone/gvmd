@@ -11024,6 +11024,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
               set_client_state (CLIENT_TOP);
               break;
+            case 99:   /* Authentication failed. */
+              free_credentials (&current_credentials);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("authenticate",
+                                                        "Permission denied"));
+              set_client_state (CLIENT_TOP);
+              break;
             case -1:  /* Error while authenticating. */
             default:
               free_credentials (&current_credentials);

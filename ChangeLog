@@ -1,5 +1,14 @@
 2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Only allow users to AUTHENTICATE if they have permission.
+
+	* src/manage_sql.c (authenticate): Add permission check.
+
+	* src/omp.c (omp_xml_handle_end_element): Add permission return case to
+	CLIENT_AUTHENTICATE.
+
+2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new role Info.
 
 	* src/manage_sql.h (ROLE_UUID_INFO): New define.
