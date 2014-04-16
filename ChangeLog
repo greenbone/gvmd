@@ -1,5 +1,14 @@
 2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add new role Info.
+
+	* src/manage_sql.h (ROLE_UUID_INFO): New define.
+
+	* src/manage_sql.c (check_db, role_is_predefined): Add new role and
+	permissions.
+
+2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Raise version in libopenvas dependency, for auth.conf
 	path change.
 

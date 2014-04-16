@@ -11277,6 +11277,16 @@ check_db ()
          " now (), now ());");
 
   if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_INFO "', NULL, 'Info',"
+         "  'Information browser.',"
+         " now (), now ());");
+
+  if (sql_int (0, 0,
                "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
       == 0)
     sql ("INSERT INTO roles"
@@ -11312,6 +11322,24 @@ check_db ()
          "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
          "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
          "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM permissions"
+               " WHERE subject_type = 'role'"
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_INFO "')"
+               " AND resource = 0;")
+      == 0)
+    {
+      sql ("BEGIN EXCLUSIVE;");
+      add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
+      add_role_permission (ROLE_UUID_INFO, "COMMANDS");
+      add_role_permission (ROLE_UUID_INFO, "GET_INFO");
+      add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
+      add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
+      add_role_permission (ROLE_UUID_INFO, "MODIFY_SETTING");
+      sql ("COMMIT;");
+    }
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM permissions"
@@ -44072,6 +44100,7 @@ role_is_predefined (role_t role)
                   "SELECT COUNT (*) FROM roles"
                   " WHERE ROWID = %llu"
                   " AND (uuid = '" ROLE_UUID_ADMIN "'"
+                  "      OR uuid = '" ROLE_UUID_INFO "'"
                   "      OR uuid = '" ROLE_UUID_USER "'"
                   "      OR uuid = '" ROLE_UUID_OBSERVER "');",
                   role)
