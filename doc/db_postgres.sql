@@ -122,6 +122,62 @@ CREATE TABLE filters_trash (
     creation_time date,
     modification_time date);
 
+CREATE TABLE groups (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE groups_trash (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE group_users (
+    id integer PRIMARY KEY,
+    group integer REFERENCES groups (id) ON DELETE RESTRICT,
+    user integer REFERENCES users (id) ON DELETE RESTRICT);
+
+CREATE TABLE group_users_trash (
+    id integer PRIMARY KEY,
+    group integer REFERENCES groups (id) ON DELETE RESTRICT,
+    user integer REFERENCES users (id) ON DELETE RESTRICT);
+
+CREATE TABLE roles (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE roles_trash (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE role_users (
+    id integer PRIMARY KEY,
+    role integer REFERENCES roles (id) ON DELETE RESTRICT,
+    user integer REFERENCES users (id) ON DELETE RESTRICT);
+
+CREATE TABLE role_users_trash (
+    id integer PRIMARY KEY,
+    role integer REFERENCES roles (id) ON DELETE RESTRICT,
+    user integer REFERENCES users (id) ON DELETE RESTRICT);
+
 CREATE TABLE users (
     id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
@@ -130,9 +186,10 @@ CREATE TABLE users (
     comment text,
     password text,
     timezone text,
-    role text,
     hosts text,
     hosts_allow integer,
+	ifaces text,
+	ifaces_allow boolean,
     method text,
     creation_time date,
     modification_time date);
@@ -182,6 +239,13 @@ CREATE TABLE port_ranges_trash (
     end integer,
     comment text,
     end boolean);
+
+CREATE TABLE port_names (
+    id integer PRIMARY KEY,
+	number integer,
+    protocol text,
+    name text,
+	UNIQUE (number, protocol));     -- ON CONFLICT REPLACE
 
 CREATE TABLE targets (
     id integer PRIMARY KEY,
@@ -303,12 +367,6 @@ CREATE TABLE task_preferences (
     name text PRIMARY KEY,
     value text);
 
-CREATE TABLE task_users (
-    id integer PRIMARY KEY,
-    task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-    user integer REFERENCES users (id) ON DELETE RESTRICT,
-    actions integer);
-
 CREATE TABLE results (
     id integer PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
@@ -318,7 +376,9 @@ CREATE TABLE results (
     nvt text,  -- OID of NVT
     type text,
     description text,
-    report integer REFERENCES reports (id) ON DELETE RESTRICT);
+    report integer REFERENCES reports (id) ON DELETE RESTRICT,
+	nvt_ersion text,
+	severity real);
 
 CREATE TABLE reports (
     id integer PRIMARY KEY,
@@ -334,16 +394,6 @@ CREATE TABLE reports (
     scan_run_status integer,
     slave_progress text,
     slave_task_uuid text,
-    highs integer,
-    mediums integer,
-    lows integer,
-    logs integer,
-    fps integer,
-    override_highs integer,
-    override_mediums integer,
-    override_lows integer,
-    override_logs integer,
-    override_fps integer,
     slave_uuid text,
     slave_name text,
     slave_host text,
@@ -351,13 +401,13 @@ CREATE TABLE reports (
     source_iface text);
 
 CREATE TABLE report_counts (
-       id integer PRIMARY KEY,
-       report integer REFERENCES reports (id) ON DELETE RESTRICT,
-       user integer REFERENCES users (id) ON DELETE RESTRICT,
-       severity decimal,
-       count integer,
-       override integer,
-       end_time integer);
+    id integer PRIMARY KEY,
+    report integer REFERENCES reports (id) ON DELETE RESTRICT,
+    user integer REFERENCES users (id) ON DELETE RESTRICT,
+    severity decimal,
+    count integer,
+    override integer,
+    end_time integer);
 
 CREATE TABLE report_format_params (
     id integer PRIMARY KEY,
@@ -470,6 +520,11 @@ CREATE TABLE nvts (
     creation_time date,
     modification_time date);
 
+CREATE TABLE nvt_cves (
+    id integer PRIMARY KEY,
+    nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
+    oid text,
+	cve_name text);
 
 --
 -- Local Security Check Credentials.
@@ -558,7 +613,7 @@ CREATE TABLE notes (
     text text,
     hosts text,
     port text,
-    threat text,
+    severity text,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     result integer REFERENCES results (id) ON DELETE RESTRICT,
     end_time integer);
@@ -573,7 +628,7 @@ CREATE TABLE notes_trash (
     text text,
     hosts text,
     port text,
-    threat text,
+    severity text,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     result integer REFERENCES results (id) ON DELETE RESTRICT,
     end_time integer);
@@ -587,9 +642,9 @@ CREATE TABLE overrides (
     modification_time date,
     text text,
     hosts text,
-    new_threat text,
+    new_severity text,
     port text,
-    threat text,
+    severity text,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     result integer REFERENCES results (id) ON DELETE RESTRICT,
     end_time integer);
@@ -603,12 +658,44 @@ CREATE TABLE overrides_trash (
     modification_time date,
     text text,
     hosts text,
-    new_threat text,
+    new_severity text,
     port text,
-    threat text,
+    severity text,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     result integer REFERENCES results (id) ON DELETE RESTRICT,
     end_time integer);
+
+CREATE TABLE permissions (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+	resource_type text,
+	resource integer,
+	resource_uuid text,
+	resource_location integer,
+	subject_type text,
+	subject integer,
+	subject_location integer,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE permissions_trash (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+	resource_type text,
+	resource integer,
+	resource_uuid text,
+	resource_location integer,
+	subject_type text,
+	subject integer,
+	subject_location integer,
+    creation_time date,
+    modification_time date);
 
 CREATE TABLE schedules (
     id integer PRIMARY KEY,
@@ -668,5 +755,31 @@ CREATE TABLE slaves_trash (
     port text,
     login text,
     password text,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE tags (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+	resource_type text,
+	resource integer,
+	resource_uuid text,
+	resource_location integer,
+    creation_time date,
+    modification_time date);
+
+CREATE TABLE tags_trash (
+    id integer PRIMARY KEY,
+    uuid text UNIQUE NOT NULL,
+    owner integer REFERENCES users (id) ON DELETE RESTRICT,
+    name text NOT NULL,
+    comment text,
+	resource_type text,
+	resource integer,
+	resource_uuid text,
+	resource_location integer,
     creation_time date,
     modification_time date);

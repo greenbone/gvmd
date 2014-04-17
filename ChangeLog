@@ -1,5 +1,19 @@
 2014-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Bring database doc up to date.
+
+	* doc/db_postgres.sql (groups, groups_trash, group_users)
+	(group_users_trash, roles, roles_trash, role_users, role_users_trash)
+	(port_names, nvt_cves, permissions, permissions_trash, tags)
+	(tags_trash): New tables.
+	(task_users): Remove.
+	(users, task_preferences, results, reports, report_counts, notes)
+	(overrides, overrides_trash): Update columns.
+
+	* doc/db.png: Update from source.
+
+2014-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add HELP permission check.  Give User and Info roles HELP permission.
 	Hence increase database version to 122.  Add database migration from
 	version 121 to 122.
@@ -11368,8 +11382,8 @@
 	(database_migrators): Add migrate_69_to_70.
 	(create_tables): Add creation_time and modification_time to port_lists
 	and port_lists_trash tables.
-	(ensure_predefined_port_lists_exist, create_port_list_lock,
-	create_port_list, delete_port_list, manage_restore): Insert current time
+	(ensure_predefined_port_lists_exist, create_port_list_lock)
+	(create_port_list, delete_port_list, manage_restore): Insert current time
 	value into creation_time and modification_time.
 
 	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 70.
