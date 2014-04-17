@@ -11334,6 +11334,7 @@ check_db ()
       sql ("BEGIN EXCLUSIVE;");
       add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_INFO, "COMMANDS");
+      add_role_permission (ROLE_UUID_INFO, "HELP");
       add_role_permission (ROLE_UUID_INFO, "GET_INFO");
       add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
       add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");
@@ -11357,7 +11358,6 @@ check_db ()
           if (strstr (command[0].name, "DESCRIBE") == NULL
               && strcmp (command[0].name, "GET_VERSION")
               && strstr (command[0].name, "GROUP") == NULL
-              && strcmp (command[0].name, "HELP")
               && strstr (command[0].name, "ROLE") == NULL
               && strstr (command[0].name, "SYNC") == NULL
               && strstr (command[0].name, "USER") == NULL)

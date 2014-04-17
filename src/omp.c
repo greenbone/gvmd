@@ -16519,6 +16519,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_HELP:
+        if (user_may ("help") == 0)
+          {
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("help",
+                                                      "Permission denied"));
+            help_data_reset (help_data);
+            set_client_state (CLIENT_AUTHENTIC);
+            break;
+          }
+
         if (help_data->format == NULL
             || (strcmp (help_data->format, "text") == 0))
           {

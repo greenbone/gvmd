@@ -8957,6 +8957,75 @@ migrate_120_to_121 ()
 }
 
 /**
+ * @brief Migrate the database from version 121 to version 122.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_121_to_122 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 121. */
+
+  if (manage_db_version () != 121)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* HELP now has a permission check, so add HELP to the User and Info roles. */
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM permissions"
+               " WHERE subject = 'role'"
+               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_USER "')"
+               " AND name = 'help'"
+               " AND resource = 0;")
+      == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
+         " VALUES"
+         " (make_uuid (), NULL, 'help', '', '',"
+         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_USER "'),"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM permissions"
+               " WHERE subject = 'role'"
+               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
+               " AND subject = (SELECT ROWID FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_INFO "')"
+               " AND name = 'help'"
+               " AND resource = 0;")
+      == 0)
+    sql ("INSERT INTO permissions"
+         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+         "  resource_location, subject_type, subject, subject_location,"
+         "  creation_time, modification_time)"
+         " VALUES"
+         " (make_uuid (), NULL, 'help', '', '',"
+         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_INFO "'),"
+         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+
+  /* Set the database version to 122. */
+
+  set_db_version (122);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9082,6 +9151,7 @@ static migrator_t database_migrators[]
     {119, migrate_118_to_119},
     {120, migrate_119_to_120},
     {121, migrate_120_to_121},
+    {122, migrate_121_to_122},
     /* End marker. */
     {-1, NULL}};
 

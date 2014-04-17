@@ -1,3 +1,20 @@
+2014-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add HELP permission check.  Give User and Info roles HELP permission.
+	Hence increase database version to 122.  Add database migration from
+	version 121 to 122.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 122.
+
+	* src/manage_migrators.c (migrate_121_to_122): New function.
+	(database_migrators): Add migrate_121_to_122.
+
+	* src/manage_sql.c (check_db): Add HELP permission to User and Info.
+
+	* src/omp.c (omp_xml_handle_end_element): Add permission check for HELP.
+
+	* doc/db.png: Update for version change.
+
 2014-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Give the Observer role AUTHENTICATE permission.  Hence increase database
