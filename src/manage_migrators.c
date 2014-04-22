@@ -9026,6 +9026,56 @@ migrate_121_to_122 ()
 }
 
 /**
+ * @brief Migrate the database from version 122 to version 123.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_122_to_123 ()
+{
+  int column_found = 0;
+  iterator_t column_data;
+
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 122. */
+
+  if (manage_db_version () != 122)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Check if targets_trash has alive_test column, which was added in the
+   *  migration to version 111 but previously missing in create_tables.   */
+  init_iterator (&column_data, "PRAGMA table_info (targets_trash);");
+  while (next (&column_data) && column_found == 0)
+    {
+      const char* column_name;
+
+      column_name = (const char*)(sqlite3_column_text (column_data.stmt, 1));
+      column_found = (strcmp (column_name, "alive_test") == 0);
+    }
+  cleanup_iterator (&column_data);
+
+  if (column_found == 0)
+    {
+      sql ("ALTER TABLE targets_trash ADD COLUMN alive_test;");
+      sql ("UPDATE targets_trash SET alive_test = 0;");
+    }
+
+  /* Set the database version to 123. */
+
+  set_db_version (123);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9152,6 +9202,7 @@ static migrator_t database_migrators[]
     {120, migrate_119_to_120},
     {121, migrate_120_to_121},
     {122, migrate_121_to_122},
+    {123, migrate_122_to_123},
     /* End marker. */
     {-1, NULL}};
 

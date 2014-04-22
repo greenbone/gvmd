@@ -4312,7 +4312,7 @@ create_tables ()
        "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify,"
        "  comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential"
        "  INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER,"
-       "  port_list_location INTEGER, creation_time,"
+       "  port_list_location INTEGER, alive_test, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");

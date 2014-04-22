@@ -1,3 +1,18 @@
+2014-04-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add alive_test column to targets_trash table which was missing in
+	new databases but not ones migrated from versions before 111.
+	Hence increase database version to 123.  Add database migration from
+	version 122 to 123.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 123.
+
+	* src/manage_migrators.c (migrate_122_to_123): New function.
+	(database_migrators): Add migrate_122_to_123.
+
+	* src/manage_sql.c (create_tables): Add alive_test to targets_trash
+	table.
+
 2014-04-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Bring database doc up to date.
