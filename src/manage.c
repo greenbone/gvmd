@@ -140,12 +140,6 @@
  */
 #define MAX_HOSTS_DEFAULT "20"
 
-/**
- * @brief Information about the scanner.
- */
-scanner_t scanner = { NULL};
-
-
 /* Severity related functions. */
 
 /**

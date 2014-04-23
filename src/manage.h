@@ -47,21 +47,6 @@ typedef struct
   gchar *value;   ///< Param value.
 } name_value_t;
 
-/**
- * @brief Structure of information about the scanner.
- */
-typedef struct
-{
-  char* plugins_feed_version;        ///<  Feed version of plugins set.
-} scanner_t;
-
-/** @todo Exported for omp.c, manage.c and otp.c access to server info (
-  *       prefs, ...). */
-/**
- * @brief Information about the server.
- */
-extern scanner_t scanner;
-
 int
 init_manage (GSList*, int, const gchar*, int, void (*) ());
 

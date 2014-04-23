@@ -1,3 +1,14 @@
+2014-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (scanner): Remove variable.
+
+	* src/manage.h (scanner_t): Remove struct.
+	(scanner): Remove extern variable.
+
+	* src/otp.h (plugins_feed_version): New static variable.
+	(init_otp_data, process_otp_scanner_input): Adjust to use new static
+	variable instead of extern scanner struct's element.
+
 2014-04-22  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add alive_test column to targets_trash table which was missing in

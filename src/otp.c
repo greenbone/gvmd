@@ -107,6 +107,8 @@ static message_t* current_message = NULL;
  */
 static gchar* current_host = NULL;
 
+static char *plugins_feed_version = NULL;
+
 /**
  * @brief Make a message.
  *
@@ -332,7 +334,7 @@ GList* scanner_plugins_list = NULL;
 void
 init_otp_data ()
 {
-  scanner.plugins_feed_version = NULL;
+  plugins_feed_version = NULL;
 }
 
 /**
@@ -1188,7 +1190,7 @@ process_otp_scanner_input (void (*progress) ())
                                    == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE)
                               {
                                 set_scanner_init_state (SCANNER_INIT_GOT_PLUGINS);
-                                set_nvts_feed_version (scanner.plugins_feed_version);
+                                set_nvts_feed_version (plugins_feed_version);
                               }
                             break;
                           case -1: goto return_error;
@@ -1273,9 +1275,9 @@ process_otp_scanner_input (void (*progress) ())
                 {
                   char* feed_version = g_strdup (field);
                   tracef ("   scanner got nvti_info: %s\n", feed_version);
-                  if (scanner.plugins_feed_version)
-                    g_free (scanner.plugins_feed_version);
-                  scanner.plugins_feed_version = feed_version;
+                  if (plugins_feed_version)
+                    g_free (plugins_feed_version);
+                  plugins_feed_version = feed_version;
                   set_scanner_state (SCANNER_DONE);
                   switch (parse_scanner_done (&messages))
                     {
