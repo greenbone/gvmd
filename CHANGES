@@ -1,3 +1,101 @@
+openvas-manager 5.0.0 (2014-04-23)
+
+This is the first release of the openvas-manager 5.0 module for the Open
+Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS Manager is
+the central management service between the actual security scanner and various
+user clients.
+
+OpenVAS Manager 5.0 introduces a large number of new and improved features, for example
+the entire user management is now done in OpenVAS Manager, tagging of objects,
+"Severity" concept to replace "Threat" concept, Alive-Test property of Targets,
+a number of new command line parameter, extended access control with groups, roles
+and permissions.  For a complete list of changes, please refer to the list below.
+The whole functionality is available via the extended protocol OMP 5.0.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Hani Benhabiles, Henri Doreau, Rodolfo Gouveia, Andre Heinecke,
+Werner Koch, Matthew Mundell, Timo Pollmeier, Stefan Schwarz, Stefan Sperling,
+Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 4.0.x:
+* User management has been consolidated in OpenVAS Manager. It was moved
+  from OpenVAS Scanner and OpenVAS Administrator into OpenVAS Manager.
+* New: Groups, Roles and Permissions.
+* New: Tags.
+* New: Default scan configurations "Discovery", "Host Discovery" and
+  "System Discovery".
+* New: Support for searching in the complete SecInfo data.
+* New: Support for regular expression searching in the powerfilter.
+* New: New "Severity" concept to replace "Threat" concept.
+* Removed: OTP port forwarding.
+* Removed: Support for obsolete scanner preferences.
+* Improved: Support for the new host management offered by Scanner has been added.
+* Improved: Schedule handling during long running operations.
+* Changed: Simplified host access conrol replaces old rules-based concept.
+* New: Support for Alterable Tasks.
+* New: Support for Source Interface access control has been added.
+* New: Alive Test property to Targets, which can override the scan config
+  settings.
+* Remove NVTs 810002 "CPE Inventory" and 810003 "Host Summary" from predefined
+  configs.
+* Orphaned results are now removed from the database when starting.
+* The speed of retrieving a task details overview has been improved.
+* Database rebuild performance has been improved.
+* Performance with large databases has been improved.
+* Updated: Verinice ISM report format plugin.
+* Updated: The NBE report format plugin.
+* New: Predefined report format CSV Hosts.
+* New: Predefined report format CSV Results.
+* New: Report format plugin for exporting TLS mapping results into a CSV file.
+* New: User setting for preferred interface language.
+* Logging has been improved and made more consistent.
+* OpenVAS Manager will now attempt to reduce database fragmentation.
+* Use UTF-8 for OTP.
+* Report scanner loading progress to client/GSA.
+* New: Support for user defined OVAL repositories in private subdirectories.
+* The scripts for SCAP and CERT data synchronization have been improved.
+* Handling of NVT risk factors has been removed as this is handled via CVSS scores now.
+* The handling of the obsolete "subnet" element in the results has been
+  removed.
+* NVT descriptions are no longer stored separately in the database and thus no
+  longer duplicate information already present in the NVT tags.
+* The credential encryption keyring is now placed in var/lib/openvas/gnupg
+  instead of etc/openvas/gnupg.
+* Support for changing a user password on the command line has been added.
+* New option --max-ips-per-target.
+* New option --delete-user.
+* New option --create-user.
+* Add option --role, which allows to set the role with --create-user.
+* The --migrate option now also migrates SCAP and CERT databases.
+* New option "--list-users".
+* Made --migrate succeed when the database has not yet been initialised.
+* Add --gnutls-priorities option.
+* Add --dh-params command-line option.
+* The command line parameter "--disable-scheduling" has been added.
+* The required minimum GnuTLS version has increased to 2.8.
+* The required minimum OpenVAS Libraries version has increased to 7.0.0.
+* Signature verification now uses the "gpgv" command.
+* Make --rebuild and --update wait for scanner when scanner is busy
+  loading NVTs.  This matches the behaviour when rebuild is called via
+  SIGHUP.
+* Startup speed has been improved.
+* Add a utility to split huge xml files in a memory efficient way
+* The handling of missing, inaccessible or corrupt database files has been
+  improved.
+* Moved some functions to openvas-libraries.
+* Large number of small fixes and speed improvements.
+* Code cleanup.
+
+And additionally changes compared to 5.0+beta13:
+* Added HELP permission check.
+* New: Role "Info".
+* Clean up of OMP and OMP documentation.
+
+
 openvas-manager 5.0+beta13 (2014-04-10)
 
 This is the thirteenth beta version of the upcoming 5.0 release of the OpenVAS
