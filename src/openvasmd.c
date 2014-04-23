@@ -6,7 +6,7 @@
  * Matthew Mundell <matthew.mundell@greenbone.net>
  *
  * Copyright:
- * Copyright (C) 2009, 2010 Greenbone Networks GmbH
+ * Copyright (C) 2009, 2010, 2014 Greenbone Networks GmbH
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2,
@@ -1351,7 +1351,7 @@ main (int argc, char** argv)
     {
       printf ("OpenVAS Manager %s\n", OPENVASMD_VERSION);
       printf ("Manager DB revision %i\n", manage_db_supported_version ());
-      printf ("Copyright (C) 2010-2013 Greenbone Networks GmbH\n");
+      printf ("Copyright (C) 2010-2014 Greenbone Networks GmbH\n");
       printf ("License GPLv2+: GNU GPL version 2 or later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
