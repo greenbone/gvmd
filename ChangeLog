@@ -1,3 +1,7 @@
+2014-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* TODO: Remove entry about memory leaks, which is ongoing.
+
 2014-04-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (scanner): Remove variable.

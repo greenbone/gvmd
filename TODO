@@ -47,12 +47,6 @@
 	is the main manager process, where it may be better to try release memory
 	than to exit the manager entirely.
 
-2009-06-12  Matthew Mundell <mmundell@greenbone.net>
-
-	Check the memory management.  A quick valgrind reported memory leaks.
-	There is initial work present for splint coverage which could be
-	completed.
-
 2009-06-16  Matthew Mundell <mmundell@greenbone.net>
 
 	In libmanage (src/manage.c), consider separating functions that
