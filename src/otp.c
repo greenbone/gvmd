@@ -94,6 +94,18 @@ category_number (const char *category)
   return ACT_UNKNOWN;
 }
 
+/** @brief Replace any control characters in string with spaces.
+ *
+ * @param[in,out]  string  String to replace in.
+ */
+static void
+blank_control_chars (char *string)
+{
+  for (; *string; string++)
+    if (iscntrl (*string) && *string != '\n') *string = ' ';
+}
+
+
 /* Messages. */
 
 /**
@@ -574,6 +586,7 @@ parse_scanner_preference_value (char** messages, void (*progress) ())
     {
       match[0] = '\0';
       value = g_strdup (*messages);
+      blank_control_chars (value);
       if (current_scanner_preference)
         {
           if (progress)
@@ -612,6 +625,7 @@ parse_scanner_plugin_list_tags (char** messages)
     {
       match[0] = '\0';
       value = g_strdup (*messages);
+      blank_control_chars (value);
       if (value != NULL)
         {
           char* pos = value;
@@ -931,6 +945,7 @@ process_otp_scanner_input (void (*progress) ())
 
           /* Strip leading and trailing whitespace. */
           field = openvas_strip_space (message, match);
+          blank_control_chars (field);
 
           tracef ("   scanner old state %i\n", scanner_state);
           tracef ("   scanner field: %s\n", field);

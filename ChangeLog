@@ -1,3 +1,11 @@
+2014-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (blank_control_chars): New function.
+	(parse_scanner_preference_value): Blank control chars in the OTP
+	messages, as was done before r18496.  r18496 was the switch to UTF-8
+	OTP.  Encoded control characters are valid in XML 1.1, but we use 1.0
+	and libxslt only supports 1.0.
+
 2014-04-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Post release version bump.
