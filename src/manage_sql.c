@@ -6181,50 +6181,6 @@ init_alert_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Return the alert from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Alert of the iterator or NULL if iteration is complete.
- */
-alert_t
-alert_iterator_alert (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (alert_iterator_uuid, 1);
-
-/**
- * @brief Get the name from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (alert_iterator_name, 2);
-
-/**
- * @brief Get the comment from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (alert_iterator_comment, 3);
-
-/**
  * @brief Return the event from an alert iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -23426,7 +23382,7 @@ manage_report (report_t report, report_format_t report_format,
     if (content_type)
       *content_type = g_strdup (report_format_iterator_content_type (&formats));
 
-    uuid_format = report_format_iterator_uuid (&formats);
+    uuid_format = get_iterator_uuid (&formats);
     if (report_format_global (report_format))
       script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                      "openvasmd",
@@ -23927,7 +23883,7 @@ manage_send_report (report_t report, report_t delta_report,
         return -1;
       }
 
-    uuid_format = report_format_iterator_uuid (&formats);
+    uuid_format = get_iterator_uuid (&formats);
     if (report_format_global (report_format))
       script_dir = g_build_filename (OPENVAS_DATA_DIR,
                                      "openvasmd",
@@ -26820,54 +26776,6 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Target.
- */
-target_t
-target_iterator_target (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (target_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_name, 2);
-
-/**
- * @brief Get the comment from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-target_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret ? ret : "";
-}
-
-/**
  * @brief Get the hosts of the target from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -28692,50 +28600,6 @@ init_config_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the config from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Config.
- */
-config_t
-config_iterator_config (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (config_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the uuid from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The uuid of the config, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the config, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_iterator_name, 2);
-
-/**
- * @brief Get the comment from a scan config iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_iterator_comment, 3);
-
-/**
  * @brief Get the nvt_selector from a config iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -30213,7 +30077,7 @@ update_config_cache (iterator_t *configs)
   gchar *quoted_selector, *quoted_name;
   int families_growing;
 
-  quoted_name = sql_quote (config_iterator_name (configs));
+  quoted_name = sql_quote (get_iterator_name (configs));
   selector = config_iterator_nvt_selector (configs);
   families_growing = nvt_selector_families_growing (selector);
   quoted_selector = sql_quote (selector);
@@ -30346,7 +30210,7 @@ manage_complete_nvt_cache_update (GList *nvts_list, int mode)
          " WHERE config = %llu"
          " AND type = 'PLUGINS_PREFS'"
          " AND name NOT IN (SELECT nvt_preferences.name FROM nvt_preferences);",
-         config_iterator_config (&configs));
+         get_iterator_resource (&configs));
   cleanup_iterator (&configs);
 
   if (progress)
@@ -33016,50 +32880,6 @@ lsc_credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
 }
 
 /**
- * @brief Get the LSC credential from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return LSC credential.
- */
-lsc_credential_t
-lsc_credential_iterator_lsc_credential (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (lsc_credential_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (lsc_credential_iterator_uuid, 1);
-
-/**
- * @brief Get the name from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (lsc_credential_iterator_name, 2);
-
-/**
- * @brief Get the comment from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (lsc_credential_iterator_comment, 3);
-
-/**
  * @brief Get the login from an LSC credential iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -34392,42 +34212,6 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
-}
-
-/**
- * @brief Get the UUID from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_uuid, 1);
-
-/**
- * @brief Get the name from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (agent_iterator_name, 2);
-
-/**
- * @brief Get the comment from an agent iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-agent_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret ? ret : "";
 }
 
 /**
@@ -37458,50 +37242,6 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the schedule from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Schedule.
- */
-schedule_t
-schedule_iterator_schedule (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (schedule_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (schedule_iterator_name, 2);
-
-/**
- * @brief Get the comment from a schedule iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (schedule_iterator_comment, 3);
-
-/**
  * @brief Get the first time from a schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -39376,10 +39116,8 @@ verify_report_format_internal (report_format_t report_format)
 
       signature = report_format_iterator_signature (&formats);
 
-      find_signature ("report_formats",
-                      report_format_iterator_uuid (&formats),
-                      &format_signature,
-                      &format_signature_size);
+      find_signature ("report_formats", get_iterator_uuid (&formats),
+                      &format_signature, &format_signature_size);
 
       if ((signature && strlen (signature))
           || format_signature)
@@ -39391,17 +39129,13 @@ verify_report_format_internal (report_format_t report_format)
 
           format = g_string_new ("");
 
+          report_format = get_iterator_resource (&formats);
           g_string_append_printf
-           (format,
-            "%s%s%s%i",
-            report_format_iterator_uuid (&formats),
+           (format, "%s%s%s%i", get_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
             report_format_iterator_content_type (&formats),
-            report_format_global
-             (report_format_iterator_report_format
-              (&formats)) & 1);
+            report_format_global (report_format) & 1);
 
-          report_format = report_format_iterator_report_format (&formats);
 
           init_report_format_file_iterator (&files, report_format);
           while (next_file (&files))
@@ -40204,40 +39938,6 @@ init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
 }
 
 /**
- * @brief Get the report format from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Report_Format.
- */
-report_format_t
-report_format_iterator_report_format (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (report_format_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a report format iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (report_format_iterator_name, 2);
-
-/**
  * @brief Get the extension from a report format iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -41029,54 +40729,6 @@ init_slave_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
-}
-
-/**
- * @brief Get the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Slave.
- */
-slave_t
-slave_iterator_slave (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (slave_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_name, 2);
-
-/**
- * @brief Get the comment from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-slave_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret ? ret : "";
 }
 
 /**
@@ -44034,54 +43686,6 @@ init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
-}
-
-/**
- * @brief Get the port_list from a port_list iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Port_List.
- */
-port_list_t
-port_list_iterator_port_list (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (port_list_t) sqlite3_column_int64 (iterator->stmt, 0);
-}
-
-/**
- * @brief Get the UUID of the port_list from a port_list iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the port_list or NULL if iteration is complete.
- */
-DEF_ACCESS (port_list_iterator_uuid, 1);
-
-/**
- * @brief Get the name of the port_list from a port_list iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the port_list or NULL if iteration is complete.
- */
-DEF_ACCESS (port_list_iterator_name, 2);
-
-/**
- * @brief Get the comment from a port_list iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Comment.
- */
-const char*
-port_list_iterator_comment (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
-  return ret ? ret : "";
 }
 
 /**

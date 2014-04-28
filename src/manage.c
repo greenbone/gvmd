@@ -2222,7 +2222,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
 
           hosts_copy = g_strdup (hosts);
-          port_range = target_port_range (target_iterator_target (&targets));
+          port_range = target_port_range (get_iterator_resource (&targets));
           cleanup_iterator (&targets);
 
           opts = omp_create_target_opts_defaults;

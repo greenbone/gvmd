@@ -1,5 +1,34 @@
 2014-04-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Cleanup of miscllaneous unused functions and code refactoring.
+
+	* src/manage.c (slave_setup): Use generic get_iterator_resource
+	function.
+
+	* src/manage.h: Remove deleted functions prototypes.
+
+	* src/manage_sql.c (alert_iterator_alert, alert_iterator_uuid,
+	(alert_iterator_name, alert_iterator_comment, target_iterator_target)
+	(target_iterator_uuid, target_iterator_name, target_iterator_comment)
+	(config_iterator_config, config_iterator_uuid, config_iterator_name)
+	(config_iterator_comment)
+	(lsc_credential_iterator_lsc_credential, lsc_credential_iterator_uuid)
+	(lsc_credential_iterator_name, lsc_credential_iterator_comment)
+	(agent_iterator_uuid, agent_iterator_name, agent_iterator_comment)
+	(schedule_iterator_schedule, schedule_iterator_uuid)
+	(schedule_iterator_name, schedule_iterator_comment)
+	(report_format_iterator_report_format, report_format_iterator_uuid)
+	(report_format_iterator_name, slave_iterator_slave, slave_iterator_uuid)
+	(slave_iterator_name, slave_iterator_comment)
+	(port_list_iterator_port_list, port_list_iterator_uuid,
+	(port_list_iterator_name, port_list_iterator_comment): Remove functions.
+	(manage_report, manage_send_report, update_config_cache)
+	(manage_complete_nvt_cache_update, verify_report_format_internal)
+	(omp_xml_handle_end_element): Use generic get_iterator_* functions
+	accordingly.
+
+2014-04-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add create_scanner, get_scanners, modify_scanner, delete_scanner and
 	verify_scanner OMP commands.
 

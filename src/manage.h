@@ -384,18 +384,6 @@ alert_count (const get_data_t *);
 int
 init_alert_iterator (iterator_t*, const get_data_t*);
 
-alert_t
-alert_iterator_alert (iterator_t*);
-
-const char*
-alert_iterator_uuid (iterator_t*);
-
-const char*
-alert_iterator_name (iterator_t*);
-
-const char *
-alert_iterator_comment (iterator_t*);
-
 int
 alert_iterator_event (iterator_t*);
 
@@ -488,12 +476,6 @@ task_count (const get_data_t *);
 
 int
 init_task_iterator (iterator_t*, const get_data_t *);
-
-task_t
-task_iterator_task (iterator_t*);
-
-const char *
-task_iterator_uuid (iterator_t*);
 
 task_status_t
 task_iterator_run_status (iterator_t*);
@@ -1262,15 +1244,6 @@ init_user_target_iterator (iterator_t*, target_t);
 int
 init_target_iterator (iterator_t*, const get_data_t *);
 
-target_t
-target_iterator_target (iterator_t*);
-
-const char*
-target_iterator_uuid (iterator_t*);
-
-const char*
-target_iterator_name (iterator_t*);
-
 const char*
 target_iterator_hosts (iterator_t*);
 
@@ -1431,20 +1404,8 @@ init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 int
 init_config_iterator (iterator_t*, const get_data_t*);
 
-config_t
-config_iterator_config (iterator_t*);
-
-const char*
-config_iterator_uuid (iterator_t*);
-
-const char*
-config_iterator_name (iterator_t*);
-
 const char*
 config_iterator_nvt_selector (iterator_t*);
-
-const char*
-config_iterator_comment (iterator_t*);
 
 int
 config_iterator_nvt_count (iterator_t*);
@@ -1745,20 +1706,8 @@ init_user_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
 int
 init_lsc_credential_iterator (iterator_t*, const get_data_t *);
 
-lsc_credential_t
-lsc_credential_iterator_lsc_credential (iterator_t*);
-
-const char*
-lsc_credential_iterator_uuid (iterator_t*);
-
-const char*
-lsc_credential_iterator_name (iterator_t*);
-
 const char*
 lsc_credential_iterator_login (iterator_t*);
-
-const char*
-lsc_credential_iterator_comment (iterator_t*);
 
 const char*
 lsc_credential_iterator_public_key (iterator_t*);
@@ -1849,15 +1798,6 @@ int
 init_agent_iterator (iterator_t*, const get_data_t *);
 
 const char*
-agent_iterator_uuid (iterator_t*);
-
-const char*
-agent_iterator_name (iterator_t*);
-
-const char*
-agent_iterator_comment (iterator_t*);
-
-const char*
 agent_iterator_installer (iterator_t*);
 
 gsize
@@ -1912,9 +1852,6 @@ note_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
 init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
-
-const char*
-note_iterator_uuid (iterator_t*);
 
 const char*
 note_iterator_nvt_oid (iterator_t*);
@@ -1986,9 +1923,6 @@ override_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
-
-const char*
-override_iterator_uuid (iterator_t*);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -2173,21 +2107,6 @@ schedule_name (schedule_t);
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
 
-schedule_t
-schedule_iterator_schedule (iterator_t*);
-
-const char*
-schedule_iterator_uuid (iterator_t *);
-
-const char*
-schedule_iterator_name (iterator_t *);
-
-const char*
-schedule_iterator_uuid (iterator_t *);
-
-const char*
-schedule_iterator_comment (iterator_t *);
-
 time_t
 schedule_iterator_first_time (iterator_t *);
 
@@ -2337,15 +2256,6 @@ report_format_count (const get_data_t *);
 int
 init_report_format_iterator (iterator_t*, const get_data_t *);
 
-report_format_t
-report_format_iterator_report_format (iterator_t*);
-
-const char*
-report_format_iterator_uuid (iterator_t *);
-
-const char*
-report_format_iterator_name (iterator_t *);
-
 const char*
 report_format_iterator_extension (iterator_t *);
 
@@ -2487,18 +2397,6 @@ delete_slave (const char*, int);
 int
 init_slave_iterator (iterator_t*, const get_data_t *);
 
-slave_t
-slave_iterator_slave (iterator_t*);
-
-const char*
-slave_iterator_uuid (iterator_t*);
-
-const char*
-slave_iterator_name (iterator_t*);
-
-const char*
-slave_iterator_comment (iterator_t*);
-
 const char*
 slave_iterator_host (iterator_t*);
 
@@ -2630,12 +2528,6 @@ int
 init_permission_iterator (iterator_t*, const get_data_t *);
 
 const char*
-permission_iterator_uuid (iterator_t*);
-
-const char*
-permission_iterator_permission (iterator_t*);
-
-const char*
 permission_iterator_resource_type (iterator_t*);
 
 const char*
@@ -2703,18 +2595,6 @@ port_list_count (const get_data_t *);
 
 int
 init_port_list_iterator (iterator_t*, const get_data_t *);
-
-port_list_t
-port_list_iterator_port_list (iterator_t*);
-
-const char*
-port_list_iterator_uuid (iterator_t*);
-
-const char*
-port_list_iterator_name (iterator_t*);
-
-const char*
-port_list_iterator_comment (iterator_t*);
 
 int
 port_list_iterator_count_all (iterator_t*);

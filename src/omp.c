@@ -12007,9 +12007,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        alert_condition_name
                                         (alert_iterator_condition
                                           (&alerts)));
-              init_alert_data_iterator (&data,
-                                        alert_iterator_alert
-                                         (&alerts),
+              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
                                         get_alerts_data->get.trash,
                                         "condition");
               while (next (&data))
@@ -12028,11 +12026,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
                                        event_name (alert_iterator_event
                                         (&alerts)));
-              init_alert_data_iterator (&data,
-                                        alert_iterator_alert
-                                         (&alerts),
-                                        get_alerts_data->get.trash,
-                                        "event");
+              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+                                        get_alerts_data->get.trash, "event");
               while (next (&data))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                          "<name>%s</name>"
@@ -12049,11 +12044,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        alert_method_name
                                         (alert_iterator_method
                                           (&alerts)));
-              init_alert_data_iterator (&data,
-                                        alert_iterator_alert
-                                         (&alerts),
-                                        get_alerts_data->get.trash,
-                                        "method");
+              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+                                        get_alerts_data->get.trash, "method");
               while (next (&data))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                          "<name>%s</name>"
@@ -12070,9 +12062,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                   init_alert_task_iterator (&tasks,
-                                            alert_iterator_alert
-                                             (&alerts),
-                                            0);
+                                            get_iterator_resource (&alerts), 0);
                   while (next (&tasks))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<task id=\"%s\">"
@@ -12166,7 +12156,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /** @todo This should really be an nvt_selector_t. */
               selector = config_iterator_nvt_selector (&configs);
-              config = config_iterator_config (&configs);
+              config = get_iterator_resource (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
               config_families_growing = config_iterator_families_growing
                                          (&configs);
@@ -12261,7 +12251,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   || get_configs_data->get.details)
                 {
                   iterator_t prefs;
-                  config_t config = config_iterator_config (&configs);
+                  config_t config = get_iterator_resource (&configs);
 
                   assert (config);
 
@@ -12318,9 +12308,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                   init_config_task_iterator
-                   (&tasks,
-                    config_iterator_config (&configs),
-                    0);
+                   (&tasks, get_iterator_resource (&configs), 0);
                   while (next (&tasks))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<task id=\"%s\">"
@@ -13142,10 +13130,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SENDF_TO_CLIENT_OR_FAIL ("<targets>");
                   init_lsc_credential_target_iterator
-                   (&targets,
-                    lsc_credential_iterator_lsc_credential
-                     (&credentials),
-                    0);
+                   (&targets, get_iterator_resource (&credentials), 0);
                   while (next (&targets))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<target id=\"%s\">"
@@ -13856,9 +13841,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("<port_ranges>");
 
                   init_port_range_iterator (&ranges,
-                                            port_list_iterator_port_list (&port_lists),
-                                            0, 1,
-                                            NULL);
+                                            get_iterator_resource (&port_lists),
+                                            0, 1, NULL);
                   while (next (&ranges))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<port_range id=\"%s\">"
@@ -13886,7 +13870,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("<targets>");
 
                   init_port_list_target_iterator (&targets,
-                                                  port_list_iterator_port_list
+                                                  get_iterator_resource
                                                    (&port_lists), 0);
                   while (next (&targets))
                     SENDF_TO_CLIENT_OR_FAIL
@@ -14775,16 +14759,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_format_iterator_description (&report_formats),
                     get_report_formats_data->get.trash
                       ? trash_report_format_global
-                         (report_format_iterator_report_format
-                          (&report_formats))
+                         (get_iterator_resource (&report_formats))
                       : report_format_global
-                         (report_format_iterator_report_format
-                          (&report_formats)),
+                         (get_iterator_resource (&report_formats)),
                     get_report_formats_data->get.trash
                       ? 0
                       : report_format_predefined
-                         (report_format_iterator_report_format
-                           (&report_formats)));
+                         (get_iterator_resource (&report_formats)));
 
                   if (get_report_formats_data->alerts)
                     {
@@ -14810,11 +14791,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       iterator_t params;
                       init_report_format_param_iterator
-                       (&params,
-                        report_format_iterator_report_format (&report_formats),
-                        get_report_formats_data->get.trash,
-                        1,
-                        NULL);
+                       (&params, get_iterator_resource (&report_formats),
+                        get_report_formats_data->get.trash, 1, NULL);
                       while (next (&params))
                         {
                           long long int min, max;
@@ -14869,9 +14847,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       file_iterator_t files;
                       if (init_report_format_file_iterator
-                           (&files,
-                            report_format_iterator_report_format
-                             (&report_formats)))
+                           (&files, get_iterator_resource (&report_formats)))
                         {
                           cleanup_iterator (&report_formats);
                           error_send_to_client (error);
@@ -15395,8 +15371,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_schedule_task_iterator (&tasks,
-                                                 schedule_iterator_schedule
-                                                  (&schedules));
+                                                   get_iterator_resource
+                                                    (&schedules));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                                  "<name>%s</name>"
@@ -15573,7 +15549,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_slave_task_iterator (&tasks,
-                                                slave_iterator_slave
+                                                get_iterator_resource
                                                  (&slaves));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -16019,7 +15995,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_targets_data->get.details)
                     SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
                                              target_port_range
-                                              (target_iterator_target
+                                              (get_iterator_resource
                                                 (&targets)));
 
                   if (get_targets_data->tasks)
@@ -16028,7 +16004,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_target_task_iterator (&tasks,
-                                                 target_iterator_target
+                                                 get_iterator_resource
                                                   (&targets));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
