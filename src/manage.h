@@ -196,6 +196,18 @@ typedef enum
   ALIVE_TEST_TCP_SYN_SERVICE = 16
 } alive_test_t;
 
+/**
+ * @brief Scanner types.
+ *
+ * These numbers are used in the database, so if the number associated with
+ * any symbol changes then a migrator must be added to update existing data.
+ */
+typedef enum scanner_type {
+  SCANNER_TYPE_NONE = 0,
+  SCANNER_TYPE_OSP_OVALDI,
+  SCANNER_TYPE_MAX,
+} scanner_type_t;
+
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int alert_t;
@@ -220,6 +232,7 @@ typedef long long int port_list_t;
 typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
+typedef long long int scanner_t;
 typedef long long int setting_t;
 typedef long long int user_t;
 
@@ -2065,7 +2078,52 @@ report_type_iterator_title (report_type_iterator_t*);
 int
 manage_system_report (const char *, const char *, const char *, char **);
 
-
+int
+create_scanner (const char*, const char *, const char *, const char *,
+                const char *, scanner_t *);
+
+int
+copy_scanner (const char*, const char*, const char *, scanner_t *);
+
+int
+modify_scanner (const char*, const char*, const char*);
+
+int
+delete_scanner (const char *, int);
+
+int
+scanner_in_use (scanner_t);
+
+int
+trash_scanner_in_use (scanner_t);
+
+int
+trash_scanner_writable (scanner_t);
+
+int
+scanner_writable (scanner_t);
+
+char *
+scanner_uuid (scanner_t);
+
+int
+scanner_count (const get_data_t *);
+
+int
+init_scanner_iterator (iterator_t*, const get_data_t *);
+
+const char*
+scanner_iterator_host (iterator_t*);
+
+int
+scanner_iterator_port (iterator_t*);
+
+int
+scanner_iterator_type (iterator_t*);
+
+int
+verify_scanner (const char *, char **);
+
 /* Scheduling. */
 
 long

@@ -61,6 +61,7 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
+#include <openvas/base/osp.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_uuid.h>
@@ -308,6 +309,7 @@ command_t omp_commands[]
     {"CREATE_REPORT", "Create a report."},
     {"CREATE_REPORT_FORMAT", "Create a report format."},
     {"CREATE_ROLE", "Create a role."},
+    {"CREATE_SCANNER", "Create a scanner."},
     {"CREATE_SCHEDULE", "Create a schedule."},
     {"CREATE_SLAVE", "Create a slave."},
     {"CREATE_TAG", "Create a tag."},
@@ -328,6 +330,7 @@ command_t omp_commands[]
     {"DELETE_REPORT", "Delete a report."},
     {"DELETE_REPORT_FORMAT", "Delete a report format."},
     {"DELETE_ROLE", "Delete a role."},
+    {"DELETE_SCANNER", "Delete a scanner."},
     {"DELETE_SCHEDULE", "Delete a schedule."},
     {"DELETE_SLAVE", "Delete a slave."},
     {"DELETE_TAG", "Delete a tag."},
@@ -358,6 +361,7 @@ command_t omp_commands[]
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_RESULTS", "Get results."},
     {"GET_ROLES", "Get all roles."},
+    {"GET_SCANNERS", "Get all scanners."},
     {"GET_SCHEDULES", "Get all schedules."},
     {"GET_SETTINGS", "Get all settings."},
     {"GET_SLAVES", "Get all slaves."},
@@ -383,6 +387,7 @@ command_t omp_commands[]
     {"MODIFY_REPORT", "Modify an existing report."},
     {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
     {"MODIFY_ROLE", "Modify an existing role."},
+    {"MODIFY_SCANNER", "Modify an existing scanner."},
     {"MODIFY_SCHEDULE", "Modify an existing schedule."},
     {"MODIFY_SETTING", "Modify an existing setting."},
     {"MODIFY_SLAVE", "Modify an existing slave."},
@@ -404,6 +409,7 @@ command_t omp_commands[]
     {"TEST_ALERT", "Run an alert."},
     {"VERIFY_AGENT", "Verify an agent."},
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
+    {"VERIFY_SCANNER", "Verify a scanner."},
     {NULL, NULL}};
 
 /**
@@ -4270,6 +4276,12 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS role_users_trash"
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
+  sql ("CREATE TABLE IF NOT EXISTS scanners"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  host, port, type, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  host, port, type, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, duration, timezone,"
@@ -36431,7 +36443,470 @@ DEF_ACCESS (override_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 14);
  */
 DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 
-
+/* Scanners */
+
+/**
+ * @brief Find a scanner for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of scanner.
+ * @param[out]  scanner     Scanner return, 0 if succesfully failed to find
+ *                          scanner.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find scanner),
+ *         TRUE on error.
+ */
+gboolean
+find_scanner_with_permission (const char* uuid, scanner_t* scanner,
+                              const char *permission)
+{
+  return find_resource_with_permission ("scanner", uuid, scanner, permission,
+                                        0);
+}
+
+/**
+ * @brief Create a scanner.
+ *
+ * @param[in]   name        Name of scanner.
+ * @param[in]   comment     Comment on scanner.
+ * @param[in]   host        Host of scanner.
+ * @param[in]   port        Port of scanner.
+ * @param[in]   type        Type of scanner.
+ *
+ * @return 0 success, 1 scanner exists already, 2 Invalid value,
+ *         99 permission denied.
+ */
+int
+create_scanner (const char* name, const char *comment, const char *host,
+                const char *port, const char *type, scanner_t *new_scanner)
+{
+  gchar *quoted_name, *quoted_comment;
+  int iport, itype;
+
+  assert (current_credentials.uuid);
+  assert (name);
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("create_scanner") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  if (!host || !port || !type)
+    return 2;
+  iport = atoi (port);
+  itype = atoi (type);
+  if (iport <= 0 || iport > 65535)
+    return 2;
+  if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+    return 2;
+  if (openvas_get_host_type (host) == -1)
+    return 2;
+  quoted_name = sql_quote (name);
+  if (sql_int (0, 0, "SELECT COUNT(*) FROM scanners WHERE name = '%s';",
+               quoted_name))
+    {
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
+  sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
+       "                      creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '%s', %d, %d, now (), now ());",
+       quoted_name, current_credentials.uuid, quoted_comment, host, iport,
+       itype);
+
+  if (new_scanner)
+    *new_scanner = sqlite3_last_insert_rowid (task_db);
+
+  sql ("COMMIT;");
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  return 0;
+}
+
+/**
+ * @brief Create a cannerchedule from an existing cannerchedule.
+ *
+ * @param[in]  name         Name of new scanner. NULL to copy from existing.
+ * @param[in]  comment      Comment on new scanner. NULL to copy from
+ *                          existing.
+ * @param[in]  scanner_id   UUID of existing scanner.
+ * @param[out] new_scanner  New scanner.
+ *
+ * @return 0 success, 1 scanner exists already, 2 failed to find existing
+ *         scanner, -1 error.
+ */
+int
+copy_scanner (const char* name, const char* comment, const char *scanner_id,
+              scanner_t* new_scanner)
+{
+  return copy_resource ("scanner", name, comment, scanner_id,
+                        "host, port, type", 1, new_scanner);
+}
+
+/**
+ * @brief Modify an scanner.
+ *
+ * @param[in]   scanner_id  UUID of scanner.
+ * @param[in]   name        Name of scanner.
+ * @param[in]   comment     Comment on scanner.
+ *
+ * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
+ *         3 scanner_id required, 99 permission denied, -1 internal error.
+ */
+int
+modify_scanner (const char *scanner_id, const char *name, const char *comment)
+{
+  gchar *quoted_name, *quoted_comment;
+  scanner_t scanner;
+
+  if (scanner_id == NULL)
+    return 3;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  assert (current_credentials.uuid);
+
+  if (user_may ("modify_scanner") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  scanner = 0;
+  if (find_scanner_with_permission (scanner_id, &scanner, "modify_scanner"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (scanner == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+
+  /* Check whether a scanner with the same name exists already. */
+  if (name)
+    {
+      quoted_name = sql_quote (name);
+      if (sql_int (0, 0,
+                   "SELECT COUNT(*) FROM scanners"
+                   " WHERE name = '%s' AND ROWID != %llu"
+                   "  AND ((owner IS NULL) OR (owner ="
+                   "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                   quoted_name, scanner, current_credentials.uuid))
+        {
+          g_free (quoted_name);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+    }
+  else
+    quoted_name = sql_quote("");
+
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("UPDATE scanners SET name = '%s', comment = '%s',"
+       " modification_time = now () WHERE ROWID = %llu;",
+       quoted_name, quoted_comment, scanner);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
+ * @brief Delete a scanner.
+ *
+ * @param[in]  scanner_id   UUID of scanner.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 2 failed to find scanner, 99 permission denied, -1 error.
+ */
+int
+delete_scanner (const char *scanner_id, int ultimate)
+{
+  scanner_t scanner = 0;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  if (user_may ("delete_scanner") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  if (find_scanner_with_permission (scanner_id, &scanner, "delete_scanner"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (scanner == 0)
+    {
+      if (find_trash ("scanner", scanner_id, &scanner))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      if (scanner == 0)
+        {
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql ("COMMIT;");
+          return 0;
+        }
+
+      permissions_set_orphans ("scanner", scanner, LOCATION_TRASH);
+      tags_set_orphans ("scanner", scanner, LOCATION_TRASH);
+
+      sql ("DELETE FROM scanners_trash WHERE ROWID = %llu;", scanner);
+      sql ("COMMIT;");
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO scanners_trash"
+           " (uuid, owner, name, comment, host, port, type,"
+           "  creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, host, port, type,"
+           "        creation_time, modification_time"
+           " FROM scanners WHERE ROWID = %llu;",
+           scanner);
+
+      permissions_set_locations ("scanner", scanner,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TRASH);
+      tags_set_locations ("scanner", scanner,
+                          sqlite3_last_insert_rowid (task_db), LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("scanner", scanner, LOCATION_TABLE);
+      tags_set_orphans ("scanner", scanner, LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM scanners WHERE ROWID = %llu;", scanner);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
+ * @brief Filter columns for scanner iterator.
+ */
+#define SCANNER_ITERATOR_FILTER_COLUMNS                              \
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "type", NULL }
+
+/**
+ * @brief Scanner iterator columns.
+ */
+#define SCANNER_ITERATOR_COLUMNS                                     \
+  GET_ITERATOR_COLUMNS (scanners) ", host, port, type"               \
+
+/**
+ * @brief Scanner iterator columns for trash case.
+ */
+#define SCANNER_ITERATOR_TRASH_COLUMNS                               \
+  GET_ITERATOR_COLUMNS (scanners_trash) ", host, port, type"         \
+
+/**
+ * @brief Initialise an scanner iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find scanner, 2 failed to find filter, -1 error.
+ */
+int
+init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
+{
+  static const char *filter_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
+
+  return init_get_iterator (iterator, "scanner", get, SCANNER_ITERATOR_COLUMNS,
+                            SCANNER_ITERATOR_TRASH_COLUMNS, filter_columns, 0,
+                            NULL, NULL, TRUE);
+}
+
+/**
+ * @brief Get the host from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Host, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_host, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the port from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Port, or -1 if iteration is complete.
+ */
+int
+scanner_iterator_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 1);
+  return ret;
+}
+
+/**
+ * @brief Get the type from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type, or SCANNER_TYPE_NONE if iteration is complete.
+ */
+int
+scanner_iterator_type (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return SCANNER_TYPE_NONE;
+  ret = sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 2);
+  return ret;
+}
+
+/**
+ * @brief Check whether an scanner is in use.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+scanner_in_use (scanner_t scanner)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a trashcan scanner is writable.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_scanner_in_use (scanner_t scanner)
+{
+  return 0;
+}
+
+/**
+ * @brief Check whether a scanner is writable.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+scanner_writable (scanner_t scanner)
+{
+  return (scanner_in_use (scanner) == 0);
+}
+
+/**
+ * @brief Check whether a trashcan scanner is writable.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return 1 yes, 0 no.
+ */
+int
+trash_scanner_writable (scanner_t scanner)
+{
+  return (trash_scanner_in_use (scanner) == 0);
+}
+
+/**
+ * @brief Return the UUID of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated UUID.
+ */
+char *
+scanner_uuid (scanner_t scanner)
+{
+  return sql_string (0, 0, "SELECT uuid FROM scanners WHERE ROWID = %llu;",
+                     scanner);
+}
+
+/**
+ * @brief Count number of scanners.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of scanners in filtered set.
+ */
+int
+scanner_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
+  return count ("scanner", get, SCANNER_ITERATOR_COLUMNS,
+                SCANNER_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Verify a scanner.
+ *
+ * @param[in]   scanner_id  Scanner UUID.
+ * @param[out]  version     Version returned by the scanner.
+ *
+ * @return 0 success, 1 failed to find scanner, 2 failed to get version,
+ *         99 if permission denied, -1 error.
+ */
+int
+verify_scanner (const char *scanner_id, char **version)
+{
+  int ret;
+  get_data_t get;
+  iterator_t scanner;
+  osp_connection_t *connection = NULL;
+
+  if (user_may ("verify_scanner") == 0)
+    return 99;
+  memset (&get, '\0', sizeof (get));
+  get.id = g_strdup (scanner_id);
+  ret = init_scanner_iterator (&scanner, &get);
+  if (!next (&scanner))
+    return 1;
+  g_free (get.id);
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OVALDI)
+    connection = osp_connection_new (scanner_iterator_host (&scanner),
+                                     scanner_iterator_port (&scanner),
+                                     CACERT, CLIENTCERT, CLIENTKEY);
+  cleanup_iterator (&scanner);
+  if (!connection)
+    return 2;
+
+  ret = osp_get_scanner_version (connection, version);
+  osp_connection_close (connection);
+
+  if (ret)
+    return 2;
+  return 0;
+}
+
 /* Schedules. */
 
 /**

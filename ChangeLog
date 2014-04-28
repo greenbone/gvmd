@@ -1,3 +1,37 @@
+2014-04-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add create_scanner, get_scanners, modify_scanner, delete_scanner and
+	verify_scanner OMP commands.
+
+	* src/manage.h: Add new functions prototypes.
+	(scanner_type_t): New enum.
+	(scanner_t): New type.
+
+	* src/manage_sql.c (omp_commands): Add create_scanner, delete_scanner,
+	get_scanners, modify_scanner and verify_scanner commands.
+	(create_tables): Create scanners and scanners_trash tables.
+	(find_scanner_with_permission, create_scanner, copy_scanner)
+	(modify_scanner, delete_scanner, init_scanner_iterator)
+	(scanner_iterator_host, scanner_iterator_port, scanner_iterator_type,
+	(scanner_in_use, trash_scanner_in_use, scanner_writable)
+	(trash_scanner_writable, scanner_uuid, scanner_count, verify_scanner):
+	New functions.
+	(SCANNER_ITERATOR_FILTER_COLUMNS, SCANNER_ITERATOR_COLUMNS)
+	(SCANNER_ITERATOR_TRASH_COLUMNS): New defines.
+
+	* src/omp.c (create_scanner_data_t, delete_scanner_data_t)
+	(get_scanners_data_t, modify_scanner_data_t, verify_scanner_data_t): New
+	structs.
+	(create_scanner_data_reset, delete_scanner_data_reset)
+	(get_scanners_data_reset, modify_scanner_data_reset)
+	(verify_scanner_data_reset): New functions.
+	(command_data_t): Add elements for new commands.
+	(create_scanner_data, delete_scanner_data, get_scanners_data)
+	(modify_scanner_data, verify_scanner_data): New variables.
+	(client_state_t): Add states for new scanners commands.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new omp commands accordingly.
+
 2014-04-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/otp.c (blank_control_chars): New function.

@@ -1471,6 +1471,37 @@ create_role_data_reset (create_role_data_t *data)
 }
 
 /**
+ * @brief Command data for the create_scanner command.
+ */
+typedef struct
+{
+  char *name;               ///< Name for new scanner.
+  char *copy;               ///< UUID of scanner to copy.
+  char *comment;            ///< Comment.
+  char *host;               ///< Host of new scanner.
+  char *port;               ///< Port of new scanner.
+  char *type;               ///< Type of new scanner.
+} create_scanner_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+create_scanner_data_reset (create_scanner_data_t *data)
+{
+  free (data->name);
+  free (data->copy);
+  free (data->comment);
+  free (data->host);
+  free (data->port);
+  free (data->type);
+
+  memset (data, 0, sizeof (create_scanner_data_t));
+}
+
+/**
  * @brief Command data for the create_schedule command.
  */
 typedef struct
@@ -2047,6 +2078,28 @@ typedef struct
   char *schedule_id;   ///< ID of schedule to delete.
   int ultimate;        ///< Boolean.  Whether to remove entirely or to trashcan.
 } delete_schedule_data_t;
+
+/**
+ * @brief Command data for the delete_scanner command.
+ */
+typedef struct
+{
+  char *scanner_id; ///< ID of scanner to delete.
+  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
+} delete_scanner_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+delete_scanner_data_reset (delete_scanner_data_t *data)
+{
+  g_free (data->scanner_id);
+
+  memset (data, 0, sizeof (delete_scanner_data_t));
+}
 
 /**
  * @brief Reset command data.
@@ -2714,6 +2767,27 @@ typedef struct
 } get_schedules_data_t;
 
 /**
+ * @brief Command data for the get_scanners command.
+ */
+typedef struct
+{
+  get_data_t get;        ///< Get args.
+} get_scanners_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_scanners_data_reset (get_scanners_data_t *data)
+{
+  get_data_reset (&data->get);
+
+  memset (data, 0, sizeof (get_scanners_data_t));
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -3311,6 +3385,31 @@ modify_role_data_reset (modify_role_data_t *data)
 }
 
 /**
+ * @brief Command data for the modify_scanner command.
+ */
+typedef struct
+{
+  char *comment;            ///< Comment.
+  char *name;               ///< Name of scanner.
+  char *scanner_id;         ///< scanner UUID.
+} modify_scanner_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+modify_scanner_data_reset (modify_scanner_data_t *data)
+{
+  free (data->comment);
+  free (data->name);
+  free (data->scanner_id);
+
+  memset (data, 0, sizeof (modify_scanner_data_t));
+}
+
+/**
  * @brief Command data for the modify_schedule command.
  */
 typedef struct
@@ -3901,6 +4000,27 @@ verify_report_format_data_reset (verify_report_format_data_t *data)
 }
 
 /**
+ * @brief Command data for the verify_scanner command.
+ */
+typedef struct
+{
+  char *scanner_id;   ///< ID of scanner to verify.
+} verify_scanner_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+verify_scanner_data_reset (verify_scanner_data_t *data)
+{
+  g_free (data->scanner_id);
+
+  memset (data, 0, sizeof (verify_scanner_data_t));
+}
+
+/**
  * @brief Command data for the wizard command.
  */
 typedef struct
@@ -3961,6 +4081,7 @@ typedef union
   create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_role_data_t create_role;                     ///< create_role
+  create_scanner_data_t create_scanner;               ///< create_scanner
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_slave_data_t create_slave;                   ///< create_slave
   create_tag_data_t create_tag;                       ///< create_tag
@@ -3981,6 +4102,7 @@ typedef union
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_role_data_t delete_role;                     ///< delete_role
+  delete_scanner_data_t delete_scanner;               ///< delete_scanner
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
   delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_tag_data_t delete_tag;                       ///< delete_tag
@@ -4006,6 +4128,7 @@ typedef union
   get_results_data_t get_results;                     ///< get_results
   get_roles_data_t get_roles;                         ///< get_roles
   get_schedules_data_t get_schedules;                 ///< get_schedules
+  get_scanners_data_t get_scanners;                   ///< get_scanners
   get_settings_data_t get_settings;                   ///< get_settings
   get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
@@ -4026,6 +4149,7 @@ typedef union
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_role_data_t modify_role;                     ///< modify_role
+  modify_scanner_data_t modify_scanner;               ///< modify_scanner
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
   modify_slave_data_t modify_slave;                   ///< modify_slave
@@ -4043,6 +4167,7 @@ typedef union
   test_alert_data_t test_alert;                       ///< test_alert
   verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
+  verify_scanner_data_t verify_scanner;               ///< verify_scanner
   run_wizard_data_t wizard;                           ///< run_wizard
 } command_data_t;
 
@@ -4146,6 +4271,12 @@ create_report_data_t *create_report_data
  */
 create_report_format_data_t *create_report_format_data
  = (create_report_format_data_t*) &(command_data.create_report_format);
+
+/**
+ * @brief Parser callback data for CREATE_SCANNER.
+ */
+create_scanner_data_t *create_scanner_data
+ = (create_scanner_data_t*) &(command_data.create_scanner);
 
 /**
  * @brief Parser callback data for CREATE_SCHEDULE.
@@ -4266,6 +4397,12 @@ delete_report_format_data_t *delete_report_format_data
  */
 delete_role_data_t *delete_role_data
  = (delete_role_data_t*) &(command_data.delete_role);
+
+/**
+ * @brief Parser callback data for DELETE_SCANNER.
+ */
+delete_scanner_data_t *delete_scanner_data
+ = (delete_scanner_data_t*) &(command_data.delete_scanner);
 
 /**
  * @brief Parser callback data for DELETE_SCHEDULE.
@@ -4412,6 +4549,12 @@ get_roles_data_t *get_roles_data
  = &(command_data.get_roles);
 
 /**
+ * @brief Parser callback data for GET_scannerS.
+ */
+get_scanners_data_t *get_scanners_data
+ = &(command_data.get_scanners);
+
+/**
  * @brief Parser callback data for GET_SCHEDULES.
  */
 get_schedules_data_t *get_schedules_data
@@ -4556,6 +4699,12 @@ modify_role_data_t *modify_role_data
  = &(command_data.modify_role);
 
 /**
+ * @brief Parser callback data for MODIFY_SCANNER.
+ */
+modify_scanner_data_t *modify_scanner_data
+ = &(command_data.modify_scanner);
+
+/**
  * @brief Parser callback data for MODIFY_SCHEDULE.
  */
 modify_schedule_data_t *modify_schedule_data
@@ -4655,6 +4804,12 @@ verify_agent_data_t *verify_agent_data
  */
 verify_report_format_data_t *verify_report_format_data
  = (verify_report_format_data_t*) &(command_data.verify_report_format);
+
+/**
+ * @brief Parser callback data for VERIFY_SCANNER.
+ */
+verify_scanner_data_t *verify_scanner_data
+ = (verify_scanner_data_t*) &(command_data.verify_scanner);
 
 /**
  * @brief Parser callback data for WIZARD.
@@ -4941,6 +5096,13 @@ typedef enum
   CLIENT_CREATE_ROLE_COPY,
   CLIENT_CREATE_ROLE_NAME,
   CLIENT_CREATE_ROLE_USERS,
+  CLIENT_CREATE_SCANNER,
+  CLIENT_CREATE_SCANNER_COMMENT,
+  CLIENT_CREATE_SCANNER_COPY,
+  CLIENT_CREATE_SCANNER_NAME,
+  CLIENT_CREATE_SCANNER_HOST,
+  CLIENT_CREATE_SCANNER_PORT,
+  CLIENT_CREATE_SCANNER_TYPE,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -5033,6 +5195,7 @@ typedef enum
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_ROLE,
+  CLIENT_DELETE_SCANNER,
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TAG,
@@ -5063,6 +5226,7 @@ typedef enum
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
+  CLIENT_GET_SCANNERS,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_SETTINGS,
   CLIENT_GET_SLAVES,
@@ -5166,6 +5330,9 @@ typedef enum
   CLIENT_MODIFY_ROLE_COMMENT,
   CLIENT_MODIFY_ROLE_NAME,
   CLIENT_MODIFY_ROLE_USERS,
+  CLIENT_MODIFY_SCANNER,
+  CLIENT_MODIFY_SCANNER_COMMENT,
+  CLIENT_MODIFY_SCANNER_NAME,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -5259,7 +5426,8 @@ typedef enum
   CLIENT_SYNC_SCAP,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
-  CLIENT_VERIFY_REPORT_FORMAT
+  CLIENT_VERIFY_REPORT_FORMAT,
+  CLIENT_VERIFY_SCANNER,
 } client_state_t;
 
 /**
@@ -6241,6 +6409,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_FORMAT);
+        else if (strcasecmp ("CREATE_SCANNER", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER);
         else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
           {
             openvas_append_string (&create_slave_data->comment, "");
@@ -6434,6 +6604,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             else
               delete_role_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ROLE);
+          }
+        else if (strcasecmp ("DELETE_SCANNER", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "scanner_id", &delete_scanner_data->scanner_id);
+            if (find_attribute (attribute_names, attribute_values, "ultimate",
+                                &attribute))
+              delete_scanner_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_scanner_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_SCANNER);
           }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
@@ -6999,6 +7181,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_values);
             set_client_state (CLIENT_GET_ROLES);
           }
+        else if (strcasecmp ("GET_SCANNERS", element_name) == 0)
+          {
+            get_data_parse_attributes (&get_scanners_data->get, "scanner",
+                                       attribute_names, attribute_values);
+            set_client_state (CLIENT_GET_SCANNERS);
+          }
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -7255,6 +7443,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_role_data->role_id);
             set_client_state (CLIENT_MODIFY_ROLE);
           }
+        else if (strcasecmp ("MODIFY_SCANNER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "scanner_id",
+                              &modify_scanner_data->scanner_id);
+            set_client_state (CLIENT_MODIFY_SCANNER);
+          }
         else if (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "schedule_id",
@@ -7375,6 +7569,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &verify_report_format_data->report_format_id);
             set_client_state (CLIENT_VERIFY_REPORT_FORMAT);
           }
+        else if (strcasecmp ("VERIFY_SCANNER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "scanner_id",
+                              &verify_scanner_data->scanner_id);
+            set_client_state (CLIENT_VERIFY_SCANNER);
+          }
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("omp", "Bogus command name"),
@@ -7406,6 +7606,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
         ELSE_ERROR ("authenticate");
+
+      case CLIENT_CREATE_SCANNER:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_COMMENT);
+        else if (strcasecmp ("COPY", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_COPY);
+        else if (strcasecmp ("NAME", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_NAME);
+        else if (strcasecmp ("HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_HOST);
+        else if (strcasecmp ("PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_PORT);
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_TYPE);
+        ELSE_ERROR ("create_scanner");
 
       case CLIENT_CREATE_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7776,6 +7991,19 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_ROLE_USERS);
           }
         ELSE_ERROR ("modify_role");
+
+      case CLIENT_MODIFY_SCANNER:
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->comment, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_COMMENT);
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->name, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_NAME);
+          }
+        ELSE_ERROR ("modify_scanner");
 
       case CLIENT_MODIFY_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -11075,6 +11303,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CASE_DELETE (REPORT, report, "Report");
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
       CASE_DELETE (ROLE, role, "Role");
+      CASE_DELETE (SCANNER, scanner, "Scanner");
       CASE_DELETE (SCHEDULE, schedule, "Schedule");
       CASE_DELETE (SLAVE, slave, "Slave");
       CASE_DELETE (TAG, tag, "Tag");
@@ -14901,6 +15130,78 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_END ("role", &get_roles_data->get, count, filtered);
 
           get_roles_data_reset (get_roles_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_SCANNERS:
+        {
+          iterator_t scanners;
+          int ret, count, filtered, first;
+
+          assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
+
+          INIT_GET (scanner, Scanner);
+          ret = init_scanner_iterator (&scanners, &get_scanners_data->get);
+          switch (ret)
+            {
+              case 0:
+                break;
+              case 1:
+                if (send_find_error_to_client
+                     ("get_scanners", "scanners", get_scanners_data->get.id,
+                      write_to_client, write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 2:
+                if (send_find_error_to_client
+                     ("get_scanners", "filter", get_scanners_data->get.filt_id,
+                      write_to_client, write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_scanners"));
+                break;
+            }
+          if (ret)
+            {
+              get_scanners_data_reset (get_scanners_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
+          SEND_GET_START ("scanner");
+          while (1)
+            {
+              ret = get_next (&scanners, &get_scanners_data->get, &first,
+                              &count, init_scanner_iterator);
+              if (ret == 1)
+                break;
+              if (ret == -1)
+                {
+                  internal_error_send_to_client (error);
+                  return;
+                }
+
+              SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<host>%s</host><port>%d</port><type>%d</type></scanner>",
+                scanner_iterator_host (&scanners),
+                scanner_iterator_port (&scanners),
+                scanner_iterator_type (&scanners));
+              count++;
+            }
+          cleanup_iterator (&scanners);
+          filtered = get_scanners_data->get.id
+                      ? 1 : scanner_count (&get_scanners_data->get);
+          SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
+          get_scanners_data_reset (get_scanners_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -19334,6 +19635,132 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, NAME);
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
+      case CLIENT_CREATE_SCANNER:
+        {
+          scanner_t new_scanner;
+
+          assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
+
+          if (create_scanner_data->copy)
+            switch (copy_scanner (create_scanner_data->name,
+                                  create_scanner_data->comment,
+                                  create_scanner_data->copy,
+                                  &new_scanner))
+              {
+                case 0:
+                  {
+                    char *uuid;
+                    uuid = scanner_uuid (new_scanner);
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_scanner"),
+                                             uuid);
+                    log_event ("scanner", "scanner", uuid, "created");
+                    free (uuid);
+                    break;
+                  }
+                case 1:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_scanner",
+                                      "Scanner name exists already"));
+                  log_event_fail ("scanner", "Scanner", NULL, "created");
+                  break;
+                case 2:
+                  if (send_find_error_to_client ("create_scanner",
+                                                 "scanner",
+                                                 create_scanner_data->copy,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("scanner", "Scanner", NULL, "created");
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_scanner",
+                                      "Permission denied"));
+                  log_event_fail ("scanner", "Scanner", NULL, "created");
+                  break;
+                case -1:
+                default:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_scanner"));
+                  log_event_fail ("scanner", "Scanner", NULL, "created");
+                  break;
+              }
+          else if (create_scanner_data->name == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a NAME entity"));
+          else if (create_scanner_data->host == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a HOST entity"));
+          else if (create_scanner_data->port == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a PORT entity"));
+          else if (create_scanner_data->type == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a TYPE entity"));
+          else switch (create_scanner (create_scanner_data->name,
+                                       create_scanner_data->comment,
+                                       create_scanner_data->host,
+                                       create_scanner_data->port,
+                                       create_scanner_data->type,
+                                       &new_scanner))
+            {
+              case 0:
+                {
+                  char *uuid = scanner_uuid (new_scanner);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_OK_CREATED_ID ("create_scanner"), uuid);
+                  log_event ("scanner", "Scanner", uuid, "created");
+                  free (uuid);
+                  break;
+                }
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_scanner",
+                                    "Scanner exists already"));
+                log_event_fail ("scanner", "Scanner", NULL, "created");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_scanner",
+                                    "Invalid entity value"));
+                log_event_fail ("scanner", "Scanner", NULL, "created");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_scanner",
+                                    "Permission denied"));
+                log_event_fail ("scanner", "Scanner", NULL, "created");
+                break;
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_scanner"));
+                log_event_fail ("scanner", "Scanner", NULL, "created");
+                break;
+              default:
+                assert (0);
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("create_scanner"));
+                log_event_fail ("scanner", "Scanner", NULL, "created");
+                break;
+            }
+          create_scanner_data_reset (create_scanner_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
+      CLOSE (CLIENT_CREATE_SCANNER, COPY);
+      CLOSE (CLIENT_CREATE_SCANNER, NAME);
+      CLOSE (CLIENT_CREATE_SCANNER, HOST);
+      CLOSE (CLIENT_CREATE_SCANNER, PORT);
+      CLOSE (CLIENT_CREATE_SCANNER, TYPE);
+
       case CLIENT_CREATE_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -22456,6 +22883,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, NAME);
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
+      case CLIENT_MODIFY_SCANNER:
+        {
+          assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
+
+          switch (modify_scanner
+                   (modify_scanner_data->scanner_id,
+                    modify_scanner_data->name,
+                    modify_scanner_data->comment))
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
+                log_event ("scanner", "Scanner",
+                           modify_scanner_data->scanner_id, "modified");
+                break;
+              case 1:
+                if (send_find_error_to_client ("modify_scanner",
+                                               "scanner",
+                                               modify_scanner_data->scanner_id,
+                                               write_to_client,
+                                               write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_scanner",
+                                    "scanner with new name exists already"));
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_scanner",
+                                    "MODIFY_SCANNER requires a scanner_id"));
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_scanner",
+                                    "Permission denied"));
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
+              default:
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_scanner"));
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
+            }
+
+          modify_scanner_data_reset (modify_scanner_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_MODIFY_SCANNER, COMMENT);
+      CLOSE (CLIENT_MODIFY_SCANNER, NAME);
+
       case CLIENT_MODIFY_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -24771,6 +25261,52 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
+      case CLIENT_VERIFY_SCANNER:
+        assert (strcasecmp ("VERIFY_SCANNER", element_name) == 0);
+        if (verify_scanner_data->scanner_id)
+          {
+            char *version = NULL;
+            switch (verify_scanner (verify_scanner_data->scanner_id, &version))
+              {
+                case 0:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<verify_scanner_response status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<version>%s</version>"
+                    "</verify_scanner_response>", version);
+                  break;
+                case 1:
+                  if (send_find_error_to_client
+                       ("verify_scanner", "scanner",
+                        verify_scanner_data->scanner_id, write_to_client,
+                        write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_UNAVAILABLE ("verify_scanner"));
+                  break;
+                case 99:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("verify_scanner", "Permission denied"));
+                  break;
+                default:
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
+                                           ("verify_scanner"));
+                  break;
+              }
+          }
+        else
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("verify_scanner", "VERIFY_SCANNER requires a"
+                              " scanner_id attribute"));
+        verify_scanner_data_reset (verify_scanner_data);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       default:
         assert (0);
         break;
@@ -25340,6 +25876,23 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_ROLE_USERS,
               &create_role_data->users);
 
+      APPEND (CLIENT_CREATE_SCANNER_NAME,
+              &create_scanner_data->name);
+
+      APPEND (CLIENT_CREATE_SCANNER_COMMENT,
+              &create_scanner_data->comment);
+
+      APPEND (CLIENT_CREATE_SCANNER_COPY,
+              &create_scanner_data->copy);
+
+      APPEND (CLIENT_CREATE_SCANNER_HOST,
+              &create_scanner_data->host);
+
+      APPEND (CLIENT_CREATE_SCANNER_PORT,
+              &create_scanner_data->port);
+
+      APPEND (CLIENT_CREATE_SCANNER_TYPE,
+              &create_scanner_data->type);
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
@@ -25653,6 +26206,12 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ROLE_USERS,
               &modify_role_data->users);
+
+      APPEND (CLIENT_MODIFY_SCANNER_COMMENT,
+              &modify_scanner_data->comment);
+
+      APPEND (CLIENT_MODIFY_SCANNER_NAME,
+              &modify_scanner_data->name);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
