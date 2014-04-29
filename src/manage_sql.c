@@ -36264,7 +36264,7 @@ int
 create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner)
 {
-  gchar *quoted_name, *quoted_comment;
+  gchar *quoted_name, *quoted_comment, *quoted_host;
   int iport, itype;
 
   assert (current_credentials.uuid);
@@ -36298,18 +36298,20 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
+  quoted_host = sql_quote (host);
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
        "                      creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
        "  '%s', '%s', %d, %d, now (), now ());",
-       quoted_name, current_credentials.uuid, quoted_comment, host, iport,
-       itype);
+       quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
+       iport, itype);
 
   if (new_scanner)
     *new_scanner = sqlite3_last_insert_rowid (task_db);
 
   sql ("COMMIT;");
+  g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
   return 0;
@@ -36343,17 +36345,30 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   comment     Comment on scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
- *         3 scanner_id required, 99 permission denied, -1 internal error.
+ *         3 scanner_id required, 4 invalid value, 99 permission denied, -1
+ *         internal error.
  */
 int
-modify_scanner (const char *scanner_id, const char *name, const char *comment)
+modify_scanner (const char *scanner_id, const char *name, const char *comment,
+                const char *host, const char *port, const char *type)
 {
-  gchar *quoted_name, *quoted_comment;
-  scanner_t scanner;
+  gchar *quoted_name, *quoted_comment, *quoted_host;
+  scanner_t scanner = 0;
+  int iport, itype;
 
   if (scanner_id == NULL)
     return 3;
 
+  if (!host || !port || !type)
+    return 4;
+  iport = atoi (port);
+  itype = atoi (type);
+  if (iport <= 0 || iport > 65535)
+    return 4;
+  if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+    return 4;
+  if (openvas_get_host_type (host) == -1)
+    return 4;
   sql ("BEGIN IMMEDIATE;");
 
   assert (current_credentials.uuid);
@@ -36364,13 +36379,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment)
       return 99;
     }
 
-  scanner = 0;
   if (find_scanner_with_permission (scanner_id, &scanner, "modify_scanner"))
     {
       sql ("ROLLBACK;");
       return -1;
     }
-
   if (scanner == 0)
     {
       sql ("ROLLBACK;");
@@ -36397,16 +36410,15 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment)
     quoted_name = sql_quote("");
 
   quoted_comment = sql_quote (comment ? comment : "");
+  quoted_host = sql_quote (host);
+  sql ("UPDATE scanners SET name = '%s', comment = '%s', host = '%s',"
+       " port = %d, type = %d, modification_time = now () WHERE ROWID = %llu;",
+       quoted_name, quoted_comment, quoted_host, iport, itype, scanner);
 
-  sql ("UPDATE scanners SET name = '%s', comment = '%s',"
-       " modification_time = now () WHERE ROWID = %llu;",
-       quoted_name, quoted_comment, scanner);
-
+  g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
-
   sql ("COMMIT;");
-
   return 0;
 }
 

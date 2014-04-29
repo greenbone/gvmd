@@ -3391,6 +3391,9 @@ typedef struct
 {
   char *comment;            ///< Comment.
   char *name;               ///< Name of scanner.
+  char *host;               ///< Host of scanner.
+  char *port;               ///< Port of scanner.
+  char *type;               ///< Type of scanner.
   char *scanner_id;         ///< scanner UUID.
 } modify_scanner_data_t;
 
@@ -3402,9 +3405,12 @@ typedef struct
 static void
 modify_scanner_data_reset (modify_scanner_data_t *data)
 {
-  free (data->comment);
-  free (data->name);
-  free (data->scanner_id);
+  g_free (data->comment);
+  g_free (data->name);
+  g_free (data->host);
+  g_free (data->port);
+  g_free (data->type);
+  g_free (data->scanner_id);
 
   memset (data, 0, sizeof (modify_scanner_data_t));
 }
@@ -5333,6 +5339,9 @@ typedef enum
   CLIENT_MODIFY_SCANNER,
   CLIENT_MODIFY_SCANNER_COMMENT,
   CLIENT_MODIFY_SCANNER_NAME,
+  CLIENT_MODIFY_SCANNER_HOST,
+  CLIENT_MODIFY_SCANNER_PORT,
+  CLIENT_MODIFY_SCANNER_TYPE,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -8002,6 +8011,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&modify_scanner_data->name, "");
             set_client_state (CLIENT_MODIFY_SCANNER_NAME);
+          }
+        else if (strcasecmp ("HOST", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->host, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_HOST);
+          }
+        else if (strcasecmp ("PORT", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->port, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_PORT);
+          }
+        else if (strcasecmp ("TYPE", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->type, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_TYPE);
           }
         ELSE_ERROR ("modify_scanner");
 
@@ -22864,9 +22888,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
 
           switch (modify_scanner
-                   (modify_scanner_data->scanner_id,
-                    modify_scanner_data->name,
-                    modify_scanner_data->comment))
+                   (modify_scanner_data->scanner_id, modify_scanner_data->name,
+                    modify_scanner_data->comment, modify_scanner_data->host,
+                    modify_scanner_data->port, modify_scanner_data->type))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
@@ -22900,6 +22924,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 log_event_fail ("scanner", "Scanner",
                                 modify_scanner_data->scanner_id, "modified");
                 break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_scanner",
+                                    "MODIFY_SCANNER invalid value"));
+                log_event_fail ("scanner", "Scanner",
+                                modify_scanner_data->scanner_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_scanner",
@@ -22919,6 +22950,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
+      CLOSE (CLIENT_MODIFY_SCANNER, PORT);
+      CLOSE (CLIENT_MODIFY_SCANNER, HOST);
       CLOSE (CLIENT_MODIFY_SCANNER, COMMENT);
       CLOSE (CLIENT_MODIFY_SCANNER, NAME);
 
@@ -26188,6 +26222,15 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SCANNER_NAME,
               &modify_scanner_data->name);
+
+      APPEND (CLIENT_MODIFY_SCANNER_HOST,
+              &modify_scanner_data->host);
+
+      APPEND (CLIENT_MODIFY_SCANNER_PORT,
+              &modify_scanner_data->port);
+
+      APPEND (CLIENT_MODIFY_SCANNER_TYPE,
+              &modify_scanner_data->type);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,

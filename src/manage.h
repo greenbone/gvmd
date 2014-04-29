@@ -2020,7 +2020,8 @@ int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
 int
-modify_scanner (const char*, const char*, const char*);
+modify_scanner (const char*, const char*, const char*, const char *,
+                const char *, const char *);
 
 int
 delete_scanner (const char *, int);
