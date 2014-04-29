@@ -1,3 +1,10 @@
+2014-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/ompd.c (wait_for_connection): New function.
+	(serve_omp): When the scanner connection is interrupted, wait for the
+	scanner socket to be writable, instead of immediately calling
+	get_sockopt via write_to_scanner.
+
 2014-04-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (severity_matches_type): Fix comparison against static
