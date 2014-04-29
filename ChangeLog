@@ -1,5 +1,10 @@
 2014-04-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (severity_matches_type): Fix comparison against static
+	string instead of the actual type variable.
+
+2014-04-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (modify_scanner): Allow modifying the host, port and
 	type values.
 	(create_scanner): SQL quote provided host value.

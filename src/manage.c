@@ -380,14 +380,14 @@ severity_matches_type (double severity, const char *type)
       if (strcmp ("Alarm", type) == 0)
         return 1;
       if ((strcmp ("high", type) == 0)
-               || (strcmp ("medium", type) == 0)
-               || (strcmp ("low", type) == 0))
+          || (strcmp ("medium", type) == 0)
+          || (strcmp ("low", type) == 0))
         return severity_in_level (severity, type);
       if (strcmp ("Security Hole", type) == 0)
         return severity_in_level (severity, "high");
       if (strcmp ("Security Warning", type) == 0)
         return severity_in_level (severity, "medium");
-      if (strcmp ("Security Note", "type") == 0)
+      if (strcmp ("Security Note", type) == 0)
         return severity_in_level (severity, "low");
       return 0;
     }
