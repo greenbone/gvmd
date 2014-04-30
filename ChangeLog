@@ -1,5 +1,13 @@
 2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19350.
+
+	* src/manage_sql.c (init_manage): Init current_credentials with memset,
+	so that all fields are cleared.
+	(authenticate): Set timezone in credentials.
+
+2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19346.
 
 	* src/ompd.c (wait_for_connection): New function.
