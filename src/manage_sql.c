@@ -46292,6 +46292,46 @@ manage_restore (const char *id)
       return 0;
     }
 
+  /* Scanner. */
+
+  if (find_trash ("scanner", id, &resource))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (resource)
+    {
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM scanners"
+                   " WHERE name ="
+                   " (SELECT name FROM scanners_trash WHERE ROWID = %llu)"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT ROWID FROM users WHERE users.uuid = '%s')));",
+                   resource, current_credentials.uuid))
+        {
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      sql ("INSERT INTO scanners"
+           " (uuid, owner, name, comment, host, port, type,"
+           "  creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, host, port, type,"
+           "        creation_time, modification_time"
+           " FROM scanners_trash WHERE ROWID = %llu;", resource);
+
+      permissions_set_locations ("scanner", resource,
+                                 sqlite3_last_insert_rowid (task_db),
+                                 LOCATION_TABLE);
+      tags_set_locations ("scanner", resource,
+                          sqlite3_last_insert_rowid (task_db), LOCATION_TABLE);
+
+      sql ("DELETE FROM scanners_trash WHERE ROWID = %llu;", resource);
+      sql ("COMMIT;");
+      return 0;
+    }
+
   /* Schedule. */
 
   if (find_trash ("schedule", id, &resource))
@@ -46605,6 +46645,7 @@ manage_empty_trashcan ()
        " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
   sql ("DELETE FROM roles_trash;");
   sql ("DELETE FROM role_users_trash;");
+  sql ("DELETE FROM scanners_trash;");
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
   sql ("DELETE FROM tags_trash;");

@@ -1,3 +1,8 @@
+2014-04-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_restore): Restore scanner object when found.
+	(manage_empty_trashcan): Empty trash scanners.
+
 2014-04-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/ompd.c (wait_for_connection): New function.
