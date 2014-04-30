@@ -1,5 +1,12 @@
 2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Do not
+	exit early if synchronization is disabled. Instead, note the fact in
+	the log and behave as if REFRESH_ONLY was requested, thus still
+	remaining useful for local operations.
+
+2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync:
 	Streamline handling of REFRESH_ONLY to consistently only operate on
 	local data and exclude network communication.
