@@ -1,3 +1,9 @@
+2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync:
+	Streamline handling of REFRESH_ONLY to consistently only operate on
+	local data and exclude network communication.
+
 2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_manage): Init current_credentials with memset,
