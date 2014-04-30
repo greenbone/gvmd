@@ -11531,9 +11531,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
                      (GLogFunc) openvas_log_func,
                      log_config);
 
-  current_credentials.uuid = NULL;
-  current_credentials.username = NULL;
-  current_credentials.password = NULL;
+  memset (&current_credentials, '\0', sizeof (current_credentials));
 
   init_manage_process (0, database);
 
@@ -11856,6 +11854,11 @@ authenticate (credentials_t* credentials)
               credentials->role = NULL;
               return 99;
             }
+
+          credentials->timezone = sql_string (0, 0,
+                                              "SELECT timezone FROM users"
+                                              " WHERE uuid = '%s';",
+                                              credentials->uuid);
 
           return 0;
         }
