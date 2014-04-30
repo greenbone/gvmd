@@ -1,3 +1,9 @@
+2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_manage): Init current_credentials with memset,
+	so that all fields are cleared.
+	(authenticate): Set timezone in credentials.
+
 2014-04-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_restore): Restore scanner object when found.
