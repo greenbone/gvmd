@@ -1,3 +1,11 @@
+2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r19351.
+
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync:
+	Streamline handling of REFRESH_ONLY to consistently only operate on
+	local data and exclude network communication.
+
 2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19350.

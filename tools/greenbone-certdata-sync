@@ -145,78 +145,83 @@ log_err () {
 }
 
 is_feed_current () {
-  if [ -r $TIMESTAMP ]
+  if [ $REFRESH_ONLY -eq 0 ]
   then
-    FEED_VERSION=`cat $TIMESTAMP`
-  fi
-
-  if [ -z "$FEED_VERSION" ]
-  then
-    log_warning "Could not determine feed version."
-    FEED_CURRENT=0
-    return $FEED_CURRENT
-  fi
-
-  FEED_INFO_TEMP_DIR=`mktemp -d`
-
-  if [ -e $ACCESSKEY ]
-  then
-    read feeduser < $ACCESSKEY
-    custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-    if [ -z $feeduser ] || [ -z $custid ]
+    if [ -r $TIMESTAMP ]
     then
-      log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
-      rm -rf $FEED_INFO_TEMP_DIR
-      exit -1
+      FEED_VERSION=`cat $TIMESTAMP`
     fi
 
-    # --protocol=29 is a workaround for a known bug in rsync 3.0.3
-    if [ -e /admin/ezcli.state ]
+    if [ -z "$FEED_VERSION" ]
     then
-      gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
-      PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+      log_warning "Could not determine feed version."
+      FEED_CURRENT=0
+      return $FEED_CURRENT
     fi
-    if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+
+    FEED_INFO_TEMP_DIR=`mktemp -d`
+
+    if [ -e $ACCESSKEY ]
     then
-      RSYNC_SSH_PROXY_CMD=""
-    else
-      if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
-      else
-        RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+      read feeduser < $ACCESSKEY
+      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+      if [ -z $feeduser ] || [ -z $custid ]
+      then
+        log_err "CERT synchronization: Could not determine credentials, aborting synchronization."
+        rm -rf $FEED_INFO_TEMP_DIR
+        exit -1
       fi
-    fi
-    rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp $FEED_INFO_TEMP_DIR
-    if [ $? -ne 0 ]
-    then
-      log_err "rsync failed, aborting synchronization."
+
+      # --protocol=29 is a workaround for a known bug in rsync 3.0.3
+      if [ -e /admin/ezcli.state ]
+      then
+        gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
+        PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+      fi
+      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+      then
+        RSYNC_SSH_PROXY_CMD=""
+      else
+        if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
+        else
+          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+        fi
+      fi
+      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data/timestamp $FEED_INFO_TEMP_DIR
+      if [ $? -ne 0 ]
+      then
+        log_err "rsync failed, aborting synchronization."
+        rm -rf $FEED_INFO_TEMP_DIR
+        exit -1
+      fi
+    else
+      log_err "Could not find access key, aborting synchronization."
       rm -rf $FEED_INFO_TEMP_DIR
       exit -1
     fi
+
+    FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
+
+    if [ -z "$FEED_VERSION_SERVER" ]
+    then
+      log_err "Could not determine server feed version."
+      rm -rf $FEED_INFO_TEMP_DIR
+      exit -1
+    fi
+
+    # Check against FEED_VERSION
+    if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
+      FEED_CURRENT=0
+    else
+      FEED_CURRENT=1
+    fi
+
+    # Cleanup
+    rm -rf $FEED_INFO_TEMP_DIR
   else
-    log_err "Could not find access key, aborting synchronization."
-    rm -rf $FEED_INFO_TEMP_DIR
-    exit -1
-  fi
-
-  FEED_VERSION_SERVER=`cat $FEED_INFO_TEMP_DIR/timestamp`
-
-  if [ -z "$FEED_VERSION_SERVER" ]
-  then
-    log_err "Could not determine server feed version."
-    rm -rf $FEED_INFO_TEMP_DIR
-    exit -1
-  fi
-
-  # Check against FEED_VERSION
-  if [ $FEED_VERSION -lt $FEED_VERSION_SERVER ] ; then
     FEED_CURRENT=0
-  else
-    FEED_CURRENT=1
   fi
-
-  # Cleanup
-  rm -rf $FEED_INFO_TEMP_DIR
 
   return $FEED_CURRENT
 }
@@ -370,58 +375,57 @@ update_cert_db() {
 }
 
 sync_certdata(){
-  if [ -e $ACCESSKEY ]
+  if [ $REFRESH_ONLY -eq 0 ]
   then
-    log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
-    notsynced=1
-    retried=0
-
-    if [ $REFRESH_ONLY -eq 1 ]
+    if [ -e $ACCESSKEY ]
     then
-      notsynced=0
-    fi
+      log_notice "Found Greenbone Security Feed subscription file, trying to synchronize with Greenbone CERT data Repository ..."
+      notsynced=1
+      retried=0
 
-    mkdir -p "$BASE_SYNC_DIR"
-    read feeduser < $ACCESSKEY
-    custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
-    if [ -z $feeduser ] || [ -z $custid ]
-    then
-      log_err "Could not determine credentials, aborting synchronization."
-      exit 1
-    fi
-    while [ 1 -eq $notsynced ]
-    do
-      # --protocol=29 is a workaround for a known bug in rsync 3.0.3
-      if [ -e /admin/ezcli.state ]
+      mkdir -p "$BASE_SYNC_DIR"
+      read feeduser < $ACCESSKEY
+      custid=`head -1 $ACCESSKEY | cut -d @ -f 1`
+      if [ -z $feeduser ] || [ -z $custid ]
       then
-        gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
-        PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
-      fi
-      if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
-      then
-        RSYNC_SSH_PROXY_CMD=""
-      else
-        if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
-        else
-          RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
-        fi
-      fi
-      rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
-      if [ 0 -ne "$?" ] ; then
-        log_err "rsync failed, aborting synchronization."
+        log_err "Could not determine credentials, aborting synchronization."
         exit 1
       fi
-      notsynced=0
-    done
-    log_notice "Synchronization with the Greenbone CERT data Repository successful."
-    echo
+      while [ 1 -eq $notsynced ]
+      do
+        # --protocol=29 is a workaround for a known bug in rsync 3.0.3
+        if [ -e /admin/ezcli.state ]
+        then
+          gsmproxy=`grep proxy_feed /admin/ezcli.state | sed -e 's/^.*\/\///' -e 's/:/ /' -e 's/[\t ]*$//'`
+          PORT=`grep ^syncport /admin/ezcli.state | sed -e "s/^syncport\t//g"`
+        fi
+        if [ -z "$gsmproxy" ] || [ "$gsmproxy" = "proxy_feed" ]
+        then
+          RSYNC_SSH_PROXY_CMD=""
+        else
+          if [ -r /admin/proxyauth ] && [ -s /admin/proxyauth ]; then
+            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p /admin/proxyauth\""
+          else
+            RSYNC_SSH_PROXY_CMD="-o \"ProxyCommand corkscrew $gsmproxy %h %p\""
+          fi
+        fi
+        rsync -e "ssh $RSYNC_SSH_OPTS $RSYNC_SSH_PROXY_CMD -p $PORT -i $ACCESSKEY" -ltvrP --protocol=29 --chmod=D+x $RSYNC_DELETE $RSYNC_COMPRESS $custid@feed.greenbone.net:/cert-data $BASE_SYNC_DIR
+        if [ 0 -ne "$?" ] ; then
+          log_err "rsync failed, aborting synchronization."
+          exit 1
+        fi
+        notsynced=0
+      done
+      log_notice "Synchronization with the Greenbone CERT data Repository successful."
+      echo
 
-    update_cert_db
-  else
-    log_err "gsf-access-key not found, aborting synchronization."
-    exit 1
+    else
+      log_err "gsf-access-key not found, aborting synchronization."
+      exit 1
+    fi
   fi
+
+  update_cert_db
 }
 
 do_self_test () {
@@ -515,14 +519,11 @@ then
   log_notice "Purging corrupted database."
   rm -f $CERT_DB
 else
-  if [ $REFRESH_ONLY -ne 1 ]
+  is_feed_current
+  if [ $FEED_CURRENT -eq 1 ]
   then
-    is_feed_current
-    if [ $FEED_CURRENT -eq 1 ]
-    then
-      log_notice "Feed is already current, skipping synchronization."
-      exit 0
-    fi
+    log_notice "Feed is already current, skipping synchronization."
+    exit 0
   fi
 fi
 sync_certdata
