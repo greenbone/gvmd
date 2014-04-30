@@ -252,12 +252,6 @@ is_feed_current () {
   return $FEED_CURRENT
 }
 
-if [ $ENABLED -ne 1 ]
-then
-  log_notice "SCAP synchronization is disabled, exiting."
-  exit 0
-fi
-
 is_db_broken () {
   DB_BROKEN=0
   if [ ! -e $SCAP_DB ]
@@ -961,6 +955,12 @@ do_self_test
 if [ $SELFTEST_FAIL -ne 0 ]
 then
   exit 1
+fi
+
+if [ $ENABLED -ne 1 ]
+then
+  log_notice "Synchronization of SCAP data with network is disabled, will only perform local operations."
+  REFRESH_ONLY=1
 fi
 
 is_db_broken

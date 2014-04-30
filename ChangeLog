@@ -1,5 +1,14 @@
 2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Backport r19354.
+
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Do not
+	exit early if synchronization is disabled. Instead, note the fact in
+	the log and behave as if REFRESH_ONLY was requested, thus still
+	remaining useful for local operations.
+
+2014-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r19351.
 
 	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync:
