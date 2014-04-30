@@ -591,6 +591,65 @@ recreate_session (int server_socket,
 /**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
+ * @param[in]  scanner_socket  Socket.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+wait_for_connection (int scanner_socket)
+{
+  while (1)
+    {
+      char ch;
+      int ret;
+      struct timeval timeout;
+      fd_set exceptfds, writefds;
+
+      timeout.tv_usec = 0;
+      timeout.tv_sec = 1;
+      FD_ZERO (&writefds);
+      FD_ZERO (&exceptfds);
+      FD_SET (scanner_socket, &writefds);
+      FD_SET (scanner_socket, &exceptfds);
+
+      ret = select (1 + scanner_socket, NULL, &writefds, &exceptfds, &timeout);
+      if (ret < 0)
+        {
+          if (errno == EINTR)
+            continue;
+          g_warning ("%s: select failed (connect): %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+
+      /* Check for exception.  */
+      if (FD_ISSET (scanner_socket, &exceptfds))
+        {
+          while (recv (scanner_socket, &ch, 1, MSG_OOB) < 1)
+            {
+              if (errno == EINTR)
+                continue;
+              g_warning ("%s: after exception on scanner in child select:"
+                         " recv failed (connect)\n",
+                         __FUNCTION__);
+              return -1;
+            }
+          g_warning ("%s: after exception on scanner in child select:"
+                     " recv (connect): %c\n",
+                     __FUNCTION__,
+                     ch);
+        }
+
+      if (FD_ISSET (scanner_socket, &writefds))
+        break;
+    }
+  return 0;
+}
+
+/**
+ * @brief Serve the OpenVAS Management Protocol (OMP).
+ *
  * Loop reading input from the sockets, processing
  * the input, and writing any results to the appropriate socket.
  * Exit the loop on reaching end of file on the client socket.
@@ -675,7 +734,15 @@ serve_omp (gnutls_session_t* client_session,
 
   /* Initiate connection (to_scanner is empty so this will just init). */
   while ((ret = write_to_scanner (scanner_socket, scanner_session)) == -3
-         && scanner_init_state == SCANNER_INIT_CONNECT_INTR);
+         && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
+    if (wait_for_connection (scanner_socket))
+      {
+        if (client_socket > 0)
+          openvas_server_free (client_socket,
+                               *client_session,
+                               *client_credentials);
+        return -1;
+      }
   if (ret == -1)
     {
       if (ompd_nvt_cache_mode)
