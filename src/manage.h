@@ -577,6 +577,9 @@ void
 set_task_start_time (task_t, char*);
 
 void
+set_task_start_time_epoch (task_t, int);
+
+void
 set_task_start_time_otp (task_t, char*);
 
 void
@@ -1006,6 +1009,9 @@ report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*, int,
 
 char*
 scan_start_time (report_t);
+
+int
+scan_start_time_epoch (report_t);
 
 char*
 scan_end_time_uuid (const char *);

@@ -2883,6 +2883,14 @@ run_task (const char *task_id, char **report_id, int from,
   ssh_credential = target_ssh_lsc_credential (target);
   smb_credential = target_smb_lsc_credential (target);
 
+  hosts = target_hosts (target);
+  if (hosts == NULL)
+    {
+      tracef ("   target hosts is NULL.\n");
+      set_task_run_status (task, run_status);
+      return -4;
+    }
+
   if ((from == 1)
       || ((from == 2)
           && (run_status == TASK_STATUS_STOPPED)))
@@ -2891,6 +2899,7 @@ run_task (const char *task_id, char **report_id, int from,
         {
           tracef ("   error getting last stopped report.\n");
           set_task_run_status (task, run_status);
+          free (hosts);
           return -1;
         }
 
@@ -2910,6 +2919,7 @@ run_task (const char *task_id, char **report_id, int from,
 
       /* Clear the end times of the task and partial report. */
 
+      set_task_start_time_epoch (task, scan_start_time_epoch (current_report));
       set_task_end_time (task, NULL);
       set_scan_end_time (last_stopped_report, NULL);
     }
@@ -2922,22 +2932,18 @@ run_task (const char *task_id, char **report_id, int from,
       if (create_current_report (task, report_id, TASK_STATUS_REQUESTED))
         {
           set_task_run_status (task, run_status);
+          free (hosts);
           return -3;
         }
+
+      reset_task (task);
     }
   else
     {
       /* "from" must be 0, 1 or 2. */
       assert (0);
+      free (hosts);
       return -1;
-    }
-
-  hosts = target_hosts (target);
-  if (hosts == NULL)
-    {
-      tracef ("   target hosts is NULL.\n");
-      set_task_run_status (task, run_status);
-      return -4;
     }
 
   /* Fork a child to start and handle the task while the parent responds to
@@ -2958,11 +2964,13 @@ run_task (const char *task_id, char **report_id, int from,
                    strerror (errno));
         set_task_run_status (task, run_status);
         current_report = (report_t) 0;
+        free (hosts);
         return -9;
         break;
       default:
         /* Parent.  Return, in order to respond to client. */
         current_report = (report_t) 0;
+        free (hosts);
         return 0;
         break;
     }
@@ -2979,8 +2987,6 @@ run_task (const char *task_id, char **report_id, int from,
   run_status = TASK_STATUS_INTERNAL_ERROR;
 
   /* Reset any running information. */
-
-  reset_task (task);
 
   {
     char *iface;
