@@ -2568,9 +2568,14 @@ process_otp_scanner_input ()
                         {
                           set_task_run_status (current_scanner_task,
                                                TASK_STATUS_RUNNING);
-                          set_task_start_time_otp (current_scanner_task,
-                                                   g_strdup (field));
-                          set_scan_start_time_otp (current_report, field);
+                          /* If the scan has been started before, then leave
+                           * the start time alone. */
+                          if (scan_start_time_epoch (current_report) == 0)
+                            {
+                              set_task_start_time_otp (current_scanner_task,
+                                                       g_strdup (field));
+                              set_scan_start_time_otp (current_report, field);
+                            }
                         }
                     }
                   set_scanner_state (SCANNER_DONE);

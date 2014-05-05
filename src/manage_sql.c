@@ -16771,6 +16771,21 @@ set_task_start_time (task_t task, char* time)
  * @brief Set the start time of a task.
  *
  * @param[in]  task  Task.
+ * @param[in]  time  New time.  Seconds since epoch.
+ */
+void
+set_task_start_time_epoch (task_t task, int time)
+{
+  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+       " WHERE ROWID = %llu;",
+       time,
+       task);
+}
+
+/**
+ * @brief Set the start time of a task.
+ *
+ * @param[in]  task  Task.
  * @param[in]  time  New time.  OTP format (ctime).  Freed before return.
  */
 void
@@ -20529,6 +20544,21 @@ set_scan_start_time (report_t report, const char* timestamp)
   sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
        parse_iso_time (timestamp),
        report);
+}
+
+/**
+ * @brief Get the start time of a scan, in seconds since the epoch.
+ *
+ * @param[in]  report  The report associated with the scan.
+ *
+ * @return Start time of scan, in seconds.
+ */
+int
+scan_start_time_epoch (report_t report)
+{
+  return sql_int (0, 0,
+                  "SELECT start_time FROM reports WHERE ROWID = %llu;",
+                  report);
 }
 
 /**

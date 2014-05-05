@@ -534,6 +534,9 @@ void
 set_task_start_time (task_t, char*);
 
 void
+set_task_start_time_epoch (task_t, int);
+
+void
 set_task_start_time_otp (task_t, char*);
 
 char*
@@ -1011,6 +1014,9 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
 
 
 /* RC's. */
+
+int
+scan_start_time_epoch (report_t);
 
 char*
 rc_preference (const char*, const char*);
