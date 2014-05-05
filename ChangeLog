@@ -1,5 +1,27 @@
 2014-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19367.
+
+	Set the start time of a report once only, the first time the scan is
+	started.  This ensures that the start time remains the same, even when
+	the task is resumed, because the start time is what identifies the scan.
+
+	* src/manage_sql.c (set_task_start_time_epoch)
+	(scan_start_time_epoch): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/manage.c (run_task): Only do a reset_task when creating a new
+	report.  When resuming an old report set the task start time from the
+	report.  Move the target_hosts call above the fork, so that it still
+	exits before the reset_task on error.
+
+	* src/otp.c (process_otp_scanner_input): When receiving a SCAN_START,
+	only set the start start times for new reports, leaving the start times
+	alone when resuming a task.
+
+2014-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19364.
 
 	* src/manage_migrators.c (manage_migrate): Reopen DB before ANALYZE, in
