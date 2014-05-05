@@ -1,3 +1,10 @@
+2014-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19364.
+
+	* src/manage_migrators.c (manage_migrate): Reopen DB before ANALYZE, in
+	case the schema has changed.
+
 2014-04-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c: Add file missed in last commit.

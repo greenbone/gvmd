@@ -9425,7 +9425,11 @@ manage_migrate (GSList *log_config, const gchar *database)
   /* We now run ANALYZE after migrating, instead of on every startup.  ANALYZE
    * made startup too slow, especially for large databases.  Running it here
    * is preferred over removing it entirely, because users may have very
-   * different use patterns of the database. */
+   * different use patterns of the database.
+   *
+   * Reopen the database before the ANALYZE, in case the schema has changed. */
+  cleanup_manage_process (TRUE);
+  init_manage_process (0, database);
   sql ("ANALYZE;");
 
   cleanup_manage_process (TRUE);
