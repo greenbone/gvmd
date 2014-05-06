@@ -3126,16 +3126,16 @@ modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 /* Users. */
 
 int
-manage_create_user (const gchar *, const gchar *, const gchar *);
+manage_create_user (GSList *, const gchar *, const gchar *, const gchar *);
 
 int
-manage_delete_user (const gchar *, const gchar *);
+manage_delete_user (GSList *, const gchar *, const gchar *);
 
 int
-manage_list_users (const gchar *);
+manage_list_users (GSList *, const gchar *);
 
 int
-manage_set_password (const gchar *, const gchar *, const gchar *);
+manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);
 
 gchar *
 manage_user_hash (const gchar *);
