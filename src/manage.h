@@ -1716,9 +1716,6 @@ const char*
 lsc_credential_iterator_login (iterator_t*);
 
 const char*
-lsc_credential_iterator_public_key (iterator_t*);
-
-const char*
 lsc_credential_iterator_private_key (iterator_t*);
 
 const char*

@@ -64,6 +64,7 @@
 #include <openvas/base/osp.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/openvas_ssh_login.h>
 #include <openvas/misc/openvas_uuid.h>
 #include <openvas/misc/resource_request.h>
 #include <openvas/base/pwpolicy.h>
@@ -32938,16 +32939,6 @@ lsc_credential_iterator_password (iterator_t* iterator)
 
 
 /**
- * @brief Get the public_key from an LSC credential iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Public_key, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (lsc_credential_iterator_public_key, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
  * @brief Get the private_key from an LSC credential iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -32972,17 +32963,24 @@ lsc_credential_iterator_private_key (iterator_t* iterator)
 const char*
 lsc_credential_iterator_rpm (iterator_t *iterator)
 {
-  const char *public_key, *login;
+  const char *private_key, *login, *pass;
   void *rpm;
+  char *public_key;
   gsize rpm_size;
   gchar *rpm64;
 
   if (iterator->done) return NULL;
 
-  public_key = lsc_credential_iterator_public_key (iterator);
+  private_key = lsc_credential_iterator_private_key (iterator);
+  pass = lsc_credential_iterator_password (iterator);
+  public_key = openvas_ssh_public_from_private (private_key, pass);
   login = lsc_credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
-    return NULL;
+    {
+      g_free (public_key);
+      return NULL;
+    }
+  g_free (public_key);
   rpm64 = (rpm && rpm_size)
           ? g_base64_encode (rpm, rpm_size)
           : g_strdup ("");
@@ -33001,17 +32999,24 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
 const char*
 lsc_credential_iterator_deb (iterator_t *iterator)
 {
-  const char *login, *public_key;
+  const char *login, *private_key, *pass;
+  char *public_key;
   void *deb, *rpm;
   gsize deb_size, rpm_size;
   gchar *deb64;
 
   if (iterator->done) return NULL;
 
-  public_key = lsc_credential_iterator_public_key (iterator);
+  private_key = lsc_credential_iterator_private_key (iterator);
+  pass = lsc_credential_iterator_password (iterator);
+  public_key = openvas_ssh_public_from_private (private_key, pass);
   login = lsc_credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
-    return NULL;
+    {
+      g_free (public_key);
+      return NULL;
+    }
+  g_free (public_key);
 
   if (lsc_user_deb_recreate (login, rpm, rpm_size, &deb, &deb_size))
     {

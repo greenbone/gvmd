@@ -2125,24 +2125,23 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                              1, NULL);
           if (next (&credentials))
             {
-              const char *user, *password, *public_key, *private_key;
+              const char *user, *password, *private_key;
               gchar *user_copy, *password_copy;
 
               user = lsc_credential_iterator_login (&credentials);
               password = lsc_credential_iterator_password (&credentials);
-              public_key = lsc_credential_iterator_public_key (&credentials);
               private_key = lsc_credential_iterator_private_key (&credentials);
 
               if (user == NULL
-                  || (public_key == NULL && password == NULL))
+                  || (private_key == NULL && password == NULL))
                 {
                   cleanup_iterator (&credentials);
                   goto fail;
                 }
 
-              if (public_key)
+              if (private_key)
                 ret = omp_create_lsc_credential_key
-                       (session, name, user, password, public_key, private_key,
+                       (session, name, user, password, NULL, private_key,
                         "Slave SSH credential created by Master",
                         &slave_ssh_credential_uuid);
               else
@@ -3218,7 +3217,7 @@ run_task (const char *task_id, char **report_id, int from,
           if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                " <|> %s\n",
                                user)
-              || (lsc_credential_iterator_public_key (&credentials)
+              || (lsc_credential_iterator_private_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
@@ -3239,32 +3238,6 @@ run_task (const char *task_id, char **report_id, int from,
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
               return -10;
-            }
-
-          if (lsc_credential_iterator_public_key (&credentials)
-              && (strlen (lsc_credential_iterator_public_key (&credentials))
-                  > 7))
-            {
-              gchar *public_key, *space;
-              char *uuid = openvas_uuid_make ();
-              if (uuid == NULL)
-                goto fail;
-
-              public_key = g_strdup (lsc_credential_iterator_public_key
-                                      (&credentials)
-                                     + 8);
-              space = memchr (public_key, ' ', strlen (public_key));
-              if (space)
-                *space = '\0';
-
-              g_ptr_array_add (preference_files, (gpointer) uuid);
-              g_ptr_array_add (preference_files, (gpointer) public_key);
-
-              if (sendf_to_server ("SSH Authorization[file]:"
-                                   "SSH public key:"
-                                   " <|> %s\n",
-                                   uuid))
-                goto fail;
             }
 
           if (lsc_credential_iterator_private_key (&credentials))

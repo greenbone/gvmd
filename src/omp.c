@@ -116,6 +116,7 @@
 #include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
+#include <openvas/misc/openvas_ssh_login.h>
 #include <openvas/misc/resource_request.h>
 #include <openvas/omp/xml.h>
 
@@ -13096,7 +13097,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START("lsc_credential");
           while (1)
             {
-              const char* public_key;
+              const char* private_key;
 
               ret = get_next (&credentials, &get_lsc_credentials_data->get,
                               &first, &count, init_lsc_credential_iterator);
@@ -13110,41 +13111,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (lsc_credential, &get_lsc_credentials_data->get,
                                &credentials);
-              public_key = lsc_credential_iterator_public_key (&credentials);
+              private_key = lsc_credential_iterator_private_key (&credentials);
               SENDF_TO_CLIENT_OR_FAIL
                ("<login>%s</login>"
                 "<type>%s</type>",
                 lsc_credential_iterator_login (&credentials),
-                public_key ? "gen" : "pass");
+                private_key ? "gen" : "pass");
 
               switch (format)
                 {
                   case 1: /* key */
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<public_key>%s</public_key>",
-                      public_key ? public_key
-                                 : "");
-                    break;
+                    {
+                      char *pub;
+                      const char *pass;
+
+                      pass = lsc_credential_iterator_password (&credentials);
+                      pub = openvas_ssh_public_from_private (private_key, pass);
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<public_key>%s</public_key>", pub ?: "");
+                      g_free (pub);
+                      break;
+                    }
                   case 2: /* rpm */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"rpm\">%s</package>",
-                      lsc_credential_iterator_rpm (&credentials)
-                        ? lsc_credential_iterator_rpm (&credentials)
-                        : "");
+                      lsc_credential_iterator_rpm (&credentials) ?: "");
                     break;
                   case 3: /* deb */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"deb\">%s</package>",
-                      lsc_credential_iterator_deb (&credentials)
-                        ? lsc_credential_iterator_deb (&credentials)
-                        : "");
+                      lsc_credential_iterator_deb (&credentials) ?: "");
                     break;
                   case 4: /* exe */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"exe\">%s</package>",
-                      lsc_credential_iterator_exe (&credentials)
-                        ? lsc_credential_iterator_exe (&credentials)
-                        : "");
+                      lsc_credential_iterator_exe (&credentials) ?: "");
                     break;
                 }
 

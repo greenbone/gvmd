@@ -1,3 +1,19 @@
+2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (slave_setup): Check credential type by checking for
+	private key value. Adjust omp_create_lsc_credential_key call.
+	(run_task): Don't send public key value to scanner.
+
+	* src/manage.h: Remove deleted function prototype.
+
+	* src/manage_sql.c (lsc_credential_iterator_public_key): Remove
+	function.
+	(lsc_credential_iterator_rpm, lsc_credential_iterator_deb): Adjust to
+	get public key value from private key.
+
+	* omp/omp.c (omp_xml_handle_end_element): Get the public key value from
+	the private key in GET_LSC_CREDENTIALS case.
+
 2014-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Set the start time of a report once only, the first time the scan is
