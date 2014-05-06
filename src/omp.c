@@ -114,6 +114,7 @@
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
+#include <openvas/base/pwpolicy.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh_login.h>
@@ -11236,7 +11237,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 {
                   const char *timezone;
-                  char *severity;
+                  char *severity, *pw_warning;
 
                   timezone = (current_credentials.timezone
                               && strlen (current_credentials.timezone))
@@ -11254,19 +11255,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   tzset ();
 
                   severity = setting_severity ();
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<authenticate_response"
-                    " status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">"
-                    "<role>%s</role>"
-                    "<timezone>%s</timezone>"
-                    "<severity>%s</severity>"
-                    "</authenticate_response>",
-                    current_credentials.role
-                      ? current_credentials.role
-                      : "",
-                    timezone,
-                    severity);
+                  pw_warning = openvas_validate_password (
+                                 current_credentials.password,
+                                 current_credentials.username);
+
+                  if (pw_warning)
+                    SENDF_TO_CLIENT_OR_FAIL
+                    ("<authenticate_response"
+                      " status=\"" STATUS_OK "\""
+                      " status_text=\"" STATUS_OK_TEXT "\">"
+                      "<role>%s</role>"
+                      "<timezone>%s</timezone>"
+                      "<severity>%s</severity>"
+                      "<password_warning>%s</password_warning>"
+                      "</authenticate_response>",
+                      current_credentials.role
+                        ? current_credentials.role
+                        : "",
+                      timezone,
+                      severity,
+                      pw_warning ? pw_warning : "");
+                  else
+                    SENDF_TO_CLIENT_OR_FAIL
+                    ("<authenticate_response"
+                      " status=\"" STATUS_OK "\""
+                      " status_text=\"" STATUS_OK_TEXT "\">"
+                      "<role>%s</role>"
+                      "<timezone>%s</timezone>"
+                      "<severity>%s</severity>"
+                      "</authenticate_response>",
+                      current_credentials.role
+                        ? current_credentials.role
+                        : "",
+                      timezone,
+                      severity);
                   g_free (severity);
 
                   set_client_state (CLIENT_AUTHENTIC);

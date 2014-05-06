@@ -1,3 +1,10 @@
+2014-05-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (): Add #include of openvas/base/pwpolicy.h
+	(omp_xml_handle_end_element): In case CLIENT_AUTHENTICATE check if
+	the password used complies with password policy and add a warning
+	message to the response if not.
+
 2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_user): Skip current_credentials check if user
