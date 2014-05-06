@@ -1,5 +1,12 @@
 2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19373.
+
+	* src/manage_sql.c (delete_user): Skip current_credentials check if user
+	is NULL, which is the case with --delete-user.
+
+2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19372.
 
 	For the command options, like --create-user, check the db version.
