@@ -48362,25 +48362,34 @@ DEF_ACCESS (all_info_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
 /**
  * @brief Create the given user.
  *
- * @param[in]  database   Location of manage database.
- * @param[in]  name       Name of user.
- * @param[in]  role_name  Role of user.  Admin if NULL.
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  name        Name of user.
+ * @param[in]  role_name   Role of user.  Admin if NULL.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
  */
 int
-manage_create_user (const gchar *database, const gchar *name,
-                    const gchar *role_name)
+manage_create_user (GSList *log_config, const gchar *database,
+                    const gchar *name, const gchar *role_name)
 {
   char *uuid;
   array_t *roles;
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
     return -1;
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage (log_config, 0, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
 
   init_manage_process (0, db);
 
@@ -48441,21 +48450,31 @@ manage_create_user (const gchar *database, const gchar *name,
 /**
  * @brief Delete the given user.
  *
- * @param[in]  database   Location of manage database.
- * @param[in]  name       Name of user.
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  name        Name of user.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks, -1 error.
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
  */
 int
-manage_delete_user (const gchar *database, const gchar *name)
+manage_delete_user (GSList *log_config, const gchar *database,
+                    const gchar *name)
 {
   const gchar *db;
   int ret;
 
-  if (openvas_auth_init ())
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
     return -1;
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage (log_config, 0, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
 
   init_manage_process (0, db);
 
@@ -48488,20 +48507,28 @@ manage_delete_user (const gchar *database, const gchar *name)
 /**
  * @brief List users.
  *
- * @param[in]  database   Location of manage database.
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
  *
  * @return 0 success, -1 error.
  */
 int
-manage_list_users (const gchar *database)
+manage_list_users (GSList *log_config, const gchar *database)
 {
   iterator_t users;
   const gchar *db;
+  int ret;
 
-  if (openvas_auth_init ())
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
     return -1;
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage (log_config, 0, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
 
   init_manage_process (0, db);
 
@@ -48555,6 +48582,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
 /**
  * @brief Set the password of a user.
  *
+ * @param[in]  log_config      Log configuration.
  * @param[in]  database  Location of manage database.
  * @param[in]  name      Name of user.
  * @param[in]  password  New password.
@@ -48562,18 +48590,24 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
  * @return 0 success, 1 failed to find user, -1 error.
  */
 int
-manage_set_password (const gchar *database, const gchar *name,
-                     const gchar *password)
+manage_set_password (GSList *log_config, const gchar *database,
+                     const gchar *name, const gchar *password)
 {
   user_t user;
   char *uuid;
   int ret;
   const gchar *db;
 
-  if (openvas_auth_init ())
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
     return -1;
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage (log_config, 0, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
 
   init_manage_process (0, db);
 

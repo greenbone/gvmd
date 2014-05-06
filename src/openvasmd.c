@@ -1433,8 +1433,27 @@ main (int argc, char** argv)
       infof ("   Creating admin user.\n");
 
       /* Create the user and then exit. */
-      if (manage_create_user (database, create_user, role))
-        return EXIT_FAILURE;
+      switch (manage_create_user (log_config, database, create_user, role))
+        {
+          case 0:
+            free_log_configuration (log_config);
+            return EXIT_SUCCESS;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+        }
       return EXIT_SUCCESS;
     }
 
@@ -1443,17 +1462,53 @@ main (int argc, char** argv)
       infof ("   Deleting user.\n");
 
       /* Delete the user and then exit. */
-      if (manage_delete_user (database, delete_user))
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
+      switch (manage_delete_user (log_config, database, delete_user))
+        {
+          case 0:
+            free_log_configuration (log_config);
+            return EXIT_SUCCESS;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+        }
     }
 
   if (list_users)
     {
       /* List the users and then exit. */
-      if (manage_list_users (database))
-        return EXIT_FAILURE;
-      return EXIT_SUCCESS;
+      switch (manage_list_users (log_config, database))
+        {
+          case 0:
+            free_log_configuration (log_config);
+            return EXIT_SUCCESS;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+        }
     }
 
   if (new_password)
@@ -1466,16 +1521,30 @@ main (int argc, char** argv)
           return EXIT_FAILURE;
         }
 
-      switch (manage_set_password (database, user, new_password))
+      switch (manage_set_password (log_config, database, user, new_password))
         {
-          case -1:
-            return EXIT_FAILURE;
-          case 1:
-            g_warning ("%s: failed to find user\n", __FUNCTION__);
-            return EXIT_FAILURE;
           case 0:
-          default:
+            free_log_configuration (log_config);
             return EXIT_SUCCESS;
+          case 1:
+            g_critical ("%s: failed to find user\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
         }
     }
 

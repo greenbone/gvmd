@@ -1,3 +1,15 @@
+2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	For the command options, like --create-user, check the db version.
+
+	* src/manage_sql.c (manage_create_user, manage_delete_user)
+	(manage_list_user, manage_set_password): Do full init, which checks db
+	version.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/openvasmd.c (main): Handle new returns.
+
 2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (slave_setup): Check credential type by checking for
