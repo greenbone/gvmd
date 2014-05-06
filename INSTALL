@@ -102,22 +102,6 @@ Please note that the target directory in the commands above might have
 to be prefixed with the prefix you have set earlier.
 
 
-Creating an administrator user for OpenVAS
-------------------------------------------
-
-You can create an administrator user with the --create-user option of
-"openvasmd":
-
-$ openvasmd --create-user=myuser
-
-The new user's password is printed on success.
-
-An administrator user can later create further users or
-administrators via clients like the Greenbone Security Assistant (GSA).
-
-Also, the new user can change her password via GSA.
-
-
 Initializing the Database
 -------------------------
 
@@ -141,6 +125,22 @@ the database to the current data model. Use this command
 to run the migration:
 
 $ openvasmd --migrate
+
+
+Creating an administrator user for OpenVAS
+------------------------------------------
+
+You can create an administrator user with the --create-user option of
+"openvasmd":
+
+$ openvasmd --create-user=myuser
+
+The new user's password is printed on success.
+
+An administrator user can later create further users or
+administrators via clients like the Greenbone Security Assistant (GSA).
+
+Also, the new user can change her password via GSA.
 
 
 Import/Update IANA Services Names
