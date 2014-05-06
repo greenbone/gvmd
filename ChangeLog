@@ -1,5 +1,13 @@
 2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19379.
+
+	* INSTALL: Move "Creating an administrator" section below Initialise and
+	Migrate sections, because --create-user needs an initialised db that is
+	at the current version.
+
+2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19373.
 
 	* src/manage_sql.c (delete_user): Skip current_credentials check if user
