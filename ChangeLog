@@ -1,3 +1,29 @@
+2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove Public Key requirement for LSC Credentials.
+
+	* src/manage.h: Adjust function prototype accordingly.
+
+	* src/manage_sql.c (create_tables): Remove public_key column from
+	lsc_credentials and lsc_credentials_trash tables.
+	(create_lsc_credential): Don't insert a public key and remove matching
+	function argument.
+	(copy_lsc_credential): Don't copy the public key.
+	(delete_lsc_credential): Don't move the public key to trash.
+	(LSC_CREDENTIAL_ITERATOR_COLUMNS)
+	(LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS): Don't iterate over public key.
+	(lsc_credential_packaged): Adjust to check for private key presence
+	instead.
+	(lsc_credential_iterator_pass_or_priv): Adjust iterated over column
+	number
+	(manage_restore): Don't restore public_key value.
+	(create_lsc_credential_data, create_lsc_credential_data_reset): Remove
+	key_public element.
+	(client_state_t): Remove CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Adjust for create_lsc_credential public element
+	removal.
+
 2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* INSTALL: Move "Creating an administrator" section below Initialise and

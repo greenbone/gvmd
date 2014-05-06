@@ -4133,11 +4133,11 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  password, comment, private_key TEXT, rpm TEXT,"
        "  deb TEXT, exe TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, public_key TEXT, private_key TEXT, rpm TEXT,"
+       "  password, comment, private_key TEXT, rpm TEXT,"
        "  deb TEXT, exe TEXT, creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
@@ -32062,22 +32062,17 @@ find_lsc_credential_with_permission (const char* uuid,
  * @param[in]  given_password  Password for password-only credential, NULL to
  *                             generate credentials.
  * @param[in]  key_private     Private key, or NULL.
- * @param[in]  key_public      Public key, or NULL.  Requires key_private.
- *                             Takes preference over password-only
- *                             and generated credentials.
  * @param[out] lsc_credential  Created LSC credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
  *         99 permission denied, -1 error.
  */
 int
-create_lsc_credential (const char* name, const char* comment,
-                       const char* login, const char* given_password,
-                       const char* key_private, const char* key_public,
+create_lsc_credential (const char* name, const char* comment, const char* login,
+                       const char* given_password, const char* key_private,
                        lsc_credential_t *lsc_credential)
 {
-  gchar *quoted_name;
-  gchar *public_key, *private_key;
+  gchar *quoted_name, *public_key, *private_key;
   int i;
   GRand *rand;
   gchar password[PASSWORD_LENGTH];
@@ -32110,20 +32105,13 @@ create_lsc_credential (const char* name, const char* comment,
       return 1;
     }
 
-  if (key_public)
+  if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
-      gchar *quoted_login, *quoted_phrase, *quoted_comment;
-      gchar *quoted_public, *quoted_private;
+      gchar *quoted_login, *quoted_phrase, *quoted_comment, *quoted_private;
 
       /* Key pair credential. */
 
-      if (key_private == NULL)
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
       if (!strcmp (key_private, ";;encrypted;;"))
         {
           g_free (quoted_name);
@@ -32158,22 +32146,20 @@ create_lsc_credential (const char* name, const char* comment,
         }
       quoted_login = sql_quote (login);
       quoted_comment = sql_quote (comment);
-      quoted_public = sql_quote (key_public);
 
       sql ("INSERT INTO lsc_credentials"
-           " (uuid, name, owner, login, password, comment, public_key,"
+           " (uuid, name, owner, login, password, comment,"
            "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
+           "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
            "  now (), now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
            quoted_phrase,
            quoted_comment,
-           quoted_public,
            quoted_private);
 
       g_free (quoted_name);
@@ -32181,7 +32167,6 @@ create_lsc_credential (const char* name, const char* comment,
       g_free (quoted_phrase);
       g_free (quoted_comment);
       g_free (quoted_private);
-      g_free (quoted_public);
       lsc_crypt_release (crypt_ctx);
 
       if (lsc_credential)
@@ -32223,7 +32208,7 @@ create_lsc_credential (const char* name, const char* comment,
       quoted_comment = sql_quote (comment);
 
       sql ("INSERT INTO lsc_credentials"
-           " (uuid, name, owner, login, password, comment, public_key,"
+           " (uuid, name, owner, login, password, comment, "
            "  private_key, rpm, deb, exe, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
@@ -32275,19 +32260,18 @@ create_lsc_credential (const char* name, const char* comment,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (password,
-                            &public_key,
-                            &private_key))
+  if (lsc_user_keys_create (password, &public_key, &private_key))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
     }
+  g_free (public_key);
 
   {
     lsc_crypt_ctx_t crypt_ctx;
     gchar *quoted_login, *quoted_password, *quoted_comment;
-    gchar *quoted_public_key, *quoted_private_key;
+    gchar *quoted_private_key;
 
     /* Generated key credential. */
 
@@ -32300,7 +32284,6 @@ create_lsc_credential (const char* name, const char* comment,
         if (!quoted_password)
           {
             lsc_crypt_release (crypt_ctx);
-            g_free (public_key);
             g_free (private_key);
             g_free (quoted_name);
             sql ("ROLLBACK;");
@@ -32316,35 +32299,31 @@ create_lsc_credential (const char* name, const char* comment,
       }
     quoted_login = sql_quote (login);
     quoted_comment = sql_quote (comment);
-    quoted_public_key = sql_quote (public_key);
 
     sql_quiet ("INSERT INTO lsc_credentials"
-               " (uuid, name, owner, login, password, comment, public_key,"
+               " (uuid, name, owner, login, password, comment,"
                "  private_key, rpm, deb, exe,"
                "  creation_time, modification_time)"
                " VALUES"
                " (make_uuid (), '%s',"
                "  (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-               "  '%s', '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
+               "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
                "  now (), now ());",
                quoted_name,
                current_credentials.uuid,
                quoted_login,
                quoted_password,
                quoted_comment,
-               quoted_public_key,
                quoted_private_key);
 
     g_free (quoted_name);
     g_free (quoted_login);
     g_free (quoted_password);
     g_free (quoted_comment);
-    g_free (quoted_public_key);
     g_free (quoted_private_key);
     lsc_crypt_release (crypt_ctx);
   }
 
-  g_free (public_key);
   g_free (private_key);
 
   if (lsc_credential)
@@ -32374,8 +32353,7 @@ copy_lsc_credential (const char* name, const char* comment,
                      lsc_credential_t* new_lsc_credential)
 {
   return copy_resource ("lsc_credential", name, comment, lsc_credential_id,
-                        "login, password, public_key, private_key, rpm,"
-                        " deb, exe",
+                        "login, password, private_key, rpm, deb, exe",
                         1, new_lsc_credential);
 }
 
@@ -32556,9 +32534,9 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
   if (ultimate == 0)
     {
       sql ("INSERT INTO lsc_credentials_trash"
-           " (uuid, owner, name, login, password, comment, public_key,"
+           " (uuid, owner, name, login, password, comment, "
            "  private_key, rpm, deb, exe, creation_time, modification_time)"
-           " SELECT uuid, owner, name, login, password, comment, public_key,"
+           " SELECT uuid, owner, name, login, password, comment, "
            "  private_key, rpm, deb, exe, creation_time, modification_time"
            " FROM lsc_credentials WHERE ROWID = %llu;",
            lsc_credential);
@@ -32609,14 +32587,14 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
  * @brief LSC Credential iterator columns.
  */
 #define LSC_CREDENTIAL_ITERATOR_COLUMNS                                       \
-  GET_ITERATOR_COLUMNS (lsc_credentials) ", login, password, public_key,"     \
-  " private_key, rpm, deb, exe"
+  GET_ITERATOR_COLUMNS (lsc_credentials) ", login, password, private_key,"    \
+  " rpm, deb, exe"
 
 /**
  * @brief LSC Credential iterator columns for trash case.
  */
 #define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                   \
-  GET_ITERATOR_COLUMNS (lsc_credentials_trash) ", login, password, public_key," \
+  GET_ITERATOR_COLUMNS (lsc_credentials_trash) ", login, password, "            \
   " private_key, rpm, deb, exe"
 
 /**
@@ -32804,7 +32782,7 @@ int
 lsc_credential_packaged (lsc_credential_t lsc_credential)
 {
   return sql_int (0, 0,
-                  "SELECT public_key NOTNULL FROM lsc_credentials"
+                  "SELECT private_key NOTNULL FROM lsc_credentials"
                   " WHERE ROWID = %llu;",
                   lsc_credential);
 }
@@ -32893,7 +32871,7 @@ lsc_credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
   password = (const char*) sqlite3_column_text (iterator->stmt,
                                                 GET_ITERATOR_COLUMN_COUNT + 1);
   privkey  = (const char*) sqlite3_column_text (iterator->stmt,
-                                                GET_ITERATOR_COLUMN_COUNT + 3);
+                                                GET_ITERATOR_COLUMN_COUNT + 2);
   /* If we do not have a private key, there is no encrypted data.
      Return the password as is or NULL.  */
   if (!privkey)
@@ -45937,9 +45915,9 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO lsc_credentials"
-           " (uuid, owner, name, login, password, comment, public_key,"
+           " (uuid, owner, name, login, password, comment, "
            "  private_key, rpm, deb, exe, creation_time, modification_time)"
-           " SELECT uuid, owner, name, login, password, comment, public_key,"
+           " SELECT uuid, owner, name, login, password, comment, "
            "  private_key, rpm, deb, exe, creation_time, modification_time"
            " FROM lsc_credentials_trash WHERE ROWID = %llu;",
            resource);

@@ -1040,7 +1040,6 @@ typedef struct
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
-  char *key_public;        ///< Public key from key.
   char *login;             ///< Login name.
   char *name;              ///< LSC credential name.
   char *password;          ///< Password associated with login name.
@@ -1058,7 +1057,6 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
   free (data->copy);
   free (data->key_phrase);
   free (data->key_private);
-  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -4958,7 +4956,6 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_KEY,
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
-  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
@@ -8667,8 +8664,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE);
-        else if (strcasecmp ("PUBLIC", element_name) == 0)
-          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC);
         ELSE_ERROR ("create_lsc_credential");
 
       case CLIENT_CREATE_NOTE:
@@ -18006,23 +18001,21 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " least one character long"));
             }
           else if (create_lsc_credential_data->key
-                   && ((create_lsc_credential_data->key_public == NULL)
-                       || (create_lsc_credential_data->key_private == NULL)))
+                   && create_lsc_credential_data->key_private == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL KEY requires a PUBLIC"
-                                  " and a PRIVATE"));
+                                  "CREATE_LSC_CREDENTIAL KEY requires a PRIVATE"
+                                  " key"));
             }
           else switch (create_lsc_credential
                         (create_lsc_credential_data->name,
                          create_lsc_credential_data->comment,
                          create_lsc_credential_data->login,
-                         create_lsc_credential_data->key_public
+                         create_lsc_credential_data->key_private
                           ? create_lsc_credential_data->key_phrase
                           : create_lsc_credential_data->password,
                          create_lsc_credential_data->key_private,
-                         create_lsc_credential_data->key_public,
                          &new_lsc_credential))
             {
               case 0:
@@ -18068,7 +18061,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, PASSWORD);
@@ -25587,9 +25579,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
               &create_lsc_credential_data->key_private);
-
-      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
-              &create_lsc_credential_data->key_public);
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
               &create_lsc_credential_data->login);

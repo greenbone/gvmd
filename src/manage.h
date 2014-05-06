@@ -1675,7 +1675,7 @@ find_lsc_credential (const char*, lsc_credential_t*);
 
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
-                       const char*, const char*, lsc_credential_t*);
+                       const char*, lsc_credential_t*);
 int
 copy_lsc_credential (const char*, const char*, const char*,
                      lsc_credential_t*);
