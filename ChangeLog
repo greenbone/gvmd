@@ -1,5 +1,10 @@
 2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_user): Skip current_credentials check if user
+	is NULL, which is the case with --delete-user.
+
+2014-05-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	For the command options, like --create-user, check the db version.
 
 	* src/manage_sql.c (manage_create_user, manage_delete_user)

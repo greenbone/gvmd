@@ -48943,14 +48943,17 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 
   assert (user_id_arg || name_arg);
 
-  if (user_id_arg)
+  if (current_credentials.username && current_credentials.uuid)
     {
-      if (strcmp (user_id_arg, current_credentials.uuid) == 0)
+      if (user_id_arg)
+        {
+          if (strcmp (user_id_arg, current_credentials.uuid) == 0)
+            return 5;
+        }
+      else if (name_arg
+               && (strcmp (name_arg, current_credentials.username) == 0))
         return 5;
     }
-  else if (name_arg
-           && (strcmp (name_arg, current_credentials.username) == 0))
-    return 5;
 
   sql ("BEGIN EXCLUSIVE;");
 
