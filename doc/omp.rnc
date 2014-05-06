@@ -2466,7 +2466,6 @@ create_lsc_credential_key
      {
        create_lsc_credential_key_phrase
        & create_lsc_credential_key_private
-       & create_lsc_credential_key_public
      }
 
 # Key passphrase.
@@ -2479,13 +2478,6 @@ create_lsc_credential_key_phrase
 # Private key.
 create_lsc_credential_key_private
  = element private
-     {
-       text
-     }
-
-# Public key.
-create_lsc_credential_key_public
- = element public
      {
        text
      }

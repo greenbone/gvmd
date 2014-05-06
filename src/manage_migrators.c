@@ -9076,6 +9076,69 @@ migrate_122_to_123 ()
 }
 
 /**
+ * @brief Migrate the database from version 123 to version 124.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_123_to_124 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 123. */
+
+  if (manage_db_version () != 123)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Rename lsc_credentials tables. */
+  sql ("ALTER TABLE lsc_credentials RENAME TO lsc_credentials_123;");
+  sql ("ALTER TABLE lsc_credentials_trash RENAME TO lsc_credentials_trash_123;");
+
+  /* Create new ones without public_key. */
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  login, password, comment, private_key, rpm, deb, exe,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
+       "  login, password, comment, private_key, rpm, deb, exe,"
+       "  creation_time, modification_time);");
+
+  /* Migrate old data to new tables. */
+  sql ("INSERT INTO lsc_credentials"
+       " (id, uuid, owner , name, login, password, comment, private_key, rpm,"
+       "  deb, exe, creation_time, modification_time)"
+       " SELECT id, uuid, owner, name, login, password, comment, private_key,"
+       "  rpm, deb, exe, creation_time, modification_time"
+       " FROM lsc_credentials_123;");
+
+  sql ("INSERT INTO lsc_credentials_trash"
+       " (id, uuid, owner , name, login, password, comment, private_key, rpm,"
+       "  deb, exe, creation_time, modification_time)"
+       " SELECT id, uuid, owner, name, login, password, comment, private_key,"
+       "  rpm, deb, exe, creation_time, modification_time"
+       " FROM lsc_credentials_123;");
+
+  /* Delete old tables. */
+  sql ("DROP TABLE lsc_credentials_123;");
+  sql ("DROP TABLE lsc_credentials_trash_123;");
+
+  /* Set the database version 124. */
+
+  set_db_version (124);
+
+  sql ("COMMIT;");
+
+  return 0;
+
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9203,6 +9266,7 @@ static migrator_t database_migrators[]
     {121, migrate_120_to_121},
     {122, migrate_121_to_122},
     {123, migrate_122_to_123},
+    {124, migrate_123_to_124},
     /* End marker. */
     {-1, NULL}};
 

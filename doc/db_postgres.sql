@@ -563,19 +563,12 @@ CREATE TABLE lsc_credentials (
 	password text,
         -- A comment describing this credential.
 	comment text,
-        -- Public and private parts for public key encryption.
-        -- Commonly used with ssh.  The need for both fields is due to
-        -- an implementation peculiarity of old OpenVAS versions,
-        -- which were not able to extract the public part from the
-        -- private part.  We keep the "public_key" field to be
-        -- prepared for future authentication schemes.  A flag value
-        -- of ";;encrypted;;" in the private_key field is used to
-        -- indicate an encrypted credential.  Note: We can't use the
-        -- password field for the flag value because the password
-        -- field is allowed to contain arbitrary data; the private_key
-        -- field however is a structured value (for example PEM or
-        -- plain base64).
-	public_key text,
+        -- Private key, commonly used with ssh.
+        -- A flag value of ";;encrypted;;" in the private_key field is used to
+        -- indicate an encrypted credential.  Note: We can't use the password
+        -- field for the flag value because the password field is allowed to
+        -- contain arbitrary data; the private_key field however is a structured
+        -- value (for example PEM or plain base64).
 	private_key text,
         -- Fixme.  (Tools to be installed on the target)
 	rpm bytea,
@@ -595,7 +588,6 @@ CREATE TABLE lsc_credentials_trash (
     login text,
     password text,
     comment text,
-    public_key text,
     private_key text,
     rpm bytea,
     deb bytea,

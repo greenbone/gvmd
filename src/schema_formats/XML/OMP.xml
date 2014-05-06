@@ -2719,7 +2719,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <e>phrase</e>
         <e>private</e>
-        <e>public</e>
       </pattern>
       <ele>
         <name>phrase</name>
@@ -2731,13 +2730,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>private</name>
         <summary>Private key</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
-      <ele>
-        <name>public</name>
-        <summary>Public key</summary>
         <pattern>
           text
         </pattern>

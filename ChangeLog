@@ -1,5 +1,25 @@
 2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Finish removal of public_key column from lsc_credentials table.
+	Hence increase database version to 124.  Add database migration from
+	version 123 to 124.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 124.
+
+	* src/manage_migrators.c (migrate_123_to_124): New function.
+	(database_migrators): Add migrate_123_to_124.
+
+	* src/manage.c (slave_setup): Adjust omp_create_lsc_credential_key() call.
+
+	* doc/db_postgres.sql, doc/db.png: Update documentation for table column
+	removal.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	documentation for public_key element removal in create_lsc_credential
+	command.
+
+2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove Public Key requirement for LSC Credentials.
 
 	* src/manage.h: Adjust function prototype accordingly.

@@ -2141,7 +2141,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
               if (private_key)
                 ret = omp_create_lsc_credential_key
-                       (session, name, user, password, NULL, private_key,
+                       (session, name, user, password, private_key,
                         "Slave SSH credential created by Master",
                         &slave_ssh_credential_uuid);
               else

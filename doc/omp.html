@@ -6143,11 +6143,6 @@ create_group_users
               <div style="margin-left: 15px; display: inline;">Private key.</div>
 <ul style="list-style: none"></ul>
 </li>
-<li>
-              &lt;<b>public</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Public key.</div>
-<ul style="list-style: none"></ul>
-</li>
 </ul>
 </li>
 <li>
@@ -6215,7 +6210,6 @@ create_lsc_credential_key
      {
        create_lsc_credential_key_phrase
        &amp; create_lsc_credential_key_private
-       &amp; create_lsc_credential_key_public
      }
 
 create_lsc_credential_key_phrase
@@ -6226,12 +6220,6 @@ create_lsc_credential_key_phrase
 
 create_lsc_credential_key_private
  = element private
-     {
-       text
-     }
-
-create_lsc_credential_key_public
- = element public
      {
        text
      }
