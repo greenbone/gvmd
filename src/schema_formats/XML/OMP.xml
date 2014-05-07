@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>5.0</version>
+  <version>6.0</version>
   <type>
     <name>alive_test</name>
     <summary>An alive test</summary>
@@ -20017,6 +20017,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>CREATE_LSC_CREDENTIAL</command>
+    <summary>KEY/PUBLIC removed</summary>
+    <description>
+      <p>
+        The child PUBLIC of element KEY was removed, because public keys are
+        now extracted from the private key.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
   <change>
     <command>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</command>
     <summary>Filter type "report" is now "result"</summary>

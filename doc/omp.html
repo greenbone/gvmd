@@ -7,7 +7,7 @@
 <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
 <h1>OMP:
                   OpenVAS Management Protocol</h1>
-<p>Version: 5.0</p>
+<p>Version: 6.0</p>
 <p>The "management" protocol of the Open Vulnerability Assessment System.</p>
 <h2 id="contents">Contents</h2>
 <ol>
@@ -20,7 +20,7 @@
 <li><a href="#command_details">Command Details</a></li>
 <li><a href="#changes">
                       Compatibility Changes in Version
-                      5.0</a></li>
+                      6.0</a></li>
 </ol>
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
@@ -31694,101 +31694,15 @@ run_wizard_response_response
 </div>
 <h2 id="changes">
       8 Compatibility Changes in Version
-      5.0</h2>
+      6.0</h2>
 <div>
 <div><h3>8.1
-          Change in <tt>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</tt>
+          Change in <tt>CREATE_LSC_CREDENTIAL</tt>
 </h3></div>
-<p>In short: Filter type "report" is now "result".</p>
+<p>In short: KEY/PUBLIC removed.</p>
 <p>
-        The filter type "report" has been renamed to "result".  Filters of
-        this type apply to the results in a report, as used for example on
-        the GSA "Report: Results" page.
-      </p>
-<p>
-        The name "report" is now used for a new filter type.  This filter
-        type applies to lists of reports, as used for example on the GSA
-        "Reports" page.
-      </p>
-</div>
-<div>
-<div><h3>8.2
-          Change in <tt>CREATE_USER, MODIFY_USER</tt>
-</h3></div>
-<p>In short: ROLE is identified by "id" attribute.</p>
-<p>
-        In OMP 4.0 these commands were served by OpenVAS Administrator.
-      </p>
-<p>
-        The attribute "id" is now used to specify a user's role, in the
-        ROLE element.  Previously this was done using the NAME element inside
-        ROLE.
-      </p>
-</div>
-<div>
-<div><h3>8.3
-          Change in <tt>GET_USERS</tt>
-</h3></div>
-<p>In short: Attributes name and sort_order removed.</p>
-<p>
-        In OMP 4.0 this command was served by OpenVAS Administrator.
-      </p>
-<p>
-        The attributes name and sort_order have been remove from the
-        GET_USERS in OpenVAS Manager.  Equivalent functionality is available
-        using filters (with the filter and filt_id attributes).
-      </p>
-</div>
-<div>
-<div><h3>8.4
-          Change in <tt>GET_USERS</tt>
-</h3></div>
-<p>In short: ROLE is optional, and role name has moved into NAME.</p>
-<p>
-        In OMP 4.0 this command was served by OpenVAS Administrator.
-      </p>
-<p>
-        With the new role management, zero or more ROLEs may be present in
-        USER.  The name of the role is now in ROLE/NAME instead of directly
-        in the text of ROLE.
-      </p>
-</div>
-<div>
-<div><h3>8.5
-          Change in <tt>GET_NVTS</tt>
-</h3></div>
-<p>In short: Fingerprint element removed.</p>
-<p>
-        The fingerprint element has been removed as signature keys aren't sent
-        by the scanner anymore and thus, aren't stored in Manager DB anymore.
-      </p>
-</div>
-<div>
-<div><h3>8.6
-          Change in <tt>GET_DEPENDENCIES</tt>
-</h3></div>
-<p>In short: Command removed.</p>
-<p>
-        The command GET_DEPENDENCIES has been removed.
-      </p>
-</div>
-<div>
-<div><h3>8.7
-          Change in <tt>MODIFY_TARGET</tt>
-</h3></div>
-<p>In short: Missing elements now leave the associate target property alone.</p>
-<p>
-        MODIFY_TARGET now allows the user to modify one or more of the
-        Target elements in a single command, instead of requiring all
-        elements to be modified at once.
-      </p>
-<p>
-        As a side effect of this, leaving out an element will no longer
-        set the associated target value to a default, but will leave the
-        associated target value untouched.  For example, if SSH_LSC_CREDENTIAL
-        is omitted from the MODIFY_TARGET command, the command will no
-        longer reset the SSH credential of the target, but will leave the
-        target's current SSH credential intact.
+        The child PUBLIC of element KEY was removed, because public keys are
+        now extracted from the private key.
       </p>
 </div>
 <div style="text-align: center; padding: 5px;">
