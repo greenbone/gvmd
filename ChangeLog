@@ -1,5 +1,9 @@
 2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Increase OMP version.
+
+2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_116_to_117, migrate_120_to_121): Clean
 	comments and indenting.
 

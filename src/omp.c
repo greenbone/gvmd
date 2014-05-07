@@ -16829,7 +16829,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\""
                                 " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version>5.0</version>"
+                                "<version>6.0</version>"
                                 "</get_version_response>");
         if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
           set_client_state (CLIENT_AUTHENTIC);
