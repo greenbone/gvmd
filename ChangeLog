@@ -1,3 +1,10 @@
+2014-05-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (check_db): When checking permissions for User role,
+	verify that there are more than one permission. This covers a path
+	covering migrations from old users on disk case + DB migration to
+	version >=122.
+
 2014-05-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Finish removal of public_key column from lsc_credentials table.
