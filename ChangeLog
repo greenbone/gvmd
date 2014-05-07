@@ -1,5 +1,10 @@
 2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_116_to_117, migrate_120_to_121): Clean
+	comments and indenting.
+
+2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (version): Increase.
 	(create_lsc_credential): Add compatibility change about removing
 	KEY/PUBLIC.
