@@ -1,5 +1,15 @@
 2014-05-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_migrators.c (migrate_120_to_121, migrate_121_to_122):
+	Remove all permissions for User, Info and Observer roles which means
+	that they will be re-inserted on next startup along with help
+	permisions.
+
+	* src/manage_sql.c (check_db): Apply same verification for Observer and
+	Info roles' permissions as for User. See revision 19385.
+
+2014-05-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (check_db): When checking permissions for User role,
 	verify that there are more than one permission. This covers a path
 	covering migrations from old users on disk case + DB migration to

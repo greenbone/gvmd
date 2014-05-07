@@ -11298,9 +11298,13 @@ check_db ()
                " AND subject = (SELECT ROWID FROM roles"
                "                WHERE uuid = '" ROLE_UUID_INFO "')"
                " AND resource = 0;")
-      == 0)
+      <= 1)
     {
       sql ("BEGIN EXCLUSIVE;");
+      /* Clean-up any remaining permissions. */
+      sql ("DELETE FROM permissions WHERE subject_type = 'role'"
+           " AND subject = (SELECT ROWID FROM roles"
+           "                WHERE uuid = '" ROLE_UUID_INFO "');");
       add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_INFO, "COMMANDS");
       add_role_permission (ROLE_UUID_INFO, "HELP");
@@ -11347,11 +11351,15 @@ check_db ()
                " AND subject = (SELECT ROWID FROM roles"
                "                WHERE uuid = '" ROLE_UUID_OBSERVER "')"
                " AND resource = 0;")
-      == 0)
+      <= 1)
     {
       command_t *command;
       command = omp_commands;
       sql ("BEGIN EXCLUSIVE;");
+      /* Clean-up any remaining permissions. */
+      sql ("DELETE FROM permissions WHERE subject_type = 'role'"
+           " AND subject = (SELECT ROWID FROM roles"
+           "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
       while (command[0].name)
         {
           if ((strstr (command[0].name, "GET") == command[0].name)
