@@ -11121,45 +11121,47 @@ check_db ()
   if (sql_int (0, 0,
               "SELECT count(*) FROM report_formats"
               " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
-    == 0)
-  {
-    /* Create Topology report format */
-    report_format_t report_format;
-    report_format_param_t report_format_param;
-    sql ("INSERT INTO report_formats (uuid, owner, name, summary, description,"
-          " extension, content_type, signature, trust, trust_time, flags,"
-          " creation_time, modification_time)"
-          " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
-          " 'Network topology SVG image.',"
-          " 'Scan results in topologic structure as scalable vector graphics.\n',"
-          " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
-          TRUST_YES,
-          time (NULL));
-    report_format = sqlite3_last_insert_rowid (task_db);
+      == 0)
+    {
+      report_format_t report_format;
+      report_format_param_t report_format_param;
 
-    /* Create report "Graph Type" format parameter and parameter options */
-    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-         " type_min, type_max, type_regex, fallback)"
-         " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
-         " 9223372036854775807,'','twopi');",
-         report_format);
-    report_format_param = sqlite3_last_insert_rowid (task_db);
-    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-         "VALUES (%lli, 'circo');",
-         report_format_param);
-    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-         "VALUES (%lli, 'dot');",
-         report_format_param);
-    sql ("INSERT INTO report_format_param_options (report_format_param, value)"
-         "VALUES (%lli, 'twopi');",
-         report_format_param);
+      /* Create Topology report format */
 
-    /* Create report "Node Distance" format parameter */
-    sql ("INSERT INTO report_format_params (report_format, name, type, value,"
-         " type_min, type_max, type_regex, fallback)"
-         " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
-         report_format);
-  }
+      sql ("INSERT INTO report_formats (uuid, owner, name, summary, description,"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
+           " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
+           " 'Network topology SVG image.',"
+           " 'Scan results in topologic structure as scalable vector graphics.\n',"
+           " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
+           TRUST_YES,
+           time (NULL));
+      report_format = sqlite3_last_insert_rowid (task_db);
+
+      /* Create report "Graph Type" format parameter and parameter options */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
+           " 9223372036854775807,'','twopi');",
+           report_format);
+      report_format_param = sqlite3_last_insert_rowid (task_db);
+      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+           "VALUES (%lli, 'circo');",
+           report_format_param);
+      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+           "VALUES (%lli, 'dot');",
+           report_format_param);
+      sql ("INSERT INTO report_format_param_options (report_format_param, value)"
+           "VALUES (%lli, 'twopi');",
+           report_format_param);
+
+      /* Create report "Node Distance" format parameter */
+      sql ("INSERT INTO report_format_params (report_format, name, type, value,"
+           " type_min, type_max, type_regex, fallback)"
+           " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
+           report_format);
+    }
 
   /* Ensure that the report formats trash directory matches the database. */
 

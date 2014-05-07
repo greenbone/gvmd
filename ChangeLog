@@ -1,5 +1,9 @@
 2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db): Clean Topology report format indenting.
+
+2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_USER include
 	paused tasks in error message.
 
