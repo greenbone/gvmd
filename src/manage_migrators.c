@@ -8479,7 +8479,7 @@ migrate_116_to_117 ()
   /* Update the database. */
 
   /* Rename attach_[...] columns in tags to resource_[...], reference
-     resources by ROWID and add new column for resource UUID */
+   * resources by ROWID and add new column for resource UUID. */
 
   sql ("ALTER TABLE tags RENAME TO tags_117;");
   sql ("ALTER TABLE tags_trash RENAME TO tags_trash_117;");
@@ -8586,7 +8586,7 @@ migrate_116_to_117 ()
   sql ("DROP TABLE tags_117;");
 
   /* Rename attach_[...] columns in tags_trash to resource_[...], reference
-     resources by ROWID and add new column for resource UUID */
+   * resources by ROWID and add new column for resource UUID. */
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, resource_type, resource,"
@@ -8926,26 +8926,12 @@ migrate_120_to_121 ()
 
   /* Update the database. */
 
-  /* Observers were missing the AUTHENTICATE permission. */
-
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM permissions"
-               " WHERE subject = 'role'"
-               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND subject = (SELECT ROWID FROM roles"
-               "                WHERE uuid = '" ROLE_UUID_OBSERVER "')"
-               " AND name = 'authenticate'"
-               " AND resource = 0;")
-      == 0)
-    sql ("INSERT INTO permissions"
-         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-         "  resource_location, subject_type, subject, subject_location,"
-         "  creation_time, modification_time)"
-         " VALUES"
-         " (make_uuid (), NULL, 'authenticate', '', '',"
-         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
-         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_OBSERVER "'),"
-         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+  /* Observer role was missing the AUTHENTICATE permission. Simply delete all
+   * its permissions and they will be recreated (along with AUTHENTICATE
+   * permission) on start-up. */
+  sql ("DELETE FROM permissions WHERE subject_type = 'role'"
+       " AND subject = (SELECT ROWID FROM roles"
+       "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
 
   /* Set the database version to 121. */
 
@@ -8976,45 +8962,12 @@ migrate_121_to_122 ()
 
   /* Update the database. */
 
-  /* HELP now has a permission check, so add HELP to the User and Info roles. */
-
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM permissions"
-               " WHERE subject = 'role'"
-               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND subject = (SELECT ROWID FROM roles"
-               "                WHERE uuid = '" ROLE_UUID_USER "')"
-               " AND name = 'help'"
-               " AND resource = 0;")
-      == 0)
-    sql ("INSERT INTO permissions"
-         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-         "  resource_location, subject_type, subject, subject_location,"
-         "  creation_time, modification_time)"
-         " VALUES"
-         " (make_uuid (), NULL, 'help', '', '',"
-         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
-         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_USER "'),"
-         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
-
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM permissions"
-               " WHERE subject = 'role'"
-               " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-               " AND subject = (SELECT ROWID FROM roles"
-               "                WHERE uuid = '" ROLE_UUID_INFO "')"
-               " AND name = 'help'"
-               " AND resource = 0;")
-      == 0)
-    sql ("INSERT INTO permissions"
-         " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
-         "  resource_location, subject_type, subject, subject_location,"
-         "  creation_time, modification_time)"
-         " VALUES"
-         " (make_uuid (), NULL, 'help', '', '',"
-         "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
-         "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_INFO "'),"
-         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+  /* HELP now has a permission check, so delete User and Info roles' permissions
+   * and they will be recreated (along with HELP permission) on start-up. */
+  sql ("DELETE FROM permissions"
+       " WHERE subject_type = 'role' AND subject IN"
+       "   (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
+       "    OR uuid = '" ROLE_UUID_INFO"');");
 
   /* Set the database version to 122. */
 
