@@ -482,6 +482,27 @@ omp_command_takes_resource (const char* name)
 
 /* General helpers. */
 
+static gboolean
+resource_with_name_exists (const char *name, const char *type)
+{
+  int ret;
+  char *qname, *qtype;
+
+  assert (type);
+  if (!name)
+    return 0;
+  qname = sql_quote (name);
+  qtype = sql_quote (type);
+  ret = sql_int (0, 0,
+                 "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 type, qname, current_credentials.uuid);
+  g_free (qname);
+  g_free (qtype);
+  return !!ret;
+}
+
 /**
  * @brief Get the threat of a CVSS.
  *
@@ -3494,24 +3515,12 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   named = type_named (type);
 
-  if (named && name && strlen (name))
-    {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   type,
-                   quoted_name,
-                   current_credentials.uuid))
-        {
-          g_free (quoted_name);
-          return 1;
-        }
-    }
+  if (named && name && *name && resource_with_name_exists (name, type))
+    return 1;
+  if (name && *name)
+    quoted_name = sql_quote (name);
   else
     quoted_name = NULL;
-
   quoted_uuid = sql_quote (resource_id);
 
   /* Copy the existing resource. */
@@ -5429,21 +5438,13 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       free (type);
     }
 
-  quoted_name = sql_quote (name);
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM alerts WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "alert"))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
-
-  quoted_comment = comment ? sql_quote (comment) : NULL;
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment ?: "");
 
   sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
        " method, filter, creation_time, modification_time)"
@@ -5452,7 +5453,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
        " '%s', '%s', %i, %i, %i, %llu, now (), now ());",
        current_credentials.uuid,
        quoted_name,
-       quoted_comment ? quoted_comment : "",
+       quoted_comment,
        event,
        condition,
        method,
@@ -5661,26 +5662,11 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
     }
 
   /* Check whether an alert with the same name exists already. */
-  if (name)
+  if (resource_with_name_exists (name, "alert"))
     {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM alerts"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   alert,
-                   current_credentials.uuid))
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
+      sql ("ROLLBACK;");
+      return 2;
     }
-  else
-    quoted_name = sql_quote("");
 
   /* Check filter. */
   filter = 0;
@@ -5714,6 +5700,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
       free (type);
     }
 
+  quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ? comment : "");
 
   sql ("UPDATE alerts SET"
@@ -27714,13 +27701,7 @@ create_config (const char* proposed_name, const char* comment,
 
   while (1)
     {
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM configs WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_candidate_name,
-                   current_credentials.uuid)
-          == 0)
+      if (!resource_with_name_exists (quoted_candidate_name, "config"))
         break;
       g_free (candidate_name);
       g_free (quoted_candidate_name);
@@ -28264,16 +28245,10 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 99;
     }
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM configs WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (quoted_name, "config"))
     {
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
-      g_free (quoted_name);
       return 1;
     }
 
@@ -28282,7 +28257,6 @@ create_config_rc (const char* name, const char* comment, char* rc,
     {
       tracef ("   failed to create UUID \n");
       sql ("ROLLBACK;");
-      g_free (quoted_name);
       return -1;
     }
 
@@ -28293,31 +28267,18 @@ create_config_rc (const char* name, const char* comment, char* rc,
       tracef ("   NVT selector \"%s\" already exists\n", selector_uuid);
       sql ("ROLLBACK;");
       free (selector_uuid);
-      g_free (quoted_name);
       return -1;
     }
 
-  if (comment)
-    {
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " creation_time, modification_time)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', now (), now ());",
-           quoted_name,
-           current_credentials.uuid,
-           selector_uuid,
-           quoted_comment);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " creation_time, modification_time)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', now (), now ());",
-         quoted_name, current_credentials.uuid, selector_uuid);
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+       " creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
+       " '%s', '%s', now (), now ());",
+       quoted_name, current_credentials.uuid, selector_uuid, quoted_comment);
+  g_free (quoted_comment);
 
   /* Insert the RC into the config_preferences table. */
 
@@ -32132,20 +32093,13 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       return 99;
     }
 
-  quoted_name = sql_quote (name);
-
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM lsc_credentials WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "lsc_credential"))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
+  quoted_name = sql_quote (name);
   if (key_private)
     {
       lsc_crypt_ctx_t crypt_ctx;
@@ -33440,7 +33394,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
               const char* installer_filename, const char* installer_signature_64,
               const char* howto_install, const char* howto_use, agent_t *agent)
 {
-  gchar *quoted_name, *quoted_comment, *installer, *installer_signature;
+  gchar *installer, *installer_signature;
   int installer_trust;
   gsize installer_size, installer_signature_size;
 
@@ -33450,7 +33404,6 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   assert (installer_signature_64);
   assert (current_credentials.uuid);
 
-  quoted_name = sql_quote (name);
   installer_trust = TRUST_UNKNOWN;
   installer_size = 0;
   installer_signature_size = 0;
@@ -33475,7 +33428,6 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       if (verify_signature (installer, installer_size, installer_signature,
                             installer_signature_size, &installer_trust))
         {
-          g_free (quoted_name);
           g_free (installer);
           g_free (installer_signature);
           return -1;
@@ -33492,7 +33444,6 @@ create_agent (const char* name, const char* comment, const char* installer_64,
           if (verify_signature (installer, installer_size, installer_signature,
                                 installer_signature_size, &installer_trust))
             {
-              g_free (quoted_name);
               g_free (installer);
               g_free (installer_signature);
               return -1;
@@ -33510,14 +33461,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       return 99;
     }
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM agents WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "agent"))
     {
-      g_free (quoted_name);
       g_free (installer);
       g_free (installer_signature);
       sql ("ROLLBACK;");
@@ -33530,64 +33475,33 @@ create_agent (const char* name, const char* comment, const char* installer_64,
     const char* tail;
     int ret;
     sqlite3_stmt* stmt;
-    gchar* formatted;
-    gchar* quoted_filename = sql_quote (installer_filename);
+    gchar *quoted_name, *quoted_comment, *formatted, *quoted_filename;
 
-    if (comment)
-      {
-        quoted_comment = sql_nquote (comment, strlen (comment));
-        formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (uuid, name, owner, comment, installer,"
-                                     "  installer_64, installer_filename,"
-                                     "  installer_signature_64,"
-                                     "  installer_trust, installer_trust_time,"
-                                     "  howto_install, howto_use,"
-                                     "  creation_time, modification_time)"
-                                     " VALUES"
-                                     " (make_uuid (), '%s',"
-                                     "  (SELECT ROWID FROM users"
-                                     "   WHERE users.uuid = '%s'),"
-                                     "  '%s',"
-                                     "  $installer, $installer_64,"
-                                     "  '%s',"
-                                     "  $installer_signature_64,"
-                                     "  %i, %i, $howto_install,"
-                                     "  $howto_use, now (), now ());",
-                                     quoted_name,
-                                     current_credentials.uuid,
-                                     quoted_comment,
-                                     quoted_filename,
-                                     installer_trust,
-                                     (int) time (NULL));
-        g_free (quoted_comment);
-      }
-    else
-      {
-        formatted = g_strdup_printf ("INSERT INTO agents"
-                                     " (uuid, name, owner, comment, installer,"
-                                     "  installer_64, installer_filename,"
-                                     "  installer_signature_64,"
-                                     "  installer_trust, howto_install,"
-                                     "  howto_use, creation_time,"
-                                     "  modification_time)"
-                                     " VALUES"
-                                     " (make_uuid (), '%s',"
-                                     "  (SELECT ROWID FROM users"
-                                     "   WHERE users.uuid = '%s'),"
-                                     "  '',"
-                                     "  $installer, $installer_64,"
-                                     "  '%s',"
-                                     "  $installer_signature_64,"
-                                     "  %i, %i, $howto_install,"
-                                     "  $howto_use, now (), now ());",
-                                     quoted_name,
-                                     current_credentials.uuid,
-                                     quoted_filename,
-                                     installer_trust,
-                                     (int) time (NULL));
-      }
-
+    quoted_name = sql_quote (name);
+    quoted_comment = sql_quote (comment ?: "");
+    quoted_filename = sql_quote (installer_filename);
+    formatted = g_strdup_printf ("INSERT INTO agents"
+                                 " (uuid, name, owner, comment, installer,"
+                                 "  installer_64, installer_filename,"
+                                 "  installer_signature_64,"
+                                 "  installer_trust, installer_trust_time,"
+                                 "  howto_install, howto_use,"
+                                 "  creation_time, modification_time)"
+                                 " VALUES"
+                                 " (make_uuid (), '%s',"
+                                 "  (SELECT ROWID FROM users"
+                                 "   WHERE users.uuid = '%s'),"
+                                 "  '%s',"
+                                 "  $installer, $installer_64,"
+                                 "  '%s',"
+                                 "  $installer_signature_64,"
+                                 "  %i, %i, $howto_install,"
+                                 "  $howto_use, now (), now ());",
+                                 quoted_name, current_credentials.uuid,
+                                 quoted_comment, quoted_filename,
+                                 installer_trust, (int) time (NULL));
     g_free (quoted_name);
+    g_free (quoted_comment);
     g_free (quoted_filename);
 
     tracef ("   sql: %s\n", formatted);
@@ -33803,37 +33717,20 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
     }
 
   /* Check whether a agent with the same name exists already. */
-  if (name)
+  if (resource_with_name_exists (name, "agent"))
     {
-      quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM agents"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   agent,
-                   current_credentials.uuid))
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
+      sql ("ROLLBACK;");
+      return 2;
     }
-  else
-    quoted_name = sql_quote("");
-
-  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
 
   sql ("UPDATE agents SET"
        " name = '%s',"
        " comment = '%s',"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
-       quoted_name,
-       quoted_comment,
-       agent);
+       quoted_name, quoted_comment, agent);
 
   g_free (quoted_comment);
   g_free (quoted_name);

@@ -1,3 +1,10 @@
+2014-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (resource_with_name_exists): New function.
+	(copy_resource_lock, create_alert, create_config, create_config_rc)
+	(create_lsc_credential, create_agent, modify_agent, modify_alert): Use
+	new function. Code style update.
+
 2014-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Remove group and role assignments of deleted users at startup and
