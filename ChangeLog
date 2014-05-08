@@ -1,5 +1,13 @@
 2014-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (resource_with_name_exists): Add resource_id, to
+	handle case of ignoring a specific resource.
+	(copy_resource_lock, create_alert, create_config, create_config_rc)
+	(create_lsc_credential, create_agent, modify_agent, modify_alert):
+	Update modified function calls accordingly.
+
+2014-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (resource_with_name_exists): New function.
 	(copy_resource_lock, create_alert, create_config, create_config_rc)
 	(create_lsc_credential, create_agent, modify_agent, modify_alert): Use

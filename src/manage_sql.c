@@ -482,24 +482,43 @@ omp_command_takes_resource (const char* name)
 
 /* General helpers. */
 
+/*
+ * @brief Look if a resource
+ *
+ * @param[in]   name        Name of resource to check for.
+ * @param[in]   type        Type of resource.
+ * @param[in]   resource_id ID of resource to ignore, -1 otherwise.
+ */
 static gboolean
-resource_with_name_exists (const char *name, const char *type)
+resource_with_name_exists (const char *name, const char *type,
+                           resource_t resource_id)
 {
   int ret;
-  char *qname, *qtype;
+  char *quoted_name, *quoted_type;
 
   assert (type);
   if (!name)
     return 0;
-  qname = sql_quote (name);
-  qtype = sql_quote (type);
-  ret = sql_int (0, 0,
-                 "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                 type, qname, current_credentials.uuid);
-  g_free (qname);
-  g_free (qtype);
+  quoted_name = sql_quote (name);
+  quoted_type = sql_quote (type);
+  if (resource_id >= 0)
+    ret = sql_int (0, 0,
+                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+                   " AND ROWID != %llu AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE"
+                   "  users.uuid = '%s')));",
+                   quoted_type, quoted_name, resource_id,
+                   current_credentials.uuid);
+  else
+    ret = sql_int (0, 0,
+                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.ROWID FROM users WHERE"
+                   "  users.uuid = '%s')));",
+                   quoted_type, quoted_name, current_credentials.uuid);
+
+  g_free (quoted_name);
+  g_free (quoted_type);
   return !!ret;
 }
 
@@ -3515,7 +3534,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   named = type_named (type);
 
-  if (named && name && *name && resource_with_name_exists (name, type))
+  if (named && name && *name && resource_with_name_exists (name, type, -1))
     return 1;
   if (name && *name)
     quoted_name = sql_quote (name);
@@ -5438,7 +5457,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       free (type);
     }
 
-  if (resource_with_name_exists (name, "alert"))
+  if (resource_with_name_exists (name, "alert", -1))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -5662,7 +5681,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
     }
 
   /* Check whether an alert with the same name exists already. */
-  if (resource_with_name_exists (name, "alert"))
+  if (resource_with_name_exists (name, "alert", alert))
     {
       sql ("ROLLBACK;");
       return 2;
@@ -27701,7 +27720,7 @@ create_config (const char* proposed_name, const char* comment,
 
   while (1)
     {
-      if (!resource_with_name_exists (quoted_candidate_name, "config"))
+      if (!resource_with_name_exists (quoted_candidate_name, "config", -1))
         break;
       g_free (candidate_name);
       g_free (quoted_candidate_name);
@@ -28245,7 +28264,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 99;
     }
 
-  if (resource_with_name_exists (quoted_name, "config"))
+  if (resource_with_name_exists (quoted_name, "config", -1))
     {
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
@@ -32093,7 +32112,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       return 99;
     }
 
-  if (resource_with_name_exists (name, "lsc_credential"))
+  if (resource_with_name_exists (name, "lsc_credential", -1))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -33461,7 +33480,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       return 99;
     }
 
-  if (resource_with_name_exists (name, "agent"))
+  if (resource_with_name_exists (name, "agent", -1))
     {
       g_free (installer);
       g_free (installer_signature);
@@ -33717,7 +33736,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
     }
 
   /* Check whether a agent with the same name exists already. */
-  if (resource_with_name_exists (name, "agent"))
+  if (resource_with_name_exists (name, "agent", agent))
     {
       sql ("ROLLBACK;");
       return 2;
