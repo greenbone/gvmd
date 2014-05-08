@@ -198,9 +198,6 @@ delete_task_lock (task_t, int);
 gchar*
 clean_hosts (const char *, int*);
 
-void
-ensure_predefined_port_lists_exist ();
-
 int
 create_port_list_unique (const char *, const char *, const char *,
                          port_list_t *);
@@ -9114,20 +9111,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
 
   if (sqlite3_create_function (task_db,
-                               "severity_matches_type",
-                               2,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               sql_severity_matches_type,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create severity_matches_type", __FUNCTION__);
-      abort ();
-    }
-
-  if (sqlite3_create_function (task_db,
                                "severity_matches_ov",
                                2,               /* Number of args. */
                                SQLITE_UTF8,
@@ -10071,11 +10054,101 @@ make_port_ranges_openvas_default (port_list_t list)
   RANGE (PORT_PROTOCOL_TCP, 65301, 65301);
 }
 
+/*
+ * @brief Ensure the predefined example task and report exists.
+ */
+static void
+check_db_tasks ()
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM tasks"
+               " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';")
+      == 0)
+    {
+      sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
+           " run_status, start_time, end_time, config, target, slave,"
+           " alterable, creation_time, modification_time)"
+           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
+           " 1, 'This is an example task for the help pages.', %u,"
+           " 1251236905, 1251237136,"
+           " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
+           " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+           " 0, 0, now (), now ());",
+           TASK_STATUS_DONE);
+    }
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM reports"
+               " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f30';")
+      == 0)
+    {
+      task_t task;
+      result_t result;
+      report_t report;
+
+      /* Setup a dummy user, so that find_task will work. */
+      current_credentials.uuid = "";
+
+      if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
+        g_warning ("%s: error while finding example task", __FUNCTION__);
+      else if (task == 0)
+        g_warning ("%s: failed to find example task", __FUNCTION__);
+      else
+        {
+          sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
+               " start_time, end_time, scan_run_status, slave_progress,"
+               " slave_task_uuid)"
+               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
+               " 'This is an example report for the help pages.',"
+               " 1251236905, 1251237136,"
+               " %u, 0, '');",
+               task, TASK_STATUS_DONE);
+          report = sqlite3_last_insert_rowid (task_db);
+          sql ("INSERT into results (uuid, task, host, port, nvt, type,"
+               " severity, description)"
+               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
+               " '127.0.0.1', 'telnet (23/tcp)',"
+               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
+               " 'A telnet server seems to be running on this port');",
+               task);
+          result = sqlite3_last_insert_rowid (task_db);
+          report_add_result (report, result);
+          sql ("INSERT into report_hosts (report, host, start_time, end_time)"
+               " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
+               report);
+        }
+      current_credentials.uuid = NULL;
+    }
+}
+
+/*
+ * @brief Ensure the predefined target exists.
+ */
+static void
+check_db_targets ()
+{
+  if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
+      == 0)
+    sql ("INSERT INTO targets"
+         " (uuid, owner, name, hosts, creation_time, modification_time,"
+         "  port_range)"
+         " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
+         " 'localhost', now (), now (),"
+         " (SELECT ROWID FROM port_lists WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
+  else
+    /* The port list was wrong for a while, so make sure it's correct. */
+    sql ("UPDATE targets SET port_range = "
+         " (SELECT ROWID FROM port_lists"
+         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
+         " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
+
+}
+
 /**
  * @brief Ensure that the predefined port lists exist.
  */
-void
-ensure_predefined_port_lists_exist ()
+static void
+check_db_port_lists ()
 {
   if (sql_int (0, 0,
                "SELECT count(*) FROM port_lists"
@@ -10203,6 +10276,13 @@ ensure_predefined_port_lists_exist ()
       list = sqlite3_last_insert_rowid (task_db);
       make_port_ranges_nmap_5_51_top_2000_top_100 (list);
     }
+  /*
+   * Ensure that the highest number in a port range is 65535.  At some point
+   * ranges were initialised to 65536.
+   *
+   * This should be a migrator, but this way is easier to backport.  */
+  sql ("UPDATE port_ranges SET end = 65535 WHERE end = 65536;");
+  sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
 }
 
 /**
@@ -10288,7 +10368,7 @@ update_report_format_uuids ()
  * Ensure all the default manager settings exist.
  */
 static void
-init_manage_settings ()
+check_db_settings ()
 {
   if (sql_int (0, 0,
                "SELECT count(*) FROM settings"
@@ -10527,24 +10607,13 @@ check_db_versions (int nvt_cache_mode)
   return 0;
 }
 
-/**
- * @brief Ensure that the database is in order.
- *
- * @return 0 success, -1 error.
+/*
+ * @brief Ensures the sanity of nvts cache in DB.
  */
-int
-check_db ()
+static void
+check_db_nvts ()
 {
-  /* Ensure the tables exist. */
-
-  create_tables ();
-
-  /* Ensure the version is set. */
-
-  set_db_version (OPENVASMD_DATABASE_VERSION);
-
   /* Ensure the nvti cache update flag exists and is clear. */
-
   if (sql_int (0, 0,
                "SELECT count(*) FROM main.meta"
                " WHERE name = 'update_nvti_cache';"))
@@ -10553,18 +10622,10 @@ check_db ()
     sql ("INSERT INTO main.meta (name, value)"
          " VALUES ('update_nvti_cache', 0);");
 
-  /* Ensure that the highest number in a port range is 65535.  At some
-   * point ranges were initialised to 65536.
-   *
-   * This should be a migrator, but this way is easier to backport.  */
-
-  sql ("UPDATE port_ranges SET end = 65535 WHERE end = 65536;");
-  sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
-
-  /* Ensure every part of the predefined selector exists.
-   *
-   * This restores entries lost due to the error solved 2010-08-13 by r8805.  */
-
+  /*
+   * Ensure every part of the predefined selector exists.
+   * This restores entries lost due to the error solved 2010-08-13 by r8805.
+   */
   if (sql_int (0, 0,
                "SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
@@ -10664,9 +10725,21 @@ check_db ()
            /* OID of the "w3af (NASL wrapper)" NVT. */
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
+  /* Ensure the NVT CVE table is filled. */
+  if (sql_int (0, 0, "SELECT count (*) FROM nvt_cves;") == 0)
+    {
+      sql ("BEGIN IMMEDIATE;");
+      refresh_nvt_cves ();
+      sql ("COMMIT;");
+    }
+}
 
-  /* Ensure the predefined configs exist. */
-
+/*
+ * @brief Ensure the predefined configs exist.
+ */
+static void
+check_db_configs ()
+{
   if (sql_int (0, 0,
                "SELECT count(*) FROM configs"
                " WHERE name = 'Full and fast';")
@@ -10807,96 +10880,16 @@ check_db ()
     make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
                                   MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
 
-  /* Ensure the predefined port lists exist. */
+}
 
-  ensure_predefined_port_lists_exist ();
-
-  /* Ensure the predefined target exists. */
-
-  if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
-      == 0)
-    sql ("INSERT INTO targets"
-         " (uuid, owner, name, hosts, creation_time, modification_time,"
-         "  port_range)"
-         " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
-         " 'localhost', now (), now (),"
-         " (SELECT ROWID FROM port_lists WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
-  else
-    /* The port list was wrong for a while, so make sure it's correct. */
-    sql ("UPDATE targets SET port_range = "
-         " (SELECT ROWID FROM port_lists"
-         "  WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
-         " WHERE uuid = '" TARGET_UUID_LOCALHOST "';");
-
-  /* Ensure the predefined example task and report exists. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
-               " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';")
-      == 0)
-    {
-      sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target, slave,"
-           " alterable, creation_time, modification_time)"
-           " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
-           " 1, 'This is an example task for the help pages.', %u,"
-           " 1251236905, 1251237136,"
-           " (SELECT ROWID FROM configs WHERE name = 'Full and fast'),"
-           " (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-           " 0, 0, now (), now ());",
-           TASK_STATUS_DONE);
-    }
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM reports"
-               " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f30';")
-      == 0)
-    {
-      task_t task;
-      result_t result;
-      report_t report;
-
-      /* Setup a dummy user, so that find_task will work. */
-      current_credentials.uuid = "";
-
-      if (find_task (MANAGE_EXAMPLE_TASK_UUID, &task))
-        g_warning ("%s: error while finding example task", __FUNCTION__);
-      else if (task == 0)
-        g_warning ("%s: failed to find example task", __FUNCTION__);
-      else
-        {
-          sql ("INSERT into reports (uuid, owner, hidden, task, comment,"
-               " start_time, end_time, scan_run_status, slave_progress,"
-               " slave_task_uuid)"
-               " VALUES ('343435d6-91b0-11de-9478-ffd71f4c6f30', NULL, 1, %llu,"
-               " 'This is an example report for the help pages.',"
-               " 1251236905, 1251237136,"
-               " %u, 0, '');",
-               task,
-               TASK_STATUS_DONE);
-          report = sqlite3_last_insert_rowid (task_db);
-          sql ("INSERT into results (uuid, task, host, port, nvt, type,"
-               " severity, description)"
-               " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
-               " '127.0.0.1', 'telnet (23/tcp)',"
-               " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
-               " 'A telnet server seems to be running on this port');",
-               task);
-          result = sqlite3_last_insert_rowid (task_db);
-          report_add_result (report, result);
-          sql ("INSERT into report_hosts (report, host, start_time, end_time)"
-               " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
-               report);
-        }
-
-      current_credentials.uuid = NULL;
-    }
-
+/*
+ * @brief Ensure the predefined report formats exist.
+ */
+static void
+check_db_report_formats ()
+{
   /* Bring report format UUIDs in database up to date. */
-
   update_report_format_uuids ();
-
-  /* Ensure the predefined report formats exist. */
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM report_formats"
@@ -10917,9 +10910,8 @@ check_db ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
-               " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats"
+                     " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
       == 0)
     {
       report_format_t report_format;
@@ -10939,8 +10931,7 @@ check_db ()
            "The report selects all CPE tables from the results and forms a single table\n"
            "as a comma separated values file.\n',"
            " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -10958,8 +10949,7 @@ check_db ()
            " 'CSV result list.',"
            " 'List of results.',"
            " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -10977,8 +10967,7 @@ check_db ()
            " 'CSV host summary.',"
            " 'Base host information and result counts',"
            " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -10997,8 +10986,7 @@ check_db ()
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
            " 'html', 'text/html', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11017,8 +11005,7 @@ check_db ()
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
            " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11036,8 +11023,7 @@ check_db ()
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
            " 'tex', 'text/plain', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11055,8 +11041,7 @@ check_db ()
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
            " 'nbe', 'text/plain', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11074,8 +11059,7 @@ check_db ()
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
            "'pdf', 'application/pdf', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11093,8 +11077,7 @@ check_db ()
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
            " 'txt', 'text/plain', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11112,8 +11095,7 @@ check_db ()
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
            " 'xml', 'text/xml', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
       report_format_verify (report_format);
     }
@@ -11135,8 +11117,7 @@ check_db ()
            " 'Network topology SVG image.',"
            " 'Scan results in topologic structure as scalable vector graphics.\n',"
            " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
-           TRUST_YES,
-           time (NULL));
+           TRUST_YES, time (NULL));
       report_format = sqlite3_last_insert_rowid (task_db);
 
       /* Create report "Graph Type" format parameter and parameter options */
@@ -11162,123 +11143,85 @@ check_db ()
            " VALUES (%lli, 'Node Distance', 1, 8, 1, 20, '', 8);",
            report_format);
     }
+}
 
-  /* Ensure that the report formats trash directory matches the database. */
+/*
+ * @brief Ensure that the report formats trash directory matches the database.
+ *
+ * @return -1 if error, 0 if success.
+ */
+static int
+check_db_report_formats_trash ()
+{
+  gchar *dir;
+  GError *error;
+  GDir *directory;
+  const gchar *entry;
 
-  {
-    gchar *dir;
-    GError *error;
-    GDir *directory;
-    const gchar *entry;
+  dir = g_build_filename (OPENVAS_DATA_DIR, "openvasmd", "report_formats_trash",
+                          NULL);
+  error = NULL;
+  directory = g_dir_open (dir, 0, &error);
 
-    dir = g_build_filename (OPENVAS_DATA_DIR,
-                            "openvasmd",
-                            "report_formats_trash",
-                            NULL);
-    error = NULL;
-    directory = g_dir_open (dir, 0, &error);
+  if (directory == NULL)
+    {
+      assert (error);
+      if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
+        {
+          g_warning ("g_dir_open (%s) failed - %s\n", dir, error->message);
+          g_error_free (error);
+          g_free (dir);
+          return -1;
+        }
+    }
+  else
+    {
+      entry = NULL;
+      while ((entry = g_dir_read_name (directory)) != NULL)
+        {
+          gchar *end;
+          if (strtol (entry, &end, 10) < 0)
+            /* Only interested in positive numbers. */
+            continue;
+          if (*end != '\0')
+            /* Only interested in numbers. */
+            continue;
 
-    if (directory == NULL)
-      {
-        assert (error);
-        if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
-          {
-            g_warning ("g_dir_open (%s) failed - %s\n",
-                       dir,
-                       error->message);
-            g_error_free (error);
-            g_free (dir);
-            return -1;
-          }
-      }
-    else
-      {
-        entry = NULL;
-        while ((entry = g_dir_read_name (directory)) != NULL)
-          {
-            gchar *end;
-            if (strtol (entry, &end, 10) < 0)
-              /* Only interested in positive numbers. */
-              continue;
-            if (*end != '\0')
-              /* Only interested in numbers. */
-              continue;
+          /* Check whether the db has a report format with this ID. */
+          if (sql_int (0, 0, "SELECT count(*) FROM report_formats_trash"
+                             " WHERE ROWID = %s;", entry)
+              == 0)
+            {
+              int ret;
+              gchar *entry_path;
 
-            /* Check whether the db has a report format with this ID. */
+              /* Remove the directory. */
 
-            if (sql_int (0, 0,
-                         "SELECT count(*) FROM report_formats_trash"
-                         " WHERE ROWID = %s;",
-                         entry)
-                == 0)
-              {
-                int ret;
-                gchar *entry_path;
+              entry_path = g_build_filename (dir, entry, NULL);
+              ret = openvas_file_remove_recurse (entry_path);
+              g_free (entry_path);
+              if (ret)
+                {
+                  g_warning ("%s: failed to remove %s from %s",
+                             __FUNCTION__, entry, dir);
+                  g_dir_close (directory);
+                  g_free (dir);
+                  return -1;
+                }
+            }
+        }
+      g_dir_close (directory);
+    }
+  g_free (dir);
+  return 0;
+}
 
-                /* Remove the directory. */
-
-                entry_path = g_build_filename (dir, entry, NULL);
-                ret = openvas_file_remove_recurse (entry_path);
-                g_free (entry_path);
-                if (ret)
-                  {
-                    g_warning ("%s: failed to remove %s from %s",
-                               __FUNCTION__, entry, dir);
-                    g_dir_close (directory);
-                    g_free (dir);
-                    return -1;
-                  }
-              }
-          }
-        g_dir_close (directory);
-      }
-    g_free (dir);
-  }
-
-  /* Ensure the predefined roles exists. */
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
-      == 0)
-    sql ("INSERT INTO roles"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
-         " VALUES"
-         " ('" ROLE_UUID_ADMIN "', NULL, 'Admin',"
-         "  'Administrator.  Full privileges.',"
-         " now (), now ());");
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
-      == 0)
-    sql ("INSERT INTO roles"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
-         " VALUES"
-         " ('" ROLE_UUID_INFO "', NULL, 'Info',"
-         "  'Information browser.',"
-         " now (), now ());");
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
-      == 0)
-    sql ("INSERT INTO roles"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
-         " VALUES"
-         " ('" ROLE_UUID_USER "', NULL, 'User',"
-         "  'Standard user.',"
-         " now (), now ());");
-
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles"
-               " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
-      == 0)
-    sql ("INSERT INTO roles"
-         " (uuid, owner, name, comment, creation_time, modification_time)"
-         " VALUES"
-         " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
-         "  'Observer.',"
-         " now (), now ());");
-
-  /* Ensure the predefined permissions exists. */
+/*
+ * @brief Ensure the predefined permissions exists.
+ */
+static void
+check_db_permissions ()
+{
 
   if (sql_int (0, 0,
                "SELECT count(*) FROM permissions"
@@ -11378,20 +11321,78 @@ check_db ()
       add_role_permission (ROLE_UUID_OBSERVER, "MODIFY_SETTING");
       sql ("COMMIT;");
     }
+}
 
-  /* Ensure the default settings exist. */
+/*
+ * @brief Ensure the predefined roles exists.
+ */
+static void
+check_db_roles ()
+{
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_ADMIN "', NULL, 'Admin',"
+         "  'Administrator.  Full privileges.',"
+         " now (), now ());");
 
-  init_manage_settings ();
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_INFO "', NULL, 'Info',"
+         "  'Information browser.',"
+         " now (), now ());");
 
-  /* Ensure the NVT CVE table is filled. */
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_USER "', NULL, 'User',"
+         "  'Standard user.',"
+         " now (), now ());");
 
-  if (sql_int (0, 0, "SELECT count (*) FROM nvt_cves;") == 0)
-    {
-      sql ("BEGIN IMMEDIATE;");
-      refresh_nvt_cves ();
-      sql ("COMMIT;");
-    }
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM roles"
+               " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
+         "  'Observer.',"
+         " now (), now ());");
 
+}
+
+/**
+ * @brief Ensure that the database is in order.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+check_db ()
+{
+  create_tables ();
+  set_db_version (OPENVASMD_DATABASE_VERSION);
+  check_db_nvts ();
+  check_db_configs ();
+  check_db_port_lists ();
+  check_db_targets ();
+  check_db_tasks ();
+  check_db_report_formats ();
+  if (check_db_report_formats_trash ())
+    return -1;
+  check_db_roles ();
+  check_db_permissions ();
+  check_db_settings ();
   if (progress)
     progress ();
 

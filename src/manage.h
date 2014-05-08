@@ -784,9 +784,6 @@ double
 level_max_severity (const char*, const gchar*);
 
 int
-severity_matches_type (double, const char *);
-
-int
 severity_matches_ov (double, double);
 
 const char*

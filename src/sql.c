@@ -1612,32 +1612,6 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
- * @brief Test if a severity score matches a message type.
- *
- * This is a callback for a scalar SQL function of one argument.
- *
- * @param[in]  context  SQL context.
- * @param[in]  argc     Number of arguments.
- * @param[in]  argv     Argument array.
- */
-void
-sql_severity_matches_type (sqlite3_context *context, int argc,
-                           sqlite3_value** argv)
-{
-  double severity;
-  const char *type;
-
-  assert (argc == 2);
-
-  severity = sqlite3_value_double (argv[0]);
-  type = (const char*)sqlite3_value_text (argv[1]);
-
-  sqlite3_result_int (context,
-                      severity_matches_type (severity, type));
-  return;
-}
-
-/**
  * @brief Test if a severity score matches an override's severity.
  *
  * This is a callback for a scalar SQL function of one argument.

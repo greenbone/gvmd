@@ -1,3 +1,19 @@
+2014-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_manage_process): Don't create unused sqlite
+	severity_matches_type() function.
+	(check_db_tasks, check_db_targets, check_db_port_lists)
+	(check_db_settings, check_db_nvts, check_db_configs)
+	(check_db_report_formats, check_db_report_formats_trash)
+	(check_db_permissions, check_db_roles): New functions.
+	(check_db): Move data check routines to related new functions.
+	(ensure_predefined_port_lists_exist): Rename to check_db_port_lists.
+	(init_manage_settings): Rename to check_db_settings.
+
+	* src/sql.c (sql_severity_matches_type): Delete unused function.
+
+	* src/manage.h, src/sql.h: Remove deleted functions prototypes.
+
 2014-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db): Clean Topology report format indenting.
