@@ -1,5 +1,12 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (resource_with_name_exists): Rename resource_id
+	param to resource, because _id params are usually UUIDs.  Expect 0
+	instead of -1 to indicate "no resource", like most other places do.
+	Update callers accordingly.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/lsc_user.c, src/manage_sql.c, src/omp.c, src/openvasmd.c,
 	src/otp.c: Use ** to start Doxygen top-level comments.
 

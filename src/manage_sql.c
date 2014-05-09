@@ -485,13 +485,13 @@ omp_command_takes_resource (const char* name)
 /**
  * @brief Look if a resource
  *
- * @param[in]   name        Name of resource to check for.
- * @param[in]   type        Type of resource.
- * @param[in]   resource_id ID of resource to ignore, -1 otherwise.
+ * @param[in]   name      Name of resource to check for.
+ * @param[in]   type      Type of resource.
+ * @param[in]   resource  Resource to ignore, 0 otherwise.
  */
 static gboolean
 resource_with_name_exists (const char *name, const char *type,
-                           resource_t resource_id)
+                           resource_t resource)
 {
   int ret;
   char *quoted_name, *quoted_type;
@@ -501,13 +501,13 @@ resource_with_name_exists (const char *name, const char *type,
     return 0;
   quoted_name = sql_quote (name);
   quoted_type = sql_quote (type);
-  if (resource_id >= 0)
+  if (resource)
     ret = sql_int (0, 0,
                    "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
                    " AND ROWID != %llu AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE"
                    "  users.uuid = '%s')));",
-                   quoted_type, quoted_name, resource_id,
+                   quoted_type, quoted_name, resource,
                    current_credentials.uuid);
   else
     ret = sql_int (0, 0,
@@ -3534,7 +3534,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
 
   named = type_named (type);
 
-  if (named && name && *name && resource_with_name_exists (name, type, -1))
+  if (named && name && *name && resource_with_name_exists (name, type, 0))
     return 1;
   if (name && *name)
     quoted_name = sql_quote (name);
@@ -5457,7 +5457,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
       free (type);
     }
 
-  if (resource_with_name_exists (name, "alert", -1))
+  if (resource_with_name_exists (name, "alert", 0))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -27830,7 +27830,7 @@ create_config (const char* proposed_name, const char* comment,
 
   while (1)
     {
-      if (!resource_with_name_exists (quoted_candidate_name, "config", -1))
+      if (!resource_with_name_exists (quoted_candidate_name, "config", 0))
         break;
       g_free (candidate_name);
       g_free (quoted_candidate_name);
@@ -28374,7 +28374,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return 99;
     }
 
-  if (resource_with_name_exists (quoted_name, "config", -1))
+  if (resource_with_name_exists (quoted_name, "config", 0))
     {
       tracef ("   config \"%s\" already exists\n", name);
       sql ("ROLLBACK;");
@@ -32222,7 +32222,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       return 99;
     }
 
-  if (resource_with_name_exists (name, "lsc_credential", -1))
+  if (resource_with_name_exists (name, "lsc_credential", 0))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -33590,7 +33590,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       return 99;
     }
 
-  if (resource_with_name_exists (name, "agent", -1))
+  if (resource_with_name_exists (name, "agent", 0))
     {
       g_free (installer);
       g_free (installer_signature);
