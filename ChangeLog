@@ -1,3 +1,20 @@
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent duplicate report format UUIDs.  Ensure all are unique at
+	startup.
+
+	* src/manage_sql.c (make_report_format_uuids_unique): New function.
+	(check_db_report_formats): Call make_report_format_uuids_unique.  Adjust
+	return.
+	(check_db): Check for check_db_report_formats return.
+	(create_report_format): Prevent any report formats from having the same
+	UUIDs, regardless of who owns the report format.
+	(manage_restore): Also check if a report format with the candidate UUID
+	exists in the regular table.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new manage_restore
+	return.
+
 2014-05-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (resource_with_name_exists): Add resource_id, to

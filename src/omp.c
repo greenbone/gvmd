@@ -24313,6 +24313,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "A resource with this name exists"
                                       " already"));
                   break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "A resource with this UUID exists"
+                                      " already"));
+                  break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("restore",
