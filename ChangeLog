@@ -1,3 +1,14 @@
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19413.
+
+	* src/manage_sql.c (delete_report_format): Check if the report format is
+	in use.
+	(trash_report_format_in_use): Select from the trash table because only
+	trash alerts should refer to trash report formats.  Select original_uuid
+	instead of uuid for report format, because that's what the alerts refer
+	to.
+
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump
@@ -6,7 +17,7 @@
 
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
 
-	* CHANGES: Fix mistake in version numbering. 
+	* CHANGES: Fix mistake in version numbering.
 
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
 

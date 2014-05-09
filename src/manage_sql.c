@@ -38796,8 +38796,8 @@ modify_report_format (const char *report_format_id, const char *name,
  * @param[in]  report_format_id  UUID of Report format.
  * @param[in]  ultimate          Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find report format, 3 predefined report
- *         format, 99 permission denied, -1 error.
+ * @return 0 success, 1 report format in use, 2 failed to find report format,
+ *         3 predefined report format, 99 permission denied, -1 error.
  */
 int
 delete_report_format (const char *report_format_id, int ultimate)
@@ -38854,6 +38854,14 @@ delete_report_format (const char *report_format_id, int ultimate)
           /* It's already in the trashcan. */
           sql ("COMMIT;");
           return 0;
+        }
+
+      /* Check if it's in use by a trash alert. */
+
+      if (trash_report_format_in_use (report_format))
+        {
+          sql ("ROLLBACK;");
+          return 1;
         }
 
       /* Remove entirely. */
@@ -38917,6 +38925,28 @@ delete_report_format (const char *report_format_id, int ultimate)
       permissions_set_orphans ("report_format", report_format, LOCATION_TABLE);
       tags_set_orphans ("report_format", report_format, LOCATION_TABLE);
 
+      /* Check if it's in use by a trash or regular alert. */
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM alert_method_data_trash"
+                   " WHERE data = (SELECT uuid FROM report_formats"
+                   "               WHERE ROWID = %llu)"
+                   " AND (name = 'notice_attach_format'"
+                   "      OR name = 'notice_report_format');",
+                   report_format))
+        {
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
+      if (report_format_in_use (report_format))
+        {
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return 1;
+        }
+
       /* Remove directory. */
 
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
@@ -38930,6 +38960,15 @@ delete_report_format (const char *report_format_id, int ultimate)
     {
       iterator_t params;
       gchar *trash_dir;
+
+      /* Check if it's in use by a regular alert. */
+
+      if (report_format_in_use (report_format))
+        {
+          g_free (dir);
+          sql ("ROLLBACK;");
+          return 1;
+        }
 
       /* Move to trash. */
 
@@ -39394,8 +39433,8 @@ int
 trash_report_format_in_use (report_format_t report_format)
 {
   return !!sql_int (0, 0,
-                    "SELECT count(*) FROM alert_method_data WHERE data = "
-                    " (SELECT uuid FROM report_formats_trash"
+                    "SELECT count(*) FROM alert_method_data_trash WHERE data = "
+                    " (SELECT original_uuid FROM report_formats_trash"
                     "  WHERE ROWID = %llu)"
                     " AND (name = 'notice_attach_format' OR "
                     "      name = 'notice_report_format');",
