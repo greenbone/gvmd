@@ -1,5 +1,10 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_format_content_type, report_format_in_use)
+	(trash_report_format_in_use): Neaten doc comments and SQL.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_format): Check if the report format is
 	in use.
 	(trash_report_format_in_use): Select from the trash table because only

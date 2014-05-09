@@ -39528,12 +39528,13 @@ char *
 report_format_content_type (report_format_t report_format)
 {
   return sql_string (0, 0,
-                     "SELECT content_type FROM report_formats WHERE ROWID = %llu;",
+                     "SELECT content_type FROM report_formats"
+                     " WHERE ROWID = %llu;",
                      report_format);
 }
 
 /**
- * @brief Return whether a report format is referenced by an alert
+ * @brief Return whether a report format is referenced by an alert.
  *
  * @param[in]  report_format  Report Format.
  *
@@ -39543,15 +39544,16 @@ int
 report_format_in_use (report_format_t report_format)
 {
   return !!sql_int (0, 0,
-                    "SELECT count(*) FROM alert_method_data WHERE data = "
-                    " ( SELECT uuid FROM report_formats WHERE ROWID = %llu)"
-                    " AND (name = 'notice_attach_format' OR "
-                    "      name = 'notice_report_format');",
+                    "SELECT count(*) FROM alert_method_data"
+                    " WHERE data = (SELECT uuid FROM report_formats"
+                    "               WHERE ROWID = %llu)"
+                    " AND (name = 'notice_attach_format'"
+                    "      OR name = 'notice_report_format');",
                     report_format);
 }
 
 /**
- * @brief Return whether a report_format in trash is referenced by an alert
+ * @brief Return whether a report format in trash is referenced by an alert.
  *
  * @param[in]  report_format  Report Format.
  *
@@ -39561,11 +39563,12 @@ int
 trash_report_format_in_use (report_format_t report_format)
 {
   return !!sql_int (0, 0,
-                    "SELECT count(*) FROM alert_method_data_trash WHERE data = "
-                    " (SELECT original_uuid FROM report_formats_trash"
-                    "  WHERE ROWID = %llu)"
-                    " AND (name = 'notice_attach_format' OR "
-                    "      name = 'notice_report_format');",
+                    "SELECT count(*) FROM alert_method_data_trash"
+                    " WHERE data = (SELECT original_uuid"
+                    "               FROM report_formats_trash"
+                    "               WHERE ROWID = %llu)"
+                    " AND (name = 'notice_attach_format'"
+                    "      OR name = 'notice_report_format');",
                     report_format);
 }
 
