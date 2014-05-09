@@ -1025,7 +1025,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     }
 }
 
-/*
+/**
  * @brief Rebuild NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1223,7 +1223,7 @@ serve_and_schedule ()
   /*@notreached@*/
 }
 
-/*
+/**
  * @brief Sets the GnuTLS priorities for a given session.
  *
  * @param[in]   session     Session for which to set the priorities.

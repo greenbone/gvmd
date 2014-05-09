@@ -482,7 +482,7 @@ omp_command_takes_resource (const char* name)
 
 /* General helpers. */
 
-/*
+/**
  * @brief Look if a resource
  *
  * @param[in]   name        Name of resource to check for.
@@ -6405,7 +6405,7 @@ alert_data (alert_t alert, const char *type, const char *name)
   return data;
 }
 
-/*
+/**
  * @brief Initialise a task alert iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -10060,7 +10060,7 @@ make_port_ranges_openvas_default (port_list_t list)
   RANGE (PORT_PROTOCOL_TCP, 65301, 65301);
 }
 
-/*
+/**
  * @brief Ensure the predefined example task and report exists.
  */
 static void
@@ -10127,7 +10127,7 @@ check_db_tasks ()
     }
 }
 
-/*
+/**
  * @brief Ensure the predefined target exists.
  */
 static void
@@ -10613,7 +10613,7 @@ check_db_versions (int nvt_cache_mode)
   return 0;
 }
 
-/*
+/**
  * @brief Ensures the sanity of nvts cache in DB.
  */
 static void
@@ -10740,7 +10740,7 @@ check_db_nvts ()
     }
 }
 
-/*
+/**
  * @brief Ensure the predefined configs exist.
  */
 static void
@@ -10888,7 +10888,7 @@ check_db_configs ()
 
 }
 
-/*
+/**
  * @brief Ensure every report format has a unique UUID.
  *
  * @return 0 success, -1 error.
@@ -10991,7 +10991,7 @@ make_report_format_uuids_unique ()
   return 0;
 }
 
-/*
+/**
  * @brief Ensure the predefined report formats exist.
  *
  * @return 0 success, -1 error.
@@ -11260,7 +11260,7 @@ check_db_report_formats ()
   return 0;
 }
 
-/*
+/**
  * @brief Ensure that the report formats trash directory matches the database.
  *
  * @return -1 if error, 0 if success.
@@ -11331,7 +11331,7 @@ check_db_report_formats_trash ()
   return 0;
 }
 
-/*
+/**
  * @brief Ensure the predefined permissions exists.
  */
 static void
@@ -11438,7 +11438,7 @@ check_db_permissions ()
     }
 }
 
-/*
+/**
  * @brief Ensure the predefined roles exists.
  */
 static void
@@ -20693,7 +20693,7 @@ report_error_count (report_t report)
                   report);
 }
 
-/*
+/**
  * @brief Write report host detail to file stream.
  *
  * @param[in]   stream    Stream to write to.
@@ -20745,7 +20745,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
   return 0;
 }
 
-/*
+/**
  * @brief Write report error message to file stream.
  *
  * @param[in]   stream      Stream to write to.
@@ -30320,7 +30320,7 @@ update_config_cache_init (const char *uuid)
   cleanup_iterator (&configs);
 }
 
-/*
+/**
  * @brief Inserts a nvt from nvti structure.
  *
  * @param[in] nvti  nvti_t to insert in nvts table.
@@ -30338,7 +30338,7 @@ insert_nvt_from_nvti (gpointer nvti, gpointer dummy)
   make_nvt_from_nvti (nvti, 0);
 }
 
-/*
+/**
  * @brief Inserts NVTs in DB from a list of nvti_t structures.
  *
  * @param[in] nvts_list     List of nvts to be inserted.

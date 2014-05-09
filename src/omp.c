@@ -429,7 +429,7 @@ auth_conf_setting_from_xml (const gchar * element_name,
   return kvp;
 }
 
-/*
+/**
  * @brief Init for a GET handler.
  *
  * @param[in]  command       OMP command name.

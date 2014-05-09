@@ -1,5 +1,10 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/lsc_user.c, src/manage_sql.c, src/omp.c, src/openvasmd.c,
+	src/otp.c: Use ** to start Doxygen top-level comments.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_manage): Add comment full stop.
 	(manage_restore): Correct order of warning args.
 
