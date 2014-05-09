@@ -10558,6 +10558,109 @@ check_db_versions (int nvt_cache_mode)
   return 0;
 }
 
+/*
+ * @brief Ensure every report format has a unique UUID.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+make_report_format_uuids_unique ()
+{
+  iterator_t rows;
+
+  sql ("BEGIN IMMEDIATE;");
+
+  sql ("CREATE TEMPORARY TABLE duplicates"
+       " AS SELECT id, uuid, make_uuid () AS new_uuid, owner,"
+       "           (SELECT uuid FROM users"
+       "            WHERE users.ROWID = outer_report_formats.owner)"
+       "           AS owner_uuid"
+       "    FROM report_formats AS outer_report_formats"
+       "    WHERE ROWID > (SELECT ROWID from report_formats"
+       "                   WHERE uuid = outer_report_formats.uuid"
+       "                   ORDER BY ROWID ASC LIMIT 1);");
+
+  sql ("UPDATE alert_method_data"
+       " SET data = (SELECT new_uuid FROM duplicates"
+       "             WHERE duplicates.id = alert_method_data.alert)"
+       " WHERE alert IN (SELECT id FROM duplicates);");
+
+  /* Update UUIDs on disk. */
+  init_iterator (&rows,
+                 "SELECT id, uuid, new_uuid, owner, owner_uuid"
+                 " FROM duplicates;");
+  while (next (&rows))
+    {
+      gchar *dir, *new_dir;
+      const char *old_uuid, *new_uuid;
+
+      old_uuid = iterator_string (&rows, 1);
+      new_uuid = iterator_string (&rows, 2);
+
+      if (iterator_int64 (&rows, 3) == 0)
+        {
+          /* Global report format. */
+          dir = g_build_filename (OPENVAS_DATA_DIR,
+                                  "openvasmd",
+                                  "global_report_formats",
+                                  old_uuid,
+                                  NULL);
+          new_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                      "openvasmd",
+                                      "global_report_formats",
+                                      new_uuid,
+                                      NULL);
+        }
+      else
+        {
+          const char *owner_uuid;
+
+          owner_uuid = iterator_string (&rows, 4);
+
+          dir = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
+                                  "report_formats",
+                                  owner_uuid,
+                                  old_uuid,
+                                  NULL);
+          new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                      "openvasmd",
+                                      "report_formats",
+                                      owner_uuid,
+                                      new_uuid,
+                                      NULL);
+        }
+
+      if (rename (dir, new_dir))
+        {
+          g_warning ("%s: rename %s to %s: %s",
+                     __FUNCTION__, dir, new_dir, strerror (errno));
+          g_free (dir);
+          g_free (new_dir);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+      g_debug ("%s: moved %s to %s", __FUNCTION__, dir, new_dir);
+      g_free (dir);
+      g_free (new_dir);
+    }
+  cleanup_iterator (&rows);
+
+  sql ("UPDATE report_formats"
+       " SET uuid = (SELECT new_uuid FROM duplicates"
+       "             WHERE duplicates.id = report_formats.id)"
+       " WHERE id IN (SELECT id FROM duplicates);");
+
+  if (sqlite3_changes (task_db) > 0)
+    g_debug ("%s: gave %d report format(s) new UUID(s) to keep UUIDs unique.",
+             __FUNCTION__, sqlite3_changes (task_db));
+
+  sql ("DROP TABLE duplicates;");
+
+  sql ("COMMIT;");
+  return 0;
+}
+
 /**
  * @brief Ensure that the database is in order.
  *
@@ -10926,6 +11029,8 @@ check_db ()
   /* Bring report format UUIDs in database up to date. */
 
   update_report_format_uuids ();
+  if (make_report_format_uuids_unique ())
+    return -1;
 
   /* Ensure the predefined report formats exist. */
 
@@ -37996,12 +38101,8 @@ create_report_format (const char *uuid, const char *name,
     }
 
   if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_formats"
-               " WHERE uuid = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               uuid,
-               current_credentials.uuid))
+               "SELECT COUNT(*) FROM report_formats WHERE uuid = '%s';",
+               uuid))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -45502,8 +45603,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
  *
  * @return 0 success, 1 fail because the resource refers to another resource
  *         in the trashcan, 2 failed to find resource in trashcan, 3 fail
- *         because resource with such name exists already, 99 permission
- *         denied, -1 error.
+ *         because resource with such name exists already, 4 fail because
+ *         resource with UUID exists already, 99 permission denied, -1 error.
  */
 int
 manage_restore (const char *id)
@@ -46069,6 +46170,17 @@ manage_restore (const char *id)
         {
           sql ("ROLLBACK;");
           return 3;
+        }
+
+      if (sql_int (0, 0,
+                   "SELECT count(*) FROM report_formats"
+                   " WHERE uuid = (SELECT original_uuid"
+                   "               FROM report_formats_trash"
+                   "               WHERE ROWID = %llu);",
+                   resource))
+        {
+          sql ("ROLLBACK;");
+          return 4;
         }
 
       /* Move to "real" tables. */
