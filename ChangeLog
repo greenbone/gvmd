@@ -1,3 +1,9 @@
+2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Prepare release of openvas-manager-5.0.1
+
+	* CHANGES: Update
+
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19396, originally committed by Timo Pollmeier.
