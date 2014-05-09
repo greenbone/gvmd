@@ -11614,6 +11614,28 @@ stop_active_tasks ()
 }
 
 /**
+ * @brief Clean up database tables.
+ *
+ * Remove superfluous entries from tables.
+ */
+void
+cleanup_tables ()
+{
+  /* Remove group and role assignments of deleted users.
+   *
+   * This should be a migrator, but this way is easier to backport.  */
+
+  sql ("DELETE FROM group_users"
+       " WHERE user NOT IN (SELECT ROWID FROM users);");
+  sql ("DELETE FROM group_users_trash"
+       " WHERE user NOT IN (SELECT ROWID FROM users);");
+  sql ("DELETE FROM role_users"
+       " WHERE user NOT IN (SELECT ROWID FROM users);");
+  sql ("DELETE FROM role_users_trash"
+       " WHERE user NOT IN (SELECT ROWID FROM users);");
+}
+
+/**
  * @brief Initialize the manage library.
  *
  * Ensure all tasks are in a clean initial state.
@@ -11664,6 +11686,9 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   ret = check_db ();
   if (ret)
     return ret;
+
+  /* Remove unused / superfluous entries from tables */
+  cleanup_tables ();
 
   if (nvt_cache_mode == 0)
     /* Stop any active tasks. */
@@ -49144,6 +49169,11 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("UPDATE groups SET owner = 0 WHERE owner = %llu;", user);
   sql ("UPDATE roles SET owner = 0 WHERE owner = %llu;", user);
   sql ("UPDATE users SET owner = 0 WHERE owner = %llu;", user);
+
+  sql ("DELETE FROM group_users WHERE user = %llu;", user);
+  sql ("DELETE FROM group_users_trash WHERE user = %llu;", user);
+  sql ("DELETE FROM role_users WHERE user = %llu;", user);
+  sql ("DELETE FROM role_users_trash WHERE user = %llu;", user);
 
   sql ("DELETE FROM users WHERE ROWID = %llu;", user);
 

@@ -1,5 +1,16 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19396, originally committed by Timo Pollmeier.
+
+	Remove group and role assignments of deleted users at startup and
+	when deleting users.
+
+	* src/manage_sql.c (cleanup_tables): New function.
+	(init_manage): Remove group and role assignments of deleted users.
+	(delete_user): Delete user from groups and roles.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19401.
 
 	Prevent duplicate report format UUIDs.  Ensure all are unique at
