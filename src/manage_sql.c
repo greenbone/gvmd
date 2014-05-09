@@ -13971,8 +13971,7 @@ cpe_highest_cvss (const char *cpe)
   int highest;
   gchar *quoted_cpe;
   quoted_cpe = sql_quote (cpe);
-  highest = sql_double (0, 0,
-                        "SELECT"
+  highest = sql_double ("SELECT"
                         " (CASE WHEN (SELECT ROWID FROM cpes WHERE name = '%s')"
                         "  THEN (SELECT max_cvss FROM cpes WHERE name = '%s')"
                         "  ELSE -1"
@@ -14960,8 +14959,7 @@ report_add_result (report_t report, result_t result)
   sql ("UPDATE results SET report = %llu WHERE ROWID = %llu;",
        report, result);
 
-  severity = sql_double (0, 0,
-                         "SELECT severity FROM results WHERE ROWID=%llu;",
+  severity = sql_double ("SELECT severity FROM results WHERE ROWID=%llu;",
                          result);
 
   rowid = 0;
@@ -47005,8 +47003,7 @@ setting_filter (const char *resource)
 char *
 setting_severity ()
 {
-  return sql_string_quiet (0, 0,
-                           "SELECT value FROM settings"
+  return sql_string_quiet ("SELECT value FROM settings"
                            " WHERE name = 'Severity Class'"
                            " AND ((owner IS NULL)"
                            "      OR (owner ="

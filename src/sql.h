@@ -59,7 +59,7 @@ int
 sql_x (unsigned int, unsigned int, char *, va_list, sqlite3_stmt **);
 
 double
-sql_double (unsigned int, unsigned int, char* sql, ...);
+sql_double (char* sql, ...);
 
 int
 sql_int (unsigned int, unsigned int, char *, ...);
@@ -68,7 +68,7 @@ char *
 sql_string (unsigned int, unsigned int, char *, ...);
 
 char *
-sql_string_quiet (unsigned int, unsigned int, char *, ...);
+sql_string_quiet (char *, ...);
 
 int
 sql_int64 (long long int * ret, unsigned int, unsigned int, char *, ...);

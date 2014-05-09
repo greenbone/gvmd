@@ -480,22 +480,20 @@ sql_x_quiet (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
 }
 
 /**
- * @brief Get a particular cell from a SQL query, as a double.
+ * @brief Get the first value from a SQL query, as a double.
  *
  * @warning Aborts on invalid queries.
  *
  * @warning Aborts when the query returns fewer rows than \p row.  The
  *          caller must ensure that the query will return sufficient rows.
  *
- * @param[in]  col    Column.
- * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return Result of the query as an integer.
  */
 double
-sql_double (unsigned int col, unsigned int row, char* sql, ...)
+sql_double (char* sql, ...)
 {
   sqlite3_stmt* stmt;
   va_list args;
@@ -503,14 +501,14 @@ sql_double (unsigned int col, unsigned int row, char* sql, ...)
 
   int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
       abort ();
     }
-  ret = sqlite3_column_double (stmt, col);
+  ret = sqlite3_column_double (stmt, 0);
   sqlite3_finalize (stmt);
   return ret;
 }
@@ -587,10 +585,8 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
 }
 
 /**
- * @brief Get a particular cell from a SQL query, as an string.
+ * @brief Get the first value from a SQL query, as a string.
  *
- * @param[in]  col    Column.
- * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
@@ -599,7 +595,7 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
  *         fewer rows in the result than \p row.
  */
 char*
-sql_string_quiet (unsigned int col, unsigned int row, char* sql, ...)
+sql_string_quiet (char* sql, ...)
 {
   sqlite3_stmt* stmt;
   const unsigned char* ret2;
@@ -608,14 +604,14 @@ sql_string_quiet (unsigned int col, unsigned int row, char* sql, ...)
 
   va_list args;
   va_start (args, sql);
-  sql_x_ret = sql_x_quiet (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x_quiet (0, 0, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
       return NULL;
     }
-  ret2 = sqlite3_column_text (stmt, col);
+  ret2 = sqlite3_column_text (stmt, 0);
   ret = g_strdup ((char*) ret2);
   sqlite3_finalize (stmt);
   return ret;

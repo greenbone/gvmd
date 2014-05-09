@@ -1,5 +1,15 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove cell args from sql_double and sql_string_quiet.
+
+	* src/sql.c (sql_double, sql_string_quiet): Remove col and row args.
+
+	* src/sql.h: Update headers accordingly.
+
+	* src/manage_sql.c: Update callers.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_format_content_type, report_format_in_use)
 	(trash_report_format_in_use): Neaten doc comments and SQL.
 
