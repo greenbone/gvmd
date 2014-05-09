@@ -1,6 +1,6 @@
 openvas-manager 5.0.1 (2014-05-09)
 
-This is the first maintenance release of the openvas-manager 4.0 module for the
+This is the first maintenance release of the openvas-manager 5.0 module for the
 Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
 Manager is the central management service between the actual security scanner
 and various user clients.

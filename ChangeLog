@@ -1,5 +1,9 @@
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* CHANGES: Fix mistake in version numbering. 
+
+2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
+
 	Prepare release of openvas-manager-5.0.1
 
 	* CHANGES: Update
