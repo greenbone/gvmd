@@ -11670,7 +11670,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   if (ret)
     return ret;
 
-  /* Remove unused / superfluous entries from tables */
+  /* Remove unused / superfluous entries from tables. */
   cleanup_tables ();
 
   if (nvt_cache_mode == 0)
@@ -46307,7 +46307,7 @@ manage_restore (const char *id)
           if (rename (trash_dir, dir))
             {
               g_warning ("%s: rename %s to %s: %s\n",
-                         __FUNCTION__, dir, trash_dir, strerror (errno));
+                         __FUNCTION__, trash_dir, dir, strerror (errno));
               g_free (dir);
               g_free (trash_dir);
               sql ("ROLLBACK;");

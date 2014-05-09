@@ -1,5 +1,13 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_manage): Add comment full stop.
+	(manage_restore): Correct order of warning args.
+
+	* src/manage_migrators.c (migrate_122_to_123): Neaten comment.
+	(migrate_123_to_124): Remove extra space.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Prevent duplicate report format UUIDs.  Ensure all are unique at
 	startup.
 

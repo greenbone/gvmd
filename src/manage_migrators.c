@@ -9002,7 +9002,7 @@ migrate_122_to_123 ()
   /* Update the database. */
 
   /* Check if targets_trash has alive_test column, which was added in the
-   *  migration to version 111 but previously missing in create_tables.   */
+   * migration to version 111 but previously missing in create_tables. */
   init_iterator (&column_data, "PRAGMA table_info (targets_trash);");
   while (next (&column_data) && column_found == 0)
     {
@@ -9088,7 +9088,6 @@ migrate_123_to_124 ()
   sql ("COMMIT;");
 
   return 0;
-
 }
 
 /**
