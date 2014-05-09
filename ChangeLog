@@ -1,5 +1,11 @@
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
 
+	Post release version bump
+
+	* CMakeLists.txt: 5.0.2
+
+2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* CHANGES: Fix mistake in version numbering. 
 
 2014-05-09  Benoît Allard  <benoit.allard@greenbone.net>
