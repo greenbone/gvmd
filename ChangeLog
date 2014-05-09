@@ -1,5 +1,14 @@
 2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format): Check if the report format is
+	in use.
+	(trash_report_format_in_use): Select from the trash table because only
+	trash alerts should refer to trash report formats.  Select original_uuid
+	instead of uuid for report format, because that's what the alerts refer
+	to.
+
+2014-05-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (resource_with_name_exists): Rename resource_id
 	param to resource, because _id params are usually UUIDs.  Expect 0
 	instead of -1 to indicate "no resource", like most other places do.
