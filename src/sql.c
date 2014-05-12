@@ -360,8 +360,6 @@ sql_quiet (char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query.
  *
- * @param[in]   col          Column.
- * @param[in]   row          Row.
  * @param[in]   log          Whether to do tracef logging.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
@@ -369,9 +367,8 @@ sql_quiet (char* sql, ...)
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
-sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
-                char* sql, va_list args, sqlite3_stmt** stmt_return)
+static int
+sql_x_internal (int log, char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
   const char* tail;
   int ret;
@@ -428,10 +425,7 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
                      sqlite3_errmsg (task_db));
           return -1;
         }
-      if (row == 0) break;
-      row--;
-      if (log)
-        tracef ("   sql_x row %i\n", row);
+      break;
     }
 
   if (log)
@@ -444,19 +438,16 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
  *
  * Do logging as usual.
  *
- * @param[in]   col          Column.
- * @param[in]   row          Row.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
  * @param[out]  stmt_return  Return from statement.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
-sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
-       va_list args, sqlite3_stmt** stmt_return)
+static int
+sql_x (char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
-  return sql_x_internal (col, row, 1, sql, args, stmt_return);
+  return sql_x_internal (1, sql, args, stmt_return);
 }
 
 /**
@@ -464,19 +455,16 @@ sql_x (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
  *
  * Skip any logging.
  *
- * @param[in]   col          Column.
- * @param[in]   row          Row.
  * @param[in]   sql          Format string for SQL query.
  * @param[in]   args         Arguments for format string.
  * @param[out]  stmt_return  Return from statement.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
-sql_x_quiet (/*@unused@*/ unsigned int col, unsigned int row, char* sql,
-             va_list args, sqlite3_stmt** stmt_return)
+static int
+sql_x_quiet (char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
-  return sql_x_internal (col, row, 0, sql, args, stmt_return);
+  return sql_x_internal (0, sql, args, stmt_return);
 }
 
 /**
@@ -501,7 +489,7 @@ sql_double (char* sql, ...)
 
   int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
+  sql_x_ret = sql_x (sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
@@ -535,7 +523,7 @@ sql_int (char* sql, ...)
 
   int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
+  sql_x_ret = sql_x (sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
@@ -567,7 +555,7 @@ sql_string (char* sql, ...)
 
   va_list args;
   va_start (args, sql);
-  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
+  sql_x_ret = sql_x (sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
@@ -600,7 +588,7 @@ sql_string_quiet (char* sql, ...)
 
   va_list args;
   va_start (args, sql);
-  sql_x_ret = sql_x_quiet (0, 0, sql, args, &stmt);
+  sql_x_ret = sql_x_quiet (sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
@@ -630,7 +618,7 @@ sql_int64 (long long int* ret, char* sql, ...)
   va_list args;
 
   va_start (args, sql);
-  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
+  sql_x_ret = sql_x (sql, args, &stmt);
   va_end (args);
   switch (sql_x_ret)
     {

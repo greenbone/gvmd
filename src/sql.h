@@ -55,9 +55,6 @@ sql_giveup (char * sql, ...);
 void
 sql_quiet (char * sql, ...);
 
-int
-sql_x (unsigned int, unsigned int, char *, va_list, sqlite3_stmt **);
-
 double
 sql_double (char* sql, ...);
 

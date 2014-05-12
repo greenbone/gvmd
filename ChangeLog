@@ -1,5 +1,14 @@
 2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove cell args from internal SQL functions.
+
+	* src/sql.c (sql_x_internal, sql_x, sql_x_quiet): Remove col and row
+	args.  Update callers.
+
+	* src/sql.h (sql_x): Remove.  Internal to the SQL "library".
+
+2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove cell args from sql_int.
 
 	* src/sql.c (sql_int): Remove col and row args.  Update caller.
