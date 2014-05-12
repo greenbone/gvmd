@@ -12942,10 +12942,10 @@ task_last_report_id (task_t task)
 gchar*
 task_second_last_report_id (task_t task)
 {
-  return sql_string (0, 1,
+  return sql_string (0, 0,
                      "SELECT uuid FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 2;",
+                     " ORDER BY date DESC LIMIT 1 OFFSET 1;",
                      task,
                      TASK_STATUS_DONE);
 }
