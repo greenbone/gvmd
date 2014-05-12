@@ -1,3 +1,22 @@
+2014-05-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Some Task iterator related optimizations.
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS, TASK_ITERATOR_TRASH_COLUMNS):
+	Count total as all tasks reports. Select uuid instead of date for first
+	column, to be used by task_iterator_first_report(). Remove duplicate
+	selection of last column.
+	(task_iterator_total_reports, task_iterator_first_report): New
+	functions.
+	(task_report_count): Delete function.
+	(task_trend_counts): Rename task_iterator_trend_counts. Take task
+	iterator as argument, instead of task ROWID.
+
+	* src/manage.h: Add, adjust and remove functions prototypes accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust GET_TASKS case to use
+	new functions accordingly.
+
 2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove cell args from internal SQL functions.

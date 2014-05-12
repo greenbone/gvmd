@@ -16165,11 +16165,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *progress_xml;
               target_t target;
               slave_t slave;
+              const char *first_report_id;
               char *config, *config_uuid;
               char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
-              gchar *first_report_id, *first_report;
+              gchar *first_report;
               char *description, *hosts_ordering;
               gchar *description64, *last_report_id, *last_report;
               gchar *second_last_report_id, *second_last_report;
@@ -16274,7 +16275,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 current_report = g_strdup ("");
 
-              first_report_id = task_first_report_id (index);
+              first_report_id = task_iterator_first_report (&tasks);
               if (first_report_id)
                 {
                   gchar *timestamp;
@@ -16458,7 +16459,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 last_report = g_strdup ("");
 
-              g_free (first_report_id);
               g_free (second_last_report_id);
 
               owner = task_owner_name (index);
@@ -16546,10 +16546,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            progress_xml,
                            description64,
                            /* TODO These can come from iterator now. */
-                           task_report_count (index),
+                           task_iterator_total_reports (&tasks),
                            task_finished_report_count (index),
-                           task_trend_counts
-                            (index, holes, warnings, infos, severity,
+                           task_iterator_trend_counts
+                            (&tasks, holes, warnings, infos, severity,
                              holes_2, warnings_2, infos_2, severity_2),
                            task_schedule_uuid,
                            task_schedule_name,

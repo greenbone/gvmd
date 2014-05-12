@@ -480,6 +480,12 @@ init_task_iterator (iterator_t*, const get_data_t *);
 task_status_t
 task_iterator_run_status (iterator_t*);
 
+int
+task_iterator_total_reports (iterator_t*);
+
+const char *
+task_iterator_first_report (iterator_t*);
+
 unsigned int
 task_id (task_t);
 
@@ -610,7 +616,8 @@ int
 task_last_report (task_t, report_t*);
 
 const char *
-task_trend_counts (task_t, int, int, int, double, int, int, int, double);
+task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
+                            double);
 
 const char *
 task_trend (task_t, int);
@@ -961,11 +968,6 @@ report_set_slave_port (report_t, int);
 
 void
 report_set_source_iface (report_t, const gchar *);
-
-/*@-exportlocal@*/
-/*@only@*/ /*@null@*/
-gchar*
-task_first_report_id (task_t);
 
 int
 task_last_stopped_report (task_t, report_t *);
