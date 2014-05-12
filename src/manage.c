@@ -1441,8 +1441,7 @@ send_ifaces_access_preferences (void)
 
   ifaces = sql_string ("SELECT ifaces FROM users WHERE uuid = '%s';",
                        current_credentials.uuid);
-  ifaces_allow = sql_int (0, 0,
-                          "SELECT ifaces_allow FROM users WHERE uuid = '%s';",
+  ifaces_allow = sql_int ("SELECT ifaces_allow FROM users WHERE uuid = '%s';",
                           current_credentials.uuid);
 
   if (ifaces && strlen (ifaces))
@@ -1481,9 +1480,8 @@ send_hosts_access_preferences (void)
 
   hosts = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
                       current_credentials.uuid);
-  hosts_allow = sql_int (0, 0,
-                          "SELECT hosts_allow FROM users WHERE uuid = '%s';",
-                          current_credentials.uuid);
+  hosts_allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
+                         current_credentials.uuid);
 
   if (hosts && strlen (hosts))
     {

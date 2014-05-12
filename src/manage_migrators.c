@@ -948,12 +948,10 @@ void
 migrate_5_to_6_move_other_config (const char *predefined_config_name,
                                   config_t predefined_config_id)
 {
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) = 0 FROM configs"
+  if (sql_int ("SELECT COUNT(*) = 0 FROM configs"
                " WHERE name = '%s';",
                predefined_config_name)
-      && sql_int (0, 0,
-                  "SELECT COUNT(*) = 1 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 1 FROM configs"
                   " WHERE ROWID = %llu;",
                   predefined_config_id))
     {
@@ -1020,17 +1018,13 @@ migrate_5_to_6 ()
   /* Fail with a message if the predefined configs have somehow got ID's
    * other than the usual ones. */
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) = 0 OR ROWID == 1 FROM configs"
+  if (sql_int ("SELECT COUNT(*) = 0 OR ROWID == 1 FROM configs"
                " WHERE name = 'Full and fast';")
-      && sql_int (0, 0,
-                  "SELECT COUNT(*) = 0 OR ROWID == 2 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 2 FROM configs"
                   " WHERE name = 'Full and fast ultimate';")
-      && sql_int (0, 0,
-                  "SELECT COUNT(*) = 0 OR ROWID == 3 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 3 FROM configs"
                   " WHERE name = 'Full and very deep';")
-      && sql_int (0, 0,
-                  "SELECT COUNT(*) = 0 OR ROWID == 4 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 4 FROM configs"
                   " WHERE name = 'Full and very deep ultimate';"))
     {
       /* Any predefined configs are OK.  Move any other configs that have the
@@ -1511,8 +1505,7 @@ migrate_12_to_13 ()
     }
   cleanup_iterator (&rows);
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '"
+  if (sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '"
                MANAGE_NVT_SELECTOR_UUID_ALL "';"))
     sql ("DELETE FROM nvt_selectors WHERE name = 'All';");
   else
@@ -1719,8 +1712,7 @@ migrate_16_to_17 ()
 void
 migrate_17_to_18_set_pref (config_t config)
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM config_preferences"
+  if (sql_int ("SELECT count(*) FROM config_preferences"
                " WHERE config = %llu"
                " AND name ="
                " 'Ping Host[checkbox]:Mark unrechable Hosts as dead"
@@ -1761,8 +1753,7 @@ migrate_17_to_18 ()
 
   /* Add "Ping Host" to the "All" NVT selector. */
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
       == 0)
@@ -2142,7 +2133,7 @@ migrate_21_to_22 ()
 
   /* Ensure that the predefined formats all exist in the database. */
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'CPE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2160,7 +2151,7 @@ migrate_21_to_22 ()
          "as a comma separated values file.\n',"
          " 'csv', 'text/csv');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'HTML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2169,7 +2160,7 @@ migrate_21_to_22 ()
          "the HTML, so the page is suitable for viewing in a browser as is.\n',"
          " 'html', 'text/html');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'ITG';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2179,7 +2170,7 @@ migrate_21_to_22 ()
          "as published and maintained by the German Federal Agency for IT-Security.\n',"
          " 'csv', 'text/csv');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2188,7 +2179,7 @@ migrate_21_to_22 ()
          " 'Report as LaTeX source file for further processing.\n',"
          " 'tex', 'text/plain');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'NBE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2196,7 +2187,7 @@ migrate_21_to_22 ()
          " 'The traditional OpenVAS Scanner text based format.',"
          " 'nbe', 'text/plain');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'PDF';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2205,7 +2196,7 @@ migrate_21_to_22 ()
          " 'Scan results in Portable Document Format (PDF).',"
          "'pdf', 'application/pdf');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'TXT';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2213,7 +2204,7 @@ migrate_21_to_22 ()
          " 'Plain text report, best viewed with fixed font size.',"
          " 'txt', 'text/plain');");
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
+  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'XML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2260,8 +2251,7 @@ migrate_21_to_22 ()
       uuid = iterator_string (&rows, 1);
       name = iterator_string (&rows, 3);
 
-      if (sql_int (0, 0,
-                   "SELECT owner is NULL FROM report_formats"
+      if (sql_int ("SELECT owner is NULL FROM report_formats"
                    " WHERE ROWID = %llu;",
                    iterator_int64 (&rows, 0)))
         {
@@ -2845,8 +2835,7 @@ migrate_32_to_33 ()
 void
 migrate_33_to_34_set_pref (config_t config)
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM config_preferences"
+  if (sql_int ("SELECT count(*) FROM config_preferences"
                " WHERE config = %llu"
                " AND name ="
                " 'Login configurations[checkbox]:NTLMSSP';",
@@ -3015,8 +3004,7 @@ migrate_35_to_36 ()
 
       target = iterator_int64 (&tasks, 1);
 
-      if (sql_int (0, 0,
-                   "SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
+      if (sql_int ("SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
                    target)
           == 0)
         {
@@ -4145,8 +4133,7 @@ migrate_54_to_55 ()
 void
 migrate_55_to_56_ensure_predefined_port_lists_exist ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_DEFAULT "';")
       == 0)
     {

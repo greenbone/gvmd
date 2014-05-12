@@ -123,8 +123,7 @@ check_config_host_discovery (char *const uuid)
 
   /* Check new preference. */
 
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM config_preferences"
+  if (sql_int ("SELECT count (*) FROM config_preferences"
                " WHERE config = (SELECT ROWID FROM configs WHERE uuid = '%s')"
                "       AND type = 'PLUGINS_PREFS'"
                "       AND name = '" NAME "';",
@@ -142,8 +141,7 @@ check_config_host_discovery (char *const uuid)
 
   /* Check new NVT. */
 
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM nvt_selectors"
+  if (sql_int ("SELECT count (*) FROM nvt_selectors"
                " WHERE name = (SELECT nvt_selector FROM configs"
                "               WHERE uuid = '%s')"
                "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.12288';",

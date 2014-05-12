@@ -59,14 +59,13 @@ user_may (const char *operation)
     /* Allow the dummy user in init_manage to do anything. */
     return 1;
 
-  if (sql_int (0, 0,
-               "SELECT user_can_everything ('%s');",
+  if (sql_int ("SELECT user_can_everything ('%s');",
                current_credentials.uuid))
     return 1;
 
   quoted_operation = sql_quote (operation);
 
-  ret = sql_int (0, 0, USER_MAY ("0"),
+  ret = sql_int (USER_MAY ("0"),
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -90,8 +89,7 @@ user_may (const char *operation)
 int
 user_can_everything (const char *user_id)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) > 0 FROM permissions"
+  return sql_int ("SELECT count(*) > 0 FROM permissions"
                   " WHERE resource = 0"
                   " AND ((subject_type = 'user'"
                   "       AND subject"
@@ -133,8 +131,7 @@ user_is_admin (const char *uuid)
   gchar *quoted_uuid;
 
   quoted_uuid = sql_quote (uuid);
-  ret = sql_int (0, 0,
-                 "SELECT count (*) FROM role_users"
+  ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT ROWID FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
                  " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
@@ -157,8 +154,7 @@ user_is_observer (const char *uuid)
   gchar *quoted_uuid;
 
   quoted_uuid = sql_quote (uuid);
-  ret = sql_int (0, 0,
-                 "SELECT count (*) FROM role_users"
+  ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT ROWID FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_OBSERVER "')"
                  " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
@@ -181,8 +177,7 @@ user_is_user (const char *uuid)
   gchar *quoted_uuid;
 
   quoted_uuid = sql_quote (uuid);
-  ret = sql_int (0, 0,
-                 "SELECT count (*) FROM role_users"
+  ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT ROWID FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_USER "')"
                  " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
@@ -205,8 +200,7 @@ user_owns_result (const char *uuid)
 
   assert (current_credentials.uuid);
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM results, report_results, reports"
+  ret = sql_int ("SELECT count(*) FROM results, report_results, reports"
                  " WHERE results.uuid = '%s'"
                  " AND report_results.result = results.ROWID"
                  " AND report_results.report = reports.ROWID"
@@ -243,8 +237,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss%s"
+  ret = sql_int ("SELECT count(*) FROM %ss%s"
                  " WHERE uuid = '%s'"
                  "%s"
                  " AND ((owner IS NULL) OR (owner ="
@@ -343,8 +336,7 @@ user_has_access_uuid (const char *type, const char *uuid,
       && ((permission == NULL)
           || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0)))
     {
-      ret = sql_int (0, 0,
-                     "SELECT count(*) FROM permissions"
+      ret = sql_int ("SELECT count(*) FROM permissions"
                      /* Any permission implies 'get'. */
                      " WHERE (resource_uuid = '%s'"
                      /* Users may view any permissions that affect them. */
@@ -390,8 +382,7 @@ user_has_access_uuid (const char *type, const char *uuid,
          || (strlen (permission) > 3 && strncmp (permission, "get", 3) == 0));
   quoted_permission = sql_quote (permission ? permission : "");
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM permissions"
+  ret = sql_int ("SELECT count(*) FROM permissions"
                  " WHERE resource_uuid = '%s'"
                  " AND ((subject_type = 'user'"
                  "       AND subject"

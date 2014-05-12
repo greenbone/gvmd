@@ -521,15 +521,13 @@ sql_double (char* sql, ...)
  * @warning Aborts when the query returns fewer rows than \p row.  The
  *          caller must ensure that the query will return sufficient rows.
  *
- * @param[in]  col    Column.
- * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return Result of the query as an integer.
  */
 int
-sql_int (unsigned int col, unsigned int row, char* sql, ...)
+sql_int (char* sql, ...)
 {
   sqlite3_stmt* stmt;
   va_list args;
@@ -537,14 +535,14 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
 
   int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
       abort ();
     }
-  ret = sqlite3_column_int (stmt, col);
+  ret = sqlite3_column_int (stmt, 0);
   sqlite3_finalize (stmt);
   return ret;
 }
@@ -815,8 +813,7 @@ sql_uniquify (sqlite3_context *context, int argc, sqlite3_value** argv)
                                     ++number);
   quoted_candidate_name = sql_quote (candidate_name);
 
-  while (sql_int (0, 0,
-                  "SELECT COUNT (*) FROM %ss WHERE name = '%s'"
+  while (sql_int ("SELECT COUNT (*) FROM %ss WHERE name = '%s'"
                    " AND ((owner IS NULL) OR (owner = %llu));",
                   type,
                   quoted_candidate_name,

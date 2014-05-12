@@ -62,7 +62,7 @@ double
 sql_double (char* sql, ...);
 
 int
-sql_int (unsigned int, unsigned int, char *, ...);
+sql_int (char *, ...);
 
 char *
 sql_string (char *, ...);

@@ -1,5 +1,16 @@
 2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove cell args from sql_int.
+
+	* src/sql.c (sql_int): Remove col and row args.  Update caller.
+
+	* src/sql.h: Update headers accordingly.
+
+	* src/manage.c, src/manage_acl.c, src/manage_config_host_discovery.c,
+	src/manage_migrators.c, src/manage_sql.c: Update callers.
+
+2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove cell args from sql_string.
 
 	* src/sql.c (sql_string): Remove col and row args.

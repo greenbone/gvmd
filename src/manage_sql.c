@@ -502,16 +502,14 @@ resource_with_name_exists (const char *name, const char *type,
   quoted_name = sql_quote (name);
   quoted_type = sql_quote (type);
   if (resource)
-    ret = sql_int (0, 0,
-                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+    ret = sql_int ("SELECT COUNT(*) FROM %ss WHERE name = '%s'"
                    " AND ROWID != %llu AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE"
                    "  users.uuid = '%s')));",
                    quoted_type, quoted_name, resource,
                    current_credentials.uuid);
   else
-    ret = sql_int (0, 0,
-                   "SELECT COUNT(*) FROM %ss WHERE name = '%s'"
+    ret = sql_int ("SELECT COUNT(*) FROM %ss WHERE name = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE"
                    "  users.uuid = '%s')));",
@@ -574,8 +572,7 @@ user_owns_trash_uuid (const char *resource, const char *uuid)
 
   assert (current_credentials.uuid);
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss_trash"
+  ret = sql_int ("SELECT count(*) FROM %ss_trash"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -602,8 +599,7 @@ user_owns (const char *resource, const char *field, const char *value)
 
   assert (current_credentials.uuid);
 
-  ret = sql_int (0, 0,
-                 "SELECT count(*) FROM %ss"
+  ret = sql_int ("SELECT count(*) FROM %ss"
                  " WHERE %s = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -3705,12 +3701,10 @@ resource_exists (const char *type, resource_t resource, int location)
     return -1;
 
   if (location == LOCATION_TABLE)
-    return sql_int (0, 0,
-                    "SELECT EXISTS (SELECT ROWID FROM %ss WHERE ROWID = %llu);",
+    return sql_int ("SELECT EXISTS (SELECT ROWID FROM %ss WHERE ROWID = %llu);",
                     type,
                     resource);
-  return sql_int (0, 0,
-                  "SELECT EXISTS (SELECT ROWID FROM %ss%s WHERE ROWID = %llu);",
+  return sql_int ("SELECT EXISTS (SELECT ROWID FROM %ss%s WHERE ROWID = %llu);",
                   type,
                   strcmp (type, "task") ? "_trash" : "",
                   resource);
@@ -4028,8 +4022,7 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 
   array_free (permissions);
 
-  ret = sql_int (0, 0,
-                 "SELECT count (%s%ss%s.ROWID), %s"
+  ret = sql_int ("SELECT count (%s%ss%s.ROWID), %s"
                  " FROM %ss%s%s"
                  " WHERE %s"
                  "%s%s%s;",
@@ -4068,8 +4061,7 @@ info_name_count (const char *type, const char *name)
   assert(name);
 
   quoted_name = sql_quote (name);
-  count =  sql_int (0, 0,
-                    "SELECT COUNT(ROWID)"
+  count =  sql_int ("SELECT COUNT(ROWID)"
                     " FROM %ss"
                     " WHERE name = '%s';",
                     type,
@@ -4461,8 +4453,7 @@ manage_db_version ()
   int number;
   char *version;
 
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM main.sqlite_master"
+  if (sql_int ("SELECT count (*) FROM main.sqlite_master"
                " WHERE type = 'table'"
                " AND name = 'meta';")
       == 0)
@@ -5872,8 +5863,7 @@ delete_alert (const char *alert_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM task_alerts"
+      if (sql_int ("SELECT count(*) FROM task_alerts"
                    " WHERE alert = %llu"
                    " AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    alert))
@@ -5900,8 +5890,7 @@ delete_alert (const char *alert_id, int ultimate)
     {
       alert_t trash_alert;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM task_alerts"
+      if (sql_int ("SELECT count(*) FROM task_alerts"
                    " WHERE alert = %llu"
                    " AND alert_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND (SELECT hidden < 2 FROM tasks"
@@ -5958,11 +5947,10 @@ delete_alert (const char *alert_id, int ultimate)
       tags_set_locations ("alert", alert, trash_alert,
                           LOCATION_TRASH);
     }
-  else if (sql_int (0, 0,
-           "SELECT count(*) FROM task_alerts"
-           " WHERE alert = %llu"
-           " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           alert))
+  else if (sql_int ("SELECT count(*) FROM task_alerts"
+                    " WHERE alert = %llu"
+                    " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+                    alert))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -6028,8 +6016,7 @@ alert_filter_id (alert_t alert)
 static alert_condition_t
 alert_condition (alert_t alert)
 {
-  return sql_int (0, 0,
-                  "SELECT condition FROM alerts WHERE ROWID = %llu;",
+  return sql_int ("SELECT condition FROM alerts WHERE ROWID = %llu;",
                   alert);
 }
 
@@ -6043,8 +6030,7 @@ alert_condition (alert_t alert)
 static alert_method_t
 alert_method (alert_t alert)
 {
-  return sql_int (0, 0,
-                  "SELECT method FROM alerts WHERE ROWID = %llu;",
+  return sql_int ("SELECT method FROM alerts WHERE ROWID = %llu;",
                   alert);
 }
 
@@ -6094,8 +6080,7 @@ alert_count (const get_data_t *get)
 int
 alert_in_use (alert_t alert)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM task_alerts WHERE alert = %llu;",
+  return !!sql_int ("SELECT count (*) FROM task_alerts WHERE alert = %llu;",
                     alert);
 }
 
@@ -6109,8 +6094,7 @@ alert_in_use (alert_t alert)
 int
 trash_alert_in_use (alert_t alert)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM task_alerts"
+  return !!sql_int ("SELECT count(*) FROM task_alerts"
                     " WHERE alert = %llu"
                     " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
                     alert);
@@ -8591,8 +8575,7 @@ task_alterable (task_t task)
     }
   free (uuid);
 
-  return sql_int (0, 0,
-                  "SELECT alterable FROM tasks"
+  return sql_int ("SELECT alterable FROM tasks"
                   " WHERE ROWID = %llu",
                   task);
 }
@@ -8617,8 +8600,7 @@ task_writable (task_t task)
     }
   free (uuid);
 
-  return sql_int (0, 0,
-                  "SELECT hidden = 0 FROM tasks"
+  return sql_int ("SELECT hidden = 0 FROM tasks"
                   " WHERE ROWID = %llu",
                   task);
 }
@@ -8643,8 +8625,7 @@ trash_task_writable (task_t task)
     }
   free (uuid);
 
-  return sql_int (0, 0,
-                  "SELECT hidden = 2 FROM tasks"
+  return sql_int ("SELECT hidden = 2 FROM tasks"
                   " WHERE ROWID = %llu",
                   task);
 }
@@ -9374,8 +9355,7 @@ update_nvti_cache ()
 void
 manage_update_nvti_cache ()
 {
-  if (sql_int (0, 0,
-               "SELECT value FROM main.meta"
+  if (sql_int ("SELECT value FROM main.meta"
                " WHERE name = 'update_nvti_cache';"))
     {
       update_nvti_cache ();
@@ -10050,8 +10030,7 @@ make_port_ranges_openvas_default (port_list_t list)
 static void
 check_db_tasks ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
+  if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';")
       == 0)
     {
@@ -10067,8 +10046,7 @@ check_db_tasks ()
            TASK_STATUS_DONE);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM reports"
+  if (sql_int ("SELECT count(*) FROM reports"
                " WHERE uuid = '343435d6-91b0-11de-9478-ffd71f4c6f30';")
       == 0)
     {
@@ -10117,7 +10095,7 @@ check_db_tasks ()
 static void
 check_db_targets ()
 {
-  if (sql_int (0, 0, "SELECT count(*) FROM targets WHERE name = 'Localhost';")
+  if (sql_int ("SELECT count(*) FROM targets WHERE name = 'Localhost';")
       == 0)
     sql ("INSERT INTO targets"
          " (uuid, owner, name, hosts, creation_time, modification_time,"
@@ -10140,8 +10118,7 @@ check_db_targets ()
 static void
 check_db_port_lists ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_DEFAULT "';")
       == 0)
     {
@@ -10154,8 +10131,7 @@ check_db_port_lists ()
       make_port_ranges_openvas_default (list);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP "';")
       == 0)
     {
@@ -10168,8 +10144,7 @@ check_db_port_lists ()
       RANGE (PORT_PROTOCOL_TCP, 1, 65535);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "';")
       == 0)
     {
@@ -10182,8 +10157,7 @@ check_db_port_lists ()
       make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "';")
       == 0)
     {
@@ -10196,8 +10170,7 @@ check_db_port_lists ()
       make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "';")
       == 0)
     {
@@ -10210,8 +10183,7 @@ check_db_port_lists ()
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "';")
       == 0)
     {
@@ -10225,8 +10197,7 @@ check_db_port_lists ()
       RANGE (PORT_PROTOCOL_UDP, 1, 1023);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "';")
       == 0)
     {
@@ -10239,8 +10210,7 @@ check_db_port_lists ()
       make_port_ranges_iana_tcp_2012 (list);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "';")
       == 0)
     {
@@ -10253,8 +10223,7 @@ check_db_port_lists ()
       make_port_ranges_iana_tcp_udp_2012 (list);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM port_lists"
+  if (sql_int ("SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "';")
       == 0)
     {
@@ -10360,8 +10329,7 @@ update_report_format_uuids ()
 static void
 check_db_settings ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
                " AND owner IS NULL;")
       == 0)
@@ -10372,8 +10340,7 @@ check_db_settings ()
          "  'Preferred language to be used in client user interfaces.',"
          "  'Browser Language');");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
                " AND owner IS NULL;")
       == 0)
@@ -10383,8 +10350,7 @@ check_db_settings ()
          "  'The default number of rows displayed in any listing.',"
          "  10);");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
                " AND owner IS NULL;")
       == 0)
@@ -10395,8 +10361,7 @@ check_db_settings ()
          " be hidden.',"
          "  3);");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
                " AND owner IS NULL;")
       == 0)
@@ -10406,8 +10371,7 @@ check_db_settings ()
          "  'Severity class used for severity bars.',"
          "  'nist');");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM settings"
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
                " AND owner IS NULL;")
       == 0)
@@ -10603,8 +10567,7 @@ static void
 check_db_nvts ()
 {
   /* Ensure the nvti cache update flag exists and is clear. */
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM main.meta"
+  if (sql_int ("SELECT count(*) FROM main.meta"
                " WHERE name = 'update_nvti_cache';"))
     sql ("UPDATE main.meta SET value = 0 WHERE name = 'update_nvti_cache';");
   else
@@ -10615,8 +10578,7 @@ check_db_nvts ()
    * Ensure every part of the predefined selector exists.
    * This restores entries lost due to the error solved 2010-08-13 by r8805.
    */
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ";")
       == 0)
@@ -10626,8 +10588,7 @@ check_db_nvts ()
            G_STRINGIFY (NVT_SELECTOR_TYPE_ALL) ", NULL);");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.810002';")
@@ -10641,8 +10602,7 @@ check_db_nvts ()
            " '1.3.6.1.4.1.25623.1.0.810002', 'Service detection');");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.810003';")
@@ -10656,8 +10616,7 @@ check_db_nvts ()
            " '1.3.6.1.4.1.25623.1.0.810003', 'General');");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                " AND family_or_nvt = 'Port scanners';")
@@ -10670,8 +10629,7 @@ check_db_nvts ()
            " 'Port scanners', 'Port scanners');");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.14259';")
@@ -10685,8 +10643,7 @@ check_db_nvts ()
            " '1.3.6.1.4.1.25623.1.0.14259', 'Port scanners');");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
@@ -10700,8 +10657,7 @@ check_db_nvts ()
            " '1.3.6.1.4.1.25623.1.0.100315', 'Port scanners');");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.80109';")
@@ -10715,7 +10671,7 @@ check_db_nvts ()
            " '1.3.6.1.4.1.25623.1.0.80109', 'Web application abuses');");
     }
   /* Ensure the NVT CVE table is filled. */
-  if (sql_int (0, 0, "SELECT count (*) FROM nvt_cves;") == 0)
+  if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
     {
       sql ("BEGIN IMMEDIATE;");
       refresh_nvt_cves ();
@@ -10729,8 +10685,7 @@ check_db_nvts ()
 static void
 check_db_configs ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = 'Full and fast';")
       == 0)
     {
@@ -10752,8 +10707,7 @@ check_db_configs ()
       setup_full_config_prefs (config, 1, 1, 0);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = 'Full and fast ultimate';")
       == 0)
     {
@@ -10776,8 +10730,7 @@ check_db_configs ()
       setup_full_config_prefs (config, 0, 1, 0);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = 'Full and very deep';")
       == 0)
     {
@@ -10799,8 +10752,7 @@ check_db_configs ()
       setup_full_config_prefs (config, 1, 0, 1);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = 'Full and very deep ultimate';")
       == 0)
     {
@@ -10824,8 +10776,7 @@ check_db_configs ()
       setup_full_config_prefs (config, 0, 0, 1);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '" CONFIG_UUID_EMPTY "';")
       == 0)
     {
@@ -10843,16 +10794,14 @@ check_db_configs ()
       setup_full_config_prefs (config, 1, 1, 0);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
                CONFIG_UUID_DISCOVERY)
       == 0)
     make_config_discovery (CONFIG_UUID_DISCOVERY,
                            MANAGE_NVT_SELECTOR_UUID_DISCOVERY);
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
                CONFIG_UUID_HOST_DISCOVERY)
       == 0)
@@ -10861,8 +10810,7 @@ check_db_configs ()
 
   check_config_host_discovery (CONFIG_UUID_HOST_DISCOVERY);
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE uuid = '%s';",
                CONFIG_UUID_SYSTEM_DISCOVERY)
       == 0)
@@ -10987,8 +10935,7 @@ check_db_report_formats ()
   if (make_report_format_uuids_unique ())
     return -1;
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '910200ca-dc05-11e1-954f-406186ea4fc5';")
       == 0)
     {
@@ -11006,7 +10953,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0, "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                      " WHERE uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5';")
       == 0)
     {
@@ -11032,8 +10979,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = 'c1645568-627a-11e3-a660-406186ea4fc5';")
       == 0)
     {
@@ -11050,8 +10996,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '9087b18c-626c-11e3-8892-406186ea4fc5';")
       == 0)
     {
@@ -11068,8 +11013,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '6c248850-1f62-11e1-b082-406186ea4fc5';")
       == 0)
     {
@@ -11087,8 +11031,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '77bd6c4a-1f62-11e1-abf0-406186ea4fc5';")
       == 0)
     {
@@ -11106,8 +11049,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = 'a684c02c-b531-11e1-bdc2-406186ea4fc5';")
       == 0)
     {
@@ -11124,8 +11066,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '9ca6fe72-1f62-11e1-9e7c-406186ea4fc5';")
       == 0)
     {
@@ -11142,8 +11083,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = 'c402cc3e-b531-11e1-9163-406186ea4fc5';")
       == 0)
     {
@@ -11160,8 +11100,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = 'a3810a62-1f62-11e1-9219-406186ea4fc5';")
       == 0)
     {
@@ -11178,8 +11117,7 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM report_formats"
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5';")
       == 0)
     {
@@ -11196,9 +11134,8 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
-  if (sql_int (0, 0,
-              "SELECT count(*) FROM report_formats"
-              " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
+  if (sql_int ("SELECT count(*) FROM report_formats"
+               " WHERE uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd';")
       == 0)
     {
       report_format_t report_format;
@@ -11286,8 +11223,9 @@ check_db_report_formats_trash ()
             continue;
 
           /* Check whether the db has a report format with this ID. */
-          if (sql_int (0, 0, "SELECT count(*) FROM report_formats_trash"
-                             " WHERE ROWID = %s;", entry)
+          if (sql_int ("SELECT count(*) FROM report_formats_trash"
+                       " WHERE ROWID = %s;",
+                       entry)
               == 0)
             {
               int ret;
@@ -11321,8 +11259,7 @@ static void
 check_db_permissions ()
 {
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM permissions"
+  if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';")
       == 0)
     sql ("INSERT INTO permissions"
@@ -11335,8 +11272,7 @@ check_db_permissions ()
          "  (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
          "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM permissions"
+  if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT ROWID FROM roles"
                "                WHERE uuid = '" ROLE_UUID_INFO "')"
@@ -11358,8 +11294,7 @@ check_db_permissions ()
       sql ("COMMIT;");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM permissions"
+  if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT ROWID FROM roles"
                "                WHERE uuid = '" ROLE_UUID_USER "')"
@@ -11388,8 +11323,7 @@ check_db_permissions ()
       sql ("COMMIT;");
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM permissions"
+  if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT ROWID FROM roles"
                "                WHERE uuid = '" ROLE_UUID_OBSERVER "')"
@@ -11427,8 +11361,7 @@ check_db_permissions ()
 static void
 check_db_roles ()
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "';")
       == 0)
     sql ("INSERT INTO roles"
          " (uuid, owner, name, comment, creation_time, modification_time)"
@@ -11437,8 +11370,7 @@ check_db_roles ()
          "  'Administrator.  Full privileges.',"
          " now (), now ());");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
       == 0)
     sql ("INSERT INTO roles"
          " (uuid, owner, name, comment, creation_time, modification_time)"
@@ -11447,8 +11379,7 @@ check_db_roles ()
          "  'Information browser.',"
          " now (), now ());");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
       == 0)
     sql ("INSERT INTO roles"
          " (uuid, owner, name, comment, creation_time, modification_time)"
@@ -11457,8 +11388,7 @@ check_db_roles ()
          "  'Standard user.',"
          " now (), now ());");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM roles"
+  if (sql_int ("SELECT count(*) FROM roles"
                " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
       == 0)
     sql ("INSERT INTO roles"
@@ -11793,8 +11723,7 @@ user_ensure_in_db (const gchar *name, const gchar *method)
   quoted_name = sql_quote (name);
   quoted_method = sql_quote (method);
 
-  if (sql_int (0, 0,
-               "SELECT count(*)"
+  if (sql_int ("SELECT count(*)"
                " FROM users WHERE name = '%s' and method = '%s';",
                quoted_name,
                quoted_method))
@@ -11882,8 +11811,7 @@ manage_user_exists (const gchar *name, auth_method_t method)
 
   quoted_name = sql_quote (name);
   quoted_method = sql_quote (auth_method_name (method));
-  ret = sql_int (0, 0,
-                 "SELECT count (*) FROM users"
+  ret = sql_int ("SELECT count (*) FROM users"
                  " WHERE name = '%s' AND method = '%s';",
                  quoted_name,
                  quoted_method);
@@ -12026,8 +11954,7 @@ resource_count (const char *type, const get_data_t *get)
 int
 resource_id_exists (const char *type, const char * id)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*)"
+  return !!sql_int ("SELECT count(*)"
                     " FROM %ss"
                     " WHERE uuid='%s'"
                     " %s;",
@@ -12057,15 +11984,13 @@ trash_id_exists (const char *type, const char * id)
       || (strcmp (type, "user") == 0))
     return 0;
   else if (strcmp (type, "task"))
-    return !!sql_int (0, 0,
-                      "SELECT count(*)"
+    return !!sql_int ("SELECT count(*)"
                       " FROM %ss_trash"
                       " WHERE uuid='%s';",
                       type,
                       id);
   else
-    return !!sql_int (0, 0,
-                      "SELECT count(*)"
+    return !!sql_int ("SELECT count(*)"
                       " FROM tasks"
                       " WHERE uuid='%s'"
                       " AND hidden=2;",
@@ -12159,8 +12084,7 @@ task_uuid (task_t task, char ** id)
 int
 task_in_trash (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT hidden = 2"
+  return sql_int ("SELECT hidden = 2"
                   " FROM tasks WHERE ROWID = %llu;",
                   task);
 }
@@ -12341,8 +12265,7 @@ task_config_name (task_t task)
 int
 task_config_in_trash (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
+  return sql_int ("SELECT config_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE ROWID = %llu;",
                   task);
 }
@@ -12429,8 +12352,7 @@ set_task_hosts_ordering (task_t task, const char *ordering)
 int
 task_target_in_trash (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
+  return sql_int ("SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE ROWID = %llu;",
                   task);
 }
@@ -12488,8 +12410,7 @@ set_task_slave (task_t task, slave_t slave)
 int
 task_slave_in_trash (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT slave_location = " G_STRINGIFY (LOCATION_TRASH)
+  return sql_int ("SELECT slave_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE ROWID = %llu;",
                   task);
 }
@@ -12536,8 +12457,7 @@ set_task_description (task_t task, char* description, gsize length)
 task_status_t
 task_run_status (task_t task)
 {
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT run_status FROM tasks WHERE ROWID = %llu;",
+  return (unsigned int) sql_int ("SELECT run_status FROM tasks WHERE ROWID = %llu;",
                                  task);
 }
 
@@ -12630,8 +12550,7 @@ task_running_report (task_t task)
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
-      return (unsigned int) sql_int (0, 0,
-                                     "SELECT max(ROWID) FROM reports"
+      return (unsigned int) sql_int ("SELECT max(ROWID) FROM reports"
                                      " WHERE task = %llu AND end_time IS NULL"
                                      " AND scan_run_status = %u;",
                                      task,
@@ -12662,8 +12581,7 @@ task_current_report (task_t task)
       || run_status == TASK_STATUS_PAUSED
       || run_status == TASK_STATUS_RESUME_REQUESTED)
     {
-      return (unsigned int) sql_int (0, 0,
-                                     "SELECT max(ROWID) FROM reports"
+      return (unsigned int) sql_int ("SELECT max(ROWID) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -12707,8 +12625,7 @@ task_upload_progress (task_t task)
       int count;
       if (report_scan_result_count (report, NULL, NULL, 0, NULL, 0, 0, &count))
         return -1;
-      return sql_int (0, 0,
-                      "SELECT"
+      return sql_int ("SELECT"
                       " max (min (((%i * 100) / upload_result_count), 100), -1)"
                       " FROM tasks"
                       " WHERE ROWID = %llu;",
@@ -13172,8 +13089,7 @@ task_schedule (task_t task)
 int
 task_schedule_in_trash (task_t task)
 {
-  return sql_int (0, 0,
-                  "SELECT schedule_location = " G_STRINGIFY (LOCATION_TRASH)
+  return sql_int ("SELECT schedule_location = " G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks"
                   " WHERE ROWID = %llu;",
                   task);
@@ -13200,8 +13116,7 @@ task_schedule_next_time_tz (task_t task)
   memset (&get, '\0', sizeof (get));
   get.id = schedule_uuid (schedule);
 
-  next_time = sql_int (0, 0,
-                       "SELECT schedule_next_time FROM tasks"
+  next_time = sql_int ("SELECT schedule_next_time FROM tasks"
                        " WHERE ROWID = %llu;",
                        task);
   if (next_time == 0)
@@ -13447,8 +13362,7 @@ set_task_observers (task_t task, const gchar *observers)
               return -1;
             }
 
-          if (sql_int (0, 0,
-                       "SELECT count(*) FROM users WHERE uuid = '%s';",
+          if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
                        uuid)
               == 0)
             {
@@ -13606,12 +13520,10 @@ make_task_rcfile (task_t task)
     if (nvt_selector_nvts_growing (selector))
       {
         /** @todo Do other cases. (?) */
-        if ((sql_int (0, 0,
-                      "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+        if ((sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
                       selector)
              == 1)
-            && (sql_int (0, 0,
-                         "SELECT COUNT(*) FROM nvt_selectors"
+            && (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                          " WHERE name = '%s'"
                          " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                          ";",
@@ -14262,8 +14174,7 @@ prognostic_report_result_count (report_host_t report_host,
   phrase_sql = prognosis_where_search_phrase (search_phrase);
   cvss_sql = prognosis_where_cvss_base (min_cvss_base);
 
-  host_holes = sql_int (0, 0,
-                        "SELECT count (*)"
+  host_holes = sql_int ("SELECT count (*)"
                         " FROM scap.cves, scap.cpes, scap.affected_products,"
                         "      report_host_details"
                         " WHERE report_host_details.report_host = %llu"
@@ -14277,8 +14188,7 @@ prognostic_report_result_count (report_host_t report_host,
                         prognosis_where_levels ("h"),
                         cvss_sql ? cvss_sql->str : "");
 
-  host_warnings = sql_int (0, 0,
-                           "SELECT count (*)"
+  host_warnings = sql_int ("SELECT count (*)"
                            " FROM scap.cves, scap.cpes, scap.affected_products,"
                            "      report_host_details"
                            " WHERE report_host_details.report_host = %llu"
@@ -14292,8 +14202,7 @@ prognostic_report_result_count (report_host_t report_host,
                            prognosis_where_levels ("m"),
                            cvss_sql ? cvss_sql->str : "");
 
-  host_infos = sql_int (0, 0,
-                        "SELECT count (*)"
+  host_infos = sql_int ("SELECT count (*)"
                         " FROM scap.cves, scap.cpes, scap.affected_products,"
                         "      report_host_details"
                         " WHERE report_host_details.report_host = %llu"
@@ -14327,8 +14236,7 @@ static void
 prognostic_report_result_total (report_host_t report_host, int *total)
 {
   if (total)
-    *total = sql_int (0, 0,
-                      "SELECT count (*)"
+    *total = sql_int ("SELECT count (*)"
                       " FROM scap.cves, scap.cpes, scap.affected_products,"
                       "      report_host_details"
                       " WHERE report_host_details.report_host = %llu"
@@ -17201,8 +17109,7 @@ scan_start_time (report_t report)
 int
 scan_start_time_epoch (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT start_time FROM reports WHERE ROWID = %llu;",
+  return sql_int ("SELECT start_time FROM reports WHERE ROWID = %llu;",
                   report);
 }
 
@@ -17318,8 +17225,7 @@ set_scan_host_end_time (report_t report, const char* host,
 {
   gchar *quoted_host;
   quoted_host = sql_quote (host);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_hosts"
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
@@ -17345,8 +17251,7 @@ set_scan_host_end_time_otp (report_t report, const char* host,
 {
   gchar *quoted_host;
   quoted_host = sql_quote (host);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_hosts"
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
@@ -17372,8 +17277,7 @@ set_scan_host_start_time (report_t report, const char* host,
 {
   gchar *quoted_host;
   quoted_host = sql_quote (host);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_hosts"
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
@@ -17399,8 +17303,7 @@ set_scan_host_start_time_otp (report_t report, const char* host,
 {
   gchar *quoted_host;
   quoted_host = sql_quote (host);
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_hosts"
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
@@ -17429,8 +17332,7 @@ int
 report_timestamp (const char* report_id, gchar** timestamp)
 {
   const char* stamp;
-  time_t time = sql_int (0, 0,
-                         "SELECT date FROM reports where uuid = '%s';",
+  time_t time = sql_int ("SELECT date FROM reports where uuid = '%s';",
                          report_id);
   stamp = iso_time (&time);
   if (stamp == NULL) return -1;
@@ -17449,8 +17351,7 @@ report_timestamp (const char* report_id, gchar** timestamp)
 int
 report_scan_run_status (report_t report, int* status)
 {
-  *status = sql_int (0, 0,
-                     "SELECT scan_run_status FROM reports"
+  *status = sql_int ("SELECT scan_run_status FROM reports"
                      " WHERE reports.ROWID = %llu;",
                      report);
   return 0;
@@ -17589,8 +17490,7 @@ report_scan_result_count (report_t report, const char* levels,
   if (report_counts_cache_exists (report, override)
       && autofp == 0 && min_cvss_base == NULL && search_phrase == NULL)
     {
-      *count = sql_int (0, 0,
-                        "SELECT sum (count)"
+      *count = sql_int ("SELECT sum (count)"
                         " FROM report_counts"
                         " WHERE report = %llu"
                         "   AND override = %d"
@@ -17659,8 +17559,7 @@ report_scan_result_count (report_t report, const char* levels,
 
   auto_type_sql = column_auto_type (report, autofp);
 
-  *count = sql_int (0, 0,
-                    "SELECT count(results.ROWID)%s%s"
+  *count = sql_int ("SELECT count(results.ROWID)%s%s"
                     " FROM results"
                     " WHERE results.report = %llu"
                     " AND (CAST (%s AS NUMBER)"
@@ -17701,8 +17600,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
   switch (autofp)
     {
       case 1:
-        if (sql_int (0, 0,
-                     "SELECT count (*) FROM nvts"
+        if (sql_int ("SELECT count (*) FROM nvts"
                      " WHERE oid = '%s'"
                      " AND"
                      " (family IN (" LSC_FAMILY_LIST ")"
@@ -17725,8 +17623,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
           return 1;
         break;
       case 2:
-        if (sql_int (0, 0,
-                     "SELECT count (*) FROM nvts AS outer_nvts"
+        if (sql_int ("SELECT count (*) FROM nvts AS outer_nvts"
                      " WHERE oid = '%s'"
                      " AND"
                      " (family IN (" LSC_FAMILY_LIST ")"
@@ -17788,8 +17685,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
         {
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {
-              if (sql_int (0, 0,
-                           "SELECT EXISTS (SELECT ROWID FROM nvts"
+              if (sql_int ("SELECT EXISTS (SELECT ROWID FROM nvts"
                            "               WHERE nvts.oid = '%s')"
                            "       AND (SELECT (CAST (cvss_base AS REAL))"
                            "                   >= CAST (%s AS REAL)"
@@ -17816,8 +17712,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
         {
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {
-              if (sql_int (0, 0,
-                           "SELECT EXISTS (SELECT ROWID FROM nvts"
+              if (sql_int ("SELECT EXISTS (SELECT ROWID FROM nvts"
                            "               WHERE nvts.oid = '%s')"
                            "       AND (SELECT (CAST (cvss_base AS REAL))"
                            "                   >= CAST (%s AS REAL)"
@@ -17835,8 +17730,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
     }
   else if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
     {
-      if (sql_int (0, 0,
-                   "SELECT EXISTS (SELECT ROWID FROM nvts"
+      if (sql_int ("SELECT EXISTS (SELECT ROWID FROM nvts"
                    "               WHERE nvts.oid = '%s')"
                    "       AND (SELECT (CAST (cvss_base AS REAL))"
                    "                   >= CAST (%s AS REAL)"
@@ -17883,8 +17777,7 @@ report_severity_data (report_t report, int override,
   int ret;
 
   if (override
-      && sql_int (0, 0,
-                  "SELECT count(*)"
+      && sql_int ("SELECT count(*)"
                   " FROM overrides"
                   " WHERE ((overrides.owner IS NULL)"
                   "        OR (overrides.owner ="
@@ -18376,8 +18269,7 @@ report_counts_cache_exists (report_t report, int override)
   if (setting_dynamic_severity_int ())
     return 0;
   else
-    return sql_int (0, 0,
-                    "SELECT EXISTS (SELECT * FROM report_counts"
+    return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
                     " WHERE report = %llu"
                     "   AND override = %d"
                     "   AND user = (SELECT ROWID FROM users"
@@ -18476,8 +18368,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
     {
       i = 0;
       if (override)
-        end_time = sql_int (0, 0,
-                            "SELECT coalesce(min(end_time), 0)"
+        end_time = sql_int ("SELECT coalesce(min(end_time), 0)"
                             " FROM overrides, results"
                             " WHERE overrides.nvt = results.nvt"
                             " AND results.report = %llu"
@@ -18722,11 +18613,10 @@ delete_report_internal (report_t report)
   task_t task;
   char *slave_task_uuid;
 
-  if (sql_int (0, 0, "SELECT hidden FROM reports WHERE ROWID = %llu;", report))
+  if (sql_int ("SELECT hidden FROM reports WHERE ROWID = %llu;", report))
     return 1;
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM reports WHERE ROWID = %llu"
+  if (sql_int ("SELECT count(*) FROM reports WHERE ROWID = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
@@ -18826,12 +18716,10 @@ delete_report_internal (report_t report)
         break;
     }
 
-  if ((sql_int (0, 0,
-                "SELECT count (*) FROM reports WHERE task = %llu",
+  if ((sql_int ("SELECT count (*) FROM reports WHERE task = %llu",
                 task)
        == 0)
-      && sql_int (0, 0,
-                  "SELECT alterable FROM tasks WHERE ROWID = %llu",
+      && sql_int ("SELECT alterable FROM tasks WHERE ROWID = %llu",
                   task))
     sql ("UPDATE tasks SET alterable = 0 WHERE ROWID = %llu;", task);
 
@@ -18955,8 +18843,7 @@ delete_report (const char *report_id, int dummy)
 int
 report_slave_progress (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT slave_progress FROM reports WHERE ROWID = %llu;",
+  return sql_int ("SELECT slave_progress FROM reports WHERE ROWID = %llu;",
                   report);
 }
 
@@ -20114,8 +20001,7 @@ host_report_count (const char *host)
   gchar *quoted_host;
   assert (current_credentials.uuid);
   quoted_host = sql_quote (host);
-  count = sql_int (0, 0,
-                   "SELECT count (*) FROM report_hosts WHERE host = '%s'"
+  count = sql_int ("SELECT count (*) FROM report_hosts WHERE host = '%s'"
                    "  AND (SELECT reports.owner FROM reports"
                    "       WHERE reports.ROWID = report_hosts.report)"
                    "      = (SELECT ROWID FROM users"
@@ -20142,8 +20028,7 @@ host_report_count (const char *host)
 static int
 host_count ()
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT host) FROM report_hosts"
+  return sql_int ("SELECT count (DISTINCT host) FROM report_hosts"
                   " WHERE host != 'localhost';");
 }
 
@@ -20232,8 +20117,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
           gchar *quoted_search_phrase;
 
           quoted_search_phrase = sql_quote (search_phrase);
-          ret = sql_int (0, 0,
-                         "SELECT"
+          ret = sql_int ("SELECT"
                          " count (*),"
                          " distinct_host,"
                          " (SELECT report FROM report_hosts"
@@ -20291,8 +20175,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
           g_free (quoted_search_phrase);
         }
       else
-        ret = sql_int (0, 0,
-                       "SELECT"
+        ret = sql_int ("SELECT"
                        " count (*),"
                        " distinct_host,"
                        " (SELECT report FROM report_hosts"
@@ -20343,8 +20226,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
       gchar *quoted_search_phrase;
 
       quoted_search_phrase = sql_quote (search_phrase);
-      retn = sql_int (0, 0,
-                      "SELECT count(*) FROM"
+      retn = sql_int ("SELECT count(*) FROM"
                       " (SELECT host"
                       "  FROM report_hosts"
                       "  WHERE (SELECT reports.owner FROM reports"
@@ -20375,8 +20257,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
       return retn;
     }
 
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM"
+  return sql_int ("SELECT count(*) FROM"
                   " (SELECT DISTINCT host FROM report_hosts"
                   "  WHERE (SELECT reports.owner FROM reports"
                   "         WHERE reports.ROWID = report_hosts.report)"
@@ -20504,8 +20385,7 @@ report_filter_term (int sort_order, const char* sort_field,
 static int
 report_host_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT ROWID) FROM report_hosts"
+  return sql_int ("SELECT count (DISTINCT ROWID) FROM report_hosts"
                   " WHERE report = %llu;",
                   report);
 }
@@ -20519,8 +20399,7 @@ report_host_count (report_t report)
 static int
 report_port_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT port) FROM results"
+  return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND port != ''"
                   "  AND port NOT LIKE 'general/%';",
                   report);
@@ -20535,8 +20414,7 @@ report_port_count (report_t report)
 static int
 prognostic_host_port_count (report_t report, const char *host)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT port) FROM results"
+  return sql_int ("SELECT count (DISTINCT port) FROM results"
                   " WHERE report = %llu AND host = '%s'"
                   "  AND port NOT LIKE 'general/%';",
                   report,
@@ -20551,8 +20429,7 @@ prognostic_host_port_count (report_t report, const char *host)
 static int
 report_closed_cve_count (report_t report)
 {
-  return sql_int (0, 0,
-                  " SELECT count(ROWID) FROM nvts"
+  return sql_int (" SELECT count(ROWID) FROM nvts"
                   " WHERE cve != 'NOCVE'"
                   " AND family IN (" LSC_FAMILY_LIST ")"
                   " AND oid IN"
@@ -20572,8 +20449,7 @@ report_closed_cve_count (report_t report)
 static int
 report_vuln_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT nvt) FROM results"
+  return sql_int ("SELECT count (DISTINCT nvt) FROM results"
                   " WHERE report = %llu AND nvt != '0'"
                   " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
@@ -20587,8 +20463,7 @@ report_vuln_count (report_t report)
 static int
 report_os_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT value) FROM report_host_details"
+  return sql_int ("SELECT count (DISTINCT value) FROM report_host_details"
                   " WHERE report_host IN"
                   "  (SELECT ROWID from report_hosts WHERE report = %llu)"
                   "  AND name = 'best_os_cpe';",
@@ -20603,8 +20478,7 @@ report_os_count (report_t report)
 static int
 report_app_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT value) FROM report_host_details"
+  return sql_int ("SELECT count (DISTINCT value) FROM report_host_details"
                   " WHERE report_host IN"
                   "  (SELECT ROWID from report_hosts WHERE report = %llu)"
                   "  AND name = 'App';",
@@ -20619,8 +20493,7 @@ report_app_count (report_t report)
 static int
 report_ssl_cert_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (DISTINCT ROWID) FROM report_host_details"
+  return sql_int ("SELECT count (DISTINCT ROWID) FROM report_host_details"
                   " WHERE report_host IN"
                   "  (SELECT ROWID from report_hosts WHERE report = %llu)"
                   "  AND name = 'SSLInfo';",
@@ -20635,8 +20508,7 @@ report_ssl_cert_count (report_t report)
 static int
 report_error_count (report_t report)
 {
-  return sql_int (0, 0,
-                  "SELECT count (ROWID) FROM results"
+  return sql_int ("SELECT count (ROWID) FROM results"
                   " WHERE report = %llu and type = 'Error Message';",
                   report);
 }
@@ -24406,8 +24278,7 @@ manage_send_report (report_t report, report_t delta_report,
 unsigned int
 task_report_count (task_t task)
 {
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM reports WHERE task = %llu;",
+  return (unsigned int) sql_int ("SELECT count(*) FROM reports WHERE task = %llu;",
                                  task);
 }
 
@@ -24421,8 +24292,7 @@ task_report_count (task_t task)
 unsigned int
 task_finished_report_count (task_t task)
 {
-  return (unsigned int) sql_int (0, 0,
-                                 "SELECT count(*) FROM reports"
+  return (unsigned int) sql_int ("SELECT count(*) FROM reports"
                                  " WHERE task = %llu"
                                  " AND scan_run_status = %u;",
                                  task,
@@ -25026,8 +24896,7 @@ request_delete_task (task_t* task_pointer)
 
   tracef ("   request delete task %u\n", task_id (task));
 
-  hidden = sql_int (0, 0,
-                    "SELECT hidden from tasks WHERE ROWID = %llu;",
+  hidden = sql_int ("SELECT hidden from tasks WHERE ROWID = %llu;",
                     *task_pointer);
 
   if (hidden == 1)
@@ -25141,8 +25010,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT hidden from tasks WHERE ROWID = %llu;",
+  if (sql_int ("SELECT hidden from tasks WHERE ROWID = %llu;",
                task)
       == 1)
     {
@@ -25290,7 +25158,7 @@ delete_task_lock (task_t task, int ultimate)
 
   sql ("BEGIN EXCLUSIVE;");
 
-  if (sql_int (0, 0, "SELECT hidden FROM tasks WHERE ROWID = %llu;", task))
+  if (sql_int ("SELECT hidden FROM tasks WHERE ROWID = %llu;", task))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -25556,8 +25424,7 @@ manage_task_update_file (task_t task, const char *name,
 
   /** @todo Probably better to save ASCII instead of base64. */
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM task_files"
+  if (sql_int ("SELECT count(*) FROM task_files"
                " WHERE task = %llu AND name = '%s';",
                task,
                quoted_name))
@@ -25599,8 +25466,7 @@ manage_task_update_file (task_t task, const char *name,
 int
 manage_task_remove_file (task_t task, const char *name)
 {
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM task_files"
+  if (sql_int ("SELECT count(*) FROM task_files"
                " WHERE task = %llu AND name = '%s';",
                task))
     {
@@ -26049,8 +25915,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int (0, 0,
-                      "SELECT COUNT(*) FROM targets"
+      while (sql_int ("SELECT COUNT(*) FROM targets"
                        " WHERE name = '%s'"
                        " AND ((owner IS NULL) OR (owner ="
                        " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -26068,8 +25933,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
     {
       /* Check whether a target with the same name exists already. */
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM targets"
+      if (sql_int ("SELECT COUNT(*) FROM targets"
                    " WHERE name = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -26309,8 +26173,7 @@ delete_target (const char *target_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE target = %llu"
                    " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    target))
@@ -26329,8 +26192,7 @@ delete_target (const char *target_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE target = %llu"
                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND (hidden = 0 OR hidden = 1);",
@@ -26372,11 +26234,10 @@ delete_target (const char *target_id, int ultimate)
                           sqlite3_last_insert_rowid (task_db),
                           LOCATION_TRASH);
     }
-  else if (sql_int (0, 0,
-           "SELECT count(*) FROM tasks"
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
-           target))
+  else if (sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE target = %llu"
+                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
+                    target))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -26481,8 +26342,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       quoted_name = sql_quote (name);
 
       /* Check whether a target with the same name exists already. */
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM targets"
+      if (sql_int ("SELECT COUNT(*) FROM targets"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -27441,8 +27301,7 @@ target_port_range (target_t target)
 alive_test_t
 target_alive_tests (target_t target)
 {
-  return sql_int (0, 0,
-                  "SELECT alive_test FROM targets WHERE ROWID = %llu;",
+  return sql_int ("SELECT alive_test FROM targets WHERE ROWID = %llu;",
                   target);
 }
 
@@ -27476,8 +27335,7 @@ set_target_hosts (target_t target, const char *hosts)
 int
 target_in_use (target_t target)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
+  return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
                     " AND (hidden = 0 OR hidden = 1);",
@@ -27494,8 +27352,7 @@ target_in_use (target_t target)
 int
 trash_target_in_use (target_t target)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
+  return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
                     target);
@@ -27511,11 +27368,10 @@ trash_target_in_use (target_t target)
 int
 target_writable (target_t target)
 {
-  return sql_int (0, 0,
-                 "SELECT count(*) FROM targets"
-                 " WHERE ROWID = %llu"
-                 " AND uuid = '" TARGET_UUID_LOCALHOST "'",
-                 target)
+  return sql_int ("SELECT count(*) FROM targets"
+                  " WHERE ROWID = %llu"
+                  " AND uuid = '" TARGET_UUID_LOCALHOST "'",
+                  target)
          == 0;
 }
 
@@ -27529,8 +27385,7 @@ target_writable (target_t target)
 int
 trash_target_writable (target_t target)
 {
-  return (sql_int (0, 0,
-                   "SELECT count(*) FROM targets_trash"
+  return (sql_int ("SELECT count(*) FROM targets_trash"
                    " WHERE ROWID = %llu"
                    " AND uuid = '" TARGET_UUID_LOCALHOST "'",
                    target)
@@ -28321,8 +28176,7 @@ create_config_rc (const char* name, const char* comment, char* rc,
       return -1;
     }
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
+  if (sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s' LIMIT 1;",
                selector_uuid))
     {
       tracef ("   NVT selector \"%s\" already exists\n", selector_uuid);
@@ -28486,8 +28340,7 @@ delete_config (const char *config_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    config))
@@ -28512,8 +28365,7 @@ delete_config (const char *config_id, int ultimate)
 
   if (ultimate)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE),
                    config))
@@ -28533,8 +28385,7 @@ delete_config (const char *config_id, int ultimate)
     {
       config_t trash_config;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu"
                    " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND (hidden = 0 OR hidden = 1);",
@@ -28790,8 +28641,7 @@ config_in_use (config_t config)
       || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
       || config == CONFIG_ID_FULL_AND_VERY_DEEP
       || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
-      || sql_int (0, 0,
-                  "SELECT count(*) FROM configs"
+      || sql_int ("SELECT count(*) FROM configs"
                   " WHERE ROWID = %i"
                   " AND (uuid = '" CONFIG_UUID_EMPTY "'"
                   "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
@@ -28800,8 +28650,7 @@ config_in_use (config_t config)
                   config))
     return 1;
 
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
+  return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TABLE)
                   " AND (hidden = 0 OR hidden = 1);",
@@ -28831,8 +28680,7 @@ config_writable (config_t config)
 int
 trash_config_in_use (config_t config)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM tasks"
+  return sql_int ("SELECT count(*) FROM tasks"
                   " WHERE config = %llu"
                   " AND config_location = " G_STRINGIFY (LOCATION_TRASH),
                   config);
@@ -29014,8 +28862,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
 
       sql ("BEGIN IMMEDIATE;");
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                    config))
         {
@@ -29048,8 +28895,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
 
   sql ("BEGIN IMMEDIATE;");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
+  if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
@@ -29197,8 +29043,7 @@ manage_set_config_name (config_t config, const char* name)
   assert (current_credentials.uuid);
   sql ("BEGIN IMMEDIATE;");
   quoted_name = sql_quote (name);
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = '%s' AND ROWID != %llu"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -29235,8 +29080,7 @@ manage_set_config_name_comment (config_t config, const char* name,
   sql ("BEGIN IMMEDIATE;");
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment);
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM configs"
+  if (sql_int ("SELECT count(*) FROM configs"
                " WHERE name = '%s' AND ROWID != %llu"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -29276,8 +29120,7 @@ manage_set_config_nvts (config_t config, const char* family,
 
   sql ("BEGIN EXCLUSIVE;");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
+  if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
@@ -30128,15 +29971,13 @@ family_nvt_count (const char *family)
     {
       static int nvt_count = -1;
       if (nvt_count == -1)
-        nvt_count = sql_int (0, 0,
-                             "SELECT COUNT(*) FROM nvts"
+        nvt_count = sql_int ("SELECT COUNT(*) FROM nvts"
                              " WHERE family != 'Credentials';");
       return nvt_count;
     }
 
   quoted_family = sql_quote (family);
-  int ret = sql_int (0, 0,
-                     "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
+  int ret = sql_int ("SELECT COUNT(*) FROM nvts WHERE family = '%s';",
                      quoted_family);
   g_free (quoted_family);
   return ret;
@@ -30150,8 +29991,7 @@ family_nvt_count (const char *family)
 int
 family_count ()
 {
-  return sql_int (0, 0,
-                  "SELECT COUNT(distinct family) FROM nvts"
+  return sql_int ("SELECT COUNT(distinct family) FROM nvts"
                   " WHERE family != 'Credentials';");
 }
 
@@ -30399,8 +30239,7 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
   if (families_growing)
     /* Assume the only family selectors are excludes. */
     return family_count ()
-           - sql_int (0, 0,
-                      "SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
+           - sql_int ("SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
                       " WHERE name = '%s'"
                       " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                       " AND exclude = 0"
@@ -30409,15 +30248,13 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
 
   /* Assume that the only family selectors are includes, and that if a
    * selection has any NVT includes then it only has NVT includes. */
-  return sql_int (0, 0,
-                  "SELECT COUNT(*) FROM nvt_selectors"
+  return sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                   " AND exclude = 0"
                   " LIMIT 1;",
                   quoted_selector)
-         + sql_int (0, 0,
-                    "SELECT COUNT(DISTINCT family) FROM nvt_selectors"
+         + sql_int ("SELECT COUNT(DISTINCT family) FROM nvt_selectors"
                     " WHERE name = '%s'"
                     " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                     " AND exclude = 0"
@@ -30440,8 +30277,7 @@ nvt_selector_families_growing (const char* selector)
   /* The number of families can only grow if there is selector that includes
    * all. */
 #if 0
-  return sql_int (0, 0,
-                  "SELECT COUNT(*) FROM nvt_selectors"
+  return sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                   " AND exclude = 0"
@@ -30475,8 +30311,7 @@ nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
   if (families_growing)
     /* Assume the only family selectors are excludes. */
     return (family_count ()
-            - sql_int (0, 0,
-                       "SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
+            - sql_int ("SELECT COUNT(distinct family_or_nvt) FROM nvt_selectors"
                        " WHERE name = '%s'"
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                        " AND exclude = 0"
@@ -30485,8 +30320,7 @@ nvt_selector_nvts_growing_2 (const char* quoted_selector, int families_growing)
            > 0;
 
   /* Assume the only family selectors are includes. */
-  return sql_int (0, 0,
-                  "SELECT COUNT(*) FROM nvt_selectors"
+  return sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                   " AND exclude = 0"
@@ -30525,8 +30359,7 @@ nvt_selector_nvts_growing (const char* selector)
 int
 config_nvts_growing (config_t config)
 {
-  return sql_int (0, 0,
-                  "SELECT nvts_growing FROM configs"
+  return sql_int ("SELECT nvts_growing FROM configs"
                   " WHERE ROWID = %llu;",
                   config);
 }
@@ -30541,8 +30374,7 @@ config_nvts_growing (config_t config)
 int
 config_families_growing (config_t config)
 {
-  return sql_int (0, 0,
-                  "SELECT families_growing FROM configs"
+  return sql_int ("SELECT families_growing FROM configs"
                   " WHERE ROWID = %llu;",
                   config);
 }
@@ -30734,8 +30566,7 @@ nvt_selector_family_growing (const char *selector,
       /* Constraining the universe.  It's static if there is a family
        * exclude. */
 
-      ret = sql_int (0, 0,
-                     "SELECT COUNT(*) FROM nvt_selectors"
+      ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                      " WHERE name = '%s'"
                      " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                      " AND family_or_nvt = '%s'"
@@ -30752,8 +30583,7 @@ nvt_selector_family_growing (const char *selector,
 
   /* Generating from empty.  It's growing if there is a family include. */
 
-  ret = sql_int (0, 0,
-                 "SELECT COUNT(*) FROM nvt_selectors"
+  ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                  " WHERE name = '%s'"
                  " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
                  " AND family_or_nvt = '%s'"
@@ -30794,11 +30624,9 @@ nvt_selector_nvt_count (const char *selector,
         {
           gchar *quoted_family = sql_quote (family);
           gchar *quoted_selector = sql_quote (selector);
-          ret = sql_int (0, 0,
-                         "SELECT COUNT(*) FROM nvts WHERE family = '%s';",
+          ret = sql_int ("SELECT COUNT(*) FROM nvts WHERE family = '%s';",
                          quoted_family);
-          ret -= sql_int (0, 0,
-                          "SELECT COUNT(*) FROM nvt_selectors"
+          ret -= sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                           " WHERE exclude = 1 AND type = 2"
                           " AND name = '%s' AND family = '%s';",
                           quoted_selector,
@@ -30810,8 +30638,7 @@ nvt_selector_nvt_count (const char *selector,
         {
           gchar *quoted_selector = sql_quote (selector);
           gchar *quoted_family = sql_quote (family);
-          ret = sql_int (0, 0,
-                         "SELECT COUNT(*) FROM nvt_selectors"
+          ret = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                          " WHERE exclude = 0 AND type = 2"
                          " AND name = '%s' AND family = '%s';",
                          quoted_selector,
@@ -30884,9 +30711,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
         {
           /* Constraining the universe. */
 
-          if (sql_int (0, 0,
-                        "SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
-                        quoted_selector)
+          if (sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '%s';",
+                       quoted_selector)
               == 1)
             /* There is one selector, it should be the all selector. */
             return g_strdup_printf
@@ -30899,8 +30725,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
           /* There are multiple selectors. */
 
-          if (sql_int (0, 0,
-                       "SELECT COUNT(*) FROM nvt_selectors"
+          if (sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                        " WHERE name = '%s' AND exclude = 1"
                        " AND type = "
                        G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
@@ -30957,8 +30782,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
           /* Generating from empty. */
 
-          all = sql_int (0, 0,
-                         "SELECT COUNT(*) FROM nvt_selectors"
+          all = sql_int ("SELECT COUNT(*) FROM nvt_selectors"
                          " WHERE name = '%s' AND exclude = 0"
                          " AND type = "
                          G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY)
@@ -31163,8 +30987,7 @@ nvt_selector_add (const char* quoted_selector,
 static int
 family_is_selected (const char* quoted_selector, const char* quoted_family)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM nvt_selectors"
+  return sql_int ("SELECT count(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND (type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                   "      AND family = '%s')"
@@ -31189,8 +31012,7 @@ static int
 nvt_selector_has (const char* quoted_selector, const char* family_or_nvt,
                   int type, int exclude)
 {
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM nvt_selectors"
+  return sql_int ("SELECT count(*) FROM nvt_selectors"
                   " WHERE name = '%s'"
                   " AND type = %i"
                   " AND exclude = %i"
@@ -31227,8 +31049,7 @@ manage_set_config_families (config_t config,
 
   sql ("BEGIN EXCLUSIVE;");
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM tasks"
+  if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
                config))
     {
@@ -31909,8 +31730,7 @@ int
 nvt_preference_count (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  int ret = sql_int (0, 0,
-                     "SELECT COUNT(*) FROM nvt_preferences"
+  int ret = sql_int ("SELECT COUNT(*) FROM nvt_preferences"
                      " WHERE name LIKE '%s[%%';",
                      quoted_name);
   g_free (quoted_name);
@@ -32002,8 +31822,7 @@ set_task_preferences (task_t task, array_t *preferences)
                   gchar *quoted_value;
                   quoted_value = sql_quote (pair->value);
                   sql ("BEGIN IMMEDIATE;");
-                  if (sql_int (0, 0,
-                               "SELECT COUNT(*) FROM task_preferences"
+                  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
                                " WHERE task = %llu AND name = '%s';",
                                task,
                                quoted_name))
@@ -32459,8 +32278,7 @@ modify_lsc_credential (const char *lsc_credential_id,
   if (name)
     {
       gchar *quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM lsc_credentials"
+      if (sql_int ("SELECT COUNT(*) FROM lsc_credentials"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -32544,8 +32362,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
         }
 
       /* Check if it's in use by a target in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM targets_trash"
+      if (sql_int ("SELECT count(*) FROM targets_trash"
                    " WHERE (lsc_credential = %llu"
                    "        AND ssh_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (smb_lsc_credential = %llu"
@@ -32568,8 +32385,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
     }
 
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM targets"
+  if (sql_int ("SELECT count(*) FROM targets"
                " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu",
                lsc_credential,
                lsc_credential))
@@ -32670,8 +32486,7 @@ lsc_credential_count (const get_data_t *get)
 int
 lsc_credential_in_use (lsc_credential_t lsc_credential)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM targets WHERE lsc_credential = %llu"
+  return !!sql_int ("SELECT count (*) FROM targets WHERE lsc_credential = %llu"
                     " OR smb_lsc_credential = %llu;",
                     lsc_credential,
                     lsc_credential);
@@ -32687,8 +32502,7 @@ lsc_credential_in_use (lsc_credential_t lsc_credential)
 int
 trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM targets_trash"
+  return !!sql_int ("SELECT count (*) FROM targets_trash"
                     " WHERE (lsc_credential = %llu"
                     " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH)")"
                     " OR (smb_lsc_credential = %llu"
@@ -32828,8 +32642,7 @@ set_lsc_credential_password (lsc_credential_t lsc_credential,
 int
 lsc_credential_packaged (lsc_credential_t lsc_credential)
 {
-  return sql_int (0, 0,
-                  "SELECT private_key NOTNULL FROM lsc_credentials"
+  return sql_int ("SELECT private_key NOTNULL FROM lsc_credentials"
                   " WHERE ROWID = %llu;",
                   lsc_credential);
 }
@@ -34408,7 +34221,7 @@ create_note (const char* active, const char* nvt, const char* text,
 
   quoted_nvt = sql_quote (nvt);
   if (strcmp (nvt, "0")
-      && (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+      && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
           == 0))
     {
       g_free (quoted_nvt);
@@ -35282,7 +35095,7 @@ create_override (const char* active, const char* nvt, const char* text,
 
   quoted_nvt = sql_quote (nvt);
   if (strcmp (nvt, "0")
-      && (sql_int (0, 0, "SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+      && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
           == 0))
     {
       g_free (quoted_nvt);
@@ -36288,7 +36101,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   if (openvas_get_host_type (host) == -1)
     return 2;
   quoted_name = sql_quote (name);
-  if (sql_int (0, 0, "SELECT COUNT(*) FROM scanners WHERE name = '%s';",
+  if (sql_int ("SELECT COUNT(*) FROM scanners WHERE name = '%s';",
                quoted_name))
     {
       g_free (quoted_name);
@@ -36393,8 +36206,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM scanners"
+      if (sql_int ("SELECT COUNT(*) FROM scanners"
                    " WHERE name = '%s' AND ROWID != %llu"
                    "  AND ((owner IS NULL) OR (owner ="
                    "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -36771,8 +36583,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 
   quoted_name = sql_quote (name);
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM schedules"
+  if (sql_int ("SELECT COUNT(*) FROM schedules"
                " WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -36917,8 +36728,7 @@ delete_schedule (const char *schedule_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE schedule = %llu"
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    schedule))
@@ -36937,8 +36747,7 @@ delete_schedule (const char *schedule_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE schedule = %llu"
                    " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND (hidden = 0 OR hidden = 1);",
@@ -36974,11 +36783,10 @@ delete_schedule (const char *schedule_id, int ultimate)
                           sqlite3_last_insert_rowid (task_db),
                           LOCATION_TRASH);
     }
-  else if (sql_int (0, 0,
-           "SELECT count(*) FROM tasks"
-           " WHERE schedule = %llu"
-           " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE),
-           schedule))
+  else if (sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE schedule = %llu"
+                    " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE),
+                    schedule))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -37005,8 +36813,7 @@ delete_schedule (const char *schedule_id, int ultimate)
 int
 schedule_in_use (schedule_t schedule)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM tasks WHERE schedule = %llu;",
+  return !!sql_int ("SELECT count (*) FROM tasks WHERE schedule = %llu;",
                     schedule);
 }
 
@@ -37020,8 +36827,7 @@ schedule_in_use (schedule_t schedule)
 int
 trash_schedule_in_use (schedule_t schedule)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
+  return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE schedule = %llu"
                     " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
                     schedule);
@@ -37767,8 +37573,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM schedules"
+      if (sql_int ("SELECT COUNT(*) FROM schedules"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -38172,8 +37977,7 @@ create_report_format (const char *uuid, const char *name,
       return 99;
     }
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM report_formats WHERE uuid = '%s';",
+  if (sql_int ("SELECT COUNT(*) FROM report_formats WHERE uuid = '%s';",
                uuid))
     {
       sql ("ROLLBACK;");
@@ -38186,8 +37990,7 @@ create_report_format (const char *uuid, const char *name,
   num = 1;
   while (1)
     {
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM report_formats WHERE name = '%s'"
+      if (sql_int ("SELECT COUNT(*) FROM report_formats WHERE name = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users"
                    "  WHERE users.uuid = '%s')));",
@@ -38458,8 +38261,7 @@ create_report_format (const char *uuid, const char *name,
 
       quoted_param_name = sql_quote (param->name);
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM report_format_params"
+      if (sql_int ("SELECT count(*) FROM report_format_params"
                    " WHERE name = '%s' AND report_format = %llu;",
                    quoted_param_name,
                    report_format_rowid))
@@ -38974,8 +38776,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
       /* Check if it's in use by a trash or regular alert. */
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM alert_method_data_trash"
+      if (sql_int ("SELECT count(*) FROM alert_method_data_trash"
                    " WHERE data = (SELECT uuid FROM report_formats"
                    "               WHERE ROWID = %llu)"
                    " AND (name = 'notice_attach_format'"
@@ -39379,8 +39180,7 @@ report_format_uuid (report_format_t report_format)
 char *
 report_format_owner_uuid (report_format_t report_format)
 {
-  if (sql_int (0, 0,
-               "SELECT owner IS NULL FROM report_formats"
+  if (sql_int ("SELECT owner IS NULL FROM report_formats"
                " WHERE ROWID = %llu;",
                report_format))
     return NULL;
@@ -39452,8 +39252,7 @@ report_format_content_type (report_format_t report_format)
 int
 report_format_in_use (report_format_t report_format)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM alert_method_data"
+  return !!sql_int ("SELECT count(*) FROM alert_method_data"
                     " WHERE data = (SELECT uuid FROM report_formats"
                     "               WHERE ROWID = %llu)"
                     " AND (name = 'notice_attach_format'"
@@ -39471,8 +39270,7 @@ report_format_in_use (report_format_t report_format)
 int
 trash_report_format_in_use (report_format_t report_format)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM alert_method_data_trash"
+  return !!sql_int ("SELECT count(*) FROM alert_method_data_trash"
                     " WHERE data = (SELECT original_uuid"
                     "               FROM report_formats_trash"
                     "               WHERE ROWID = %llu)"
@@ -39550,8 +39348,7 @@ set_report_format_name (report_format_t report_format, const char *name)
 int
 report_format_global (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT owner is NULL FROM report_formats"
+  return sql_int ("SELECT owner is NULL FROM report_formats"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
@@ -39566,8 +39363,7 @@ report_format_global (report_format_t report_format)
 int
 trash_report_format_global (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT owner is NULL FROM report_formats_trash"
+  return sql_int ("SELECT owner is NULL FROM report_formats_trash"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
@@ -39582,8 +39378,7 @@ trash_report_format_global (report_format_t report_format)
 int
 report_format_predefined (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
+  return sql_int ("SELECT uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
                   " OR uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
                   " OR uuid = 'c1645568-627a-11e3-a660-406186ea4fc5'"
                   " OR uuid = '9087b18c-626c-11e3-8892-406186ea4fc5'"
@@ -39610,8 +39405,7 @@ report_format_predefined (report_format_t report_format)
 static int
 report_format_trash_global (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT owner is NULL FROM report_formats_trash"
+  return sql_int ("SELECT owner is NULL FROM report_formats_trash"
                   " WHERE ROWID = %llu;",
                   report_format);
 }
@@ -39678,8 +39472,7 @@ report_format_param_type (report_format_t report_format, const char *name)
   report_format_param_type_t type;
   gchar *quoted_name = sql_quote (name);
   type = (report_format_param_type_t)
-         sql_int (0, 0,
-                  "SELECT type FROM report_format_params"
+         sql_int ("SELECT type FROM report_format_params"
                   " WHERE report_format = %llu AND name = '%s';",
                   report_format,
                   quoted_name);
@@ -39895,8 +39688,7 @@ set_report_format_param (report_format_t report_format, const char *name,
 int
 report_format_trust (report_format_t report_format)
 {
-  return sql_int (0, 0,
-                  "SELECT trust FROM report_formats WHERE ROWID = %llu;",
+  return sql_int ("SELECT trust FROM report_formats WHERE ROWID = %llu;",
                   report_format);
 }
 
@@ -40379,8 +40171,7 @@ create_slave (const char* name, const char* comment, const char* host,
   quoted_name = sql_quote (name);
 
   /* Check whether a slave with the same name exists already. */
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM slaves"
+  if (sql_int ("SELECT COUNT(*) FROM slaves"
                " WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -40508,8 +40299,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM slaves"
+      if (sql_int ("SELECT COUNT(*) FROM slaves"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -40609,8 +40399,7 @@ delete_slave (const char *slave_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE slave = %llu"
                    " AND slave_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    slave))
@@ -40629,8 +40418,7 @@ delete_slave (const char *slave_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM tasks"
+      if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE slave = %llu"
                    " AND slave_location = " G_STRINGIFY (LOCATION_TABLE)
                    " AND (hidden = 0 OR hidden = 1);",
@@ -40665,11 +40453,10 @@ delete_slave (const char *slave_id, int ultimate)
                           sqlite3_last_insert_rowid (task_db),
                           LOCATION_TRASH);
     }
-  else if (sql_int (0, 0,
-           "SELECT count(*) FROM tasks"
-           " WHERE slave = %llu"
-           " AND slave_location = " G_STRINGIFY (LOCATION_TABLE),
-           slave))
+  else if (sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE slave = %llu"
+                    " AND slave_location = " G_STRINGIFY (LOCATION_TABLE),
+                    slave))
     {
       sql ("ROLLBACK;");
       return 1;
@@ -40936,8 +40723,7 @@ slave_port (slave_t slave)
 int
 slave_in_use (slave_t slave)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
+  return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE slave = %llu AND hidden = 0;",
                     slave);
 }
@@ -40952,8 +40738,7 @@ slave_in_use (slave_t slave)
 int
 trash_slave_in_use (slave_t slave)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM tasks"
+  return !!sql_int ("SELECT count(*) FROM tasks"
                     " WHERE slave = %llu"
                     " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
                     slave);
@@ -41144,8 +40929,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
                   return -1;
                 }
 
-              if (sql_int (0, 0,
-                           "SELECT count(*) FROM users WHERE uuid = '%s';",
+              if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
                            uuid)
                   == 0)
                 {
@@ -41222,8 +41006,7 @@ create_group (const char *group_name, const char *comment, const char *users,
 
   quoted_group_name = sql_quote (group_name);
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM groups WHERE name = '%s';",
+  if (sql_int ("SELECT COUNT(*) FROM groups WHERE name = '%s';",
                quoted_group_name))
     {
       g_free (quoted_group_name);
@@ -41572,8 +41355,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM groups"
+      if (sql_int ("SELECT COUNT(*) FROM groups"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL)"
@@ -42713,8 +42495,7 @@ port_range_port_list_uuid (const char *port_range)
   char *ret;
 
   quoted_port_range = sql_quote (port_range);
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM port_ranges WHERE uuid = '%s';",
+  if (sql_int ("SELECT count (*) FROM port_ranges WHERE uuid = '%s';",
                quoted_port_range))
     ret = sql_string ("SELECT uuid FROM port_lists"
                       " WHERE ROWID = (SELECT port_list FROM port_ranges"
@@ -42962,8 +42743,7 @@ create_port_list_unique (const char *name, const char *comment,
   /* Check whether a port list with the same name exists already. */
   suffix = 1;
   quoted_name = sql_quote (name);
-  while (sql_int (0, 0,
-                  "SELECT COUNT(*) FROM port_lists"
+  while (sql_int ("SELECT COUNT(*) FROM port_lists"
                   " WHERE name = '%s'"
                   " AND ((owner IS NULL) OR (owner ="
                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -43029,8 +42809,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       /* Check whether this port list exists already. */
 
       quoted_id = sql_quote (id);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM port_lists"
+      if (sql_int ("SELECT COUNT(*) FROM port_lists"
                    " WHERE uuid = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -43042,8 +42821,7 @@ create_port_list (const char* id, const char* name, const char* comment,
           return 1;
         }
 
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM port_lists_trash"
+      if (sql_int ("SELECT COUNT(*) FROM port_lists_trash"
                    " WHERE uuid = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -43058,8 +42836,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int (0, 0,
-                      "SELECT COUNT(*) FROM port_lists"
+      while (sql_int ("SELECT COUNT(*) FROM port_lists"
                        " WHERE name = '%s'"
                        " AND ((owner IS NULL) OR (owner ="
                        " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -43106,8 +42883,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   quoted_name = sql_quote (name);
 
   /* Check whether a port_list with the same name exists already. */
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM port_lists"
+  if (sql_int ("SELECT COUNT(*) FROM port_lists"
                " WHERE name = '%s'"
                " AND ((owner IS NULL) OR (owner ="
                " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -43254,8 +43030,7 @@ modify_port_list (const char *port_list_id, const char *name,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM port_lists"
+      if (sql_int ("SELECT COUNT(*) FROM port_lists"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -43367,8 +43142,7 @@ create_port_range (const char *port_list_id, const char *type,
       return 5;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count (*) FROM port_ranges"
+  if (sql_int ("SELECT count (*) FROM port_ranges"
                " WHERE port_list = %llu"
                " AND type = %i"
                " AND ((start <= %i AND end >= %i)"
@@ -43463,8 +43237,7 @@ delete_port_list (const char *port_list_id, int ultimate)
         }
 
       /* Check if it's in use by a target in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM targets_trash"
+      if (sql_int ("SELECT count(*) FROM targets_trash"
                    " WHERE port_range = %llu"
                    " AND port_list_location"
                    " = " G_STRINGIFY (LOCATION_TRASH) ";",
@@ -43483,8 +43256,7 @@ delete_port_list (const char *port_list_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM targets"
+  if (sql_int ("SELECT count(*) FROM targets"
                " WHERE port_range = %llu;",
                port_list))
     {
@@ -43825,8 +43597,7 @@ port_list_in_use (port_list_t port_list)
   if (port_list_is_predefined (port_list))
     return 1;
 
-  return sql_int (0, 0,
-                  "SELECT count(*) FROM targets"
+  return sql_int ("SELECT count(*) FROM targets"
                   " WHERE port_range = %llu",
                   port_list);
 }
@@ -43841,8 +43612,7 @@ port_list_in_use (port_list_t port_list)
 int
 trash_port_list_in_use (port_list_t port_list)
 {
-  return (sql_int (0, 0,
-                   "SELECT count (*) FROM targets_trash"
+  return (sql_int ("SELECT count (*) FROM targets_trash"
                    " WHERE port_range = %llu"
                    " AND port_list_location = "
                    G_STRINGIFY (LOCATION_TRASH) ";",
@@ -44168,8 +43938,7 @@ create_role (const char *role_name, const char *comment, const char *users,
 
   quoted_role_name = sql_quote (role_name);
 
-  if (sql_int (0, 0,
-               "SELECT COUNT(*) FROM roles WHERE name = '%s';",
+  if (sql_int ("SELECT COUNT(*) FROM roles WHERE name = '%s';",
                quoted_role_name))
     {
       g_free (quoted_role_name);
@@ -44211,8 +43980,7 @@ create_role (const char *role_name, const char *comment, const char *users,
 int
 role_is_predefined (role_t role)
 {
-  return sql_int (0, 0,
-                  "SELECT COUNT (*) FROM roles"
+  return sql_int ("SELECT COUNT (*) FROM roles"
                   " WHERE ROWID = %llu"
                   " AND (uuid = '" ROLE_UUID_ADMIN "'"
                   "      OR uuid = '" ROLE_UUID_INFO "'"
@@ -44516,8 +44284,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM roles"
+      if (sql_int ("SELECT COUNT(*) FROM roles"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL)"
@@ -44811,13 +44578,12 @@ create_filter (const char *name, const char *comment, const char *type,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int (0, 0,
-                      "SELECT COUNT(*) FROM filters"
-                       " WHERE name = '%s'"
-                       " AND ((owner IS NULL) OR (owner ="
-                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                       quoted_name,
-                       current_credentials.uuid))
+      while (sql_int ("SELECT COUNT(*) FROM filters"
+                      " WHERE name = '%s'"
+                      " AND ((owner IS NULL) OR (owner ="
+                      " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                      quoted_name,
+                      current_credentials.uuid))
         {
           gchar *new_name;
           g_free (quoted_name);
@@ -44830,8 +44596,7 @@ create_filter (const char *name, const char *comment, const char *type,
     {
       /* Check whether a filter with the same name exists already. */
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM filters"
+      if (sql_int ("SELECT COUNT(*) FROM filters"
                    " WHERE name = '%s'"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
@@ -44959,8 +44724,7 @@ delete_filter (const char *filter_id, int ultimate)
         }
 
       /* Check if it's in use by an alert in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM alerts_trash"
+      if (sql_int ("SELECT count(*) FROM alerts_trash"
                    " WHERE filter = %llu"
                    " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                    filter))
@@ -44977,8 +44741,7 @@ delete_filter (const char *filter_id, int ultimate)
       return 0;
     }
 
-  if (sql_int (0, 0,
-               "SELECT count(*) FROM alerts"
+  if (sql_int ("SELECT count(*) FROM alerts"
                " WHERE filter = %llu;",
                filter))
     {
@@ -45039,8 +44802,7 @@ delete_filter (const char *filter_id, int ultimate)
 int
 filter_in_use (filter_t filter)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM alerts WHERE filter = %llu;",
+  return !!sql_int ("SELECT count (*) FROM alerts WHERE filter = %llu;",
                     filter);
 }
 
@@ -45054,8 +44816,7 @@ filter_in_use (filter_t filter)
 int
 trash_filter_in_use (filter_t filter)
 {
-  return !!sql_int (0, 0,
-                    "SELECT count (*) FROM alerts_trash"
+  return !!sql_int ("SELECT count (*) FROM alerts_trash"
                     " WHERE filter = %llu"
                     " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
                     filter);
@@ -45283,8 +45044,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   if (name)
     {
       quoted_name = sql_quote (name);
-      if (sql_int (0, 0,
-                   "SELECT COUNT(*) FROM filters"
+      if (sql_int ("SELECT COUNT(*) FROM filters"
                    " WHERE name = '%s'"
                    " AND ROWID != %llu"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45582,8 +45342,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM agents"
+      if (sql_int ("SELECT count(*) FROM agents"
                    " WHERE name ="
                    " (SELECT name FROM agents_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45632,8 +45391,7 @@ manage_restore (const char *id)
     {
       config_t config;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM configs"
+      if (sql_int ("SELECT count(*) FROM configs"
                    " WHERE name ="
                    " (SELECT name FROM configs_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45696,8 +45454,7 @@ manage_restore (const char *id)
     {
       alert_t alert;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM alerts"
+      if (sql_int ("SELECT count(*) FROM alerts"
                    " WHERE name ="
                    " (SELECT name FROM alerts_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45710,8 +45467,7 @@ manage_restore (const char *id)
         }
 
       /* Check if it uses a filter in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT filter_location = " G_STRINGIFY (LOCATION_TRASH)
+      if (sql_int ("SELECT filter_location = " G_STRINGIFY (LOCATION_TRASH)
                    " FROM alerts_trash WHERE ROWID = %llu;",
                    resource))
         {
@@ -45786,8 +45542,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM filters"
+      if (sql_int ("SELECT count(*) FROM filters"
                    " WHERE name ="
                    " (SELECT name FROM filters_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45840,8 +45595,7 @@ manage_restore (const char *id)
     {
       group_t group;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM groups"
+      if (sql_int ("SELECT count(*) FROM groups"
                    " WHERE name ="
                    " (SELECT name FROM groups_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -45892,8 +45646,7 @@ manage_restore (const char *id)
     {
       lsc_credential_t credential;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM lsc_credentials"
+      if (sql_int ("SELECT count(*) FROM lsc_credentials"
                    " WHERE name ="
                    " (SELECT name FROM lsc_credentials_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46045,8 +45798,7 @@ manage_restore (const char *id)
     {
       port_list_t table_port_list;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM port_lists"
+      if (sql_int ("SELECT count(*) FROM port_lists"
                    " WHERE name ="
                    " (SELECT name FROM port_lists_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46110,8 +45862,7 @@ manage_restore (const char *id)
       int global;
       char *trash_uuid;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM report_formats"
+      if (sql_int ("SELECT count(*) FROM report_formats"
                    " WHERE name ="
                    " (SELECT name FROM report_formats_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46123,8 +45874,7 @@ manage_restore (const char *id)
           return 3;
         }
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM report_formats"
+      if (sql_int ("SELECT count(*) FROM report_formats"
                    " WHERE uuid = (SELECT original_uuid"
                    "               FROM report_formats_trash"
                    "               WHERE ROWID = %llu);",
@@ -46269,8 +46019,7 @@ manage_restore (const char *id)
     {
       role_t role;
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM roles"
+      if (sql_int ("SELECT count(*) FROM roles"
                    " WHERE name ="
                    " (SELECT name FROM roles_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46319,8 +46068,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM scanners"
+      if (sql_int ("SELECT count(*) FROM scanners"
                    " WHERE name ="
                    " (SELECT name FROM scanners_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46359,8 +46107,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM schedules"
+      if (sql_int ("SELECT count(*) FROM schedules"
                    " WHERE name ="
                    " (SELECT name FROM schedules_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46413,8 +46160,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM slaves"
+      if (sql_int ("SELECT count(*) FROM slaves"
                    " WHERE name ="
                    " (SELECT name FROM slaves_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46495,8 +46241,7 @@ manage_restore (const char *id)
 
   if (resource)
     {
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM targets"
+      if (sql_int ("SELECT count(*) FROM targets"
                    " WHERE name ="
                    " (SELECT name FROM targets_trash WHERE ROWID = %llu)"
                    " AND ((owner IS NULL) OR (owner ="
@@ -46509,8 +46254,7 @@ manage_restore (const char *id)
         }
 
       /* Check if it uses a credential or port list in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT ssh_location = " G_STRINGIFY (LOCATION_TRASH)
+      if (sql_int ("SELECT ssh_location = " G_STRINGIFY (LOCATION_TRASH)
                    " OR smb_location = " G_STRINGIFY (LOCATION_TRASH)
                    " OR port_list_location = " G_STRINGIFY (LOCATION_TRASH)
                    " FROM targets_trash WHERE ROWID = %llu;",
@@ -46564,8 +46308,7 @@ manage_restore (const char *id)
   if (resource)
     {
       /* Check if it's in use by a resource in the trashcan. */
-      if (sql_int (0, 0,
-                   "SELECT (target_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+      if (sql_int ("SELECT (target_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (config_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (schedule_location = " G_STRINGIFY (LOCATION_TRASH) ")"
                    " OR (slave_location = " G_STRINGIFY (LOCATION_TRASH) ")"
@@ -46841,8 +46584,7 @@ setting_count (const char *filter)
   clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
                           NULL, NULL, NULL);
 
-  ret = sql_int (0, 0,
-                 "SELECT count (*)"
+  ret = sql_int ("SELECT count (*)"
                  " FROM settings"
                  " WHERE"
                  " (owner == (SELECT ROWID FROM users WHERE uuid = '%s')"
@@ -46908,8 +46650,7 @@ setting_severity ()
 int
 setting_dynamic_severity_int ()
 {
-  return sql_int (0, 0,
-                  "SELECT value FROM settings"
+  return sql_int ("SELECT value FROM settings"
                   " WHERE name = 'Dynamic Severity'"
                   " AND ((owner IS NULL)"
                   "      OR (owner ="
@@ -47046,8 +46787,7 @@ setting_value_int (const char *uuid, int *value)
 
   quoted_uuid = sql_quote (uuid);
 
-  if (sql_int (0, 0,
-               "SELECT count (*)"
+  if (sql_int ("SELECT count (*)"
                " FROM settings"
                " WHERE uuid = '%s'"
                " AND (owner IS NULL)"
@@ -47062,8 +46802,7 @@ setting_value_int (const char *uuid, int *value)
       return -1;
     }
 
-  *value = sql_int (0, 0,
-                    "SELECT value"
+  *value = sql_int ("SELECT value"
                     " FROM settings"
                     " WHERE uuid = '%s'"
                     " AND ((owner IS NULL)"
@@ -47164,8 +46903,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       quoted_uuid = sql_quote (uuid);
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM settings"
+      if (sql_int ("SELECT count(*) FROM settings"
                    " WHERE uuid = '%s'"
                    " AND owner IS NULL;",
                    quoted_uuid,
@@ -47212,8 +46950,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       quoted_value = sql_quote (value);
       g_free (value);
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM settings"
+      if (sql_int ("SELECT count(*) FROM settings"
                    " WHERE uuid = '%s'"
                    " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
                    quoted_uuid,
@@ -47318,8 +47055,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       quoted_value = sql_quote (value);
 
-      if (sql_int (0, 0,
-                   "SELECT count(*) FROM settings"
+      if (sql_int ("SELECT count(*) FROM settings"
                    " WHERE uuid = '%s'"
                    " AND owner = (SELECT ROWID FROM users WHERE uuid = '%s');",
                    uuid,
@@ -47480,8 +47216,7 @@ manage_scap_loaded ()
     /* There was an error, so probably the initial ATTACH failed. */
     return 0;
 
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM scap.sqlite_master"
+  return !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
                     " WHERE type = 'table' AND name = 'cves';");
 }
 
@@ -47511,8 +47246,7 @@ manage_cert_loaded ()
     /* There was an error, so probably the initial ATTACH failed. */
     return 0;
 
-  return !!sql_int (0, 0,
-                    "SELECT count(*) FROM cert.sqlite_master"
+  return !!sql_int ("SELECT count(*) FROM cert.sqlite_master"
                     " WHERE type = 'table' AND name = 'dfn_cert_advs';");
 }
 
@@ -48234,15 +47968,13 @@ total_info_count (const get_data_t *get, int filtered)
                               filter_columns, get->trash, NULL, NULL, NULL,
                               NULL, NULL);
       if (clause)
-        return sql_int (0, 0,
-                        "SELECT count (ROWID) FROM"
+        return sql_int ("SELECT count (ROWID) FROM"
                         ALL_INFO_UNION_COLUMNS
                         " WHERE %s;",
                         clause);
     }
 
-  return sql_int (0, 0,
-                  "SELECT count (ROWID) FROM"
+  return sql_int ("SELECT count (ROWID) FROM"
                   ALL_INFO_UNION_COLUMNS ";");
 }
 
@@ -48724,7 +48456,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   /* Check if user exists already. */
 
   quoted_name = sql_quote (name);
-  if (sql_int (0, 0, "SELECT count (*) FROM users WHERE name = '%s'",
+  if (sql_int ("SELECT count (*) FROM users WHERE name = '%s'",
                quoted_name))
     {
       g_free (quoted_name);
@@ -50428,8 +50160,7 @@ resource_tag_count (const char* type, resource_t resource, int active_only)
   assert (type);
   assert (resource);
 
-  ret = sql_int (0, 0,
-                 "SELECT count (ROWID)"
+  ret = sql_int ("SELECT count (ROWID)"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
                  "   AND resource = %llu"
