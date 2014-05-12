@@ -3733,8 +3733,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
     return 1;
 
   if (strcasecmp (type, "note") == 0)
-    *name = sql_string (0, 0,
-                        "SELECT 'Note for: '"
+    *name = sql_string ("SELECT 'Note for: '"
                         " || (SELECT name"
                         "     FROM nvts"
                         "     WHERE nvts.uuid = notes%s.nvt)"
@@ -3744,8 +3743,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         location == LOCATION_TABLE ? "" : "_trash",
                         uuid);
   else if (strcasecmp (type, "override") == 0)
-    *name = sql_string (0, 0,
-                        "SELECT 'Override for: '"
+    *name = sql_string ("SELECT 'Override for: '"
                         " || (SELECT name"
                         "     FROM nvts"
                         "     WHERE nvts.uuid = overrides%s.nvt)"
@@ -3755,8 +3753,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         location == LOCATION_TABLE ? "" : "_trash",
                         uuid);
   else if (strcasecmp (type, "report") == 0)
-    *name = sql_string (0, 0,
-                        "SELECT (SELECT name FROM tasks WHERE id = task)"
+    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
                         " || ' - '"
                         " || (SELECT"
                         "       CASE (SELECT end_time FROM tasks"
@@ -3769,8 +3766,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " WHERE uuid = '%s';",
                         uuid);
   else if (strcasecmp (type, "result") == 0)
-    *name = sql_string (0, 0,
-                        "SELECT (SELECT name FROM tasks WHERE id = task)"
+    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
                         " || ' - '"
                         " || (SELECT name FROM nvts WHERE oid = nvt)"
                         " || ' - '"
@@ -3785,8 +3781,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " WHERE uuid = '%s';",
                         uuid);
   else if (location == LOCATION_TABLE)
-    *name = sql_string (0, 0,
-                        "SELECT name"
+    *name = sql_string ("SELECT name"
                         " FROM %ss"
                         " WHERE uuid = '%s';",
                         type,
@@ -3799,8 +3794,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
            && (strcmp (type, "report"))
            && (strcmp (type, "result"))
            && (strcmp (type, "user")))
-    *name = sql_string (0, 0,
-                        "SELECT name"
+    *name = sql_string ("SELECT name"
                         " FROM %ss%s"
                         " WHERE uuid = '%s';",
                         type,
@@ -4474,8 +4468,7 @@ manage_db_version ()
       == 0)
     return -2;
 
-  version = sql_string (0, 0,
-                        "SELECT value FROM main.meta"
+  version = sql_string ("SELECT value FROM main.meta"
                         " WHERE name = 'database_version' LIMIT 1;");
   if (version)
     {
@@ -4509,8 +4502,7 @@ manage_scap_db_version ()
     return -1;
 
   int number;
-  char *version = sql_string (0, 0,
-                              "SELECT value FROM scap.meta"
+  char *version = sql_string ("SELECT value FROM scap.meta"
                               " WHERE name = 'database_version' LIMIT 1;");
   if (version)
     {
@@ -4544,8 +4536,7 @@ manage_cert_db_version ()
     return -1;
 
   int number;
-  char *version = sql_string (0, 0,
-                              "SELECT value FROM cert.meta"
+  char *version = sql_string ("SELECT value FROM cert.meta"
                               " WHERE name = 'database_version' LIMIT 1;");
   if (version)
     {
@@ -4570,8 +4561,7 @@ manage_port_name (int number, const char *protocol)
   if (protocol == NULL || number <= 0 || number > 65535)
     return NULL;
 
-  return sql_string (0, 0,
-                     "SELECT name FROM port_names"
+  return sql_string ("SELECT name FROM port_names"
                      " WHERE number = %i AND protocol = '%s' LIMIT 0,1;",
                      number, protocol);
 }
@@ -5445,8 +5435,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
       /* Filter type must be result if specified. */
 
-      type = sql_string (0, 0,
-                         "SELECT type FROM filters WHERE ROWID = %llu;",
+      type = sql_string ("SELECT type FROM filters WHERE ROWID = %llu;",
                          filter);
       if (type && strcasecmp (type, "result"))
         {
@@ -5707,8 +5696,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
       /* Filter type must be report if specified. */
 
-      type = sql_string (0, 0,
-                         "SELECT type FROM filters WHERE ROWID = %llu;",
+      type = sql_string ("SELECT type FROM filters WHERE ROWID = %llu;",
                          filter);
       if (type && strcasecmp (type, "result"))
         {
@@ -6004,8 +5992,7 @@ delete_alert (const char *alert_id, int ultimate)
 char *
 alert_uuid (alert_t alert)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM alerts WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM alerts WHERE ROWID = %llu;",
                      alert);
 }
 
@@ -6019,8 +6006,7 @@ alert_uuid (alert_t alert)
 char *
 alert_filter_id (alert_t alert)
 {
-  return sql_string (0, 0,
-                     "SELECT"
+  return sql_string ("SELECT"
                      " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
                      "             FROM alerts WHERE ROWID = %llu)"
                      "  THEN NULL"
@@ -6395,8 +6381,7 @@ alert_data (alert_t alert, const char *type, const char *name)
           || strcmp (type, "method") == 0);
 
   quoted_name = sql_quote (name);
-  data = sql_string (0, 0,
-                     "SELECT data FROM alert_%s_data"
+  data = sql_string ("SELECT data FROM alert_%s_data"
                      " WHERE alert = %llu AND name = '%s';",
                      type,
                      alert,
@@ -8358,8 +8343,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 {
   char* current;
   gchar* quote;
-  current = sql_string (0, 0,
-                        "SELECT %s FROM tasks WHERE ROWID = %llu;",
+  current = sql_string ("SELECT %s FROM tasks WHERE ROWID = %llu;",
                         field,
                         task);
   if (current)
@@ -10518,8 +10502,7 @@ check_db_versions (int nvt_cache_mode)
   char *database_version;
   int scap_db_version, cert_db_version;
 
-  database_version = sql_string (0, 0,
-                                 "SELECT value FROM main.meta"
+  database_version = sql_string ("SELECT value FROM main.meta"
                                  " WHERE name = 'database_version';");
   if (nvt_cache_mode)
     {
@@ -11758,8 +11741,7 @@ manage_user_hash (const gchar *username)
 {
   gchar *hash, *quoted_username;
   quoted_username = sql_quote (username);
-  hash = sql_string (0, 0,
-                     "SELECT password FROM users WHERE name = '%s';",
+  hash = sql_string ("SELECT password FROM users WHERE name = '%s';",
                      quoted_username);
   g_free (quoted_username);
   return hash;
@@ -11779,8 +11761,7 @@ manage_user_uuid (const gchar *username, auth_method_t method)
   gchar *uuid, *quoted_username, *quoted_method;
   quoted_username = sql_quote (username);
   quoted_method = sql_quote (auth_method_name (method));
-  uuid = sql_string (0, 0,
-                     "SELECT uuid FROM users"
+  uuid = sql_string ("SELECT uuid FROM users"
                      " WHERE name = '%s' AND method = '%s';",
                      quoted_username,
                      quoted_method);
@@ -11952,8 +11933,7 @@ authenticate (credentials_t* credentials)
 
           quoted_name = sql_quote (credentials->username);
           quoted_method = sql_quote (auth_method_name (auth_method));
-          credentials->uuid = sql_string (0, 0,
-                                          "SELECT uuid FROM users"
+          credentials->uuid = sql_string ("SELECT uuid FROM users"
                                           " WHERE name = '%s'"
                                           " AND method = '%s';",
                                           quoted_name,
@@ -11981,8 +11961,7 @@ authenticate (credentials_t* credentials)
               return 99;
             }
 
-          credentials->timezone = sql_string (0, 0,
-                                              "SELECT timezone FROM users"
+          credentials->timezone = sql_string ("SELECT timezone FROM users"
                                               " WHERE uuid = '%s';",
                                               credentials->uuid);
 
@@ -12165,8 +12144,7 @@ task_id (task_t task)
 int
 task_uuid (task_t task, char ** id)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM tasks WHERE ROWID = %llu;",
+  *id = sql_string ("SELECT uuid FROM tasks WHERE ROWID = %llu;",
                     task);
   return 0;
 }
@@ -12197,8 +12175,7 @@ task_in_trash (task_t task)
 char*
 task_owner_name (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM users WHERE ROWID ="
+  return sql_string ("SELECT name FROM users WHERE ROWID ="
                      " (SELECT owner FROM tasks WHERE ROWID = %llu);",
                      task);
 }
@@ -12213,8 +12190,7 @@ task_owner_name (task_t task)
 static char*
 task_owner_uuid (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM users WHERE ROWID ="
+  return sql_string ("SELECT uuid FROM users WHERE ROWID ="
                      " (SELECT owner FROM tasks WHERE ROWID = %llu);",
                      task);
 }
@@ -12229,8 +12205,7 @@ task_owner_uuid (task_t task)
 char*
 task_name (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM tasks WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -12244,8 +12219,7 @@ task_name (task_t task)
 char*
 task_comment (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT comment FROM tasks WHERE ROWID = %llu;",
+  return sql_string ("SELECT comment FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -12259,8 +12233,7 @@ task_comment (task_t task)
 char*
 task_hosts_ordering (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT hosts_ordering FROM tasks WHERE ROWID = %llu;",
+  return sql_string ("SELECT hosts_ordering FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -12331,12 +12304,10 @@ char*
 task_config_uuid (task_t task)
 {
   if (task_config_in_trash (task))
-    return sql_string (0, 0,
-                       "SELECT uuid FROM configs_trash WHERE ROWID ="
+    return sql_string ("SELECT uuid FROM configs_trash WHERE ROWID ="
                        " (SELECT config FROM tasks WHERE ROWID = %llu);",
                        task);
-  return sql_string (0, 0,
-                     "SELECT uuid FROM configs WHERE ROWID ="
+  return sql_string ("SELECT uuid FROM configs WHERE ROWID ="
                      " (SELECT config FROM tasks WHERE ROWID = %llu);",
                      task);
 }
@@ -12352,12 +12323,10 @@ char*
 task_config_name (task_t task)
 {
   if (task_config_in_trash (task))
-    return sql_string (0, 0,
-                       "SELECT name FROM configs_trash WHERE ROWID ="
+    return sql_string ("SELECT name FROM configs_trash WHERE ROWID ="
                        " (SELECT config FROM tasks WHERE ROWID = %llu);",
                        task);
-  return sql_string (0, 0,
-                     "SELECT name FROM configs WHERE ROWID ="
+  return sql_string ("SELECT name FROM configs WHERE ROWID ="
                      " (SELECT config FROM tasks WHERE ROWID = %llu);",
                      task);
 }
@@ -12535,8 +12504,7 @@ task_slave_in_trash (task_t task)
 char*
 task_description (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT description FROM tasks WHERE ROWID = %llu;",
+  return sql_string ("SELECT description FROM tasks WHERE ROWID = %llu;",
                      task);
 }
 
@@ -12906,8 +12874,7 @@ task_last_stopped_report (task_t task, report_t *report)
 gchar*
 task_first_report_id (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM reports WHERE task = %llu"
+  return sql_string ("SELECT uuid FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date ASC LIMIT 1;",
                      task,
@@ -12924,8 +12891,7 @@ task_first_report_id (task_t task)
 gchar*
 task_last_report_id (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM reports WHERE task = %llu"
+  return sql_string ("SELECT uuid FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1;",
                      task,
@@ -12942,8 +12908,7 @@ task_last_report_id (task_t task)
 gchar*
 task_second_last_report_id (task_t task)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM reports WHERE task = %llu"
+  return sql_string ("SELECT uuid FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1 OFFSET 1;",
                      task,
@@ -13341,8 +13306,7 @@ task_severity (task_t task, int overrides, int offset)
 
   g_free (severity_sql);
 
-  severity = sql_string (0, 0,
-                         "SELECT max (%s),"
+  severity = sql_string ("SELECT max (%s),"
                          "       (SELECT ROWID FROM reports"
                          "        WHERE reports.task = %llu"
                          "        AND reports.scan_run_status = %u"
@@ -13764,16 +13728,14 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 
   if (nvt && strcmp(nvt, ""))
     {
-      nvt_revision = sql_string (0, 0,
-                                "SELECT version FROM nvts WHERE uuid = '%s';",
-                                nvt);
+      nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
+                                 nvt);
 
       if (strcasecmp (type, "Alarm") == 0)
         {
-          severity = sql_string (0, 0,
-                                "SELECT coalesce(cvss_base, 0.0)"
-                                " FROM nvts WHERE uuid = '%s';",
-                                nvt);
+          severity = sql_string ("SELECT coalesce(cvss_base, 0.0)"
+                                 " FROM nvts WHERE uuid = '%s';",
+                                 nvt);
 
           if (strcmp (severity, "") == 0)
             {
@@ -13843,8 +13805,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 int
 result_uuid (result_t result, char ** id)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM results WHERE ROWID = %llu;",
+  *id = sql_string ("SELECT uuid FROM results WHERE ROWID = %llu;",
                     result);
   return 0;
 }
@@ -13877,70 +13838,70 @@ result_detection_reference (result_t result, char **ref, char **product,
 
   *ref = *product = *location = *oid = *name = NULL;
 
-  report = sql_string (0, 0, "SELECT report FROM report_results"
-                             " WHERE result = %llu;",
-                             result);
+  report = sql_string ("SELECT report FROM report_results"
+                       " WHERE result = %llu;",
+                       result);
   if (report == NULL)
     goto detect_cleanup;
 
-  host = sql_string (0, 0, "SELECT host FROM results where ROWID = %llu;",
+  host = sql_string ("SELECT host FROM results where ROWID = %llu;",
                      result);
   if (host == NULL)
     goto detect_cleanup;
 
-  *oid = sql_string (0, 0, "SELECT value"
-                           " FROM report_host_details"
-                           " WHERE report_host = (SELECT ROWID"
-                           "                      FROM report_hosts"
-                           "                      WHERE report = %s"
-                           "                      AND host = '%s')"
-                           " AND name = 'detected_by'"
-                           " AND source_name = (SELECT nvt FROM results"
-                           "                    WHERE ROWID = %llu);",
-                           report, host, result);
+  *oid = sql_string ("SELECT value"
+                     " FROM report_host_details"
+                     " WHERE report_host = (SELECT ROWID"
+                     "                      FROM report_hosts"
+                     "                      WHERE report = %s"
+                     "                      AND host = '%s')"
+                     " AND name = 'detected_by'"
+                     " AND source_name = (SELECT nvt FROM results"
+                     "                    WHERE ROWID = %llu);",
+                     report, host, result);
   if (*oid == NULL)
     goto detect_cleanup;
 
-  *location = sql_string (0, 0, "SELECT value"
-                                " FROM report_host_details"
-                                " WHERE report_host = (SELECT ROWID"
-                                "                      FROM report_hosts"
-                                "                      WHERE report = %s"
-                                "                      AND host = '%s')"
-                                " AND name = 'detected_at'"
-                                " AND source_name = (SELECT nvt"
-                                "                    FROM results"
-                                "                    WHERE ROWID = %llu);",
-                                report, host, result);
+  *location = sql_string ("SELECT value"
+                          " FROM report_host_details"
+                          " WHERE report_host = (SELECT ROWID"
+                          "                      FROM report_hosts"
+                          "                      WHERE report = %s"
+                          "                      AND host = '%s')"
+                          " AND name = 'detected_at'"
+                          " AND source_name = (SELECT nvt"
+                          "                    FROM results"
+                          "                    WHERE ROWID = %llu);",
+                          report, host, result);
   if (*location == NULL)
     goto detect_cleanup;
 
-  *product = sql_string (0, 0, "SELECT name"
-                               " FROM report_host_details"
-                               " WHERE report_host = (SELECT ROWID"
-                               "                      FROM report_hosts"
-                               "                      WHERE report = %s"
-                               "                      AND host = '%s')"
-                               " AND source_name = '%s'"
-                               " AND value = '%s';",
-                               report, host, *oid, *location);
+  *product = sql_string ("SELECT name"
+                         " FROM report_host_details"
+                         " WHERE report_host = (SELECT ROWID"
+                         "                      FROM report_hosts"
+                         "                      WHERE report = %s"
+                         "                      AND host = '%s')"
+                         " AND source_name = '%s'"
+                         " AND value = '%s';",
+                         report, host, *oid, *location);
   if (*product == NULL)
     goto detect_cleanup;
 
-  *name = sql_string (0, 0, "SELECT name FROM nvts WHERE oid = '%s';", *oid);
+  *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
   if (*name == NULL)
     goto detect_cleanup;
 
-  *ref = sql_string (0, 0, "SELECT uuid"
-                           " FROM results"
-                           " WHERE ROWID IN (SELECT result"
-                           "                 FROM report_results"
-                           "                 WHERE report = %s)"
-                           " AND host = '%s'"
-                           " AND nvt = '%s'"
-                           " AND (description LIKE '%%%s%%'"
-                           "      OR port LIKE '%%%s%%');",
-                           report, host, *oid, *location, *location);
+  *ref = sql_string ("SELECT uuid"
+                     " FROM results"
+                     " WHERE ROWID IN (SELECT result"
+                     "                 FROM report_results"
+                     "                 WHERE report = %s)"
+                     " AND host = '%s'"
+                     " AND nvt = '%s'"
+                     " AND (description LIKE '%%%s%%'"
+                     "      OR port LIKE '%%%s%%');",
+                     report, host, *oid, *location, *location);
   if (*ref == NULL)
     goto detect_cleanup;
 
@@ -14749,8 +14710,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 char*
 report_uuid (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14793,8 +14753,7 @@ report_task (report_t report, task_t *task)
 char*
 report_slave_uuid (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT slave_uuid FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT slave_uuid FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14808,8 +14767,7 @@ report_slave_uuid (report_t report)
 char*
 report_slave_name (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT slave_name FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT slave_name FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14823,8 +14781,7 @@ report_slave_name (report_t report)
 char*
 report_slave_host (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT slave_host FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT slave_host FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14838,8 +14795,7 @@ report_slave_host (report_t report)
 char*
 report_slave_port (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT slave_port FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT slave_port FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14853,8 +14809,7 @@ report_slave_port (report_t report)
 char*
 report_source_iface (report_t report)
 {
-  return sql_string (0, 0,
-                     "SELECT source_iface FROM reports WHERE ROWID = %llu;",
+  return sql_string ("SELECT source_iface FROM reports WHERE ROWID = %llu;",
                      report);
 }
 
@@ -14983,8 +14938,7 @@ report_add_result (report_t report, result_t result)
         report, current_credentials.uuid, severity);
 
   ov_severity_str
-    = sql_string (0, 0,
-                  "SELECT coalesce (overrides.new_severity, %1.1f)"
+    = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
                   " FROM overrides, results"
                   " WHERE results.ROWID = %llu"
                   " AND overrides.nvt = results.nvt"
@@ -17231,8 +17185,7 @@ set_task_end_time (task_t task, char* time)
 char*
 scan_start_time (report_t report)
 {
-  char *time = sql_string (0, 0,
-                           "SELECT iso_time (start_time)"
+  char *time = sql_string ("SELECT iso_time (start_time)"
                            " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
@@ -17291,8 +17244,7 @@ set_scan_start_time_otp (report_t report, const char* timestamp)
 char*
 scan_end_time (report_t report)
 {
-  char *time = sql_string (0, 0,
-                           "SELECT iso_time (end_time)"
+  char *time = sql_string ("SELECT iso_time (end_time)"
                            " FROM reports WHERE ROWID = %llu;",
                            report);
   return time ? time : g_strdup ("");
@@ -17310,8 +17262,7 @@ scan_end_time_uuid (const char *uuid)
 {
   char *time, *quoted_uuid;
   quoted_uuid = sql_quote (uuid);
-  time = sql_string (0, 0,
-                     "SELECT iso_time (end_time)"
+  time = sql_string ("SELECT iso_time (end_time)"
                      " FROM reports WHERE uuid = '%s';",
                      quoted_uuid);
   return time ? time : g_strdup ("");
@@ -19038,8 +18989,7 @@ report_slave_task_uuid (report_t report)
 {
   char *uuid;
 
-  uuid = sql_string (0, 0,
-                     "SELECT slave_task_uuid FROM reports WHERE ROWID = %llu;",
+  uuid = sql_string ("SELECT slave_task_uuid FROM reports WHERE ROWID = %llu;",
                      report);
   if (uuid && strlen (uuid))
     return uuid;
@@ -27163,8 +27113,7 @@ target_iterator_alive_tests (iterator_t* iterator)
 char*
 tag_uuid (tag_t tag)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM tags WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM tags WHERE ROWID = %llu;",
                      tag);
 }
 
@@ -27178,8 +27127,7 @@ tag_uuid (tag_t tag)
 char*
 target_uuid (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM targets WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27193,8 +27141,7 @@ target_uuid (target_t target)
 char*
 trash_target_uuid (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM targets_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM targets_trash WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27208,8 +27155,7 @@ trash_target_uuid (target_t target)
 char*
 target_name (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM targets WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27223,8 +27169,7 @@ target_name (target_t target)
 char*
 trash_target_name (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM targets_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM targets_trash WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27239,8 +27184,7 @@ trash_target_name (target_t target)
 char*
 target_hosts (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT hosts FROM targets WHERE ROWID = %llu;",
+  return sql_string ("SELECT hosts FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27255,8 +27199,7 @@ target_hosts (target_t target)
 char*
 target_exclude_hosts (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT exclude_hosts FROM targets WHERE ROWID = %llu;",
+  return sql_string ("SELECT exclude_hosts FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27270,8 +27213,7 @@ target_exclude_hosts (target_t target)
 char*
 target_reverse_lookup_only (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT reverse_lookup_only FROM targets"
+  return sql_string ("SELECT reverse_lookup_only FROM targets"
                      " WHERE ROWID = %llu;", target);
 }
 
@@ -27285,8 +27227,7 @@ target_reverse_lookup_only (target_t target)
 char*
 target_reverse_lookup_unify (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT reverse_lookup_unify FROM targets"
+  return sql_string ("SELECT reverse_lookup_unify FROM targets"
                      " WHERE ROWID = %llu;", target);
 }
 
@@ -27301,8 +27242,7 @@ target_reverse_lookup_unify (target_t target)
 char*
 trash_target_hosts (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT hosts FROM targets_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT hosts FROM targets_trash WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27317,8 +27257,7 @@ trash_target_hosts (target_t target)
 char*
 trash_target_exclude_hosts (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT exclude_hosts FROM targets_trash"
+  return sql_string ("SELECT exclude_hosts FROM targets_trash"
                      " WHERE ROWID = %llu;",
                      target);
 }
@@ -27333,8 +27272,7 @@ trash_target_exclude_hosts (target_t target)
 char*
 target_ssh_port (target_t target)
 {
-  return sql_string (0, 0,
-                     "SELECT ssh_port FROM targets WHERE ROWID = %llu;",
+  return sql_string ("SELECT ssh_port FROM targets WHERE ROWID = %llu;",
                      target);
 }
 
@@ -27900,8 +27838,7 @@ create_config (const char* proposed_name, const char* comment,
 int
 config_uuid (config_t config, char ** id)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM configs WHERE ROWID = %llu;",
+  *id = sql_string ("SELECT uuid FROM configs WHERE ROWID = %llu;",
                     config);
   return 0;
 }
@@ -27921,13 +27858,11 @@ config_preference (config_t config, const char *type, const char *preference)
 {
   /** @todo Quote type and preference. */
   if (type)
-    return sql_string (0, 0,
-                       "SELECT value FROM config_preferences"
+    return sql_string ("SELECT value FROM config_preferences"
                        " WHERE ROWID = %llu AND  type = '%s' AND name = '%s';",
                        config, type, preference);
   else
-    return sql_string (0, 0,
-                       "SELECT value FROM config_preferences"
+    return sql_string ("SELECT value FROM config_preferences"
                        " WHERE ROWID = %llu AND type is NULL AND name = '%s';",
                        config, preference);
 }
@@ -27943,8 +27878,7 @@ config_preference (config_t config, const char *type, const char *preference)
 char *
 config_nvt_timeout (config_t config, const char *oid)
 {
-  return sql_string (0, 0,
-                     "SELECT value FROM config_preferences"
+  return sql_string ("SELECT value FROM config_preferences"
                      " WHERE config = %llu"
                      " AND type = 'SERVER_PREFS'"
                      " AND name = 'timeout.%s';",
@@ -29051,8 +28985,7 @@ DEF_ACCESS (otp_pref_iterator_value, 1);
 char*
 config_nvt_selector (config_t config)
 {
-  return sql_string (0, 0,
-                     "SELECT nvt_selector FROM configs WHERE ROWID = %llu;",
+  return sql_string ("SELECT nvt_selector FROM configs WHERE ROWID = %llu;",
                      config);
 }
 
@@ -29154,8 +29087,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
 
           /* A radio.  Put the new value on the front of the list of options. */
 
-          old_value = sql_string (0, 0,
-                                  "SELECT value FROM config_preferences"
+          old_value = sql_string ("SELECT value FROM config_preferences"
                                   " WHERE config = %llu"
                                   " AND type %s"
                                   " AND name = '%s'",
@@ -29163,8 +29095,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
                                   nvt ? "= 'PLUGINS_PREFS'" : "is NULL",
                                   quoted_name);
           if (old_value == NULL)
-            old_value = sql_string (0, 0,
-                                    "SELECT value FROM nvt_preferences"
+            old_value = sql_string ("SELECT value FROM nvt_preferences"
                                     " WHERE name = '%s'",
                                     quoted_name);
           if (old_value)
@@ -29648,7 +29579,7 @@ DEF_ACCESS (config_task_iterator_uuid, 1);
 char *
 manage_nvt_name (nvt_t nvt)
 {
-  return sql_string (0, 0, "SELECT name FROM nvts WHERE ROWID = %llu;", nvt);
+  return sql_string ("SELECT name FROM nvts WHERE ROWID = %llu;", nvt);
 }
 
 /**
@@ -29662,8 +29593,7 @@ char *
 nvt_oid (const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  char *ret = sql_string (0, 0,
-                          "SELECT oid FROM nvts WHERE name = '%s' LIMIT 1;",
+  char *ret = sql_string ("SELECT oid FROM nvts WHERE name = '%s' LIMIT 1;",
                           quoted_name);
   g_free (quoted_name);
   return ret;
@@ -29677,8 +29607,7 @@ nvt_oid (const char *name)
 char*
 nvts_feed_version ()
 {
-  return sql_string (0, 0,
-                     "SELECT value FROM main.meta"
+  return sql_string ("SELECT value FROM main.meta"
                      " WHERE name = 'nvts_feed_version';");
 }
 
@@ -30520,8 +30449,7 @@ nvt_selector_families_growing (const char* selector)
                   selector);
 #else
   char *string;
-  string = sql_string (0, 0,
-                       "SELECT name FROM nvt_selectors"
+  string = sql_string ("SELECT name FROM nvt_selectors"
                        " WHERE name = '%s'"
                        " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_ALL)
                        " AND exclude = 0"
@@ -31953,8 +31881,7 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
   if (iterator->done) return NULL;
 
   quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
-  value = sql_string (0, 0,
-                      "SELECT value FROM config_preferences"
+  value = sql_string ("SELECT value FROM config_preferences"
                       " WHERE config = %llu"
                       " AND name = '%s'"
                       /* Ensure that the NVT pref comes first, in case an
@@ -32024,8 +31951,7 @@ task_preference_value (task_t task, const char *name)
   gchar *quoted_name, *value;
 
   quoted_name = sql_quote (name);
-  value = sql_string (0, 0,
-                      "SELECT value FROM task_preferences"
+  value = sql_string ("SELECT value FROM task_preferences"
                       " WHERE task = %llu"
                       " AND name = '%s';",
                       task,
@@ -32036,8 +31962,7 @@ task_preference_value (task_t task, const char *name)
       return value;
     }
 
-  value = sql_string (0, 0,
-                      "SELECT value FROM nvt_preferences"
+  value = sql_string ("SELECT value FROM nvt_preferences"
                       " WHERE name = '%s';",
                       quoted_name);
   if (value)
@@ -33170,8 +33095,7 @@ lsc_credential_iterator_exe (iterator_t *iterator)
 char*
 lsc_credential_uuid (lsc_credential_t lsc_credential)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM lsc_credentials WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM lsc_credentials WHERE ROWID = %llu;",
                      lsc_credential);
 }
 
@@ -33185,8 +33109,7 @@ lsc_credential_uuid (lsc_credential_t lsc_credential)
 char*
 trash_lsc_credential_uuid (lsc_credential_t lsc_credential)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM lsc_credentials_trash"
+  return sql_string ("SELECT uuid FROM lsc_credentials_trash"
                      " WHERE ROWID = %llu;",
                      lsc_credential);
 }
@@ -33201,8 +33124,7 @@ trash_lsc_credential_uuid (lsc_credential_t lsc_credential)
 char*
 lsc_credential_name (lsc_credential_t lsc_credential)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM lsc_credentials WHERE ROWID = %llu;",
                      lsc_credential);
 }
 
@@ -33216,8 +33138,7 @@ lsc_credential_name (lsc_credential_t lsc_credential)
 char*
 trash_lsc_credential_name (lsc_credential_t lsc_credential)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM lsc_credentials_trash"
+  return sql_string ("SELECT name FROM lsc_credentials_trash"
                      " WHERE ROWID = %llu;",
                      lsc_credential);
 }
@@ -34148,8 +34069,7 @@ verify_agent (const char *agent_id)
 char *
 agent_uuid (agent_t agent)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM agents WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM agents WHERE ROWID = %llu;",
                      agent);
 }
 
@@ -34688,8 +34608,7 @@ delete_note (const char *note_id, int ultimate)
 int
 note_uuid (note_t note, char ** id)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM notes WHERE ROWID = %llu;",
+  *id = sql_string ("SELECT uuid FROM notes WHERE ROWID = %llu;",
                     note);
   return 0;
 }
@@ -35505,8 +35424,7 @@ create_override (const char* active, const char* nvt, const char* text,
 int
 override_uuid (override_t override, char ** id)
 {
-  *id = sql_string (0, 0,
-                    "SELECT uuid FROM overrides WHERE ROWID = %llu;",
+  *id = sql_string ("SELECT uuid FROM overrides WHERE ROWID = %llu;",
                     override);
   return 0;
 }
@@ -36724,7 +36642,7 @@ trash_scanner_writable (scanner_t scanner)
 char *
 scanner_uuid (scanner_t scanner)
 {
-  return sql_string (0, 0, "SELECT uuid FROM scanners WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM scanners WHERE ROWID = %llu;",
                      scanner);
 }
 
@@ -36869,8 +36787,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
   if (timezone && strcmp (timezone, ""))
     insert_timezone = g_strdup (timezone);
   else
-    insert_timezone = sql_string (0, 0,
-                                  "SELECT timezone FROM users"
+    insert_timezone = sql_string ("SELECT timezone FROM users"
                                   " WHERE users.uuid = '%s';",
                                   current_credentials.uuid);
 
@@ -37248,8 +37165,7 @@ add_months (time_t time, int months)
 char *
 schedule_uuid (schedule_t schedule)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM schedules WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM schedules WHERE ROWID = %llu;",
                      schedule);
 }
 
@@ -37263,8 +37179,7 @@ schedule_uuid (schedule_t schedule)
 char *
 schedule_name (schedule_t schedule)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM schedules WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM schedules WHERE ROWID = %llu;",
                      schedule);
 }
 
@@ -39450,8 +39365,7 @@ report_format_verify (report_format_t report_format)
 char *
 report_format_uuid (report_format_t report_format)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM report_formats WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM report_formats WHERE ROWID = %llu;",
                      report_format);
 }
 
@@ -39470,8 +39384,7 @@ report_format_owner_uuid (report_format_t report_format)
                " WHERE ROWID = %llu;",
                report_format))
     return NULL;
-  return sql_string (0, 0,
-                     "SELECT uuid FROM users"
+  return sql_string ("SELECT uuid FROM users"
                      " WHERE ROWID = (SELECT owner FROM report_formats"
                      "                WHERE ROWID = %llu);",
                      report_format);
@@ -39510,8 +39423,7 @@ set_report_format_active (report_format_t report_format, int active)
 char *
 report_format_name (report_format_t report_format)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM report_formats WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM report_formats WHERE ROWID = %llu;",
                      report_format);
 }
 
@@ -39525,8 +39437,7 @@ report_format_name (report_format_t report_format)
 char *
 report_format_content_type (report_format_t report_format)
 {
-  return sql_string (0, 0,
-                     "SELECT content_type FROM report_formats"
+  return sql_string ("SELECT content_type FROM report_formats"
                      " WHERE ROWID = %llu;",
                      report_format);
 }
@@ -39608,8 +39519,7 @@ trash_report_format_writable (report_format_t report_format)
 char *
 report_format_extension (report_format_t report_format)
 {
-  return sql_string (0, 0,
-                     "SELECT extension FROM report_formats WHERE ROWID = %llu;",
+  return sql_string ("SELECT extension FROM report_formats WHERE ROWID = %llu;",
                      report_format);
 }
 
@@ -40908,8 +40818,7 @@ DEF_ACCESS (slave_iterator_password, GET_ITERATOR_COLUMN_COUNT + 3);
 char*
 slave_uuid (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM slaves WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM slaves WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40923,8 +40832,7 @@ slave_uuid (slave_t slave)
 char*
 trash_slave_uuid (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM slaves_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM slaves_trash WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40938,8 +40846,7 @@ trash_slave_uuid (slave_t slave)
 char*
 slave_name (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM slaves WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM slaves WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40953,8 +40860,7 @@ slave_name (slave_t slave)
 char*
 trash_slave_name (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM slaves_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM slaves_trash WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40968,8 +40874,7 @@ trash_slave_name (slave_t slave)
 char*
 slave_host (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT host FROM slaves WHERE ROWID = %llu;",
+  return sql_string ("SELECT host FROM slaves WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40983,8 +40888,7 @@ slave_host (slave_t slave)
 char*
 slave_login (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT login FROM slaves WHERE ROWID = %llu;",
+  return sql_string ("SELECT login FROM slaves WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -40998,8 +40902,7 @@ slave_login (slave_t slave)
 char*
 slave_password (slave_t slave)
 {
-  return sql_string (0, 0,
-                     "SELECT password FROM slaves WHERE ROWID = %llu;",
+  return sql_string ("SELECT password FROM slaves WHERE ROWID = %llu;",
                      slave);
 }
 
@@ -41014,8 +40917,7 @@ int
 slave_port (slave_t slave)
 {
   int ret;
-  char *port = sql_string (0, 0,
-                           "SELECT port FROM slaves WHERE ROWID = %llu;",
+  char *port = sql_string ("SELECT port FROM slaves WHERE ROWID = %llu;",
                            slave);
   if (port == NULL)
     return -1;
@@ -41484,8 +41386,7 @@ delete_group (const char *group_id, int ultimate)
 char*
 group_uuid (group_t group)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM groups WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM groups WHERE ROWID = %llu;",
                      group);
 }
 
@@ -41499,8 +41400,7 @@ group_uuid (group_t group)
 gchar *
 group_users (group_t group)
 {
-  return sql_string (0, 0,
-                     "SELECT group_concat (name, ', ') FROM users, group_users"
+  return sql_string ("SELECT group_concat (name, ', ') FROM users, group_users"
                      " WHERE group_users.`group` = %llu"
                      " AND group_users.user = users.ROWID;",
                      group);
@@ -42029,8 +41929,7 @@ copy_permission (const char* comment, const char *permission_id,
 char*
 permission_uuid (permission_t permission)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM permissions WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM permissions WHERE ROWID = %llu;",
                      permission);
 }
 
@@ -42604,8 +42503,7 @@ modify_permission (const char *permission_id, const char *name,
         command = g_strdup (name);
       else
         {
-          command = sql_string (0, 0,
-                                "SELECT name FROM permissions"
+          command = sql_string ("SELECT name FROM permissions"
                                 " WHERE ROWID = %llu;",
                                 permission);
           if ((command == NULL) || (strlen (command) == 0))
@@ -42818,8 +42716,7 @@ port_range_port_list_uuid (const char *port_range)
   if (sql_int (0, 0,
                "SELECT count (*) FROM port_ranges WHERE uuid = '%s';",
                quoted_port_range))
-    ret = sql_string (0, 0,
-                      "SELECT uuid FROM port_lists"
+    ret = sql_string ("SELECT uuid FROM port_lists"
                       " WHERE ROWID = (SELECT port_list FROM port_ranges"
                       "                WHERE uuid = '%s');",
                       quoted_port_range);
@@ -43874,8 +43771,7 @@ port_list_iterator_count_udp (iterator_t* iterator)
 char*
 port_list_uuid (port_list_t port_list)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM port_lists WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM port_lists WHERE ROWID = %llu;",
                      port_list);
 }
 
@@ -43889,8 +43785,7 @@ port_list_uuid (port_list_t port_list)
 char*
 port_range_uuid (port_range_t port_range)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM port_ranges WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM port_ranges WHERE ROWID = %llu;",
                      port_range);
 }
 
@@ -44495,8 +44390,7 @@ find_role_by_name (const char* name, role_t *role)
 gchar *
 role_uuid (role_t role)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM roles WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM roles WHERE ROWID = %llu;",
                      role);
 }
 
@@ -44510,8 +44404,7 @@ role_uuid (role_t role)
 gchar *
 role_users (role_t role)
 {
-  return sql_string (0, 0,
-                     "SELECT group_concat (name, ', ') FROM users, role_users"
+  return sql_string ("SELECT group_concat (name, ', ') FROM users, role_users"
                      " WHERE role_users.role = %llu"
                      " AND role_users.user = users.ROWID;",
                      role);
@@ -44773,8 +44666,7 @@ find_filter_with_permission (const char* uuid, filter_t* filter,
 char*
 filter_uuid (filter_t filter)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM filters WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM filters WHERE ROWID = %llu;",
                      filter);
 }
 
@@ -44788,8 +44680,7 @@ filter_uuid (filter_t filter)
 char*
 trash_filter_uuid (filter_t filter)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM filters_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM filters_trash WHERE ROWID = %llu;",
                      filter);
 }
 
@@ -44803,8 +44694,7 @@ trash_filter_uuid (filter_t filter)
 char*
 filter_name (filter_t filter)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM filters WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM filters WHERE ROWID = %llu;",
                      filter);
 }
 
@@ -44818,8 +44708,7 @@ filter_name (filter_t filter)
 char*
 trash_filter_name (filter_t filter)
 {
-  return sql_string (0, 0,
-                     "SELECT name FROM filters_trash WHERE ROWID = %llu;",
+  return sql_string ("SELECT name FROM filters_trash WHERE ROWID = %llu;",
                      filter);
 }
 
@@ -44835,8 +44724,7 @@ filter_term (const char *uuid)
 {
   gchar *quoted_uuid, *ret;
   quoted_uuid = sql_quote (uuid);
-  ret = sql_string (0, 0,
-                    "SELECT term FROM filters WHERE uuid = '%s';",
+  ret = sql_string ("SELECT term FROM filters WHERE uuid = '%s';",
                     quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -46294,8 +46182,7 @@ manage_restore (const char *id)
 
       global = report_format_trash_global (resource);
 
-      trash_uuid = sql_string (0, 0,
-                               "SELECT original_uuid FROM report_formats_trash"
+      trash_uuid = sql_string ("SELECT original_uuid FROM report_formats_trash"
                                " WHERE ROWID = %llu;",
                                resource);
       if (trash_uuid == NULL)
@@ -46985,8 +46872,7 @@ setting_count (const char *filter)
 char *
 setting_filter (const char *resource)
 {
-  return sql_string (0, 0,
-                     "SELECT value FROM settings WHERE name = '%s Filter'"
+  return sql_string ("SELECT value FROM settings WHERE name = '%s Filter'"
                      " AND ((owner IS NULL)"
                      "      OR (owner ="
                      "          (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
@@ -48298,8 +48184,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
 gchar*
 get_ovaldef_short_filename (char* item_id)
 {
-  return sql_string (0, 0,
-                     "SELECT xml_file FROM ovaldefs WHERE uuid = '%s';",
+  return sql_string ("SELECT xml_file FROM ovaldefs WHERE uuid = '%s';",
                      item_id);
 }
 
@@ -49077,8 +48962,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 
   memset (&get, '\0', sizeof (get));
   current_uuid = current_credentials.uuid;
-  current_credentials.uuid = sql_string (0, 0,
-                                         "SELECT uuid FROM users"
+  current_credentials.uuid = sql_string ("SELECT uuid FROM users"
                                          " WHERE ROWID = %llu;",
                                          user);
   init_user_task_iterator (&tasks, 0);
@@ -49343,8 +49227,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
       return 2;
     }
 
-  uuid = sql_string (0, 0,
-                     "SELECT uuid FROM users WHERE ROWID = %llu",
+  uuid = sql_string ("SELECT uuid FROM users WHERE ROWID = %llu",
                      user);
 
   was_admin = user_is_admin (uuid);
@@ -49353,8 +49236,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
     {
       char *user_name;
 
-      user_name = sql_string (0, 0,
-                              "SELECT name FROM users WHERE ROWID = %llu",
+      user_name = sql_string ("SELECT name FROM users WHERE ROWID = %llu",
                               user);
       errstr = openvas_validate_password (password, user_name);
       g_free (user_name);
@@ -49507,8 +49389,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
       if (is_admin)
         return 0;
       if (*name == NULL)
-        *name = sql_string (0, 0,
-                            "SELECT name FROM users WHERE ROWID = %llu",
+        *name = sql_string ("SELECT name FROM users WHERE ROWID = %llu",
                             user);
       return 4;
     }
@@ -49518,8 +49399,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
   if (is_admin)
     {
       if (*name == NULL)
-        *name = sql_string (0, 0,
-                            "SELECT name FROM users WHERE ROWID = %llu",
+        *name = sql_string ("SELECT name FROM users WHERE ROWID = %llu",
                             user);
       return 3;
     }
@@ -49538,8 +49418,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
 char*
 user_uuid (user_t user)
 {
-  return sql_string (0, 0,
-                     "SELECT uuid FROM users WHERE ROWID = %llu;",
+  return sql_string ("SELECT uuid FROM users WHERE ROWID = %llu;",
                      user);
 }
 

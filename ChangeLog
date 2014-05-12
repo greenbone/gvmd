@@ -1,5 +1,16 @@
 2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove cell args from sql_string.
+
+	* src/sql.c (sql_string): Remove col and row args.
+
+	* src/sql.h: Update headers accordingly.
+
+	* src/manage.c, src/manage_migrators.c, src/manage_sql.c: Update
+	callers.
+
+2014-05-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_second_last_report_id): Use SQL OFFSET to pick
 	row instead of sql_string args.
 

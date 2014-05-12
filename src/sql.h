@@ -65,7 +65,7 @@ int
 sql_int (unsigned int, unsigned int, char *, ...);
 
 char *
-sql_string (unsigned int, unsigned int, char *, ...);
+sql_string (char *, ...);
 
 char *
 sql_string_quiet (char *, ...);

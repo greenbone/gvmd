@@ -552,17 +552,15 @@ sql_int (unsigned int col, unsigned int row, char* sql, ...)
 /**
  * @brief Get a particular cell from a SQL query, as an string.
  *
- * @param[in]  col    Column.
- * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return Freshly allocated string containing the result, NULL otherwise.
  *         NULL means that either the selected value was NULL or there were
- *         fewer rows in the result than \p row.
+ *         no rows in the result.
  */
 char*
-sql_string (unsigned int col, unsigned int row, char* sql, ...)
+sql_string (char* sql, ...)
 {
   sqlite3_stmt* stmt;
   const unsigned char* ret2;
@@ -571,14 +569,14 @@ sql_string (unsigned int col, unsigned int row, char* sql, ...)
 
   va_list args;
   va_start (args, sql);
-  sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
   va_end (args);
   if (sql_x_ret)
     {
       sqlite3_finalize (stmt);
       return NULL;
     }
-  ret2 = sqlite3_column_text (stmt, col);
+  ret2 = sqlite3_column_text (stmt, 0);
   ret = g_strdup ((char*) ret2);
   sqlite3_finalize (stmt);
   return ret;

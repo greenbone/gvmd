@@ -975,8 +975,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
       sql ("UPDATE config_preferences SET config = %llu WHERE config = %llu;",
            config,
            predefined_config_id);
-      name = sql_string (0, 0,
-                         "SELECT name FROM configs WHERE ROWID = %llu;",
+      name = sql_string ("SELECT name FROM configs WHERE ROWID = %llu;",
                          predefined_config_id);
       if (name == NULL)
         {
@@ -2281,8 +2280,7 @@ migrate_21_to_22 ()
       else
         {
           char *owner_uuid;
-          owner_uuid = sql_string (0, 0,
-                                   "SELECT uuid FROM users"
+          owner_uuid = sql_string ("SELECT uuid FROM users"
                                    " WHERE ROWID = %llu;",
                                    iterator_int64 (&rows, 2));
           if (owner_uuid == NULL)
@@ -2999,8 +2997,7 @@ migrate_35_to_36 ()
   sql ("ALTER TABLE targets ADD column port_range;");
   sql ("UPDATE targets SET port_range = NULL;");
 
-  scanner_range = sql_string (0, 0,
-                              "SELECT value FROM nvt_preferences"
+  scanner_range = sql_string ("SELECT value FROM nvt_preferences"
                               " WHERE name = 'port_range'");
   if (scanner_range)
     {
@@ -3027,8 +3024,7 @@ migrate_35_to_36 ()
 
           /* Already used this target, use a copy of it. */
 
-          name = sql_string (0, 0,
-                             "SELECT name || ' Migration' FROM targets"
+          name = sql_string ("SELECT name || ' Migration' FROM targets"
                              " WHERE ROWID = %llu;",
                              target);
           assert (name);
@@ -3040,8 +3036,7 @@ migrate_35_to_36 ()
                iterator_int64 (&tasks, 0));
         }
 
-      config_range = sql_string (0, 0,
-                                 "SELECT value FROM config_preferences"
+      config_range = sql_string ("SELECT value FROM config_preferences"
                                  " WHERE config = %llu"
                                  " AND name = 'port_range';",
                                  iterator_int64 (&tasks, 2));
