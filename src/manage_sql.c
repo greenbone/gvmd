@@ -652,7 +652,7 @@ find_trash (const char *type, const char *uuid, resource_t *resource)
       *resource = 0;
       return FALSE;
     }
-  switch (sql_int64 (resource, 0, 0,
+  switch (sql_int64 (resource,
                      "SELECT ROWID FROM %ss_trash WHERE uuid = '%s';",
                      type,
                      quoted_uuid))
@@ -3353,7 +3353,7 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
       return FALSE;
     }
   // TODO should really check type
-  switch (sql_int64 (resource, 0, 0,
+  switch (sql_int64 (resource,
                      "SELECT ROWID FROM %ss WHERE uuid = '%s'%s;",
                      type,
                      quoted_uuid,
@@ -3405,7 +3405,7 @@ find_resource_with_permission (const char* type, const char* uuid,
       return FALSE;
     }
   // TODO should really check type
-  switch (sql_int64 (resource, 0, 0,
+  switch (sql_int64 (resource,
                      "SELECT ROWID FROM %ss%s WHERE uuid = '%s'%s;",
                      type,
                      (strcmp (type, "task") && trash) ? "_trash" : "",
@@ -3448,7 +3448,7 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
   gchar *quoted_name;
   quoted_name = sql_quote (name);
   // TODO should really check type
-  switch (sql_int64 (resource, 0, 0,
+  switch (sql_int64 (resource,
                      "SELECT ROWID FROM %ss WHERE name = '%s'"
                      " ORDER BY ROWID DESC;",
                      type,
@@ -3854,7 +3854,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
   if (get->id && owned && (current_credentials.uuid == NULL))
     {
       gchar *quoted_uuid = sql_quote (get->id);
-      switch (sql_int64 (&resource, 0, 0,
+      switch (sql_int64 (&resource,
                          "SELECT ROWID FROM %ss WHERE uuid = '%s';",
                          type, quoted_uuid))
         {
@@ -5244,7 +5244,7 @@ find_alert (const char* uuid, alert_t* alert)
       *alert = 0;
       return FALSE;
     }
-  switch (sql_int64 (alert, 0, 0,
+  switch (sql_int64 (alert,
                      "SELECT ROWID FROM alerts WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -7555,7 +7555,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   /* Message with inlined report. */
 
                   if (report == 0)
-                    switch (sql_int64 (&report, 0, 0,
+                    switch (sql_int64 (&report,
                                        "SELECT max (ROWID) FROM reports"
                                        " WHERE task = %llu",
                                        task))
@@ -7673,7 +7673,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   /* Message with attached report. */
 
                   if (report == 0)
-                    switch (sql_int64 (&report, 0, 0,
+                    switch (sql_int64 (&report,
                                        "SELECT max (ROWID) FROM reports"
                                        " WHERE task = %llu",
                                        task))
@@ -7887,7 +7887,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             return -1;
 
           if (report == 0)
-            switch (sql_int64 (&report, 0, 0,
+            switch (sql_int64 (&report,
                                "SELECT max (ROWID) FROM reports"
                                " WHERE task = %llu",
                                task))
@@ -7982,7 +7982,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             }
 
           if (report == 0)
-            switch (sql_int64 (&report, 0, 0,
+            switch (sql_int64 (&report,
                                "SELECT max (ROWID) FROM reports"
                                " WHERE task = %llu",
                                task))
@@ -10571,7 +10571,7 @@ check_db_versions (int nvt_cache_mode)
        * was created before NVT preferences were cached in the database.
        */
 
-      if (sql_int64 (&count, 0, 0,
+      if (sql_int64 (&count,
                      "SELECT count(*) FROM main.meta"
                      " WHERE name = 'nvts_feed_version'"
                      " OR name = 'nvt_preferences_enabled';")
@@ -12304,7 +12304,7 @@ config_t
 task_config (task_t task)
 {
   config_t config;
-  switch (sql_int64 (&config, 0, 0,
+  switch (sql_int64 (&config,
                      "SELECT config FROM tasks WHERE ROWID = %llu;",
                      task))
     {
@@ -12404,7 +12404,7 @@ target_t
 task_target (task_t task)
 {
   target_t target = 0;
-  switch (sql_int64 (&target, 0, 0,
+  switch (sql_int64 (&target,
                      "SELECT target FROM tasks WHERE ROWID = %llu;",
                      task))
     {
@@ -12478,7 +12478,7 @@ slave_t
 task_slave (task_t task)
 {
   slave_t slave = 0;
-  switch (sql_int64 (&slave, 0, 0,
+  switch (sql_int64 (&slave,
                      "SELECT slave FROM tasks WHERE ROWID = %llu;",
                      task))
     {
@@ -12808,7 +12808,7 @@ set_task_start_time_otp (task_t task, char* time)
 int
 task_last_report (task_t task, report_t *report)
 {
-  switch (sql_int64 (report, 0, 0,
+  switch (sql_int64 (report,
                      "SELECT ROWID FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1;",
@@ -12841,7 +12841,7 @@ task_last_report (task_t task, report_t *report)
 static int
 task_second_last_report (task_t task, report_t *report)
 {
-  switch (sql_int64 (report, 0, 0,
+  switch (sql_int64 (report,
                      "SELECT ROWID FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1 OFFSET 1;",
@@ -12874,7 +12874,7 @@ task_second_last_report (task_t task, report_t *report)
 int
 task_last_stopped_report (task_t task, report_t *report)
 {
-  switch (sql_int64 (report, 0, 0,
+  switch (sql_int64 (report,
                      "SELECT ROWID FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
                      " ORDER BY date DESC LIMIT 1;",
@@ -13181,7 +13181,7 @@ schedule_t
 task_schedule (task_t task)
 {
   schedule_t schedule = 0;
-  switch (sql_int64 (&schedule, 0, 0,
+  switch (sql_int64 (&schedule,
                      "SELECT schedule FROM tasks WHERE ROWID = %llu;",
                      task))
     {
@@ -13721,7 +13721,7 @@ find_result_with_permission (const char* uuid, result_t* result,
       *result = 0;
       return FALSE;
     }
-  switch (sql_int64 (result, 0, 0,
+  switch (sql_int64 (result,
                      "SELECT ROWID FROM results WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -14765,7 +14765,7 @@ report_uuid (report_t report)
 gboolean
 report_task (report_t report, task_t *task)
 {
-  switch (sql_int64 (task, 0, 0,
+  switch (sql_int64 (task,
                      "SELECT task FROM reports WHERE ROWID = %llu;",
                      report))
     {
@@ -14963,7 +14963,7 @@ report_add_result (report_t report, result_t result)
                          result);
 
   rowid = 0;
-  sql_int64 (&rowid, 0, 0,
+  sql_int64 (&rowid,
              "SELECT ROWID FROM report_counts"
              " WHERE report = %llu"
              " AND user = (SELECT ROWID FROM users WHERE users.uuid = '%s')"
@@ -15022,7 +15022,7 @@ report_add_result (report_t report, result_t result)
     ov_severity = severity;
 
   rowid = 0;
-  sql_int64 (&rowid, 0, 0,
+  sql_int64 (&rowid,
              "SELECT ROWID FROM report_counts"
              " WHERE report = %llu"
              " AND user = (SELECT ROWID FROM users WHERE users.uuid = '%s')"
@@ -18847,7 +18847,7 @@ delete_report_internal (report_t report)
 
   /* Update the task state. */
 
-  switch (sql_int64 (&report, 0, 0,
+  switch (sql_int64 (&report,
                      "SELECT max (ROWID) FROM reports WHERE task = %llu",
                      task))
     {
@@ -20110,7 +20110,7 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
     position = 1;
 
   quoted_host = sql_quote (host);
-  switch (sql_int64 (report_host, 0, 0,
+  switch (sql_int64 (report_host,
                      "SELECT ROWID FROM report_hosts WHERE host = '%s'"
                      " AND (SELECT reports.owner FROM reports"
                      "      WHERE reports.ROWID = report_hosts.report)"
@@ -25470,7 +25470,7 @@ find_task (const char* uuid, task_t* task)
       *task = 0;
       return FALSE;
     }
-  switch (sql_int64 (task, 0, 0,
+  switch (sql_int64 (task,
                      "SELECT ROWID FROM tasks WHERE uuid = '%s'"
                      " AND hidden != 2;",
                      uuid))
@@ -25538,7 +25538,7 @@ find_trash_task (const char* uuid, task_t* task)
       *task = 0;
       return FALSE;
     }
-  switch (sql_int64 (task, 0, 0,
+  switch (sql_int64 (task,
                      "SELECT ROWID FROM tasks WHERE uuid = '%s'"
                      " AND hidden = 2;",
                      uuid))
@@ -27350,7 +27350,7 @@ target_ssh_lsc_credential (target_t target)
 {
   lsc_credential_t lsc_credential;
 
-  switch (sql_int64 (&lsc_credential, 0, 0,
+  switch (sql_int64 (&lsc_credential,
                      "SELECT lsc_credential FROM targets"
                      " WHERE ROWID = %llu;",
                      target))
@@ -27382,7 +27382,7 @@ target_smb_lsc_credential (target_t target)
 {
   lsc_credential_t lsc_credential;
 
-  switch (sql_int64 (&lsc_credential, 0, 0,
+  switch (sql_int64 (&lsc_credential,
                      "SELECT smb_lsc_credential FROM targets"
                      " WHERE ROWID = %llu;",
                      target))
@@ -27414,7 +27414,7 @@ target_port_list (target_t target)
 {
   port_list_t port_list;
 
-  switch (sql_int64 (&port_list, 0, 0,
+  switch (sql_int64 (&port_list,
                      "SELECT port_range FROM targets"
                      " WHERE ROWID = %llu;",
                      target))
@@ -27665,7 +27665,7 @@ find_config (const char* uuid, config_t* config)
       *config = 0;
       return FALSE;
     }
-  switch (sql_int64 (config, 0, 0,
+  switch (sql_int64 (config,
                      "SELECT ROWID FROM configs WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -29712,7 +29712,7 @@ set_nvts_feed_version (const char *feed_version)
 gboolean
 find_nvt (const char* oid, nvt_t* nvt)
 {
-  switch (sql_int64 (nvt, 0, 0,
+  switch (sql_int64 (nvt,
                      "SELECT ROWID FROM nvts WHERE oid = '%s';",
                      oid))
     {
@@ -32134,7 +32134,7 @@ find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
       *lsc_credential = 0;
       return FALSE;
     }
-  switch (sql_int64 (lsc_credential, 0, 0,
+  switch (sql_int64 (lsc_credential,
                      "SELECT ROWID FROM lsc_credentials WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -37992,7 +37992,7 @@ find_report_format (const char* uuid, report_format_t* report_format)
       return FALSE;
     }
   assert (current_credentials.uuid);
-  switch (sql_int64 (report_format, 0, 0,
+  switch (sql_int64 (report_format,
                      "SELECT ROWID FROM report_formats WHERE uuid = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
                      " (SELECT users.ROWID FROM users"
@@ -38061,7 +38061,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
       *report_format = 0;
       return FALSE;
     }
-  switch (sql_int64 (report_format, 0, 0,
+  switch (sql_int64 (report_format,
                      "SELECT ROWID FROM report_formats"
                      " WHERE name = '%s'"
                      " AND ((owner IS NULL) OR (owner ="
@@ -39717,7 +39717,7 @@ int
 report_format_active (report_format_t report_format)
 {
   long long int flag;
-  switch (sql_int64 (&flag, 0, 0,
+  switch (sql_int64 (&flag,
                      "SELECT flags & %llu FROM report_formats"
                      " WHERE ROWID = %llu;",
                      (long long int) REPORT_FORMAT_FLAG_ACTIVE,
@@ -39791,7 +39791,7 @@ report_format_param_type_max (report_format_t report_format, const char *name)
   long long int max = 0;
   gchar *quoted_name = sql_quote (name);
   /* Assume it's there. */
-  sql_int64 (&max, 0, 0,
+  sql_int64 (&max,
              "SELECT type_max FROM report_format_params"
              " WHERE report_format = %llu AND name = '%s';",
              report_format,
@@ -39814,7 +39814,7 @@ report_format_param_type_min (report_format_t report_format, const char *name)
   long long int min = 0;
   gchar *quoted_name = sql_quote (name);
   /* Assume it's there. */
-  sql_int64 (&min, 0, 0,
+  sql_int64 (&min,
              "SELECT type_min FROM report_format_params"
              " WHERE report_format = %llu AND name = '%s';",
              report_format,
@@ -39916,7 +39916,7 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   /* Ensure the param exists. */
 
-  switch (sql_int64 (&param, 0, 0,
+  switch (sql_int64 (&param,
                      "SELECT ROWID FROM report_format_params"
                      " WHERE name = '%s';",
                      quoted_name))
@@ -42045,7 +42045,7 @@ static resource_t
 permission_resource (permission_t permission)
 {
   resource_t resource;
-  sql_int64 (&resource, 0, 0,
+  sql_int64 (&resource,
              "SELECT resource FROM permissions WHERE ROWID = %llu;",
              permission);
   return resource;
@@ -42380,7 +42380,7 @@ find_permission_with_permission (const char *uuid, permission_t *resource,
       *resource = 0;
       return FALSE;
     }
-  switch (sql_int64 (resource, 0, 0,
+  switch (sql_int64 (resource,
                      "SELECT ROWID FROM permissions WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -42761,7 +42761,7 @@ find_port_list (const char* uuid, port_list_t* port_list)
       *port_list = 0;
       return FALSE;
     }
-  switch (sql_int64 (port_list, 0, 0,
+  switch (sql_int64 (port_list,
                      "SELECT ROWID FROM port_lists WHERE uuid = '%s';",
                      quoted_uuid))
     {
@@ -42868,7 +42868,7 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
   g_free (port_list_uuid);
 
   quoted_uuid = sql_quote (uuid);
-  switch (sql_int64 (port_range, 0, 0,
+  switch (sql_int64 (port_range,
                      "SELECT ROWID FROM port_ranges WHERE uuid = '%s';",
                      quoted_uuid))
     {

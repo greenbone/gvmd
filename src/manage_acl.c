@@ -293,7 +293,7 @@ user_has_access_uuid (const char *type, const char *uuid,
       task_t task;
       report_t report;
 
-      switch (sql_int64 (&report, 0, 0,
+      switch (sql_int64 (&report,
                          "SELECT ROWID FROM reports WHERE uuid = '%s';",
                          uuid))
         {
@@ -318,7 +318,7 @@ user_has_access_uuid (const char *type, const char *uuid,
     {
       task_t task;
 
-      switch (sql_int64 (&task, 0, 0,
+      switch (sql_int64 (&task,
                          "SELECT task FROM results WHERE uuid = '%s';",
                          uuid))
         {

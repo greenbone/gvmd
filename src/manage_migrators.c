@@ -6699,7 +6699,7 @@ migrate_79_to_80 ()
       /* Find user in db. */
 
       quoted_uuid = sql_quote (uuid);
-      switch (sql_int64 (&user, 0, 0,
+      switch (sql_int64 (&user,
                          "SELECT ROWID FROM users WHERE uuid = '%s';",
                          quoted_uuid))
         {

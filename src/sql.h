@@ -71,7 +71,7 @@ char *
 sql_string_quiet (char *, ...);
 
 int
-sql_int64 (long long int * ret, unsigned int, unsigned int, char *, ...);
+sql_int64 (long long int * ret, char *, ...);
 
 void
 sql_make_uuid (sqlite3_context *, int argc, sqlite3_value **);

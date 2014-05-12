@@ -621,22 +621,20 @@ sql_string_quiet (char* sql, ...)
  * @brief Get a particular cell from a SQL query, as an int64.
  *
  * @param[in]  ret    Return value.
- * @param[in]  col    Column.
- * @param[in]  row    Row.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ...)
+sql_int64 (long long int* ret, char* sql, ...)
 {
   sqlite3_stmt* stmt;
   int sql_x_ret;
   va_list args;
 
   va_start (args, sql);
-  sql_x_ret = sql_x (col, row, sql, args, &stmt);
+  sql_x_ret = sql_x (0, 0, sql, args, &stmt);
   va_end (args);
   switch (sql_x_ret)
     {
@@ -654,7 +652,7 @@ sql_int64 (long long int* ret, unsigned int col, unsigned int row, char* sql, ..
         return -1;
         break;
     }
-  *ret = sqlite3_column_int64 (stmt, col);
+  *ret = sqlite3_column_int64 (stmt, 0);
   sqlite3_finalize (stmt);
   return 0;
 }
