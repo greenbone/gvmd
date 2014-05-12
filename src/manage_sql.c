@@ -12841,10 +12841,10 @@ task_last_report (task_t task, report_t *report)
 static int
 task_second_last_report (task_t task, report_t *report)
 {
-  switch (sql_int64 (report, 0, 1,
+  switch (sql_int64 (report, 0, 0,
                      "SELECT ROWID FROM reports WHERE task = %llu"
                      " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 2;",
+                     " ORDER BY date DESC LIMIT 1 OFFSET 1;",
                      task,
                      TASK_STATUS_DONE))
     {
@@ -20110,7 +20110,7 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
     position = 1;
 
   quoted_host = sql_quote (host);
-  switch (sql_int64 (report_host, 0, position - 1,
+  switch (sql_int64 (report_host, 0, 0,
                      "SELECT ROWID FROM report_hosts WHERE host = '%s'"
                      " AND (SELECT reports.owner FROM reports"
                      "      WHERE reports.ROWID = report_hosts.report)"
@@ -20129,10 +20129,10 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "     = 'yes'"
                      " AND (report_hosts.end_time IS NOT NULL"
                      "      AND report_hosts.end_time != '')"
-                     " ORDER BY ROWID DESC LIMIT %i;",
+                     " ORDER BY ROWID DESC LIMIT 1 OFFSET %i;",
                      quoted_host,
                      current_credentials.uuid,
-                     position))
+                     position - 1))
     {
       case 0:
         break;
