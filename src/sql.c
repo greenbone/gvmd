@@ -2060,6 +2060,21 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
 }
 
 /**
+ * @brief Get a double column from an iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return Value of given column.
+ */
+double
+iterator_double (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return sqlite3_column_double (iterator->stmt, col);
+}
+
+/**
  * @brief Get an integer column from an iterator.
  *
  * @param[in]  iterator  Iterator.

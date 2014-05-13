@@ -1,5 +1,15 @@
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_column_double.
+
+	* src/sql.c (iterator_double): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_column_double with iterator_double.
+
+2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_column_text.
 
 	* src/manage_migrators.c, src/manage_sql.c: Call iterator_string instead

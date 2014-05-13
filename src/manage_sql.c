@@ -13973,7 +13973,7 @@ double
 prognosis_iterator_cvss_double (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_double (iterator->stmt, 1);
+  return iterator_double (iterator, 1);
 }
 
 /**
@@ -16371,7 +16371,7 @@ result_iterator_severity_double (iterator_t *iterator)
   if (sqlite3_column_int (iterator->stmt, 6))
     return SEVERITY_FP;
 
-  return sqlite3_column_double (iterator->stmt, 13);
+  return iterator_double (iterator, 13);
 }
 
 /**
@@ -16397,7 +16397,7 @@ result_iterator_original_level (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  severity = sqlite3_column_double (iterator->stmt, 12);
+  severity = iterator_double (iterator, 12);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -16430,7 +16430,7 @@ result_iterator_level (iterator_t *iterator)
   if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
     return NULL;
 
-  severity = sqlite3_column_double (iterator->stmt, 13);
+  severity = iterator_double (iterator, 13);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -17992,7 +17992,7 @@ report_severity_data (report_t report, int override,
 
           if (ret == SQLITE_DONE)
             {
-              new_severity = sqlite3_column_double (results.stmt, 7);
+              new_severity = iterator_double (&results, 7);
               new_type = (const char*) sqlite3_column_text (results.stmt, 2);
 
               if (new_type)
@@ -18083,7 +18083,7 @@ report_severity_data (report_t report, int override,
               while (1)
                 {
                   double severity;
-                  severity = sqlite3_column_double (results.stmt, 7);
+                  severity = iterator_double (&results, 7);
                   ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
@@ -18116,7 +18116,7 @@ report_severity_data (report_t report, int override,
               if (ret == SQLITE_DONE)
                 {
                   new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-                  new_severity = sqlite3_column_double (results.stmt, 7);
+                  new_severity = iterator_double (&results, 7);
                 }
               else
                 {
@@ -18230,7 +18230,7 @@ report_severity_data (report_t report, int override,
 
           /* Check the result. */
           new_type = (const char*) sqlite3_column_text (results.stmt, 2);
-          new_severity = sqlite3_column_double (results.stmt, 7);
+          new_severity = iterator_double (&results, 7);
 
           if (new_type)
             {
@@ -18341,7 +18341,7 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
   while (next (&iterator))
     {
       severity_data_add_count (data,
-                               sqlite3_column_double (iterator.stmt, 0),
+                               iterator_double (&iterator, 0),
                                sqlite3_column_int (iterator.stmt, 1));
     }
   cleanup_iterator (&iterator);
@@ -18627,7 +18627,7 @@ report_severity (report_t report, int overrides)
     {
       g_debug ("%s: max(severity)=%s", __FUNCTION__,
                sqlite3_column_text (iterator.stmt, 0));
-      severity = sqlite3_column_double (iterator.stmt, 0);
+      severity = iterator_double (&iterator, 0);
     }
   else
     {
