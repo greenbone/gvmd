@@ -175,6 +175,9 @@ init_iterator (iterator_t*, const char*, ...);
 double
 iterator_double (iterator_t*, int);
 
+int
+iterator_int (iterator_t*, int);
+
 long long int
 iterator_int64 (iterator_t*, int);
 

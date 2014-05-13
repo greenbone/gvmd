@@ -1,5 +1,15 @@
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_column_int.
+
+	* src/sql.c (iterator_int): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_column_int with iterator_int.
+
+2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c: Replace overlooked cases of sqlite3_column_text with
 	iterator_string.
 
