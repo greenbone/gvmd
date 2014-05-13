@@ -292,7 +292,7 @@ migrate_1_to_2 ()
       int category;
       const char *category_string;
 
-      category_string = (const char*) sqlite3_column_text (nvts.stmt, 1);
+      category_string = iterator_string (&nvts, 1);
 
       category = atoi (category_string);
       sql ("UPDATE nvts SET category = %i WHERE ROWID = %llu;",
@@ -8990,7 +8990,7 @@ migrate_122_to_123 ()
     {
       const char* column_name;
 
-      column_name = (const char*)(sqlite3_column_text (column_data.stmt, 1));
+      column_name = iterator_string (&column_data, 1);
       column_found = (strcmp (column_name, "alive_test") == 0);
     }
   cleanup_iterator (&column_data);

@@ -4645,8 +4645,8 @@ encrypt_all_credentials (gboolean decrypt_flag)
         g_message ("  %lu credentials so far processed", ntotal);
 
       rowid    = iterator_int64 (&iterator, 0);
-      password = (const char*) sqlite3_column_text (iterator.stmt, 1);
-      privkey  = (const char*) sqlite3_column_text (iterator.stmt, 2);
+      password = iterator_string (&iterator, 1);
+      privkey  = iterator_string (&iterator, 2);
 
       /* If there is no password or private key, skip the row.  */
       if (!password && !privkey)
@@ -5117,7 +5117,7 @@ name (iterator_t* iterator)                                       \
 {                                                                 \
   const char *ret;                                                \
   if (iterator->done) return NULL;                                \
-  ret = (const char*) sqlite3_column_text (iterator->stmt, col);  \
+  ret = iterator_string (iterator, col);                          \
   return ret;                                                     \
 }
 
@@ -6324,7 +6324,7 @@ alert_data_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  ret = iterator_string (iterator, 0);
   return ret;
 }
 
@@ -6341,7 +6341,7 @@ alert_data_iterator_data (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = iterator_string (iterator, 1);
   return ret;
 }
 
@@ -8292,7 +8292,7 @@ alert_task_iterator_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  ret = iterator_string (iterator, 0);
   return ret;
 }
 
@@ -8308,7 +8308,7 @@ alert_task_iterator_uuid (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = iterator_string (iterator, 1);
   return ret;
 }
 
@@ -16239,7 +16239,7 @@ result_iterator_type (iterator_t *iterator)
   if (sqlite3_column_int (iterator->stmt, 6))
     return "False Positive";
   /* new_type */
-  return (const char*) sqlite3_column_text (iterator->stmt, 5);
+  return iterator_string (iterator, 5);
 }
 
 /**
@@ -16297,7 +16297,7 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
     return NULL;
 
   /* nvt_version */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 11);
+  ret = iterator_string (iterator, 11);
   return ret ? ret : "";
 }
 
@@ -16320,7 +16320,7 @@ result_iterator_original_severity (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 12);
+  ret = iterator_string (iterator, 12);
   return ret ? ret : "";
 }
 
@@ -16347,7 +16347,7 @@ result_iterator_severity (iterator_t *iterator)
     return G_STRINGIFY (SEVERITY_FP);
 
   /* new_severity */
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 13);
+  ret = iterator_string (iterator, 13);
   return ret ? ret : "";
 }
 
@@ -31643,7 +31643,7 @@ nvt_preference_iterator_real_name (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  ret = iterator_string (iterator, 0);
   if (ret)
     {
       int value_start = -1, value_end = -1, count;
@@ -31671,7 +31671,7 @@ nvt_preference_iterator_type (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  ret = iterator_string (iterator, 0);
   if (ret)
     {
       int type_start = -1, type_end = -1, count;
@@ -31698,7 +31698,7 @@ nvt_preference_iterator_nvt (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 0);
+  ret = iterator_string (iterator, 0);
   if (ret)
     {
       int type_start = -1, count;
@@ -31740,7 +31740,7 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
   g_free (quoted_name);
   if (value) return value;
 
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = iterator_string (iterator, 1);
   if (ret) return g_strdup (ret);
   return NULL;
 }
@@ -32754,10 +32754,8 @@ lsc_credential_iterator_pass_or_priv (iterator_t* iterator, int want_privkey)
 
   if (iterator->done)
     return NULL;
-  password = (const char*) sqlite3_column_text (iterator->stmt,
-                                                GET_ITERATOR_COLUMN_COUNT + 1);
-  privkey  = (const char*) sqlite3_column_text (iterator->stmt,
-                                                GET_ITERATOR_COLUMN_COUNT + 2);
+  password = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  privkey  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
   /* If we do not have a private key, there is no encrypted data.
      Return the password as is or NULL.  */
   if (!privkey)
@@ -33996,7 +33994,7 @@ get_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 3);
+  ret = iterator_string (iterator, 3);
   return ret ? ret : "";
 }
 
@@ -34967,8 +34965,7 @@ note_iterator_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT + 4);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
   if (ret == NULL) return NULL;
   return message_type_threat (ret);
 }
@@ -35948,8 +35945,7 @@ override_iterator_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT + 4);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
   return ret;
 }
 
@@ -35965,8 +35961,7 @@ override_iterator_new_threat (iterator_t *iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT + 5);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -43761,7 +43756,7 @@ port_range_iterator_comment (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return "";
-  ret = (const char*) sqlite3_column_text (iterator->stmt, 1);
+  ret = iterator_string (iterator, 1);
   return ret ? ret : "";
 }
 
@@ -44948,8 +44943,7 @@ filter_iterator_type (iterator_t* iterator)
 {
   const char *ret;
   if (iterator->done) return NULL;
-  ret = (const char*) sqlite3_column_text (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
   return ret ? type_pretty_name (ret) : "";
 }
 
