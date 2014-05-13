@@ -480,11 +480,26 @@ init_task_iterator (iterator_t*, const get_data_t *);
 task_status_t
 task_iterator_run_status (iterator_t*);
 
+const char *
+task_iterator_run_status_name (iterator_t*);
+
 int
 task_iterator_total_reports (iterator_t*);
 
+int
+task_iterator_finished_reports (iterator_t *);
+
 const char *
 task_iterator_first_report (iterator_t*);
+
+const char *
+task_iterator_last_report (iterator_t *);
+
+report_t
+task_iterator_current_report (iterator_t *);
+
+const char *
+task_iterator_hosts_ordering (iterator_t *);
 
 unsigned int
 task_id (task_t);
@@ -573,9 +588,6 @@ set_task_run_status (task_t, task_status_t);
 report_t
 task_running_report (task_t);
 
-report_t
-task_current_report (task_t);
-
 int
 task_upload_progress (task_t);
 
@@ -608,9 +620,6 @@ set_task_schedule (task_t, schedule_t);
 
 unsigned int
 task_report_count (task_t);
-
-unsigned int
-task_finished_report_count (task_t);
 
 int
 task_last_report (task_t, report_t*);
@@ -971,9 +980,6 @@ report_set_source_iface (report_t, const gchar *);
 
 int
 task_last_stopped_report (task_t, report_t *);
-
-gchar*
-task_last_report_id (task_t);
 
 gchar*
 task_second_last_report_id (task_t);

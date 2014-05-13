@@ -8360,7 +8360,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
 #define TASK_ITERATOR_COLUMNS(overrides)                   \
   GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
   " (SELECT count(*) FROM reports"                         \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID)"                            \
   " AS total,"                                             \
   " (SELECT uuid FROM reports WHERE task = tasks.ROWID"    \
@@ -8371,17 +8370,16 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " task_threat_level (ROWID, " overrides ") AS threat,"   \
   " task_trend (ROWID, " overrides ") AS trend,"           \
   " run_status_name (run_status) AS status,"               \
-  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  " (SELECT uuid FROM reports WHERE task = tasks.ROWID"    \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
   "  ORDER BY date DESC LIMIT 1)"                          \
   " AS last,"                                              \
   " task_severity (ROWID, " overrides ") AS severity,"     \
-  " (CASE WHEN target IS NULL"                             \
-  "  THEN 'Container'"                                     \
-  "  ELSE run_status_name (run_status)"                    \
-  "  END)"                                                 \
-  " AS status_text"
+  " (SELECT count(*) FROM reports"                         \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  WHERE task = tasks.ROWID AND scan_run_status = 1),"   \
+  " hosts_ordering"
 
 
 /**
@@ -8390,7 +8388,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
 #define TASK_ITERATOR_TRASH_COLUMNS(overrides)             \
   GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
   " (SELECT count(*) FROM reports"                         \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID)"                            \
   " AS total,"                                             \
   " (SELECT uuid FROM reports WHERE task = tasks.ROWID"    \
@@ -8401,16 +8398,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " task_threat_level (ROWID, " overrides ") AS threat,"   \
   " task_trend (ROWID, " overrides ") AS trend,"           \
   " run_status_name (run_status) AS status,"               \
-  " (SELECT date FROM reports WHERE task = tasks.ROWID"    \
+  " (SELECT uuid FROM reports WHERE task = tasks.ROWID"    \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  AND scan_run_status = 1"                              \
   "  ORDER BY date DESC LIMIT 1)"                          \
   " AS last,"                                              \
-  " (CASE WHEN target IS NULL"                             \
-  "  THEN 'Container'"                                     \
-  "  ELSE run_status_name (run_status)"                    \
-  "  END)"                                                 \
-  " AS status_text"
+  " (SELECT count(*) FROM reports"                         \
+  /* TODO 1 == TASK_STATUS_DONE */                         \
+  "  WHERE task = tasks.ROWID AND scan_run_status = 1),"   \
+  " hosts_ordering"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
@@ -8533,6 +8529,65 @@ task_iterator_first_report (iterator_t* iterator)
   if (iterator->done) return 0;
   return (const char *) sqlite3_column_text (iterator->stmt,
                                              GET_ITERATOR_COLUMN_COUNT + 2);
+}
+
+/**
+ * @brief Get the run status name from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task run status name.
+ */
+const char *
+task_iterator_run_status_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (const char *) sqlite3_column_text (iterator->stmt,
+                                             GET_ITERATOR_COLUMN_COUNT + 5);
+}
+
+/**
+ * @brief Get the last report UUID from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Last report UUID.
+ */
+const char *
+task_iterator_last_report (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (const char *) sqlite3_column_text (iterator->stmt,
+                                             GET_ITERATOR_COLUMN_COUNT + 6);
+}
+
+/**
+ * @brief Get the number of reports of a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Count of all task reports.
+ */
+int
+task_iterator_finished_reports (iterator_t *iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 8);
+}
+
+/**
+ * @brief Get the hosts ordering value from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Taks' hosts ordering.
+ */
+const char *
+task_iterator_hosts_ordering (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return (const char *) sqlite3_column_text (iterator->stmt,
+                                             GET_ITERATOR_COLUMN_COUNT + 9);
 }
 
 /**
@@ -12588,9 +12643,10 @@ task_running_report (task_t task)
  * @return Current report of task if task is active, else (report_t) 0.
  */
 report_t
-task_current_report (task_t task)
+task_iterator_current_report (iterator_t *iterator)
 {
-  task_status_t run_status = task_run_status (task);
+  task_t task = get_iterator_resource (iterator);
+  task_status_t run_status = task_iterator_run_status (iterator);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
       || run_status == TASK_STATUS_DELETE_REQUESTED
@@ -12800,23 +12856,6 @@ task_last_stopped_report (task_t task, report_t *report)
         break;
     }
   return 0;
-}
-
-/**
- * @brief Get the report ID from the most recently completed invocation of task.
- *
- * @param[in]  task  The task.
- *
- * @return The UUID of the report as a newly allocated string.
- */
-gchar*
-task_last_report_id (task_t task)
-{
-  return sql_string ("SELECT uuid FROM reports WHERE task = %llu"
-                     " AND scan_run_status = %u"
-                     " ORDER BY date DESC LIMIT 1;",
-                     task,
-                     TASK_STATUS_DONE);
 }
 
 /**
@@ -24398,10 +24437,7 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
                             int warns_b, int infos_b, double severity_b)
 {
   /* Ensure there are enough reports. */
-  task_t task;
-
-  task = get_iterator_resource (iterator);
-  if (task_finished_report_count (task) <= 1)
+  if (task_iterator_finished_reports (iterator) <= 1)
     return "";
 
   /* Skip running tasks. */

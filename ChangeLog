@@ -1,3 +1,23 @@
+2014-05-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Reduce the amount of extra SQL queries when getting tasks.
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS, TASK_ITERATOR_TRASH_COLUMNS):
+	Select uuid instead of date for last report. Remove unused selected
+	column. Select the number of finished reports and hosts ordering.
+	(task_iterator_run_status_name, task_iterator_last_report)
+	(task_iterator_finished_reports, task_iterator_hosts_ordering): New
+	function.
+	(task_current_report): Rename to task_iterator_current_report. Take
+	iterator as argument.
+	(task_last_report_id): Remove function.
+	(task_iterator_trend_counts): Call new function.
+
+	* src/omp.c (omp_xml_handle_end_element): Call new functions accordingly
+	in GET_TASKS case. Code style update.
+
+	* src/manage.h: Add and remove functions prototypes accordingly.
+
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move SQLite calls into SQL library: sqlite3_last_insert_rowid.

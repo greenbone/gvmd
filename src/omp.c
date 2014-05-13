@@ -16165,14 +16165,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *progress_xml;
               target_t target;
               slave_t slave;
-              const char *first_report_id;
+              const char *first_report_id, *last_report_id;
               char *config, *config_uuid;
               char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
               gchar *first_report;
-              char *description, *hosts_ordering;
-              gchar *description64, *last_report_id, *last_report;
+              char *description;
+              gchar *description64, *last_report;
               gchar *second_last_report_id, *second_last_report;
               gchar *current_report;
               report_t running_report;
@@ -16206,7 +16206,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_in_trash = task_target_in_trash (index);
               if ((target == 0)
-                  && (task_run_status (index) == TASK_STATUS_RUNNING))
+                  && (task_iterator_run_status (&tasks) == TASK_STATUS_RUNNING))
                 {
                   progress_xml = g_strdup_printf
                                   ("%i",
@@ -16218,7 +16218,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   int progress;
                   gchar *host_xml;
 
-                  running_report = task_current_report (index);
+                  running_report = task_iterator_current_report (&tasks);
                   progress = report_progress (running_report, index, &host_xml);
                   progress_xml = g_strdup_printf ("%i%s", progress, host_xml);
                   g_free (host_xml);
@@ -16389,7 +16389,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 second_last_report = g_strdup ("");
 
-              last_report_id = task_last_report_id (index);
+              last_report_id = task_iterator_last_report (&tasks);
               if (last_report_id)
                 {
                   gchar *timestamp;
@@ -16454,7 +16454,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  severity);
                   free (scan_end);
                   g_free (timestamp);
-                  g_free (last_report_id);
                 }
               else
                 last_report = g_strdup ("");
@@ -16499,7 +16498,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   schedule_in_trash = 0;
                 }
               next_time = task_schedule_next_time_tz (index);
-              hosts_ordering = task_hosts_ordering (index);
 
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
@@ -16532,22 +16530,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            get_tasks_data->get.trash
                             ? 0
                             : task_alterable (index),
-                           config_uuid ? config_uuid : "",
-                           config ? config : "",
+                           config_uuid ?: "",
+                           config ?: "",
                            task_config_in_trash (index),
-                           task_target_uuid ? task_target_uuid : "",
-                           task_target_name ? task_target_name : "",
+                           task_target_uuid ?: "",
+                           task_target_name ?: "",
                            target_in_trash,
-                           hosts_ordering,
-                           task_slave_uuid ? task_slave_uuid : "",
-                           task_slave_name ? task_slave_name : "",
+                           task_iterator_hosts_ordering (&tasks),
+                           task_slave_uuid ?: "",
+                           task_slave_name ?: "",
                            task_slave_in_trash (index),
-                           task_run_status_name (index),
+                           task_iterator_run_status_name (&tasks),
                            progress_xml,
                            description64,
                            /* TODO These can come from iterator now. */
                            task_iterator_total_reports (&tasks),
-                           task_finished_report_count (index),
+                           task_iterator_finished_reports (&tasks),
                            task_iterator_trend_counts
                             (&tasks, holes, warnings, infos, severity,
                              holes_2, warnings_2, infos_2, severity_2),
@@ -16564,7 +16562,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               free (config);
               free (task_target_name);
               free (task_target_uuid);
-              free (hosts_ordering);
               g_free (progress_xml);
               g_free (current_report);
               g_free (first_report);
