@@ -1,5 +1,11 @@
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_column_int64.
+
+	* src/manage_sql.c: Call iterator_int64 instead of sqlite3_column_int64.
+
+2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_changes.
 
 	* src/sql.c (sql_changes): New function.

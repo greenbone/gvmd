@@ -4644,7 +4644,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
       if (!(ntotal % 10))
         g_message ("  %lu credentials so far processed", ntotal);
 
-      rowid    = sqlite3_column_int64 (iterator.stmt, 0);
+      rowid    = iterator_int64 (&iterator, 0);
       password = (const char*) sqlite3_column_text (iterator.stmt, 1);
       privkey  = (const char*) sqlite3_column_text (iterator.stmt, 2);
 
@@ -6215,8 +6215,8 @@ filter_t
 alert_iterator_filter (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return (filter_t) sqlite3_column_int64 (iterator->stmt,
-                                          GET_ITERATOR_COLUMN_COUNT + 3);
+  return (filter_t) iterator_int64 (iterator,
+                                    GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -6420,7 +6420,7 @@ alert_t
 task_alert_iterator_alert (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
+  return (task_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -15133,7 +15133,7 @@ next_report (iterator_t* iterator, report_t* report)
                  sqlite3_errmsg (task_db));
       abort ();
     }
-  *report = sqlite3_column_int64 (iterator->stmt, 0);
+  *report = iterator_int64 (iterator, 0);
   return TRUE;
 }
 
@@ -16050,7 +16050,7 @@ result_t
 result_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) sqlite3_column_int64 (iterator->stmt, 0);
+  return (result_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -16263,8 +16263,7 @@ task_t
 result_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        8);
+  return (task_t) iterator_int64 (iterator, 8);
 }
 
 /**
@@ -16278,8 +16277,7 @@ report_t
 result_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        9);
+  return (task_t) iterator_int64 (iterator, 9);
 }
 
 /**
@@ -16523,7 +16521,7 @@ static report_host_t
 host_iterator_report_host (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (report_host_t) sqlite3_column_int64 (iterator->stmt, 0);
+  return (report_host_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -16609,7 +16607,7 @@ static report_t
 host_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (report_host_t) sqlite3_column_int64 (iterator->stmt, 7);
+  return (report_host_t) iterator_int64 (iterator, 7);
 }
 
 /**
@@ -17661,7 +17659,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      "                               = 'EXIT_NOTVULN')"
                      "                 AND family IN (" LSC_FAMILY_LIST ")));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
-                     sqlite3_column_int64 (results->stmt, 6),
+                     iterator_int64 (results, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))
           return 1;
         break;
@@ -17687,7 +17685,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                       * detail is nvts.cve.  Either can be a list of CVEs. */
                      "      AND common_cve (nvts.cve, outer_nvts.cve)));",
                      (const char*) sqlite3_column_text (results->stmt, 1),
-                     sqlite3_column_int64 (results->stmt, 6),
+                     iterator_int64 (results, 6),
                      (const char*) sqlite3_column_text (results->stmt, 3)))
           return 1;
         break;
@@ -18044,7 +18042,7 @@ report_severity_data (report_t report, int override,
               while (1)
                 {
                   result_t result;
-                  result = (result_t) sqlite3_column_int64 (results.stmt, 0);
+                  result = (result_t) iterator_int64 (&results, 0);
                   ret = sqlite3_bind_int64 (full_stmt, 2, result);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
@@ -33965,7 +33963,7 @@ resource_t
 get_iterator_resource (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, 0);
+  return iterator_int64 (iterator, 0);
 }
 
 /**
@@ -34986,8 +34984,8 @@ task_t
 note_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        GET_ITERATOR_COLUMN_COUNT + 5);
+  return (task_t) iterator_int64 (iterator,
+                                  GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -35001,8 +34999,8 @@ result_t
 note_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) sqlite3_column_int64 (iterator->stmt,
-                                          GET_ITERATOR_COLUMN_COUNT + 6);
+  return (result_t) iterator_int64 (iterator,
+                                    GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -35983,8 +35981,8 @@ task_t
 override_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt,
-                                        GET_ITERATOR_COLUMN_COUNT + 6);
+  return (task_t) iterator_int64 (iterator,
+                                  GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -35998,8 +35996,8 @@ result_t
 override_iterator_result (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (result_t) sqlite3_column_int64 (iterator->stmt,
-                                          GET_ITERATOR_COLUMN_COUNT + 7);
+  return (result_t) iterator_int64 (iterator,
+                                    GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -37250,7 +37248,7 @@ task_t
 task_schedule_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) sqlite3_column_int64 (iterator->stmt, 0);
+  return (task_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -37274,7 +37272,7 @@ time_t
 task_schedule_iterator_next_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 3);
+  return (time_t) iterator_int64 (iterator, 3);
 }
 
 /**
@@ -37288,7 +37286,7 @@ time_t
 task_schedule_iterator_period (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 4);
+  return (time_t) iterator_int64 (iterator, 4);
 }
 
 /**
@@ -37302,7 +37300,7 @@ time_t
 task_schedule_iterator_period_months (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 5);
+  return (time_t) iterator_int64 (iterator, 5);
 }
 
 /**
@@ -37316,7 +37314,7 @@ time_t
 task_schedule_iterator_first_time (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 6);
+  return (time_t) iterator_int64 (iterator, 6);
 }
 
 /**
@@ -37330,7 +37328,7 @@ time_t
 task_schedule_iterator_duration (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 7);
+  return (time_t) iterator_int64 (iterator, 7);
 }
 
 /**
@@ -37384,7 +37382,7 @@ time_t
 task_schedule_iterator_initial_offset (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (time_t) sqlite3_column_int64 (iterator->stmt, 12);
+  return (time_t) iterator_int64 (iterator, 12);
 }
 
 /**
@@ -39896,7 +39894,7 @@ int
 report_format_iterator_active (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return (sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 7)
+  return (iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7)
           & REPORT_FORMAT_FLAG_ACTIVE) ? 1 : 0;
 }
 
@@ -39995,7 +39993,7 @@ report_format_param_t
 report_format_param_iterator_param (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (report_format_param_t) sqlite3_column_int64 (iterator->stmt, 0);
+  return (report_format_param_t) iterator_int64 (iterator, 0);
 }
 
 /**
@@ -40057,7 +40055,7 @@ long long int
 report_format_param_iterator_type_min (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sqlite3_column_int64 (iterator->stmt, 4);
+  return iterator_int64 (iterator, 4);
 }
 
 /**
@@ -40071,7 +40069,7 @@ long long int
 report_format_param_iterator_type_max (iterator_t* iterator)
 {
   if (iterator->done) return -1;
-  return sqlite3_column_int64 (iterator->stmt, 5);
+  return iterator_int64 (iterator, 5);
 }
 
 /**
@@ -42009,7 +42007,7 @@ int
 permission_iterator_resource_in_trash (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 3);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
 }
 
 /**
@@ -42023,7 +42021,7 @@ int
 permission_iterator_resource_orphan (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 4);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -42064,7 +42062,7 @@ int
 permission_iterator_subject_in_trash (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 8);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 }
 
 /**
@@ -49970,8 +49968,8 @@ tag_iterator_resource (iterator_t* iterator)
 {
   resource_t ret;
   if (iterator->done) return -1;
-  ret = (resource_t) sqlite3_column_int64 (iterator->stmt,
-                                           GET_ITERATOR_COLUMN_COUNT + 1);
+  ret = (resource_t) iterator_int64 (iterator,
+                                     GET_ITERATOR_COLUMN_COUNT + 1);
   return ret;
 }
 
