@@ -8527,8 +8527,7 @@ const char *
 task_iterator_first_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (const char *) sqlite3_column_text (iterator->stmt,
-                                             GET_ITERATOR_COLUMN_COUNT + 2);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
 }
 
 /**
@@ -8542,8 +8541,7 @@ const char *
 task_iterator_run_status_name (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (const char *) sqlite3_column_text (iterator->stmt,
-                                             GET_ITERATOR_COLUMN_COUNT + 5);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
 }
 
 /**
@@ -8557,8 +8555,7 @@ const char *
 task_iterator_last_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (const char *) sqlite3_column_text (iterator->stmt,
-                                             GET_ITERATOR_COLUMN_COUNT + 6);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -8586,8 +8583,7 @@ const char *
 task_iterator_hosts_ordering (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (const char *) sqlite3_column_text (iterator->stmt,
-                                             GET_ITERATOR_COLUMN_COUNT + 9);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
 }
 
 /**
@@ -17634,7 +17630,7 @@ report_scan_result_count (report_t report, const char* levels,
 static int
 report_counts_autofp_match (iterator_t *results, int autofp)
 {
-  if (strcmp ((const char *) sqlite3_column_text (results->stmt, 1), "0") == 0)
+  if (strcmp (iterator_string (results, 1), "0") == 0)
     /* Open port special case.  These previously had nvt 0. */
     return 1;
 
@@ -17658,9 +17654,9 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                      "                               AND value"
                      "                               = 'EXIT_NOTVULN')"
                      "                 AND family IN (" LSC_FAMILY_LIST ")));",
-                     (const char*) sqlite3_column_text (results->stmt, 1),
+                     iterator_string (results, 1),
                      iterator_int64 (results, 6),
-                     (const char*) sqlite3_column_text (results->stmt, 3)))
+                     iterator_string (results, 3)))
           return 1;
         break;
       case 2:
@@ -17684,9 +17680,9 @@ report_counts_autofp_match (iterator_t *results, int autofp)
                       * of the NVT that has registered the "closed" host
                       * detail is nvts.cve.  Either can be a list of CVEs. */
                      "      AND common_cve (nvts.cve, outer_nvts.cve)));",
-                     (const char*) sqlite3_column_text (results->stmt, 1),
+                     iterator_string (results, 1),
                      iterator_int64 (results, 6),
-                     (const char*) sqlite3_column_text (results->stmt, 3)))
+                     iterator_string (results, 3)))
           return 1;
         break;
     }
@@ -17714,14 +17710,11 @@ report_counts_match (iterator_t *results, const char *search_phrase,
 
   if (search_phrase && search_phrase_exact)
     {
-      if ((strcmp ((const char*) sqlite3_column_text (results->stmt, 5),
-                  search_phrase)
+      if ((strcmp (iterator_string (results, 5), search_phrase)
            == 0)
-          || (strcmp ((const char*) sqlite3_column_text (results->stmt, 4),
-                      search_phrase)
+          || (strcmp (iterator_string (results, 4), search_phrase)
               == 0)
-          || (strcmp ((const char*) sqlite3_column_text (results->stmt, 1),
-                      search_phrase)
+          || (strcmp (iterator_string (results, 1), search_phrase)
               == 0))
         {
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
@@ -17732,10 +17725,10 @@ report_counts_match (iterator_t *results, const char *search_phrase,
                            "                   >= CAST (%s AS REAL)"
                            "            FROM nvts"
                            "            WHERE nvts.oid = '%s');",
-                           sqlite3_column_text (results->stmt, 1),
+                           iterator_string (results, 1),
                            /* Assume valid SQL string. */
                            min_cvss_base,
-                           sqlite3_column_text (results->stmt, 1)))
+                           iterator_string (results, 1)))
                 return 1;
             }
           else
@@ -17744,12 +17737,9 @@ report_counts_match (iterator_t *results, const char *search_phrase,
     }
   else if (search_phrase)
     {
-      if (strcasestr ((const char*) sqlite3_column_text (results->stmt, 5),
-                      search_phrase)
-          || strcasestr ((const char*) sqlite3_column_text (results->stmt, 4),
-                         search_phrase)
-          || strcasestr ((const char*) sqlite3_column_text (results->stmt, 1),
-                         search_phrase))
+      if (strcasestr (iterator_string (results, 5), search_phrase)
+          || strcasestr (iterator_string (results, 4), search_phrase)
+          || strcasestr (iterator_string (results, 1), search_phrase))
         {
           if (min_cvss_base && sqlite3_column_int (results->stmt, 1))
             {
@@ -17759,10 +17749,10 @@ report_counts_match (iterator_t *results, const char *search_phrase,
                            "                   >= CAST (%s AS REAL)"
                            "            FROM nvts"
                            "            WHERE nvts.oid = '%s');",
-                           sqlite3_column_text (results->stmt, 1),
+                           iterator_string (results, 1),
                            /* Assume valid SQL string. */
                            min_cvss_base,
-                           sqlite3_column_text (results->stmt, 1)))
+                           iterator_string (results, 1)))
                 return 1;
             }
           else
@@ -17777,10 +17767,10 @@ report_counts_match (iterator_t *results, const char *search_phrase,
                    "                   >= CAST (%s AS REAL)"
                    "            FROM nvts"
                    "            WHERE nvts.oid = '%s');",
-                   sqlite3_column_text (results->stmt, 1),
+                   iterator_string (results, 1),
                    /* Assume valid SQL string. */
                    min_cvss_base,
-                   sqlite3_column_text (results->stmt, 1)))
+                   iterator_string (results, 1)))
         return 1;
     }
   else
@@ -17955,7 +17945,7 @@ report_severity_data (report_t report, int override,
           const char *nvt, *new_type;
           double new_severity;
 
-          nvt = (const char*) sqlite3_column_text (results.stmt, 1);
+          nvt = iterator_string (&results, 1);
 
           /* Bind the current result values into the quick statement. */
 
@@ -17993,7 +17983,7 @@ report_severity_data (report_t report, int override,
           if (ret == SQLITE_DONE)
             {
               new_severity = iterator_double (&results, 7);
-              new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+              new_type = iterator_string (&results, 2);
 
               if (new_type)
                 {
@@ -18055,7 +18045,7 @@ report_severity_data (report_t report, int override,
               while (1)
                 {
                   const char *host;
-                  host = (const char*) sqlite3_column_text (results.stmt, 3);
+                  host = iterator_string (&results, 3);
                   ret = sqlite3_bind_text (full_stmt, 3, host, -1,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
@@ -18069,7 +18059,7 @@ report_severity_data (report_t report, int override,
               while (1)
                 {
                   const char *port;
-                  port = (const char*) sqlite3_column_text (results.stmt, 4);
+                  port = iterator_string (&results, 4);
                   ret = sqlite3_bind_text (full_stmt, 4, port, -1,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
@@ -18115,7 +18105,7 @@ report_severity_data (report_t report, int override,
 
               if (ret == SQLITE_DONE)
                 {
-                  new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+                  new_type = iterator_string (&results, 2);
                   new_severity = iterator_double (&results, 7);
                 }
               else
@@ -18229,7 +18219,7 @@ report_severity_data (report_t report, int override,
           double new_severity;
 
           /* Check the result. */
-          new_type = (const char*) sqlite3_column_text (results.stmt, 2);
+          new_type = iterator_string (&results, 2);
           new_severity = iterator_double (&results, 7);
 
           if (new_type)
@@ -18626,7 +18616,7 @@ report_severity (report_t report, int overrides)
       && sqlite3_column_type (iterator.stmt, 0) != SQLITE_NULL)
     {
       g_debug ("%s: max(severity)=%s", __FUNCTION__,
-               sqlite3_column_text (iterator.stmt, 0));
+               iterator_string (&iterator, 0));
       severity = iterator_double (&iterator, 0);
     }
   else
@@ -31727,7 +31717,7 @@ nvt_preference_iterator_config_value (iterator_t* iterator, config_t config)
   const char *ret;
   if (iterator->done) return NULL;
 
-  quoted_name = sql_quote ((const char *) sqlite3_column_text (iterator->stmt, 0));
+  quoted_name = sql_quote (iterator_string (iterator, 0));
   value = sql_string ("SELECT value FROM config_preferences"
                       " WHERE config = %llu"
                       " AND name = '%s'"

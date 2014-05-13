@@ -1,5 +1,10 @@
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Replace overlooked cases of sqlite3_column_text with
+	iterator_string.
+
+2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_column_double.
 
 	* src/sql.c (iterator_double): New function.
