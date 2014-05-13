@@ -34,6 +34,9 @@
 extern sqlite3 *
 task_db;
 
+resource_t
+sql_last_insert_rowid ();
+
 gchar *
 sql_nquote (const char *, size_t);
 

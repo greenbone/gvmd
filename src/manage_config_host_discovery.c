@@ -55,7 +55,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        uuid,
        selector_name);
 
-  config = sqlite3_last_insert_rowid (task_db);
+  config = sql_last_insert_rowid ();
 
   /* Add the Ping Host NVT to the config. */
 

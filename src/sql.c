@@ -67,6 +67,15 @@ sqlite3* task_db;
 /* Helpers. */
 
 /**
+ * @brief Get the ID of the last inserted row.
+ */
+resource_t
+sql_last_insert_rowid ()
+{
+  return sqlite3_last_insert_rowid (task_db);
+}
+
+/**
  * @brief Quotes a string of a known length to be passed to sql statements.
  *
  * @param[in]  string  String to quote.

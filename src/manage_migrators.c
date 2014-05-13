@@ -969,7 +969,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
       /* This ID will be larger then predefined_config_id because
        * predefined_config_id exists already.  At worst the ID will be one
        * larger. */
-      config = sqlite3_last_insert_rowid (task_db);
+      config = sql_last_insert_rowid ();
       sql ("UPDATE config_preferences SET config = %llu WHERE config = %llu;",
            config,
            predefined_config_id);
@@ -2944,7 +2944,7 @@ migrate_35_to_36_duplicate_target (target_t target, const char *name)
        quoted_name,
        target);
   g_free (quoted_name);
-  return sqlite3_last_insert_rowid (task_db);
+  return sql_last_insert_rowid ();
 }
 
 /**
@@ -4141,7 +4141,7 @@ migrate_55_to_56_ensure_predefined_port_lists_exist ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
            " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
            " '')");
-      list = sqlite3_last_insert_rowid (task_db);
+      list = sql_last_insert_rowid ();
 
       MIGRATE_55_TO_56_RANGE (PORT_PROTOCOL_TCP, 1, 5);
       MIGRATE_55_TO_56_RANGE (PORT_PROTOCOL_TCP, 7, 7);
@@ -4862,7 +4862,7 @@ migrate_55_to_56 ()
 
           g_free (quoted_name);
 
-          list = sqlite3_last_insert_rowid (task_db);
+          list = sql_last_insert_rowid ();
 
           /* Convert old range (1-100,1649,210-214) to multiple new ranges. */
 
@@ -4974,7 +4974,7 @@ migrate_55_to_56 ()
 
           g_free (quoted_name);
 
-          list = sqlite3_last_insert_rowid (task_db);
+          list = sql_last_insert_rowid ();
 
           /* Convert old range (1-100,1649,210-214) to multiple new ranges. */
 
@@ -6697,7 +6697,7 @@ migrate_79_to_80 ()
                  quoted_uuid,
                  quoted_name);
             g_free (quoted_name);
-            user = sqlite3_last_insert_rowid (task_db);
+            user = sql_last_insert_rowid ();
             break;
           default:       /* Programming error. */
             assert (0);
