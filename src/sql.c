@@ -67,6 +67,15 @@ sqlite3* task_db;
 /* Helpers. */
 
 /**
+ * @brief Get the number of rows changed or inserted in last statement.
+ */
+int
+sql_changes ()
+{
+  return sqlite3_changes (task_db);
+}
+
+/**
  * @brief Get the ID of the last inserted row.
  */
 resource_t

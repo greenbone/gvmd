@@ -34,6 +34,9 @@
 extern sqlite3 *
 task_db;
 
+int
+sql_changes ();
+
 resource_t
 sql_last_insert_rowid ();
 

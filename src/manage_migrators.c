@@ -8829,10 +8829,10 @@ migrate_118_to_119 ()
   sql ("DELETE FROM results"
        " WHERE NOT EXISTS (SELECT * FROM report_results"
        "                   WHERE report_results.result = results.id);");
-  if (sqlite3_changes (task_db) > 0)
+  if (sql_changes () > 0)
     {
       g_debug ("%s: Removed %d orphaned result(s).",
-               __FUNCTION__, sqlite3_changes (task_db));
+               __FUNCTION__, sql_changes ());
       sql ("DELETE FROM report_counts WHERE override = 0;");
       sql ("DELETE FROM report_counts WHERE override = 1;");
     }

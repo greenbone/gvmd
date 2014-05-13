@@ -10988,9 +10988,9 @@ make_report_format_uuids_unique ()
        "             WHERE duplicates.id = report_formats.id)"
        " WHERE id IN (SELECT id FROM duplicates);");
 
-  if (sqlite3_changes (task_db) > 0)
+  if (sql_changes () > 0)
     g_debug ("%s: gave %d report format(s) new UUID(s) to keep UUIDs unique.",
-             __FUNCTION__, sqlite3_changes (task_db));
+             __FUNCTION__, sql_changes ());
 
   sql ("DROP TABLE duplicates;");
 

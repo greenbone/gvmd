@@ -1,3 +1,14 @@
+2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: sqlite3_changes.
+
+	* src/sql.c (sql_changes): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_migrators.c, src/manage_sql.c: Replace sqlite3_changes with
+	sql_changes.
+
 2014-05-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Reduce the amount of extra SQL queries when getting tasks.
