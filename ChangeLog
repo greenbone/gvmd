@@ -1,5 +1,10 @@
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (reinit_manage_process): Make database comment
+	generic.
+
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_create_function.
 
 	* src/sql.c (sql_create_functions): New function.

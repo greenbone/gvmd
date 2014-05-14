@@ -8855,8 +8855,8 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 /**
  * @brief Reinitialize the manage library for a process.
  *
- * This is essentially needed after a fork, to not carry open databases around
- * (refer to sqlite3 documentation).
+ * This is mandatory after a fork, to not carry open databases around (refer
+ * to database documentation).
  */
 void
 reinit_manage_process ()
