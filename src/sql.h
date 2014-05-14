@@ -35,6 +35,12 @@ extern sqlite3 *
 task_db;
 
 int
+sql_open (const char *);
+
+void
+sql_close ();
+
+int
 sql_changes ();
 
 resource_t

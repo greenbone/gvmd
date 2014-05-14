@@ -1,3 +1,16 @@
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: sqlite3_open and sqlite3_close.
+
+	* src/sql.c (DB_CHUNK_SIZE): New define.  From manage_sql.c
+	(sql_open, sql_close): New functions.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_open and sqlite3_close with sql_open
+	and sql_close.
+	(DB_CHUNK_SIZE): Remove.  Now in sql.c.
+
 2014-05-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move SQLite calls into SQL library: sqlite3_column_int.

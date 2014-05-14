@@ -34,6 +34,11 @@
 
 #include <openvas/misc/openvas_uuid.h>
 
+/**
+ * @brief Chunk size for SQLite memory allocation.
+ */
+#define DB_CHUNK_SIZE 1 * 1024 * 1024
+
 
 /* Headers of manage_sql.c function also used here. */
 
@@ -65,6 +70,50 @@ sqlite3* task_db;
 
 
 /* Helpers. */
+
+/**
+ * @brief Open the database.
+ *
+ * @param[in]  database  Database, or NULL for default.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_open (const char *database)
+{
+  int chunk_size = DB_CHUNK_SIZE;
+
+  if (sqlite3_open (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+                    &task_db))
+    {
+      g_warning ("%s: sqlite3_open failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
+    }
+
+  sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
+  return 0;
+}
+
+/**
+ * @brief Close the database.
+ */
+void
+sql_close ()
+{
+  if (sqlite3_close (task_db) == SQLITE_BUSY)
+    /* Richard Hipp on how to find the open statements:
+     *
+     * There is no published way to do this.  If you run in a debugger,
+     * you can look at the linked list of "struct Vdbe" objects that
+     * sqlite3.pVdbe points to.  This is the list of open statements
+     * in the current implementation (and subject to change without
+     * notice). */
+    g_warning ("%s: attempt to close db with open statement(s)\n",
+               __FUNCTION__);
+  task_db = NULL;
+}
 
 /**
  * @brief Get the number of rows changed or inserted in last statement.

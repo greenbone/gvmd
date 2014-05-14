@@ -74,11 +74,6 @@
 #include "splint.h"
 #endif
 
-/**
- * @brief Chunk size for SQLite memory allocation.
- */
-#define DB_CHUNK_SIZE 1 * 1024 * 1024
-
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -8769,23 +8764,12 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       }
   }
 
-#ifndef S_SPLINT_S
   /* Open the database. */
-  if (sqlite3_open (database ? database
-                             : OPENVAS_STATE_DIR "/mgr/tasks.db",
-                    &task_db))
+  if (sql_open (database))
     {
-      g_warning ("%s: sqlite3_open failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_open failed\n", __FUNCTION__);
       abort ();
     }
-#endif /* not S_SPLINT_S */
-
-  {
-    int chunk_size = DB_CHUNK_SIZE;
-    sqlite3_file_control (task_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunk_size);
-  }
 
   if (update_nvt_cache)
     {
@@ -11660,8 +11644,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   if (nvti_cache == NULL)
     update_nvti_cache ();
 
-  sqlite3_close (task_db);
-  task_db = NULL;
+  sql_close ();
   task_db_name = g_strdup (database);
   return 0;
 }
@@ -11684,16 +11667,7 @@ cleanup_manage_process (gboolean cleanup)
           if (current_scanner_task)
             set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
           cleanup_prognosis_iterator ();
-          if (sqlite3_close (task_db) == SQLITE_BUSY)
-            /* Richard Hipp on how to find the open statements:
-             *
-             * There is no published way to do this.  If you run in a debugger,
-             * you can look at the linked list of "struct Vdbe" objects that
-             * sqlite3.pVdbe points to.  This is the list of open statements
-             * in the current implementation (and subject to change without
-             * notice). */
-            g_warning ("%s: attempt to close db with open statement(s)\n",
-                       __FUNCTION__);
+          sql_close ();
         }
       task_db = NULL;
     }
@@ -11717,8 +11691,7 @@ manage_cleanup_process_error (int signal)
     {
       if (current_scanner_task)
         set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);
-      sqlite3_close (task_db);
-      task_db = NULL;
+      sql_close ();
     }
 }
 
