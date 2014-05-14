@@ -201,11 +201,48 @@ do_sync () {
   fi
 }
 
+set_interrupt_trap () {
+  trap "handle_interrupt $1" 2
+}
+
+handle_interrupt () {
+  echo "$1:X" >&3
+}
+
+test_exit_codes () {
+  if [ -n "$exit_codes" ]
+  then
+    echo "[e] $1:"
+    for item in $exit_codes
+    do
+      command=`echo "$item" | cut -d':' -f1`
+      code=`echo "$item" | cut -d':' -f2`
+      if [ "X" = "$code" ]
+      then
+        echo "[w] Sync script was interrupted"
+      else
+        echo "[w] $command exited with code $code"
+      fi
+    done
+    exit 1
+  fi
+}
+
+test_sql_exit () {
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] $1. sqlite3 returned code $exit_code."
+    exit 1
+  fi
+}
+
 reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
   $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+  test_sql_exit "Could not reinitialize SCAP database"
 }
 
 db_migrate_9 () {
@@ -214,6 +251,7 @@ db_migrate_9 () {
                      CREATE INDEX afp_cpe_idx ON affected_products (cpe);
                      CREATE INDEX afp_cve_idx ON affected_products (cve);
                      UPDATE meta SET value = '9' WHERE name = 'database_version';"
+  test_sql_exit "Could not migrate SCAP database"
   echo "[i] Migration done."
 }
 
@@ -228,6 +266,7 @@ db_migrate_10 () {
                       UPDATE meta
                         SET value = '10'
                         WHERE name = 'database_version';"
+  test_sql_exit "Could not migrate SCAP database"
   echo "[i] Migration done."
 }
 
@@ -241,6 +280,7 @@ db_migrate_11 () {
                           SET value = '11'
                           WHERE name = 'database_version';
                       "
+    test_sql_exit "Could not migrate SCAP database"
     REBUILD_OVAL=1
     echo "[i] Migration done."
   else
@@ -284,6 +324,7 @@ db_migrate_12 () {
                           SET value = '12'
                           WHERE name = 'database_version';
                       "
+    test_sql_exit "Could not migrate SCAP database"
     REBUILD_OVAL=1
     echo "[i] Migration done."
   else
@@ -300,6 +341,7 @@ db_migrate_13 () {
                         SET value = '13'
                         WHERE name = 'database_version';
                      "
+  test_sql_exit "Could not migrate SCAP database"
   echo "[i] Migration done."
 }
 
@@ -338,6 +380,7 @@ db_migrate_14 () {
                         SET value = '14'
                         WHERE name = 'database_version';
                      "
+  test_sql_exit "Could not migrate SCAP database"
   echo "[i] Migration done."
   REBUILD_OVAL=1
 }
@@ -382,15 +425,19 @@ init_sec_db_update () {
   then
     echo "[i] Initializing scap database"
     $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+    test_sql_exit "Could not initialize SCAP database"
     DB_LASTUPDATE=0
     CVE_REFDATE=0
     OVAL_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') from cves;" | tr -d "-"`
+    CVE_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') from cves;"`
+    test_sql_exit "Could not get reference date for CVEs and CPEs"
+    CVE_REFDATE=`echo "$CVE_REFDATE" | tr -d "-"`
   fi
 
   DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
+  test_sql_exit "Could not get last_update timestamp from database"
 
   if [ -z "$CVE_REFDATE" ]
   then
@@ -403,6 +450,7 @@ init_sec_db_update () {
     echo "[e] Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
     $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+    test_sql_exit "Could not reinitialize SCAP database"
     CVE_REFDATE=0
     OVAL_REFDATE=0
     DB_LASTUPDATE=0
@@ -460,6 +508,7 @@ update_cvss () {
             WHERE cpe=cpes.id
           );
     "
+    test_sql_exit "Could not update CVSS scores for CPEs"
   else
     echo "[i] No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
   fi
@@ -483,6 +532,7 @@ update_cvss () {
               AND cvss != ''
           );
     "
+    test_sql_exit "Could not update CVSS scores for OVAL definitions"
   else
     echo "[i] No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
   fi
@@ -544,7 +594,9 @@ update_sec_db_private () {
             then
               OVAL_REFDATE=0
             else
-              OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+              OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+              test_sql_exit "Could not get OVAL reference date"
+              OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
               if [ -z "$OVAL_REFDATE" ]
               then
                 OVAL_REFDATE=0
@@ -569,8 +621,16 @@ update_sec_db_private () {
                   echo "[w] Validation of file '$ovalfile' failed: $validation_message"
                 else
                   echo "[i] Updating $ovalfile"
-                  xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                  $SQLITE $SEC_DB
+                  exec 4>&1
+                  exit_codes=$(
+                    (
+                      set_interrupt_trap
+                      (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+                      ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                    ) 3>&1 >&4
+                  )
+                  exec 4>&-
+                  test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
                   updated_ovaldefs=1
                 fi
               fi
@@ -600,17 +660,20 @@ update_sec_db_private () {
     fi
 
     deleted=`$SQLITE "$SEC_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+    test_sql_exit "Could not get list of deleted OVAL XML files"
     if [ -n "$deleted" ]
     then
       echo "[i] Removing definitions formerly inserted from:"
       echo "$deleted"
       $SQLITE "$SEC_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+      test_sql_exit "Could not remove deleted OVAL definitions from database"
     fi
 
     # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
     LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
     $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    test_sql_exit "Could not update last_update timestamp in database"
   else
     echo "[i] No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
@@ -625,10 +688,18 @@ update_sec_db () {
     if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
     then
       echo "[i] Updating CPEs"
-      sed 's/&/&amp;/g' $CPEBASE | \
-        xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
-        xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
-        $SQLITE $SEC_DB
+      exec 4>&1
+      exit_codes=$(
+        (
+          set_interrupt_trap
+          (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
+          (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
+          (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
+          ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3) \
+        ) 3>&1 >&4
+      )
+      exec 4>&-
+      test_exit_codes "Update of CPEs failed"
       updated_cpes=1
     else
       echo "[i] Skipping CPEs, file is older than last revision"
@@ -655,15 +726,31 @@ update_sec_db () {
           for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
           do
             echo "[i] Updating part $cvepart"
-            xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart | \
-              xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-              $SQLITE $SEC_DB
+            exec 4>&1
+            exit_codes=$(
+              (
+                set_interrupt_trap
+                (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
+                (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
+                ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+              ) 3>&1 >&4
+            )
+            exec 4>&-
             rm "$cvepart"
+            test_exit_codes "Update of CVEs failed at part '$cvepart'"
           done
         else
-          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-            xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-            $SQLITE $SEC_DB
+          exec 4>&1
+          exit_codes=$(
+            (
+              set_interrupt_trap
+              (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
+              (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
+              ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+            ) 3>&1 >&4
+          )
+          exec 4>&-
+          test_exit_codes "Update of CVEs failed at file '$cvefile'"
         fi
 
         updated_cves=1
@@ -701,7 +788,9 @@ update_sec_db () {
         then
           OVAL_REFDATE=0
         else
-          OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+          OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+          test_sql_exit "Could not get OVAL reference date from database"
+          OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
           if [ -z "$OVAL_REFDATE" ]
           then
             OVAL_REFDATE=0
@@ -711,8 +800,16 @@ update_sec_db () {
         if [ $oval_timestamp -ge $OVAL_REFDATE ]
         then
           echo "[i] Updating $ovalfile"
-          xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-          $SQLITE $SEC_DB
+          exec 4>&1
+          exit_codes=$(
+            (
+              set_interrupt_trap
+              (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+              ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+            ) 3>&1 >&4
+          )
+          exec 4>&-
+          test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
           updated_ovaldefs=1
         else
           echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
@@ -731,6 +828,7 @@ update_sec_db () {
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
   $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+  test_sql_exit "Could not update last_update timestamp in database"
 }
 
 do_refresh () {

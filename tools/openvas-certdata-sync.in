@@ -185,17 +185,56 @@ do_sync () {
   fi
 }
 
+set_interrupt_trap () {
+  trap "handle_interrupt X" 2
+}
+
+handle_interrupt () {
+  echo "$1:X" >&3
+}
+
+test_exit_codes () {
+  if [ -n "$exit_codes" ]
+  then
+    echo "[e] $1:"
+    for item in $exit_codes
+    do
+      command=`echo "$item" | cut -d':' -f1`
+      code=`echo "$item" | cut -d':' -f2`
+
+      if [ "X" = "$code" ]
+      then
+        echo "[w] Sync script was interrupted"
+      else
+        echo "[w] $command exited with code $code"
+      fi
+    done
+    exit 1
+  fi
+}
+
+test_sql_exit () {
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] $1. sqlite3 returned code $exit_code."
+    exit 1
+  fi
+}
+
 reinit () {
   echo "[i] Major change in internal CERT data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
   $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+  test_sql_exit "Could not reinitialize CERT database"
 }
 
 db_migrate_4 () {
   echo "[i] Migrating database to version 4."
   $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
                     UPDATE meta SET value = '4' WHERE name = 'database_version';"
+  test_sql_exit "Could not migrate CERT database"
   updated_dfn=1
   echo "[i] Migration done."
 }
@@ -216,6 +255,7 @@ update_cvss () {
     echo "[w] SCAP database not found. Cannot update max_cvss."
   else
     SCAP_DB_LASTUPDATE=`$SQLITE $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+    test_sql_exit "Could not get last_update timestamp from SCAP database"
     if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
     then
       echo "[i] Updating Max CVSS for DFN-CERT"
@@ -235,6 +275,7 @@ update_cvss () {
                                   )
                                   AND cvss != ''
                               );"
+      test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
     else
       echo "[i] No DFN-CERT advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
     fi
@@ -251,10 +292,13 @@ update_sec_db () {
   then
     echo "[i] Initializing CERT advisory database"
     $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    test_sql_exit "Could not initialize CERT database"
     DB_LASTUPDATE=0
   else
     check_db_version
-    DFN_REFDATE=`$SQLITE $CERT_DB "SELECT date(max(modification_time),'unixepoch') from dfn_cert_advs;" | tr -d "-"`
+    DFN_REFDATE=`$SQLITE $CERT_DB "SELECT date(max(modification_time),'unixepoch') from dfn_cert_advs;"`
+    test_sql_exit "Could not get DFN-CERT reference date from database"
+    DFN_REFDATE=`echo "$DFN_REFDATE" | tr -d "-"`
   fi
 
   if [ -z "$DFN_REFDATE" ]
@@ -263,6 +307,7 @@ update_sec_db () {
   fi
 
   DB_LASTUPDATE=`$SQLITE $CERT_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+  test_sql_exit "Could not get last_update timestamp from CERT database"
 
   if [ -z "$DB_LASTUPDATE" ]
   then
@@ -270,6 +315,7 @@ update_sec_db () {
     echo "Error: Inconsistent data. Resetting CERT database."
     rm -f $CERT_DB
     $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    test_sql_exit "Could not reinitialize CERT database"
     DFN_REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -282,7 +328,16 @@ update_sec_db () {
       if [ `stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
         echo "[i] Updating $certfile"
-        xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile | $SQLITE $CERT_DB
+        exec 4>&1
+        exit_codes=$(
+          (
+            set_interrupt_trap
+            (xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
+            ($SQLITE $CERT_DB || echo "sqlite3:$?" >&3)
+          ) 3>&1 >&4
+        )
+        exec 4>&-
+        test_exit_codes "Update of DFN-CERT Advisories failed at file '$certfile'"
         updated_dfn=1
       else
         echo "[i] Skipping $certfile, file is older than last revision"
@@ -297,7 +352,7 @@ update_sec_db () {
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
   $SQLITE $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-
+  test_sql_exit "Could not update last_update timestamp in CERT database"
 }
 
 do_refresh () {
