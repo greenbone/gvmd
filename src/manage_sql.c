@@ -8585,7 +8585,7 @@ scanner_t
 task_iterator_scanner (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 10);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
 }
 
 /**

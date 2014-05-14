@@ -1,3 +1,8 @@
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_iterator_scanner): Use iterator_int64 instead
+	sqlite3_column_int64.
+
 2014-05-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Test exit codes of sqlite and xsltproc in SCAP and CERT sync scripts
