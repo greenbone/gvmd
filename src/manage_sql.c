@@ -41646,12 +41646,10 @@ permission_resource (permission_t permission)
 int
 permission_is_predefined (permission_t permission)
 {
-  return !!sql_int
-            (0, 0,
-             "SELECT COUNT (*) FROM permissions"
-             " WHERE ROWID = %llu"
-             " AND uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';",
-             permission);
+  return !!sql_int ("SELECT COUNT (*) FROM permissions"
+                    " WHERE ROWID = %llu"
+                    " AND uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';",
+                    permission);
 }
 
 /**
@@ -43251,8 +43249,7 @@ delete_port_range (const char *port_range_id, int dummy)
     }
 
   if (sql_int
-       (0, 0,
-        "SELECT count (*) FROM port_lists WHERE"
+       ("SELECT count (*) FROM port_lists WHERE"
         " ROWID = (SELECT port_list FROM port_ranges"
         "          WHERE port_ranges.ROWID = %llu)"
         " AND"
@@ -43466,8 +43463,7 @@ int
 port_list_is_predefined (port_list_t port_list)
 {
   return !!sql_int
-            (0, 0,
-             "SELECT COUNT (*) FROM port_lists"
+            ("SELECT COUNT (*) FROM port_lists"
              " WHERE ROWID = %llu AND"
              " (uuid = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
              "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)

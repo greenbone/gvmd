@@ -1,5 +1,10 @@
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (permission_is_predefined, delete_port_range)
+	(port_list_is_predefined): Remove overlooked sql_int cell arguments.
+
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_create_collation.
 
 	* src/sql.c (sql_create_collations): New function.
