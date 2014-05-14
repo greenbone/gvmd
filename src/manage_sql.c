@@ -25532,21 +25532,13 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
     }
   else
     {
-      /* Check whether a target with the same name exists already. */
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM targets"
-                   " WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "target", 0))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 1;
         }
     }
-
+  quoted_name = sql_quote (name);
   quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
                                        : g_strdup ("");
   /* Import targets from target locator. */
@@ -25939,24 +25931,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           sql ("ROLLBACK;");
           return 11;
         }
-
-      quoted_name = sql_quote (name);
-
-      /* Check whether a target with the same name exists already. */
-      if (sql_int ("SELECT COUNT(*) FROM targets"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   target,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "target", target))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 1;
         }
 
+      quoted_name = sql_quote (name);
       sql ("UPDATE targets SET"
            " name = '%s',"
            " modification_time = now ()"
@@ -31868,21 +31849,11 @@ modify_lsc_credential (const char *lsc_credential_id,
   /* Check whether a lsc_credential with the same name exists already. */
   if (name)
     {
-      gchar *quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM lsc_credentials"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   lsc_credential,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "lsc_credential", lsc_credential))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
-      g_free (quoted_name);
     }
 
   /* Update values */
@@ -35691,17 +35662,15 @@ create_scanner (const char* name, const char *comment, const char *host,
     return 2;
   if (openvas_get_host_type (host) == -1)
     return 2;
-  quoted_name = sql_quote (name);
-  if (sql_int ("SELECT COUNT(*) FROM scanners WHERE name = '%s';",
-               quoted_name))
+  if (resource_with_name_exists (name, "scanner", 0))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
-  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
-  quoted_host = sql_quote (host);
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  quoted_host = sql_quote (host ?: "");
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
        "                      creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
@@ -35796,22 +35765,15 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   /* Check whether a scanner with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM scanners"
-                   " WHERE name = '%s' AND ROWID != %llu"
-                   "  AND ((owner IS NULL) OR (owner ="
-                   "  (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name, scanner, current_credentials.uuid))
+      if (resource_with_name_exists (name, "scanner", scanner))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
-  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
   quoted_host = sql_quote (host);
   sql ("UPDATE scanners SET name = '%s', comment = '%s', host = '%s',"
        " port = %d, type = %d, modification_time = now () WHERE ROWID = %llu;",
@@ -37172,20 +37134,12 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   /* Check whether a schedule with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM schedules"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   schedule,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "schedule", schedule))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
+      quoted_name = sql_quote (name);
     }
   else
     quoted_name = NULL;
@@ -37590,13 +37544,7 @@ create_report_format (const char *uuid, const char *name,
   num = 1;
   while (1)
     {
-      if (sql_int ("SELECT COUNT(*) FROM report_formats WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users"
-                   "  WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   current_credentials.uuid)
-          == 0)
+      if (!resource_with_name_exists (quoted_name, "report_format", 0))
         break;
       g_free (candidate_name);
       g_free (quoted_name);
@@ -39767,21 +39715,15 @@ create_slave (const char* name, const char* comment, const char* host,
       return 99;
     }
 
-  quoted_name = sql_quote (name);
 
   /* Check whether a slave with the same name exists already. */
-  if (sql_int ("SELECT COUNT(*) FROM slaves"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "slave", 0))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
+  quoted_name = sql_quote (name);
   quoted_host = sql_quote (host);
   quoted_port = sql_quote (port);
   quoted_login = sql_quote (login);
@@ -39897,24 +39839,14 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   /* Check whether a slave with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM slaves"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   slave,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "slave", slave))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
+  quoted_name = sql_quote(name ?: "");
   quoted_comment = sql_quote (comment ? comment : "");
   quoted_host = sql_quote (host ? host : "");
   quoted_port = sql_quote (port ? port : "");
@@ -40603,16 +40535,12 @@ create_group (const char *group_name, const char *comment, const char *users,
       return 99;
     }
 
-  quoted_group_name = sql_quote (group_name);
-
-  if (sql_int ("SELECT COUNT(*) FROM groups WHERE name = '%s';",
-               quoted_group_name))
+  if (resource_with_name_exists (group_name, "group", 0))
     {
-      g_free (quoted_group_name);
       sql ("ROLLBACK;");
       return 1;
     }
-
+  quoted_group_name = sql_quote (group_name);
   quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
   sql ("INSERT INTO groups"
        " (uuid, name, owner, comment, creation_time, modification_time)"
@@ -40953,25 +40881,14 @@ modify_group (const char *group_id, const char *name, const char *comment,
   /* Check whether a group with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM groups"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.ROWID FROM users"
-                   "                   WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   group,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "group", group))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 5;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
+  quoted_name = sql_quote(name ?: "");
   quoted_comment = sql_quote (comment ? comment : "");
 
   sql ("UPDATE groups SET"
@@ -42340,12 +42257,7 @@ create_port_list_unique (const char *name, const char *comment,
   /* Check whether a port list with the same name exists already. */
   suffix = 1;
   quoted_name = sql_quote (name);
-  while (sql_int ("SELECT COUNT(*) FROM port_lists"
-                  " WHERE name = '%s'"
-                  " AND ((owner IS NULL) OR (owner ="
-                  " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                  quoted_name,
-                  current_credentials.uuid))
+  while (resource_with_name_exists (quoted_name, "port_list", 0))
     {
       gchar *new_name;
       new_name = g_strdup_printf ("%s %i", name, suffix);
@@ -42477,21 +42389,15 @@ create_port_list (const char* id, const char* name, const char* comment,
       return 99;
     }
 
-  quoted_name = sql_quote (name);
 
   /* Check whether a port_list with the same name exists already. */
-  if (sql_int ("SELECT COUNT(*) FROM port_lists"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "port_list", 0))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
+  quoted_name = sql_quote (name);
   if (port_ranges == NULL || (strcmp (port_ranges, "default") == 0))
     {
       gchar *quoted_comment, *quoted_name;
@@ -43528,16 +43434,13 @@ create_role (const char *role_name, const char *comment, const char *users,
       return 99;
     }
 
-  quoted_role_name = sql_quote (role_name);
-
-  if (sql_int ("SELECT COUNT(*) FROM roles WHERE name = '%s';",
-               quoted_role_name))
+  if (resource_with_name_exists (role_name, "role", 0))
     {
-      g_free (quoted_role_name);
       sql ("ROLLBACK;");
       return 1;
     }
 
+  quoted_role_name = sql_quote (role_name);
   quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
   sql ("INSERT INTO roles"
        " (uuid, name, owner, comment, creation_time, modification_time)"
@@ -48046,14 +47949,12 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   /* Check if user exists already. */
 
-  quoted_name = sql_quote (name);
-  if (sql_int ("SELECT count (*) FROM users WHERE name = '%s'",
-               quoted_name))
+  if (resource_with_name_exists (name, "user", 0))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return -2;
     }
+  quoted_name = sql_quote (name);
 
   /* Get the password hashes. */
 

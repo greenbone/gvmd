@@ -1,3 +1,11 @@
+2014-05-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_target, modify_target, modify_lsc_credential)
+	(create_scanner, modify_scanner, modify_schedule, create_report_format)
+	(create_slave, modify_slave, create_group, modify_group)
+	(create_port_list_unique, create_port_list, create_role, create_user):
+	Refactor code. Call resource_with_name_exists() accordingly.
+
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (reinit_manage_process): Make database comment
