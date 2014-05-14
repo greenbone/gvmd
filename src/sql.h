@@ -173,6 +173,12 @@ int
 sql_create_collations ();
 
 
+/* Functions. */
+
+int
+sql_create_functions ();
+
+
 /* Iterators. */
 
 sqlite3_stmt *

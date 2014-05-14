@@ -1,7 +1,18 @@
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_create_function.
+
+	* src/sql.c (sql_create_functions): New function.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_create_function calls with one
+	sql_create_functions.
+
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (task_iterator_scanner): Use iterator_int64 instead
-	sqlite3_column_int64.
+	of sqlite3_column_int64.
 
 2014-05-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
