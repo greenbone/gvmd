@@ -1,5 +1,16 @@
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_create_collation.
+
+	* src/sql.c (sql_create_collations): New function.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_create_collation calls with one
+	sql_create_collations.
+
+2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_open and sqlite3_close.
 
 	* src/sql.c (DB_CHUNK_SIZE): New define.  From manage_sql.c

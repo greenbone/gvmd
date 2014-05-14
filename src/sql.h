@@ -167,6 +167,12 @@ void
 sql_user_can_everything (sqlite3_context *, int, sqlite3_value **);
 
 
+/* Colations. */
+
+int
+sql_create_collations ();
+
+
 /* Iterators. */
 
 sqlite3_stmt *

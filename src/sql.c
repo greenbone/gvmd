@@ -60,6 +60,18 @@ resource_name (const char *, const char *, int, gchar **);
 int
 resource_exists (const char *, resource_t, int);
 
+int
+collate_threat (void *, int, const void *, int, const void *);
+
+int
+collate_ip (void *, int, const void *, int, const void *);
+
+int
+collate_location (void *, int, const void *, int, const void *);
+
+int
+collate_role (void *, int, const void *, int, const void *);
+
 
 /* Variables */
 
@@ -1991,6 +2003,75 @@ sql_user_can_everything (sqlite3_context *context, int argc,
     }
 
   sqlite3_result_int (context, user_can_everything ((char *) uuid));
+}
+
+
+/* Collations. */
+
+/**
+ * @brief Create collations.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_create_collations ()
+{
+  if (sqlite3_create_collation (task_db,
+                                "collate_message_type",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_message_type)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_threat",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_threat)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_threat", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_ip",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_ip)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_ip", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_location",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_location)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_location", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_collation (task_db,
+                                "collate_role",
+                                SQLITE_UTF8,
+                                NULL,
+                                collate_role)
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create collate_role", __FUNCTION__);
+      return -1;
+    }
+
+  return 0;
 }
 
 
