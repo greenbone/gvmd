@@ -501,6 +501,9 @@ task_iterator_current_report (iterator_t *);
 const char *
 task_iterator_hosts_ordering (iterator_t *);
 
+scanner_t
+task_iterator_scanner (iterator_t *);
+
 unsigned int
 task_id (task_t);
 
@@ -537,6 +540,9 @@ task_comment (task_t);
 char*
 task_hosts_ordering (task_t);
 
+scanner_t
+task_scanner (task_t);
+
 config_t
 task_config (task_t);
 
@@ -564,7 +570,10 @@ set_task_target (task_t, target_t);
 void
 set_task_hosts_ordering (task_t, const char *);
 
-target_t
+void
+set_task_scanner (task_t, scanner_t);
+
+slave_t
 task_slave (task_t);
 
 void
@@ -2020,6 +2029,9 @@ report_type_iterator_title (report_type_iterator_t*);
 int
 manage_system_report (const char *, const char *, const char *, char **);
 
+gboolean
+find_scanner (const char *, scanner_t *);
+
 int
 create_scanner (const char*, const char *, const char *, const char *,
                 const char *, scanner_t *);
@@ -2063,6 +2075,12 @@ scanner_iterator_port (iterator_t*);
 
 int
 scanner_iterator_type (iterator_t*);
+
+char *
+scanner_name (scanner_t);
+
+char *
+scanner_uuid (scanner_t);
 
 int
 verify_scanner (const char *, char **);

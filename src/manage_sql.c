@@ -4094,12 +4094,12 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
-       "  families_growing INTEGER, nvts_growing INTEGER, creation_time,"
+       "  families_growing INTEGER, nvts_growing INTEGER, type, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS configs_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"
-       "  families_growing INTEGER, nvts_growing INTEGER, creation_time,"
+       "  families_growing INTEGER, nvts_growing INTEGER, type, creation_time,"
        "  modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data"
        " (id INTEGER PRIMARY KEY, alert INTEGER, name, data);");
@@ -4346,7 +4346,7 @@ create_tables ()
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
        "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
        "  schedule_location INTEGER, slave_location INTEGER,"
-       "  upload_result_count INTEGER, hosts_ordering, alterable,"
+       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
        "  creation_time, modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow. */
@@ -8368,7 +8368,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1),"   \
-  " hosts_ordering"
+  " hosts_ordering, scanner"
 
 
 /**
@@ -8395,7 +8395,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT count(*) FROM reports"                         \
   /* TODO 1 == TASK_STATUS_DONE */                         \
   "  WHERE task = tasks.ROWID AND scan_run_status = 1),"   \
-  " hosts_ordering"
+  " hosts_ordering, scanner"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
@@ -8565,13 +8565,27 @@ task_iterator_finished_reports (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Taks' hosts ordering.
+ * @return Task hosts ordering.
  */
 const char *
 task_iterator_hosts_ordering (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+}
+
+/**
+ * @brief Get the UUID of task scanner from a task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task scanner if found, NULL otherwise.
+ */
+scanner_t
+task_iterator_scanner (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return sqlite3_column_int64 (iterator->stmt, GET_ITERATOR_COLUMN_COUNT + 10);
 }
 
 /**
@@ -12348,6 +12362,44 @@ task_target_in_trash (task_t task)
                   task);
 }
 
+/**
+ * @brief Return the scanner of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return scanner of task.
+ */
+scanner_t
+task_scanner (task_t task)
+{
+  scanner_t scanner = 0;
+  switch (sql_int64 (&scanner, "SELECT scanner FROM tasks WHERE ROWID = %llu;",
+                     task))
+    {
+      case 0:
+        return scanner;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Set the scanner of a task.
+ *
+ * @param[in]  task     Task.
+ * @param[in]  scanner  Scanner.
+ */
+void
+set_task_scanner (task_t task, scanner_t scanner)
+{
+  sql ("UPDATE tasks SET scanner = %llu, modification_time = now ()"
+       " WHERE ROWID = %llu;", scanner, task);
+}
 
 /**
  * @brief Return the slave of a task.
@@ -24756,7 +24808,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             "time, config, target, schedule,"
                             " schedule_next_time, slave, config_location,"
                             " target_location, schedule_location,"
-                            " slave_location, hosts_ordering",
+                            " slave_location, hosts_ordering, scanner",
                             1, &new, &old);
   if (ret)
     {
@@ -35953,6 +36005,20 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /* Scanners */
 
 /**
+ * @brief Find a scanner given a UUID.
+ *
+ * @param[in]   uuid    UUID of scanner.
+ * @param[out]  scanner Scanner return, 0 if succesfully failed to find scanner.
+ *
+ * @return FALSE on success (including if failed to find scanner), TRUE on error.
+ */
+gboolean
+find_scanner (const char* uuid, scanner_t *scanner)
+{
+  return find_resource ("scanner", uuid, scanner);
+}
+
+/**
  * @brief Find a scanner for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of scanner.
@@ -36313,7 +36379,8 @@ scanner_iterator_type (iterator_t* iterator)
 int
 scanner_in_use (scanner_t scanner)
 {
-  return 0;
+  return !!sql_int ("SELECT count(*) FROM tasks" " WHERE scanner = %llu;",
+                    scanner);
 }
 
 /**
@@ -36353,6 +36420,20 @@ int
 trash_scanner_writable (scanner_t scanner)
 {
   return (trash_scanner_in_use (scanner) == 0);
+}
+
+/**
+ * @brief Return the name of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+scanner_name (scanner_t scanner)
+{
+  return sql_string ("SELECT name FROM scanners WHERE ROWID = %llu;",
+                     scanner);
 }
 
 /**

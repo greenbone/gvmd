@@ -9073,6 +9073,43 @@ migrate_123_to_124 ()
 }
 
 /**
+ * @brief Migrate the database from version 124 to version 125.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_124_to_125 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 124. */
+
+  if (manage_db_version () != 124)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add tasks scanner and configs type. */
+  sql ("ALTER TABLE tasks ADD COLUMN scanner;");
+  sql ("ALTER TABLE configs ADD COLUMN type;");
+  sql ("ALTER TABLE configs_trash ADD COLUMN type;");
+  sql ("UPDATE tasks SET scanner = 0;");
+  sql ("UPDATE configs SET type = 0;");
+  sql ("UPDATE configs_trash SET type = 0;");
+
+  /* Set the database version 125. */
+
+  set_db_version (125);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9201,6 +9238,7 @@ static migrator_t database_migrators[]
     {122, migrate_121_to_122},
     {123, migrate_122_to_123},
     {124, migrate_123_to_124},
+    {125, migrate_124_to_125},
     /* End marker. */
     {-1, NULL}};
 

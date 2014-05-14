@@ -295,6 +295,7 @@ CREATE TABLE configs (
     nvt_count integer,
     families_growing integer,
     nvts_growing integer,
+    type integer,
     creation_time date,
     modification_time date);
 
@@ -309,6 +310,7 @@ CREATE TABLE configs_trash (
     nvt_count integer,
     families_growing integer,
     nvts_growing integer,
+    type integer,
     creation_time date,
     modification_time date);
 
@@ -347,6 +349,7 @@ CREATE TABLE tasks (
     upload_result_count integer,
     hosts_ordering text,
     alterable integer,
+    scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
     creation_time date,
     modification_time date);
 

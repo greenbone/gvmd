@@ -1,3 +1,35 @@
+2014-05-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add tasks scanner and configs type.
+	Hence increase database version to 125.  Add database migration from
+	version 124 to 125.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 125.
+
+	* src/manage_migrators.c (migrate_124_to_125): New function.
+	(database_migrators): Add migrate_124_to_125.
+
+	* doc/db_postgres.sql, doc/db.png: Update documentation for new table
+	columns.
+
+	* src/manage_sql.c (create_tables): Add scanner column for tasks. Add
+	type column for configs and configs_trash.
+	(TASK_ITERATOR_COLUMNS, TASK_ITERATOR_TRASH_COLUMNS): Iterate over
+	scanner column.
+	(task_iterator_scanner, task_scanner, set_task_scanner, find_scanner)
+	(scanner_name): New functions.
+	(copy_task): Adjust for new column.
+	(scanner_in_use): Check if a task is using the scanner.
+
+	* src/manage.h: Add function prototypes accordingly.
+
+	* src/omp.c (create_task_data_t, create_task_data_reset)
+	(modify_task_data_t, modify_task_data_reset): Add scanner_id element.
+	(client_state_t): Add CLIENT_CREATE_TASK_SCANNER and
+	CLIENT_MODIFY_TASK_SCANNER states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Adjust
+	GET_TASKS, CREATE_TASK and MODIFY_TASK for adding task scanner element.
+
 2014-05-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (permission_is_predefined, delete_port_range)

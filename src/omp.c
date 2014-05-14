@@ -1672,6 +1672,7 @@ typedef struct
   char *alterable;      ///< Boolean.  Whether task is alterable.
   char *config_id;      ///< ID of task config.
   char *hosts_ordering; ///< Order for scanning target hosts.
+  char *scanner_id;     ///< ID of task scanner.
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
   array_t *groups;      ///< IDs of groups.
@@ -1695,6 +1696,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->alterable);
   free (data->config_id);
   free (data->hosts_ordering);
+  free (data->scanner_id);
   free (data->copy);
   array_free (data->alerts);
   array_free (data->groups);
@@ -3610,6 +3612,7 @@ typedef struct
   char *alterable;     ///< Boolean. Whether the task is alterable.
   char *comment;       ///< Comment.
   char *hosts_ordering; ///< Order for scanning of target hosts.
+  char *scanner_id;    ///< ID of new scanner for task.
   char *config_id;     ///< ID of new config for task.
   array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
@@ -3640,6 +3643,7 @@ modify_task_data_reset (modify_task_data_t *data)
   array_free (data->groups);
   free (data->comment);
   free (data->hosts_ordering);
+  free (data->scanner_id);
   free (data->config_id);
   free (data->file);
   free (data->file_name);
@@ -5162,6 +5166,7 @@ typedef enum
   CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_HOSTS_ORDERING,
+  CLIENT_CREATE_TASK_SCANNER,
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_COPY,
   CLIENT_CREATE_TASK_NAME,
@@ -5405,6 +5410,7 @@ typedef enum
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
+  CLIENT_MODIFY_TASK_SCANNER,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
@@ -8225,6 +8231,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_HOSTS_ORDERING);
+        else if (strcasecmp ("SCANNER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->scanner_id);
+            set_client_state (CLIENT_MODIFY_TASK_SCANNER);
+          }
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -9418,6 +9430,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
         else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
+        else if (strcasecmp ("SCANNER", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->scanner_id);
+            set_client_state (CLIENT_CREATE_TASK_SCANNER);
+          }
         else if (strcasecmp ("CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -16165,11 +16183,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *progress_xml;
               target_t target;
               slave_t slave;
+              scanner_t scanner;
               const char *first_report_id, *last_report_id;
               char *config, *config_uuid;
               char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
+              char *task_scanner_uuid, *task_scanner_name;
               gchar *first_report;
               char *description;
               gchar *description64, *last_report;
@@ -16497,8 +16517,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_schedule_name = (char*) g_strdup ("");
                   schedule_in_trash = 0;
                 }
+              scanner = task_scanner (index);
+              if (scanner)
+                {
+                  task_scanner_uuid = scanner_uuid (scanner);
+                  task_scanner_name = scanner_name (scanner);
+                }
+              else
+                {
+                  task_scanner_uuid = g_strdup ("");
+                  task_scanner_name = g_strdup ("");
+                }
               next_time = task_schedule_next_time_tz (index);
-
+              scanner = task_iterator_scanner (&tasks);
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
                            "<config id=\"%s\">"
@@ -16510,6 +16541,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "</target>"
                            "<hosts_ordering>%s</hosts_ordering>"
+                           "<scanner id='%s'><name>%s</name></scanner>"
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
@@ -16537,13 +16569,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_target_name ?: "",
                            target_in_trash,
                            task_iterator_hosts_ordering (&tasks),
+                           task_scanner_uuid,
+                           task_scanner_name,
                            task_slave_uuid ?: "",
                            task_slave_name ?: "",
                            task_slave_in_trash (index),
                            task_iterator_run_status_name (&tasks),
                            progress_xml,
                            description64,
-                           /* TODO These can come from iterator now. */
                            task_iterator_total_reports (&tasks),
                            task_iterator_finished_reports (&tasks),
                            task_iterator_trend_counts
@@ -16570,6 +16603,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               g_free (description64);
               g_free (task_schedule_uuid);
               g_free (task_schedule_name);
+              g_free (task_scanner_uuid);
+              g_free (task_scanner_name);
               free (task_slave_uuid);
               free (task_slave_name);
               if (send_to_client (response,
@@ -20468,6 +20503,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           config_t config = 0;
           target_t target = 0;
+          scanner_t scanner = 0;
           slave_t slave = 0;
           char *tsk_uuid, *name, *description;
           guint index;
@@ -20912,6 +20948,33 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
+          else if (create_task_data->scanner_id
+                   && find_scanner (create_task_data->scanner_id, &scanner))
+            {
+              request_delete_task (&create_task_data->task);
+              free (tsk_uuid);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+          else if (create_task_data->scanner_id && scanner == 0)
+            {
+              request_delete_task (&create_task_data->task);
+              free (tsk_uuid);
+              if (send_find_error_to_client ("create_task", "target",
+                                             create_task_data->scanner_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                {
+                  /* Out of space. */
+                  error_send_to_client (error);
+                  return;
+                }
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
           else if (create_task_data->slave_id
                    && find_slave (create_task_data->slave_id, &slave))
             {
@@ -20945,6 +21008,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_config (create_task_data->task, config);
               set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
+              set_task_scanner (create_task_data->task, scanner);
               set_task_hosts_ordering (create_task_data->task,
                                        create_task_data->hosts_ordering);
               if (create_task_data->preferences)
@@ -20980,6 +21044,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, ALTERABLE);
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
+      CLOSE (CLIENT_CREATE_TASK, SCANNER);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
       CLOSE (CLIENT_CREATE_TASK, COPY);
       CLOSE (CLIENT_CREATE_TASK, ALERT);
@@ -23978,6 +24043,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       set_task_target (task, target);
                   }
 
+                if (fail == 0 && modify_task_data->scanner_id)
+                  {
+                    scanner_t scanner = 0;
+
+                    if (strcmp (modify_task_data->scanner_id, "0") == 0)
+                      {
+                        /* Leave it as it is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW
+                                      && (task_alterable (task) == 0))))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX
+                         ("modify_task", "Status must be New to edit Scanner"));
+                    else if ((fail = find_scanner
+                                      (modify_task_data->scanner_id, &scanner)))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (scanner == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task", "scanner",
+                              modify_task_data->scanner_id, write_to_client,
+                              write_to_client_data))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      set_task_scanner (task, scanner);
+                  }
+
                 if (fail == 0 && modify_task_data->preferences)
                   set_task_preferences (task,
                                         modify_task_data->preferences);
@@ -24005,6 +24104,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, ALTERABLE);
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
       CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
+      CLOSE (CLIENT_MODIFY_TASK, SCANNER);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
       CLOSE (CLIENT_MODIFY_TASK, ALERT);
       CLOSE (CLIENT_MODIFY_TASK, NAME);
