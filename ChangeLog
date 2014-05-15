@@ -1,5 +1,10 @@
 2014-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (next_report): Call "next" instead of doing the same
+	sqlite3 call manually.
+
+2014-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_column_type.
 
 	* src/sql.c (iterator_null): New function.

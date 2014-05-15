@@ -14696,26 +14696,12 @@ DEF_ACCESS (report_iterator_uuid, 1);
 gboolean
 next_report (iterator_t* iterator, report_t* report)
 {
-  int ret;
-
-  if (iterator->done) return FALSE;
-
-  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
-  if (ret == SQLITE_DONE)
+  if (next (iterator))
     {
-      iterator->done = TRUE;
-      return FALSE;
+      *report = iterator_int64 (iterator, 0);
+      return TRUE;
     }
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-    {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
-      g_warning ("%s: sqlite3_step failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
-  *report = iterator_int64 (iterator, 0);
-  return TRUE;
+  return FALSE;
 }
 
 /**
