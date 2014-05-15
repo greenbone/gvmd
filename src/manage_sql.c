@@ -15974,7 +15974,7 @@ result_iterator_original_level (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  if (sqlite3_column_type (iterator->stmt, 12) == SQLITE_NULL)
+  if (iterator_null (iterator, 12))
     return NULL;
 
   /* severity */
@@ -16008,7 +16008,7 @@ result_iterator_level (iterator_t *iterator)
     return "False Positive";
 
   /* new_severity */
-  if (sqlite3_column_type (iterator->stmt, 13) == SQLITE_NULL)
+  if (iterator_null (iterator, 13))
     return NULL;
 
   severity = iterator_double (iterator, 13);
@@ -18198,7 +18198,7 @@ report_severity (report_t report, int overrides)
                  " AND (end_time = 0 or end_time >= now());",
                  report, overrides);
   if (next (&iterator)
-      && sqlite3_column_type (iterator.stmt, 0) != SQLITE_NULL)
+      && (iterator_null (&iterator, 0) == 0))
     {
       g_debug ("%s: max(severity)=%s", __FUNCTION__,
                iterator_string (&iterator, 0));

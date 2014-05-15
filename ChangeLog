@@ -1,3 +1,14 @@
+2014-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: sqlite3_column_type.
+
+	* src/sql.c (iterator_null): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_column_type calls with
+	iterator_null.
+
 2014-05-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_target, manage_set_config_name)
@@ -24,7 +35,7 @@
 
 	* src/sql.c (sql_create_functions): New function.
 
-	* src/sql.h: Add headers accordingly.
+	* src/sql.h: Add header accordingly.
 
 	* src/manage_sql.c: Replace sqlite3_create_function calls with one
 	sql_create_functions.

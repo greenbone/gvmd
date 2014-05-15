@@ -2641,6 +2641,21 @@ iterator_int64 (iterator_t* iterator, int col)
 }
 
 /**
+ * @brief Get whether a column is NULL.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  col       Column offset.
+ *
+ * @return 1 if NULL, else 0.
+ */
+int
+iterator_null (iterator_t* iterator, int col)
+{
+  if (iterator->done) abort ();
+  return sqlite3_column_type (iterator->stmt, col) == SQLITE_NULL;
+}
+
+/**
  * @brief Get a string column from an iterator.
  *
  * @param[in]  iterator  Iterator.

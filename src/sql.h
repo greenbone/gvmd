@@ -199,6 +199,9 @@ iterator_int (iterator_t*, int);
 long long int
 iterator_int64 (iterator_t*, int);
 
+int
+iterator_null (iterator_t*, int);
+
 const char*
 iterator_string (iterator_t*, int);
 
