@@ -25516,12 +25516,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int ("SELECT COUNT(*) FROM targets"
-                       " WHERE name = '%s'"
-                       " AND ((owner IS NULL) OR (owner ="
-                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                       quoted_name,
-                       current_credentials.uuid))
+      while (resource_with_name_exists (quoted_name, "target", 0))
         {
           gchar *new_name;
           g_free (quoted_name);
@@ -28615,18 +28610,12 @@ manage_set_config_name (config_t config, const char* name)
   gchar *quoted_name;
   assert (current_credentials.uuid);
   sql ("BEGIN IMMEDIATE;");
-  quoted_name = sql_quote (name);
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = '%s' AND ROWID != %llu"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               config,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "config", config))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+  quoted_name = sql_quote (name);
   sql ("UPDATE configs SET name = '%s', modification_time = now ()"
        " WHERE ROWID = %llu;",
        quoted_name, config);
@@ -28651,19 +28640,13 @@ manage_set_config_name_comment (config_t config, const char* name,
   gchar *quoted_name, *quoted_comment;
   assert (current_credentials.uuid);
   sql ("BEGIN IMMEDIATE;");
-  quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment);
-  if (sql_int ("SELECT count(*) FROM configs"
-               " WHERE name = '%s' AND ROWID != %llu"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               config,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "config", config))
     {
       sql ("ROLLBACK;");
       return 1;
     }
+  quoted_name = sql_quote (name);
+  quoted_comment = sql_quote (comment);
   sql ("UPDATE configs SET name = '%s', comment = '%s',"
        " modification_time = now ()"
        " WHERE ROWID = %llu;",
@@ -36149,19 +36132,13 @@ create_schedule (const char* name, const char *comment, time_t first_time,
       return 99;
     }
 
-  quoted_name = sql_quote (name);
 
-  if (sql_int ("SELECT COUNT(*) FROM schedules"
-               " WHERE name = '%s'"
-               " AND ((owner IS NULL) OR (owner ="
-               " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-               quoted_name,
-               current_credentials.uuid))
+  if (resource_with_name_exists (name, "schedule", 0))
     {
-      g_free (quoted_name);
       sql ("ROLLBACK;");
       return 1;
     }
+  quoted_name = sql_quote (name);
 
   if (timezone && strcmp (timezone, ""))
     insert_timezone = g_strdup (timezone);
@@ -42345,12 +42322,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int ("SELECT COUNT(*) FROM port_lists"
-                       " WHERE name = '%s'"
-                       " AND ((owner IS NULL) OR (owner ="
-                       " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                       quoted_name,
-                       current_credentials.uuid))
+      while (resource_with_name_exists (quoted_name, "port_list", port_list))
         {
           gchar *new_name;
           g_free (quoted_name);
@@ -42532,25 +42504,15 @@ modify_port_list (const char *port_list_id, const char *name,
   /* Check whether a Port List with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM port_lists"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   port_list,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "port_list", port_list))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
-  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
 
   sql ("UPDATE port_lists SET"
        " name = '%s',"
@@ -43778,26 +43740,15 @@ modify_role (const char *role_id, const char *name, const char *comment,
   /* Check whether a role with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM roles"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.ROWID FROM users"
-                   "                   WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   role,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "role", role))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 5;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
-  quoted_comment = sql_quote (comment ? comment : "");
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
 
   sql ("UPDATE roles SET"
        " name = '%s',"
@@ -44073,12 +44024,7 @@ create_filter (const char *name, const char *comment, const char *type,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (sql_int ("SELECT COUNT(*) FROM filters"
-                      " WHERE name = '%s'"
-                      " AND ((owner IS NULL) OR (owner ="
-                      " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                      quoted_name,
-                      current_credentials.uuid))
+      while (resource_with_name_exists (quoted_name, "filter", 0))
         {
           gchar *new_name;
           g_free (quoted_name);
@@ -44089,14 +44035,8 @@ create_filter (const char *name, const char *comment, const char *type,
     }
   else
     {
-      /* Check whether a filter with the same name exists already. */
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM filters"
-                   " WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   current_credentials.uuid))
+      quoted_name = sql_quote (name ?: "");
+      if (resource_with_name_exists (name, "filter", 0))
         {
           g_free (quoted_name);
           sql ("ROLLBACK;");
@@ -44537,24 +44477,14 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   /* Check whether a filter with the same name exists already. */
   if (name)
     {
-      quoted_name = sql_quote (name);
-      if (sql_int ("SELECT COUNT(*) FROM filters"
-                   " WHERE name = '%s'"
-                   " AND ROWID != %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
-                   quoted_name,
-                   filter,
-                   current_credentials.uuid))
+      if (resource_with_name_exists (name, "filter", filter))
         {
-          g_free (quoted_name);
           sql ("ROLLBACK;");
           return 2;
         }
     }
-  else
-    quoted_name = sql_quote("");
 
+  quoted_name = sql_quote(name ?: "");
   clean_term = manage_clean_filter (term ? term : "");
   quoted_term = sql_quote (clean_term);
   g_free (clean_term);

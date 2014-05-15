@@ -1,3 +1,10 @@
+2014-05-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_target, manage_set_config_name)
+	(manage_set_config_name_comment, create_schedule, create_port_list)
+	(modify_port_list, modify_role, create_filter, modify_filter): Call
+	resource_with_name_exists() accordingly.
+
 2014-05-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_target, modify_target, modify_lsc_credential)
