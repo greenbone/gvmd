@@ -2015,7 +2015,7 @@ migrate_19_to_20 ()
           return -1;
         }
 
-      sqlite3_finalize (stmt);
+      sql_finalize (stmt);
     }
   cleanup_iterator (&rows);
 

@@ -13492,7 +13492,7 @@ cleanup_prognosis_iterator ()
 {
   if (prognosis_stmt)
     {
-      sqlite3_finalize (prognosis_stmt);
+      sql_finalize (prognosis_stmt);
       prognosis_stmt = NULL;
     }
 }
@@ -17656,8 +17656,8 @@ report_severity_data (report_t report, int override,
             }
         }
       cleanup_iterator (&results);
-      sqlite3_finalize (stmt);
-      sqlite3_finalize (full_stmt);
+      sql_finalize (stmt);
+      sql_finalize (full_stmt);
     }
   else
     {
@@ -27328,7 +27328,7 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
         }
     }
 
-  sqlite3_finalize (stmt);
+  sql_finalize (stmt);
 }
 
 /**
@@ -32827,7 +32827,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         return -1;
       }
 
-    sqlite3_finalize (stmt);
+    sql_finalize (stmt);
   }
 
   if (agent)

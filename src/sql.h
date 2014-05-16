@@ -235,4 +235,7 @@ sql_bind_double (sqlite3_stmt *, int, double);
 int
 sql_exec (sqlite3_stmt *);
 
+void
+sql_finalize (sqlite3_stmt *);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */

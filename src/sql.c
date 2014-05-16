@@ -2914,3 +2914,14 @@ sql_exec (sqlite3_stmt *stmt)
       return 1;
     }
 }
+
+/**
+ * @brief Free a prepared statement.
+ *
+ * @param[in]  stmt  Statement.
+ */
+void
+sql_finalize (sqlite3_stmt *stmt)
+{
+  sqlite3_finalize (stmt);
+}
