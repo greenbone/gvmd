@@ -157,25 +157,35 @@ gchar*
 sql_nquote (const char* string, size_t length)
 {
   gchar *new, *new_start;
-  const gchar *start;
+  const gchar *start, *end;
+  int count = 0;
 
   assert (string);
-  if (*string == '\0')
-    return g_strdup ("");
+
+  /* Count number of apostrophes. */
+
+  start = string;
+  while ((start = strchr (start, '\''))) start++, count++;
 
   /* Allocate new string. */
 
-  new = new_start = g_malloc0 (length * 2 + 1);
+  new = new_start = g_malloc0 (length + count + 1);
 
-  /* Copy string, doubling apostrophes. */
+  /* Copy string, replacing apostrophes with double apostrophes. */
 
   start = string;
-  while (*start)
+  end = string + length;
+  for (; start < end; start++, new++)
     {
-      *new++ = *start;
-      if (*start == '\'')
-        *new++ = '\'';
-      start++;
+      char ch = *start;
+      if (ch == '\'')
+        {
+          *new = '\'';
+          new++;
+          *new = '\'';
+        }
+      else
+        *new = ch;
     }
 
   return new_start;

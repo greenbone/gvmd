@@ -1,7 +1,13 @@
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (sql_nquote): Revert r18716 from 2014-02-06 which did
+	not correctly handle the length argument, causing memory access past the
+	end of the existing string in certain cases.
+
 2014-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (next_report): Call "next" instead of doing the same
-	sqlite3 call manually.
+	sqlite3 calls manually.
 
 2014-05-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
