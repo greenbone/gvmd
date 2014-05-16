@@ -13528,15 +13528,9 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
   init_prepared_iterator (iterator, prognosis_stmt);
 
   /* Bind iterator. */
-  while (1)
+  if (sql_bind_text (prognosis_stmt, 1, cpe, -1))
     {
-      int ret;
-      ret = sqlite3_bind_text (prognosis_stmt, 1, cpe, -1, SQLITE_TRANSIENT);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_OK) break;
-      g_warning ("%s: sqlite3_bind failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
       abort ();
     }
 }
@@ -17486,14 +17480,9 @@ report_severity_data (report_t report, int override,
 
           /* Bind the current result values into the quick statement. */
 
-          while (1)
+          if (sql_bind_text (stmt, 1, nvt, -1))
             {
-              ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_bind failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
+              g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
               abort ();
             }
 
@@ -17551,72 +17540,45 @@ report_severity_data (report_t report, int override,
             }
           else
             {
+              result_t result;
+              const char *host, *port;
+              double severity;
+
               /* There is an override on this NVT, get the new threat value. */
 
               /* Bind the current result values into the full statement. */
 
-              while (1)
+              if (sql_bind_text (full_stmt, 1, nvt, -1))
                 {
-                  ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_bind failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
                   abort ();
                 }
 
-              while (1)
+              result = (result_t) iterator_int64 (&results, 0);
+              if (sql_bind_int64 (full_stmt, 2, result))
                 {
-                  result_t result;
-                  result = (result_t) iterator_int64 (&results, 0);
-                  ret = sqlite3_bind_int64 (full_stmt, 2, result);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_bind failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                  g_warning ("%s: sql_bind_int64 failed\n", __FUNCTION__);
                   abort ();
                 }
 
-              while (1)
+              host = iterator_string (&results, 3);
+              if (sql_bind_text (full_stmt, 3, host, -1))
                 {
-                  const char *host;
-                  host = iterator_string (&results, 3);
-                  ret = sqlite3_bind_text (full_stmt, 3, host, -1,
-                                            SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_bind failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
                   abort ();
                 }
 
-              while (1)
+              port = iterator_string (&results, 4);
+              if (sql_bind_text (full_stmt, 4, port, -1))
                 {
-                  const char *port;
-                  port = iterator_string (&results, 4);
-                  ret = sqlite3_bind_text (full_stmt, 4, port, -1,
-                                            SQLITE_TRANSIENT);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_bind failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
                   abort ();
                 }
 
-              while (1)
+              severity = iterator_double (&results, 7);
+              if (sql_bind_double (full_stmt, 5, severity))
                 {
-                  double severity;
-                  severity = iterator_double (&results, 7);
-                  ret = sqlite3_bind_double (full_stmt, 5, severity);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_bind failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
+                  g_warning ("%s: sql_bind_double failed\n", __FUNCTION__);
                   abort ();
                 }
 
@@ -27342,30 +27304,19 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
               continue;
             }
 
-          while (1)
+          assert (family);
+          if (sql_bind_text (stmt, 2, family, -1))
             {
-              assert (family);
-              ret = sqlite3_bind_text (stmt, 2, family, -1,
-                                       SQLITE_TRANSIENT);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_bind failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
+              g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
               abort ();
             }
         }
 
       /* Bind the ID to the "$value" in the SQL statement. */
 
-      while (1)
+      if (sql_bind_text (stmt, 1, id, -1))
         {
-          ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_TRANSIENT);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_OK) break;
-          g_warning ("%s: sqlite3_bind failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+          g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
           abort ();
         }
 
@@ -32851,18 +32802,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
     /* Bind the packages to the "$values" in the SQL statement. */
 
-    while (1)
+    if (sql_bind_text (stmt, 1, installer, installer_size))
       {
-        ret = sqlite3_bind_text (stmt,
-                                 1,
-                                 installer,
-                                 installer_size,
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_bind failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
         sql ("ROLLBACK;");
         g_free (installer);
         g_free (installer_signature);
@@ -32870,68 +32812,33 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       }
     g_free (installer);
 
-    while (1)
+    if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
       {
-        ret = sqlite3_bind_text (stmt,
-                                 2,
-                                 installer_64,
-                                 strlen (installer_64),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_bind failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
         sql ("ROLLBACK;");
         g_free (installer_signature);
         return -1;
       }
     g_free (installer_signature);
 
-    while (1)
+    if (sql_bind_text (stmt, 3, installer_signature_64,
+                       strlen (installer_signature_64)))
       {
-        ret = sqlite3_bind_text (stmt,
-                                 3,
-                                 installer_signature_64,
-                                 strlen (installer_signature_64),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_bind failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
         sql ("ROLLBACK;");
         return -1;
       }
 
-    while (1)
+    if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
       {
-        ret = sqlite3_bind_text (stmt,
-                                 4,
-                                 howto_install,
-                                 strlen (howto_install),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_bind failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
         sql ("ROLLBACK;");
         return -1;
       }
 
-    while (1)
+    if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
       {
-        ret = sqlite3_bind_blob (stmt,
-                                 5,
-                                 howto_use,
-                                 strlen (howto_use),
-                                 SQLITE_TRANSIENT);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_bind failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_bind_blob failed\n", __FUNCTION__);
         sql ("ROLLBACK;");
         return -1;
       }

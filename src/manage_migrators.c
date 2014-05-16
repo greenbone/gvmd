@@ -1994,18 +1994,9 @@ migrate_19_to_20 ()
 
       /* Bind the packages to the "$values" in the SQL statement. */
 
-      while (1)
+      if (sql_bind_text (stmt, 1, installer, installer_size))
         {
-          ret = sqlite3_bind_text (stmt,
-                                   1,
-                                   installer,
-                                   installer_size,
-                                   SQLITE_TRANSIENT);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_OK) break;
-          g_warning ("%s: sqlite3_bind failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+          g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
           cleanup_iterator (&rows);
           sql ("ROLLBACK;");
           g_free (installer);

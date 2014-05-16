@@ -1,3 +1,16 @@
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: sqlite3_bind_*.
+
+	* src/sql.c (sql_bind_blob, sql_bind_int64, sql_bind_double)
+	(sql_bind_text): New functions.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage_sql.c, src/manage_migrators.c: Replace sqlite3_bind_text,
+	sqlite3_bind_int64, sqlite3_bind_double and sqlite3_bind_blob with
+	sql_bind_text, sql_bind_int64, sql_bind_double and sql_bind_blob.
+
 2014-05-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	In SCAP and CERT sync, ensure timestamps are based on the UTC timezone

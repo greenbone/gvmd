@@ -2765,3 +2765,122 @@ next (iterator_t* iterator)
     }
   return TRUE;
 }
+
+
+/* Prepared statements. */
+
+/**
+ * @brief Bind a blob to a statement.
+ *
+ * @param[in]  stmt        Statement.
+ * @param[in]  position    Position in statement.
+ * @param[in]  value       Blob.
+ * @param[in]  value_size  Blob size.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_bind_blob (sqlite3_stmt *stmt, int position, const void *value,
+               int value_size)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_bind_blob (stmt,
+                               position,
+                               value,
+                               value_size,
+                               SQLITE_TRANSIENT);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK) break;
+      g_warning ("%s: sqlite3_bind_blob failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Bind an int64 value to a statement.
+ *
+ * @param[in]  stmt        Statement.
+ * @param[in]  position    Position in statement.
+ * @param[in]  value       Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_bind_int64 (sqlite3_stmt *stmt, int position, long long int value)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_bind_int64 (stmt, position, value);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK) break;
+      g_warning ("%s: sqlite3_bind_int64 failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Bind a double value to a statement.
+ *
+ * @param[in]  stmt        Statement.
+ * @param[in]  position    Position in statement.
+ * @param[in]  value       Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_bind_double (sqlite3_stmt *stmt, int position, double value)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_bind_double (stmt, position, value);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK) break;
+      g_warning ("%s: sqlite3_bind_double failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
+    }
+  return 0;
+}
+
+/**
+ * @brief Bind a text value to a statement.
+ *
+ * @param[in]  stmt        Statement.
+ * @param[in]  position    Position in statement.
+ * @param[in]  value       Value.
+ * @param[in]  value_size  Value size, or -1 to use strlen of value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_bind_text (sqlite3_stmt *stmt, int position, const gchar *value,
+               gsize value_size)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_bind_text (stmt,
+                               position,
+                               value,
+                               value_size,
+                               SQLITE_TRANSIENT);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_OK) break;
+      g_warning ("%s: sqlite3_bind_text failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return -1;
+    }
+  return 0;
+}

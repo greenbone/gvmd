@@ -217,4 +217,19 @@ cleanup_iterator (iterator_t*);
 gboolean
 next (iterator_t*);
 
+
+/* Prepared statemnets */
+
+int
+sql_bind_blob (sqlite3_stmt *, int, const void *, int);
+
+int
+sql_bind_int64 (sqlite3_stmt *, int, long long int);
+
+int
+sql_bind_text (sqlite3_stmt *, int, const gchar *, gsize);
+
+int
+sql_bind_double (sqlite3_stmt *, int, double);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */
