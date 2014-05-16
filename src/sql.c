@@ -2884,3 +2884,33 @@ sql_bind_text (sqlite3_stmt *stmt, int position, const gchar *value,
     }
   return 0;
 }
+
+/**
+ * @brief Execute a prepared statement.
+ *
+ * @param[in]  stmt  Statement.
+ *
+ * @return 0 complete, 1 row available in results, -1 error.
+ */
+int
+sql_exec (sqlite3_stmt *stmt)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_step (stmt);
+      if (ret == SQLITE_BUSY)
+        continue;
+      if (ret == SQLITE_DONE)
+        return 0;
+      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+        {
+          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+          g_warning ("%s: sqlite3_step failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          return -1;
+        }
+      return 1;
+    }
+}

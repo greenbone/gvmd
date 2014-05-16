@@ -232,4 +232,7 @@ sql_bind_text (sqlite3_stmt *, int, const gchar *, gsize);
 int
 sql_bind_double (sqlite3_stmt *, int, double);
 
+int
+sql_exec (sqlite3_stmt *);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */

@@ -1,5 +1,16 @@
 2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_step.
+
+	* src/sql.c (sql_exec): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_sql.c, src/manage_migrators.c: Replace sqlite3_step with
+	sql_exec.
+
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: sqlite3_bind_*.
 
 	* src/sql.c (sql_bind_blob, sql_bind_int64, sql_bind_double)

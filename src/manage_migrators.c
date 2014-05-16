@@ -2006,21 +2006,13 @@ migrate_19_to_20 ()
 
       /* Run the statement. */
 
-      while (1)
+      while ((ret = sql_exec (stmt)) > 0);
+      if (ret < 0)
         {
-          ret = sqlite3_step (stmt);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_DONE) break;
-          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-            {
-              if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-              g_warning ("%s: sqlite3_step failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              cleanup_iterator (&rows);
-              sql ("ROLLBACK;");
-              return -1;
-            }
+          g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+          cleanup_iterator (&rows);
+          sql ("ROLLBACK;");
+          return -1;
         }
 
       sqlite3_finalize (stmt);

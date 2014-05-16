@@ -17488,25 +17488,16 @@ report_severity_data (report_t report, int override,
 
           /* Run the quick inner statement to check for overrides. */
 
-          while (1)
+          ret = sql_exec (stmt);
+          if (ret < 0)
             {
-              ret = sqlite3_step (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-                  g_warning ("%s: sqlite3_step failed: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
+              g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+              abort ();
             }
 
           /* Check the result. */
 
-          if (ret == SQLITE_DONE)
+          if (ret == 0)
             {
               new_severity = iterator_double (&results, 7);
               new_type = iterator_string (&results, 2);
@@ -17584,25 +17575,16 @@ report_severity_data (report_t report, int override,
 
               /* Run the full inner statement. */
 
-              while (1)
+              ret = sql_exec (full_stmt);
+              if (ret < 0)
                 {
-                  ret = sqlite3_step (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      if (ret == SQLITE_ERROR) ret = sqlite3_reset (full_stmt);
-                      g_warning ("%s: sqlite3_step failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
-                  break;
+                  g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+                  abort ();
                 }
 
               /* Check the result. */
 
-              if (ret == SQLITE_DONE)
+              if (ret == 0)
                 {
                   new_type = iterator_string (&results, 2);
                   new_severity = iterator_double (&results, 7);
@@ -27322,19 +27304,11 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
       /* Run the statement. */
 
-      while (1)
+      while ((ret = sql_exec (stmt)) > 0);
+      if (ret < 0)
         {
-          ret = sqlite3_step (stmt);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_DONE) break;
-          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-            {
-              if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-              g_warning ("%s: sqlite3_step failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
+          g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+          abort ();
         }
 
       /* Reset the statement. */
@@ -32845,20 +32819,12 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
     /* Run the statement. */
 
-    while (1)
+    while ((ret = sql_exec (stmt)) > 0);
+    if (ret < 0)
       {
-        ret = sqlite3_step (stmt);
-        if (ret == SQLITE_BUSY) continue;
-        if (ret == SQLITE_DONE) break;
-        if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-          {
-            if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-            g_warning ("%s: sqlite3_step failed: %s\n",
-                       __FUNCTION__,
-                       sqlite3_errmsg (task_db));
-            sql ("ROLLBACK;");
-            return -1;
-          }
+        g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+        sql ("ROLLBACK;");
+        return -1;
       }
 
     sqlite3_finalize (stmt);
