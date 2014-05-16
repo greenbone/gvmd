@@ -31,8 +31,22 @@
 #include <sqlite3.h>
 #include <glib.h>
 
+
+/* Types. */
+
+/**
+ * @brief A prepared SQL statement.
+ */
+typedef sqlite3_stmt sql_stmt_t;
+
+
+/* Variables */
+
 extern sqlite3 *
 task_db;
+
+
+/* Helpers. */
 
 int
 sql_open (const char *);
@@ -218,24 +232,24 @@ gboolean
 next (iterator_t*);
 
 
-/* Prepared statemnets */
+/* Prepared statements. */
 
 int
-sql_bind_blob (sqlite3_stmt *, int, const void *, int);
+sql_bind_blob (sql_stmt_t *, int, const void *, int);
 
 int
-sql_bind_int64 (sqlite3_stmt *, int, long long int);
+sql_bind_int64 (sql_stmt_t *, int, long long int);
 
 int
-sql_bind_text (sqlite3_stmt *, int, const gchar *, gsize);
+sql_bind_text (sql_stmt_t *, int, const gchar *, gsize);
 
 int
-sql_bind_double (sqlite3_stmt *, int, double);
+sql_bind_double (sql_stmt_t *, int, double);
 
 int
-sql_exec (sqlite3_stmt *);
+sql_exec (sql_stmt_t *);
 
 void
-sql_finalize (sqlite3_stmt *);
+sql_finalize (sql_stmt_t *);
 
 #endif /* not OPENVAS_MANAGER_SQL_H */

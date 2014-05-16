@@ -13482,7 +13482,7 @@ cpe_highest_cvss (const char *cpe)
 /**
  * @brief Prognosis iterator prepared statement.
  */
-static sqlite3_stmt* prognosis_stmt = NULL;
+static sql_stmt_t *prognosis_stmt = NULL;
 
 /**
  * @brief Cleanup the prognosis iterator prepared statement.
@@ -17371,7 +17371,7 @@ report_severity_data (report_t report, int override,
   iterator_t results;
   task_t task;
 
-  sqlite3_stmt *stmt, *full_stmt;
+  sql_stmt_t *stmt, *full_stmt;
   gchar *quoted_host, *severity_sql;
   int ret;
 
@@ -27224,7 +27224,7 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 {
   gint index;
   int ret;
-  sqlite3_stmt* stmt;
+  sql_stmt_t *stmt;
 
   if (families)
     stmt = sql_prepare ("INSERT INTO nvt_selectors"
@@ -32733,7 +32733,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   {
     int ret;
-    sqlite3_stmt* stmt;
+    sql_stmt_t *stmt;
     gchar *quoted_name, *quoted_comment, *quoted_filename;
 
     quoted_name = sql_quote (name);

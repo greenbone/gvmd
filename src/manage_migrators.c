@@ -1960,7 +1960,7 @@ migrate_19_to_20 ()
       gchar *installer;
       gsize installer_size;
       int ret;
-      sqlite3_stmt* stmt;
+      sql_stmt_t* stmt;
 
       sql ("UPDATE agents SET"
            " installer_trust = %i,"

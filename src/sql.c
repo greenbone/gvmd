@@ -2780,7 +2780,7 @@ next (iterator_t* iterator)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_blob (sqlite3_stmt *stmt, int position, const void *value,
+sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                int value_size)
 {
   while (1)
@@ -2811,7 +2811,7 @@ sql_bind_blob (sqlite3_stmt *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_int64 (sqlite3_stmt *stmt, int position, long long int value)
+sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
 {
   while (1)
     {
@@ -2837,7 +2837,7 @@ sql_bind_int64 (sqlite3_stmt *stmt, int position, long long int value)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_double (sqlite3_stmt *stmt, int position, double value)
+sql_bind_double (sql_stmt_t *stmt, int position, double value)
 {
   while (1)
     {
@@ -2864,7 +2864,7 @@ sql_bind_double (sqlite3_stmt *stmt, int position, double value)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_text (sqlite3_stmt *stmt, int position, const gchar *value,
+sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                gsize value_size)
 {
   while (1)
@@ -2893,7 +2893,7 @@ sql_bind_text (sqlite3_stmt *stmt, int position, const gchar *value,
  * @return 0 complete, 1 row available in results, -1 error.
  */
 int
-sql_exec (sqlite3_stmt *stmt)
+sql_exec (sql_stmt_t *stmt)
 {
   while (1)
     {
@@ -2921,7 +2921,7 @@ sql_exec (sqlite3_stmt *stmt)
  * @param[in]  stmt  Statement.
  */
 void
-sql_finalize (sqlite3_stmt *stmt)
+sql_finalize (sql_stmt_t *stmt)
 {
   sqlite3_finalize (stmt);
 }
