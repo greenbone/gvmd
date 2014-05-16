@@ -1,3 +1,31 @@
+2014-05-16  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	In SCAP and CERT sync, ensure timestamps are based on the UTC timezone
+	and make the cut-off times for updates more precise by using the UNIX
+	epoch format and use stricter conditions.
+
+	* tools/cpe_youngerthan.xsl, tools/cve_youngerthan.xsl: Use EXSLT
+	conversion to seconds since UNIX epoch for comparison with refdate.
+
+	* tools/dfn_cert_update.xsl: Use EXSLT conversion to seconds since
+	UNIX epoch for comparison with refdate and for the SQL inserts.
+
+	* tools/oval_update.xsl: Use EXSLT conversion to seconds since
+	UNIX epoch for the SQL inserts.
+
+	* tools/greenbone-certdata-sync (update_cert_db): Use UNIX timestamp
+	format for refdates. Files with dates equal to the reference are now
+	considered old. Account for missing seconds in timestamp file in
+	comparisons. Force UTC timezone when writing last_update.
+
+	* tools/greenbone-scapdata-sync (init_scap_db_update)
+	(update_scap_db_private, update_scap_db): Same as above sync script.
+
+	* tools/openvas-certdata-sync.in (update_sec_db): Same as above.
+
+	* tools/openvas-scapdata-sync.in (init_sec_db_update)
+	(update_sec_db_private, update_sec_db): Same as above.
+
 2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move SQLite calls into SQL library: sqlite3_prepare.

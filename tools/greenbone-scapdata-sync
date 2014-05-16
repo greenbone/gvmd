@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20140514
+VERSION=20140515
 RESTRICTED=1
 
 # SETTINGS
@@ -531,9 +531,8 @@ init_scap_db_update () {
     CVE_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`$SQLITE3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;"`
+    CVE_REFDATE=`$SQLITE3 $SCAP_DB "select max(modification_time) from cves;"`
     test_sql_exit "Could not get reference date for CVEs and CPEs"
-    CVE_REFDATE=`echo "$CVE_REFDATE" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
   DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "select value from meta where name = 'last_update';"`
@@ -663,24 +662,25 @@ update_scap_db_private () {
       then
         for ovalfile in $oval_files_sorted_private
         do
-          if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = $REBUILD_OVAL ]
+          filedate=`stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"`
+          filedate=$(( $filedate - ( $filedate % 60 ) ))
+          if [ $filedate -gt $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
           then
-            oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
+            oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | date "+%s" -f -`
 
             if [ 1 = "$REBUILD_OVAL" ]
             then
               OVAL_REFDATE=0
             else
-              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
               test_sql_exit "Could not get OVAL reference date"
-              OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
               if [ -z "$OVAL_REFDATE" ]
               then
                 OVAL_REFDATE=0
               fi
             fi
 
-            if [ $oval_timestamp -ge $OVAL_REFDATE ]
+            if [ $oval_timestamp -gt $OVAL_REFDATE ]
             then
               validation_message=`xsltproc "$SCAP_RES_DIR/oval_verify.xsl" "$ovalfile" 2>/dev/null`
               validation_return="$?"
@@ -764,7 +764,9 @@ update_scap_db() {
     CPEBASE="$SCAP_DIR/official-cpe-dictionary_v2.2.xml"
     if [ -e $CPEBASE ]
     then
-      if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      filedate=`stat -c "%Y" "$CPEBASE" | cut -d " " -f 1 | tr -d "-"`
+      filedate=$(( $filedate - ( $filedate % 60 ) ))
+      if [ $filedate -gt $DB_LASTUPDATE ]
       then
         log_info "Updating CPEs"
         exec 4>&1
@@ -792,7 +794,9 @@ update_scap_db() {
     then
       for cvefile in `ls $SCAP_DIR/nvdcve-2.0-*.xml`
       do
-        if [ `stat -c "%Y" $cvefile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+        filedate=`stat -c "%Y" "$cvefile" | cut -d " " -f 1 | tr -d "-"`
+        filedate=$(( $filedate - ( $filedate % 60 ) ))
+        if [ $filedate -gt $DB_LASTUPDATE ]
         then
           log_info "Updating $cvefile"
 
@@ -857,24 +861,25 @@ update_scap_db() {
 
       for ovalfile in $oval_files_sorted
       do
-        if [ `stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ] || [ 1 = $REBUILD_OVAL ]
+        filedate=`stat -c "%Y" "$ovalfile" | cut -d " " -f 1 | tr -d "-"`
+        filedate=$(( $filedate - ( $filedate % 60 ) ))
+        if [ $filedate -gt $DB_LASTUPDATE ] || [ 1 = "$REBUILD_OVAL" ]
         then
-          oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | sed -e 's/T.*//' | tr -d "-"`
+          oval_timestamp=`xsltproc "$SCAP_RES_DIR/oval_timestamp.xsl" "$ovalfile" | date "+%s" -f -`
 
           if [ 1 = "$REBUILD_OVAL" ]
           then
             OVAL_REFDATE=0
           else
-            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
             test_sql_exit "Could not get OVAL reference date from database"
-            OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
             if [ -z "$OVAL_REFDATE" ]
             then
               OVAL_REFDATE=0
             fi
           fi
 
-          if [ $oval_timestamp -ge $OVAL_REFDATE ]
+          if [ $oval_timestamp -gt $OVAL_REFDATE ]
           then
             log_info "Updating $ovalfile"
             exec 4>&1
@@ -903,7 +908,7 @@ update_scap_db() {
   update_scap_db_private
   update_cvss
 
-  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
+  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
 
   $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
   test_sql_exit "Could not update last_update timestamp in database"

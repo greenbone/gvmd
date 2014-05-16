@@ -31,7 +31,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   xmlns:dfncert="http://www.dfn-cert.de/dfncert.dtd"
   xmlns:atom="http://www.w3.org/2005/Atom"
   xmlns:str="http://exslt.org/strings"
-  extension-element-prefixes="str"
+  xmlns:date="http://exslt.org/dates-and-times"
+  extension-element-prefixes="str date"
   >
   <xsl:output method="text"/>
   <xsl:param name="refdate" select="'0'"/>
@@ -44,7 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="atom:entry">
   <xsl:choose>
-  <xsl:when test="number(translate(substring(atom:updated,1,10),'-','')) &gt; number($refdate)">
+  <xsl:when test="floor (date:seconds (atom:updated)) &gt; number($refdate)">
   INSERT OR REPLACE INTO dfn_cert_advs (
     uuid,
     name,
@@ -58,8 +59,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     "<xsl:value-of select="dfncert:refnum"/>",
     "<xsl:value-of select="dfncert:refnum"/>",
     "",
-    strftime("%s","<xsl:value-of select="atom:published/text()"/>"),
-    strftime("%s","<xsl:value-of select="atom:updated/text()"/>"),
+    <xsl:value-of select="floor (date:seconds (atom:published/text()))"/>,
+    <xsl:value-of select="floor (date:seconds (atom:updated/text()))"/>,
     "<xsl:value-of select="str:replace(atom:title/text(), '&quot;', '&quot;&quot;')"/>",
     "<xsl:value-of select="str:replace(atom:summary/text(), '&quot;', '&quot;&quot;')"/>",
     <xsl:value-of select="count(dfncert:cve)"/>

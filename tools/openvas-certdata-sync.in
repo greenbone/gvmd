@@ -296,9 +296,8 @@ update_sec_db () {
     DB_LASTUPDATE=0
   else
     check_db_version
-    DFN_REFDATE=`$SQLITE $CERT_DB "SELECT date(max(modification_time),'unixepoch') from dfn_cert_advs;"`
+    DFN_REFDATE=`$SQLITE $CERT_DB "SELECT max(modification_time) from dfn_cert_advs;"`
     test_sql_exit "Could not get DFN-CERT reference date from database"
-    DFN_REFDATE=`echo "$DFN_REFDATE" | tr -d "-"`
   fi
 
   if [ -z "$DFN_REFDATE" ]
@@ -325,7 +324,9 @@ update_sec_db () {
   then
     for certfile in `ls $CERT_DIR/dfn-cert-*.xml`
     do
-      if [ `stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
+      filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
+      filedate=$(( $filedate - ( $filedate % 60 ) ))
+      if [ $filedate -gt $DB_LASTUPDATE ]
       then
         echo "[i] Updating $certfile"
         exec 4>&1
@@ -349,8 +350,7 @@ update_sec_db () {
 
   update_cvss
 
-  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
-
+  LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
   $SQLITE $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
   test_sql_exit "Could not update last_update timestamp in CERT database"
 }
