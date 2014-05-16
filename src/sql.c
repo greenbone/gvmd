@@ -2497,6 +2497,8 @@ sql_create_functions ()
  * @brief Prepare a statement.
  *
  * @param[in]  sql       Format string for SQL.
+ *
+ * @return Statement on success, NULL on error.
  */
 sqlite3_stmt *
 sql_prepare (const char* sql, ...)
@@ -2526,14 +2528,14 @@ sql_prepare (const char* sql, ...)
               g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                          __FUNCTION__,
                          sqlite3_errmsg (task_db));
-              abort ();
+              return NULL;
             }
           break;
         }
       g_warning ("%s: sqlite3_prepare failed: %s\n",
                  __FUNCTION__,
                  sqlite3_errmsg (task_db));
-      abort ();
+      return NULL;
     }
 
   tracef ("   prepared as: %p\n", stmt);

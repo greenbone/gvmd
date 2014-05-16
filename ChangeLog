@@ -1,5 +1,20 @@
 2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sqlite3_prepare.
+
+	* src/sql.c (sql_prepare): Return instead of aborting, so that the
+	caller can rollback if required.
+
+	* src/manage_migrators.c (migrate_19_to_20): Replace sqlite3_prepare
+	call with sql_prepare.
+
+	* src/manage_sql.c (init_prognosis_iterator): Handle new sql_prepare
+	return.
+	(report_severity_data, clude, create_agent): Replace sqlite3_prepare
+	call with sql_prepare.
+
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (sql_nquote): Revert r18716 from 2014-02-06 which did
 	not correctly handle the length argument, causing memory access past the
 	end of the existing string in certain cases.

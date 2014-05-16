@@ -1956,8 +1956,8 @@ migrate_19_to_20 ()
   init_iterator (&rows, "SELECT ROWID, installer FROM agents;");
   while (next (&rows))
     {
-      const char *tail, *installer_64 = iterator_string (&rows, 1);
-      gchar *installer, *formatted;
+      const char *installer_64 = iterator_string (&rows, 1);
+      gchar *installer;
       gsize installer_size;
       int ret;
       sqlite3_stmt* stmt;
@@ -1970,33 +1970,15 @@ migrate_19_to_20 ()
            TRUST_UNKNOWN,
            iterator_int64 (&rows, 0));
 
-      formatted = g_strdup_printf ("UPDATE agents SET installer = $installer"
-                                   " WHERE ROWID = %llu;",
-                                   iterator_int64 (&rows, 0));
+      stmt = sql_prepare ("UPDATE agents SET installer = $installer"
+                          " WHERE ROWID = %llu;",
+                          iterator_int64 (&rows, 0));
 
       /* Prepare statement. */
 
-      while (1)
+      if (stmt == NULL)
         {
-          ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (formatted);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  cleanup_iterator (&rows);
-                  sql ("ROLLBACK;");
-                  return -1;
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
+          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
           cleanup_iterator (&rows);
           sql ("ROLLBACK;");
           return -1;
@@ -2021,7 +2003,7 @@ migrate_19_to_20 ()
                                    SQLITE_TRANSIENT);
           if (ret == SQLITE_BUSY) continue;
           if (ret == SQLITE_OK) break;
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
+          g_warning ("%s: sqlite3_bind failed: %s\n",
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
           cleanup_iterator (&rows);

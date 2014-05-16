@@ -13522,6 +13522,9 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
       sqlite3_reset (prognosis_stmt);
     }
 
+  if (prognosis_stmt == NULL)
+    abort ();
+
   init_prepared_iterator (iterator, prognosis_stmt);
 
   /* Bind iterator. */
@@ -17375,7 +17378,7 @@ report_severity_data (report_t report, int override,
   task_t task;
 
   sqlite3_stmt *stmt, *full_stmt;
-  gchar *select, *quoted_host, *severity_sql;
+  gchar *quoted_host, *severity_sql;
   int ret;
 
   if (override
@@ -17391,34 +17394,16 @@ report_severity_data (report_t report, int override,
     {
       /* Prepare quick inner statement. */
 
-      select = g_strdup_printf ("SELECT 1 FROM overrides"
-                                " WHERE (overrides.nvt = $nvt)"
-                                " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                                " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
-                                " AND ((overrides.end_time = 0)"
-                                "      OR (overrides.end_time >= now ()))",
-                                current_credentials.uuid);
-      while (1)
+      stmt = sql_prepare ("SELECT 1 FROM overrides"
+                          " WHERE (overrides.nvt = $nvt)"
+                          " AND ((overrides.owner IS NULL) OR (overrides.owner ="
+                          " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                          " AND ((overrides.end_time = 0)"
+                          "      OR (overrides.end_time >= now ()))",
+                          current_credentials.uuid);
+      if (stmt == NULL)
         {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
+          g_warning ("%s: sql_prepare stmt failed\n", __FUNCTION__);
           abort ();
         }
 
@@ -17426,56 +17411,37 @@ report_severity_data (report_t report, int override,
 
       report_task (report, &task);
 
-      select = g_strdup_printf
-                ("SELECT severity_to_type (overrides.new_severity),"
-                  "       overrides.new_severity"
-                  " FROM overrides"
-                  " WHERE overrides.nvt = $nvt" // 1
-                  " AND ((overrides.owner IS NULL)"
-                  " OR (overrides.owner ="
-                  " (SELECT users.ROWID FROM users"
-                  "  WHERE users.uuid = '%s')))"
-                  " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))"
-                  " AND (overrides.task = 0"
-                  "      OR overrides.task = %llu)"
-                  " AND (overrides.result = 0"
-                  "      OR overrides.result = $result)" // 2
-                  " AND (overrides.hosts is NULL"
-                  "      OR overrides.hosts = \"\""
-                  "      OR hosts_contains (overrides.hosts, $host))" // 3
-                  " AND (overrides.port is NULL"
-                  "      OR overrides.port = \"\""
-                  "      OR overrides.port = $port)" // 4
-                  " AND severity_matches_ov ($severity,"
-                  "                          overrides.severity)" // 5
-                  " ORDER BY overrides.result DESC, overrides.task DESC,"
-                  " overrides.port DESC, overrides.severity ASC,"
-                  " overrides.modification_time DESC;",
-                  current_credentials.uuid,
-                  task);
-
-      while (1)
+      full_stmt = sql_prepare
+                   ("SELECT severity_to_type (overrides.new_severity),"
+                     "       overrides.new_severity"
+                     " FROM overrides"
+                     " WHERE overrides.nvt = $nvt" // 1
+                     " AND ((overrides.owner IS NULL)"
+                     " OR (overrides.owner ="
+                     " (SELECT users.ROWID FROM users"
+                     "  WHERE users.uuid = '%s')))"
+                     " AND ((overrides.end_time = 0)"
+                     "      OR (overrides.end_time >= now ()))"
+                     " AND (overrides.task = 0"
+                     "      OR overrides.task = %llu)"
+                     " AND (overrides.result = 0"
+                     "      OR overrides.result = $result)" // 2
+                     " AND (overrides.hosts is NULL"
+                     "      OR overrides.hosts = \"\""
+                     "      OR hosts_contains (overrides.hosts, $host))" // 3
+                     " AND (overrides.port is NULL"
+                     "      OR overrides.port = \"\""
+                     "      OR overrides.port = $port)" // 4
+                     " AND severity_matches_ov ($severity,"
+                     "                          overrides.severity)" // 5
+                     " ORDER BY overrides.result DESC, overrides.task DESC,"
+                     " overrides.port DESC, overrides.severity ASC,"
+                     " overrides.modification_time DESC;",
+                     current_credentials.uuid,
+                     task);
+      if (full_stmt == NULL)
         {
-          const char* tail;
-          ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
-          if (ret == SQLITE_BUSY) continue;
-          g_free (select);
-          if (ret == SQLITE_OK)
-            {
-              if (full_stmt == NULL)
-                {
-                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                             __FUNCTION__,
-                             sqlite3_errmsg (task_db));
-                  abort ();
-                }
-              break;
-            }
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          /** @todo ROLLBACK if in transaction. */
+          g_warning ("%s: sql_prepare full_stmt failed\n", __FUNCTION__);
           abort ();
         }
 
@@ -17525,7 +17491,7 @@ report_severity_data (report_t report, int override,
               ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
               if (ret == SQLITE_BUSY) continue;
               if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
+              g_warning ("%s: sqlite3_bind failed: %s\n",
                          __FUNCTION__,
                          sqlite3_errmsg (task_db));
               abort ();
@@ -17594,7 +17560,7 @@ report_severity_data (report_t report, int override,
                   ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                  g_warning ("%s: sqlite3_bind failed: %s\n",
                              __FUNCTION__,
                              sqlite3_errmsg (task_db));
                   abort ();
@@ -17607,7 +17573,7 @@ report_severity_data (report_t report, int override,
                   ret = sqlite3_bind_int64 (full_stmt, 2, result);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                  g_warning ("%s: sqlite3_bind failed: %s\n",
                              __FUNCTION__,
                              sqlite3_errmsg (task_db));
                   abort ();
@@ -17621,7 +17587,7 @@ report_severity_data (report_t report, int override,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                  g_warning ("%s: sqlite3_bind failed: %s\n",
                              __FUNCTION__,
                              sqlite3_errmsg (task_db));
                   abort ();
@@ -17635,7 +17601,7 @@ report_severity_data (report_t report, int override,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                  g_warning ("%s: sqlite3_bind failed: %s\n",
                              __FUNCTION__,
                              sqlite3_errmsg (task_db));
                   abort ();
@@ -17648,7 +17614,7 @@ report_severity_data (report_t report, int override,
                   ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY) continue;
                   if (ret == SQLITE_OK) break;
-                  g_warning ("%s: sqlite3_prepare failed: %s\n",
+                  g_warning ("%s: sqlite3_bind failed: %s\n",
                              __FUNCTION__,
                              sqlite3_errmsg (task_db));
                   abort ();
@@ -27313,48 +27279,27 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
        GHashTable *families)
 {
   gint index;
-  const char* tail;
   int ret;
   sqlite3_stmt* stmt;
-  gchar* formatted;
 
   if (families)
-    formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
-                                 " (name, exclude, type, family_or_nvt, family)"
-                                 " VALUES ('%s', %i, 2, $value, $family);",
-                                 nvt_selector,
-                                 exclude);
+    stmt = sql_prepare ("INSERT INTO nvt_selectors"
+                        " (name, exclude, type, family_or_nvt, family)"
+                        " VALUES ('%s', %i, 2, $value, $family);",
+                        nvt_selector,
+                        exclude);
   else
-    formatted = g_strdup_printf ("INSERT INTO nvt_selectors"
-                                 " (name, exclude, type, family_or_nvt, family)"
-                                 " VALUES ('%s', %i, 2, $value, NULL);",
-                                 nvt_selector,
-                                 exclude);
-
-  tracef ("   sql: %s\n", formatted);
+    stmt = sql_prepare ("INSERT INTO nvt_selectors"
+                        " (name, exclude, type, family_or_nvt, family)"
+                        " VALUES ('%s', %i, 2, $value, NULL);",
+                        nvt_selector,
+                        exclude);
 
   /* Prepare statement. */
 
-  while (1)
+  if (stmt == NULL)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      /** @todo ROLLBACK if in transaction. */
+      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
       abort ();
     }
 
@@ -27404,7 +27349,7 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
                                        SQLITE_TRANSIENT);
               if (ret == SQLITE_BUSY) continue;
               if (ret == SQLITE_OK) break;
-              g_warning ("%s: sqlite3_prepare failed: %s\n",
+              g_warning ("%s: sqlite3_bind failed: %s\n",
                          __FUNCTION__,
                          sqlite3_errmsg (task_db));
               abort ();
@@ -27418,7 +27363,7 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
           ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_TRANSIENT);
           if (ret == SQLITE_BUSY) continue;
           if (ret == SQLITE_OK) break;
-          g_warning ("%s: sqlite3_prepare failed: %s\n",
+          g_warning ("%s: sqlite3_bind failed: %s\n",
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
           abort ();
@@ -32862,64 +32807,42 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   /* Insert the packages. */
 
   {
-    const char* tail;
     int ret;
     sqlite3_stmt* stmt;
-    gchar *quoted_name, *quoted_comment, *formatted, *quoted_filename;
+    gchar *quoted_name, *quoted_comment, *quoted_filename;
 
     quoted_name = sql_quote (name);
     quoted_comment = sql_quote (comment ?: "");
     quoted_filename = sql_quote (installer_filename);
-    formatted = g_strdup_printf ("INSERT INTO agents"
-                                 " (uuid, name, owner, comment, installer,"
-                                 "  installer_64, installer_filename,"
-                                 "  installer_signature_64,"
-                                 "  installer_trust, installer_trust_time,"
-                                 "  howto_install, howto_use,"
-                                 "  creation_time, modification_time)"
-                                 " VALUES"
-                                 " (make_uuid (), '%s',"
-                                 "  (SELECT ROWID FROM users"
-                                 "   WHERE users.uuid = '%s'),"
-                                 "  '%s',"
-                                 "  $installer, $installer_64,"
-                                 "  '%s',"
-                                 "  $installer_signature_64,"
-                                 "  %i, %i, $howto_install,"
-                                 "  $howto_use, now (), now ());",
-                                 quoted_name, current_credentials.uuid,
-                                 quoted_comment, quoted_filename,
-                                 installer_trust, (int) time (NULL));
-    g_free (quoted_name);
-    g_free (quoted_comment);
-    g_free (quoted_filename);
-
-    tracef ("   sql: %s\n", formatted);
 
     /* Prepare statement. */
 
-    while (1)
+    stmt = sql_prepare ("INSERT INTO agents"
+                        " (uuid, name, owner, comment, installer,"
+                        "  installer_64, installer_filename,"
+                        "  installer_signature_64,"
+                        "  installer_trust, installer_trust_time,"
+                        "  howto_install, howto_use,"
+                        "  creation_time, modification_time)"
+                        " VALUES"
+                        " (make_uuid (), '%s',"
+                        "  (SELECT ROWID FROM users"
+                        "   WHERE users.uuid = '%s'),"
+                        "  '%s',"
+                        "  $installer, $installer_64,"
+                        "  '%s',"
+                        "  $installer_signature_64,"
+                        "  %i, %i, $howto_install,"
+                        "  $howto_use, now (), now ());",
+                        quoted_name, current_credentials.uuid,
+                        quoted_comment, quoted_filename,
+                        installer_trust, (int) time (NULL));
+    g_free (quoted_name);
+    g_free (quoted_comment);
+    g_free (quoted_filename);
+    if (stmt == NULL)
       {
-        ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-        if (ret == SQLITE_BUSY) continue;
-        g_free (formatted);
-        if (ret == SQLITE_OK)
-          {
-            if (stmt == NULL)
-              {
-                g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                           __FUNCTION__,
-                           sqlite3_errmsg (task_db));
-                g_free (installer);
-                g_free (installer_signature);
-                sql ("ROLLBACK;");
-                return -1;
-              }
-            break;
-          }
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
-                   __FUNCTION__,
-                   sqlite3_errmsg (task_db));
+        g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
         g_free (installer);
         g_free (installer_signature);
         sql ("ROLLBACK;");
@@ -32937,7 +32860,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
+        g_warning ("%s: sqlite3_bind failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
@@ -32956,7 +32879,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
+        g_warning ("%s: sqlite3_bind failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
@@ -32974,7 +32897,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
+        g_warning ("%s: sqlite3_bind failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
@@ -32990,7 +32913,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
+        g_warning ("%s: sqlite3_bind failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
@@ -33006,7 +32929,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY) continue;
         if (ret == SQLITE_OK) break;
-        g_warning ("%s: sqlite3_prepare failed: %s\n",
+        g_warning ("%s: sqlite3_bind failed: %s\n",
                    __FUNCTION__,
                    sqlite3_errmsg (task_db));
         sql ("ROLLBACK;");
