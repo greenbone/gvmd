@@ -1,6 +1,16 @@
 2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Move SQLite calls into SQL library: sql_reset.
+	Move SQLite calls into SQL library: sqlite3_clear_bindings.
+
+	* src/sql.c (sql_reset): Clear bindings before reset.  This was only
+	done before one of the sql_reset callers, but is safe to do always.
+
+	* src/manage_sql.c (init_prognosis_iterator): Remove
+	sqlite3_clear_bindings.  Now done in sql_reset.
+
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: sqlite3_reset.
 
 	* src/sql.c (sql_reset): New function.
 

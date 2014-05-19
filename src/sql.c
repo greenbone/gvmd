@@ -2936,6 +2936,7 @@ sql_finalize (sql_stmt_t *stmt)
 int
 sql_reset (sql_stmt_t *stmt)
 {
+  sqlite3_clear_bindings (stmt);
   while (1)
     {
       int ret;

@@ -13518,7 +13518,6 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
                                   " DESC;");
   else
     {
-      sqlite3_clear_bindings (prognosis_stmt);
       if (sql_reset (prognosis_stmt))
         {
           g_warning ("%s: sql_reset failed\n", __FUNCTION__);
