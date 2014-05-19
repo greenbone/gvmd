@@ -189,32 +189,34 @@ sql_insert (const char *string)
 }
 
 /**
- * @brief Perform an SQL statement.
+ * @brief Prepare a statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
+ * @param[in]  log    Whether to keep retrying while database is busy or locked.
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
+ * @param[out] stmt   Statement return.
  *
  * @return 0 success, 1 gave up, -1 error.
  */
-static int
-sqlv (int retry, char* sql, va_list args)
+int
+sql_prepare_internal (int retry, int log, const char* sql, va_list args,
+                      sql_stmt_t **stmt)
 {
   const char* tail;
   int ret, retries;
-  sqlite3_stmt* stmt;
   gchar* formatted;
 
   formatted = g_strdup_vprintf (sql, args);
 
-  tracef ("   sql: %s\n", formatted);
-
-  /* Prepare statement. */
+  if (log)
+    tracef ("   sql: %s\n", formatted);
 
   retries = 10;
+  *stmt = NULL;
   while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, stmt, &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
@@ -227,12 +229,46 @@ sqlv (int retry, char* sql, va_list args)
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
-          if (stmt == NULL)
-            return -1;
+          if (*stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              return -1;
+            }
           break;
         }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
       return -1;
     }
+
+  return 0;
+}
+
+/**
+ * @brief Perform an SQL statement.
+ *
+ * @param[in]  retry  Whether to keep retrying while database is busy or locked.
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  args   Arguments for format string.
+ *
+ * @return 0 success, 1 gave up, -1 error.
+ */
+static int
+sqlv (int retry, char* sql, va_list args)
+{
+  int ret, retries;
+  sql_stmt_t* stmt;
+
+  /* Prepare statement. */
+
+  ret = sql_prepare_internal (retry, 1, sql, args, &stmt);
+  if (ret == -1)
+    g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+  if (ret)
+    return ret;
 
   /* Run statement. */
 
@@ -354,37 +390,16 @@ sql_giveup (char* sql, ...)
 void
 sql_quiet (char* sql, ...)
 {
-  const char* tail;
   int ret;
-  sqlite3_stmt* stmt;
+  sql_stmt_t *stmt;
   va_list args;
-  gchar* formatted;
 
   va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
+  ret = sql_prepare_internal (1, 0, sql, args, &stmt);
   va_end (args);
-
-  /* Prepare statement. */
-
-  while (1)
+  if (ret)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
       abort ();
     }
 
@@ -419,42 +434,18 @@ sql_quiet (char* sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_x_internal (int log, char* sql, va_list args, sqlite3_stmt** stmt_return)
+sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 {
-  const char* tail;
   int ret;
-  sqlite3_stmt* stmt;
-  gchar* formatted;
 
-  //va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
-  //va_end (args);
-
-  if (log)
-    tracef ("   sql_x: %s\n", formatted);
+  assert (stmt_return);
 
   /* Prepare statement. */
 
-  while (1)
+  ret = sql_prepare_internal (1, 1, sql, args, stmt_return);
+  if (ret)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      *stmt_return = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              return -1;
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
       return -1;
     }
 
@@ -462,7 +453,7 @@ sql_x_internal (int log, char* sql, va_list args, sqlite3_stmt** stmt_return)
 
   while (1)
     {
-      ret = sqlite3_step (stmt);
+      ret = sqlite3_step (*stmt_return);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE)
         {
@@ -470,7 +461,7 @@ sql_x_internal (int log, char* sql, va_list args, sqlite3_stmt** stmt_return)
         }
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+          if (ret == SQLITE_ERROR) ret = sqlite3_reset (*stmt_return);
           g_warning ("%s: sqlite3_step failed: %s",
                      __FUNCTION__,
                      sqlite3_errmsg (task_db));
@@ -496,7 +487,7 @@ sql_x_internal (int log, char* sql, va_list args, sqlite3_stmt** stmt_return)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_x (char* sql, va_list args, sqlite3_stmt** stmt_return)
+sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   return sql_x_internal (1, sql, args, stmt_return);
 }
@@ -513,7 +504,7 @@ sql_x (char* sql, va_list args, sqlite3_stmt** stmt_return)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_x_quiet (char* sql, va_list args, sqlite3_stmt** stmt_return)
+sql_x_quiet (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   return sql_x_internal (0, sql, args, stmt_return);
 }
@@ -534,7 +525,7 @@ sql_x_quiet (char* sql, va_list args, sqlite3_stmt** stmt_return)
 double
 sql_double (char* sql, ...)
 {
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   va_list args;
   double ret;
 
@@ -568,7 +559,7 @@ sql_double (char* sql, ...)
 int
 sql_int (char* sql, ...)
 {
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   va_list args;
   int ret;
 
@@ -599,7 +590,7 @@ sql_int (char* sql, ...)
 char*
 sql_string (char* sql, ...)
 {
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   const char* ret2;
   char* ret;
   int sql_x_ret;
@@ -632,7 +623,7 @@ sql_string (char* sql, ...)
 char*
 sql_string_quiet (char* sql, ...)
 {
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   const char* ret2;
   char* ret;
   int sql_x_ret;
@@ -664,7 +655,7 @@ sql_string_quiet (char* sql, ...)
 int
 sql_int64 (long long int* ret, char* sql, ...)
 {
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   int sql_x_ret;
   va_list args;
 
@@ -721,42 +712,22 @@ void
 init_iterator (iterator_t* iterator, const char* sql, ...)
 {
   int ret;
-  const char* tail;
   sqlite3_stmt* stmt;
   va_list args;
-  gchar* formatted;
-
-  va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
-  va_end (args);
-
-  tracef ("   sql: %s\n", formatted);
 
   iterator->done = FALSE;
   iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
-  while (1)
+
+  va_start (args, sql);
+  ret = sql_prepare_internal (1, 1, sql, args, &stmt);
+  va_end (args);
+  if (ret)
     {
-      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      iterator->stmt = stmt;
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
       abort ();
     }
+  iterator->stmt = stmt;
 }
 
 /**
@@ -924,7 +895,7 @@ next (iterator_t* iterator)
 /**
  * @brief Prepare a statement.
  *
- * @param[in]  sql       Format string for SQL.
+ * @param[in]  sql  Format string for SQL.
  *
  * @return Statement on success, NULL on error.
  */
@@ -932,42 +903,14 @@ sql_stmt_t *
 sql_prepare (const char* sql, ...)
 {
   int ret;
-  const char* tail;
   sql_stmt_t* stmt;
   va_list args;
-  gchar* formatted;
 
   va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
+  ret = sql_prepare_internal (1, 1, sql, args, &stmt);
   va_end (args);
-
-  tracef ("   sql: %s\n", formatted);
-
-  stmt = NULL;
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              return NULL;
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      return NULL;
-    }
-
-  tracef ("   prepared as: %p\n", stmt);
-
+  if (ret)
+    return NULL;
   return stmt;
 }
 
