@@ -26,10 +26,25 @@
 #ifndef OPENVAS_MANAGER_SQL_H
 #define OPENVAS_MANAGER_SQL_H
 
-#include "manage.h"  /* For iterator_t. */
-
+#include "lsc_crypt.h"  /* For lsc_crypt_ctx_t. */
 #include <sqlite3.h>
 #include <glib.h>
+
+/**
+ * @brief A resource, like a task or target.
+ */
+typedef long long int resource_t;
+
+/**
+ * @brief A generic SQL iterator.
+ */
+typedef struct
+{
+  sqlite3_stmt* stmt;        ///< SQL statement.
+  gboolean done;             ///< End flag.
+  int prepared;              ///< Prepared flag.
+  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
+} iterator_t;
 
 
 /* Types. */

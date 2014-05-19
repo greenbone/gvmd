@@ -1,3 +1,19 @@
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move resource_t and iterator_t to SQL library.
+
+	* src/sql.h: Remove manage.h include because this sould be a plain SQL
+	interface.
+	(resource_t, iterator_t): New type.  Were in manage.h.
+
+	* src/manage.h: Include sql.h for resource_t and iterator_t.  Remove
+	sqlite3.h now that all SQLite code is in sql.c.
+	(resource_t, iterator_t): Remove.  Now in sql.h because they are part of
+	the SQL interface.
+
+	* src/sql.c: Include manage.h which was being included in sql.h, because
+	there are still manager calls in here.
+
 2014-05-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (task_scanner_options, run_osp_task): New functions.

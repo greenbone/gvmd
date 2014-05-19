@@ -26,6 +26,7 @@
 #define _XOPEN_SOURCE /* Glibc2 needs this for strptime. */
 
 #include "sql.h"
+#include "manage.h"
 #include "tracef.h"
 
 #include <assert.h>

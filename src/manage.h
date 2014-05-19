@@ -27,10 +27,11 @@
 #ifndef OPENVAS_MANAGER_MANAGE_H
 #define OPENVAS_MANAGER_MANAGE_H
 
+#include "sql.h"
+
 #include <stdio.h>
 #include <glib.h>
 #include <gnutls/gnutls.h>
-
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
@@ -222,7 +223,6 @@ typedef long long int report_t;
 typedef long long int report_host_t;
 typedef long long int report_format_t;
 typedef long long int report_format_param_t;
-typedef long long int resource_t;
 typedef long long int role_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
@@ -235,21 +235,6 @@ typedef long long int schedule_t;
 typedef long long int scanner_t;
 typedef long long int setting_t;
 typedef long long int user_t;
-
-#include <sqlite3.h>
-
-#include "lsc_crypt.h"  /* (lsc_crypt_ctx_t) */
-
-/**
- * @brief A generic SQL iterator.
- */
-typedef struct
-{
-  sqlite3_stmt* stmt;        ///< SQL statement.
-  gboolean done;             ///< End flag.
-  int prepared;              ///< Prepared flag.
-  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
-} iterator_t;
 
 
 /* OMP GET. */
