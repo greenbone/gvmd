@@ -1,5 +1,25 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move collation and SQL function creation into new SQLite specific file,
+	because these use many "manage" functions.
+
+	* src/CMakeLists.txt: Add manage_sqlite3.c.
+
+	* src/manage_sqlite3.c: New file.  Code from sql.c.
+
+	* src/manage_sql.c (init_manage_process): Adjust name of functions.
+
+	* src/manage_migrators.c (migrate_51_to_52): Adjust name of function.
+
+	* src/sql.c: Remove all functions that setup collation and SQL
+	functions.  Now in manage_sqlite3.c.  Some are generic, but some call
+	functions that are part of manage_sql.c, and it's easier to group them
+	together.
+
+	* src/sql.h: Update headers accordingly.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql.c: Use sql_finalize, sql_column_double and sql_column_text in
 	more places.
 

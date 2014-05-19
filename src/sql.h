@@ -115,18 +115,6 @@ void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
 
-/* Colations. */
-
-int
-sql_create_collations ();
-
-
-/* Functions. */
-
-int
-sql_create_functions ();
-
-
 /* Iterators. */
 
 void
@@ -194,11 +182,5 @@ sql_column_double (sql_stmt_t *, int);
 
 const char *
 sql_column_text (sql_stmt_t *, int);
-
-
-/* Migrator helper. */
-
-int
-sql_create_migrate_51_to_52_convert ();
 
 #endif /* not OPENVAS_MANAGER_SQL_H */

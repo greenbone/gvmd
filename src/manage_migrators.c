@@ -140,7 +140,14 @@
 #include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_logging.h>
 
-/* Types */
+
+/* Headers from backend specific manage_xxx.c file. */
+
+int
+manage_create_migrate_51_to_52_convert ();
+
+
+/* Types. */
 
 /**
  * @brief A migrator.
@@ -151,7 +158,8 @@ typedef struct
   int (*function) ();  ///< Function that does the migration.  NULL if too hard.
 } migrator_t;
 
-/* Functions */
+
+/* Functions. */
 
 /**
  * @brief Create all tables, using the version 4 schema.
@@ -3781,7 +3789,7 @@ migrate_51_to_52 ()
 
   /* Add an SQL helper. */
 
-  if (sql_create_migrate_51_to_52_convert ())
+  if (manage_create_migrate_51_to_52_convert ())
     {
       sql ("ROLLBACK;");
       g_critical ("%s: failed to create convert", __FUNCTION__);

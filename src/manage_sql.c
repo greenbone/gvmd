@@ -74,6 +74,15 @@
 #endif
 
 
+/* Headers from backend specific manage_xxx.c file. */
+
+int
+manage_create_sql_functions ();
+
+int
+manage_create_sql_collations ();
+
+
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
 /**
@@ -8836,7 +8845,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Define collations for SQL. */
 
-  if (sql_create_collations ())
+  if (manage_create_sql_collations ())
     {
       g_warning ("%s: failed to create collations", __FUNCTION__);
       abort ();
@@ -8844,7 +8853,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
 
   /* Define functions for SQL. */
 
-  if (sql_create_functions ())
+  if (manage_create_sql_functions ())
     {
       g_warning ("%s: failed to create functions", __FUNCTION__);
       abort ();
