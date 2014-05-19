@@ -35770,6 +35770,39 @@ scanner_uuid (scanner_t scanner)
 }
 
 /**
+ * @brief Return the host of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated host.
+ */
+char *
+scanner_host (scanner_t scanner)
+{
+  return sql_string ("SELECT host FROM scanners WHERE ROWID = %llu;", scanner);
+}
+
+/**
+ * @brief Return the port of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Scanner port, -1 if not found;
+ */
+int
+scanner_port (scanner_t scanner)
+{
+  int port;
+  char *str;
+  str = sql_string ("SELECT port FROM scanners WHERE ROWID = %llu;", scanner);
+  if (!str)
+    return -1;
+  port = atoi (str);
+  g_free (str);
+  return port;
+}
+
+/**
  * @brief Count number of scanners.
  *
  * @param[in]  get  GET params.

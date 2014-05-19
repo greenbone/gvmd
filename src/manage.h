@@ -928,6 +928,9 @@ report_severity (report_t, int);
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 
+report_t
+make_report (task_t, const char *, task_status_t);
+
 result_t
 make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);
@@ -2060,6 +2063,12 @@ scanner_writable (scanner_t);
 
 char *
 scanner_uuid (scanner_t);
+
+char *
+scanner_host (scanner_t);
+
+int
+scanner_port (scanner_t);
 
 int
 scanner_count (const get_data_t *);

@@ -65,6 +65,7 @@
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
+#include <openvas/base/osp.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
@@ -2810,6 +2811,50 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
   return 0;
 }
 
+GHashTable *
+task_scanner_options (task_t task)
+{
+    GHashTable *table;
+
+    table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    /* XXX: Fetch scanner options from the config. */
+    return table;
+}
+
+int
+run_osp_task (task_t task, char **report_id)
+{
+  char *scanner_id, *host, *targets;
+  int port;
+  GHashTable *options;
+  osp_connection_t *connection;
+  scanner_t scanner;
+
+  scanner = task_scanner (task);
+  scanner_id = scanner_uuid (scanner);
+  if (verify_scanner (scanner_id, NULL))
+    return -5;
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
+  g_free (host);
+
+  targets = target_hosts (task_target (task));
+  options = task_scanner_options (task);
+  *report_id = osp_start_scan (connection, targets, options);
+  osp_connection_close (connection);
+  g_free (targets);
+  g_hash_table_destroy (options);
+  if (*report_id == NULL)
+    return -1;
+
+  make_report (task, *report_id, TASK_STATUS_RUNNING);
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+
+  /* XXX: Fork "scan updater" ? */
+  return 0;
+}
+
 /**
  * @brief Start a task.
  *
@@ -2852,6 +2897,9 @@ run_task (const char *task_id, char **report_id, int from,
     return -1;
   if (task == 0)
     return 3;
+
+  if (task_scanner (task) > 0)
+    return run_osp_task  (task, report_id);
 
   if (scanner_up == 0)
     return -5;

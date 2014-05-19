@@ -226,7 +226,7 @@ struct sockaddr_in manager_address_2;
 /**
  * @brief The Scanner port.
  */
-static int scanner_port;
+static int openvassd_port;
 
 /**
  * @brief The address of the Scanner.
@@ -944,7 +944,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
   /* Setup the scanner address. */
 
   scanner_address.sin_family = AF_INET;
-  scanner_address.sin_port = scanner_port;
+  scanner_address.sin_port = openvassd_port;
   if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
     {
       g_critical ("%s: failed to create scanner address %s\n",
@@ -1068,8 +1068,8 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
           /* Child: Try reload. */
           int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
                                                  scanner_address_string,
-                                                 scanner_port, register_cleanup,
-                                                 progress);
+                                                 openvassd_port,
+                                                 register_cleanup, progress);
 
           exit (ret);
         }
@@ -1648,24 +1648,24 @@ main (int argc, char** argv)
 
   if (scanner_port_string)
     {
-      scanner_port = atoi (scanner_port_string);
-      if (scanner_port <= 0 || scanner_port >= 65536)
+      openvassd_port = atoi (scanner_port_string);
+      if (openvassd_port <= 0 || openvassd_port >= 65536)
         {
           g_critical ("%s: Scanner port must be a number between 0 and 65536\n",
                       __FUNCTION__);
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
-      scanner_port = htons (scanner_port);
+      openvassd_port = htons (openvassd_port);
     }
   else
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
         /** @todo Free servent? */
-        scanner_port = servent->s_port;
+        openvassd_port = servent->s_port;
       else
-        scanner_port = htons (OPENVASSD_PORT);
+        openvassd_port = htons (OPENVASSD_PORT);
     }
 
   if (update_nvt_cache || rebuild_nvt_cache)
@@ -1881,7 +1881,7 @@ main (int argc, char** argv)
   /* Setup the scanner address. */
 
   scanner_address.sin_family = AF_INET;
-  scanner_address.sin_port = scanner_port;
+  scanner_address.sin_port = openvassd_port;
   if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
     {
       g_critical ("%s: failed to create scanner address %s\n",

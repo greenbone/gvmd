@@ -25059,6 +25059,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       start_task_data->task_id,
                                       "started");
                       break;
+                    case -1:
+                      /* Internal error. */
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task", "Internal error."));
+                      log_event_fail ("task", "Task", start_task_data->task_id,
+                                      "started");
+                      break;
                     case -2:
                       /* Task lacks target.  This is true for container
                        * tasks. */

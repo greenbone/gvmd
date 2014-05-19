@@ -1,3 +1,18 @@
+2014-05-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options, run_osp_task): New functions.
+	(run_task): Call run_osp_task() if task has a scanner specified.
+
+	* src/manage_sql.c (scanner_host, scanner_port): New functions.
+
+	* src/manage.h: Add functions prototypes.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle run_task() returning -1
+	value.
+
+	* src/openvasmd.c (scanner_port): Change variable name to
+	openvassd_port.
+
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql.h (sql_make_uuid, sql_hosts_contains, sql_clean_hosts)
