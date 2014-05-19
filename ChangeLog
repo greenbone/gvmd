@@ -1,5 +1,10 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_lsc_credential): Remove extra argument that
+	corresponded to public key before 2014-05-06.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Isolate SQLite calls in SQL library.
 
 	* src/sql.c (sql_prepare_internal): New function.  Based on sql_prepare.
