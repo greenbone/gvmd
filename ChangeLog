@@ -1,5 +1,15 @@
 2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite calls into SQL library: sql_reset.
+
+	* src/sql.c (sql_reset): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_sql.c: Replace sqlite3_reset with sql_reset.
+
+2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite specifics into SQL library: sqlite3_stmt.
 
 	* src/sql.c: Use sql_stmt_t instead of sqlite3_stmt in interface

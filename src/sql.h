@@ -252,4 +252,7 @@ sql_exec (sql_stmt_t *);
 void
 sql_finalize (sql_stmt_t *);
 
+int
+sql_reset (sql_stmt_t *);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */

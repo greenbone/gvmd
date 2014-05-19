@@ -2925,3 +2925,30 @@ sql_finalize (sql_stmt_t *stmt)
 {
   sqlite3_finalize (stmt);
 }
+
+/**
+ * @brief Reset a prepared statement.
+ *
+ * @param[in]  stmt  Statement.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_reset (sql_stmt_t *stmt)
+{
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_reset (stmt);
+      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
+      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+        {
+          g_warning ("%s: sqlite3_reset failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          return -1;
+        }
+    }
+  return 0;
+}

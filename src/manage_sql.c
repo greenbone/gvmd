@@ -13519,7 +13519,11 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
   else
     {
       sqlite3_clear_bindings (prognosis_stmt);
-      sqlite3_reset (prognosis_stmt);
+      if (sql_reset (prognosis_stmt))
+        {
+          g_warning ("%s: sql_reset failed\n", __FUNCTION__);
+          abort ();
+        }
     }
 
   if (prognosis_stmt == NULL)
@@ -17624,35 +17628,19 @@ report_severity_data (report_t report, int override,
 
               /* Reset the full inner statement. */
 
-              while (1)
+              if (sql_reset (full_stmt))
                 {
-                  ret = sqlite3_reset (full_stmt);
-                  if (ret == SQLITE_BUSY) continue;
-                  if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-                  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                    {
-                      g_warning ("%s: sqlite3_reset failed: %s\n",
-                                 __FUNCTION__,
-                                 sqlite3_errmsg (task_db));
-                      abort ();
-                    }
+                  g_warning ("%s: sql_reset failed\n", __FUNCTION__);
+                  abort ();
                 }
             }
 
           /* Reset the quick inner statement. */
 
-          while (1)
+          if (sql_reset (stmt))
             {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY) continue;
-              if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-              if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-                {
-                  g_warning ("%s: sqlite3_reset failed: %s\n",
-                              __FUNCTION__,
-                              sqlite3_errmsg (task_db));
-                  abort ();
-                }
+              g_warning ("%s: sql_reset failed\n", __FUNCTION__);
+              abort ();
             }
         }
       cleanup_iterator (&results);
@@ -27313,18 +27301,10 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
       /* Reset the statement. */
 
-      while (1)
+      if (sql_reset (stmt))
         {
-          ret = sqlite3_reset (stmt);
-          if (ret == SQLITE_BUSY) continue;
-          if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
-          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-            {
-              g_warning ("%s: sqlite3_reset failed: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              abort ();
-            }
+          g_warning ("%s: sql_reset failed\n", __FUNCTION__);
+          abort ();
         }
     }
 
