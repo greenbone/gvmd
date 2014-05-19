@@ -17594,8 +17594,8 @@ report_severity_data (report_t report, int override,
                 }
               else
                 {
-                  new_type = (const char*) sqlite3_column_text (full_stmt, 0);
-                  new_severity = sqlite3_column_double (full_stmt, 1);
+                  new_type = sql_column_text (full_stmt, 0);
+                  new_severity = sql_column_double (full_stmt, 1);
                 }
 
               if (new_type)

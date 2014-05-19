@@ -255,4 +255,10 @@ sql_finalize (sql_stmt_t *);
 int
 sql_reset (sql_stmt_t *);
 
+double
+sql_column_double (sql_stmt_t *, int);
+
+const char *
+sql_column_text (sql_stmt_t *, int);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */

@@ -2953,3 +2953,31 @@ sql_reset (sql_stmt_t *stmt)
     }
   return 0;
 }
+
+/**
+ * @brief Return a column as text from a prepared statement.
+ *
+ * @param[in]  stmt      Statement.
+ * @param[in]  position  Column position.
+ *
+ * @return 0 success, -1 error.
+ */
+double
+sql_column_double (sql_stmt_t *stmt, int position)
+{
+  return sqlite3_column_double (stmt, position);
+}
+
+/**
+ * @brief Return a column as text from a prepared statement.
+ *
+ * @param[in]  stmt      Statement.
+ * @param[in]  position  Column position.
+ *
+ * @return 0 success, -1 error.
+ */
+const char *
+sql_column_text (sql_stmt_t *stmt, int position)
+{
+  return (const char*) sqlite3_column_text (stmt, position);
+}
