@@ -1,5 +1,16 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use sql_stmt_t in more places.
+
+	* src/sql.h (sql_stmt_t): Move up in file.
+	(iterator_t): Use sql_stmt_t.
+
+	* src/sql.c (sql_prepare): Move into Prepared statements section.
+	Change return type to sql_stmt_t.
+	(init_prepared_iterator): Match arg to header.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move resource_t and iterator_t to SQL library.
 
 	* src/sql.h: Remove manage.h include because this sould be a plain SQL

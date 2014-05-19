@@ -30,29 +30,29 @@
 #include <sqlite3.h>
 #include <glib.h>
 
+
+/* Types. */
+
 /**
  * @brief A resource, like a task or target.
  */
 typedef long long int resource_t;
 
 /**
+ * @brief A prepared SQL statement.
+ */
+typedef sqlite3_stmt sql_stmt_t;
+
+/**
  * @brief A generic SQL iterator.
  */
 typedef struct
 {
-  sqlite3_stmt* stmt;        ///< SQL statement.
+  sql_stmt_t* stmt;          ///< SQL statement.
   gboolean done;             ///< End flag.
   int prepared;              ///< Prepared flag.
   lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
 } iterator_t;
-
-
-/* Types. */
-
-/**
- * @brief A prepared SQL statement.
- */
-typedef sqlite3_stmt sql_stmt_t;
 
 
 /* Variables */

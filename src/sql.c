@@ -74,7 +74,7 @@ int
 collate_role (void *, int, const void *, int, const void *);
 
 
-/* Variables */
+/* Variables. */
 
 /**
  * @brief Handle on the database.
@@ -2495,63 +2495,13 @@ sql_create_functions ()
 /* Iterators. */
 
 /**
- * @brief Prepare a statement.
- *
- * @param[in]  sql       Format string for SQL.
- *
- * @return Statement on success, NULL on error.
- */
-sqlite3_stmt *
-sql_prepare (const char* sql, ...)
-{
-  int ret;
-  const char* tail;
-  sqlite3_stmt* stmt;
-  va_list args;
-  gchar* formatted;
-
-  va_start (args, sql);
-  formatted = g_strdup_vprintf (sql, args);
-  va_end (args);
-
-  tracef ("   sql: %s\n", formatted);
-
-  stmt = NULL;
-  while (1)
-    {
-      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
-      g_free (formatted);
-      if (ret == SQLITE_OK)
-        {
-          if (stmt == NULL)
-            {
-              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
-                         __FUNCTION__,
-                         sqlite3_errmsg (task_db));
-              return NULL;
-            }
-          break;
-        }
-      g_warning ("%s: sqlite3_prepare failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      return NULL;
-    }
-
-  tracef ("   prepared as: %p\n", stmt);
-
-  return stmt;
-}
-
-/**
  * @brief Initialise an iterator.
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  stmt      Statement.
  */
 void
-init_prepared_iterator (iterator_t* iterator, sqlite3_stmt* stmt)
+init_prepared_iterator (iterator_t* iterator, sql_stmt_t* stmt)
 {
   iterator->done = FALSE;
   iterator->stmt = stmt;
@@ -2769,6 +2719,56 @@ next (iterator_t* iterator)
 
 
 /* Prepared statements. */
+
+/**
+ * @brief Prepare a statement.
+ *
+ * @param[in]  sql       Format string for SQL.
+ *
+ * @return Statement on success, NULL on error.
+ */
+sql_stmt_t *
+sql_prepare (const char* sql, ...)
+{
+  int ret;
+  const char* tail;
+  sql_stmt_t* stmt;
+  va_list args;
+  gchar* formatted;
+
+  va_start (args, sql);
+  formatted = g_strdup_vprintf (sql, args);
+  va_end (args);
+
+  tracef ("   sql: %s\n", formatted);
+
+  stmt = NULL;
+  while (1)
+    {
+      ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
+      if (ret == SQLITE_BUSY) continue;
+      g_free (formatted);
+      if (ret == SQLITE_OK)
+        {
+          if (stmt == NULL)
+            {
+              g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              return NULL;
+            }
+          break;
+        }
+      g_warning ("%s: sqlite3_prepare failed: %s\n",
+                 __FUNCTION__,
+                 sqlite3_errmsg (task_db));
+      return NULL;
+    }
+
+  tracef ("   prepared as: %p\n", stmt);
+
+  return stmt;
+}
 
 /**
  * @brief Bind a blob to a statement.
