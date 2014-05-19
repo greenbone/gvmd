@@ -1,5 +1,10 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c: Use sql_finalize, sql_column_double and sql_column_text in
+	more places.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use sql_stmt_t in more places.
 
 	* src/sql.h (sql_stmt_t): Move up in file.

@@ -285,7 +285,7 @@ sqlv (int retry, char* sql, va_list args)
             continue;
           if (retries--)
             continue;
-          sqlite3_finalize (stmt);
+          sql_finalize (stmt);
           return 1;
         }
       if (ret == SQLITE_DONE) break;
@@ -298,16 +298,16 @@ sqlv (int retry, char* sql, va_list args)
                 {
                   if (retry)
                     continue;
-                  sqlite3_finalize (stmt);
+                  sql_finalize (stmt);
                   return 1;
                 }
             }
-          sqlite3_finalize (stmt);
+          sql_finalize (stmt);
           return -1;
         }
     }
 
-  sqlite3_finalize (stmt);
+  sql_finalize (stmt);
   return 0;
 }
 
@@ -444,7 +444,7 @@ sql_quiet (char* sql, ...)
         }
     }
 
-  sqlite3_finalize (stmt);
+  sql_finalize (stmt);
 }
 
 /**
@@ -583,11 +583,11 @@ sql_double (char* sql, ...)
   va_end (args);
   if (sql_x_ret)
     {
-      sqlite3_finalize (stmt);
+      sql_finalize (stmt);
       abort ();
     }
-  ret = sqlite3_column_double (stmt, 0);
-  sqlite3_finalize (stmt);
+  ret = sql_column_double (stmt, 0);
+  sql_finalize (stmt);
   return ret;
 }
 
@@ -617,11 +617,11 @@ sql_int (char* sql, ...)
   va_end (args);
   if (sql_x_ret)
     {
-      sqlite3_finalize (stmt);
+      sql_finalize (stmt);
       abort ();
     }
   ret = sqlite3_column_int (stmt, 0);
-  sqlite3_finalize (stmt);
+  sql_finalize (stmt);
   return ret;
 }
 
@@ -639,7 +639,7 @@ char*
 sql_string (char* sql, ...)
 {
   sqlite3_stmt* stmt;
-  const unsigned char* ret2;
+  const char* ret2;
   char* ret;
   int sql_x_ret;
 
@@ -649,12 +649,12 @@ sql_string (char* sql, ...)
   va_end (args);
   if (sql_x_ret)
     {
-      sqlite3_finalize (stmt);
+      sql_finalize (stmt);
       return NULL;
     }
-  ret2 = sqlite3_column_text (stmt, 0);
-  ret = g_strdup ((char*) ret2);
-  sqlite3_finalize (stmt);
+  ret2 = sql_column_text (stmt, 0);
+  ret = g_strdup (ret2);
+  sql_finalize (stmt);
   return ret;
 }
 
@@ -672,7 +672,7 @@ char*
 sql_string_quiet (char* sql, ...)
 {
   sqlite3_stmt* stmt;
-  const unsigned char* ret2;
+  const char* ret2;
   char* ret;
   int sql_x_ret;
 
@@ -682,12 +682,12 @@ sql_string_quiet (char* sql, ...)
   va_end (args);
   if (sql_x_ret)
     {
-      sqlite3_finalize (stmt);
+      sql_finalize (stmt);
       return NULL;
     }
-  ret2 = sqlite3_column_text (stmt, 0);
-  ret = g_strdup ((char*) ret2);
-  sqlite3_finalize (stmt);
+  ret2 = sql_column_text (stmt, 0);
+  ret = g_strdup (ret2);
+  sql_finalize (stmt);
   return ret;
 }
 
@@ -715,19 +715,19 @@ sql_int64 (long long int* ret, char* sql, ...)
       case  0:
         break;
       case  1:
-        sqlite3_finalize (stmt);
+        sql_finalize (stmt);
         return 1;
         break;
       default:
         assert (0);
         /* Fall through. */
       case -1:
-        sqlite3_finalize (stmt);
+        sql_finalize (stmt);
         return -1;
         break;
     }
   *ret = sqlite3_column_int64 (stmt, 0);
-  sqlite3_finalize (stmt);
+  sql_finalize (stmt);
   return 0;
 }
 
@@ -2570,7 +2570,7 @@ double
 iterator_double (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return sqlite3_column_double (iterator->stmt, col);
+  return sql_column_double (iterator->stmt, col);
 }
 
 /**
@@ -2630,7 +2630,7 @@ const char*
 iterator_string (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return (const char*) sqlite3_column_text (iterator->stmt, col);
+  return sql_column_text (iterator->stmt, col);
 }
 
 /**
@@ -2677,7 +2677,7 @@ cleanup_iterator (iterator_t* iterator)
     }
 
   if (iterator->prepared == 0)
-    sqlite3_finalize (iterator->stmt);
+    sql_finalize (iterator->stmt);
   if (iterator->crypt_ctx)
     {
       lsc_crypt_release (iterator->crypt_ctx);
