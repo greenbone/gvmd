@@ -1,5 +1,10 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Remove SQLite include because all SQLite code is in
+	SQL library now.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite calls into SQL library: migrator SQL function creation.
 
 	* src/sql.c (migrate_51_to_52_sql_convert): New function.  From

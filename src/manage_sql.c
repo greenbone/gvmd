@@ -49,7 +49,6 @@
 #include <glib/gstdio.h>
 #include <locale.h>
 #include <pwd.h>
-#include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
