@@ -97,88 +97,7 @@ int
 sql_int64 (long long int * ret, char *, ...);
 
 void
-sql_make_uuid (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_hosts_contains (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_clean_hosts (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_uniquify (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_iso_time (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_parse_time (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_next_time (sqlite3_context *, int, sqlite3_value **);
-
-void
-sql_now (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_tag (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_max_hosts (sqlite3_context *, int, sqlite3_value **);
-
-void
 sql_rename_column (const char *, const char *, const char *, const char *);
-
-void
-sql_common_cve (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_current_offset (sqlite3_context *, int, sqlite3_value **);
-
-void
-sql_report_progress (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_report_severity (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_report_severity_count (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_task_severity (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_severity_matches_ov (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_severity_to_level (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_severity_to_type (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_task_trend (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_threat_level (sqlite3_context *, int argc, sqlite3_value **);
-
-void
-sql_regexp (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_run_status_name (sqlite3_context *, int, sqlite3_value **);
-
-void
-sql_resource_name (sqlite3_context *, int, sqlite3_value **);
-
-void
-sql_resource_exists (sqlite3_context *, int, sqlite3_value **);
-
-void
-sql_severity_in_level (sqlite3_context *, int, sqlite3_value**);
-
-void
-sql_user_can_everything (sqlite3_context *, int, sqlite3_value **);
 
 
 /* Colations. */
@@ -195,11 +114,8 @@ sql_create_functions ();
 
 /* Iterators. */
 
-sqlite3_stmt *
-sql_prepare (const char* sql, ...);
-
 void
-init_prepared_iterator (iterator_t*, sqlite3_stmt*);
+init_prepared_iterator (iterator_t*, sql_stmt_t*);
 
 void
 init_iterator (iterator_t*, const char*, ...);
@@ -233,6 +149,9 @@ next (iterator_t*);
 
 
 /* Prepared statements. */
+
+sql_stmt_t *
+sql_prepare (const char* sql, ...);
 
 int
 sql_bind_blob (sql_stmt_t *, int, const void *, int);

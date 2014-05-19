@@ -1,5 +1,19 @@
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.h (sql_make_uuid, sql_hosts_contains, sql_clean_hosts)
+	(sql_uniquify, sql_iso_time, sql_parse_time, sql_next_time, sql_now)
+	(sql_tag, sql_max_hosts, sql_common_cve, sql_current_offset)
+	(sql_report_progress, sql_report_severity, sql_report_severity_count)
+	(sql_task_severity, sql_severity_matches_ov, sql_severity_to_level)
+	(sql_severity_to_type, sql_task_trend, sql_threat_level, sql_regexp)
+	(sql_run_status_name, sql_resource_name, sql_resource_exists)
+	(sql_severity_in_level, sql_user_can_everything): Remove.  Now used in
+	sql.c only.
+	(sql_prepare): Move to Prepared statements.
+	(init_prepared_iterator): Use sql_stmt_t.
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c: Remove SQLite include because all SQLite code is in
 	SQL library now.
 
