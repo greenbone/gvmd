@@ -3762,61 +3762,6 @@ migrate_50_to_51 ()
 }
 
 /**
- * @brief Convert a UTC text time to an integer time since the Epoch.
- *
- * This is a callback for a scalar SQL function of one argument.
- *
- * @param[in]  context  SQL context.
- * @param[in]  argc     Number of arguments.
- * @param[in]  argv     Argument array.
- */
-void
-migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
-                              sqlite3_value** argv)
-{
-  const unsigned char *text_time;
-  int epoch_time;
-  struct tm tm;
-
-  assert (argc == 1);
-
-  text_time = sqlite3_value_text (argv[0]);
-  if (text_time)
-    {
-      /* Scanner uses ctime: "Wed Jun 30 21:49:08 1993".
-       *
-       * The dates being converted are in the timezone that the Scanner was using.
-       *
-       * As a special case for this migrator, openvasmd.c uses the timezone
-       * from the environment, instead of forcing UTC.  This allows the user
-       * to set the timezone to be the same as the Scanner timezone, so
-       * that these dates are converted from the Scanner timezone.  Even if
-       * the user just leaves the timezone as is, it is likely to be the same
-       * timezone she/he is running the Scanner under.
-       */
-      if (text_time && (strlen ((char*) text_time) > 0))
-        {
-          if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
-            {
-              sqlite3_result_error (context, "Failed to parse time", -1);
-              return;
-            }
-          epoch_time = mktime (&tm);
-          if (epoch_time == -1)
-            {
-              sqlite3_result_error (context, "Failed to make time", -1);
-              return;
-            }
-        }
-      else
-        epoch_time = 0;
-    }
-  else
-    epoch_time = 0;
-  sqlite3_result_int (context, epoch_time);
-}
-
-/**
  * @brief Migrate the database from version 51 to version 52.
  *
  * @return 0 success, -1 error.
@@ -3836,18 +3781,10 @@ migrate_51_to_52 ()
 
   /* Add an SQL helper. */
 
-  if (sqlite3_create_function (task_db,
-                               "convert",
-                               1,               /* Number of args. */
-                               SQLITE_UTF8,
-                               NULL,            /* Callback data. */
-                               migrate_51_to_52_sql_convert,
-                               NULL,            /* xStep. */
-                               NULL)            /* xFinal. */
-      != SQLITE_OK)
+  if (sql_create_migrate_51_to_52_convert ())
     {
-      g_warning ("%s: failed to create convert", __FUNCTION__);
       sql ("ROLLBACK;");
+      g_critical ("%s: failed to create convert", __FUNCTION__);
       return -1;
     }
 

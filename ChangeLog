@@ -1,4 +1,18 @@
-2014-05-16  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SQLite calls into SQL library: migrator SQL function creation.
+
+	* src/sql.c (migrate_51_to_52_sql_convert): New function.  From
+	manage_migrators.c.
+	(sql_create_migrate_51_to_52_convert): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_migrators.c (migrate_51_to_52_convert): Remove.  Now in
+	sql.c.
+	(migrate_51_to_52): Let SQL lib create "convert".
+
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Move SQLite calls into SQL library: sql_column_double and
 	sql_column_text.
