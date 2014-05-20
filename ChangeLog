@@ -1,6 +1,8 @@
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/sql.c (sql_x_internal): Pass log flag into sql_prepare_internal.
+	* doc/db_postgres.sql: Make all id columns of type SERIAL.
+
+	* doc/db.png: Update from source.
 
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 

@@ -1,10 +1,10 @@
 CREATE TABLE meta (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name text UNIQUE NOT NULL,
     value text);
 
 CREATE TABLE agents (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE agents (
     modification_time date);
 
 CREATE TABLE agents_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -38,43 +38,43 @@ CREATE TABLE agents_trash (
     modification_time date);
 
 CREATE TABLE alert_condition_data (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alert_condition_data_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alert_event_data (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alert_event_data_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alert_method_data (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alert_method_data_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     name text,
     data text);
 
 CREATE TABLE alerts (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE alerts (
     modification_time date);
 
 CREATE TABLE alerts_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE alerts_trash (
     modification_time date);
 
 CREATE TABLE filters (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE filters (
     modification_time date);
 
 CREATE TABLE filters_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE filters_trash (
     modification_time date);
 
 CREATE TABLE groups (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -132,7 +132,7 @@ CREATE TABLE groups (
     modification_time date);
 
 CREATE TABLE groups_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -141,17 +141,17 @@ CREATE TABLE groups_trash (
     modification_time date);
 
 CREATE TABLE group_users (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     group integer REFERENCES groups (id) ON DELETE RESTRICT,
     user integer REFERENCES users (id) ON DELETE RESTRICT);
 
 CREATE TABLE group_users_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     group integer REFERENCES groups (id) ON DELETE RESTRICT,
     user integer REFERENCES users (id) ON DELETE RESTRICT);
 
 CREATE TABLE roles (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -160,7 +160,7 @@ CREATE TABLE roles (
     modification_time date);
 
 CREATE TABLE roles_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -169,17 +169,17 @@ CREATE TABLE roles_trash (
     modification_time date);
 
 CREATE TABLE role_users (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     role integer REFERENCES roles (id) ON DELETE RESTRICT,
     user integer REFERENCES users (id) ON DELETE RESTRICT);
 
 CREATE TABLE role_users_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     role integer REFERENCES roles (id) ON DELETE RESTRICT,
     user integer REFERENCES users (id) ON DELETE RESTRICT);
 
 CREATE TABLE users (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -195,7 +195,7 @@ CREATE TABLE users (
     modification_time date);
 
 CREATE TABLE nvt_selectors (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name text,
     exclude boolean,
     type integer,
@@ -203,7 +203,7 @@ CREATE TABLE nvt_selectors (
     family text);
 
 CREATE TABLE port_lists (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -212,7 +212,7 @@ CREATE TABLE port_lists (
     modification_time date);
 
 CREATE TABLE port_lists_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -221,7 +221,7 @@ CREATE TABLE port_lists_trash (
     modification_time date);
 
 CREATE TABLE port_ranges (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
     type integer,
@@ -231,7 +231,7 @@ CREATE TABLE port_ranges (
     end boolean);
 
 CREATE TABLE port_ranges_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     port_list integer REFERENCES port_lists_trash (id) ON DELETE RESTRICT,
     type integer,
@@ -241,14 +241,14 @@ CREATE TABLE port_ranges_trash (
     end boolean);
 
 CREATE TABLE port_names (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
 	number integer,
     protocol text,
     name text,
 	UNIQUE (number, protocol));     -- ON CONFLICT REPLACE
 
 CREATE TABLE targets (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -266,7 +266,7 @@ CREATE TABLE targets (
     modification_time date);
 
 CREATE TABLE targets_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -285,7 +285,7 @@ CREATE TABLE targets_trash (
     modification_time date);
 
 CREATE TABLE configs (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -300,7 +300,7 @@ CREATE TABLE configs (
     modification_time date);
 
 CREATE TABLE configs_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -327,7 +327,7 @@ CREATE TABLE config_preferences_trash (
     value text);
 
 CREATE TABLE tasks (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text,
@@ -354,13 +354,13 @@ CREATE TABLE tasks (
     modification_time date);
 
 CREATE TABLE task_files (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     name text,
     content text);
 
 CREATE TABLE task_alerts (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
     alert_location integer);
@@ -371,7 +371,7 @@ CREATE TABLE task_preferences (
     value text);
 
 CREATE TABLE results (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     task integer REFERENCES tasks (id) ON DELETE RESTRICT,
     host text,
@@ -384,7 +384,7 @@ CREATE TABLE results (
 	severity real);
 
 CREATE TABLE reports (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     hidden integer,
@@ -404,7 +404,7 @@ CREATE TABLE reports (
     source_iface text);
 
 CREATE TABLE report_counts (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report integer REFERENCES reports (id) ON DELETE RESTRICT,
     user integer REFERENCES users (id) ON DELETE RESTRICT,
     severity decimal,
@@ -413,7 +413,7 @@ CREATE TABLE report_counts (
     end_time integer);
 
 CREATE TABLE report_format_params (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
     name text,
     type integer,
@@ -424,7 +424,7 @@ CREATE TABLE report_format_params (
     fallback text);
 
 CREATE TABLE report_format_params_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
     name text,
     type integer,
@@ -435,17 +435,17 @@ CREATE TABLE report_format_params_trash (
     fallback text);
 
 CREATE TABLE report_format_param_options (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
     value text);
 
 CREATE TABLE report_format_param_options_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
     value text);
 
 CREATE TABLE report_formats (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -461,7 +461,7 @@ CREATE TABLE report_formats (
     modification_time date);
 
 CREATE TABLE report_formats_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -477,7 +477,7 @@ CREATE TABLE report_formats_trash (
     modification_time date);
 
 CREATE TABLE report_hosts (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report integer REFERENCES reports (id) ON DELETE RESTRICT,
     host text,
     start_time date,
@@ -487,7 +487,7 @@ CREATE TABLE report_hosts (
     max_port text);
 
 CREATE TABLE report_host_details (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     report_host integer REFERENCES report_hosts (id) ON DELETE RESTRICT,
     source_type text,
     source_name text,
@@ -500,12 +500,12 @@ CREATE TABLE report_results (
     result integer PRIMARY KEY REFERENCES results (id) ON DELETE RESTRICT);
 
 CREATE TABLE nvt_preferences (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name text UNIQUE NOT NULL,
     value text);
 
 CREATE TABLE nvts (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     oid text UNIQUE NOT NULL,
     version text,
@@ -524,7 +524,7 @@ CREATE TABLE nvts (
     modification_time date);
 
 CREATE TABLE nvt_cves (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
     oid text,
 	cve_name text);
@@ -536,7 +536,7 @@ CREATE TABLE nvt_cves (
 -- for packages or tools to be installed on the targets are stored.
 --
 CREATE TABLE lsc_credentials (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
         uuid text UNIQUE NOT NULL,
 	owner integer REFERENCES users (id) ON DELETE RESTRICT,
         -- The OpenVAS name for this credential.
@@ -584,7 +584,7 @@ CREATE TABLE lsc_credentials (
 -- Trashcan for lsc_credentials.
 --
 CREATE TABLE lsc_credentials_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -599,7 +599,7 @@ CREATE TABLE lsc_credentials_trash (
     modification_time date);
 
 CREATE TABLE notes (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     nvt text NOT NULL,  -- OID of NVT
@@ -614,7 +614,7 @@ CREATE TABLE notes (
     end_time integer);
 
 CREATE TABLE notes_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     nvt text NOT NULL,  -- OID of NVT
@@ -629,7 +629,7 @@ CREATE TABLE notes_trash (
     end_time integer);
 
 CREATE TABLE overrides (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     nvt text NOT NULL,  -- OID of NVT
@@ -645,7 +645,7 @@ CREATE TABLE overrides (
     end_time integer);
 
 CREATE TABLE overrides_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     nvt text NOT NULL,  -- OID of NVT
@@ -661,7 +661,7 @@ CREATE TABLE overrides_trash (
     end_time integer);
 
 CREATE TABLE permissions (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -677,7 +677,7 @@ CREATE TABLE permissions (
     modification_time date);
 
 CREATE TABLE permissions_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -693,7 +693,7 @@ CREATE TABLE permissions_trash (
     modification_time date);
 
 CREATE TABLE schedules (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -707,7 +707,7 @@ CREATE TABLE schedules (
     modification_time date);
 
 CREATE TABLE schedules_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -720,7 +720,7 @@ CREATE TABLE schedules_trash (
     modification_time date);
 
 CREATE TABLE settings (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -728,7 +728,7 @@ CREATE TABLE settings (
     value text);
 
 CREATE TABLE slaves (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -741,7 +741,7 @@ CREATE TABLE slaves (
     modification_time date);
 
 CREATE TABLE slaves_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -754,7 +754,7 @@ CREATE TABLE slaves_trash (
     modification_time date);
 
 CREATE TABLE tags (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
@@ -767,7 +767,7 @@ CREATE TABLE tags (
     modification_time date);
 
 CREATE TABLE tags_trash (
-    id integer PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     uuid text UNIQUE NOT NULL,
     owner integer REFERENCES users (id) ON DELETE RESTRICT,
     name text NOT NULL,
