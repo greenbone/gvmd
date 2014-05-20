@@ -11495,10 +11495,11 @@ authenticate (credentials_t* credentials)
       fail = openvas_authenticate_method (credentials->username,
                                           credentials->password,
                                           &auth_method);
-      // Authentication succeeded.
       if (fail == 0)
         {
           gchar *quoted_name, *quoted_method;
+
+          /* Authentication succeeded. */
 
           user_ensure_in_db (credentials->username,
                              auth_method_name (auth_method));

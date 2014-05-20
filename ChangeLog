@@ -1,3 +1,10 @@
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (authenticate): Move comment into block it applies
+	to.
+
+	* src/sql.c (init_iterator): Use sql_stmt_t instead of sqlite3_stmt.
+
 2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (copy_config): Copy config type column too.
@@ -29,7 +36,7 @@
 
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Isolate SQLite calls in SQL library.
+	Isolate SQLite calls in SQL library: sqlite3_prepare.
 
 	* src/sql.c (sql_prepare_internal): New function.  Based on sql_prepare.
 	(sqlv, sql_quiet, sql_x_internal, init_iterator, sql_prepare): Use

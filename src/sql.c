@@ -712,7 +712,7 @@ void
 init_iterator (iterator_t* iterator, const char* sql, ...)
 {
   int ret;
-  sqlite3_stmt* stmt;
+  sql_stmt_t* stmt;
   va_list args;
 
   iterator->done = FALSE;
