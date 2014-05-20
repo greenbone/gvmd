@@ -138,15 +138,6 @@ check_config_host_discovery (const char *);
 /* Static headers. */
 
 static void
-init_preference_iterator (iterator_t*, config_t, const char*);
-
-static const char*
-preference_iterator_name (iterator_t*);
-
-static const char*
-preference_iterator_value (iterator_t*);
-
-static void
 nvt_selector_add (const char*, const char*, const char*, int);
 
 static int
@@ -10317,6 +10308,30 @@ check_db_nvts ()
     }
 }
 
+void
+make_config_osp_ovaldi ()
+{
+  config_t config;
+
+  sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+       " family_count, nvt_count, nvts_growing, families_growing,"
+       " creation_time, modification_time)"
+       " VALUES ('%s', 'OSP Ovaldi', NULL, NULL,"
+       " 'OSP Ovaldi specific config.', 0, 0, 0, 0, now (), now ());",
+       CONFIG_UUID_OSP_OVALDI);
+
+  /* Setup preferences for the config. */
+  config = sql_last_insert_rowid ();
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'username', '');", config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'password', '');", config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'definitions', '');", config);
+  sql ("INSERT into config_preferences (config, type, name, value)"
+       " VALUES (%i, 'SERVER_PREFS', 'port', '22');", config);
+}
+
 /**
  * @brief Ensure the predefined configs exist.
  */
@@ -10455,6 +10470,9 @@ check_db_configs ()
     make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
                                   MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
 
+  if (sql_int ("SELECT count(*) FROM configs WHERE uuid = '%s';",
+               CONFIG_UUID_OSP_OVALDI) == 0)
+    make_config_osp_ovaldi ();
 }
 
 /**
@@ -28119,9 +28137,8 @@ trash_config_writable (config_t config)
  * @param[in]  config    Config.
  * @param[in]  section   Preference section, NULL for general preferences.
  */
-static void
-init_preference_iterator (iterator_t* iterator,
-                          config_t config,
+void
+init_preference_iterator (iterator_t* iterator, config_t config,
                           const char* section)
 {
   gchar* sql;
@@ -28151,7 +28168,7 @@ init_preference_iterator (iterator_t* iterator,
  * @return The name of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-static DEF_ACCESS (preference_iterator_name, 0);
+DEF_ACCESS (preference_iterator_name, 0);
 
 /**
  * @brief Get the value from a preference iterator.
@@ -28161,7 +28178,7 @@ static DEF_ACCESS (preference_iterator_name, 0);
  * @return The value of the preference iterator, or NULL if iteration is
  *         complete.  Freed by cleanup_iterator.
  */
-static DEF_ACCESS (preference_iterator_value, 1);
+DEF_ACCESS (preference_iterator_value, 1);
 
 /**
  * @brief Initialise an "OTP" preference iterator.

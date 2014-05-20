@@ -1455,6 +1455,15 @@ int
 manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
+void
+init_preference_iterator (iterator_t *, config_t, const char *);
+
+const char*
+preference_iterator_name (iterator_t *);
+
+const char*
+preference_iterator_value (iterator_t *);
+
 int
 manage_set_config_comment (config_t, const char*);
 

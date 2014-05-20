@@ -1,3 +1,17 @@
+2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options): Get options from the task's
+	config preferences.
+
+	* src/manage.h: Add function prototypes.
+
+	* src/manage_sql.c (make_config_osp_ovaldi): New function.
+	(check_db_configs): Check for osp ovaldi default config.
+	(init_preference_iterator, preference_iterator_name)
+	(preference_iterator_value): Export functions.
+
+	* src/manage_sql.h (CONFIG_UUID_OSP_OVALDI): New config UUID value.
+
 2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_lsc_credential): Remove extra argument that

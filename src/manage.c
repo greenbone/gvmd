@@ -2811,16 +2811,42 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
   return 0;
 }
 
-GHashTable *
+/**
+ * @brief Give a task's OSP scan options in a hash table.
+ *
+ * @param[in]   task        The task.
+ *
+ * @return Hash table with options names and their values.
+ */
+static GHashTable *
 task_scanner_options (task_t task)
 {
-    GHashTable *table;
+  GHashTable *table;
+  config_t config;
+  iterator_t prefs;
 
-    table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-    /* XXX: Fetch scanner options from the config. */
-    return table;
+  config = task_config (task);
+  init_preference_iterator (&prefs, config, "SERVER_PREFS");
+  table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  while (next (&prefs))
+    {
+      char *name, *value;
+      name = g_strdup (preference_iterator_name (&prefs));
+      value = g_strdup (preference_iterator_value (&prefs));
+      g_hash_table_insert (table, name, value);
+    }
+  cleanup_iterator (&prefs);
+  return table;
 }
 
+/**
+ * @brief Start a task on an OSP scanner.
+ *
+ * @param[in]   task_id    The task ID.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return 0 success, -1 error, -5 scanner is down.
+ */
 int
 run_osp_task (task_t task, char **report_id)
 {

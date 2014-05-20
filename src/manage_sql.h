@@ -95,6 +95,11 @@
 #define CONFIG_UUID_SYSTEM_DISCOVERY "bbca7412-a950-11e3-9109-406186ea4fc5"
 
 /**
+ * @brief UUID of 'OSP Ovaldi' config.
+ */
+#define CONFIG_UUID_OSP_OVALDI "4604515a-fb1c-4bda-bc99-119625e4ec30"
+
+/**
  * @brief Location of a constituent of a trashcan resource.
  */
 #define LOCATION_TABLE 0
