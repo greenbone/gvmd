@@ -30521,6 +30521,11 @@ manage_set_config_families (config_t config,
       return 1;
     }
 
+  if (config_type (config) > 0)
+    {
+      sql ("ROLLBACK;");
+      return 0;
+    }
   constraining = config_families_growing (config);
 
   if (constraining + grow_families == 1)

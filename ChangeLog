@@ -1,5 +1,10 @@
 2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_set_config_families): Don't set families
+	for OSP configs as they are not used.
+
+2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (config_type, config_iterator_type): New functions.
 	(copy_config, update_config_cache): Adjust for config type.
 	(CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS): Add type
