@@ -1,4 +1,9 @@
-2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql.c (sql, sql_error, sql_giveup): Remove error warning, because
+	the internal functions have the same warning.
+
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Isolate SQLite calls in SQL library: sqlite3_step.
 

@@ -344,12 +344,7 @@ sql (char* sql, ...)
 
   va_start (args, sql);
   if (sqlv (1, sql, args) == -1)
-    {
-      g_warning ("%s: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
-      abort ();
-    }
+    abort ();
   va_end (args);
 }
 
@@ -371,10 +366,6 @@ sql_error (char* sql, ...)
 
   va_start (args, sql);
   ret = sqlv (1, sql, args);
-  if (ret == -1)
-    g_warning ("%s: %s\n",
-               __FUNCTION__,
-               sqlite3_errmsg (task_db));
   va_end (args);
 
   return ret;
@@ -396,10 +387,6 @@ sql_giveup (char* sql, ...)
 
   va_start (args, sql);
   ret = sqlv (0, sql, args);
-  if (ret == -1)
-    g_warning ("%s: %s\n",
-               __FUNCTION__,
-               sqlite3_errmsg (task_db));
   va_end (args);
   return ret;
 }
