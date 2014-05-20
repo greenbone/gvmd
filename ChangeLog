@@ -1,5 +1,9 @@
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (sql_x_internal): Pass log flag into sql_prepare_internal.
+
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQLite specific code in the SQL library to a separate file.
 
 	* src/sql.c (DB_CHUNK_SIZE, task_db, sql_open, sql_close, sql_changes)

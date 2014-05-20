@@ -270,7 +270,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 
   /* Prepare statement. */
 
-  ret = sql_prepare_internal (1, 1, sql, args, stmt_return);
+  ret = sql_prepare_internal (1, log, sql, args, stmt_return);
   if (ret)
     {
       g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
