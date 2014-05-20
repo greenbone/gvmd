@@ -27674,7 +27674,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   ret = copy_resource_lock ("config", name, comment, config_id,
                             " comment, family_count, nvt_count,"
-                            " families_growing, nvts_growing",
+                            " families_growing, nvts_growing, type",
                             1, &new, &old);
   if (ret)
     {

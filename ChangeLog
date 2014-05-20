@@ -1,5 +1,9 @@
 2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (copy_config): Copy config type column too.
+
+2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (make_config_osp_ovaldi, check_db_configs)
 	(create_config, create_config_rc, delete_config, manage_restore): Insert
 	value for config type column.
