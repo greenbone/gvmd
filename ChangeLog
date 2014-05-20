@@ -1,5 +1,21 @@
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Move SQLite specific code in the SQL library to a separate file.
+
+	* src/sql.c (DB_CHUNK_SIZE, task_db, sql_open, sql_close, sql_changes)
+	(sql_last_insert_rowid, sql_prepare_internal, sql_exec_internal)
+	(iterator_null, iterator_column_name, iterator_column_count)
+	(sql_bind_blob, sql_bind_int64, sql_bind_double, sql_bind_text)
+	(sql_finalize, sql_reset, sql_column_double, sql_column_text)
+	(sql_column_int, sql_column_int64): Remove.  Now in sql_sqlite3.c.  Add
+	headers for internal functions.
+
+	* src/sql_sqlite3.c: New file.
+
+	* src/CMakeLists.txt: Add sql_sqlite3.c.
+
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Isolate SQLite calls in SQL library: sqlite3_column_int and
 	sqlite3_column_int64.
 
