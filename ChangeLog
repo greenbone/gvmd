@@ -1,3 +1,11 @@
+2014-05-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Isolate SQLite calls in SQL library: sqlite3_step.
+
+	* src/sql.c (sql_exec_internal): New function.  Based on sql_exec.
+	(sqlv, sql_quiet, sql_x_internal, next, sql_exec): Use
+	sql_exec_internal instead of doing the sqlite3_exec by hand.
+
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (authenticate): Move comment into block it applies

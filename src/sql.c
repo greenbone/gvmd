@@ -248,6 +248,56 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 }
 
 /**
+ * @brief Execute a prepared statement.
+ *
+ * @param[in]  retry  Whether to keep retrying while database is busy or locked.
+ * @param[in]  stmt   Statement.
+ *
+ * @return 0 complete, 1 row available in results, -1 error, -2 gave up.
+ */
+static int
+sql_exec_internal (int retry, sql_stmt_t *stmt)
+{
+  int retries;
+
+  retries = 10;
+  while (1)
+    {
+      int ret;
+      ret = sqlite3_step (stmt);
+      if (ret == SQLITE_BUSY)
+        {
+          if (retry)
+            continue;
+          if (retries--)
+            continue;
+          return -2;
+        }
+      if (ret == SQLITE_DONE)
+        return 0;
+      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+        {
+          if (ret == SQLITE_ERROR)
+            {
+              ret = sqlite3_reset (stmt);
+              if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
+                {
+                  if (retry)
+                    continue;
+                  return -2;
+                }
+            }
+          g_warning ("%s: sqlite3_step failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
+          return -1;
+        }
+      assert (ret == SQLITE_ROW);
+      return 1;
+    }
+}
+
+/**
  * @brief Perform an SQL statement.
  *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
@@ -259,53 +309,26 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 static int
 sqlv (int retry, char* sql, va_list args)
 {
-  int ret, retries;
+  int ret;
   sql_stmt_t* stmt;
 
   /* Prepare statement. */
 
   ret = sql_prepare_internal (retry, 1, sql, args, &stmt);
   if (ret == -1)
-    g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+    g_warning ("%s: sql_prepare_internal failed\n", __FUNCTION__);
   if (ret)
     return ret;
 
   /* Run statement. */
 
-  retries = 10;
-  while (1)
-    {
-      ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY)
-        {
-          if (retry)
-            continue;
-          if (retries--)
-            continue;
-          sql_finalize (stmt);
-          return 1;
-        }
-      if (ret == SQLITE_DONE) break;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR)
-            {
-              ret = sqlite3_reset (stmt);
-              if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
-                {
-                  if (retry)
-                    continue;
-                  sql_finalize (stmt);
-                  return 1;
-                }
-            }
-          sql_finalize (stmt);
-          return -1;
-        }
-    }
-
+  while ((ret = sql_exec_internal (retry, stmt)) > 0);
+  if (ret == -1)
+    g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
   sql_finalize (stmt);
-  return 0;
+  if (ret == -2)
+    return 1;
+  return ret;
 }
 
 /**
@@ -394,6 +417,8 @@ sql_quiet (char* sql, ...)
   sql_stmt_t *stmt;
   va_list args;
 
+  /* Prepare statement. */
+
   va_start (args, sql);
   ret = sql_prepare_internal (1, 0, sql, args, &stmt);
   va_end (args);
@@ -405,21 +430,12 @@ sql_quiet (char* sql, ...)
 
   /* Run statement. */
 
-  while (1)
+  while ((ret = sql_exec_internal (1, stmt)) > 0);
+  if (ret == -1)
     {
-      ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_DONE) break;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          g_warning ("%s: sqlite3_step failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          abort ();
-        }
+      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+      abort ();
     }
-
   sql_finalize (stmt);
 }
 
@@ -451,25 +467,16 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 
   /* Run statement. */
 
-  while (1)
+  ret = sql_exec_internal (1, *stmt_return);
+  if (ret == -1)
     {
-      ret = sqlite3_step (*stmt_return);
-      if (ret == SQLITE_BUSY) continue;
-      if (ret == SQLITE_DONE)
-        {
-          return 1;
-        }
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (*stmt_return);
-          g_warning ("%s: sqlite3_step failed: %s",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          return -1;
-        }
-      break;
+      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+      return -1;
     }
-
+  if (ret == 0)
+    /* Too few rows. */
+    return 1;
+  assert (ret == 1);
   if (log)
     tracef ("   sql_x end\n");
   return 0;
@@ -872,20 +879,18 @@ next (iterator_t* iterator)
   if (iterator->done) return FALSE;
 
   lsc_crypt_flush (iterator->crypt_ctx);
-  while ((ret = sqlite3_step (iterator->stmt)) == SQLITE_BUSY);
-  if (ret == SQLITE_DONE)
+  ret = sql_exec_internal (1, iterator->stmt);
+  if (ret == 0)
     {
       iterator->done = TRUE;
       return FALSE;
     }
-  if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+  if (ret == -1)
     {
-      if (ret == SQLITE_ERROR) ret = sqlite3_reset (iterator->stmt);
-      g_warning ("%s: sqlite3_step failed: %s\n",
-                 __FUNCTION__,
-                 sqlite3_errmsg (task_db));
+      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
       abort ();
     }
+  assert (ret == 1);
   return TRUE;
 }
 
@@ -1040,24 +1045,7 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
 int
 sql_exec (sql_stmt_t *stmt)
 {
-  while (1)
-    {
-      int ret;
-      ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY)
-        continue;
-      if (ret == SQLITE_DONE)
-        return 0;
-      if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
-        {
-          if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
-          g_warning ("%s: sqlite3_step failed: %s\n",
-                     __FUNCTION__,
-                     sqlite3_errmsg (task_db));
-          return -1;
-        }
-      return 1;
-    }
+  return sql_exec_internal (1, stmt);
 }
 
 /**
