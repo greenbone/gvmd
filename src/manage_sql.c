@@ -10315,10 +10315,9 @@ make_config_osp_ovaldi ()
 
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
-       " creation_time, modification_time)"
-       " VALUES ('%s', 'OSP Ovaldi', NULL, NULL,"
-       " 'OSP Ovaldi specific config.', 0, 0, 0, 0, now (), now ());",
-       CONFIG_UUID_OSP_OVALDI);
+       " type, creation_time, modification_time)"
+       " VALUES ('%s', 'OSP Ovaldi', NULL, NULL, 'OSP Ovaldi specific config.',"
+       "         0, 0, 0, 0, 1, now (), now ());", CONFIG_UUID_OSP_OVALDI);
 
   /* Setup preferences for the config. */
   config = sql_last_insert_rowid ();
@@ -10346,12 +10345,12 @@ check_db_configs ()
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
            " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s; optimized by using previously collected information.',"
-           " %i, %i, 1, 1, now (), now ());",
+           " %i, %i, 1, 1, 0, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -10368,13 +10367,13 @@ check_db_configs ()
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
            " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s including those that can stop services/hosts;"
            " optimized by using previously collected information.',"
-           " %i, %i, 1, 1, now (), now ());",
+           " %i, %i, 1, 1, 0, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -10391,12 +10390,12 @@ check_db_configs ()
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s; don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1, now (), now ());",
+           " %i, %i, 1, 1, 0, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -10413,14 +10412,14 @@ check_db_configs ()
 
       sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
            " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
            " NULL, 'Full and very deep ultimate',"
            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
            " 'Most NVT''s including those that can stop services/hosts;"
            " don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1, now (), now ());",
+           " %i, %i, 1, 1, 0, now (), now ());",
            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
            family_count ());
 
@@ -10437,10 +10436,10 @@ check_db_configs ()
 
       sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
            " family_count, nvt_count, nvts_growing, families_growing,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
            " 'Empty and static configuration template.',"
-           " 0, 0, 0, 0, now (), now ());");
+           " 0, 0, 0, 0, 0, now (), now ());");
 
       /* Setup preferences for the config. */
       config = sql_last_insert_rowid ();
@@ -27114,10 +27113,10 @@ create_config (const char* proposed_name, const char* comment,
     {
       quoted_comment = sql_nquote (comment, strlen (comment));
       sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-           " creation_time, modification_time)"
+           " type, creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', now (), now ());",
+           " '%s', '%s', 0, now (), now ());",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
@@ -27126,10 +27125,10 @@ create_config (const char* proposed_name, const char* comment,
     }
   else
     sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-         " creation_time, modification_time)"
+         " type, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', now (), now ());",
+         " '%s', '', 0, now (), now ());",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid);
@@ -27621,10 +27620,10 @@ create_config_rc (const char* name, const char* comment, char* rc,
   quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ?: "");
   sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " creation_time, modification_time)"
+       " type, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT ROWID FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', now (), now ());",
+       " '%s', '%s', 0, now (), now ());",
        quoted_name, current_credentials.uuid, selector_uuid, quoted_comment);
   g_free (quoted_comment);
 
@@ -27830,10 +27829,11 @@ delete_config (const char *config_id, int ultimate)
 
       sql ("INSERT INTO configs_trash"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, creation_time, modification_time)"
+           "  families_growing, nvts_growing, type,"
+           "  creation_time, modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing,"
-           "        creation_time, modification_time"
+           "        type, creation_time, modification_time"
            " FROM configs WHERE ROWID = %llu;",
            config);
 
@@ -44648,10 +44648,11 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO configs"
            " (uuid, owner, name, nvt_selector, comment, family_count, nvt_count,"
-           "  families_growing, nvts_growing, creation_time, modification_time)"
+           "  families_growing, nvts_growing, type, creation_time,"
+           "  modification_time)"
            " SELECT uuid, owner, name, nvt_selector, comment, family_count,"
            "        nvt_count, families_growing, nvts_growing,"
-           "        creation_time, modification_time"
+           "        type, creation_time, modification_time"
            " FROM configs_trash WHERE ROWID = %llu;",
            resource);
 
