@@ -27180,6 +27180,26 @@ config_uuid (config_t config, char ** id)
 }
 
 /**
+ * @brief Return the type of a config.
+ *
+ * @param[in]  config  Config.
+ *
+ * @return Config type, -1 if not found.
+ */
+int
+config_type (config_t config)
+{
+  int type;
+  char *str;
+  str = sql_string ("SELECT type FROM configs WHERE ROWID = %llu;", config);
+  if (!str)
+    return -1;
+  type = atoi (str);
+  g_free (str);
+  return type;
+}
+
+/**
  * @brief Get the value of a config preference.
  *
  * @param[in]  config      Config.
@@ -27662,7 +27682,7 @@ int
 copy_config (const char* name, const char* comment, const char *config_id,
              config_t* new_config)
 {
-  int ret;
+  int ret, type;
   char *config_selector;
   gchar *quoted_config_selector;
   config_t new, old;
@@ -27683,14 +27703,23 @@ copy_config (const char* name, const char* comment, const char *config_id,
       return ret;
     }
 
-  sql ("UPDATE configs SET nvt_selector = make_uuid () WHERE ROWID = %llu;",
-       new);
-
   sql ("INSERT INTO config_preferences (config, type, name, value)"
        " SELECT %llu, type, name, value FROM config_preferences"
-       " WHERE config = %llu;",
-       new,
-       old);
+       " WHERE config = %llu;", new, old);
+
+  type = config_type (new);
+  if (type > 0)
+    {
+      /* Don't create nvt_selector etc,. for non-standard configs
+       * (eg. OSP Ovaldi.) Only config preferences are copied.
+       */
+      sql ("COMMIT;");
+      if (new_config) *new_config = new;
+      return 0;
+    }
+
+  sql ("UPDATE configs SET nvt_selector = make_uuid () WHERE ROWID = %llu;",
+       new);
 
   config_selector = config_nvt_selector (old);
   if (config_selector == NULL)
@@ -27883,7 +27912,7 @@ delete_config (const char *config_id, int ultimate)
   GET_ITERATOR_COLUMNS (configs) ", nvt_selector,"                            \
   " family_count AS families_total, nvt_count AS nvts_total,"                 \
   " families_growing AS families_trend,"                                      \
-  " nvts_growing AS nvts_trend"
+  " nvts_growing AS nvts_trend, type"
 
 /**
  * @brief Scan config iterator columns for trash case.
@@ -27891,7 +27920,7 @@ delete_config (const char *config_id, int ultimate)
 #define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
   GET_ITERATOR_COLUMNS (configs_trash) ", nvt_selector,"                      \
   " family_count AS families_total, nvt_count AS nvts_total,"                 \
-  " families_growing AS families_trend, nvts_growing AS nvts_trend"
+  " families_growing AS families_trend, nvts_growing AS nvts_trend, type"
 
 /**
  * @brief Count the number of scan configs.
@@ -28052,6 +28081,22 @@ config_iterator_nvts_growing (iterator_t* iterator)
   int ret;
   if (iterator->done) return -1;
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+  return ret;
+}
+
+/**
+ * @brief Get the type from a config iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Config type.
+ */
+int
+config_iterator_type (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
   return ret;
 }
 
@@ -29424,6 +29469,9 @@ update_config_cache (iterator_t *configs)
   const char *selector;
   gchar *quoted_selector, *quoted_name;
   int families_growing;
+
+  if (config_iterator_type (configs) > 0)
+    return;
 
   quoted_name = sql_quote (get_iterator_name (configs));
   selector = config_iterator_nvt_selector (configs);

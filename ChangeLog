@@ -1,3 +1,15 @@
+2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (config_type, config_iterator_type): New functions.
+	(copy_config, update_config_cache): Adjust for config type.
+	(CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS): Add type
+	column.
+
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust GET_CONFIGS case to
+	send config type value. Adjust accordingly.
+
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql.c (sql, sql_error, sql_giveup): Remove error warning, because

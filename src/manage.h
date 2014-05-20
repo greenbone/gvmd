@@ -1425,6 +1425,9 @@ int
 config_iterator_nvts_growing (iterator_t*);
 
 int
+config_iterator_type (iterator_t*);
+
+int
 config_iterator_families_growing (iterator_t*);
 
 char*

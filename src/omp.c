@@ -12198,7 +12198,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START ("config");
           while (1)
             {
-              int config_nvts_growing, config_families_growing;
+              int config_nvts_growing, config_families_growing, config_type;
               const char *selector;
               config_t config;
 
@@ -12218,6 +12218,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               selector = config_iterator_nvt_selector (&configs);
               config = get_iterator_resource (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
+              config_type = config_iterator_type (&configs);
               config_families_growing = config_iterator_families_growing
                                          (&configs);
 
@@ -12228,14 +12229,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         * by the selector. */
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
-                                       "</nvt_count>",
+                                       "</nvt_count>"
+                                       "<type>%i</type>",
                                        config_iterator_family_count (&configs),
                                        config_families_growing,
                                        config_iterator_nvt_count (&configs),
-                                       config_nvts_growing);
+                                       config_nvts_growing,
+                                       config_type);
 
-              if (get_configs_data->families
-                  || get_configs_data->get.details)
+              if (config_type == 0 && (get_configs_data->families
+                                       || get_configs_data->get.details))
                 {
                   iterator_t families;
                   int max_nvt_count = 0, known_nvt_count = 0;
@@ -12307,8 +12310,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     known_nvt_count);
                 }
 
-              if (get_configs_data->preferences
-                  || get_configs_data->get.details)
+              if (config_type > 0)
+                {
+                  iterator_t prefs;
+                  config_t config = get_iterator_resource (&configs);
+
+                  assert (config);
+
+                  SEND_TO_CLIENT_OR_FAIL ("<preferences>");
+
+                  init_preference_iterator (&prefs, config, "SERVER_PREFS");
+                  while (next (&prefs))
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<preference>"
+                        "<nvt oid=\"\"><name></name></nvt>"
+                        "<name>%s</name><type></type>"
+                        "<value>%s</value>"
+                        "<default>%s</default></preference>",
+                        preference_iterator_name (&prefs),
+                        preference_iterator_value (&prefs),
+                        preference_iterator_value (&prefs));
+                    }
+                  cleanup_iterator (&prefs);
+
+                  SEND_TO_CLIENT_OR_FAIL ("</preferences>");
+                }
+              else if (get_configs_data->preferences
+                       || get_configs_data->get.details)
                 {
                   iterator_t prefs;
                   config_t config = get_iterator_resource (&configs);
@@ -12330,7 +12359,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("</preferences>");
                 }
 
-              if (get_configs_data->get.details)
+              if (config_type == 0 && get_configs_data->get.details)
                 {
                   iterator_t selectors;
 
