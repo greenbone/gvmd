@@ -1,3 +1,14 @@
+2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Isolate SQLite calls in SQL library: sqlite3_column_int and
+	sqlite3_column_int64.
+
+	* src/sql.c (sql_int, sql_int64, iterator_int, iterator_int64): Use new
+	functions.
+	(sql_column_int, sql_column_int64): New functions.
+
+	* src/sql.h: Add headers accordingly.
+
 2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_config_families): Don't set families

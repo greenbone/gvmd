@@ -566,7 +566,7 @@ sql_int (char* sql, ...)
       sql_finalize (stmt);
       abort ();
     }
-  ret = sqlite3_column_int (stmt, 0);
+  ret = sql_column_int (stmt, 0);
   sql_finalize (stmt);
   return ret;
 }
@@ -672,7 +672,7 @@ sql_int64 (long long int* ret, char* sql, ...)
         return -1;
         break;
     }
-  *ret = sqlite3_column_int64 (stmt, 0);
+  *ret = sql_column_int64 (stmt, 0);
   sql_finalize (stmt);
   return 0;
 }
@@ -751,7 +751,7 @@ int
 iterator_int (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return sqlite3_column_int (iterator->stmt, col);
+  return sql_column_int (iterator->stmt, col);
 }
 
 /**
@@ -766,7 +766,7 @@ long long int
 iterator_int64 (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return (long long int) sqlite3_column_int64 (iterator->stmt, col);
+  return sql_column_int64 (iterator->stmt, col);
 }
 
 /**
@@ -1075,7 +1075,7 @@ sql_reset (sql_stmt_t *stmt)
 }
 
 /**
- * @brief Return a column as text from a prepared statement.
+ * @brief Return a column as a double from a prepared statement.
  *
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
@@ -1100,4 +1100,32 @@ const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
   return (const char*) sqlite3_column_text (stmt, position);
+}
+
+/**
+ * @brief Return a column as an integer from a prepared statement.
+ *
+ * @param[in]  stmt      Statement.
+ * @param[in]  position  Column position.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_column_int (sql_stmt_t *stmt, int position)
+{
+  return sqlite3_column_int (stmt, position);
+}
+
+/**
+ * @brief Return a column as an int64 from a prepared statement.
+ *
+ * @param[in]  stmt      Statement.
+ * @param[in]  position  Column position.
+ *
+ * @return 0 success, -1 error.
+ */
+long long int
+sql_column_int64 (sql_stmt_t *stmt, int position)
+{
+  return sqlite3_column_int64 (stmt, position);
 }

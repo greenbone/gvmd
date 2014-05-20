@@ -183,4 +183,10 @@ sql_column_double (sql_stmt_t *, int);
 const char *
 sql_column_text (sql_stmt_t *, int);
 
+int
+sql_column_int (sql_stmt_t *, int);
+
+long long int
+sql_column_int64 (sql_stmt_t *, int);
+
 #endif /* not OPENVAS_MANAGER_SQL_H */
