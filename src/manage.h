@@ -1186,12 +1186,6 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     const char *, int, int, const gchar *);
 
 
-/* RC's. */
-
-char*
-rc_preference (const char*, const char*);
-
-
 /* Targets. */
 
 /**
@@ -3224,9 +3218,6 @@ tag_count (const get_data_t *get);
 
 const char*
 tag_iterator_resource_type (iterator_t*);
-
-resource_t
-tag_iterator_resource (iterator_t*);
 
 const char*
 tag_iterator_resource_uuid (iterator_t*);

@@ -353,51 +353,6 @@ level_max_severity (const char *level, const gchar *class)
 }
 
 /**
- * @brief Check whether a severity matches a message type.
- *
- * @param[in] severity  severity score
- * @param[in] type      message type
- *
- * @return 1 if matches, else 0.
- */
-int
-severity_matches_type (double severity, const char *type)
-{
-  if (type == NULL)
-    {
-      g_warning ("%s: type is NULL", __FUNCTION__);
-      return 0;
-    }
-  if (severity == SEVERITY_LOG)
-    return strcmp ("Log Message", type) == 0;
-  if (severity == SEVERITY_FP)
-    return strcmp ("False Positive", type) == 0;
-  if (severity == SEVERITY_DEBUG)
-    return strcmp ("Debug Message", type) == 0;
-  if (severity == SEVERITY_ERROR)
-    return strcmp ("Error Message", type) == 0;
-  if (severity > 0.0 && severity <= 10.0)
-    {
-      if (strcmp ("Alarm", type) == 0)
-        return 1;
-      if ((strcmp ("high", type) == 0)
-          || (strcmp ("medium", type) == 0)
-          || (strcmp ("low", type) == 0))
-        return severity_in_level (severity, type);
-      if (strcmp ("Security Hole", type) == 0)
-        return severity_in_level (severity, "high");
-      if (strcmp ("Security Warning", type) == 0)
-        return severity_in_level (severity, "medium");
-      if (strcmp ("Security Note", type) == 0)
-        return severity_in_level (severity, "low");
-      return 0;
-    }
-  g_warning ("%s: Invalid severity score given: %f",
-             __FUNCTION__, severity);
-  return 0;
-}
-
-/**
  * @brief Check whether a severity matches an override's severity.
  *
  * @param[in] severity     severity score
@@ -1078,76 +1033,6 @@ const char*
 task_run_status_name (task_t task)
 {
   return run_status_name (task_run_status (task));
-}
-
-/** @todo Test these RC parsing functions. */
-
-/**
- * @brief Return a preference from an RC.
- *
- * @param[in]  desc  The RC.
- * @param[in]  name  The name of the preference.
- *
- * @return The preference on success, else NULL.
- */
-char*
-rc_preference (const char* desc, const char* name)
-{
-  char* seek;
-
-  if (desc == NULL)
-    {
-      tracef ("   desc NULL\n");
-      return NULL;
-    }
-
-  while ((seek = strchr (desc, '\n')))
-    {
-      char* eq = seek
-                 ? memchr (desc, '=', seek - desc)
-                 : strchr (desc, '=');
-      if (eq)
-        {
-#if 0
-          tracef ("   1 found: %.*s\n",
-                  seek ? seek - desc : strlen (seek),
-                  desc);
-#endif
-          if (strncmp (desc, name, eq - desc - 1) == 0)
-            {
-              gchar* ret;
-              if (seek > eq + 1)
-                ret = g_strndup (eq + 2,
-                                 seek ? seek - (eq + 2) : strlen (seek));
-              else
-                ret = g_strdup ("");
-              return ret;
-            }
-        }
-      else if ((seek ? seek - desc > 7 : 1)
-               && strncmp (desc, "begin(", 6) == 0)
-        {
-          /* Read over the section. */
-          desc = seek + 1;
-          while ((seek = strchr (desc, '\n')))
-            {
-              if ((seek ? seek - desc > 5 : 1)
-                  && strncmp (desc, "end(", 4) == 0)
-                {
-                  break;
-                }
-#if 0
-              tracef ("   1 skip: %.*s\n",
-                      seek ? seek - desc : strlen (seek),
-                      desc);
-#endif
-              desc = seek + 1;
-            }
-        }
-      if (seek == NULL) break;
-      desc = seek + 1;
-    }
-  return NULL;
 }
 
 /**

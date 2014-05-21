@@ -48395,23 +48395,6 @@ tag_count (const get_data_t *get)
 DEF_ACCESS (tag_iterator_resource_type, GET_ITERATOR_COLUMN_COUNT);
 
 /**
- * @brief Get the resource from a Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The ROWID of the resource attached to a tag.
- */
-resource_t
-tag_iterator_resource (iterator_t* iterator)
-{
-  resource_t ret;
-  if (iterator->done) return -1;
-  ret = (resource_t) iterator_int64 (iterator,
-                                     GET_ITERATOR_COLUMN_COUNT + 1);
-  return ret;
-}
-
-/**
  * @brief Get the resource_uuid from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.

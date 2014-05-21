@@ -1,3 +1,12 @@
+2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (severity_matches_type, rc_preference): Remove unused
+	functions.
+
+	* src/manage_sql.c (tag_iterator_resource): Remove unused function.
+
+	* src/manage.h: Remove unused functions prototypes.
+
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove openvasrc file support from OMP.
