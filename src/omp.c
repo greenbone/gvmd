@@ -24078,7 +24078,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (strcmp (modify_task_data->scanner_id, "0") == 0)
                       {
-                        /* Leave it as it is. */
+                        set_task_scanner (task, 0);
                       }
                     else if ((fail = (task_run_status (task)
                                       != TASK_STATUS_NEW

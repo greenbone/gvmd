@@ -1,3 +1,8 @@
+2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TASK, set scanner to
+	default value, if provided scanner id value is 0.
+
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_severity_data): Format SQL better.
