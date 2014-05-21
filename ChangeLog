@@ -1,3 +1,13 @@
+2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (make_task_rcfile): Don't create the rcfile for tasks
+	using a different scanner as it is not used.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_TASK, check that
+	specified config and scanner types for the task match.
+
+	* src/manage.h: Add function prototype.
+
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make sql_stmt_t opaque, to remove last of SQLite from SQL interface.

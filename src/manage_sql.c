@@ -13082,8 +13082,11 @@ make_task_rcfile (task_t task)
   iterator_t prefs;
   GString *buffer;
 
-  config = task_config (task);
+  /* Skip test for tasks using OSP Scanners/Configs. */
+  if (task_scanner (task) > 0)
+    return 0;
 
+  config = task_config (task);
   config_name = task_config_name (task);
   if (config_name == NULL) return -1;
 

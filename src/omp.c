@@ -20536,7 +20536,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           slave_t slave = 0;
           char *tsk_uuid, *name, *description;
           guint index;
-          int fail;
+          int fail, type;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -20991,7 +20991,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
-              if (send_find_error_to_client ("create_task", "target",
+              if (send_find_error_to_client ("create_task", "scanner",
                                              create_task_data->scanner_id,
                                              write_to_client,
                                              write_to_client_data))
@@ -21000,6 +21000,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   error_send_to_client (error);
                   return;
                 }
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+          else if (((type = config_type (config)) > 0 && scanner == 0)
+                   || (type == 0 && scanner > 0))
+            {
+              request_delete_task (&create_task_data->task);
+              free (tsk_uuid);
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
+                                      "Scanner and config mismatched types."));
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;

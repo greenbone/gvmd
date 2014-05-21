@@ -1434,6 +1434,9 @@ char*
 config_nvt_selector (config_t);
 
 int
+config_type (config_t);
+
+int
 config_in_use (config_t);
 
 int
