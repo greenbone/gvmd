@@ -1,5 +1,9 @@
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Remove extra entry introduced 2014-03-14 in r18988.
+
+2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove task_db from SQL interface.
 
 	* src/sql.h (task_db): Remove.  No longer used in interface.
@@ -2178,12 +2182,6 @@
 	* src/schema_formats/XML/OMP.xml (report): Add SCAN.
 
 	* doc/omp.html, doc/omp.rnc: Update from source.
-
-2014-03-14  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	Retrieve progress indication lost in last commit.
-
-	* src/openvasmd.c (rebuild_nvt_cache_retry): Add progress arg.  Call
 
 2014-03-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
