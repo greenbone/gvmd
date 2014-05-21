@@ -2232,11 +2232,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           config with this name, then a number is attached to the name to
           make it unique.
         </li>
-        <li>
-          With an rcfile element. The config is created as described in
-          the RC file.  In this case a name element is required.  The new
-          config is given this name.
-        </li>
       </l>
     </description>
     <pattern>
@@ -2244,7 +2239,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <or>
         <e>copy</e>
         <r>get_configs</r>
-        <e>rcfile</e>
       </or>
       <e>name</e>
     </pattern>
@@ -4176,7 +4170,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>slave</e></o>
       <o><e>observers</e></o>
       <o><e>preferences</e></o>
-      <o><e>rcfile</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -4283,13 +4276,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
       </ele>
-    </ele>
-    <ele>
-      <name>rcfile</name>
-      <summary>An openvasrc style file defining the task</summary>
-      <pattern>
-        <t>base64</t>
-      </pattern>
     </ele>
     <response>
       <pattern>
@@ -15542,11 +15528,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>rcfile</name>
-        <summary>Whether to include task RC file (for openvas-client)</summary>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>apply_overrides</name>
         <summary>Whether to override result threat levels</summary>
         <type>boolean</type>
@@ -15609,7 +15590,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>first_report</e></o>
           <o><e>last_report</e></o>
           <o><e>second_last_report</e></o>
-          <o><e>rcfile</e></o>
           <any><e>reports</e></any>
           <e>preferences</e>
         </pattern>
@@ -16123,10 +16103,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>rcfile</name>
-          <pattern><t>base64</t></pattern>
         </ele>
         <ele>
           <name>reports</name>
@@ -19173,7 +19149,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
-        <e>rcfile</e>
         <e>schedule</e>
         <e>slave</e>
         <e>file</e>
@@ -19228,13 +19203,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
       </ele>
-    </ele>
-    <ele>
-      <name>rcfile</name>
-      <summary>An openvasrc style file describing the task</summary>
-      <pattern>
-        <t>base64</t>
-      </pattern>
     </ele>
     <ele>
       <name>schedule</name>
@@ -20017,6 +19985,32 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>GET_TASKS</command>
+    <summary>Attribute "rcfile" and associate RCFILE removed</summary>
+    <description>
+      <p>
+        The attribute "rcfile" and associate response element RCFILE were
+        removed.  It is no longer possible to get an openvasrc configuration
+        for a task.  This feature was primarily introduced to support the
+        GTK frontend openvas-client, which is no longer maintained.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</command>
+    <summary>RCFILE removed</summary>
+    <description>
+      <p>
+        The element RCFILE was removed.  It is no longer possible to create
+        or modify a config or task from an openvasrc file.  This feature was
+        primarily introduced to support the GTK frontend openvas-client, which
+        is no longer maintained.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
   <change>
     <command>CREATE_LSC_CREDENTIAL</command>
     <summary>KEY/PUBLIC removed</summary>

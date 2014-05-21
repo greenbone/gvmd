@@ -1,3 +1,30 @@
+2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove openvasrc file support from OMP.
+
+	* src/omp.c (create_config_data_t, create_config_data_reset)
+	(get_tasks_data_t, modify_task_data_t, modify_task_data_reset): Remove
+	rcfile handling.
+	(client_state_t): Remove RCFILE entries.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Remove "rcfile" attribute from GET_TASKS.  Remove
+	RCFILE from MODIFY_TASK, CREATE_CONFIG and CREATE_TASK.  Remove RCFILE
+	from GET_TASKS response.
+
+	* src/manage_sql.c (task_description, set_task_description)
+	(make_task_rcfile, add_task_description_line, set_target_hosts)
+	(config_preference, clude, insert_rc_into_config, create_config_rc)
+	(nvt_selector_nvts_growing): Remove.  Out of use.
+	(set_task_parameter): Remove "RCFILE" parameter.
+
+	* src/manage.h: Remove headers accordingly.
+
+	* src/schema_formats/XML/OMP.xml (create_config, create_task, get_tasks)
+	(modify_task): Remove RC elements and attributes.  Add CHANGEs
+	accordingly.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_task_rcfile): Don't create the rcfile for tasks

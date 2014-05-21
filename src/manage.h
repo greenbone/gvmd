@@ -737,9 +737,6 @@ set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 void
 append_task_open_port (task_t task, const char *, const char*);
 
-int
-make_task_rcfile (task_t);
-
 void
 manage_task_update_file (task_t, const char *, const void *);
 
@@ -1384,9 +1381,6 @@ typedef struct
 int
 create_config (const char*, const char*, const array_t*, const array_t*,
                config_t*, char**);
-
-int
-create_config_rc (const char*, const char*, char*, config_t*);
 
 int
 copy_config (const char*, const char*, const char *, config_t*);

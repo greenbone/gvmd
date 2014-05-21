@@ -2181,8 +2181,7 @@ create_config
      {
        create_config_comment?
        & ( create_config_copy
-           | get_configs_response
-           | create_config_rcfile )
+           | get_configs_response )
        & create_config_name
      }
 
@@ -3365,7 +3364,6 @@ create_task
        & create_task_slave?
        & create_task_observers?
        & create_task_preferences?
-       & create_task_rcfile?
      }
 
 # A name for the task.
@@ -3462,13 +3460,6 @@ create_task_preferences_preference_value
  = element value
      {
        text
-     }
-
-# An openvasrc style file defining the task.
-create_task_rcfile
- = element rcfile
-     {
-       base64
      }
 
 ## Command create_user
@@ -4361,8 +4352,6 @@ get_tasks
        attribute trash { boolean }?
        & # Whether to include full task details.
        attribute details { boolean }?
-       & # Whether to include task RC file (for openvas-client).
-       attribute rcfile { boolean }?
        & # Whether to override result threat levels.
        attribute apply_overrides { boolean }?
      }
@@ -5528,7 +5517,6 @@ modify_task
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
-           | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
            | modify_task_file )
@@ -5586,13 +5574,6 @@ modify_task_preferences_preference_value
  = element value
      {
        text
-     }
-
-# An openvasrc style file describing the task.
-modify_task_rcfile
- = element rcfile
-     {
-       base64
      }
 
 # Task schedule.
@@ -13601,7 +13582,6 @@ get_tasks_response_task
        & get_tasks_response_task_first_report?
        & get_tasks_response_task_last_report?
        & get_tasks_response_task_second_last_report?
-       & get_tasks_response_task_rcfile?
        & get_tasks_response_task_reports*
        & get_tasks_response_task_preferences
      }
@@ -14164,12 +14144,6 @@ get_tasks_response_task_second_last_report_report_severity
  = element severity
      {
        severity
-     }
-
-get_tasks_response_task_rcfile
- = element rcfile
-     {
-       base64
      }
 
 get_tasks_response_task_reports

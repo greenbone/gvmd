@@ -5490,11 +5490,6 @@ create_agent_howto_use
           config with this name, then a number is attached to the name to
           make it unique.
         </li>
-<li>
-          With an rcfile element. The config is created as described in
-          the RC file.  In this case a name element is required.  The new
-          config is given this name.
-        </li>
 </ul></p>
 <h4>7.4.1 Structure</h4>
 <ul style="list-style: none">
@@ -5516,11 +5511,6 @@ create_agent_howto_use
           &lt;<b>get_configs_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_configs">get_configs</a> command.
           </div>
-</li>
-<li>
-              &lt;<b>rcfile</b>&gt;
-              <div style="margin-left: 15px; display: inline;">An openvasrc style file that defines the config.</div>
-<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -5555,8 +5545,7 @@ create_agent_howto_use
      {
        create_config_comment?
        &amp; ( create_config_copy
-           | get_configs_response
-           | create_config_rcfile )
+           | get_configs_response )
        &amp; create_config_name
      }
 
@@ -8328,11 +8317,6 @@ create_target_port_list
 </ul>
 </li></ul>
 </li>
-<li>
-              &lt;<b>rcfile</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An openvasrc style file defining the task.</div>
-<ul style="list-style: none"></ul>
-</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -8368,7 +8352,6 @@ create_target_port_list
        &amp; create_task_slave?
        &amp; create_task_observers?
        &amp; create_task_preferences?
-       &amp; create_task_rcfile?
      }
 
 create_task_name
@@ -8454,12 +8437,6 @@ create_task_preferences_preference_value
  = element value
      {
        text
-     }
-
-create_task_rcfile
- = element rcfile
-     {
-       base64
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_task_response
@@ -25091,11 +25068,6 @@ get_targets_response_target_count_page
           Whether to include full task details.
           </li>
 <li>
-          @<b>rcfile</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to include task RC file (for openvas-client).
-          </li>
-<li>
           @<b>apply_overrides</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to override result threat levels.
@@ -25540,10 +25512,6 @@ get_targets_response_target_count_page
 </li></ul>
 </li>
 <li>
-              &lt;<b>rcfile</b>&gt;
-              ?<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>reports</b>&gt;
               *<ul style="list-style: none"><li>
               &lt;<b>report</b>&gt;
@@ -25711,7 +25679,6 @@ get_targets_response_target_count_page
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
-       &amp; attribute rcfile { boolean }?
        &amp; attribute apply_overrides { boolean }?
      }
 </pre></div>
@@ -25762,7 +25729,6 @@ get_tasks_response_task
        &amp; get_tasks_response_task_first_report?
        &amp; get_tasks_response_task_last_report?
        &amp; get_tasks_response_task_second_last_report?
-       &amp; get_tasks_response_task_rcfile?
        &amp; get_tasks_response_task_reports*
        &amp; get_tasks_response_task_preferences
      }
@@ -26276,12 +26242,6 @@ get_tasks_response_task_second_last_report_report_severity
  = element severity
      {
        severity
-     }
-
-get_tasks_response_task_rcfile
- = element rcfile
-     {
-       base64
      }
 
 get_tasks_response_task_reports
@@ -30536,11 +30496,6 @@ modify_tag_active
 </li></ul>
 </li>
 <li>
-              &lt;<b>rcfile</b>&gt;
-              <div style="margin-left: 15px; display: inline;">An openvasrc style file describing the task.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>schedule</b>&gt;
               <div style="margin-left: 15px; display: inline;">Task schedule.</div>
 <ul style="list-style: none"><li>
@@ -30598,7 +30553,6 @@ modify_tag_active
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
-           | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
            | modify_task_file )
@@ -30651,12 +30605,6 @@ modify_task_preferences_preference_value
  = element value
      {
        text
-     }
-
-modify_task_rcfile
- = element rcfile
-     {
-       base64
      }
 
 modify_task_schedule
@@ -31697,6 +31645,30 @@ run_wizard_response_response
       6.0</h2>
 <div>
 <div><h3>8.1
+          Change in <tt>GET_TASKS</tt>
+</h3></div>
+<p>In short: Attribute "rcfile" and associate RCFILE removed.</p>
+<p>
+        The attribute "rcfile" and associate response element RCFILE were
+        removed.  It is no longer possible to get an openvasrc configuration
+        for a task.  This feature was primarily introduced to support the
+        GTK frontend openvas-client, which is no longer maintained.
+      </p>
+</div>
+<div>
+<div><h3>8.2
+          Change in <tt>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</tt>
+</h3></div>
+<p>In short: RCFILE removed.</p>
+<p>
+        The element RCFILE was removed.  It is no longer possible to create
+        or modify a config or task from an openvasrc file.  This feature was
+        primarily introduced to support the GTK frontend openvas-client, which
+        is no longer maintained.
+      </p>
+</div>
+<div>
+<div><h3>8.3
           Change in <tt>CREATE_LSC_CREDENTIAL</tt>
 </h3></div>
 <p>In short: KEY/PUBLIC removed.</p>
