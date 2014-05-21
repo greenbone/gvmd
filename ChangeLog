@@ -1,3 +1,20 @@
+2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make sql_stmt_t opaque, to remove last of SQLite from SQL interface.
+
+	* src/sql.h: Remove SQLite include.
+	(sql_stmt_t): Use opaque type.
+
+	* src/sql_sqlite3.c (struct sql_stmt): New struct.
+	(sql_prepare_internal): Allocate and setup new struct.
+	(sql_exec_internal, iterator_null, iterator_column_name)
+	(iterator_column_count, sql_bind_blob, sql_bind_int64, sql_bind_double)
+	(sql_bind_text, sql_finalize, sql_reset, sql_column_double)
+	(sql_column_text, sql_column_int, sql_column_int64): Get statement from
+	struct.
+
+	* src/manage_sqlite3.c: Include sqlite3.h.
+
 2014-05-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TASK, set scanner to

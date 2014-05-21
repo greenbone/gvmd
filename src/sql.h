@@ -27,7 +27,6 @@
 #define OPENVAS_MANAGER_SQL_H
 
 #include "lsc_crypt.h"  /* For lsc_crypt_ctx_t. */
-#include <sqlite3.h>
 #include <glib.h>
 
 
@@ -41,7 +40,7 @@ typedef long long int resource_t;
 /**
  * @brief A prepared SQL statement.
  */
-typedef sqlite3_stmt sql_stmt_t;
+typedef struct sql_stmt sql_stmt_t;
 
 /**
  * @brief A generic SQL iterator.

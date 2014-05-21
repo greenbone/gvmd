@@ -36,6 +36,14 @@
 #define DB_CHUNK_SIZE 1 * 1024 * 1024
 
 
+/* Types. */
+
+struct sql_stmt
+{
+  sqlite3_stmt *stmt;
+};
+
+
 /* Variables. */
 
 /**
@@ -146,6 +154,9 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   const char* tail;
   int ret, retries;
   gchar* formatted;
+  sqlite3_stmt *sqlite_stmt;
+
+  assert (stmt);
 
   formatted = g_strdup_vprintf (sql, args);
 
@@ -154,9 +165,11 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 
   retries = 10;
   *stmt = NULL;
+  sqlite_stmt = NULL;
   while (1)
     {
-      ret = sqlite3_prepare (task_db, (char*) formatted, -1, stmt, &tail);
+      ret = sqlite3_prepare (task_db, (char*) formatted, -1, &sqlite_stmt,
+                             &tail);
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
@@ -169,7 +182,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
-          if (*stmt == NULL)
+          if (sqlite_stmt == NULL)
             {
               g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
                          __FUNCTION__,
@@ -184,6 +197,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
       return -1;
     }
 
+  *stmt = (sql_stmt_t*) g_malloc (sizeof (sql_stmt_t));
+  (*stmt)->stmt = sqlite_stmt;
   return 0;
 }
 
@@ -204,7 +219,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
   while (1)
     {
       int ret;
-      ret = sqlite3_step (stmt);
+      ret = sqlite3_step (stmt->stmt);
       if (ret == SQLITE_BUSY)
         {
           if (retry)
@@ -219,7 +234,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
         {
           if (ret == SQLITE_ERROR)
             {
-              ret = sqlite3_reset (stmt);
+              ret = sqlite3_reset (stmt->stmt);
               if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
                 {
                   if (retry)
@@ -252,7 +267,7 @@ int
 iterator_null (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return sqlite3_column_type (iterator->stmt, col) == SQLITE_NULL;
+  return sqlite3_column_type (iterator->stmt->stmt, col) == SQLITE_NULL;
 }
 
 /**
@@ -267,7 +282,7 @@ const char*
 iterator_column_name (iterator_t* iterator, int col)
 {
   if (iterator->done) abort ();
-  return (const char*) sqlite3_column_name (iterator->stmt, col);
+  return (const char*) sqlite3_column_name (iterator->stmt->stmt, col);
 }
 
 /**
@@ -281,7 +296,7 @@ int
 iterator_column_count (iterator_t* iterator)
 {
   if (iterator->done) abort ();
-  return sqlite3_column_count (iterator->stmt);
+  return sqlite3_column_count (iterator->stmt->stmt);
 }
 
 
@@ -304,7 +319,7 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_blob (stmt,
+      ret = sqlite3_bind_blob (stmt->stmt,
                                position,
                                value,
                                value_size,
@@ -334,7 +349,7 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_int64 (stmt, position, value);
+      ret = sqlite3_bind_int64 (stmt->stmt, position, value);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_int64 failed: %s\n",
@@ -360,7 +375,7 @@ sql_bind_double (sql_stmt_t *stmt, int position, double value)
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_double (stmt, position, value);
+      ret = sqlite3_bind_double (stmt->stmt, position, value);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_double failed: %s\n",
@@ -388,7 +403,7 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_text (stmt,
+      ret = sqlite3_bind_text (stmt->stmt,
                                position,
                                value,
                                value_size,
@@ -411,7 +426,8 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
 void
 sql_finalize (sql_stmt_t *stmt)
 {
-  sqlite3_finalize (stmt);
+  sqlite3_finalize (stmt->stmt);
+  g_free (stmt);
 }
 
 /**
@@ -424,11 +440,11 @@ sql_finalize (sql_stmt_t *stmt)
 int
 sql_reset (sql_stmt_t *stmt)
 {
-  sqlite3_clear_bindings (stmt);
+  sqlite3_clear_bindings (stmt->stmt);
   while (1)
     {
       int ret;
-      ret = sqlite3_reset (stmt);
+      ret = sqlite3_reset (stmt->stmt);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
@@ -453,7 +469,7 @@ sql_reset (sql_stmt_t *stmt)
 double
 sql_column_double (sql_stmt_t *stmt, int position)
 {
-  return sqlite3_column_double (stmt, position);
+  return sqlite3_column_double (stmt->stmt, position);
 }
 
 /**
@@ -467,7 +483,7 @@ sql_column_double (sql_stmt_t *stmt, int position)
 const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
-  return (const char*) sqlite3_column_text (stmt, position);
+  return (const char*) sqlite3_column_text (stmt->stmt, position);
 }
 
 /**
@@ -481,7 +497,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
 int
 sql_column_int (sql_stmt_t *stmt, int position)
 {
-  return sqlite3_column_int (stmt, position);
+  return sqlite3_column_int (stmt->stmt, position);
 }
 
 /**
@@ -495,5 +511,5 @@ sql_column_int (sql_stmt_t *stmt, int position)
 long long int
 sql_column_int64 (sql_stmt_t *stmt, int position)
 {
-  return sqlite3_column_int64 (stmt, position);
+  return sqlite3_column_int64 (stmt->stmt, position);
 }

@@ -29,6 +29,7 @@
 #include "manage.h"
 #include "tracef.h"
 
+#include <sqlite3.h>
 #include <time.h>
 
 #include <openvas/misc/openvas_uuid.h>
