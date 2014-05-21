@@ -1,5 +1,10 @@
 2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_ql.c (create_port_list): Don't specify port_list value in
+	resource_with_name_exists() call.
+
+2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (severity_matches_type, rc_preference): Remove unused
 	functions.
 

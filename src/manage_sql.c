@@ -41365,7 +41365,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       /* Ensure the name is unique. */
       quoted_name = sql_quote (name);
       suffix = 1;
-      while (resource_with_name_exists (quoted_name, "port_list", port_list))
+      while (resource_with_name_exists (quoted_name, "port_list", 0))
         {
           gchar *new_name;
           g_free (quoted_name);
