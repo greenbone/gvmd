@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20140114
+VERSION=20140514
 RESTRICTED=1
 
 # SETTINGS
@@ -170,6 +170,42 @@ log_err () {
   $LOG_CMD -p daemon.err $1
 }
 
+set_interrupt_trap () {
+  trap "handle_interrupt $1" 2
+}
+
+handle_interrupt () {
+  echo "$1:X" >&3
+}
+
+test_exit_codes () {
+  if [ -n "$exit_codes" ]
+  then
+    log_err "$1:"
+    for item in $exit_codes
+    do
+      command=`echo "$item" | cut -d':' -f1`
+      code=`echo "$item" | cut -d':' -f2`
+      if [ "X" = "$code" ]
+      then
+        log_warning "Sync script was interrupted"
+      else
+        log_warning "$command exited with code $code"
+      fi
+    done
+    exit 1
+  fi
+}
+
+test_sql_exit () {
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    log_err "$1. sqlite3 returned code $exit_code."
+    exit 1
+  fi
+}
+
 is_feed_current () {
   if [ $REFRESH_ONLY -eq 0 ]
   then
@@ -270,6 +306,7 @@ reinit () {
   log_notice "Reinitialization of the database necessary."
   rm -f $SCAP_DB
   $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+  test_sql_exit "Could not reinitialize SCAP database"
 }
 
 db_migrate_9 () {
@@ -278,6 +315,7 @@ db_migrate_9 () {
                        CREATE INDEX afp_cpe_idx ON affected_products (cpe);
                        CREATE INDEX afp_cve_idx ON affected_products (cve);
                        UPDATE meta SET value = '9' WHERE name = 'database_version';"
+  test_sql_exit "Could not migrate SCAP database"
   log_notice "Migration done."
 }
 
@@ -292,6 +330,7 @@ db_migrate_10 () {
                        UPDATE meta
                          SET value = '10'
                          WHERE name = 'database_version';"
+  test_sql_exit "Could not migrate SCAP database"
   log_notice "Migration done."
 }
 
@@ -305,6 +344,7 @@ db_migrate_11 () {
                           SET value = '11'
                           WHERE name = 'database_version';
                       "
+    test_sql_exit "Could not migrate SCAP database"
     REBUILD_OVAL=1
     log_notice "Migration done."
   else
@@ -348,6 +388,7 @@ db_migrate_12 () {
                           SET value = '12'
                           WHERE name = 'database_version';
                       "
+    test_sql_exit "Could not migrate SCAP database"
     REBUILD_OVAL=1
     log_notice "Migration done."
   else
@@ -364,6 +405,7 @@ db_migrate_13 () {
                         SET value = '13'
                         WHERE name = 'database_version';
                      "
+  test_sql_exit "Could not migrate SCAP database"
   log_notice "Migration done."
 }
 
@@ -402,6 +444,7 @@ db_migrate_14 () {
                         SET value = '14'
                         WHERE name = 'database_version';
                      "
+  test_sql_exit "Could not migrate SCAP database"
   log_notice "Migration done."
   REBUILD_OVAL=1
 }
@@ -484,13 +527,17 @@ init_scap_db_update () {
   then
     log_notice "Initializing SCAP database."
     $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+    test_sql_exit "Could not initialize SCAP database"
     CVE_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`$SQLITE3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;" | sed -e 's/T.*//' | tr -d "-"`
+    CVE_REFDATE=`$SQLITE3 $SCAP_DB "select date(max(modification_time),'unixepoch') from cves;"`
+    test_sql_exit "Could not get reference date for CVEs and CPEs"
+    CVE_REFDATE=`echo "$CVE_REFDATE" | sed -e 's/T.*//' | tr -d "-"`
   fi
 
   DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "select value from meta where name = 'last_update';"`
+  test_sql_exit "Could not get last_update timestamp from database"
 
   if [ -z "$CVE_REFDATE" ]
   then
@@ -503,6 +550,7 @@ init_scap_db_update () {
     log_warning "Inconsistent data. Resetting SCAP database."
     rm -f $SCAP_DB
     $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+    test_sql_exit "Could not reinitialize SCAP database"
     CVE_REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -537,6 +585,7 @@ update_cvss () {
             WHERE cpe=cpes.id
           );
     "
+    test_sql_exit "Could not update CVSS scores for CPEs"
   else
     log_info "No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
   fi
@@ -560,6 +609,7 @@ update_cvss () {
               AND cvss != ''
           );
     "
+    test_sql_exit "Could not update CVSS scores for OVAL definitions"
   else
     log_notice "No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
   fi
@@ -621,7 +671,9 @@ update_scap_db_private () {
             then
               OVAL_REFDATE=0
             else
-              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+              test_sql_exit "Could not get OVAL reference date"
+              OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
               if [ -z "$OVAL_REFDATE" ]
               then
                 OVAL_REFDATE=0
@@ -646,8 +698,16 @@ update_scap_db_private () {
                   log_warning "Validation of file '$ovalfile' failed: $validation_message"
                 else
                   log_info "Updating $ovalfile"
-                  xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-                  $SQLITE3 $SCAP_DB
+                  exec 4>&1
+                  exit_codes=$(
+                    (
+                      set_interrupt_trap
+                      (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+                      ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3)
+                    ) 3>&1 >&4
+                  )
+                  exec 4>&-
+                  test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
                   updated_ovaldefs=1
                 fi
               fi
@@ -677,16 +737,19 @@ update_scap_db_private () {
     fi
 
     deleted=`$SQLITE3 "$SCAP_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+    test_sql_exit "Could not get list of deleted OVAL XML files"
     if [ -n "$deleted" ]
     then
       log_notice "Removing definitions formerly inserted from: $deleted"
       $SQLITE3 "$SCAP_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+      test_sql_exit "Could not remove deleted OVAL definitions from database"
     fi
 
     # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
     LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
     $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    test_sql_exit "Could not update last_update timestamp in database"
   else
     log_notice "No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
@@ -704,10 +767,18 @@ update_scap_db() {
       if [ `stat -c "%Y" $CPEBASE | cut -d " " -f 1 | tr -d "-"` -ge $DB_LASTUPDATE ]
       then
         log_info "Updating CPEs"
-        sed 's/&/&amp;/g' $CPEBASE | \
-          xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - | \
-          xsltproc $SCAP_RES_DIR/cpe_update.xsl - | \
-          $SQLITE3 $SCAP_DB
+        exec 4>&1
+        exit_codes=$(
+          (
+            set_interrupt_trap
+            (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
+            (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
+            (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
+            ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+          ) 3>&1 >&4
+        )
+        exec 4>&-
+        test_exit_codes "Update of CPEs failed"
         updated_cpes=1
       else
         log_info "Skipping CPEs, file is older than last revision (this is not an error)."
@@ -734,17 +805,32 @@ update_scap_db() {
             for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
             do
               log_info "Updating part $cvepart"
-              xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart | \
-                xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-                $SQLITE3 $SCAP_DB
+              exec 4>&1
+              exit_codes=$(
+                (
+                  set_interrupt_trap
+                  (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
+                  (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
+                  ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+                ) 3>&1 >&4
+              )
+              exec 4>&-
               rm "$cvepart"
+              test_exit_codes "Update of CVEs failed in part '$cvepart'"
             done
           else
-            xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile | \
-              xsltproc $SCAP_RES_DIR/cve_update.xsl - | \
-              $SQLITE $SCAP_DB
+              exec 4>&1
+              exit_codes=$(
+                (
+                  set_interrupt_trap
+                  (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
+                  (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
+                  ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+                ) 3>&1 >&4
+              )
+              exec 4>&-
           fi
-
+          test_exit_codes "Update of CVEs failed in file '$cvefile'"
           updated_cves=1
         else
           log_info "Skipping $cvefile, file is older than last revision (this is not an error)."
@@ -779,7 +865,9 @@ update_scap_db() {
           then
             OVAL_REFDATE=0
           else
-            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';" | tr -d "-"`
+            OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT date(max(modification_time),'unixepoch') FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+            test_sql_exit "Could not get OVAL reference date from database"
+            OVAL_REFDATE=`echo "$OVAL_REFDATE" | tr -d "-"`
             if [ -z "$OVAL_REFDATE" ]
             then
               OVAL_REFDATE=0
@@ -789,8 +877,16 @@ update_scap_db() {
           if [ $oval_timestamp -ge $OVAL_REFDATE ]
           then
             log_info "Updating $ovalfile"
-            xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" | \
-            $SQLITE3 $SCAP_DB
+            exec 4>&1
+            exit_codes=$(
+              (
+                set_interrupt_trap
+                (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+                ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3)
+              ) 3>&1 >&4
+            )
+            exec 4>&-
+            test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
             updated_ovaldefs=1
           else
             log_info "Skipping $ovalfile, file has older timestamp than latest OVAL definition in database. (This is not an error)"
@@ -810,6 +906,7 @@ update_scap_db() {
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
   $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+  test_sql_exit "Could not update last_update timestamp in database"
 }
 
 sync_scapdata(){

@@ -1,3 +1,35 @@
+2014-05-21  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Backport r19439 by Timo Pollmeier.
+
+	Test exit codes of sqlite and xsltproc in SCAP and CERT sync scripts
+	and abort with an error message if it is non-zero and exit the script
+	on interrupt signal instead of just aborting the current command.
+
+	* tools/greenbone-certdata-sync (set_interrupt_trap, handle_interrupt)
+	(test_exit_codes, test_sql_exit): New functions.
+	(reinit, db_migrate_4, update_cvss, update_cert_db): Add exit code
+	checks and interrupt trap.
+
+	* tools/greenbone-scapdata-sync (set_interrupt_trap, handle_interrupt)
+	(test_exit_codes, test_sql_exit): New functions.
+	(reinit, db_migrate_9, db_migrate_10, db_migrate_11, db_migrate_12)
+	(db_migrate_13, db_migrate_14, init_scap_db_update, update_cvss)
+	(update_scap_db_private, update_scap_db): Add exit code checks and
+	interrupt traps.
+
+	* tools/openvas-certdata-sync.in (set_interrupt_trap, handle_interrupt)
+	(test_exit_codes, test_sql_exit): New functions.
+	(reinit, db_migrate_4, update_cvss, update_sec_db): Add exit code
+	checks and interrupt trap.
+
+	* tools/openvas-scapdata-sync.in (set_interrupt_trap, handle_interrupt)
+	(test_exit_codes, test_sql_exit): New functions.
+	(reinit, db_migrate_9, db_migrate_10, db_migrate_11, db_migrate_12)
+	(db_migrate_13, db_migrate_14, init_sec_db_update, update_cvss)
+	(update_sec_db_private, update_sec_db): Add exit code checks and
+	interrupt traps.
+
 2014-05-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport r19455 by matthew Mundell.
