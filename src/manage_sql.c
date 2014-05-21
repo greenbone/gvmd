@@ -17420,8 +17420,10 @@ report_severity_data (report_t report, int override,
 
       stmt = sql_prepare ("SELECT 1 FROM overrides"
                           " WHERE (overrides.nvt = $nvt)"
-                          " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                          " (SELECT ROWID FROM users WHERE users.uuid = '%s')))"
+                          " AND ((overrides.owner IS NULL)"
+                          "      OR (overrides.owner"
+                          "          = (SELECT ROWID FROM users"
+                          "             WHERE users.uuid = '%s')))"
                           " AND ((overrides.end_time = 0)"
                           "      OR (overrides.end_time >= now ()))",
                           current_credentials.uuid);

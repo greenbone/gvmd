@@ -1,5 +1,9 @@
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_severity_data): Format SQL better.
+
+2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Remove extra entry introduced 2014-03-14 in r18988.
 
 2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
