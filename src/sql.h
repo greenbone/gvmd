@@ -55,19 +55,19 @@ typedef struct
 } iterator_t;
 
 
-/* Variables */
-
-extern sqlite3 *
-task_db;
-
-
 /* Helpers. */
+
+int
+sql_is_open ();
 
 int
 sql_open (const char *);
 
 void
 sql_close ();
+
+void
+sql_close_fork ();
 
 int
 sql_changes ();

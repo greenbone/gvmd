@@ -8718,7 +8718,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
   gchar *mgr_dir;
   int ret;
 
-  if (task_db)
+  if (sql_is_open ())
     {
       if (update_nvt_cache == -2)
         {
@@ -11266,7 +11266,7 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
 void
 cleanup_manage_process (gboolean cleanup)
 {
-  if (task_db)
+  if (sql_is_open ())
     {
       if (cleanup)
         {
@@ -11275,7 +11275,8 @@ cleanup_manage_process (gboolean cleanup)
           cleanup_prognosis_iterator ();
           sql_close ();
         }
-      task_db = NULL;
+      else
+        sql_close_fork ();
     }
 }
 
@@ -11293,7 +11294,7 @@ manage_cleanup_process_error (int signal)
 {
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
          sys_siglist[signal]);
-  if (task_db)
+  if (sql_is_open ())
     {
       if (current_scanner_task)
         set_task_run_status (current_scanner_task, TASK_STATUS_INTERNAL_ERROR);

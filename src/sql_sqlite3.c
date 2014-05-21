@@ -47,6 +47,17 @@ sqlite3* task_db;
 /* Helpers. */
 
 /**
+ * @brief Check whether the database is open.
+ *
+ * @return 1 if open, else 0.
+ */
+int
+sql_is_open ()
+{
+  return task_db ? 1 : 0;
+}
+
+/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.
@@ -87,6 +98,15 @@ sql_close ()
      * notice). */
     g_warning ("%s: attempt to close db with open statement(s)\n",
                __FUNCTION__);
+  task_db = NULL;
+}
+
+/**
+ * @brief Close the database in a forked process.
+ */
+void
+sql_close_fork ()
+{
   task_db = NULL;
 }
 

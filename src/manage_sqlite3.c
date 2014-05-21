@@ -34,6 +34,12 @@
 #include <openvas/misc/openvas_uuid.h>
 
 
+/* Variables */
+
+extern sqlite3 *
+task_db;
+
+
 /* Headers of manage_sql.c functions also used here. */
 
 gchar*

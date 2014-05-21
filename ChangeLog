@@ -1,3 +1,18 @@
+2014-05-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove task_db from SQL interface.
+
+	* src/sql.h (task_db): Remove.  No longer used in interface.
+	(sql_is_open, sql_close_fork): New functions.
+
+	* src/sql.c (sql_is_open, sql_close_fork): New functions.
+
+	* src/manage_sql.c (init_manage_process, cleanup_manage_process)
+	(manage_cleanup_process_error): Use new interface functions instead
+	of accessing task_db directly.
+
+	* src/manage_sqlite3.c (task_db): New header.  Was in sql.h.
+
 2014-05-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db_postgres.sql: Make all id columns of type SERIAL.
