@@ -1,3 +1,17 @@
+2014-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove description from tasks table.  Hence increase database version to
+	126.  Add database migration from version 125 to 126.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 126.
+
+	* src/manage_migrators.c (migrate_125_to_126): New function.
+	(database_migrators): Add migrate_125_to_126.
+
+	* src/manage_sql.c (create_tables): Remove description from tasks.
+
+	* doc/db.png: Update for version change.
+
 2014-05-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_ql.c (create_port_list): Don't specify port_list value in

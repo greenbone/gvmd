@@ -9020,6 +9020,76 @@ migrate_124_to_125 ()
 }
 
 /**
+ * @brief Migrate the database from version 125 to version 126.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_125_to_126 ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+
+  /* Ensure that the database is currently version 125. */
+
+  if (manage_db_version () != 125)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The description column was removed from table tasks. */
+
+  /* Move the table away. */
+
+  sql ("ALTER TABLE tasks RENAME TO tasks_125;");
+
+  /* Create the table in the new format. */
+
+  sql ("CREATE TABLE IF NOT EXISTS tasks"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
+       "  time, comment, run_status INTEGER, start_time, end_time,"
+       "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
+       "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
+       "  schedule_location INTEGER, slave_location INTEGER,"
+       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
+       "  creation_time, modification_time);");
+
+  /* Copy the data into the new table. */
+
+  sql ("INSERT into tasks"
+       " (id, uuid, owner, name, hidden,"
+       "  time, comment, run_status, start_time, end_time,"
+       "  config, target, schedule, schedule_next_time,"
+       "  slave, config_location, target_location,"
+       "  schedule_location, slave_location,"
+       "  upload_result_count, hosts_ordering, scanner, alterable,"
+       "  creation_time, modification_time)"
+       " SELECT"
+       "  id, uuid, owner, name, hidden,"
+       "  time, comment, run_status, start_time, end_time,"
+       "  config, target, schedule, schedule_next_time,"
+       "  slave, config_location, target_location,"
+       "  schedule_location, slave_location,"
+       "  upload_result_count, hosts_ordering, scanner, alterable,"
+       "  creation_time, modification_time"
+       " FROM tasks_125;");
+
+  /* Drop the old table. */
+
+  sql ("DROP TABLE tasks_125;");
+
+  /* Set the database version to 126. */
+
+  set_db_version (126);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9149,6 +9219,7 @@ static migrator_t database_migrators[]
     {123, migrate_122_to_123},
     {124, migrate_123_to_124},
     {125, migrate_124_to_125},
+    {126, migrate_125_to_126},
     /* End marker. */
     {-1, NULL}};
 
