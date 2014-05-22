@@ -1978,7 +1978,7 @@ migrate_19_to_20 ()
            TRUST_UNKNOWN,
            iterator_int64 (&rows, 0));
 
-      stmt = sql_prepare ("UPDATE agents SET installer = $installer"
+      stmt = sql_prepare ("UPDATE agents SET installer = $1"
                           " WHERE ROWID = %llu;",
                           iterator_int64 (&rows, 0));
 
@@ -2000,7 +2000,7 @@ migrate_19_to_20 ()
           installer_size = 0;
         }
 
-      /* Bind the packages to the "$values" in the SQL statement. */
+      /* Bind the packages to the "$1" in the SQL statement. */
 
       if (sql_bind_text (stmt, 1, installer, installer_size))
         {

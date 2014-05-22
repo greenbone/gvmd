@@ -1,5 +1,15 @@
 2014-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use numbers instead of names to specify bind locations in SQL.
+
+	* src/manage_migrators.c (migrate_19_to_20): Use number instead of name
+	in SQL.
+
+	* src/manage_sql.c (init_prognosis_iterator, report_severity_data)
+	(create_agent): Use numbers instead of names in SQL.
+
+2014-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove description from tasks table.  Hence increase database version to
 	126.  Add database migration from version 125 to 126.
 

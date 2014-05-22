@@ -13338,7 +13338,7 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
                                   "       cves.description, cpes.name"
                                   " FROM scap.cves, scap.cpes,"
                                   "      scap.affected_products"
-                                  " WHERE cpes.name=$cpe"
+                                  " WHERE cpes.name=$1"
                                   " AND cpes.id=affected_products.cpe"
                                   " AND cves.id=affected_products.cve"
                                   " ORDER BY CAST (cves.cvss AS NUMERIC)"
@@ -17219,7 +17219,7 @@ report_severity_data (report_t report, int override,
       /* Prepare quick inner statement. */
 
       stmt = sql_prepare ("SELECT 1 FROM overrides"
-                          " WHERE (overrides.nvt = $nvt)"
+                          " WHERE (overrides.nvt = $1)"
                           " AND ((overrides.owner IS NULL)"
                           "      OR (overrides.owner"
                           "          = (SELECT ROWID FROM users"
@@ -17241,7 +17241,7 @@ report_severity_data (report_t report, int override,
                    ("SELECT severity_to_type (overrides.new_severity),"
                      "       overrides.new_severity"
                      " FROM overrides"
-                     " WHERE overrides.nvt = $nvt" // 1
+                     " WHERE overrides.nvt = $1" // 1
                      " AND ((overrides.owner IS NULL)"
                      " OR (overrides.owner ="
                      " (SELECT users.ROWID FROM users"
@@ -17251,15 +17251,15 @@ report_severity_data (report_t report, int override,
                      " AND (overrides.task = 0"
                      "      OR overrides.task = %llu)"
                      " AND (overrides.result = 0"
-                     "      OR overrides.result = $result)" // 2
+                     "      OR overrides.result = $2)" // 2
                      " AND (overrides.hosts is NULL"
                      "      OR overrides.hosts = \"\""
-                     "      OR hosts_contains (overrides.hosts, $host))" // 3
+                     "      OR hosts_contains (overrides.hosts, $3))" // 3
                      " AND (overrides.port is NULL"
                      "      OR overrides.port = \"\""
-                     "      OR overrides.port = $port)" // 4
-                     " AND severity_matches_ov ($severity,"
-                     "                          overrides.severity)" // 5
+                     "      OR overrides.port = $4)" // 4
+                     " AND severity_matches_ov ($5," // 5
+                     "                          overrides.severity)"
                      " ORDER BY overrides.result DESC, overrides.task DESC,"
                      " overrides.port DESC, overrides.severity ASC,"
                      " overrides.modification_time DESC;",
@@ -31982,11 +31982,11 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                         "  (SELECT ROWID FROM users"
                         "   WHERE users.uuid = '%s'),"
                         "  '%s',"
-                        "  $installer, $installer_64,"
+                        "  $1, $2,"               /* installer, installer_64 */
                         "  '%s',"
-                        "  $installer_signature_64,"
-                        "  %i, %i, $howto_install,"
-                        "  $howto_use, now (), now ());",
+                        "  $3,"                   /* installer_signature_64 */
+                        "  %i, %i, $4,"           /* howto_install */
+                        "  $5, now (), now ());", /* howto_use */
                         quoted_name, current_credentials.uuid,
                         quoted_comment, quoted_filename,
                         installer_trust, (int) time (NULL));
@@ -32002,7 +32002,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         return -1;
       }
 
-    /* Bind the packages to the "$values" in the SQL statement. */
+    /* Bind the packages to the "$numbers" in the SQL statement. */
 
     if (sql_bind_text (stmt, 1, installer, installer_size))
       {
