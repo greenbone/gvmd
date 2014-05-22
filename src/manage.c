@@ -70,6 +70,7 @@
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_uuid.h>
+#include <openvas/misc/openvas_proctitle.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -163,6 +164,8 @@ threat_message_type (const char *threat)
     return "Log Message";
   if (strcasecmp (threat, "Debug") == 0)
     return "Debug Message";
+  if (strcasecmp (threat, "Error") == 0)
+    return "Error Message";
   if (strcasecmp (threat, "False Positive") == 0)
     return "False Positive";
   return NULL;
@@ -190,6 +193,8 @@ message_type_threat (const char *type)
     return "Log";
   if (strcasecmp (type, "Debug Message") == 0)
     return "Debug";
+  if (strcasecmp (type, "Error Message") == 0)
+    return "Error";
   if (strcasecmp (type, "False Positive") == 0)
     return "False Positive";
   return NULL;
@@ -2724,6 +2729,140 @@ task_scanner_options (task_t task)
   return table;
 }
 
+static void
+parse_osp_report (task_t task, report_t report, const char *report_xml)
+{
+  entity_t entity, child;
+  entities_t results;
+  const char *str, *target;
+  char *quoted_target;
+  time_t start_time, end_time;
+
+  assert (task);
+  assert (report);
+  assert (report_xml);
+
+  if (parse_entity (report_xml, &entity))
+    {
+      g_warning ("Couldn't parse %s OSP scan report\n", report_xml);
+      return;
+    }
+
+  /* Set the report's start and end times. */
+  str = entity_attribute (entity, "start_time");
+  assert (str);
+  start_time = atoi (str);
+  set_scan_start_time_epoch (report, start_time);
+  str = entity_attribute (entity, "end_time");
+  assert (str);
+  end_time = atoi (str);
+  set_scan_end_time_epoch (report, end_time);
+
+  /* Insert target as host */
+  target = entity_attribute (entity, "target");
+  assert (target);
+  quoted_target = sql_quote (target);
+  sql ("INSERT INTO report_hosts"
+       "  (report, host, start_time, end_time, current_port, max_port)"
+       " VALUES (%llu, '%s', %llu, %llu, 0, 0)", report, quoted_target,
+       start_time, end_time);
+  g_free (quoted_target);
+
+  /* Insert results. */
+  child = entity_child (entity, "results");
+  assert (child);
+  results = child->entities;
+  while (results)
+    {
+      result_t result;
+      const char *type;
+      entity_t r_entity = results->data;
+
+      type = threat_message_type (entity_attribute (r_entity, "type"));
+      result = make_result (task, target, "", "", type, entity_text (r_entity));
+      report_add_result (report, result);
+      results = next_entities (results);
+    }
+  free_entity (entity);
+}
+
+/**
+ * @brief Fork a child to handle an OSP scan's fetching and inserting.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   report      The report.
+ * @param[in]   host        The OSP scanner's host.
+ * @param[in]   port        The OSP scanner's port.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
+{
+  char *report_xml, *report_id, title[128];
+  int rc;
+
+  switch (fork ())
+    {
+      case 0:
+        break;
+      case -1:
+        return -1;
+      default:
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  report_id = report_uuid (report);
+  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
+  proctitle_set (title);
+
+  while (1)
+    {
+      int progress;
+      osp_connection_t *connection;
+
+      connection = osp_connection_new (host, port, CACERT, CLIENTCERT,
+                                       CLIENTKEY);
+      if (!connection)
+        {
+          g_warning ("Couldn't connect to scanner %s:%d\n", host, port);
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          exit (1);
+        }
+
+      report_xml = NULL;
+      progress = osp_get_scan (connection, report_id, &report_xml);
+      osp_connection_close (connection);
+      assert (progress <= 100);
+      if (progress < 0)
+        {
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          rc = 1;
+          break;
+        }
+      else if (progress == 100)
+        {
+          /* Parse the report XML. */
+          parse_osp_report (task, report, report_xml);
+          g_free (report_xml);
+          set_task_run_status (task, TASK_STATUS_DONE);
+          set_report_scan_run_status (report, TASK_STATUS_DONE);
+          rc = 0;
+          break;
+        }
+      g_free (report_xml);
+      sleep (10);
+    }
+  g_free (report_id);
+  exit (rc);
+}
+
 /**
  * @brief Start a task on an OSP scanner.
  *
@@ -2735,21 +2874,22 @@ task_scanner_options (task_t task)
 int
 run_osp_task (task_t task, char **report_id)
 {
-  char *scanner_id, *host, *targets;
-  int port;
+  char *host, *targets;
+  int port, ret;
   GHashTable *options;
   osp_connection_t *connection;
   scanner_t scanner;
+  report_t report;
 
   scanner = task_scanner (task);
-  scanner_id = scanner_uuid (scanner);
-  if (verify_scanner (scanner_id, NULL))
-    return -5;
   host = scanner_host (scanner);
   port = scanner_port (scanner);
   connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
-  g_free (host);
-
+  if (!connection)
+    {
+      g_free (host);
+      return -5;
+    }
   targets = target_hosts (task_target (task));
   options = task_scanner_options (task);
   *report_id = osp_start_scan (connection, targets, options);
@@ -2759,10 +2899,17 @@ run_osp_task (task_t task, char **report_id)
   if (*report_id == NULL)
     return -1;
 
-  make_report (task, *report_id, TASK_STATUS_RUNNING);
+  report = make_report (task, *report_id, TASK_STATUS_RUNNING);
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  /* XXX: Fork "scan updater" ? */
+  /* Fork OSP scan handler. */
+  ret = fork_osp_scan_handler (task, report, host, port);
+  g_free (host);
+  if (ret)
+    {
+      g_warning ("Couldn't fork OSP scan handler.\n");
+      return -1;
+    }
   return 0;
 }
 

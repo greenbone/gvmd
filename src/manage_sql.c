@@ -4814,6 +4814,14 @@ collate_message_type (void* data,
     }
   if (strncmp (two, "Debug Message", two_len) == 0) return -1;
 
+  if (strncmp (one, "Error Message", one_len) == 0)
+    {
+      if (strncmp (two, "Error Message", two_len) == 0)
+        return 0;
+      return 1;
+    }
+  if (strncmp (two, "Error Message", two_len) == 0) return -1;
+
   return strncmp (one, two, MIN (one_len, two_len));
 }
 
@@ -16566,6 +16574,19 @@ set_scan_start_time (report_t report, const char* timestamp)
  * @brief Set the start time of a scan.
  *
  * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  Start time. Epoch format.
+ */
+void
+set_scan_start_time_epoch (report_t report, time_t timestamp)
+{
+  sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
+       timestamp, report);
+}
+
+/**
+ * @brief Set the start time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
  * @param[in]  timestamp  Start time.  In OTP format (ctime).
  */
 void
@@ -16608,6 +16629,20 @@ scan_end_time_uuid (const char *uuid)
                      " FROM reports WHERE uuid = '%s';",
                      quoted_uuid);
   return time ? time : g_strdup ("");
+}
+
+/**
+ * @brief Set the end time of a scan.
+ *
+ * @param[in]  report     The report associated with the scan.
+ * @param[in]  timestamp  End time. Epoch format.
+ */
+void
+set_scan_end_time_epoch (report_t report, time_t timestamp)
+{
+  if (timestamp)
+    sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
+         timestamp, report);
 }
 
 /**

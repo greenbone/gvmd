@@ -1,3 +1,16 @@
+2014-05-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Further OSP scans handling improvmnets.
+
+	* src/manage.c (parse_osp_report, fork_osp_scan_handler): New functions.
+	(run_osp_task):
+	(threat_message_type, message_type_threat): Handle Error Message case.
+
+	* src/manage_sql.c (collate_message_type): Handle Error Message case.
+	(set_scan_start_time_epoch, set_scan_end_time_epoch): New functions.
+
+	* src/manage.h: Add functions prototypes.
+
 2014-05-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use numbers instead of names to specify bind locations in SQL.

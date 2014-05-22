@@ -1021,6 +1021,9 @@ set_scan_start_time (report_t, const char*);
 void
 set_scan_start_time_otp (report_t, const char*);
 
+void
+set_scan_start_time_epoch (report_t, time_t);
+
 char*
 scan_end_time (report_t);
 
@@ -1029,6 +1032,9 @@ set_scan_end_time (report_t, const char*);
 
 void
 set_scan_end_time_otp (report_t, const char*);
+
+void
+set_scan_end_time_epoch (report_t, time_t);
 
 void
 set_scan_host_start_time (report_t, const char*, const char*);
