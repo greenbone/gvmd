@@ -2775,11 +2775,21 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type;
+      const char *type, *mtype, *name;
+      char *desc;
       entity_t r_entity = results->data;
 
-      type = threat_message_type (entity_attribute (r_entity, "type"));
-      result = make_result (task, target, "", "", type, entity_text (r_entity));
+      type = entity_attribute (r_entity, "type");
+      /* XXX: Alarm messages are tied associated NVT at the moment. */
+      if (!strcmp (type, "Alarm"))
+        mtype = "Log Message";
+      else
+        mtype = threat_message_type (type);
+      name = entity_attribute (r_entity, "name");
+      assert (name);
+      desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
+      result = make_result (task, target, "", "", mtype, desc);
+      g_free (desc);
       report_add_result (report, result);
       results = next_entities (results);
     }
@@ -2801,7 +2811,7 @@ static int
 fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
 {
   char *report_xml, *report_id, title[128];
-  int rc;
+  int rc, retry_limit = 30;
 
   switch (fork ())
     {
@@ -2831,7 +2841,7 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
                                        CLIENTKEY);
       if (!connection)
         {
-          g_warning ("Couldn't connect to scanner %s:%d\n", host, port);
+          g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
           set_task_run_status (task, TASK_STATUS_STOPPED);
           exit (1);
         }
@@ -2843,6 +2853,7 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
       if (progress < 0)
         {
           set_task_run_status (task, TASK_STATUS_STOPPED);
+          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
           rc = 1;
           break;
         }
@@ -2858,6 +2869,14 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
         }
       g_free (report_xml);
       sleep (10);
+      retry_limit--;
+      if (retry_limit < 0)
+        {
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
+          rc = 1;
+          break;
+        }
     }
   g_free (report_id);
   exit (rc);

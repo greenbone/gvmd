@@ -1,3 +1,10 @@
+2014-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Parse the OSP scan report's results
+	and insert them accordingly..
+	(fork_osp_scan_handler): Adjust log message. Set the task and report
+	states adequately. Set retry limits when waiting for scan to finish.
+
 2014-05-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Further OSP scans handling improvmnets.
