@@ -2947,11 +2947,11 @@ run_osp_task (task_t task, char **report_id)
  * @param[in]   permission  Permission required on task.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
- *         -1 error, -2 task is missing a target, -3 creating the report failed,
- *         -4 target missing hosts, -5 scanner is down, -6 already a task
- *         running in this process, -9 fork failed.
- *         After forking: 0 success (parent), 2 success (child),
- *         -10 error (child).
+ *         4 resuming task not supported, -1 error, -2 task is missing a target,
+ *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
+ *         down, -6 already a task running in this process, -9 fork failed.
+ *         After forking: 0 success (parent), 2 success (child), -10 error
+ *         (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from,
@@ -2975,6 +2975,8 @@ run_task (const char *task_id, char **report_id, int from,
   if (task == 0)
     return 3;
 
+  if (from > 0 && task_scanner (task) > 0)
+    return 4;
   if (task_scanner (task) > 0)
     return run_osp_task  (task, report_id);
 
@@ -3618,7 +3620,7 @@ stop_task_internal (task_t task)
  *
  * @return 0 on success, 1 if stop requested, 3 failed to find task,
  *         99 permission denied, -1 if out of space in scanner output buffer,
- *         -5 scanner down.
+ *         -5 scanner down, 2 if stopping the task is not supported.
  */
 int
 stop_task (const char *task_id)
@@ -3634,6 +3636,9 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
+  if (task_scanner (task) > 0)
+    return 2;
+
   return stop_task_internal (task);
 }
 
@@ -3645,9 +3650,9 @@ stop_task (const char *task_id)
  *
  * @param[in]  task_id  Task UUID.
  *
- * @return 0 on success, 1 if pause requested, 3 failed to find task,
- *         99 permission denied, -1 internal error, -3 if out of space in
- *         scanner output buffer, -5 scanner down.
+ * @return 0 on success, 1 if pause requested, 2 Pausing not supported,
+ *         3 failed to find task, 99 permission denied, -1 internal error, -3 if
+ *         out of space in scanner output buffer, -5 scanner down.
  */
 int
 pause_task (const char *task_id)
@@ -3663,6 +3668,9 @@ pause_task (const char *task_id)
     return -1;
   if (task == 0)
     return 3;
+
+  if (task_scanner (task) > 0)
+    return 2;
 
   if (scanner_up == 0)
     return -5;

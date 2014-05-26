@@ -1,3 +1,10 @@
+2014-05-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_task, stop_task, pause_task): Don't try to resume,
+	stop or pause task if using an OSP scanner.
+	(omp_xml_handle_end_element): Handle new return values for run_task(),
+	stop_task() and pause_task().
+
 2014-05-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Parse the OSP scan report's results

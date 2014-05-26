@@ -24125,6 +24125,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event ("task", "Task", pause_task_data->task_id,
                              "requested to pause");
                   break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("pause_task", "Pausing not supported"));
+                  log_event_fail ("task", "Task", pause_task_data->task_id,
+                                  "paused");
+                  break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("pause_task",
                                                  "task",
@@ -24303,6 +24309,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           return;
                         }
                       break;
+                    case 4:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_or_start_task",
+                                          "Resuming not supported"));
+                      log_event_fail ("task", "Task",
+                                      resume_or_start_task_data->task_id,
+                                      "resumed");
+                      break;
                     case 99:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
@@ -24398,6 +24412,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  break;
+                case 4:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_paused_task",
+                                      "Resuming not supported"));
+                  log_event_fail ("task", "Task",
+                                  resume_paused_task_data->task_id, "resumed");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -24495,6 +24516,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
                                    "Dummy error for current_error");
+                      break;
+                    case 4:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                                          "Resuming not supported"));
+                      log_event_fail ("task", "Task",
+                                      resume_stopped_task_data->task_id,
+                                      "resumed");
                       break;
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client
@@ -24915,6 +24944,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   log_event ("task", "Task", stop_task_data->task_id,
                              "requested to stop");
+                  break;
+                case 2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task", "Stopping not supported"));
+                  log_event_fail ("task", "Task", stop_task_data->task_id,
+                                  "stopped");
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task",
