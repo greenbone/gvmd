@@ -1,3 +1,10 @@
+2014-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c, src/manage_config_discovery.c,
+	src/manage_config_host_discovery.c,
+	src/manage_config_system_discovery.c, src/manage_migrators.c,
+	src/manage_sql.c: In SQL use "id" instead of SQLite3 specific "ROWID".
+
 2014-05-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_task, stop_task, pause_task): Don't try to resume,

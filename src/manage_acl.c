@@ -93,13 +93,13 @@ user_can_everything (const char *user_id)
                   " WHERE resource = 0"
                   " AND ((subject_type = 'user'"
                   "       AND subject"
-                  "           = (SELECT ROWID FROM users"
+                  "           = (SELECT id FROM users"
                   "              WHERE users.uuid = '%s'))"
                   "      OR (subject_type = 'group'"
                   "          AND subject"
                   "              IN (SELECT DISTINCT `group`"
                   "                  FROM group_users"
-                  "                  WHERE user = (SELECT ROWID"
+                  "                  WHERE user = (SELECT id"
                   "                                FROM users"
                   "                                WHERE users.uuid"
                   "                                      = '%s')))"
@@ -107,7 +107,7 @@ user_can_everything (const char *user_id)
                   "          AND subject"
                   "              IN (SELECT DISTINCT role"
                   "                  FROM role_users"
-                  "                  WHERE user = (SELECT ROWID"
+                  "                  WHERE user = (SELECT id"
                   "                                FROM users"
                   "                                WHERE users.uuid"
                   "                                      = '%s'))))"
@@ -132,9 +132,9 @@ user_is_admin (const char *uuid)
 
   quoted_uuid = sql_quote (uuid);
   ret = sql_int ("SELECT count (*) FROM role_users"
-                 " WHERE role = (SELECT ROWID FROM roles"
+                 " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
-                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -155,9 +155,9 @@ user_is_observer (const char *uuid)
 
   quoted_uuid = sql_quote (uuid);
   ret = sql_int ("SELECT count (*) FROM role_users"
-                 " WHERE role = (SELECT ROWID FROM roles"
+                 " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_OBSERVER "')"
-                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -178,9 +178,9 @@ user_is_user (const char *uuid)
 
   quoted_uuid = sql_quote (uuid);
   ret = sql_int ("SELECT count (*) FROM role_users"
-                 " WHERE role = (SELECT ROWID FROM roles"
+                 " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_USER "')"
-                 " AND user = (SELECT ROWID FROM users WHERE uuid = '%s');",
+                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -202,10 +202,10 @@ user_owns_result (const char *uuid)
 
   ret = sql_int ("SELECT count(*) FROM results, report_results, reports"
                  " WHERE results.uuid = '%s'"
-                 " AND report_results.result = results.ROWID"
-                 " AND report_results.report = reports.ROWID"
+                 " AND report_results.result = results.id"
+                 " AND report_results.report = reports.id"
                  " AND ((reports.owner IS NULL) OR (reports.owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                  uuid,
                  current_credentials.uuid);
 
@@ -241,7 +241,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                  " WHERE uuid = '%s'"
                  "%s"
                  " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.ROWID FROM users WHERE users.uuid = '%s')));",
+                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                  type,
                  (strcmp (type, "task") && trash) ? "_trash" : "",
                  uuid,
@@ -287,7 +287,7 @@ user_has_access_uuid (const char *type, const char *uuid,
       report_t report;
 
       switch (sql_int64 (&report,
-                         "SELECT ROWID FROM reports WHERE uuid = '%s';",
+                         "SELECT id FROM reports WHERE uuid = '%s';",
                          uuid))
         {
           case 0:
@@ -343,13 +343,13 @@ user_has_access_uuid (const char *type, const char *uuid,
                      "        OR uuid = '%s')"
                      " AND ((subject_type = 'user'"
                      "       AND subject"
-                     "           = (SELECT ROWID FROM users"
+                     "           = (SELECT id FROM users"
                      "              WHERE users.uuid = '%s'))"
                      "      OR (subject_type = 'group'"
                      "          AND subject"
                      "              IN (SELECT DISTINCT `group`"
                      "                  FROM group_users"
-                     "                  WHERE user = (SELECT ROWID"
+                     "                  WHERE user = (SELECT id"
                      "                                FROM users"
                      "                                WHERE users.uuid"
                      "                                      = '%s')))"
@@ -357,7 +357,7 @@ user_has_access_uuid (const char *type, const char *uuid,
                      "          AND subject"
                      "              IN (SELECT DISTINCT role"
                      "                  FROM role_users"
-                     "                  WHERE user = (SELECT ROWID"
+                     "                  WHERE user = (SELECT id"
                      "                                FROM users"
                      "                                WHERE users.uuid"
                      "                                      = '%s'))));",
@@ -386,13 +386,13 @@ user_has_access_uuid (const char *type, const char *uuid,
                  " WHERE resource_uuid = '%s'"
                  " AND ((subject_type = 'user'"
                  "       AND subject"
-                 "           = (SELECT ROWID FROM users"
+                 "           = (SELECT id FROM users"
                  "              WHERE users.uuid = '%s'))"
                  "      OR (subject_type = 'group'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT `group`"
                  "                  FROM group_users"
-                 "                  WHERE user = (SELECT ROWID"
+                 "                  WHERE user = (SELECT id"
                  "                                FROM users"
                  "                                WHERE users.uuid"
                  "                                      = '%s')))"
@@ -400,7 +400,7 @@ user_has_access_uuid (const char *type, const char *uuid,
                  "          AND subject"
                  "              IN (SELECT DISTINCT role"
                  "                  FROM role_users"
-                 "                  WHERE user = (SELECT ROWID"
+                 "                  WHERE user = (SELECT id"
                  "                                FROM users"
                  "                                WHERE users.uuid"
                  "                                      = '%s'))))"
@@ -496,19 +496,19 @@ where_owned (const char *type, const get_data_t *get, int owned,
           gchar *clause;
           clause
            = g_strdup_printf ("OR EXISTS"
-                              " (SELECT ROWID FROM permissions"
-                              "  WHERE resource = %ss%s.ROWID"
+                              " (SELECT id FROM permissions"
+                              "  WHERE resource = %ss%s.id"
                               "  AND resource_type = '%s'"
                               "  AND resource_location = %i"
                               "  AND ((subject_type = 'user'"
                               "        AND subject"
-                              "            = (SELECT ROWID FROM users"
+                              "            = (SELECT id FROM users"
                               "               WHERE users.uuid = '%s'))"
                               "       OR (subject_type = 'group'"
                               "           AND subject"
                               "               IN (SELECT DISTINCT `group`"
                               "                   FROM group_users"
-                              "                   WHERE user = (SELECT ROWID"
+                              "                   WHERE user = (SELECT id"
                               "                                 FROM users"
                               "                                 WHERE users.uuid"
                               "                                       = '%s')))"
@@ -516,7 +516,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "           AND subject"
                               "               IN (SELECT DISTINCT role"
                               "                   FROM role_users"
-                              "                   WHERE user = (SELECT ROWID"
+                              "                   WHERE user = (SELECT id"
                               "                                 FROM users"
                               "                                 WHERE users.uuid"
                               "                                       = '%s'))))"
@@ -534,18 +534,18 @@ where_owned (const char *type, const get_data_t *get, int owned,
             permission_clause
              = g_strdup_printf ("%s"
                                 " OR EXISTS"
-                                " (SELECT ROWID FROM permissions"
+                                " (SELECT id FROM permissions"
                                 "  WHERE resource = reports%s.task"
                                 "  AND resource_type = 'task'"
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
-                                "            = (SELECT ROWID FROM users"
+                                "            = (SELECT id FROM users"
                                 "               WHERE users.uuid = '%s'))"
                                 "       OR (subject_type = 'group'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT `group`"
                                 "                   FROM group_users"
-                                "                   WHERE user = (SELECT ROWID"
+                                "                   WHERE user = (SELECT id"
                                 "                                 FROM users"
                                 "                                 WHERE users.uuid"
                                 "                                       = '%s')))"
@@ -553,7 +553,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT role"
                                 "                   FROM role_users"
-                                "                   WHERE user = (SELECT ROWID"
+                                "                   WHERE user = (SELECT id"
                                 "                                 FROM users"
                                 "                                 WHERE users.uuid"
                                 "                                       = '%s'))))"
@@ -580,7 +580,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
          = g_strdup_printf (" (%ss.hidden = 2"
                             "  AND ((%ss.owner IS NULL)"
                             "       OR (%ss.owner"
-                            "           = (SELECT ROWID FROM users"
+                            "           = (SELECT id FROM users"
                             "              WHERE users.uuid = '%s'))"
                             "       %s))",
                             type,
@@ -600,7 +600,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
         owned_clause
          = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
                             "  OR (%ss_trash.owner"
-                            "      = (SELECT ROWID FROM users"
+                            "      = (SELECT id FROM users"
                             "         WHERE users.uuid = '%s'))"
                             "  %s)",
                             type,
@@ -609,7 +609,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             permission_clause ? permission_clause : "");
       else if (get->trash)
         owned_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
-                                        "  (SELECT ROWID FROM users"
+                                        "  (SELECT id FROM users"
                                         "   WHERE users.uuid = '%s')))",
                                         current_credentials.uuid);
       else if (strcmp (type, "permission") == 0)
@@ -619,18 +619,18 @@ where_owned (const char *type, const get_data_t *get, int owned,
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
           owned_clause
-           = g_strdup_printf (" ((%ss.owner = (SELECT ROWID FROM users"
+           = g_strdup_printf (" ((%ss.owner = (SELECT id FROM users"
                               "                WHERE users.uuid = '%s'))"
                               "  %s"
                               "  OR (%ss.subject_type = 'user'"
                               "      AND %ss.subject"
-                              "          = (SELECT ROWID FROM users"
+                              "          = (SELECT id FROM users"
                               "             WHERE users.uuid = '%s'))"
                               "  OR (%ss.subject_type = 'group'"
                               "      AND %ss.subject"
                               "          IN (SELECT DISTINCT `group`"
                               "              FROM group_users"
-                              "              WHERE user = (SELECT ROWID"
+                              "              WHERE user = (SELECT id"
                               "                            FROM users"
                               "                            WHERE users.uuid"
                               "                                  = '%s')))"
@@ -638,7 +638,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "      AND %ss.subject"
                               "          IN (SELECT DISTINCT role"
                               "              FROM role_users"
-                              "              WHERE user = (SELECT ROWID"
+                              "              WHERE user = (SELECT id"
                               "                            FROM users"
                               "                            WHERE users.uuid"
                               "                                  = '%s')))"
@@ -669,7 +669,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
         owned_clause
          = g_strdup_printf (" ((%ss.owner IS NULL)"
                             "  OR (%ss.owner"
-                            "      = (SELECT ROWID FROM users"
+                            "      = (SELECT id FROM users"
                             "         WHERE users.uuid = '%s'))"
                             "  %s)",
                             type,
@@ -678,7 +678,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             permission_clause ? permission_clause : "");
       else
         owned_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
-                                        "  (SELECT ROWID FROM users"
+                                        "  (SELECT id FROM users"
                                         "   WHERE users.uuid = '%s')))",
                                         type,
                                         type,
@@ -690,7 +690,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
         {
           gchar *quoted;
           quoted = sql_quote (owner_filter);
-          filter_owned_clause = g_strdup_printf ("(owner = (SELECT ROWID FROM users"
+          filter_owned_clause = g_strdup_printf ("(owner = (SELECT id FROM users"
                                                  "          WHERE name = '%s')"
                                                  " AND %s)",
                                                  quoted,
@@ -698,7 +698,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
           g_free (quoted);
         }
       else
-        filter_owned_clause = g_strdup_printf ("((owner = (SELECT ROWID FROM users"
+        filter_owned_clause = g_strdup_printf ("((owner = (SELECT id FROM users"
                                                "           WHERE uuid = '%s')"
                                                "  OR owner IS NULL)"
                                                " AND %s)",

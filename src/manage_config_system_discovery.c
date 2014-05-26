@@ -177,7 +177,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
        "     modification_time = now ()"
-       " WHERE ROWID = %llu;",
+       " WHERE id = %llu;",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);

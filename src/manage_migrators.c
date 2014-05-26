@@ -960,7 +960,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
                " WHERE name = '%s';",
                predefined_config_name)
       && sql_int ("SELECT COUNT(*) = 1 FROM configs"
-                  " WHERE ROWID = %llu;",
+                  " WHERE id = %llu;",
                   predefined_config_id))
     {
       config_t config;
@@ -972,7 +972,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
            " SELECT nvt_selector, comment, family_count,"
            " nvt_count, nvts_growing, families_growing"
            " FROM configs"
-           " WHERE ROWID = %llu;",
+           " WHERE id = %llu;",
            predefined_config_id);
       /* This ID will be larger then predefined_config_id because
        * predefined_config_id exists already.  At worst the ID will be one
@@ -981,7 +981,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
       sql ("UPDATE config_preferences SET config = %llu WHERE config = %llu;",
            config,
            predefined_config_id);
-      name = sql_string ("SELECT name FROM configs WHERE ROWID = %llu;",
+      name = sql_string ("SELECT name FROM configs WHERE id = %llu;",
                          predefined_config_id);
       if (name == NULL)
         {
@@ -991,9 +991,9 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
       quoted_name = sql_quote (name);
       free (name);
       /* Table tasks references config by name, so it stays the same. */
-      sql ("DELETE FROM configs WHERE ROWID = %llu;",
+      sql ("DELETE FROM configs WHERE id = %llu;",
            predefined_config_id);
-      sql ("UPDATE configs SET name = '%s' WHERE ROWID = %llu;",
+      sql ("UPDATE configs SET name = '%s' WHERE id = %llu;",
            quoted_name,
            config);
       g_free (quoted_name);
@@ -1026,13 +1026,13 @@ migrate_5_to_6 ()
   /* Fail with a message if the predefined configs have somehow got ID's
    * other than the usual ones. */
 
-  if (sql_int ("SELECT COUNT(*) = 0 OR ROWID == 1 FROM configs"
+  if (sql_int ("SELECT COUNT(*) = 0 OR id == 1 FROM configs"
                " WHERE name = 'Full and fast';")
-      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 2 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR id == 2 FROM configs"
                   " WHERE name = 'Full and fast ultimate';")
-      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 3 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR id == 3 FROM configs"
                   " WHERE name = 'Full and very deep';")
-      && sql_int ("SELECT COUNT(*) = 0 OR ROWID == 4 FROM configs"
+      && sql_int ("SELECT COUNT(*) = 0 OR id == 4 FROM configs"
                   " WHERE name = 'Full and very deep ultimate';"))
     {
       /* Any predefined configs are OK.  Move any other configs that have the
@@ -1276,7 +1276,7 @@ migrate_9_to_10 ()
   sql ("CREATE TABLE users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
-  init_iterator (&rows, "SELECT rowid, name, password FROM users_9;");
+  init_iterator (&rows, "SELECT id, name, password FROM users_9;");
   while (next (&rows))
     {
       gchar *quoted_name, *quoted_password, *uuid;
@@ -1338,7 +1338,7 @@ migrate_10_to_11 ()
   /* Update the database. */
 
   /* The config and target columns of the tasks table changed from the name
-   * of the config/target to the ROWID of the config/target.
+   * of the config/target to the id of the config/target.
    *
    * Recreate the table, in order to add INTEGER to the column definitions. */
 
@@ -1357,8 +1357,8 @@ migrate_10_to_11 ()
        " SELECT"
        "  id, uuid, owner, name, hidden, time, comment, description,"
        "  run_status, start_time, end_time,"
-       "  (SELECT ROWID FROM configs WHERE configs.name = tasks_10.config),"
-       "  (SELECT ROWID FROM targets WHERE targets.name = tasks_10.target)"
+       "  (SELECT id FROM configs WHERE configs.name = tasks_10.config),"
+       "  (SELECT id FROM targets WHERE targets.name = tasks_10.target)"
        " FROM tasks_10;");
 
   sql ("DROP TABLE tasks_10;");
@@ -1683,7 +1683,7 @@ migrate_16_to_17 ()
 
   /* Move the CVSS and risk values out of any existing tags. */
 
-  init_iterator (&rows, "SELECT ROWID, tag FROM nvts;");
+  init_iterator (&rows, "SELECT id, tag FROM nvts;");
   while (next (&rows))
     {
       gchar *tags, *cvss_base, *risk_factor;
@@ -1691,7 +1691,7 @@ migrate_16_to_17 ()
       parse_tags (iterator_string (&rows, 1), &tags, &cvss_base, &risk_factor);
 
       sql ("UPDATE nvts SET cvss_base = '%s', risk_factor = '%s', tag = '%s'"
-           " WHERE ROWID = %llu;",
+           " WHERE id = %llu;",
            cvss_base ? cvss_base : "",
            risk_factor ? risk_factor : "",
            tags ? tags : "",
@@ -1897,19 +1897,19 @@ migrate_18_to_19 ()
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
+       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-       " WHERE ROWID = "
+       " WHERE id = "
        G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ";");
 
   sql ("UPDATE configs"
@@ -1961,7 +1961,7 @@ migrate_19_to_20 ()
   sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
 
-  init_iterator (&rows, "SELECT ROWID, installer FROM agents;");
+  init_iterator (&rows, "SELECT id, installer FROM agents;");
   while (next (&rows))
     {
       const char *installer_64 = iterator_string (&rows, 1);
@@ -1974,12 +1974,12 @@ migrate_19_to_20 ()
            " installer_trust = %i,"
            " installer_64 = installer,"
            " installer_signature_64 = ''"
-           " WHERE ROWID = %llu",
+           " WHERE id = %llu",
            TRUST_UNKNOWN,
            iterator_int64 (&rows, 0));
 
       stmt = sql_prepare ("UPDATE agents SET installer = $1"
-                          " WHERE ROWID = %llu;",
+                          " WHERE id = %llu;",
                           iterator_int64 (&rows, 0));
 
       /* Prepare statement. */
@@ -2214,7 +2214,7 @@ migrate_21_to_22 ()
 
   /* Rename the directories. */
 
-  init_iterator (&rows, "SELECT ROWID, uuid, owner, name FROM report_formats;");
+  init_iterator (&rows, "SELECT id, uuid, owner, name FROM report_formats;");
   while (next (&rows))
     {
       const char *name, *uuid;
@@ -2225,7 +2225,7 @@ migrate_21_to_22 ()
       name = iterator_string (&rows, 3);
 
       if (sql_int ("SELECT owner is NULL FROM report_formats"
-                   " WHERE ROWID = %llu;",
+                   " WHERE id = %llu;",
                    iterator_int64 (&rows, 0)))
         {
           /* Global. */
@@ -2244,7 +2244,7 @@ migrate_21_to_22 ()
         {
           char *owner_uuid;
           owner_uuid = sql_string ("SELECT uuid FROM users"
-                                   " WHERE ROWID = %llu;",
+                                   " WHERE id = %llu;",
                                    iterator_int64 (&rows, 2));
           if (owner_uuid == NULL)
             {
@@ -2405,7 +2405,7 @@ migrate_24_to_25 ()
   /* Missing parameter chunking handling in the GSA may have resulted in
    * empty options in NVT radio preference values. */
 
-  init_iterator (&rows, "SELECT ROWID, name, value FROM nvt_preferences;");
+  init_iterator (&rows, "SELECT id, name, value FROM nvt_preferences;");
   while (next (&rows))
     {
       const char *name;
@@ -2444,7 +2444,7 @@ migrate_24_to_25 ()
 
           quoted_value = sql_nquote (string->str, string->len);
           g_string_free (string, TRUE);
-          sql ("UPDATE nvt_preferences SET value = '%s' WHERE ROWID = %llu",
+          sql ("UPDATE nvt_preferences SET value = '%s' WHERE id = %llu",
                quoted_value,
                iterator_int64 (&rows, 0));
           g_free (quoted_value);
@@ -2453,7 +2453,7 @@ migrate_24_to_25 ()
   cleanup_iterator (&rows);
 
   init_iterator (&rows,
-                 "SELECT ROWID, name, value FROM config_preferences"
+                 "SELECT id, name, value FROM config_preferences"
                  " WHERE type = 'PLUGINS_PREFS';");
   while (next (&rows))
     {
@@ -2493,7 +2493,7 @@ migrate_24_to_25 ()
 
           quoted_value = sql_nquote (string->str, string->len);
           g_string_free (string, TRUE);
-          sql ("UPDATE config_preferences SET value = '%s' WHERE ROWID = %llu",
+          sql ("UPDATE config_preferences SET value = '%s' WHERE id = %llu",
                quoted_value,
                iterator_int64 (&rows, 0));
           g_free (quoted_value);
@@ -2913,7 +2913,7 @@ migrate_35_to_36_duplicate_target (target_t target, const char *name)
        "  smb_lsc_credential)"
        " SELECT make_uuid (), owner, uniquify ('target', '%s', owner, ''),"
        "        hosts, comment, lsc_credential, smb_lsc_credential"
-       " FROM targets WHERE ROWID = %llu;",
+       " FROM targets WHERE id = %llu;",
        quoted_name,
        target);
   g_free (quoted_name);
@@ -2948,8 +2948,8 @@ migrate_35_to_36 ()
    * of ID references.  Correct this now. */
 
   sql ("UPDATE tasks SET"
-       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
+       " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
        " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
 
   /* Scanner preference "port_range" moved from config into target. */
@@ -2969,7 +2969,7 @@ migrate_35_to_36 ()
   else
     quoted_scanner_range = NULL;
 
-  init_iterator (&tasks, "SELECT ROWID, target, config FROM tasks;");
+  init_iterator (&tasks, "SELECT id, target, config FROM tasks;");
   while (next (&tasks))
     {
       char *config_range, *quoted_config_range;
@@ -2977,7 +2977,7 @@ migrate_35_to_36 ()
 
       target = iterator_int64 (&tasks, 1);
 
-      if (sql_int ("SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
+      if (sql_int ("SELECT port_range IS NULL FROM targets WHERE id = %llu;",
                    target)
           == 0)
         {
@@ -2986,13 +2986,13 @@ migrate_35_to_36 ()
           /* Already used this target, use a copy of it. */
 
           name = sql_string ("SELECT name || ' Migration' FROM targets"
-                             " WHERE ROWID = %llu;",
+                             " WHERE id = %llu;",
                              target);
           assert (name);
           target = migrate_35_to_36_duplicate_target (target, name);
           free (name);
 
-          sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu",
+          sql ("UPDATE tasks SET target = %llu WHERE id = %llu",
                target,
                iterator_int64 (&tasks, 0));
         }
@@ -3011,7 +3011,7 @@ migrate_35_to_36 ()
         quoted_config_range = NULL;
 
       sql ("UPDATE targets SET port_range = '%s'"
-           " WHERE ROWID = %llu;",
+           " WHERE id = %llu;",
            quoted_config_range
             ? quoted_config_range
             : (quoted_scanner_range ? quoted_scanner_range : "default"),
@@ -3062,8 +3062,8 @@ migrate_36_to_37 ()
      the correct clauses. */
 
   sql ("UPDATE tasks SET"
-       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
-       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
+       " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
        " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
 
   /* Set the database version to 37. */
@@ -3586,7 +3586,7 @@ migrate_46_to_47 ()
        " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
 
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " SELECT tasks.ROWID, config_preferences.name, config_preferences.value"
+       " SELECT tasks.id, config_preferences.name, config_preferences.value"
        " FROM tasks, config_preferences"
        " WHERE tasks.config = config_preferences.config"
        " AND (config_preferences.name = 'max_checks'"
@@ -4742,7 +4742,7 @@ migrate_55_to_56 ()
 
   /* Make a port list and port range(s) for each target. */
 
-  init_iterator (&rows, "SELECT ROWID, owner, name, port_range FROM targets;");
+  init_iterator (&rows, "SELECT id, owner, name, port_range FROM targets;");
   while (next (&rows))
     {
       resource_t target;
@@ -4828,9 +4828,9 @@ migrate_55_to_56 ()
         }
       else
         sql ("UPDATE targets SET port_range"
-             " = (SELECT ROWID FROM port_lists"
+             " = (SELECT id FROM port_lists"
              "    WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
-             " WHERE ROWID = %llu;",
+             " WHERE id = %llu;",
              target);
     }
   cleanup_iterator (&rows);
@@ -4838,23 +4838,23 @@ migrate_55_to_56 ()
   /* Set the port_ranges of the targets to the new port lists. */
 
   sql ("UPDATE targets SET"
-       " port_range = (SELECT ROWID FROM port_lists"
-       "               WHERE comment = targets.ROWID)"
+       " port_range = (SELECT id FROM port_lists"
+       "               WHERE comment = targets.id)"
        " WHERE port_range"
-       " != (SELECT ROWID FROM port_lists"
+       " != (SELECT id FROM port_lists"
        "     WHERE uuid = '" PORT_LIST_UUID_DEFAULT "');");
 
   sql ("UPDATE port_lists SET"
        " comment = 'Migrated from target '"
        "           || (SELECT targets.name FROM targets"
-       "               WHERE port_lists.ROWID = targets.port_range)"
+       "               WHERE port_lists.id = targets.port_range)"
        "           || '.'"
        " WHERE uuid != '" PORT_LIST_UUID_DEFAULT "';");
 
   /* Make a port list and port range(s) for each trash target. */
 
   init_iterator (&rows,
-                 "SELECT ROWID, owner, name, port_range FROM targets_trash;");
+                 "SELECT id, owner, name, port_range FROM targets_trash;");
   while (next (&rows))
     {
       resource_t target;
@@ -4940,10 +4940,10 @@ migrate_55_to_56 ()
         }
       else
         sql ("UPDATE targets_trash SET port_range"
-             " = (SELECT ROWID FROM port_lists"
+             " = (SELECT id FROM port_lists"
              "    WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'),"
              " port_list_location = " G_STRINGIFY (LOCATION_TABLE)
-             " WHERE ROWID = %llu;",
+             " WHERE id = %llu;",
              target);
 
       g_free (range);
@@ -4953,16 +4953,16 @@ migrate_55_to_56 ()
   /* Set the port_ranges of the trash targets to the new port lists. */
 
   sql ("UPDATE targets_trash SET"
-       " port_range = (SELECT ROWID FROM port_lists_trash"
-       "               WHERE comment = targets_trash.ROWID)"
+       " port_range = (SELECT id FROM port_lists_trash"
+       "               WHERE comment = targets_trash.id)"
        " WHERE port_range"
-       " != (SELECT ROWID FROM port_lists"
+       " != (SELECT id FROM port_lists"
        "     WHERE uuid = '" PORT_LIST_UUID_DEFAULT "');");
 
   sql ("UPDATE port_lists_trash SET"
        " comment = 'Migrated from trashcan target '"
        "           || (SELECT targets_trash.name FROM targets_trash"
-       "               WHERE port_lists_trash.ROWID = targets_trash.port_range)"
+       "               WHERE port_lists_trash.id = targets_trash.port_range)"
        "           || '.'");
 
   /* Set the database version to 56. */
@@ -5241,7 +5241,7 @@ migrate_59_to_60 ()
   /* Every task must now have an in_assets task preference. */
 
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " SELECT ROWID, 'in_assets', 'yes' FROM tasks;");
+       " SELECT id, 'in_assets', 'yes' FROM tasks;");
 
   /* Set the database version to 60. */
 
@@ -5375,7 +5375,7 @@ migrate_62_to_63 ()
 
   sql ("UPDATE schedules"
        " SET timezone = (SELECT users.timezone FROM users"
-       "                 WHERE ROWID = schedules.owner);");
+       "                 WHERE id = schedules.owner);");
 
   sql ("UPDATE schedules SET initial_offset = current_offset (timezone);");
 
@@ -5384,7 +5384,7 @@ migrate_62_to_63 ()
 
   sql ("UPDATE schedules_trash"
        " SET timezone = (SELECT users.timezone FROM users"
-       "                 WHERE ROWID = schedules_trash.owner);");
+       "                 WHERE id = schedules_trash.owner);");
 
   sql ("UPDATE schedules_trash"
        " SET initial_offset = current_offset (timezone);");
@@ -5425,7 +5425,7 @@ migrate_63_to_64 ()
   sql ("ALTER TABLE results ADD COLUMN report;");
 
   sql ("UPDATE results SET report = (SELECT report FROM report_results"
-       "                             WHERE result = results.rowid);");
+       "                             WHERE result = results.id);");
 
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
        " ON results (report, host);");
@@ -5464,7 +5464,7 @@ migrate_64_to_65 ()
   /* The report column on new results was left blank. */
 
   sql ("UPDATE results SET report = (SELECT report FROM report_results"
-       "                             WHERE result = results.rowid);");
+       "                             WHERE result = results.id);");
 
   sql ("REINDEX results_by_report_host;");
 
@@ -5917,9 +5917,9 @@ migrate_74_to_75 ()
        "  resource_location, subject_type, subject, creation_time,"
        "  modification_time)"
        " SELECT make_uuid (),"
-       "        (SELECT owner FROM tasks WHERE ROWID = task),"
+       "        (SELECT owner FROM tasks WHERE id = task),"
        "        'get', '', 'task', task,"
-       "        (SELECT uuid FROM tasks WHERE ROWID = task),"
+       "        (SELECT uuid FROM tasks WHERE id = task),"
        "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, now (), now ()"
        " FROM task_users;");
 
@@ -6092,13 +6092,13 @@ migrate_78_to_79 ()
 
   /* Add preferences for "Ping Host" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');");
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
@@ -6106,7 +6106,7 @@ migrate_78_to_79 ()
 
   /* Add preferences for "Services" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Services[radio]:Test SSL based services',"
@@ -6123,7 +6123,7 @@ migrate_78_to_79 ()
 
 #define MIGRATE_79_to_80_DELETE(table)                                \
  sql ("DELETE FROM " table                                            \
-      " WHERE owner IN (SELECT ROWID FROM users WHERE %s);",          \
+      " WHERE owner IN (SELECT id FROM users WHERE %s);",             \
       where)
 
 /**
@@ -6138,50 +6138,50 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("agents");
   MIGRATE_79_to_80_DELETE ("agents_trash");
   sql ("DELETE FROM config_preferences"
-       " WHERE config IN (SELECT ROWID FROM configs"
-       "                  WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE config IN (SELECT id FROM configs"
+       "                  WHERE owner IN (SELECT id FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM config_preferences_trash"
-       " WHERE config IN (SELECT ROWID FROM configs"
-       "                  WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE config IN (SELECT id FROM configs"
+       "                  WHERE owner IN (SELECT id FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM nvt_selectors"
        " WHERE name IN (SELECT nvt_selector FROM configs"
-       "                WHERE owner IN (SELECT ROWID FROM users"
+       "                WHERE owner IN (SELECT id FROM users"
        "                                WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("configs");
   MIGRATE_79_to_80_DELETE ("configs_trash");
   sql ("DELETE FROM alert_condition_data"
-       " WHERE alert IN (SELECT ROWID FROM alerts"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_condition_data_trash"
-       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts_trash"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_event_data"
-       " WHERE alert IN (SELECT ROWID FROM alerts"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_event_data_trash"
-       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts_trash"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_method_data"
-       " WHERE alert IN (SELECT ROWID FROM alerts"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_method_data_trash"
-       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
-       "                 WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE alert IN (SELECT id FROM alerts_trash"
+       "                 WHERE owner IN (SELECT id FROM users"
        "                                 WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("alerts");
@@ -6189,8 +6189,8 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("filters");
   MIGRATE_79_to_80_DELETE ("filters_trash");
   sql ("DELETE FROM group_users"
-       " WHERE `group` IN (SELECT ROWID FROM groups"
-       "                   WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE `group` IN (SELECT id FROM groups"
+       "                   WHERE owner IN (SELECT id FROM users"
        "                                   WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("groups");
@@ -6205,58 +6205,58 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("port_lists");
   MIGRATE_79_to_80_DELETE ("port_lists_trash");
   sql ("DELETE FROM port_ranges"
-       " WHERE port_list IN (SELECT ROWID FROM port_lists"
-       "                     WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE port_list IN (SELECT id FROM port_lists"
+       "                     WHERE owner IN (SELECT id FROM users"
        "                                     WHERE %s));",
        where);
   sql ("DELETE FROM port_ranges_trash"
-       " WHERE port_list IN (SELECT ROWID FROM port_lists_trash"
-       "                     WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE port_list IN (SELECT id FROM port_lists_trash"
+       "                     WHERE owner IN (SELECT id FROM users"
        "                                     WHERE %s));",
        where);
   sql ("DELETE FROM report_format_param_options"
        " WHERE report_format_param"
-       "       IN (SELECT ROWID FROM report_format_params"
+       "       IN (SELECT id FROM report_format_params"
        "           WHERE report_format"
-       "                 IN (SELECT ROWID FROM report_formats"
-       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                 IN (SELECT id FROM report_formats"
+       "                     WHERE owner IN (SELECT id FROM users"
        "                                     WHERE %s)));",
        where);
   sql ("DELETE FROM report_format_param_options_trash"
        " WHERE report_format_param"
-       "       IN (SELECT ROWID FROM report_format_params_trash"
+       "       IN (SELECT id FROM report_format_params_trash"
        "           WHERE report_format"
-       "                 IN (SELECT ROWID FROM report_formats"
-       "                     WHERE owner IN (SELECT ROWID FROM users"
+       "                 IN (SELECT id FROM report_formats"
+       "                     WHERE owner IN (SELECT id FROM users"
        "                                     WHERE %s)));",
        where);
   sql ("DELETE FROM report_format_params"
-       " WHERE report_format IN (SELECT ROWID FROM report_formats"
-       "                         WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE report_format IN (SELECT id FROM report_formats"
+       "                         WHERE owner IN (SELECT id FROM users"
        "                                         WHERE %s));",
        where);
   sql ("DELETE FROM report_format_params_trash"
-       " WHERE report_format IN (SELECT ROWID FROM report_formats"
-       "                         WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE report_format IN (SELECT id FROM report_formats"
+       "                         WHERE owner IN (SELECT id FROM users"
        "                                         WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("report_formats");
   MIGRATE_79_to_80_DELETE ("report_formats_trash");
   sql ("DELETE FROM report_host_details"
        " WHERE report_host"
-       "       IN (SELECT ROWID FROM report_hosts"
-       "           WHERE report IN (SELECT ROWID FROM reports"
-       "                            WHERE owner IN (SELECT ROWID FROM users"
+       "       IN (SELECT id FROM report_hosts"
+       "           WHERE report IN (SELECT id FROM reports"
+       "                            WHERE owner IN (SELECT id FROM users"
        "                                            WHERE %s)));",
        where);
   sql ("DELETE FROM report_results"
-       " WHERE report IN (SELECT ROWID FROM reports"
-       "                  WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE report IN (SELECT id FROM reports"
+       "                  WHERE owner IN (SELECT id FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM results"
-       " WHERE report IN (SELECT ROWID FROM reports"
-       "                  WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE report IN (SELECT id FROM reports"
+       "                  WHERE owner IN (SELECT id FROM users"
        "                                  WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("reports");
@@ -6270,18 +6270,18 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("targets");
   MIGRATE_79_to_80_DELETE ("targets_trash");
   sql ("DELETE FROM task_files"
-       " WHERE task IN (SELECT ROWID FROM tasks"
-       "                WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE task IN (SELECT id FROM tasks"
+       "                WHERE owner IN (SELECT id FROM users"
        "                                WHERE %s));",
        where);
   sql ("DELETE FROM task_alerts"
-       " WHERE task IN (SELECT ROWID FROM tasks"
-       "                WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE task IN (SELECT id FROM tasks"
+       "                WHERE owner IN (SELECT id FROM users"
        "                                WHERE %s));",
        where);
   sql ("DELETE FROM task_preferences"
-       " WHERE task IN (SELECT ROWID FROM tasks"
-       "                WHERE owner IN (SELECT ROWID FROM users"
+       " WHERE task IN (SELECT id FROM tasks"
+       "                WHERE owner IN (SELECT id FROM users"
        "                                WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("tasks");
@@ -6592,7 +6592,7 @@ migrate_79_to_80 ()
 
       quoted_uuid = sql_quote (uuid);
       switch (sql_int64 (&user,
-                         "SELECT ROWID FROM users WHERE uuid = '%s';",
+                         "SELECT id FROM users WHERE uuid = '%s';",
                          quoted_uuid))
         {
           case 0:
@@ -6688,7 +6688,7 @@ migrate_79_to_80 ()
            "     password = %s%s%s,"
            "     hosts = '%s',"
            "     hosts_allow = %i"
-           " WHERE ROWID = %llu;",
+           " WHERE id = %llu;",
            role,
            quoted_uuid,
            quoted_method,
@@ -6706,7 +6706,7 @@ migrate_79_to_80 ()
       /* Remove all other users with this name from the db. */
 
       quoted_name = sql_quote (names[index]->d_name);
-      where = g_strdup_printf ("name = '%s' AND ROWID != %llu",
+      where = g_strdup_printf ("name = '%s' AND id != %llu",
                                quoted_name,
                                user);
       g_free (quoted_name);
@@ -6803,8 +6803,8 @@ migrate_80_to_81 ()
        "  now ());");
 
   sql ("INSERT INTO role_users (role, user)"
-       " SELECT (SELECT ROWID FROM roles WHERE roles.name = users.role),"
-       "        users.ROWID"
+       " SELECT (SELECT id FROM roles WHERE roles.name = users.role),"
+       "        users.id"
        " FROM users;");
 
   sql ("UPDATE users SET role = NULL;");
@@ -7961,7 +7961,7 @@ migrate_106_to_107 ()
 
   /* Results in container tasks were being given a task of 0. */
   sql ("UPDATE results"
-       " SET task = (SELECT task FROM reports WHERE reports.ROWID = report);");
+       " SET task = (SELECT task FROM reports WHERE reports.id = report);");
 
   /* Set the database version to 107. */
 
@@ -8152,7 +8152,7 @@ migrate_111_to_112 ()
    * defaults will be used instead. */
 
   sql ("DELETE FROM config_preferences"
-       " WHERE config = (SELECT ROWID FROM configs"
+       " WHERE config = (SELECT id FROM configs"
        "                 WHERE uuid = '" CONFIG_UUID_HOST_DISCOVERY "')"
        " AND (name = 'Ping Host[checkbox]:Do a TCP ping'"
        "      OR name = 'Ping Host[checkbox]:Do an ICMP ping'"
@@ -8328,15 +8328,15 @@ migrate_115_to_116 ()
 
 #define ID_WHEN_WITH_TRASH(type)                                 \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
- "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
+ "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
  "               WHERE uuid = attach_id),"                       \
- "             (SELECT ROWID FROM " G_STRINGIFY (type) "s_trash" \
+ "             (SELECT id FROM " G_STRINGIFY (type) "s_trash"    \
  "               WHERE uuid = attach_id),"                       \
  "             0)"
 
 #define ID_WHEN_WITHOUT_TRASH(type)                              \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
- "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
+ "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
  "                WHERE uuid = attach_id),"                      \
  "             0)"
 
@@ -8371,7 +8371,7 @@ migrate_116_to_117 ()
   /* Update the database. */
 
   /* Rename attach_[...] columns in tags to resource_[...], reference
-   * resources by ROWID and add new column for resource UUID. */
+   * resources by id and add new column for resource UUID. */
 
   sql ("ALTER TABLE tags RENAME TO tags_117;");
   sql ("ALTER TABLE tags_trash RENAME TO tags_trash_117;");
@@ -8394,7 +8394,7 @@ migrate_116_to_117 ()
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value)"
        " SELECT"
-       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
+       "  id, uuid, owner, name, comment, creation_time, modification_time,"
        "  attach_type,"
        "  (SELECT CASE attach_type"
        ID_WHEN_WITH_TRASH (agent)
@@ -8452,7 +8452,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = attach_id) AS report_task"
-       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+       "               JOIN tasks ON tasks.id = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8462,7 +8462,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = attach_id) AS result_task"
-       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+       "               JOIN tasks ON tasks.id = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
@@ -8478,7 +8478,7 @@ migrate_116_to_117 ()
   sql ("DROP TABLE tags_117;");
 
   /* Rename attach_[...] columns in tags_trash to resource_[...], reference
-   * resources by ROWID and add new column for resource UUID. */
+   * resources by id and add new column for resource UUID. */
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, resource_type, resource,"
@@ -8489,7 +8489,7 @@ migrate_116_to_117 ()
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value)"
        " SELECT"
-       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
+       "  id, uuid, owner, name, comment, creation_time, modification_time,"
        "  attach_type,"
        "  (SELECT CASE attach_type"
        ID_WHEN_WITH_TRASH (agent)
@@ -8547,7 +8547,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = attach_id) AS report_task"
-       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+       "               JOIN tasks ON tasks.id = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8557,7 +8557,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = attach_id) AS result_task"
-       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+       "               JOIN tasks ON tasks.id = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
@@ -8645,7 +8645,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = resource_uuid) AS report_task"
-       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+       "               JOIN tasks ON tasks.id = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8655,7 +8655,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = resource_uuid) AS result_task"
-       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+       "               JOIN tasks ON tasks.id = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
 
@@ -8690,7 +8690,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = resource_uuid) AS report_task"
-       "               JOIN tasks ON tasks.ROWID = report_task.task),"
+       "               JOIN tasks ON tasks.id = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8700,7 +8700,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = resource_uuid) AS result_task"
-       "               JOIN tasks ON tasks.ROWID = result_task.task),"
+       "               JOIN tasks ON tasks.id = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
 
@@ -8822,7 +8822,7 @@ migrate_120_to_121 ()
    * its permissions and they will be recreated (along with AUTHENTICATE
    * permission) on start-up. */
   sql ("DELETE FROM permissions WHERE subject_type = 'role'"
-       " AND subject = (SELECT ROWID FROM roles"
+       " AND subject = (SELECT id FROM roles"
        "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
 
   /* Set the database version to 121. */
@@ -8858,7 +8858,7 @@ migrate_121_to_122 ()
    * and they will be recreated (along with HELP permission) on start-up. */
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'role' AND subject IN"
-       "   (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
+       "   (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
        "    OR uuid = '" ROLE_UUID_INFO"');");
 
   /* Set the database version to 122. */

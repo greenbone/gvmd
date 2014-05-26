@@ -69,7 +69,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
        "     modification_time = now ()"
-       " WHERE ROWID = %llu;",
+       " WHERE id = %llu;",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);
@@ -124,14 +124,14 @@ check_config_host_discovery (char *const uuid)
   /* Check new preference. */
 
   if (sql_int ("SELECT count (*) FROM config_preferences"
-               " WHERE config = (SELECT ROWID FROM configs WHERE uuid = '%s')"
+               " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
                "       AND type = 'PLUGINS_PREFS'"
                "       AND name = '" NAME "';",
                uuid)
       == 0)
     {
       sql ("INSERT INTO config_preferences (config, type, name, value)"
-           " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+           " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
            "         'PLUGINS_PREFS',"
            "         '" NAME "',"
            "         'yes');",

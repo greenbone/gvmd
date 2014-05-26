@@ -1027,13 +1027,13 @@ make_config_discovery (char *const uuid, char *const selector_name)
 
   /* Add preferences for "ping host" nvt. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        uuid);
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
        "         'yes');",
@@ -1041,7 +1041,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
 
   /* Add preferences for "Services" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Services[radio]:Test SSL based services',"
        "         'All;Known SSL ports;None');",
