@@ -1,3 +1,10 @@
+2014-05-27  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Backport r19392 by Matthew Mundell. 
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_DELETE_USER include
+	  paused tasks in error message.
+
 2014-05-21  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Backport r19457 by Timo Pollmeier.
