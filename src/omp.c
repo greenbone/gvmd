@@ -2316,6 +2316,35 @@ get_agents_data_reset (get_agents_data_t *data)
 }
 
 /**
+ * @brief Command data for the get_aggregates command.
+ */
+typedef struct
+{
+  get_data_t get;        ///< Get args.
+  char *type;            ///< Resource type.
+  char *subtype;         ///< Resource subtype.
+  char *data_column;     ///< Column to calculate aggregate for.
+  char *group_column;    ///< Column to group data by.
+} get_aggregates_data_t;
+
+/**
+ * @brief Reset command data.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+get_aggregates_data_reset (get_aggregates_data_t *data)
+{
+  get_data_reset (&data->get);
+  free (data->type);
+  free (data->data_column);
+  free (data->group_column);
+
+  memset (data, 0, sizeof (get_aggregates_data_t));
+}
+
+
+/**
  * @brief Command data for the get_configs command.
  */
 typedef struct
@@ -4115,6 +4144,7 @@ typedef union
   delete_task_data_t delete_task;                     ///< delete_task
   delete_user_data_t delete_user;                     ///< delete_user
   get_agents_data_t get_agents;                       ///< get_agents
+  get_aggregates_data_t get_aggregates;               ///< get_aggregates
   get_configs_data_t get_configs;                     ///< get_configs
   get_alerts_data_t get_alerts;                       ///< get_alerts
   get_filters_data_t get_filters;                     ///< get_filters
@@ -4450,6 +4480,12 @@ delete_user_data_t *delete_user_data
  */
 get_agents_data_t *get_agents_data
  = &(command_data.get_agents);
+
+/**
+ * @brief Parser callback data for GET_AGGREGATES.
+ */
+get_aggregates_data_t *get_aggregates_data
+ = &(command_data.get_aggregates);
 
 /**
  * @brief Parser callback data for GET_CONFIGS.
@@ -5211,6 +5247,7 @@ typedef enum
   CLIENT_DESCRIBE_SCAP,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
+  CLIENT_GET_AGGREGATES,
   CLIENT_GET_ALERTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_FILTERS,
@@ -6715,6 +6752,31 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "format",
                               &get_agents_data->format);
             set_client_state (CLIENT_GET_AGENTS);
+          }
+        else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "type",
+                              &get_aggregates_data->type);
+
+            if (get_aggregates_data->type
+                && strcasecmp (get_aggregates_data->type, "info") == 0)
+            {
+              append_attribute (attribute_names, attribute_values, "info_type",
+                                &get_aggregates_data->subtype);
+            }
+            append_attribute (attribute_names, attribute_values, "data_column",
+                              &get_aggregates_data->data_column);
+
+            append_attribute (attribute_names, attribute_values, "group_column",
+                              &get_aggregates_data->group_column);
+
+            get_data_parse_attributes (&get_aggregates_data->get,
+                                       get_aggregates_data->type
+                                        ? get_aggregates_data->type
+                                        : "",
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_GET_AGGREGATES);
           }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
@@ -15633,6 +15695,183 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
             }
           get_slaves_data_reset (get_slaves_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
+      case CLIENT_GET_AGGREGATES:
+        {
+          assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
+
+          iterator_t aggregate;
+          const char *type;
+          get_data_t *get;
+          const char *columns, *trash_columns, **filter_columns;
+          const char *data_column, *group_column;
+          int ret;
+          GString *xml;
+
+          type = get_aggregates_data->type;
+          if (type == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("get_aggregates",
+                                      "GET_AGGREGATES requires a"
+                                      " 'type' attribute"));
+              return;
+            }
+
+          get = &get_aggregates_data->get;
+          data_column = get_aggregates_data->data_column;
+          group_column = get_aggregates_data->group_column;
+
+          if (data_column == NULL && group_column == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("get_aggregates",
+                                      "GET_AGGREGATES requires at least one of"
+                                      " the attributes 'data_column'"
+                                      " and 'group_column'"));
+              return;
+            }
+
+          columns = type_columns (type);
+          trash_columns = type_trash_columns (type);
+          filter_columns = type_filter_columns (type);
+
+          if (columns == NULL || filter_columns == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("get_aggregates",
+                                     "Invalid resource type"));
+              return;
+            }
+          if (get->trash && trash_columns == NULL)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("get_aggregates",
+                                     "Trashcan not used by resource type"));
+              return;
+            }
+
+          ret = init_aggregate_iterator (&aggregate, type, get, columns,
+                                         trash_columns, filter_columns,
+                                         0 /* distinct */,
+                                         data_column, group_column,
+                                         NULL /* extra_tables */,
+                                         NULL /* extra_where */,
+                                         1, /* no_pagination */
+                                         0 /* owned */);
+
+          switch (ret)
+            {
+              case 0:
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Failed to find resource"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Failed to find filter"));
+                break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Invalid data_column"));
+                break;
+              case 4:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Invalid group_column"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Permission denied"));
+                break;
+              default:
+                assert (0);
+                /*@fallthrough@*/
+              case -1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_INTERNAL_ERROR ("get_aggregates"));
+                break;
+            }
+
+          if (ret)
+            return;
+
+          xml = g_string_new ("<get_aggregates_response"
+                              "  status_text=\"" STATUS_OK_TEXT "\""
+                              "  status=\"" STATUS_OK "\">");
+
+          g_string_append (xml, "<aggregate>");
+          if (type)
+            g_string_append_printf (xml,
+                                    "<data_type>%s</data_type>",
+                                    type);
+          if (data_column)
+            g_string_append_printf (xml,
+                                    "<data_column>%s</data_column>",
+                                    data_column);
+          if (group_column)
+            g_string_append_printf (xml,
+                                    "<group_column>%s</group_column>",
+                                    group_column);
+
+          while (next (&aggregate))
+            {
+              if (group_column && data_column)
+                g_string_append_printf (xml,
+                                        "<group>"
+                                        "<value>%s</value>"
+                                        "<count>%d</count>"
+                                        "<min>%g</min>"
+                                        "<max>%g</max>"
+                                        "<mean>%g</mean>"
+                                        "<sum>%g</sum>"
+                                        "</group>",
+                                        aggregate_iterator_value (&aggregate),
+                                        aggregate_iterator_count (&aggregate),
+                                        aggregate_iterator_min (&aggregate),
+                                        aggregate_iterator_max (&aggregate),
+                                        aggregate_iterator_mean (&aggregate),
+                                        aggregate_iterator_sum (&aggregate));
+              else if (group_column)
+                g_string_append_printf (xml,
+                                        "<group>"
+                                        "<value>%s</value>"
+                                        "<count>%d</count>"
+                                        "</group>",
+                                        aggregate_iterator_value (&aggregate),
+                                        aggregate_iterator_count (&aggregate));
+              else
+                g_string_append_printf (xml,
+                                        "<overall>"
+                                        "<count>%d</count>"
+                                        "<min>%g</min>"
+                                        "<max>%g</max>"
+                                        "<mean>%g</mean>"
+                                        "<sum>%g</sum>"
+                                        "</overall>",
+                                        aggregate_iterator_count (&aggregate),
+                                        aggregate_iterator_min (&aggregate),
+                                        aggregate_iterator_max (&aggregate),
+                                        aggregate_iterator_mean (&aggregate),
+                                        aggregate_iterator_sum (&aggregate));
+            }
+          g_string_append (xml, "</aggregate>");
+          g_string_append (xml, "</get_aggregates_response>");
+
+
+          SEND_TO_CLIENT_OR_FAIL (xml->str);
+
+          cleanup_iterator (&aggregate);
+          g_string_free (xml, TRUE);
+          get_aggregates_data_reset (get_aggregates_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }

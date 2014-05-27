@@ -6841,6 +6841,167 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+
+  <command>
+    <name>get_aggregates</name>
+    <summary>Get aggregates of various resources</summary>
+    <description>
+      <p>
+        The client uses the get_aggregate command to get aggregated data like
+        counts or averages of various resources.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>type</name>
+        <summary>The OMP resource type to gather data from</summary>
+        <type>text</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>data_column</name>
+        <summary>The column to get the data to aggregate from</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>group_column</name>
+        <summary>The field to group the resources by</summary>
+        <type>text</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>aggregate</e></any>
+      </pattern>
+      <ele>
+        <name>aggregate</name>
+        <summary>A collection of aggregated data of the selected type</summary>
+        <pattern>
+          <e>data_type</e>
+          <o><e>data_column</e></o>
+          <o><e>group_column</e></o>
+          <or>
+            <any><e>group</e></any>
+            <e>overall</e>
+          </or>
+        </pattern>
+        <ele>
+          <name>data_type</name>
+          <summary>The resource type the data is aggregated from</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>data_column</name>
+          <summary>The column the data is aggregated from</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>group_column</name>
+          <summary>The column the data is grouped by</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>group</name>
+          <summary>Aggregate data for a group of resources</summary>
+          <pattern><t>text</t></pattern>
+        </ele>
+        <ele>
+          <name>group</name>
+          <summary>Aggregate data for all resources of the selected type</summary>
+          <pattern>
+            <e>value</e>
+            <e>count</e>
+            <o>
+              <g>
+                <e>min</e>
+                <e>max</e>
+                <e>mean</e>
+                <e>sum</e>
+              </g>
+            </o>
+          </pattern>
+          <ele>
+            <name>value</name>
+            <summary>Value of the group column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>count</name>
+            <summary>Number of resources in the group</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>min</name>
+            <summary>Minimum value of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>max</name>
+            <summary>Maximum value of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>mean</name>
+            <summary>Arithmetic mean of the numeric values of the data</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>sum</name>
+            <summary>Sum of the numeric values of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>overall</name>
+          <summary>Aggregate data for all resources of the selected type</summary>
+          <pattern>
+            <e>count</e>
+            <e>min</e>
+            <e>max</e>
+            <e>mean</e>
+            <e>sum</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Overall number of resources</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>min</name>
+            <summary>Overall minimum value of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>max</name>
+            <summary>Overall maximum value of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>mean</name>
+            <summary>Overall arithmetic mean of the numeric values of the data</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>sum</name>
+            <summary>Overall sum of the numeric values of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    
+  </command>
+  
   <command>
     <name>get_alerts</name>
     <summary>Get all alerts</summary>

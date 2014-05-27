@@ -1,3 +1,31 @@
+2014-05-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new OMP command GET_AGGREGATES.
+
+	* src/manage_sql.c (init_aggregate_iterator, aggregate_iterator_count)
+	(aggregate_iterator_min, aggregate_iterator_max)
+	(aggregate_iterator_mean, aggregate_iterator_sum)
+	(aggregate_iterator_value, type_columns, type_filter_columns)
+	(type_trash_columns): New functions.
+	
+	* src/manage.h (init_aggregate_iterator, aggregate_iterator_count)
+	(aggregate_iterator_min, aggregate_iterator_max)
+	(aggregate_iterator_mean, aggregate_iterator_sum)
+	(aggregate_iterator_value, type_columns, type_filter_columns)
+	(type_trash_columns): New function prototypes.
+	
+	* src/omp.c (get_aggregates_data_t): New typedef.
+	(get_aggregates_data_reset): New function.
+	(command_data_t): Add get_aggregates.
+	(get_aggregates_data): New variable for GET_AGGREGATES callback data.
+	(client_state_t): Add CLIENT_GET_AGGREGATES.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add cases
+	for GET_AGGREGATES command.
+
+	* src/schema_formats/XML/OMP.xml (get_aggregates): New command.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-05-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c, src/manage_config_discovery.c,

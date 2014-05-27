@@ -3284,6 +3284,33 @@ int
 trash_tag_writable (tag_t);
 
 
+/* Resource aggregates */
+
+int
+init_aggregate_iterator (iterator_t*, const char *, const get_data_t *,
+                          const char *, const char *, const char **, int,
+                          const char *, const char *, const char *,
+                          const char *, int, int);
+
+int
+aggregate_iterator_count (iterator_t*);
+
+double
+aggregate_iterator_min (iterator_t*);
+
+double
+aggregate_iterator_max (iterator_t*);
+
+double
+aggregate_iterator_mean (iterator_t*);
+
+double
+aggregate_iterator_sum (iterator_t*);
+
+const char*
+aggregate_iterator_value (iterator_t*);
+
+
 /* Feeds. */
 
 /* For feed syncing */
@@ -3334,6 +3361,15 @@ xsl_transform (gchar *, gchar *, gchar **, gchar **);
 
 int
 valid_db_resource_type (const char*);
+
+const char*
+type_columns (const char *);
+
+const char**
+type_filter_columns (const char *);
+
+const char*
+type_trash_columns (const char *);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);

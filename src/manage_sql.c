@@ -3958,6 +3958,312 @@ init_get_iterator (iterator_t* iterator, const char *type,
 }
 
 /**
+ * @brief Initialise a GET_AGGREGATES iterator, including observed resources.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  columns         Columns for SQL.
+ * @param[in]  trash_columns   Columns for SQL trash case.
+ * @param[in]  filter_columns  Columns for filter.
+ * @param[in]  distinct        Whether the query should be distinct.  Skipped
+ *                             for trash and single resource.
+ * @param[in]  stat_column     Column to calculate statistics for.
+ * @param[in]  group_column    Column to group data by.
+ * @param[in]  extra_tables    Join tables.  Skipped for trash and single
+ *                             resource.
+ * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
+ *                             resource.
+ * @param[in]  no_pagination   Ignore max and first limits.
+ * @param[in]  owned           Only get items owned by the current user.
+ *
+ * @return 0 success, 1 failed to find resource, 2 failed to find filter,
+ *         3 invalid stat_column, 4 invalid group_column, -1 error.
+ */
+int
+init_aggregate_iterator (iterator_t* iterator, const char *type,
+                         const get_data_t *get, const char *columns,
+                         const char *trash_columns,
+                         const char **filter_columns, int distinct,
+                         const char *stat_column, const char *group_column,
+                         const char *extra_tables, const char *extra_where,
+                         int no_pagination, int owned)
+{
+  int first, max;
+  gchar *clause, *order, *filter, *owned_clause;
+  array_t *permissions;
+  resource_t resource = 0;
+  gchar *owner_filter;
+  gchar *outer_select, *outer_group_by;
+
+  assert (get);
+
+  if (columns == NULL)
+    {
+      assert (0);
+      return -1;
+    }
+
+  if (get->id)
+    g_warning ("%s: Called with an id parameter", __FUNCTION__);
+
+  if (stat_column && vector_find_filter (filter_columns, stat_column) == 0)
+    return 3;
+  if (group_column && vector_find_filter (filter_columns, group_column) == 0)
+    return 4;
+
+  if (get->filt_id && strcmp (get->filt_id, "0"))
+    {
+      if (get->filter_replacement)
+        /* Replace the filter term with one given by the caller.  This is
+         * used by GET_REPORTS to use the default filter with any task (when
+         * given the special value of -3 in filt_id). */
+        filter = g_strdup (get->filter_replacement);
+      else
+        filter = filter_term (get->filt_id);
+      if (filter == NULL)
+        return 2;
+    }
+  else
+    filter = NULL;
+
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          get->trash, &order, &first, &max, &permissions,
+                          &owner_filter);
+
+  g_free (filter);
+
+  if (resource)
+    /* Ownership test is done above by find function. */
+    owned_clause = g_strdup (" 1");
+  else
+    owned_clause = where_owned (type, get, owned, owner_filter, resource,
+                                permissions);
+
+  g_free (owner_filter);
+  array_free (permissions);
+
+  if (group_column && strcmp (group_column, ""))
+    {
+      if (stat_column && strcmp (stat_column, ""))
+        outer_select = g_strdup_printf (" count(*),"
+                                        " min(%s), max(%s), avg(%s), sum(%s),"
+                                        " %s ",
+                                        stat_column,
+                                        stat_column,
+                                        stat_column,
+                                        stat_column,
+                                        group_column);
+      else
+        outer_select = g_strdup_printf (" count(*),"
+                                        " NULL, NULL, NULL, NULL, %s ",
+                                        group_column);
+
+      outer_group_by = g_strdup_printf (" GROUP BY %s",
+                                        group_column);
+    }
+  else
+    {
+      if (stat_column && strcmp (stat_column, ""))
+        outer_select = g_strdup_printf (" count(*),"
+                                        " min(%s), max(%s), avg(%s), sum(%s) ",
+                                        stat_column,
+                                        stat_column,
+                                        stat_column,
+                                        stat_column);
+      else
+        return -1;
+
+      outer_group_by = g_strdup ("");
+    }
+
+  if (resource && get->trash)
+    init_iterator (iterator,
+                   "SELECT %s FROM ("
+                   " SELECT %s"
+                   " FROM %ss%s"
+                   " WHERE ROWID = %llu"
+                   " AND %s"
+                   " %s)%s;",
+                   outer_select,
+                   trash_columns ? trash_columns : columns,
+                   type,
+                   type_trash_in_table (type) ? "" : "_trash",
+                   resource,
+                   owned_clause,
+                   order,
+                   outer_group_by);
+  else if (get->trash)
+    init_iterator (iterator,
+                   "SELECT %s FROM ("
+                   " SELECT %s"
+                   " FROM %ss%s"
+                   " WHERE"
+                   " %s"
+                   " %s"
+                   " %s)%s;",
+                   outer_select,
+                   trash_columns ? trash_columns : columns,
+                   type,
+                   type_trash_in_table (type) ? "" : "_trash",
+                   owned_clause,
+                   extra_where ? extra_where : "",
+                   order,
+                   outer_group_by);
+  else if (resource)
+    init_iterator (iterator,
+                   "SELECT %s FROM ("
+                   " SELECT %s"
+                   " FROM %ss"
+                   " WHERE ROWID = %llu"
+                   " AND %s"
+                   " %s)%s;",
+                   outer_select,
+                   columns,
+                   type,
+                   resource,
+                   owned_clause,
+                   order,
+                   outer_group_by);
+  else if (no_pagination)
+    {
+      init_iterator (iterator,
+                   "SELECT %s FROM ("
+                   " SELECT%s %s"
+                   " FROM %ss%s"
+                   " WHERE"
+                   " %s"
+                   "%s%s%s%s%s)%s;",
+                   outer_select,
+                   distinct ? " DISTINCT" : "",
+                   columns,
+                   type,
+                   extra_tables ? extra_tables : "",
+                   owned_clause,
+                   clause ? " AND (" : "",
+                   clause ? clause : "",
+                   clause ? ")" : "",
+                   extra_where ? extra_where : "",
+                   order,
+                   outer_group_by);
+    }
+  else
+    {
+      init_iterator (iterator,
+                   "SELECT %s FROM ("
+                   " SELECT%s %s"
+                   " FROM %ss%s"
+                   " WHERE"
+                   " %s"
+                   "%s%s%s%s%s"
+                   " LIMIT %i OFFSET %i)%s;",
+                   outer_select,
+                   distinct ? " DISTINCT" : "",
+                   columns,
+                   type,
+                   extra_tables ? extra_tables : "",
+                   owned_clause,
+                   clause ? " AND (" : "",
+                   clause ? clause : "",
+                   clause ? ")" : "",
+                   extra_where ? extra_where : "",
+                   order,
+                   max,
+                   first,
+                   outer_group_by);
+    }
+
+  g_free (owned_clause);
+  g_free (order);
+  g_free (clause);
+  g_free (outer_group_by);
+  g_free (outer_select);
+  return 0;
+}
+
+/**
+ * @brief Get the count from an aggregate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The count of resources in the current group.
+ */
+int
+aggregate_iterator_count (iterator_t* iterator)
+{
+  return sql_column_int (iterator->stmt, 0);
+}
+
+/**
+ * @brief Get the minimum from an aggregate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The minimum value in the current group.
+ */
+double
+aggregate_iterator_min (iterator_t* iterator)
+{
+  return sql_column_double (iterator->stmt, 1);
+}
+
+/**
+ * @brief Get the maximum from an aggregate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum value in the current group.
+ */
+double
+aggregate_iterator_max (iterator_t* iterator)
+{
+  return sql_column_double (iterator->stmt, 2);
+}
+
+/**
+ * @brief Get the mean from an aggregate iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The mean value in the current group.
+ */
+double
+aggregate_iterator_mean (iterator_t* iterator)
+{
+  return sql_column_double (iterator->stmt, 3);
+}
+
+/**
+ * @brief Get the sum from a statistics iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The sum of values in the current group.
+ */
+double
+aggregate_iterator_sum (iterator_t* iterator)
+{
+  return sql_column_double (iterator->stmt, 4);
+}
+
+/**
+ * @brief Get the value of the group column from a statistics iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+const char*
+aggregate_iterator_value (iterator_t* iterator)
+{
+  const char *ret;
+  if (iterator->done) return NULL;
+  ret = (const char*) sql_column_text (iterator->stmt, 5);
+  return ret;
+}
+
+/**
  * @brief Count number of a particular resource.
  *
  * @param[in]  type              Type of resource.
@@ -48701,6 +49007,78 @@ int
 trash_tag_writable (tag_t tag)
 {
   return 0;
+}
+
+const char*
+type_columns (const char *type)
+{
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "CPE") == 0)
+    return CPE_INFO_ITERATOR_COLUMNS;
+  else if (strcasecmp (type, "CVE") == 0)
+    return CVE_INFO_ITERATOR_COLUMNS;
+  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+    return DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  else if (strcasecmp (type, "NVT") == 0)
+    return NVT_ITERATOR_COLUMNS;
+  else if (strcasecmp (type, "OVALDEF") == 0)
+    return OVALDEF_INFO_ITERATOR_COLUMNS;
+  else if (strcasecmp (type, "ALERT") == 0)
+    return ALERT_ITERATOR_COLUMNS;
+  else
+    return NULL;
+}
+
+const char**
+type_filter_columns (const char *type)
+{
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "CPE") == 0)
+    {
+      static const char *ret[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "CVE") == 0)
+    {
+      static const char *ret[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+    {
+      static const char *ret[] = DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "NVT") == 0)
+    {
+      static const char *ret[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "OVALDEF") == 0)
+    {
+      static const char *ret[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "ALERT") == 0)
+    {
+      static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else
+    return NULL;
+
+}
+
+const char*
+type_trash_columns (const char *type)
+{
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "ALERT") == 0)
+    return ALERT_ITERATOR_TRASH_COLUMNS;
+  else
+    return NULL;
 }
 
 /**

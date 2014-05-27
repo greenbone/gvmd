@@ -58,6 +58,7 @@ command
     | empty_trashcan
     | get_agents
     | get_configs
+    | get_aggregates
     | get_alerts
     | get_filters
     | get_groups
@@ -172,6 +173,7 @@ response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
+    | get_aggregates_response
     | get_alerts_response
     | get_filters_response
     | get_groups_response
@@ -3853,6 +3855,21 @@ get_configs
        attribute tasks { boolean }?
      }
 
+## Command get_aggregates
+##
+## Get aggregates of various resources.
+
+get_aggregates
+ = element get_aggregates
+     {
+       # The OMP resource type to gather data from.
+       attribute type { text }
+       & # The column to get the data to aggregate from.
+       attribute data_column { text }?
+       & # The field to group the resources by.
+       attribute group_column { text }?
+     }
+
 ## Command get_alerts
 ##
 ## Get all alerts.
@@ -7327,6 +7344,155 @@ get_configs_response_config_count_page
  = element page
      {
        integer
+     }
+
+## Response to get_aggregates
+
+get_aggregates_response
+ = element get_aggregates_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_aggregates_response_aggregate*
+     }
+
+# A collection of aggregated data of the selected type.
+get_aggregates_response_aggregate
+ = element aggregate
+     {
+       get_aggregates_response_aggregate_data_type
+       & get_aggregates_response_aggregate_data_column?
+       & get_aggregates_response_aggregate_group_column?
+       & ( get_aggregates_response_aggregate_group*
+           | get_aggregates_response_aggregate_overall )
+     }
+
+# The resource type the data is aggregated from.
+get_aggregates_response_aggregate_data_type
+ = element data_type
+     {
+       text
+     }
+
+# The column the data is aggregated from.
+get_aggregates_response_aggregate_data_column
+ = element data_column
+     {
+       text
+     }
+
+# The column the data is grouped by.
+get_aggregates_response_aggregate_group_column
+ = element group_column
+     {
+       text
+     }
+
+# Aggregate data for a group of resources.
+get_aggregates_response_aggregate_group
+ = element group
+     {
+       text
+     }
+
+# Aggregate data for all resources of the selected type.
+get_aggregates_response_aggregate_group
+ = element group
+     {
+       get_aggregates_response_aggregate_group_value
+       & get_aggregates_response_aggregate_group_count
+       & ( get_aggregates_response_aggregate_group_min
+           & get_aggregates_response_aggregate_group_max
+           & get_aggregates_response_aggregate_group_mean
+           & get_aggregates_response_aggregate_group_sum )?
+     }
+
+# Value of the group column.
+get_aggregates_response_aggregate_group_value
+ = element value
+     {
+       text
+     }
+
+# Number of resources in the group.
+get_aggregates_response_aggregate_group_count
+ = element count
+     {
+       integer
+     }
+
+# Minimum value of the data column.
+get_aggregates_response_aggregate_group_min
+ = element min
+     {
+       text
+     }
+
+# Maximum value of the data column.
+get_aggregates_response_aggregate_group_max
+ = element max
+     {
+       text
+     }
+
+# Arithmetic mean of the numeric values of the data.
+get_aggregates_response_aggregate_group_mean
+ = element mean
+     {
+       text
+     }
+
+# Sum of the numeric values of the data column.
+get_aggregates_response_aggregate_group_sum
+ = element sum
+     {
+       text
+     }
+
+# Aggregate data for all resources of the selected type.
+get_aggregates_response_aggregate_overall
+ = element overall
+     {
+       get_aggregates_response_aggregate_overall_count
+       & get_aggregates_response_aggregate_overall_min
+       & get_aggregates_response_aggregate_overall_max
+       & get_aggregates_response_aggregate_overall_mean
+       & get_aggregates_response_aggregate_overall_sum
+     }
+
+# Overall number of resources.
+get_aggregates_response_aggregate_overall_count
+ = element count
+     {
+       integer
+     }
+
+# Overall minimum value of the data column.
+get_aggregates_response_aggregate_overall_min
+ = element min
+     {
+       text
+     }
+
+# Overall maximum value of the data column.
+get_aggregates_response_aggregate_overall_max
+ = element max
+     {
+       text
+     }
+
+# Overall arithmetic mean of the numeric values of the data.
+get_aggregates_response_aggregate_overall_mean
+ = element mean
+     {
+       text
+     }
+
+# Overall sum of the numeric values of the data column.
+get_aggregates_response_aggregate_overall_sum
+ = element sum
+     {
+       text
      }
 
 ## Response to get_alerts
