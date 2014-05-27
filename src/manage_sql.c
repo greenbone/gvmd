@@ -45747,7 +45747,8 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
         {
           /* User Interface Language. */
-          if (strcmp (value, "English")
+          if (strcmp (value, "Chinese")
+              && strcmp (value, "English")
               && strcmp (value, "German")
               && strcmp (value, "Browser Language"))
             {

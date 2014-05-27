@@ -1,3 +1,8 @@
+2014-05-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (modify_setting): Added Chinese as allowed
+	value for interface language.
+
 2014-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_prepare_internal): Set stmt even in
