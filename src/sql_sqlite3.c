@@ -164,7 +164,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
     tracef ("   sql: %s\n", formatted);
 
   retries = 10;
-  *stmt = NULL;
+  *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));
   sqlite_stmt = NULL;
   while (1)
     {
@@ -180,6 +180,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
           return 1;
         }
       g_free (formatted);
+      (*stmt)->stmt = sqlite_stmt;
       if (ret == SQLITE_OK)
         {
           if (sqlite_stmt == NULL)
@@ -197,8 +198,6 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
       return -1;
     }
 
-  *stmt = (sql_stmt_t*) g_malloc (sizeof (sql_stmt_t));
-  (*stmt)->stmt = sqlite_stmt;
   return 0;
 }
 
@@ -426,7 +425,8 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
 void
 sql_finalize (sql_stmt_t *stmt)
 {
-  sqlite3_finalize (stmt->stmt);
+  if (stmt->stmt)
+    sqlite3_finalize (stmt->stmt);
   g_free (stmt);
 }
 
