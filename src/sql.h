@@ -56,6 +56,9 @@ typedef struct
 
 /* Helpers. */
 
+const char *
+sql_schema ();
+
 int
 sql_is_open ();
 

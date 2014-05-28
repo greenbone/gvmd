@@ -5955,11 +5955,13 @@ migrate_75_to_76 ()
   /* Update the database. */
 
   /* Delete any nvts_checksum leftovers. */
-  sql ("DELETE FROM main.meta WHERE name = \"nvts_checksum\";");
+  sql ("DELETE FROM %s.meta WHERE name = \"nvts_checksum\";",
+       sql_schema ());
 
   /* Rename nvts_md5sum into nvts_feed_version */
-  sql ("UPDATE main.meta SET name = \"nvts_feed_version\""
-       " WHERE name = \"nvts_md5sum\";");
+  sql ("UPDATE %s.meta SET name = \"nvts_feed_version\""
+       " WHERE name = \"nvts_md5sum\";",
+       sql_schema ());
 
   /* Set the database version to 76. */
 

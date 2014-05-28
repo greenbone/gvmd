@@ -39,6 +39,8 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
 
+set (BACKEND SQLITE3)
+
 ## Retrieve svn revision (at configure time)
 #  Not using Subversion_WC_INFO, as it would have to connect to the repo
 find_program (SVN_EXECUTABLE svn DOC "subversion command line client")
@@ -189,7 +191,24 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=7.0.1)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
-pkg_check_modules (SQLITE3 REQUIRED sqlite3)
+if (BACKEND STREQUAL SQLITE3)
+  pkg_check_modules (SQLITE3 REQUIRED sqlite3)
+else (BACKEND STREQUAL SQLITE3)
+  message (STATUS "Looking for PostgreSQL...")
+  find_package (PostgreSQL REQUIRED)
+  message (STATUS "PostgreSQL_INCLUDE_DIRS: ${PostgreSQL_INCLUDE_DIRS}")
+  message (STATUS "PostgreSQL_LIBRARIES: ${PostgreSQL_LIBRARIES}")
+  message (STATUS "PostgreSQL_VERSION_STRING: ${PostgreSQL_VERSION_STRING}")
+  if (NOT PostgreSQL_FOUND)
+    message (FATAL_ERROR "The PostgreSQL library is required.")
+  endif (NOT PostgreSQL_FOUND)
+  message (STATUS "Looking for PostgreSQL... ${PostgreSQL_VERSION_STRING}")
+  set (POSTGRESQL_LDFLAGS ${PostgreSQL_LIBRARIES})
+  string (REGEX REPLACE "^([^;]*);" "\\1"
+          FIRST_INCLUDE_DIR "${PostgreSQL_INCLUDE_DIRS}")
+  set (POSTGRESQL_CFLAGS ${FIRST_INCLUDE_DIR})
+  unset (FIRST_INCLUDE_DIR)
+endif (BACKEND STREQUAL SQLITE3)
 
 message (STATUS "Looking for pcap...")
 find_library (PCAP pcap)
@@ -226,12 +245,14 @@ execute_process (COMMAND pkg-config --libs gnutls
   OUTPUT_VARIABLE GNUTLS_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-execute_process (COMMAND pkg-config --cflags sqlite3
-  OUTPUT_VARIABLE SQLITE3_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs sqlite3
-  OUTPUT_VARIABLE SQLITE3_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (BACKEND STREQUAL SQLITE3)
+  execute_process (COMMAND pkg-config --cflags sqlite3
+    OUTPUT_VARIABLE SQLITE3_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process (COMMAND pkg-config --libs sqlite3
+    OUTPUT_VARIABLE SQLITE3_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif (BACKEND STREQUAL SQLITE3)
 
 ## Version
 

@@ -1,3 +1,39 @@
+2014-05-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add Postgres SQL layer and table creation.
+
+	* CMakeLists.txt: Add BACKEND variable which controls whether SQLite3 or
+	PostgreSQL is compiled.
+
+	* src/CMakeLists.txt: Set compile and link options according to BACKEND.
+
+	* src/sql_sqlite3.c (task_db): Initialise so that sql_is_open always
+	works.
+	(sql_schema): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/manage_migrators.c (migrate_75_to_76): Use sql_schema to get
+	main schema.
+
+	* src/manage_sql.c (create_tables): Remove.  Now in manage_sqlite3.c.
+	(set_db_version): DELETE then INSERT to avoid OR REPLACE.  Use
+	sql_schema.
+	(manage_db_version, manage_update_nvti_cache, check_db_versions)
+	(check_db_nvts, nvts_feed_version, set_nvts_feed_version)
+	(manage_nvt_preferences_enable): Use sql_schema.
+	(check_db): Add progress call removed from create_tables.
+
+	* src/manage_sqlite.c (create_tables): New function.  From manage_sql.c.
+	Remove progress call.
+
+	* src/manage_pg.c, src/sql_pg.c: New files.
+
+	* doc/db_postgres.sql: Format like SQL in C code.  Replace booleans with
+	integers.  Add missing ID columns.
+
+	* doc/db.png: Update from source.
+
 2014-05-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Added Chinese as allowed

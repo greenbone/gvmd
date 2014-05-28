@@ -28,19 +28,30 @@
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
+if (BACKEND STREQUAL SQLITE3)
+  set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
+else (BACKEND STREQUAL SQLITE3)
+  set (BACKEND_FILES sql_pg.c manage_pg.c)
+endif (BACKEND STREQUAL SQLITE3)
+
 add_library (manage STATIC
-             manage.c sql.c sql_sqlite3.c
+             manage.c sql.c
              manage_ranges_all_tcp_nmap_5_51_top_100.c
              manage_ranges_all_tcp_nmap_5_51_top_1000.c
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_acl.c manage_config_discovery.c
              manage_config_host_discovery.c manage_config_system_discovery.c
-             manage_sql.c manage_sqlite3.c manage_migrators.c
+             manage_sql.c manage_migrators.c
+			 ${BACKEND_FILES}
              lsc_user.c lsc_crypt.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
-target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+if (BACKEND STREQUAL SQLITE3)
+  target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+else (BACKEND STREQUAL SQLITE3)
+  target_link_libraries (manage m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+endif (BACKEND STREQUAL SQLITE3)
 
 add_library (omp STATIC omp.c)
 set_target_properties (omp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
@@ -127,8 +138,13 @@ if (SBINDIR)
   add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
 endif (SBINDIR)
 
-set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-                       "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+if (BACKEND STREQUAL SQLITE3)
+  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
+						 "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+else (BACKEND STREQUAL SQLITE3)
+  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
+						 "-I${POSTGRESQL_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+endif (BACKEND STREQUAL SQLITE3)
 
 ## Install
 

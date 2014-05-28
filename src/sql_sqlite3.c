@@ -49,10 +49,21 @@ struct sql_stmt
 /**
  * @brief Handle on the database.
  */
-sqlite3* task_db;
+sqlite3* task_db = NULL;
 
 
 /* Helpers. */
+
+/**
+ * @brief Get main schema name.
+ *
+ * @return Schema name.
+ */
+const char *
+sql_schema ()
+{
+  return "main";
+}
 
 /**
  * @brief Check whether the database is open.
