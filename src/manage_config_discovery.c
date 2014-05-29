@@ -47,7 +47,7 @@
 void
 make_config_discovery (char *const uuid, char *const selector_name)
 {
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   /* First, create the Discovery config. */
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"

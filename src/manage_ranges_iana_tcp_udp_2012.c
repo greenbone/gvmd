@@ -50,7 +50,7 @@
 void
 make_port_ranges_iana_tcp_udp_2012 (port_list_t list)
 {
-  sql ("BEGIN TRANSACTION");
+  sql_begin_immediate ();
 
   RANGE (PORT_PROTOCOL_TCP, 1, 80);
   RANGE (PORT_PROTOCOL_TCP, 82, 113);

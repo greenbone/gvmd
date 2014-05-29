@@ -50,7 +50,7 @@
 void
 make_port_ranges_all_tcp_nmap_5_51_top_100 (port_list_t list)
 {
-  sql ("BEGIN TRANSACTION");
+  sql_begin_immediate ();
 
   RANGE (PORT_PROTOCOL_TCP, 1, 65535);
 

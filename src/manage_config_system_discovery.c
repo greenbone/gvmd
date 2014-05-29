@@ -42,7 +42,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   /* Create the System Discovery config. */
 

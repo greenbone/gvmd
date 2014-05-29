@@ -42,7 +42,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   /* Create the Host Discovery config. */
 
@@ -117,7 +117,7 @@ check_config_host_discovery (char *const uuid)
 {
   int update;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   update = 0;
 
