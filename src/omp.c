@@ -12357,15 +12357,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_preference_iterator (&prefs, config, "SERVER_PREFS");
                   while (next (&prefs))
                     {
+                      const char *name, *value, *def, *type = "";
+
+                      name = preference_iterator_name (&prefs);
+                      value = def = preference_iterator_value (&prefs);
+                      /* Work-around to differentiate OSP preferences types as
+                       * config_preferences table doesn't have a type column and
+                       * *normal* configs rely on nvt_preferences naming scheme.
+                       */
+                      if (g_str_has_suffix (name, "_file"))
+                        {
+                          type = "osp_file";
+                          def = "";
+                        }
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preference>"
                         "<nvt oid=\"\"><name></name></nvt>"
-                        "<name>%s</name><type></type>"
+                        "<name>%s</name><type>%s</type>"
                         "<value>%s</value>"
                         "<default>%s</default></preference>",
-                        preference_iterator_name (&prefs),
-                        preference_iterator_value (&prefs),
-                        preference_iterator_value (&prefs));
+                        name, type, value, def);
                     }
                   cleanup_iterator (&prefs);
 

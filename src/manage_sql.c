@@ -10352,7 +10352,7 @@ make_config_osp_ovaldi ()
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'password', '');", config);
   sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'definitions', '');", config);
+       " VALUES (%i, 'SERVER_PREFS', 'definitions_file', '');", config);
   sql ("INSERT into config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'port', '22');", config);
 }
@@ -27373,6 +27373,7 @@ config_in_use (config_t config)
                   " AND (uuid = '" CONFIG_UUID_EMPTY "'"
                   "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
                   "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
+                  "      OR uuid = '" CONFIG_UUID_OSP_OVALDI "'"
                   "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
                   config))
     return 1;

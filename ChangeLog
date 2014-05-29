@@ -1,3 +1,12 @@
+2014-05-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (make_config_osp_ovaldi): name definitions preference
+	as definitions_file.
+	(config_in_use): Check OSP Ovaldi config too.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust GET_CONFIGS when
+	sending OSP config preferences for osp_file type.
+
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_pg.c (bind_param): Correct doc.
