@@ -10099,7 +10099,8 @@ refresh_nvt_cves ()
     }
   cleanup_iterator (&nvts);
 
-  sql ("REINDEX nvt_cves_by_oid;");
+  if (sql_is_sqlite3 ())
+    sql ("REINDEX nvt_cves_by_oid;");
 }
 
 /**

@@ -56,6 +56,9 @@ typedef struct
 
 /* Helpers. */
 
+int
+sql_is_sqlite3 ();
+
 const char *
 sql_schema ();
 

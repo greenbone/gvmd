@@ -67,6 +67,17 @@ PGconn *conn = NULL;
 /* Helpers. */
 
 /**
+ * @brief Get whether backend is SQLite3.
+ *
+ * @return 0.
+ */
+int
+sql_is_sqlite3 ()
+{
+  return 0;
+}
+
+/**
  * @brief Get main schema name.
  *
  * @return Schema name.

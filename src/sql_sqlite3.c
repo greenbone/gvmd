@@ -61,6 +61,17 @@ sqlite3* task_db = NULL;
 /* Helpers. */
 
 /**
+ * @brief Get whether backend is SQLite3.
+ *
+ * @return 1.
+ */
+int
+sql_is_sqlite3 ()
+{
+  return 1;
+}
+
+/**
  * @brief Get main schema name.
  *
  * @return Schema name.

@@ -1,5 +1,15 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Hide a REINDEX from Postgres for now.
+
+	* src/manage_sql.c (refresh_nvt_cves): Hide REINDEX.
+
+	* src/sql_pg.c, src/sql_sqlite3.c (sql_is_sqlite3): New function.
+
+	* src/sql.h: Add header accordingly.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add new function for inserting and retrieving row ID in one call.
 
 	* src/sql_pg.c, src/sql_sqlite3.c (sqli): New function.
