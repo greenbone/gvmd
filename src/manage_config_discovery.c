@@ -1010,9 +1010,9 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100315", "Port scanners");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14259", "Port scanners");
 
-  /* Add all the product detection family. */
-  sql ("INSERT INTO nvt_selectors"
-       " VALUES (NULL, '%s', 0, 1,"
+  /* Add the Product Detection family. */
+  sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
+       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
        "         'Product detection', 'Product detection');",
        selector_name);
 

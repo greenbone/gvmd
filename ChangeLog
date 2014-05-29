@@ -1,3 +1,8 @@
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_config_discovery.c (make_config_discovery): Remove ID
+	column from Product Detection insert.  This is set by database.
+
 2014-05-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_config_osp_ovaldi): name definitions preference
