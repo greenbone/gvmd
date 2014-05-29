@@ -36,6 +36,12 @@
 #define DB_CHUNK_SIZE 1 * 1024 * 1024
 
 
+/* Headers of sql.c symbols used only here. */
+
+int
+sqlv (int, char*, va_list);
+
+
 /* Types. */
 
 struct sql_stmt
@@ -145,6 +151,26 @@ resource_t
 sql_last_insert_rowid ()
 {
   return sqlite3_last_insert_rowid (task_db);
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * @param[out] resource  Last inserted resource.
+ * @param[in]  sql       Format string for SQL statement.
+ * @param[in]  ...       Arguments for format string.
+ */
+void
+sqli (resource_t *resource, char* sql, ...)
+{
+  va_list args;
+
+  va_start (args, sql);
+  if (sqlv (1, sql, args) == -1)
+    abort ();
+  va_end (args);
+  if (resource)
+    *resource = sql_last_insert_rowid ();
 }
 
 /**

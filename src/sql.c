@@ -131,7 +131,7 @@ sql_insert (const char *string)
  *
  * @return 0 success, 1 gave up, -1 error.
  */
-static int
+int
 sqlv (int retry, char* sql, va_list args)
 {
   int ret;
@@ -305,7 +305,7 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
-static int
+int
 sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   return sql_x_internal (1, sql, args, stmt_return);

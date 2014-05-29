@@ -89,6 +89,9 @@ sql_insert (const char *);
 void
 sql (char * sql, ...);
 
+void
+sqli (resource_t *, char *, ...);
+
 int
 sql_error (char* sql, ...);
 

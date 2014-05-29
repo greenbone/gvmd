@@ -10369,19 +10369,19 @@ check_db_configs ()
     {
       config_t config;
 
-      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " type, creation_time, modification_time)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
-           " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
-           " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'Most NVT''s; optimized by using previously collected information.',"
-           " %i, %i, 1, 1, 0, now (), now ());",
-           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-           family_count ());
+      sqli (&config,
+            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            " family_count, nvt_count, nvts_growing, families_growing,"
+            " type, creation_time, modification_time)"
+            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
+            " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
+            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
+            " 'Most NVT''s; optimized by using previously collected information.',"
+            " %i, %i, 1, 1, 0, now (), now ())",
+            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
+            family_count ());
 
       /* Setup preferences for the config. */
-      config = sql_last_insert_rowid ();
       setup_full_config_prefs (config, 1, 1, 0);
     }
 
@@ -10391,20 +10391,20 @@ check_db_configs ()
     {
       config_t config;
 
-      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " type, creation_time, modification_time)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
-           " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
-           " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'Most NVT''s including those that can stop services/hosts;"
-           " optimized by using previously collected information.',"
-           " %i, %i, 1, 1, 0, now (), now ());",
-           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-           family_count ());
+      sqli (&config,
+            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            " family_count, nvt_count, nvts_growing, families_growing,"
+            " type, creation_time, modification_time)"
+            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
+            " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
+            " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
+            " 'Most NVT''s including those that can stop services/hosts;"
+            " optimized by using previously collected information.',"
+            " %i, %i, 1, 1, 0, now (), now ())",
+            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
+            family_count ());
 
       /* Setup preferences for the config. */
-      config = sql_last_insert_rowid ();
       setup_full_config_prefs (config, 0, 1, 0);
     }
 
@@ -10414,19 +10414,19 @@ check_db_configs ()
     {
       config_t config;
 
-      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " type, creation_time, modification_time)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
-           " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
-           " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'Most NVT''s; don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1, 0, now (), now ());",
-           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-           family_count ());
+      sqli (&config,
+            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            " family_count, nvt_count, nvts_growing, families_growing,"
+            " type, creation_time, modification_time)"
+            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
+            " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
+            " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
+            " 'Most NVT''s; don''t trust previously collected information; slow.',"
+            " %i, %i, 1, 1, 0, now (), now ())",
+            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
+            family_count ());
 
       /* Setup preferences for the config. */
-      config = sql_last_insert_rowid ();
       setup_full_config_prefs (config, 1, 0, 1);
     }
 
@@ -10436,21 +10436,21 @@ check_db_configs ()
     {
       config_t config;
 
-      sql ("INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " type, creation_time, modification_time)"
-           " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
-           " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
-           " NULL, 'Full and very deep ultimate',"
-           " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
-           " 'Most NVT''s including those that can stop services/hosts;"
-           " don''t trust previously collected information; slow.',"
-           " %i, %i, 1, 1, 0, now (), now ());",
-           family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
-           family_count ());
+      sqli (&config,
+            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            " family_count, nvt_count, nvts_growing, families_growing,"
+            " type, creation_time, modification_time)"
+            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
+            " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
+            " NULL, 'Full and very deep ultimate',"
+            " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
+            " 'Most NVT''s including those that can stop services/hosts;"
+            " don''t trust previously collected information; slow.',"
+            " %i, %i, 1, 1, 0, now (), now ())",
+            family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
+            family_count ());
 
       /* Setup preferences for the config. */
-      config = sql_last_insert_rowid ();
       setup_full_config_prefs (config, 0, 0, 1);
     }
 
@@ -10460,15 +10460,15 @@ check_db_configs ()
     {
       config_t config;
 
-      sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
-           " family_count, nvt_count, nvts_growing, families_growing,"
-           " type, creation_time, modification_time)"
-           " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
-           " 'Empty and static configuration template.',"
-           " 0, 0, 0, 0, 0, now (), now ());");
+      sqli (&config,
+            "INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+            " family_count, nvt_count, nvts_growing, families_growing,"
+            " type, creation_time, modification_time)"
+            " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
+            " 'Empty and static configuration template.',"
+            " 0, 0, 0, 0, 0, now (), now ())");
 
       /* Setup preferences for the config. */
-      config = sql_last_insert_rowid ();
       setup_full_config_prefs (config, 1, 1, 0);
     }
 

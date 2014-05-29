@@ -1,5 +1,20 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add new function for inserting and retrieving row ID in one call.
+
+	* src/sql_pg.c, src/sql_sqlite3.c (sqli): New function.
+
+	* src/sql.h: Add header accordingly.
+
+	* src/sql.c (sqlv, sql_x): Remove static as these are now used in the
+	backends.
+
+	* src/manage_sql.c (check_db_configs): Insert with sqli in order to get
+	ID of inserted row, because sql_last_insert_row seems gets the ID of a
+	previous row.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_config_discovery.c, src/manage_config_host_discovery.c,
 	src/manage_config_system_discovery.c, src/manage_migrators.c,
 	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
