@@ -1,5 +1,10 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_pg.c (bind_param): Correct doc.
+	(sql_column_int, sql_column_int64): Remove breaks for consistency.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Create transactions via SQL interface.
 
 	* src/sql_sqlite3.c, src/sql_pg.c (sql_begin_exclusive)

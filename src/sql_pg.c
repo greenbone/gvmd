@@ -365,7 +365,7 @@ iterator_column_count (iterator_t* iterator)
 /* Prepared statements. */
 
 /**
- * @brief Bind a blob to a statement.
+ * @brief Bind a param to a statement.
  *
  * @param[in]  stmt          Statement.
  * @param[in]  position      Position in statement.
@@ -561,7 +561,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
         /* Hope for the best. */
       case 23:  /* INT4OID */
         return (int) ntohl (*((uint32_t *) cell));
-        break;
+
       case 20:  /* INT8OID */
         /* be64 is network byte order. */
         return (int) be64toh (*((uint64_t *) cell));
@@ -592,7 +592,7 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 
       case 23:  /* INT4OID */
         return (long long int) ntohl (*((uint32_t *) cell));
-        break;
+
       default:
         /* Hope for the best. */
       case 20:  /* INT8OID */
