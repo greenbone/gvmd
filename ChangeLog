@@ -1,5 +1,10 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (nvt_selector_family_count): Use "IS NOT NULL" like
+	everywhere else.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Hide a REINDEX from Postgres for now.
 
 	* src/manage_sql.c (refresh_nvt_cves): Hide REINDEX.

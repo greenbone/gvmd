@@ -28979,7 +28979,7 @@ nvt_selector_family_count (const char* quoted_selector, int families_growing)
                     " WHERE name = '%s'"
                     " AND type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                     " AND exclude = 0"
-                    " AND family NOT NULL"
+                    " AND family IS NOT NULL"
                     " LIMIT 1;",
                     quoted_selector);
 }
