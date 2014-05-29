@@ -51,6 +51,32 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
+// SELECT * FROM pg_available_extensions WHERE name = 'uuid-ossp';
+// CREATE EXTENSION "uuid-ossp";
+#if 0
+CREATE FUNCTION make_uuid () RETURNS integer AS $$
+    SELECT uuid_generate_v4 () AS result;
+$$ LANGUAGE SQL;
+#endif
+
+  sql ("CREATE OR REPLACE FUNCTION iso_time (integer) RETURNS text AS $$"
+       "  SELECT CASE"
+       "         WHEN $1 = 0 THEN ''"
+       "         WHEN EXTRACT (timezone FROM current_timestamp) = 0"
+       "         THEN to_char (to_timestamp ($1), 'IYYY-MM-DD')"
+       "              || to_char (to_timestamp ($1), 'THH24:MI:SSZ')"
+       "         ELSE to_char (to_timestamp ($1), 'IYYY-MM-DD')"
+       "              || to_char (to_timestamp ($1), 'THH24:MI:SS')"
+       "              || to_char (extract (timezone from to_timestamp ($1))"
+       "                          ::integer / 100,"
+       "                          '00')"
+       "              || ':'"
+       "              || to_char (extract (timezone from to_timestamp ($1))"
+       "                          ::integer % 100,"
+       "                          '00')"
+       "         END;"
+       "$$ LANGUAGE SQL;");
+
   return 0;
 }
 
@@ -95,8 +121,8 @@ create_tables ()
        "  ifaces text,"
        "  ifaces_allow integer,"
        "  method text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS agents"
        " (id SERIAL PRIMARY KEY,"
@@ -109,11 +135,11 @@ create_tables ()
        "  installer_filename text,"
        "  installer_signature_64 text,"
        "  installer_trust integer,"
-       "  installer_trust_time date,"
+       "  installer_trust_time integer,"
        "  howto_install text,"
        "  howto_use text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS agents_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -126,11 +152,11 @@ create_tables ()
        "  installer_filename text,"
        "  installer_signature_64 text,"
        "  installer_trust integer,"
-       "  installer_trust_time date,"
+       "  installer_trust_time integer,"
        "  howto_install text,"
        "  howto_use text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS alerts"
        " (id SERIAL PRIMARY KEY,"
@@ -142,8 +168,8 @@ create_tables ()
        "  condition integer,"
        "  method integer,"
        "  filter integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS alerts_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -156,8 +182,8 @@ create_tables ()
        "  method integer,"
        "  filter integer,"
        "  filter_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS alert_condition_data"
        " (id SERIAL PRIMARY KEY,"
@@ -203,8 +229,8 @@ create_tables ()
        "  comment text,"
        "  type text,"
        "  term text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS filters_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -214,8 +240,8 @@ create_tables ()
        "  comment text,"
        "  type text,"
        "  term text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS groups"
        " (id SERIAL PRIMARY KEY,"
@@ -223,8 +249,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS groups_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -232,8 +258,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS group_users"
        " (id SERIAL PRIMARY KEY,"
@@ -251,8 +277,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS roles_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -260,8 +286,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS role_users"
        " (id SERIAL PRIMARY KEY,"
@@ -287,8 +313,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS port_lists_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -296,8 +322,8 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS port_ranges"
        " (id SERIAL PRIMARY KEY,"
@@ -338,8 +364,8 @@ create_tables ()
        "  rpm bytea,"
        "  deb bytea,"
        "  exe bytea,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -353,8 +379,8 @@ create_tables ()
        "  rpm bytea,"
        "  deb bytea,"
        "  exe bytea,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets"
        " (id SERIAL PRIMARY KEY,"
@@ -371,8 +397,8 @@ create_tables ()
        "  smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
        "  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  alive_test integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -390,8 +416,8 @@ create_tables ()
        "  ssh_location integer,"
        "  smb_location integer,"
        "  port_list_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
@@ -405,8 +431,8 @@ create_tables ()
        "  families_growing integer,"
        "  nvts_growing integer,"
        "  type integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -420,8 +446,8 @@ create_tables ()
        "  families_growing integer,"
        "  nvts_growing integer,"
        "  type integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences"
        " (id SERIAL PRIMARY KEY,"
@@ -443,13 +469,13 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  first_time date,"
+       "  first_time integer,"
        "  period integer,"
        "  period_months integer,"
        "  timezone text,"
        "  initial_offset integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -457,12 +483,12 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  first_time date,"
+       "  first_time integer,"
        "  period integer,"
        "  period_months integer,"
        "  duration integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS slaves"
        " (id SERIAL PRIMARY KEY,"
@@ -474,8 +500,8 @@ create_tables ()
        "  port text,"
        "  login text,"
        "  password text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS slaves_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -487,8 +513,8 @@ create_tables ()
        "  port text,"
        "  login text,"
        "  password text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id SERIAL PRIMARY KEY,"
@@ -499,12 +525,12 @@ create_tables ()
        "  comment text,"
        "  description text,"
        "  run_status integer,"
-       "  start_time date,"
-       "  end_time date,"
+       "  start_time integer,"
+       "  end_time integer,"
        "  config integer REFERENCES configs (id) ON DELETE RESTRICT,"
        "  target integer REFERENCES targets (id) ON DELETE RESTRICT,"
        "  schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,"
-       "  schedule_next_time date,"
+       "  schedule_next_time integer,"
        "  slave integer REFERENCES slaves (id) ON DELETE RESTRICT,"
        "  config_location integer,"
        "  target_location integer,"
@@ -515,8 +541,8 @@ create_tables ()
        "  alterable integer,"
 // FIX
 //       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id SERIAL PRIMARY KEY,"
@@ -542,9 +568,9 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  hidden integer,"
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  date date,"
-       "  start_time date,"
-       "  end_time date,"
+       "  date integer,"
+       "  start_time integer,"
+       "  end_time integer,"
        "  nbefile text,"
        "  comment text,"
        "  scan_run_status integer,"
@@ -589,10 +615,10 @@ create_tables ()
        "  description text,"
        "  signature text,"
        "  trust integer,"
-       "  trust_time date,"
+       "  trust_time integer,"
        "  flags integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_formats_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -605,10 +631,10 @@ create_tables ()
        "  description text,"
        "  signature text,"
        "  trust integer,"
-       "  trust_time date,"
+       "  trust_time integer,"
        "  flags integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_format_params"
        " (id SERIAL PRIMARY KEY,"
@@ -646,8 +672,8 @@ create_tables ()
        " (id SERIAL PRIMARY KEY,"
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
        "  host text,"
-       "  start_time date,"
-       "  end_time date,"
+       "  start_time integer,"
+       "  end_time integer,"
        "  attack_state INTEGER,"
        "  current_port text,"
        "  max_port text);");
@@ -687,8 +713,8 @@ create_tables ()
        "  category text,"
        "  family text,"
        "  cvss_base text,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
        " (id SERIAL PRIMARY KEY,"
@@ -701,8 +727,8 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
-       "  creation_time date,"
-       "  modification_time date,"
+       "  creation_time integer,"
+       "  modification_time integer,"
        "  text text,"
        "  hosts text,"
        "  port text,"
@@ -716,8 +742,8 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
-       "  creation_time date,"
-       "  modification_time date,"
+       "  creation_time integer,"
+       "  modification_time integer,"
        "  text text,"
        "  hosts text,"
        "  port text,"
@@ -731,8 +757,8 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
-       "  creation_time date,"
-       "  modification_time date,"
+       "  creation_time integer,"
+       "  modification_time integer,"
        "  text text,"
        "  hosts text,"
        "  new_severity text,"
@@ -747,8 +773,8 @@ create_tables ()
        "  uuid text UNIQUE NOT NULL,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  nvt text NOT NULL,"
-       "  creation_time date,"
-       "  modification_time date,"
+       "  creation_time integer,"
+       "  modification_time integer,"
        "  text text,"
        "  hosts text,"
        "  new_severity text,"
@@ -771,8 +797,8 @@ create_tables ()
        "  subject_type text,"
        "  subject integer,"
        "  subject_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS permissions_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -787,8 +813,8 @@ create_tables ()
        "  subject_type text,"
        "  subject integer,"
        "  subject_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id SERIAL PRIMARY KEY,"
@@ -808,8 +834,8 @@ create_tables ()
        "  resource integer,"
        "  resource_uuid text,"
        "  resource_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -821,8 +847,8 @@ create_tables ()
        "  resource integer,"
        "  resource_uuid text,"
        "  resource_location integer,"
-       "  creation_time date,"
-       "  modification_time date);");
+       "  creation_time integer,"
+       "  modification_time integer);");
 }
 
 
