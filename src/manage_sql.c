@@ -33207,7 +33207,7 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.nvt AS oid, notes.text, notes.hosts, notes.port,"                \
   " severity_to_level (notes.severity, 1) as threat,"                      \
   " notes.task, notes.result, notes.end_time,"                             \
-  " (notes.end_time = 0) OR (notes.end_time >= m_now ()),"                   \
+  " (notes.end_time = 0) OR (notes.end_time >= m_now ()),"                 \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt,"                 \
   " notes.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE id = notes.task) AS task_id,"            \
@@ -33232,7 +33232,7 @@ modify_note (note_t note, const char *active, const char* text,
   " notes_trash.port,"                                                     \
   " severity_to_level (notes_trash.severity, 1) as threat,"                \
   " notes_trash.task, notes_trash.result, notes_trash.end_time,"           \
-  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()),"       \
+  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()),"     \
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
   " notes_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE id = notes_trash.task) AS task_id,"      \
@@ -34168,38 +34168,38 @@ modify_override (override_t override, const char *active, const char* text,
  * @brief Override iterator columns.
  */
 #define OVERRIDE_ITERATOR_COLUMNS                                              \
-  "overrides.id, overrides.uuid,"                                           \
+  "overrides.id, overrides.uuid,"                                              \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS name, '',"            \
   " iso_time (overrides.creation_time),"                                       \
   " iso_time (overrides.modification_time),"                                   \
   " overrides.creation_time AS created,"                                       \
   " overrides.modification_time AS modified,"                                  \
-  " (SELECT name FROM users WHERE users.id = overrides.owner) AS _owner,"   \
+  " (SELECT name FROM users WHERE users.id = overrides.owner) AS _owner,"      \
   /* Columns specific to overrides. */                                         \
   " overrides.nvt AS oid, overrides.text,"                                     \
   " overrides.hosts, overrides.port,"                                          \
   " severity_to_level (overrides.severity, 1) as threat,"                      \
   " severity_to_level (overrides.new_severity, 0) as new_threat,"              \
   " overrides.task, overrides.result, overrides.end_time,"                     \
-  " (overrides.end_time = 0) OR (overrides.end_time >= m_now ()) as active,"     \
+  " (overrides.end_time = 0) OR (overrides.end_time >= m_now ()) as active,"   \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
-  " (SELECT uuid FROM tasks WHERE id = overrides.task) AS task_id,"         \
-  " (SELECT name FROM tasks WHERE id = overrides.task) AS task_name,"       \
+  " (SELECT uuid FROM tasks WHERE id = overrides.task) AS task_id,"            \
+  " (SELECT name FROM tasks WHERE id = overrides.task) AS task_name,"          \
   " overrides.severity, overrides.new_severity,"                               \
-  " (SELECT name FROM users WHERE users.id = overrides.owner)"              \
+  " (SELECT name FROM users WHERE users.id = overrides.owner)"                 \
   " AS _owner"
 
 /**
  * @brief Override iterator columns for trash case.
  */
 #define OVERRIDE_ITERATOR_TRASH_COLUMNS                                        \
-  "overrides_trash.id, overrides_trash.uuid, '', '',"                       \
+  "overrides_trash.id, overrides_trash.uuid, '', '',"                          \
   " iso_time (overrides_trash.creation_time),"                                 \
   " iso_time (overrides_trash.modification_time),"                             \
   " overrides_trash.creation_time AS created,"                                 \
   " overrides_trash.modification_time AS modified,"                            \
-  " (SELECT name FROM users WHERE users.id = overrides_trash.owner)"        \
+  " (SELECT name FROM users WHERE users.id = overrides_trash.owner)"           \
   " AS _owner,"                                                                \
   /* Columns specific to overrides_trash. */                                   \
   " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
@@ -34207,11 +34207,11 @@ modify_override (override_t override, const char *active, const char* text,
   " severity_to_level (overrides_trash.severity, 0) as threat,"                \
   " severity_to_level (overrides_trash.new_severity, 1) as new_threat,"        \
   " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
-  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= m_now ()),"   \
+  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= m_now ())," \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
-  " (SELECT uuid FROM tasks WHERE id = overrides_trash.task) AS task_id,"   \
-  " (SELECT name FROM tasks WHERE id = overrides_trash.task) AS task_name," \
+  " (SELECT uuid FROM tasks WHERE id = overrides_trash.task) AS task_id,"      \
+  " (SELECT name FROM tasks WHERE id = overrides_trash.task) AS task_name,"    \
   " overrides_trash.severity, overrides_trash.new_severity"
 
 /**

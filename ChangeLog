@@ -1,5 +1,9 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c: Neaten line ends in defines.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Rename SQL function "now" to "m_now" to avoid conflict with Postgres
 	"now".  Add Postgres "m_now".
 
