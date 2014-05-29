@@ -51,7 +51,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        " creation_time, modification_time)"
        " VALUES ('%s', 'Host Discovery', NULL,"
        "         '%s', 'Network Host Discovery scan configuration.',"
-       "         0, 0, 0, 0, now (), now ());",
+       "         0, 0, 0, 0, m_now (), m_now ());",
        uuid,
        selector_name);
 
@@ -68,7 +68,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
-       "     modification_time = now ()"
+       "     modification_time = m_now ()"
        " WHERE id = %llu;",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),

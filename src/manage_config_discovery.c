@@ -55,7 +55,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " creation_time, modification_time)"
        " VALUES ('%s', 'Discovery', NULL,"
        "         '%s', 'Network Discovery scan configuration.',"
-       "         0, 0, 0, 0, now (), now ());",
+       "         0, 0, 0, 0, m_now (), m_now ());",
        uuid,
        selector_name);
 
@@ -1019,7 +1019,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
   /* Update number of families and nvts. */
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE uuid = '%s';",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),

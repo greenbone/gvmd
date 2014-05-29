@@ -1,5 +1,20 @@
 2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Rename SQL function "now" to "m_now" to avoid conflict with Postgres
+	"now".  Add Postgres "m_now".
+
+	* src/manage_pg.c (manage_create_sql_functions): Neaten "iso_time".  Add
+	"m_now".
+
+	* src/manage_sqlite3.c (manage_create_sql_functions): Rename "now" to
+	"m_now".
+
+	* src/manage_config_discovery.c, src/manage_config_host_discovery.c,
+	src/manage_config_system_discovery.c, src/manage_migrators.c,
+	src/manage_sql.c: Use "m_now" instead of "now" in SQL.
+
+2014-05-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add iso_time.
 	(create_tables): Switch dates to integers because dates are treated as
 	seconds since the epoch.

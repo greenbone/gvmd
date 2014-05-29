@@ -1482,7 +1482,7 @@ manage_create_sql_functions ()
     }
 
   if (sqlite3_create_function (task_db,
-                               "now",
+                               "m_now",
                                0,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
@@ -1491,7 +1491,7 @@ manage_create_sql_functions ()
                                NULL)            /* xFinal. */
       != SQLITE_OK)
     {
-      g_warning ("%s: failed to create now", __FUNCTION__);
+      g_warning ("%s: failed to create m_now", __FUNCTION__);
       return -1;
     }
 

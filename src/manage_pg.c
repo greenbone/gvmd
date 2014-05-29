@@ -62,19 +62,23 @@ $$ LANGUAGE SQL;
   sql ("CREATE OR REPLACE FUNCTION iso_time (integer) RETURNS text AS $$"
        "  SELECT CASE"
        "         WHEN $1 = 0 THEN ''"
-       "         WHEN EXTRACT (timezone FROM current_timestamp) = 0"
+       "         WHEN extract (timezone FROM current_timestamp) = 0"
        "         THEN to_char (to_timestamp ($1), 'IYYY-MM-DD')"
        "              || to_char (to_timestamp ($1), 'THH24:MI:SSZ')"
        "         ELSE to_char (to_timestamp ($1), 'IYYY-MM-DD')"
        "              || to_char (to_timestamp ($1), 'THH24:MI:SS')"
-       "              || to_char (extract (timezone from to_timestamp ($1))"
+       "              || to_char (extract (timezone FROM to_timestamp ($1))"
        "                          ::integer / 100,"
        "                          '00')"
        "              || ':'"
-       "              || to_char (extract (timezone from to_timestamp ($1))"
+       "              || to_char (extract (timezone FROM to_timestamp ($1))"
        "                          ::integer % 100,"
        "                          '00')"
        "         END;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION m_now () RETURNS integer AS $$"
+       "  SELECT extract (epoch FROM now ())::integer;"
        "$$ LANGUAGE SQL;");
 
   return 0;

@@ -5920,7 +5920,7 @@ migrate_74_to_75 ()
        "        (SELECT owner FROM tasks WHERE id = task),"
        "        'get', '', 'task', task,"
        "        (SELECT uuid FROM tasks WHERE id = task),"
-       "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, now (), now ()"
+       "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, m_now (), m_now ()"
        " FROM task_users;");
 
   sql ("DROP TABLE task_users;");
@@ -6790,19 +6790,19 @@ migrate_80_to_81 ()
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_ADMIN "', NULL, 'Admin', 'Administrator', now (),"
-       "  now ());");
+       " ('" ROLE_UUID_ADMIN "', NULL, 'Admin', 'Administrator', m_now (),"
+       "  m_now ());");
 
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_USER "', NULL, 'User', 'User', now (), now ());");
+       " ('" ROLE_UUID_USER "', NULL, 'User', 'User', m_now (), m_now ());");
 
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer', 'Observer', now (),"
-       "  now ());");
+       " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer', 'Observer', m_now (),"
+       "  m_now ());");
 
   sql ("INSERT INTO role_users (role, user)"
        " SELECT (SELECT id FROM roles WHERE roles.name = users.role),"

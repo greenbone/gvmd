@@ -3547,7 +3547,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
            " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
            " SELECT make_uuid (),"
            " %s%s%s,"
-           " %s%s%s, '%s', now (), now ()%s%s"
+           " %s%s%s, '%s', m_now (), m_now ()%s%s"
            " FROM %ss WHERE uuid = '%s';",
            type,
            columns ? ", " : "",
@@ -3568,7 +3568,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name%s, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s%s%s, %s%s%s%s, now (), now ()%s%s"
+         " SELECT make_uuid (), %s%s%s, %s%s%s%s, m_now (), m_now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          type_has_comment (type) ? ", comment" : "",
@@ -3588,7 +3588,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else
     sql ("INSERT INTO %ss"
          " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s%s%s, now (), now ()%s%s"
+         " SELECT make_uuid (), %s%s%s, m_now (), m_now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
@@ -3608,7 +3608,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
        " (uuid, owner, name, comment, creation_time, modification_time,"
        "  resource_type, resource, resource_uuid, resource_location,"
        "  active, value)"
-       " SELECT make_uuid (), %s%s%s, name, comment, now (), now (),"
+       " SELECT make_uuid (), %s%s%s, name, comment, m_now (), m_now (),"
        "        resource_type, %llu, (SELECT uuid FROM %ss WHERE id = %llu),"
        "        resource_location, active, value"
        " FROM tags WHERE resource_type = '%s' AND resource = %llu"
@@ -4690,7 +4690,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
 
           sql ("UPDATE lsc_credentials SET password = %s,"
                " private_key = %s,"
-               " modification_time = now ()"
+               " modification_time = m_now ()"
                " WHERE id = %llu;", quoted_password, quoted_privkey, rowid);
           g_free (quoted_password);
           g_free (quoted_privkey);
@@ -4719,7 +4719,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
             }
           sql ("UPDATE lsc_credentials SET password = '%s',"
                " private_key = ';;encrypted;;',"
-               " modification_time = now ()"
+               " modification_time = m_now ()"
                " WHERE id = %llu;", encblob, rowid);
           g_free (encblob);
         }
@@ -5462,7 +5462,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
        " method, filter, creation_time, modification_time)"
        " VALUES (make_uuid (),"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', %i, %i, %i, %llu, now (), now ());",
+       " '%s', '%s', %i, %i, %i, %llu, m_now (), m_now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_comment,
@@ -5718,7 +5718,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
        " name = '%s',"
        " comment = '%s',"
        " filter = %llu,"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -5919,7 +5919,7 @@ delete_alert (const char *alert_id, int ultimate)
            "  filter_location, creation_time, modification_time)"
            " SELECT uuid, owner, name, comment, event, condition, method,"
            "        filter, " G_STRINGIFY (LOCATION_TABLE) ", creation_time,"
-           "        now ()"
+           "        m_now ()"
            " FROM alerts WHERE id = %llu;",
            alert);
 
@@ -8346,7 +8346,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
     }
   else
     quote = sql_nquote (value, strlen (value));
-  sql ("UPDATE tasks SET %s = '%s', modification_time = now ()"
+  sql ("UPDATE tasks SET %s = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        field,
        quote,
@@ -9692,7 +9692,7 @@ check_db_tasks ()
            " 1251236905, 1251237136,"
            " (SELECT id FROM configs WHERE name = 'Full and fast'),"
            " (SELECT id FROM targets WHERE name = 'Localhost'),"
-           " 0, 0, now (), now ());",
+           " 0, 0, m_now (), m_now ());",
            TASK_STATUS_DONE);
     }
 
@@ -9751,7 +9751,7 @@ check_db_targets ()
          " (uuid, owner, name, hosts, creation_time, modification_time,"
          "  port_range)"
          " VALUES ('" TARGET_UUID_LOCALHOST "', NULL, 'Localhost',"
-         " 'localhost', now (), now (),"
+         " 'localhost', m_now (), m_now (),"
          " (SELECT id FROM port_lists WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'));");
   else
     /* The port list was wrong for a while, so make sure it's correct. */
@@ -9776,7 +9776,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '', now (), now ())");
+           " '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_openvas_default (list);
     }
@@ -9802,7 +9802,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 100 UDP', '', now (), now ())");
+           " 'All TCP and Nmap 5.51 top 100 UDP', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
     }
@@ -9815,7 +9815,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
-           " 'All TCP and Nmap 5.51 top 1000 UDP', '', now (), now ())");
+           " 'All TCP and Nmap 5.51 top 1000 UDP', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
     }
@@ -9828,7 +9828,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
-           " 'All privileged TCP', '', now (), now ())");
+           " 'All privileged TCP', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
     }
@@ -9841,7 +9841,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
-           " 'All privileged TCP and UDP', '', now (), now ())");
+           " 'All privileged TCP and UDP', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
       RANGE (PORT_PROTOCOL_UDP, 1, 1023);
@@ -9855,7 +9855,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
-           " 'All IANA assigned TCP 2012-02-10', '', now (), now ())");
+           " 'All IANA assigned TCP 2012-02-10', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_iana_tcp_2012 (list);
     }
@@ -9868,7 +9868,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
-           " 'All IANA assigned TCP and UDP 2012-02-10', '', now (), now ())");
+           " 'All IANA assigned TCP and UDP 2012-02-10', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_iana_tcp_udp_2012 (list);
     }
@@ -9881,7 +9881,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
-           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', now (), now ())");
+           " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       make_port_ranges_nmap_5_51_top_2000_top_100 (list);
     }
@@ -9916,7 +9916,7 @@ update_report_format_uuid (const char *old, const char *new)
   g_free (dir);
 
   sql ("UPDATE report_formats"
-       " SET uuid = '%s', modification_time = now ()"
+       " SET uuid = '%s', modification_time = m_now ()"
        " WHERE uuid = '%s';",
        new,
        old);
@@ -10051,7 +10051,7 @@ add_role_permission (const gchar *role, const gchar *permission)
        " (make_uuid (), NULL, lower ('%s'), '', '',"
        "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
        "  (SELECT id FROM roles WHERE uuid = '%s'),"
-       "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
        permission,
        role);
 }
@@ -10344,7 +10344,7 @@ make_config_osp_ovaldi ()
        " family_count, nvt_count, nvts_growing, families_growing,"
        " type, creation_time, modification_time)"
        " VALUES ('%s', 'OSP Ovaldi', NULL, NULL, 'OSP Ovaldi specific config.',"
-       "         0, 0, 0, 0, 1, now (), now ());", CONFIG_UUID_OSP_OVALDI);
+       "         0, 0, 0, 0, 1, m_now (), m_now ());", CONFIG_UUID_OSP_OVALDI);
 
   /* Setup preferences for the config. */
   config = sql_last_insert_rowid ();
@@ -10378,7 +10378,7 @@ check_db_configs ()
             " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, now (), now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now ())",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -10401,7 +10401,7 @@ check_db_configs ()
             " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
             " optimized by using previously collected information.',"
-            " %i, %i, 1, 1, 0, now (), now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now ())",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -10423,7 +10423,7 @@ check_db_configs ()
             " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
             " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, now (), now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now ())",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -10447,7 +10447,7 @@ check_db_configs ()
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
             " don''t trust previously collected information; slow.',"
-            " %i, %i, 1, 1, 0, now (), now ())",
+            " %i, %i, 1, 1, 0, m_now (), m_now ())",
             family_nvt_count (NULL) - family_nvt_count ("Port scanners") + 1,
             family_count ());
 
@@ -10467,7 +10467,7 @@ check_db_configs ()
             " type, creation_time, modification_time)"
             " VALUES ('" CONFIG_UUID_EMPTY "', 'empty', NULL, 'empty',"
             " 'Empty and static configuration template.',"
-            " 0, 0, 0, 0, 0, now (), now ())");
+            " 0, 0, 0, 0, 0, m_now (), m_now ())");
 
       /* Setup preferences for the config. */
       setup_full_config_prefs (config, 1, 1, 0);
@@ -10628,7 +10628,7 @@ check_db_report_formats ()
            " VALUES ('910200ca-dc05-11e1-954f-406186ea4fc5', NULL, 'ARF',"
            " 'Asset Reporting Format v1.0.0.',"
            " 'NIST Asset Reporting Format 1.1 compliant document.\n',"
-           " 'xml', 'text/xml', '', %i, %i, 1, now (), now ());",
+           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES,
            time (NULL));
       report_format = sql_last_insert_rowid ();
@@ -10655,7 +10655,7 @@ check_db_report_formats ()
            "\n"
            "The report selects all CPE tables from the results and forms a single table\n"
            "as a comma separated values file.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
+           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10672,7 +10672,7 @@ check_db_report_formats ()
            " VALUES ('c1645568-627a-11e3-a660-406186ea4fc5', NULL, 'CSV Results',"
            " 'CSV result list.',"
            " 'List of results.',"
-           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
+           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10689,7 +10689,7 @@ check_db_report_formats ()
            " VALUES ('9087b18c-626c-11e3-8892-406186ea4fc5', NULL, 'CSV Hosts',"
            " 'CSV host summary.',"
            " 'Base host information and result counts',"
-           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
+           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10707,7 +10707,7 @@ check_db_report_formats ()
            " 'Single page HTML report.',"
            " 'A single HTML page listing results of a scan.  Style information is embedded in\n"
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
-           " 'html', 'text/html', '', %i, %i, 1, now (), now ());",
+           " 'html', 'text/html', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10725,7 +10725,7 @@ check_db_report_formats ()
            " 'German \"IT-Grundschutz-Kataloge\" report.',"
            " 'Tabular report on the German \"IT-Grundschutz-Kataloge\",\n"
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
-           " 'csv', 'text/csv', '', %i, %i, 1, now (), now ());",
+           " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10742,7 +10742,7 @@ check_db_report_formats ()
            " VALUES ('a684c02c-b531-11e1-bdc2-406186ea4fc5', NULL, 'LaTeX',"
            " 'LaTeX source file.',"
            " 'Report as LaTeX source file for further processing.\n',"
-           " 'tex', 'text/plain', '', %i, %i, 1, now (), now ());",
+           " 'tex', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10759,7 +10759,7 @@ check_db_report_formats ()
            " VALUES ('9ca6fe72-1f62-11e1-9e7c-406186ea4fc5', NULL, 'NBE',"
            " 'Legacy OpenVAS report.',"
            " 'The traditional OpenVAS Scanner text based format.',"
-           " 'nbe', 'text/plain', '', %i, %i, 1, now (), now ());",
+           " 'nbe', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10776,7 +10776,7 @@ check_db_report_formats ()
            " VALUES ('c402cc3e-b531-11e1-9163-406186ea4fc5', NULL, 'PDF',"
            " 'Portable Document Format report.',"
            " 'Scan results in Portable Document Format (PDF).',"
-           "'pdf', 'application/pdf', '', %i, %i, 1, now (), now ());",
+           "'pdf', 'application/pdf', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10793,7 +10793,7 @@ check_db_report_formats ()
            " VALUES ('a3810a62-1f62-11e1-9219-406186ea4fc5', NULL, 'TXT',"
            " 'Plain text report.',"
            " 'Plain text report, best viewed with fixed font size.',"
-           " 'txt', 'text/plain', '', %i, %i, 1, now (), now ());",
+           " 'txt', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10810,7 +10810,7 @@ check_db_report_formats ()
            " VALUES ('a994b278-1f62-11e1-96ac-406186ea4fc5', NULL, 'XML',"
            " 'Raw XML report.',"
            " 'Complete scan report in OpenVAS Manager XML format.',"
-           " 'xml', 'text/xml', '', %i, %i, 1, now (), now ());",
+           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
       report_format_verify (report_format);
@@ -10831,7 +10831,7 @@ check_db_report_formats ()
            " VALUES ('9e5e5deb-879e-4ecc-8be6-a71cd0875cdd', NULL, 'Topology SVG',"
            " 'Network topology SVG image.',"
            " 'Scan results in topologic structure as scalable vector graphics.\n',"
-           " 'svg', 'image/svg+xml', '', %i, %i, 1, now (), now ());",
+           " 'svg', 'image/svg+xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
       report_format = sql_last_insert_rowid ();
 
@@ -10952,7 +10952,7 @@ check_db_permissions ()
          " ('" PERMISSION_UUID_ADMIN_EVERYTHING "', NULL, 'Everything', '', '',"
          "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
          "  (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
-         "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());");
+         "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -11050,7 +11050,7 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_ADMIN "', NULL, 'Admin',"
          "  'Administrator.  Full privileges.',"
-         " now (), now ());");
+         " m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
       == 0)
@@ -11059,7 +11059,7 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_INFO "', NULL, 'Info',"
          "  'Information browser.',"
-         " now (), now ());");
+         " m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
       == 0)
@@ -11068,7 +11068,7 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_USER "', NULL, 'User',"
          "  'Standard user.',"
-         " now (), now ());");
+         " m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM roles"
                " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
@@ -11078,7 +11078,7 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
          "  'Observer.',"
-         " now (), now ());");
+         " m_now (), m_now ());");
 
 }
 
@@ -11413,7 +11413,7 @@ user_ensure_in_db (const gchar *name, const gchar *method)
        " VALUES"
        " (make_uuid (),"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '', NULL, NULL, '%s', '', 2, '', 2, now (), now ());",
+       "  '%s', '', NULL, NULL, '%s', '', 2, '', 2, m_now (), m_now ());",
        current_credentials.uuid,
        quoted_name,
        quoted_method);
@@ -11954,7 +11954,7 @@ task_config_in_trash (task_t task)
 void
 set_task_config (task_t task, config_t config)
 {
-  sql ("UPDATE tasks SET config = %llu, modification_time = now ()"
+  sql ("UPDATE tasks SET config = %llu, modification_time = m_now ()"
        "WHERE id = %llu;",
        config,
        task);
@@ -11996,7 +11996,7 @@ task_target (task_t task)
 void
 set_task_target (task_t task, target_t target)
 {
-  sql ("UPDATE tasks SET target = %llu, modification_time = now ()"
+  sql ("UPDATE tasks SET target = %llu, modification_time = m_now ()"
        " WHERE id = %llu;",
        target,
        task);
@@ -12011,7 +12011,7 @@ set_task_target (task_t task, target_t target)
 void
 set_task_hosts_ordering (task_t task, const char *ordering)
 {
-  sql ("UPDATE tasks SET hosts_ordering = '%s', modification_time = now ()"
+  sql ("UPDATE tasks SET hosts_ordering = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        ordering,
        task);
@@ -12067,7 +12067,7 @@ task_scanner (task_t task)
 void
 set_task_scanner (task_t task, scanner_t scanner)
 {
-  sql ("UPDATE tasks SET scanner = %llu, modification_time = now ()"
+  sql ("UPDATE tasks SET scanner = %llu, modification_time = m_now ()"
        " WHERE id = %llu;", scanner, task);
 }
 
@@ -12107,7 +12107,7 @@ task_slave (task_t task)
 void
 set_task_slave (task_t task, slave_t slave)
 {
-  sql ("UPDATE tasks SET slave = %llu, modification_time = now ()"
+  sql ("UPDATE tasks SET slave = %llu, modification_time = m_now ()"
        " WHERE id = %llu;",
        slave,
        task);
@@ -12326,7 +12326,7 @@ task_upload_progress (task_t task)
 void
 set_task_start_time (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+  sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
        parse_iso_time (time),
        task);
@@ -12342,7 +12342,7 @@ set_task_start_time (task_t task, char* time)
 void
 set_task_start_time_epoch (task_t task, int time)
 {
-  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+  sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
        time,
        task);
@@ -12357,7 +12357,7 @@ set_task_start_time_epoch (task_t task, int time)
 void
 set_task_start_time_otp (task_t task, char* time)
 {
-  sql ("UPDATE tasks SET start_time = %i, modification_time = now ()"
+  sql ("UPDATE tasks SET start_time = %i, modification_time = m_now ()"
        " WHERE id = %llu;",
        parse_otp_time (time),
        task);
@@ -12619,7 +12619,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
            "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.id = %llu),"
            "  " G_STRINGIFY (LOCATION_TABLE) ", 'group', %llu,"
-           "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
+           "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
            current_credentials.uuid, task, task, group);
 
       index++;
@@ -12666,7 +12666,7 @@ set_task_schedule (task_t task, schedule_t schedule)
 
   sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
        " (SELECT schedules.first_time FROM schedules WHERE id = %llu),"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        schedule,
        schedule,
@@ -12841,7 +12841,7 @@ task_severity (task_t task, int overrides, int offset)
              "          (SELECT id FROM users"
              "           WHERE users.uuid = '%s')))"
              " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= now ()))"
+             "      OR (overrides.end_time >= m_now ()))"
              " AND (overrides.task = results.task"
              "      OR overrides.task = 0)"
              " AND (overrides.result = results.id"
@@ -13019,7 +13019,7 @@ set_task_observers (task_t task, const gchar *observers)
               sql ("INSERT INTO users"
                    " (uuid, name, creation_time, modification_time)"
                    " VALUES"
-                   " ('%s', '%s', now (), now ());",
+                   " ('%s', '%s', m_now (), m_now ());",
                    uuid,
                    quoted_name);
               g_free (quoted_name);
@@ -13050,7 +13050,7 @@ set_task_observers (task_t task, const gchar *observers)
            "  'get_tasks', '', 'task', %llu,"
            "  (SELECT uuid FROM tasks WHERE tasks.id = %llu),"
            "  " G_STRINGIFY (LOCATION_TABLE) ", 'user', %llu,"
-           "  " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
+           "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
            current_credentials.uuid, task, task, user);
 
       point++;
@@ -14344,7 +14344,7 @@ report_add_result (report_t report, result_t result)
                   "            (SELECT id FROM users"
                   "             WHERE users.uuid = '%s')))"
                   " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))"
+                  "      OR (overrides.end_time >= m_now ()))"
                   " AND (overrides.task ="
                   "      (SELECT reports.task FROM reports"
                   "       WHERE reports.id = %llu)"
@@ -14399,7 +14399,7 @@ report_add_result (report_t report, result_t result)
        "                 FROM overrides, results"
        "                 WHERE overrides.nvt = results.nvt"
        "                 AND results.report = %llu"
-       "                 AND overrides.end_time >= now ())"
+       "                 AND overrides.end_time >= m_now ())"
        " WHERE report = %llu AND override = 1;",
        report, report);
 }
@@ -15101,7 +15101,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " (SELECT id FROM users"
                  "  WHERE users.uuid = '%s')))"
                  " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
+                 "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports"
                  "       WHERE report_results.report = reports.id)"
@@ -15327,7 +15327,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " (SELECT id FROM users"
                  "  WHERE users.uuid = '%s')))"
                  " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
+                 "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports, report_results"
                  "       WHERE report_results.result = results.id"
@@ -16305,7 +16305,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " (SELECT id FROM users"
                  "  WHERE users.uuid = '%s')))"
                  " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
+                 "      OR (overrides.end_time >= m_now ()))"
                  /** @todo Include tasks.hidden and task pref in_assets? */
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports, report_results"
@@ -17028,7 +17028,7 @@ report_scan_result_count (report_t report, const char* levels,
              " (SELECT id FROM users"
              "  WHERE users.uuid = '%s')))"
              " AND ((overrides.end_time = 0)"
-             "      OR (overrides.end_time >= now ()))"
+             "      OR (overrides.end_time >= m_now ()))"
              " AND (overrides.task = results.task"
              "      OR overrides.task = 0)"
              " AND (overrides.result = results.id"
@@ -17278,7 +17278,7 @@ report_severity_data (report_t report, int override,
                   "            (SELECT id FROM users"
                   "             WHERE users.uuid = '%s')))"
                   " AND ((overrides.end_time = 0)"
-                  "      OR (overrides.end_time >= now ()))",
+                  "      OR (overrides.end_time >= m_now ()))",
                   current_credentials.uuid))
     {
       /* Prepare quick inner statement. */
@@ -17290,7 +17290,7 @@ report_severity_data (report_t report, int override,
                           "          = (SELECT id FROM users"
                           "             WHERE users.uuid = '%s')))"
                           " AND ((overrides.end_time = 0)"
-                          "      OR (overrides.end_time >= now ()))",
+                          "      OR (overrides.end_time >= m_now ()))",
                           current_credentials.uuid);
       if (stmt == NULL)
         {
@@ -17312,7 +17312,7 @@ report_severity_data (report_t report, int override,
                      " (SELECT users.id FROM users"
                      "  WHERE users.uuid = '%s')))"
                      " AND ((overrides.end_time = 0)"
-                     "      OR (overrides.end_time >= now ()))"
+                     "      OR (overrides.end_time >= m_now ()))"
                      " AND (overrides.task = 0"
                      "      OR overrides.task = %llu)"
                      " AND (overrides.result = 0"
@@ -17667,7 +17667,7 @@ report_counts_cache_exists (report_t report, int override)
                     "   AND override = %d"
                     "   AND user = (SELECT id FROM users"
                     "               WHERE users.uuid = '%s')"
-                    "   AND (end_time = 0 OR end_time >= now ()));",
+                    "   AND (end_time = 0 OR end_time >= m_now ()));",
                     report, override, current_credentials.uuid);
 }
 
@@ -17688,7 +17688,7 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
                  "   AND override = %i"
                  "   AND user = (SELECT id FROM users"
                  "               WHERE users.uuid = '%s')"
-                 "   AND (end_time = 0 OR end_time >= now ());",
+                 "   AND (end_time = 0 OR end_time >= m_now ());",
                  report, override, current_credentials.uuid);
   while (next (&iterator))
     {
@@ -17765,7 +17765,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                             " FROM overrides, results"
                             " WHERE overrides.nvt = results.nvt"
                             " AND results.report = %llu"
-                            " AND overrides.end_time >= now ();",
+                            " AND overrides.end_time >= m_now ();",
                             report);
       else
         end_time = 0;
@@ -19472,7 +19472,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " (SELECT id FROM users"
                  "  WHERE users.uuid = '%s')))"
                  " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= now ()))"
+                 "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task ="
                  "      (SELECT reports.task FROM reports, report_results"
                  "       WHERE report_results.result = results.id"
@@ -23918,8 +23918,8 @@ make_task (char* name, unsigned int time, char* comment)
        "  schedule_location, slave_location, alterable, creation_time,"
        "  modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, 0, now (),"
-       "         now ());",
+       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         m_now ());",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
@@ -24013,7 +24013,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strcasecmp ("NAME", parameter) == 0)
     {
       gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE tasks SET name = '%s', modification_time = now ()"
+      sql ("UPDATE tasks SET name = '%s', modification_time = m_now ()"
            " WHERE id = %llu;",
            value,
            task);
@@ -24022,7 +24022,7 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
   else if (strcasecmp ("COMMENT", parameter) == 0)
     {
       gchar* quote = sql_nquote (value, strlen (value));
-      sql ("UPDATE tasks SET comment = '%s', modification_time = now ()"
+      sql ("UPDATE tasks SET comment = '%s', modification_time = m_now ()"
            " WHERE id = %llu;",
            quote,
            task);
@@ -24100,7 +24100,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
        " SELECT make_uuid (), (SELECT owner FROM tasks WHERE id = %llu),"
        "        name, comment, resource_type, %llu, resource_uuid,"
        "        resource_location, subject_type, subject, subject_location,"
-       "        now (), now ()"
+       "        m_now (), m_now ()"
        " FROM permissions"
        " WHERE owner = (SELECT owner FROM tasks WHERE id = %llu)"
        " AND resource_type = 'task'"
@@ -24680,7 +24680,7 @@ manage_task_update_file (task_t task, const char *name,
            quoted_content);
     }
 
-  sql ("UPDATE tasks SET modification_time = now () WHERE id = %llu;",
+  sql ("UPDATE tasks SET modification_time = m_now () WHERE id = %llu;",
        task);
 
   g_free (quoted_name);
@@ -24706,7 +24706,7 @@ manage_task_remove_file (task_t task, const char *name)
       sql ("DELETE FROM task_files WHERE task = %llu AND name = '%s';",
            task,
            quoted_name);
-      sql ("UPDATE tasks SET modification_time = now () WHERE id = %llu;",
+      sql ("UPDATE tasks SET modification_time = m_now () WHERE id = %llu;",
            task);
       g_free (quoted_name);
       return 0;
@@ -25284,8 +25284,8 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
            "  modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'), '%s',"
-           " '%s', '%s', %llu, %s, %llu, %llu, '%s', '%s', %i, now (),"
-           " now ());",
+           " '%s', '%s', %llu, %s, %llu, %llu, '%s', '%s', %i, m_now (),"
+           " m_now ());",
            quoted_name, current_credentials.uuid, quoted_hosts,
            quoted_exclude_hosts, quoted_comment, ssh_lsc_credential,
            quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
@@ -25299,8 +25299,8 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
          "  reverse_lookup_unify, alive_test, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '', %llu, %s, %llu, %llu, '%s', '%s', %i, now (),"
-         " now ());",
+         " '%s', '%s', '', %llu, %s, %llu, %llu, '%s', '%s', %i, m_now (),"
+         " m_now ());",
          quoted_name, current_credentials.uuid, quoted_hosts,
          quoted_exclude_hosts, quoted_exclude_hosts, ssh_lsc_credential,
          quoted_ssh_port, smb_lsc_credential, port_list, reverse_lookup_only,
@@ -25566,7 +25566,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       quoted_name = sql_quote (name);
       sql ("UPDATE targets SET"
            " name = '%s',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            quoted_name,
            target);
@@ -25580,7 +25580,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       quoted_comment = sql_quote (comment);
       sql ("UPDATE targets SET"
            " comment = '%s',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            quoted_comment,
            target);
@@ -25599,7 +25599,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
       sql ("UPDATE targets SET"
            " alive_test = '%i',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            alive_test,
            target);
@@ -25630,7 +25630,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       sql ("UPDATE targets SET"
            " port_range = %llu,"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            port_list,
            target);
@@ -25676,7 +25676,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       sql ("UPDATE targets SET"
            " lsc_credential = %llu,"
            " ssh_port = %s,"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            ssh_lsc_credential,
            quoted_ssh_port,
@@ -25713,7 +25713,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       sql ("UPDATE targets SET"
            " smb_lsc_credential = %llu,"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            smb_lsc_credential,
            target);
@@ -25815,7 +25815,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       sql ("UPDATE targets SET"
            " hosts = '%s',"
            " exclude_hosts = '%s',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            quoted_hosts,
            quoted_exclude_hosts,
@@ -25835,7 +25835,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       sql ("UPDATE targets SET"
            " reverse_lookup_only = '%i',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            strcmp (reverse_lookup_only, "0") ? 1 : 0,
            target);
@@ -25851,7 +25851,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
       sql ("UPDATE targets SET"
            " reverse_lookup_unify = '%i',"
-           " modification_time = now ()"
+           " modification_time = m_now ()"
            " WHERE id = %llu;",
            strcmp (reverse_lookup_unify, "0") ? 1 : 0,
            target);
@@ -26819,7 +26819,7 @@ create_config (const char* proposed_name, const char* comment,
            " type, creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', 0, now (), now ());",
+           " '%s', '%s', 0, m_now (), m_now ());",
            quoted_candidate_name,
            current_credentials.uuid,
            selector_uuid,
@@ -26831,7 +26831,7 @@ create_config (const char* proposed_name, const char* comment,
          " type, creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', 0, now (), now ());",
+         " '%s', '', 0, m_now (), m_now ());",
          quoted_candidate_name,
          current_credentials.uuid,
          selector_uuid);
@@ -27749,7 +27749,7 @@ manage_set_config_comment (config_t config, const char* comment)
 {
   gchar *quoted_comment;
   quoted_comment = sql_quote (comment);
-  sql ("UPDATE configs SET comment = '%s', modification_time = now ()"
+  sql ("UPDATE configs SET comment = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_comment, config);
   g_free (quoted_comment);
@@ -27776,7 +27776,7 @@ manage_set_config_name (config_t config, const char* name)
       return 1;
     }
   quoted_name = sql_quote (name);
-  sql ("UPDATE configs SET name = '%s', modification_time = now ()"
+  sql ("UPDATE configs SET name = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name, config);
   g_free (quoted_name);
@@ -27808,7 +27808,7 @@ manage_set_config_name_comment (config_t config, const char* name,
   quoted_name = sql_quote (name);
   quoted_comment = sql_quote (comment);
   sql ("UPDATE configs SET name = '%s', comment = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name, quoted_comment, config);
   g_free (quoted_name);
@@ -27949,7 +27949,7 @@ manage_set_config_nvts (config_t config, const char* family,
 
   sql ("UPDATE configs SET family_count = family_count + %i,"
        " nvt_count = nvt_count - %i + %i,"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        old_nvt_count == 0
         ? (new_nvt_count == 0 ? 0 : 1)
@@ -29897,7 +29897,7 @@ manage_set_config_families (config_t config,
 
               sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i,"
                    " nvts_growing = %i, family_count = family_count + %i,"
-                   " modification_time = now ()"
+                   " modification_time = m_now ()"
                    " WHERE id = %llu;",
                    old_nvt_count,
                    new_nvt_count,
@@ -29947,7 +29947,7 @@ manage_set_config_families (config_t config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvt_count = nvt_count - %i,"
-                           " nvts_growing = 1, modification_time = now ()"
+                           " nvts_growing = 1, modification_time = m_now ()"
                            " WHERE id = %llu;",
                            old_nvt_count,
                            config);
@@ -29986,7 +29986,7 @@ manage_set_config_families (config_t config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvts_growing = 1,"
-                           " modification_time = now ()"
+                           " modification_time = m_now ()"
                            " WHERE id = %llu;",
                            config);
                     }
@@ -30016,7 +30016,7 @@ manage_set_config_families (config_t config,
                       sql ("UPDATE configs SET nvts_growing = %i,"
                            " nvt_count = nvt_count - %i,"
                            " family_count = family_count - 1,"
-                           " modification_time = now ()"
+                           " modification_time = m_now ()"
                            " WHERE id = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
@@ -30062,7 +30062,7 @@ manage_set_config_families (config_t config,
                       /* Update the cached config info. */
 
                       sql ("UPDATE configs SET nvts_growing = %i,"
-                           " modification_time = now ()"
+                           " modification_time = m_now ()"
                            " WHERE id = %llu;",
                            /* Recalculate the NVT growing state. */
                            nvt_selector_nvts_growing_2 (quoted_selector,
@@ -30556,7 +30556,7 @@ set_task_preferences (task_t task, array_t *preferences)
                 sql ("DELETE FROM task_preferences WHERE name = '%s';",
                      quoted_name);
               g_free (quoted_name);
-              sql ("UPDATE tasks SET modification_time = now ()"
+              sql ("UPDATE tasks SET modification_time = m_now ()"
                    " WHERE id = %llu;",
                    task);
             }
@@ -30729,7 +30729,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
            " (make_uuid (), '%s',"
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
            "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
-           "  now (), now ());",
+           "  m_now (), m_now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -30789,7 +30789,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
            " (make_uuid (), '%s',"
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
            "  '%s', '%s', '%s', %s, NULL, NULL, NULL,"
-           "  now (), now ());",
+           "  m_now (), m_now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -30883,7 +30883,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
                " (make_uuid (), '%s',"
                "  (SELECT id FROM users WHERE users.uuid = '%s'),"
                "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
-               "  now (), now ());",
+               "  m_now (), m_now ());",
                quoted_name,
                current_credentials.uuid,
                quoted_login,
@@ -31246,7 +31246,7 @@ void
 set_lsc_credential_name (lsc_credential_t lsc_credential, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE lsc_credentials SET name = '%s', modification_time = now ()"
+  sql ("UPDATE lsc_credentials SET name = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        lsc_credential);
@@ -31264,7 +31264,7 @@ set_lsc_credential_comment (lsc_credential_t lsc_credential,
                             const char *comment)
 {
   gchar *quoted_comment = sql_quote (comment);
-  sql ("UPDATE lsc_credentials SET comment = '%s', modification_time = now ()"
+  sql ("UPDATE lsc_credentials SET comment = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_comment,
        lsc_credential);
@@ -31281,7 +31281,7 @@ void
 set_lsc_credential_login (lsc_credential_t lsc_credential, const char *login)
 {
   gchar *quoted_login = sql_quote (login);
-  sql ("UPDATE lsc_credentials SET login = '%s', modification_time = now ()"
+  sql ("UPDATE lsc_credentials SET login = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_login,
        lsc_credential);
@@ -31322,7 +31322,7 @@ set_lsc_credential_password (lsc_credential_t lsc_credential,
     }
 
   sql ("UPDATE lsc_credentials SET password = '%s', private_key = %s,"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_password, quoted_private,
        lsc_credential);
@@ -32056,7 +32056,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                         "  '%s',"
                         "  $3,"                   /* installer_signature_64 */
                         "  %i, %i, $4,"           /* howto_install */
-                        "  $5, now (), now ());", /* howto_use */
+                        "  $5, m_now (), m_now ());", /* howto_use */
                         quoted_name, current_credentials.uuid,
                         quoted_comment, quoted_filename,
                         installer_trust, (int) time (NULL));
@@ -32212,7 +32212,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
   sql ("UPDATE agents SET"
        " name = '%s',"
        " comment = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name, quoted_comment, agent);
 
@@ -33207,7 +33207,7 @@ modify_note (note_t note, const char *active, const char* text,
   " notes.nvt AS oid, notes.text, notes.hosts, notes.port,"                \
   " severity_to_level (notes.severity, 1) as threat,"                      \
   " notes.task, notes.result, notes.end_time,"                             \
-  " (notes.end_time = 0) OR (notes.end_time >= now ()),"                   \
+  " (notes.end_time = 0) OR (notes.end_time >= m_now ()),"                   \
   " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt,"                 \
   " notes.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE id = notes.task) AS task_id,"            \
@@ -33232,7 +33232,7 @@ modify_note (note_t note, const char *active, const char* text,
   " notes_trash.port,"                                                     \
   " severity_to_level (notes_trash.severity, 1) as threat,"                \
   " notes_trash.task, notes_trash.result, notes_trash.end_time,"           \
-  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= now ()),"       \
+  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()),"       \
   " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
   " notes_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE id = notes_trash.task) AS task_id,"      \
@@ -34181,7 +34181,7 @@ modify_override (override_t override, const char *active, const char* text,
   " severity_to_level (overrides.severity, 1) as threat,"                      \
   " severity_to_level (overrides.new_severity, 0) as new_threat,"              \
   " overrides.task, overrides.result, overrides.end_time,"                     \
-  " (overrides.end_time = 0) OR (overrides.end_time >= now ()) as active,"     \
+  " (overrides.end_time = 0) OR (overrides.end_time >= m_now ()) as active,"     \
   " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
   " overrides.nvt AS nvt_id,"                                                  \
   " (SELECT uuid FROM tasks WHERE id = overrides.task) AS task_id,"         \
@@ -34207,7 +34207,7 @@ modify_override (override_t override, const char *active, const char* text,
   " severity_to_level (overrides_trash.severity, 0) as threat,"                \
   " severity_to_level (overrides_trash.new_severity, 1) as new_threat,"        \
   " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
-  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= now ()),"   \
+  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= m_now ()),"   \
   " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
   " overrides_trash.nvt AS nvt_id,"                                            \
   " (SELECT uuid FROM tasks WHERE id = overrides_trash.task) AS task_id,"   \
@@ -34738,7 +34738,7 @@ create_scanner (const char* name, const char *comment, const char *host,
        "                      creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, now (), now ());",
+       "  '%s', '%s', %d, %d, m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
        iport, itype);
 
@@ -34839,7 +34839,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   quoted_comment = sql_quote (comment ?: "");
   quoted_host = sql_quote (host);
   sql ("UPDATE scanners SET name = '%s', comment = '%s', host = '%s',"
-       " port = %d, type = %d, modification_time = now () WHERE id = %llu;",
+       " port = %d, type = %d, modification_time = m_now () WHERE id = %llu;",
        quoted_name, quoted_comment, quoted_host, iport, itype, scanner);
 
   g_free (quoted_host);
@@ -36792,7 +36792,7 @@ create_report_format (const char *uuid, const char *name,
          "  signature, trust, trust_time, flags, creation_time,"
          "  modification_time)"
          " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0,"
-         "         now (), now ());",
+         "         m_now (), m_now ());",
          uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
@@ -36809,7 +36809,7 @@ create_report_format (const char *uuid, const char *name,
          "  modification_time)"
          " VALUES ('%s', '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, now (), now ());",
+         " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
          uuid,
          quoted_name,
          current_credentials.uuid,
@@ -37717,7 +37717,7 @@ verify_report_format_internal (report_format_t report_format)
   cleanup_iterator (&formats);
 
   sql ("UPDATE report_formats SET trust = %i, trust_time = %i,"
-       "                          modification_time = now ()"
+       "                          modification_time = m_now ()"
        " WHERE id = %llu;",
        format_trust,
        time (NULL),
@@ -37839,13 +37839,13 @@ set_report_format_active (report_format_t report_format, int active)
 {
   if (active)
     sql ("UPDATE report_formats SET flags = (flags | %llu), "
-         "                          modification_time = now ()"
+         "                          modification_time = m_now ()"
          " WHERE id = %llu;",
          (long long int) REPORT_FORMAT_FLAG_ACTIVE,
          report_format);
   else
     sql ("UPDATE report_formats SET flags = (flags & ~ %llu), "
-         "                          modification_time = now ()"
+         "                          modification_time = m_now ()"
          " WHERE id = %llu;",
          (long long int) REPORT_FORMAT_FLAG_ACTIVE,
          report_format);
@@ -37969,7 +37969,7 @@ void
 set_report_format_name (report_format_t report_format, const char *name)
 {
   gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE report_formats SET name = '%s', modification_time = now ()"
+  sql ("UPDATE report_formats SET name = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        report_format);
@@ -38089,7 +38089,7 @@ void
 set_report_format_summary (report_format_t report_format, const char *summary)
 {
   gchar *quoted_summary = sql_quote (summary);
-  sql ("UPDATE report_formats SET summary = '%s', modification_time = now ()"
+  sql ("UPDATE report_formats SET summary = '%s', modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_summary,
        report_format);
@@ -38827,7 +38827,7 @@ create_slave (const char* name, const char* comment, const char* host,
            "  creation_time, modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', '%s', '%s', '%s', '%s', now (), now ());",
+           " '%s', '%s', '%s', '%s', '%s', m_now (), m_now ());",
            quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
            quoted_port, quoted_login, quoted_password);
       g_free (quoted_comment);
@@ -38838,7 +38838,7 @@ create_slave (const char* name, const char* comment, const char* host,
          " creation_time, modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '%s', '', '%s', '%s', '%s', now (), now ());",
+         " '%s', '', '%s', '%s', '%s', m_now (), m_now ());",
          quoted_name, current_credentials.uuid, quoted_host, quoted_port,
          quoted_login, quoted_password);
 
@@ -38950,7 +38950,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
        " port = '%s',"
        " login = '%s',"
        " password = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -39559,7 +39559,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
                   sql ("INSERT INTO users"
                        " (uuid, name, creation_time, modification_time)"
                        " VALUES"
-                       " ('%s', '%s', now (), now ());",
+                       " ('%s', '%s', m_now (), m_now ());",
                        uuid,
                        quoted_name);
                   g_free (quoted_name);
@@ -39635,7 +39635,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   sql ("INSERT INTO groups"
        " (uuid, name, owner, comment, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), '%s', NULL, '%s', now (), now ());",
+       " (make_uuid (), '%s', NULL, '%s', m_now (), m_now ());",
        quoted_group_name,
        quoted_comment);
   g_free (quoted_comment);
@@ -39984,7 +39984,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
   sql ("UPDATE groups SET"
        " name = '%s',"
        " comment = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -40240,7 +40240,7 @@ create_permission (const char *name_arg, const char *comment,
        " VALUES"
        " (make_uuid (), %s,"
        "  '%s', '%s', '%s', '%s', %llu, " G_STRINGIFY (LOCATION_TABLE) ","
-       "  %s%s%s, %llu, " G_STRINGIFY (LOCATION_TABLE) ", now (), now ());",
+       "  %s%s%s, %llu, " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
        owner,
        quoted_name,
        quoted_comment,
@@ -41008,7 +41008,7 @@ modify_permission (const char *permission_id, const char *name,
     }
 
   sql ("UPDATE permissions SET"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        permission);
 
@@ -41275,7 +41275,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
          " (uuid, owner, name, comment, creation_time, modification_time)"
          " VALUES"
          " ('%s', (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s', now (), now ());",
+         "  '%s', m_now (), m_now ());",
          quoted_id,
          current_credentials.uuid,
          quoted_name,
@@ -41285,7 +41285,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
          " (uuid, owner, name, comment, creation_time, modification_time)"
          " VALUES"
          " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-         "  '%s', now (), now ());",
+         "  '%s', m_now (), m_now ());",
          current_credentials.uuid,
          quoted_name,
          quoted_comment);
@@ -41493,7 +41493,7 @@ create_port_list (const char* id, const char* name, const char* comment,
            " (uuid, owner, name, comment, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-           "  '%s', now (), now ());",
+           "  '%s', m_now (), m_now ());",
            current_credentials.uuid,
            quoted_name,
            quoted_comment);
@@ -41630,7 +41630,7 @@ modify_port_list (const char *port_list_id, const char *name,
   sql ("UPDATE port_lists SET"
        " name = '%s',"
        " comment = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -42463,7 +42463,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
        "  creation_time, modification_time)"
        " SELECT make_uuid (), owner, name, comment, resource_type,"
        "        resource_uuid, resource, resource_location, subject_type, %llu,"
-       "        subject_location, now (), now ()"
+       "        subject_location, m_now (), m_now ()"
        " FROM permissions"
        " WHERE subject_type = 'role'"
        " AND subject = %llu"
@@ -42522,7 +42522,7 @@ create_role (const char *role_name, const char *comment, const char *users,
        " VALUES"
        " (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', now (), now ());",
+       "  '%s', m_now (), m_now ());",
        quoted_role_name,
        current_credentials.uuid,
        quoted_comment);
@@ -42866,7 +42866,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
   sql ("UPDATE roles SET"
        " name = '%s',"
        " comment = '%s',"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -43169,7 +43169,7 @@ create_filter (const char *name, const char *comment, const char *type,
            "  modification_time)"
            " VALUES (make_uuid (), '%s',"
            " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', %s%s%s, '%s', now (), now ());",
+           " '%s', %s%s%s, '%s', m_now (), m_now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_comment,
@@ -43185,7 +43185,7 @@ create_filter (const char *name, const char *comment, const char *type,
          "  modification_time)"
          " VALUES (make_uuid (), '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '', %s%s%s, '%s', now (), now ());",
+         " '', %s%s%s, '%s', m_now (), m_now ());",
          quoted_name,
          current_credentials.uuid,
          type ? "lower ('" : "",
@@ -43609,7 +43609,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
        " comment = '%s',"
        " term = '%s',"
        " type = lower ('%s'),"
-       " modification_time = now ()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name,
        quoted_comment,
@@ -45396,7 +45396,7 @@ modify_setting (const gchar *uuid, const gchar *name,
         }
       quoted_timezone = sql_quote (value);
       g_free (value);
-      sql ("UPDATE users SET timezone = '%s', modification_time = now ()"
+      sql ("UPDATE users SET timezone = '%s', modification_time = m_now ()"
            " WHERE uuid = '%s';",
            quoted_timezone,
            current_credentials.uuid);
@@ -46818,7 +46818,7 @@ set_password (const gchar *name, const gchar *uuid, const gchar *password,
       return -1;
     }
   hash = get_password_hashes (GCRY_MD_MD5, password);
-  sql ("UPDATE users SET password = '%s', modification_time = now ()"
+  sql ("UPDATE users SET password = '%s', modification_time = m_now ()"
        " WHERE uuid = '%s';",
        hash,
        uuid);
@@ -47019,7 +47019,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
        "  ifaces, ifaces_allow, method, creation_time, modification_time)"
        " VALUES"
        " (make_uuid (), NULL, '%s', '%s', '%s', %i,"
-       "  '%s', %i, '%s', now (), now ());",
+       "  '%s', %i, '%s', m_now (), m_now ());",
        quoted_name,
        hash,
        quoted_hosts,
@@ -47546,7 +47546,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
        "     ifaces = '%s',"
        "     ifaces_allow = %i,"
        "     method = %s%s%s,"
-       "     modification_time = now ()"
+       "     modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_hosts,
        hosts_allow,
