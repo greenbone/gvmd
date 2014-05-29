@@ -266,6 +266,52 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 }
 
 
+/* Transactions. */
+
+/**
+ * @brief Begin an exclusive transaction.
+ */
+void
+sql_begin_exclusive ()
+{
+  sql ("BEGIN;");
+  sql ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
+}
+
+/**
+ * @brief Begin an exclusive transaction, giving up on failure.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_exclusive_giveup ()
+{
+  int ret;
+
+  ret = sql_giveup ("BEGIN;");
+  if (ret)
+    return ret;
+  ret = sql_giveup ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
+  if (ret)
+    {
+      sql ("ROLLBACK;");
+      return ret;
+    }
+  return 0;
+}
+
+/**
+ * @brief Begin an immediate transaction.
+ */
+void
+sql_begin_immediate ()
+{
+  sql ("BEGIN;");
+  /* TODO This is just an exclusive lock. */
+  sql ("LOCK TABLE meta IN ACCESS EXCLUSIVE MODE;");
+}
+
+
 /* Iterators. */
 
 /**

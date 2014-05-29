@@ -117,6 +117,18 @@ void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
 
+/* Transactions. */
+
+void
+sql_begin_exclusive ();
+
+int
+sql_begin_exclusive_giveup ();
+
+void
+sql_begin_immediate ();
+
+
 /* Iterators. */
 
 void

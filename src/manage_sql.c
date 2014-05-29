@@ -3660,7 +3660,7 @@ copy_resource (const char *type, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock (type, name, comment, resource_id, columns,
                             make_name_unique, new_resource, NULL);
@@ -4381,7 +4381,7 @@ backup_db (const gchar *database, gchar **backup_file)
   gchar *command;
   int ret;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   command = g_strdup_printf ("cp %s %s.bak > /dev/null 2>&1"
                              "&& for f in `ls %s-* 2> /dev/null | grep --invert .\\*bak`;"
@@ -4637,7 +4637,7 @@ encrypt_all_credentials (gboolean decrypt_flag)
                  "SELECT id, password, private_key FROM lsc_credentials");
   iterator.crypt_ctx = lsc_crypt_new ();
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   ntotal = nencrypted = nreencrypted = ndecrypted = 0;
   while (next (&iterator))
@@ -5412,7 +5412,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_alert") == 0)
     {
@@ -5579,7 +5579,7 @@ copy_alert (const char* name, const char* comment, const char* alert_id,
   if (alert_id == NULL)
     return -1;
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("alert", name, comment, alert_id,
                             "event, condition, method, filter",
@@ -5650,7 +5650,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
   if (alert_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -5842,7 +5842,7 @@ delete_alert (const char *alert_id, int ultimate)
 {
   alert_t alert = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_alert") == 0)
     {
@@ -8743,7 +8743,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         {
           if (progress)
             progress ();
-          sql ("BEGIN EXCLUSIVE;");
+          sql_begin_exclusive ();
           sql ("DELETE FROM nvts;");
           if (progress)
             progress ();
@@ -8809,7 +8809,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
         {
           if (progress)
             progress ();
-          sql ("BEGIN EXCLUSIVE;");
+          sql_begin_exclusive ();
           sql ("DELETE FROM nvts;");
           if (progress)
             progress ();
@@ -10328,7 +10328,7 @@ check_db_nvts ()
   /* Ensure the NVT CVE table is filled. */
   if (sql_int ("SELECT count (*) FROM nvt_cves;") == 0)
     {
-      sql ("BEGIN IMMEDIATE;");
+      sql_begin_immediate ();
       refresh_nvt_cves ();
       sql ("COMMIT;");
     }
@@ -10510,7 +10510,7 @@ make_report_format_uuids_unique ()
 {
   iterator_t rows;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   sql ("CREATE TEMPORARY TABLE duplicates"
        " AS SELECT id, uuid, make_uuid () AS new_uuid, owner,"
@@ -10960,7 +10960,7 @@ check_db_permissions ()
                " AND resource = 0;")
       <= 1)
     {
-      sql ("BEGIN EXCLUSIVE;");
+      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -10984,7 +10984,7 @@ check_db_permissions ()
     {
       command_t *command;
       command = omp_commands;
-      sql ("BEGIN EXCLUSIVE;");
+      sql_begin_exclusive ();
 
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
@@ -11013,7 +11013,7 @@ check_db_permissions ()
     {
       command_t *command;
       command = omp_commands;
-      sql ("BEGIN EXCLUSIVE;");
+      sql_begin_exclusive ();
       /* Clean-up any remaining permissions. */
       sql ("DELETE FROM permissions WHERE subject_type = 'role'"
            " AND subject = (SELECT id FROM roles"
@@ -12185,7 +12185,7 @@ set_task_requested (task_t task, task_status_t *status)
 {
   task_status_t run_status;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
@@ -12509,7 +12509,7 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
   alert_t alert = 0;
   guint index;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   sql ("DELETE FROM task_alerts where task = %llu;", task);
 
@@ -12574,7 +12574,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
   group_t group = 0;
   guint index;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   sql ("DELETE FROM permissions"
        " WHERE resource_type = 'task'"
@@ -12938,7 +12938,7 @@ set_task_observers (task_t task, const gchar *observers)
   added = NULL;
   split = g_strsplit_set (observers, " ,", 0);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   sql ("DELETE FROM permissions"
        " WHERE resource_type = 'task' AND resource = %llu"
@@ -13954,7 +13954,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   /* This is faster, but causes problems on Debian 5 (sqlite 3.5.9). */
 #if 0
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 #endif
 
   index = 0;
@@ -17722,7 +17722,7 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   if (setting_dynamic_severity_int ())
     return 0;
 
-  ret = sql_giveup ("BEGIN EXCLUSIVE;");
+  ret = sql_begin_exclusive_giveup ();
   if (ret)
     return ret;
 
@@ -18139,7 +18139,7 @@ modify_report (const char *report_id, const char *comment)
   if (comment == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -18192,7 +18192,7 @@ delete_report (const char *report_id, int dummy)
   report_t report;
   int ret;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   if (user_may ("delete_report") == 0)
     {
@@ -18324,7 +18324,7 @@ trim_report (report_t report)
 
   /* Clear and rebuild counts cache */
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
   sql ("DELETE FROM report_counts WHERE report = %llu;",
        current_report);
   report_cache_counts (current_report);
@@ -18376,7 +18376,7 @@ trim_partial_report (report_t report)
 
   /* Clear and rebuild counts cache */
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
   sql ("DELETE FROM report_counts WHERE report = %llu;",
        report);
   report_cache_counts (report);
@@ -24059,7 +24059,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
   if (task_id == NULL)
     return -1;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
@@ -24204,7 +24204,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   tracef ("   request delete task %s\n", task_id);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_task") == 0)
     {
@@ -24401,7 +24401,7 @@ delete_task_lock (task_t task, int ultimate)
 
   tracef ("   delete task %llu\n", task);
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   if (sql_int ("SELECT hidden FROM tasks WHERE id = %llu;", task))
     {
@@ -24937,7 +24937,7 @@ manage_transaction_start ()
 {
   if (!in_transaction)
     {
-      sql ("BEGIN IMMEDIATE;");
+      sql_begin_immediate ();
       in_transaction = TRUE;
     }
   gettimeofday (&last_msg, NULL);
@@ -25132,7 +25132,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   if (alive_test == -1)
     return 7;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_target") == 0)
     {
@@ -25357,7 +25357,7 @@ delete_target (const char *target_id, int ultimate)
   if (strcmp (target_id, TARGET_UUID_LOCALHOST) == 0)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_target") == 0)
     {
@@ -25518,7 +25518,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   assert (target_id);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -26789,7 +26789,7 @@ create_config (const char* proposed_name, const char* comment,
   if (selector_uuid == NULL)
     return -1;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_config") == 0)
     {
@@ -26941,7 +26941,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   /* Copy the existing config. */
 
@@ -27020,7 +27020,7 @@ delete_config (const char *config_id, int ultimate)
       || (strcmp (config_id, CONFIG_UUID_EMPTY) == 0))
     return 1;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_config") == 0)
     {
@@ -27586,7 +27586,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
     {
       int end = -1;
 
-      sql ("BEGIN IMMEDIATE;");
+      sql_begin_immediate ();
 
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -27619,7 +27619,7 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
       return 0;
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -27767,7 +27767,7 @@ manage_set_config_name (config_t config, const char* name)
 {
   gchar *quoted_name;
   assert (current_credentials.uuid);
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
   if (resource_with_name_exists (name, "config", config))
     {
       sql ("ROLLBACK;");
@@ -27797,7 +27797,7 @@ manage_set_config_name_comment (config_t config, const char* name,
 {
   gchar *quoted_name, *quoted_comment;
   assert (current_credentials.uuid);
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
   if (resource_with_name_exists (name, "config", config))
     {
       sql ("ROLLBACK;");
@@ -27832,7 +27832,7 @@ manage_set_config_nvts (config_t config, const char* family,
   gchar *quoted_family, *quoted_selector;
   int new_nvt_count = 0, old_nvt_count;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -28239,7 +28239,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
 
   if (remove)
     {
-      sql ("BEGIN EXCLUSIVE;");
+      sql_begin_exclusive ();
       sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
     }
 
@@ -29748,7 +29748,7 @@ manage_set_config_families (config_t config,
   int constraining;
   char *selector;
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   if (sql_int ("SELECT count(*) FROM tasks"
                " WHERE config = %llu AND (hidden = 0 OR hidden = 1);",
@@ -30222,7 +30222,7 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
 
   if (remove)
     {
-      sql ("BEGIN EXCLUSIVE;");
+      sql_begin_exclusive ();
       sql ("DELETE FROM nvt_preferences WHERE name = '%s';", quoted_name);
     }
 
@@ -30528,7 +30528,7 @@ set_task_preferences (task_t task, array_t *preferences)
                 {
                   gchar *quoted_value;
                   quoted_value = sql_quote (pair->value);
-                  sql ("BEGIN IMMEDIATE;");
+                  sql_begin_immediate ();
                   if (sql_int ("SELECT COUNT(*) FROM task_preferences"
                                " WHERE task = %llu AND name = '%s';",
                                task,
@@ -30663,7 +30663,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
   assert (current_credentials.uuid);
   assert (comment);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_lsc_credential") == 0)
     {
@@ -30953,7 +30953,7 @@ modify_lsc_credential (const char *lsc_credential_id,
   if (lsc_credential_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -31024,7 +31024,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 {
   lsc_credential_t lsc_credential = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_lsc_credential") == 0)
     {
@@ -32009,7 +32009,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   /* Check that the name is unique. */
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_agent") == 0)
     {
@@ -32175,7 +32175,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
   if (agent_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -32235,7 +32235,7 @@ delete_agent (const char *agent_id, int ultimate)
 {
   agent_t agent = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_agent") == 0)
     {
@@ -32376,7 +32376,7 @@ verify_agent (const char *agent_id)
   iterator_t agents;
   get_data_t get;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("verify_agent") == 0)
     {
@@ -32960,7 +32960,7 @@ delete_note (const char *note_id, int ultimate)
 {
   note_t note = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_note") == 0)
     {
@@ -33888,7 +33888,7 @@ delete_override (const char *override_id, int ultimate)
 {
   override_t override;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_override") == 0)
     {
@@ -34705,7 +34705,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   assert (current_credentials.uuid);
   assert (name);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_scanner") == 0)
     {
@@ -34802,7 +34802,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     return 4;
   if (openvas_get_host_type (host) == -1)
     return 4;
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -34860,7 +34860,7 @@ delete_scanner (const char *scanner_id, int ultimate)
 {
   scanner_t scanner = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_scanner") == 0)
     {
@@ -35235,7 +35235,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_schedule") == 0)
     {
@@ -35350,7 +35350,7 @@ delete_schedule (const char *schedule_id, int ultimate)
 {
   schedule_t schedule = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_schedule") == 0)
     {
@@ -35831,7 +35831,7 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
-  ret = sql_giveup ("BEGIN EXCLUSIVE;");
+  ret = sql_begin_exclusive_giveup ();
   if (ret)
     return ret;
   init_iterator (iterator,
@@ -36196,7 +36196,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
   if (schedule_id == NULL)
     return 4;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -36611,7 +36611,7 @@ create_report_format (const char *uuid, const char *name,
       g_string_free (format, TRUE);
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_report_format") == 0)
     {
@@ -37008,7 +37008,7 @@ copy_report_format (const char* name, const char* source_uuid,
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("report_format", name, NULL, source_uuid,
                             "extension, content_type, summary, description,"
@@ -37226,7 +37226,7 @@ modify_report_format (const char *report_format_id, const char *name,
   if (report_format_id == NULL)
     return 2;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -37301,7 +37301,7 @@ delete_report_format (const char *report_format_id, int ultimate)
    *     info in the db, so the disk information has to be held
    *     in a special trashcan directory. */
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_report_format") == 0)
     {
@@ -37738,7 +37738,7 @@ verify_report_format (const char *report_format_id)
   int ret;
   report_format_t report_format;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("verify_report_format") == 0)
     {
@@ -37781,7 +37781,7 @@ report_format_verify (report_format_t report_format)
 {
   int ret;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
   ret = verify_report_format_internal (report_format);
   if (ret)
     {
@@ -38251,7 +38251,7 @@ set_report_format_param (report_format_t report_format, const char *name,
 
   quoted_name = sql_quote (name);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   /* Ensure the param exists. */
 
@@ -38795,7 +38795,7 @@ create_slave (const char* name, const char* comment, const char* host,
   assert (password);
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_slave") == 0)
     {
@@ -38901,7 +38901,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
   if (slave_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -38984,7 +38984,7 @@ delete_slave (const char *slave_id, int ultimate)
 {
   slave_t slave = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_slave") == 0)
     {
@@ -39442,7 +39442,7 @@ copy_group (const char *name, const char *comment, const char *group_id,
   int ret;
   group_t new, old;
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("group", name, comment, group_id, NULL, 1, &new,
                             &old);
@@ -39615,7 +39615,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   assert (group_name);
   assert (group);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_group") == 0)
     {
@@ -39664,7 +39664,7 @@ delete_group (const char *group_id, int ultimate)
 {
   group_t group = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_group") == 0)
     {
@@ -39943,7 +39943,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
   if (group_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("modify_group") == 0)
     {
@@ -40150,7 +40150,7 @@ create_permission (const char *name_arg, const char *comment,
   if (subject_id && (subject_type == NULL))
     return 6;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_permission") == 0)
     {
@@ -40280,7 +40280,7 @@ copy_permission (const char* comment, const char *permission_id,
   int ret;
   permission_t new, old;
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("permission", NULL, comment, permission_id,
                             "resource_type, resource, resource_uuid,"
@@ -40701,7 +40701,7 @@ delete_permission (const char *permission_id, int ultimate)
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_permission") == 0)
     {
@@ -40826,7 +40826,7 @@ modify_permission (const char *permission_id, const char *name,
   if (permission_id == NULL)
     return 4;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("modify_permission") == 0)
     {
@@ -41395,7 +41395,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       if (id == NULL)
         return -1;
 
-      sql ("BEGIN IMMEDIATE;");
+      sql_begin_immediate ();
 
       if (user_may ("create_port_list") == 0)
         {
@@ -41464,7 +41464,7 @@ create_port_list (const char* id, const char* name, const char* comment,
   if (validate_port_range (port_ranges))
     return 4;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_port_list") == 0)
     {
@@ -41543,7 +41543,7 @@ copy_port_list (const char* name, const char* comment,
   int ret;
   port_list_t new, old;
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("port_list", name, comment, port_list_id, NULL, 1,
                             &new, &old);
@@ -41588,7 +41588,7 @@ modify_port_list (const char *port_list_id, const char *name,
   if (port_list_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -41690,7 +41690,7 @@ create_port_range (const char *port_list_id, const char *type,
       last = tem;
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_port_range") == 0)
     {
@@ -41771,7 +41771,7 @@ delete_port_list (const char *port_list_id, int ultimate)
 {
   port_list_t port_list = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_port_list") == 0)
     {
@@ -41901,7 +41901,7 @@ delete_port_range (const char *port_range_id, int dummy)
 {
   port_range_t port_range = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_port_range") == 0)
     {
@@ -42442,7 +42442,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
   int ret;
   role_t new_role, old_role;
 
-  sql ("BEGIN IMMEDIATE");
+  sql_begin_immediate ();
 
   if (user_may ("create_role") == 0)
     return 99;
@@ -42499,7 +42499,7 @@ create_role (const char *role_name, const char *comment, const char *users,
   assert (role_name);
   assert (role);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_role") == 0)
     {
@@ -42572,7 +42572,7 @@ delete_role (const char *role_id, int ultimate)
 {
   role_t role = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_role") == 0)
     {
@@ -42825,7 +42825,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
   if (role_id == NULL)
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("modify_role") == 0)
     {
@@ -43121,7 +43121,7 @@ create_filter (const char *name, const char *comment, const char *type,
         return 2;
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_filter") == 0)
     {
@@ -43236,7 +43236,7 @@ delete_filter (const char *filter_id, int ultimate)
   gchar *quoted_filter_id;
   filter_t filter = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_filter") == 0)
     {
@@ -43553,7 +43553,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
   if (type && !((strcmp (type, "") == 0) || valid_type (type)))
     return 3;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 
@@ -43859,7 +43859,7 @@ manage_restore (const char *id)
 
   assert (current_credentials.uuid);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("restore") == 0)
     {
@@ -44905,7 +44905,7 @@ manage_empty_trashcan ()
 {
   gchar *dir;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("empty_trashcan") == 0)
     {
@@ -46856,7 +46856,7 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   init_manage_process (0, db);
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (find_user_by_name (name, &user))
     {
@@ -46982,7 +46982,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
       return -1;
     }
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_user") == 0)
     {
@@ -47128,7 +47128,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   ret = copy_resource_lock ("user", name, comment, user_id,
                             "password, timezone, hosts, hosts_allow,"
@@ -47198,7 +47198,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
         return 5;
     }
 
-  sql ("BEGIN EXCLUSIVE;");
+  sql_begin_exclusive ();
 
   if (user_may ("delete_user") == 0)
     {
@@ -47465,7 +47465,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
 
   // FIX validate methods  single source, one of "", "ldap", ...
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("modify_user") == 0)
     {
@@ -48007,7 +48007,7 @@ create_tag (const char * name, const char * comment, const char * value,
   gchar *resource_permission = NULL;
   resource_t resource;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("create_tag") == 0)
     {
@@ -48120,7 +48120,7 @@ delete_tag (const char *tag_id, int ultimate)
 {
   tag_t tag = 0;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   if (user_may ("delete_tag") == 0)
     {
@@ -48214,7 +48214,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
   if (tag_id == NULL)
     return 2;
 
-  sql ("BEGIN IMMEDIATE;");
+  sql_begin_immediate ();
 
   assert (current_credentials.uuid);
 

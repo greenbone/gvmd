@@ -263,6 +263,38 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 }
 
 
+/* Transactions. */
+
+/**
+ * @brief Begin an exclusive transaction.
+ */
+void
+sql_begin_exclusive ()
+{
+  sql ("BEGIN EXCLUSIVE;");
+}
+
+/**
+ * @brief Begin an exclusive transaction, giving up on failure.
+ *
+ * @return 0 got lock, 1 gave up, -1 error.
+ */
+int
+sql_begin_exclusive_giveup ()
+{
+  return sql_giveup ("BEGIN EXCLUSIVE;");
+}
+
+/**
+ * @brief Begin an exclusive transaction.
+ */
+void
+sql_begin_immediate ()
+{
+  sql ("BEGIN IMMEDIATE;");
+}
+
+
 /* Iterators. */
 
 /**
