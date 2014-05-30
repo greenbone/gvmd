@@ -1,3 +1,21 @@
+2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Quote keyword "end" in SQL, for Postgres.
+
+	* src/manage_migrators.c (MIGRATE_55_TO_56_RANGE)
+	(migrate_55_to_56): Quote keyword "end" in SQL.
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c,
+	src/manage_ranges_all_tcp_nmap_5_51_top_1000.c,
+	src/manage_ranges_iana_tcp_2012.c,
+	src/manage_ranges_iana_tcp_udp_2012.c,
+	src/manage_ranges_nmap_5_51_top_2000_top_100.c (RANGE): Quote keyword
+	"end" in SQL.
+
+	* src/manage_migrators.c (RANGE, check_db_port_lists)
+	(create_port_list_lock, copy_port_list, create_port_range)
+	(delete_port_list, manage_restore): Quote keyword "end" in SQL.
+
 2014-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (set_task_hosts_ordering, set_task_parameter): Quote

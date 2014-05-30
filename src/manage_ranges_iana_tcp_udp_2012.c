@@ -29,15 +29,15 @@
 /**
  * @brief Insert a port range.
  */
-#define RANGE(type, start, end)                                  \
-  sql ("INSERT INTO port_ranges"                                 \
-       " (uuid, port_list, type, start, end, comment, exclude)"  \
-       " VALUES"                                                 \
-       " (make_uuid (), %llu, %i,"                               \
-       "  '" G_STRINGIFY (start) "',"                            \
-       "  '" G_STRINGIFY (end) "',"                              \
-       "  '', 0)",                                               \
-       list,                                                     \
+#define RANGE(type, start, end)                                      \
+  sql ("INSERT INTO port_ranges"                                     \
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"  \
+       " VALUES"                                                     \
+       " (make_uuid (), %llu, %i,"                                   \
+       "  '" G_STRINGIFY (start) "',"                                \
+       "  '" G_STRINGIFY (end) "',"                                  \
+       "  '', 0)",                                                   \
+       list,                                                         \
        type)
 
 /**

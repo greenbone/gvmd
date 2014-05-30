@@ -4049,15 +4049,15 @@ migrate_54_to_55 ()
 /**
  * @brief Insert a port range.
  */
-#define MIGRATE_55_TO_56_RANGE(type, start, end)                         \
-  sql ("INSERT INTO port_ranges"                                 \
-       " (uuid, port_list, type, start, end, comment, exclude)"  \
-       " VALUES"                                                 \
-       " (make_uuid (), %llu, %i,"                               \
-       "  '" G_STRINGIFY (start) "',"                            \
-       "  '" G_STRINGIFY (end) "',"                              \
-       "  '', 0)",                                               \
-       list,                                                     \
+#define MIGRATE_55_TO_56_RANGE(type, start, end)                    \
+  sql ("INSERT INTO port_ranges"                                    \
+       " (uuid, port_list, type, start, \"end\", comment, exclude)" \
+       " VALUES"                                                    \
+       " (make_uuid (), %llu, %i,"                                  \
+       "  '" G_STRINGIFY (start) "',"                               \
+       "  '" G_STRINGIFY (end) "',"                                 \
+       "  '', 0)",                                                  \
+       list,                                                        \
        type)
 
 /**
@@ -4820,7 +4820,7 @@ migrate_55_to_56 ()
                     /* A range. */
 
                     sql ("INSERT INTO port_ranges"
-                         " (uuid, port_list, type, start, end, comment,"
+                         " (uuid, port_list, type, start, \"end\", comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, %s, '', 0)",
@@ -4834,7 +4834,7 @@ migrate_55_to_56 ()
                     /* A single port. */
 
                     sql ("INSERT INTO port_ranges"
-                         " (uuid, port_list, type, start, end, comment,"
+                         " (uuid, port_list, type, start, \"end\", comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, NULL, '',"
@@ -4932,7 +4932,7 @@ migrate_55_to_56 ()
                     /* A range. */
 
                     sql ("INSERT INTO port_ranges_trash"
-                         " (uuid, port_list, type, start, end, comment,"
+                         " (uuid, port_list, type, start, \"end\", comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, %s, '', 0)",
@@ -4946,7 +4946,7 @@ migrate_55_to_56 ()
                     /* A single port. */
 
                     sql ("INSERT INTO port_ranges_trash"
-                         " (uuid, port_list, type, start, end, comment,"
+                         " (uuid, port_list, type, start, \"end\", comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, NULL, '',"

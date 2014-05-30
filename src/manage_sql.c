@@ -9016,15 +9016,15 @@ manage_update_nvti_cache ()
 /**
  * @brief Insert a port range.
  */
-#define RANGE(type, start, end)                                  \
-  sql ("INSERT INTO port_ranges"                                 \
-       " (uuid, port_list, type, start, end, comment, exclude)"  \
-       " VALUES"                                                 \
-       " (make_uuid (), %llu, %i,"                               \
-       "  '" G_STRINGIFY (start) "',"                            \
-       "  '" G_STRINGIFY (end) "',"                              \
-       "  '', 0)",                                               \
-       list,                                                     \
+#define RANGE(type, start, end)                                      \
+  sql ("INSERT INTO port_ranges"                                     \
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"  \
+       " VALUES"                                                     \
+       " (make_uuid (), %llu, %i,"                                   \
+       "  '" G_STRINGIFY (start) "',"                                \
+       "  '" G_STRINGIFY (end) "',"                                  \
+       "  '', 0)",                                                   \
+       list,                                                         \
        type)
 
 /**
@@ -9890,7 +9890,7 @@ check_db_port_lists ()
    * ranges were initialised to 65536.
    *
    * This should be a migrator, but this way is easier to backport.  */
-  sql ("UPDATE port_ranges SET end = 65535 WHERE end = 65536;");
+  sql ("UPDATE port_ranges SET \"end\" = 65535 WHERE \"end\" = 65536;");
   sql ("UPDATE port_ranges SET start = 65535 WHERE start = 65536;");
 }
 
@@ -41292,7 +41292,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
   index = 0;
   while ((range = (range_t*) g_ptr_array_index (ranges, index++)))
     sql ("INSERT INTO port_ranges"
-         " (uuid, port_list, type, start, end, comment, exclude)"
+         " (uuid, port_list, type, start, \"end\", comment, exclude)"
          " VALUES"
          " (make_uuid (), %llu, %i, %i, %i, '', %i);",
          *port_list,
@@ -41552,7 +41552,7 @@ copy_port_list (const char* name, const char* comment,
   /* Copy port ranges. */
 
   sql ("INSERT INTO port_ranges "
-       " (uuid, port_list, type, start, end, comment, exclude)"
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"
        " SELECT make_uuid(), %llu, type, start, end, comment, exclude"
        "  FROM port_ranges WHERE port_list = %llu;",
        new,
@@ -41738,7 +41738,7 @@ create_port_range (const char *port_list_id, const char *type,
 
   quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
   sql ("INSERT INTO port_ranges"
-       " (uuid, port_list, type, start, end, comment, exclude)"
+       " (uuid, port_list, type, start, \"end\", comment, exclude)"
        " VALUES"
        " (make_uuid (), %llu, %i, %i, %i, '', 0);",
        port_list, port_type, first, last, quoted_comment);
@@ -41850,8 +41850,8 @@ delete_port_list (const char *port_list_id, int ultimate)
       trash_port_list = sql_last_insert_rowid ();
 
       sql ("INSERT INTO port_ranges_trash"
-           " (uuid, port_list, type, start, end, comment, exclude)"
-           " SELECT uuid, %llu, type, start, end, comment, exclude"
+           " (uuid, port_list, type, start, \"end\", comment, exclude)"
+           " SELECT uuid, %llu, type, start, \"end\", comment, exclude"
            " FROM port_ranges WHERE port_list = %llu;",
            trash_port_list,
            port_list);
@@ -44351,8 +44351,8 @@ manage_restore (const char *id)
       table_port_list = sql_last_insert_rowid ();
 
       sql ("INSERT INTO port_ranges"
-           " (uuid, port_list, type, start, end, comment, exclude)"
-           " SELECT uuid, %llu, type, start, end, comment, exclude"
+           " (uuid, port_list, type, start, \"end\", comment, exclude)"
+           " SELECT uuid, %llu, type, start, \"end\", comment, exclude"
            " FROM port_ranges_trash WHERE port_list = %llu;",
            table_port_list,
            resource);
