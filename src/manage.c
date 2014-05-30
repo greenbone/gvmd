@@ -2722,7 +2722,11 @@ task_scanner_options (task_t task)
     {
       char *name, *value;
       name = g_strdup (preference_iterator_name (&prefs));
-      value = g_strdup (preference_iterator_value (&prefs));
+      if (g_str_has_suffix (name, "_file"))
+        value = g_base64_encode ((guchar *) preference_iterator_value (&prefs),
+                                 strlen (preference_iterator_value (&prefs)));
+      else
+        value = g_strdup (preference_iterator_value (&prefs));
       g_hash_table_insert (table, name, value);
     }
   cleanup_iterator (&prefs);

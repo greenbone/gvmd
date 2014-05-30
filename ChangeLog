@@ -1,3 +1,8 @@
+2014-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options): Encode OSP file options before
+	storing them.
+
 2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_port_lists, report_severity)
