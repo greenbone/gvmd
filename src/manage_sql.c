@@ -12007,10 +12007,10 @@ set_task_target (task_t task, target_t target)
 void
 set_task_hosts_ordering (task_t task, const char *ordering)
 {
+  char *quoted_ordering = sql_quote (ordering ?: "");
   sql ("UPDATE tasks SET hosts_ordering = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       ordering,
-       task);
+       " WHERE id = %llu;", quoted_ordering, task);
+  g_free (quoted_ordering);
 }
 
 /**
@@ -24008,12 +24008,10 @@ set_task_parameter (task_t task, const char* parameter, /*@only@*/ char* value)
     }
   else if (strcasecmp ("NAME", parameter) == 0)
     {
-      gchar* quote = sql_nquote (value, strlen (value));
+      gchar* quoted_value = sql_quote (value ?: "");
       sql ("UPDATE tasks SET name = '%s', modification_time = m_now ()"
-           " WHERE id = %llu;",
-           value,
-           task);
-      g_free (quote);
+           " WHERE id = %llu;", quoted_value, task);
+      g_free (quoted_value);
     }
   else if (strcasecmp ("COMMENT", parameter) == 0)
     {

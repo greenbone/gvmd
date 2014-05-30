@@ -1,5 +1,10 @@
 2014-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (set_task_hosts_ordering, set_task_parameter): Quote
+	strings before insertion.
+
+2014-05-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (task_scanner_options): Encode OSP file options before
 	storing them.
 
