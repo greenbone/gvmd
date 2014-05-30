@@ -51,14 +51,6 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
-// SELECT * FROM pg_available_extensions WHERE name = 'uuid-ossp';
-// CREATE EXTENSION "uuid-ossp";
-#if 0
-CREATE FUNCTION make_uuid () RETURNS integer AS $$
-    SELECT uuid_generate_v4 () AS result;
-$$ LANGUAGE SQL;
-#endif
-
   sql ("CREATE OR REPLACE FUNCTION iso_time (integer) RETURNS text AS $$"
        "  SELECT CASE"
        "         WHEN $1 = 0 THEN ''"
@@ -79,6 +71,18 @@ $$ LANGUAGE SQL;
 
   sql ("CREATE OR REPLACE FUNCTION m_now () RETURNS integer AS $$"
        "  SELECT extract (epoch FROM now ())::integer;"
+       "$$ LANGUAGE SQL;");
+
+  if (sql_int ("SELECT count (*) FROM pg_available_extensions"
+               " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
+      == 0)
+    {
+      g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
+      return -1;
+    }
+
+  sql ("CREATE OR REPLACE FUNCTION make_uuid () RETURNS text AS $$"
+       "  SELECT uuid_generate_v4 ()::text AS result;"
        "$$ LANGUAGE SQL;");
 
   return 0;
