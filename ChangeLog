@@ -1,3 +1,8 @@
+2014-05-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync:
+	Fix URL of feed home.
+
 2014-05-27  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Backport r19530.

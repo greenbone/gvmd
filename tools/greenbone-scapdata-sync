@@ -121,7 +121,7 @@ if [ -z "$FEED_VENDOR" ] ; then
 fi
 
 if [ -z "$FEED_HOME" ] ; then
-  FEED_HOME="http://www.greenbone.net/solutions/gbn_feed.html"
+  FEED_HOME="http://www.greenbone.net/technology/gsf.html"
 fi
 
 RSYNC=`command -v rsync`
