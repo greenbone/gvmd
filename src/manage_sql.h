@@ -33,26 +33,6 @@
 /* Internal types and preprocessor definitions. */
 
 /**
- * @brief Database ROWID of 'Full and fast' config.
- */
-#define CONFIG_ID_FULL_AND_FAST 1
-
-/**
- * @brief Database ROWID of 'Full and fast ultimate' config.
- */
-#define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
-
-/**
- * @brief Database ROWID of 'Full and very deep' config.
- */
-#define CONFIG_ID_FULL_AND_VERY_DEEP 3
-
-/**
- * @brief Database ROWID of 'Full and very deep ultimate' config.
- */
-#define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
-
-/**
  * @brief UUID of 'Full and fast' config.
  */
 #define CONFIG_UUID_FULL_AND_FAST "daba56c8-73ec-11df-a475-002264764cea"

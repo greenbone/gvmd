@@ -1,3 +1,22 @@
+2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove explicit control of the IDs of the Full and * configs, because
+	this interferes with the autoincrement of the ID in Postgres.  All other
+	configs specify only the UUID anyway.
+
+	* src/manage_sql.c (check_db_configs): Let database insert IDs.
+	(config_in_use): Check all by UUID.
+
+	* src/manage_migrators.c (CONFIG_ID_FULL_AND_FAST)
+	(CONFIG_ID_FULL_AND_FAST_ULTIMATE, CONFIG_ID_FULL_AND_VERY_DEEP)
+	(CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE): Remove.  Now in
+	manage_migrators.c.
+
+	* src/manage_migrators.c (CONFIG_ID_FULL_AND_FAST)
+	(CONFIG_ID_FULL_AND_FAST_ULTIMATE, CONFIG_ID_FULL_AND_VERY_DEEP)
+	(CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE): New defines.  From
+	manage_sql.h.  Old IDs used only here.
+
 2014-05-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync:

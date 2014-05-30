@@ -10371,11 +10371,10 @@ check_db_configs ()
       config_t config;
 
       sqli (&config,
-            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
             " type, creation_time, modification_time)"
-            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ","
-            " '" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
+            " VALUES ('" CONFIG_UUID_FULL_AND_FAST "', NULL, 'Full and fast',"
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; optimized by using previously collected information.',"
             " %i, %i, 1, 1, 0, m_now (), m_now ())",
@@ -10393,11 +10392,10 @@ check_db_configs ()
       config_t config;
 
       sqli (&config,
-            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
             " type, creation_time, modification_time)"
-            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ","
-            " '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
+            " VALUES ('" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "', NULL,"
             " 'Full and fast ultimate', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
             " optimized by using previously collected information.',"
@@ -10416,11 +10414,10 @@ check_db_configs ()
       config_t config;
 
       sqli (&config,
-            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
             " type, creation_time, modification_time)"
-            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ","
-            " '" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
+            " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP "', NULL,"
             " 'Full and very deep', '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s; don''t trust previously collected information; slow.',"
             " %i, %i, 1, 1, 0, m_now (), m_now ())",
@@ -10438,11 +10435,10 @@ check_db_configs ()
       config_t config;
 
       sqli (&config,
-            "INSERT into configs (id, uuid, owner, name, nvt_selector, comment,"
+            "INSERT into configs (uuid, owner, name, nvt_selector, comment,"
             " family_count, nvt_count, nvts_growing, families_growing,"
             " type, creation_time, modification_time)"
-            " VALUES (" G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ","
-            " '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
+            " VALUES ('" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "',"
             " NULL, 'Full and very deep ultimate',"
             " '" MANAGE_NVT_SELECTOR_UUID_ALL "',"
             " 'Most NVT''s including those that can stop services/hosts;"
@@ -27365,18 +27361,18 @@ config_iterator_type (iterator_t* iterator)
 int
 config_in_use (config_t config)
 {
-  if (config == CONFIG_ID_FULL_AND_FAST
-      || config == CONFIG_ID_FULL_AND_FAST_ULTIMATE
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP
-      || config == CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE
-      || sql_int ("SELECT count(*) FROM configs"
-                  " WHERE id = %i"
-                  " AND (uuid = '" CONFIG_UUID_EMPTY "'"
-                  "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
-                  "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-                  "      OR uuid = '" CONFIG_UUID_OSP_OVALDI "'"
-                  "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
-                  config))
+  if (sql_int ("SELECT count(*) FROM configs"
+               " WHERE id = %i"
+               " AND (uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
+               "      OR uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
+               "      OR uuid = '" CONFIG_UUID_EMPTY "'"
+               "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
+               "      OR uuid = '" CONFIG_UUID_OSP_OVALDI "'"
+               "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
+               config))
     return 1;
 
   return sql_int ("SELECT count(*) FROM tasks"
