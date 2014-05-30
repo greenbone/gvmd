@@ -7920,7 +7920,7 @@ migrate_104_to_105 ()
 
   /* Clear cache for reports with already expired overrides */
   sql ("DELETE FROM report_counts"
-       " WHERE end_time != 0 AND end_time <= now()");
+       " WHERE end_time != 0 AND end_time <= m_now ()");
 
   /* Set the database version to 105. */
 

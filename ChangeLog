@@ -1,5 +1,13 @@
 2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_port_lists, report_severity)
+	(create_schedule, modify_schedule):  Replace "now" with "m_now" in SQL.
+
+	* src/manage_migrators.c (migrate_104_to_105): Replace "now" with
+	"m_now" in SQL.
+
+2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove explicit control of the IDs of the Full and * configs, because
 	this interferes with the autoincrement of the ID in Postgres.  All other
 	configs specify only the UUID anyway.

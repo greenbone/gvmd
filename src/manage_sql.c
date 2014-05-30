@@ -9789,7 +9789,7 @@ check_db_port_lists ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment, creation_time,"
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
-           " '', now(), now())");
+           " '', m_now (), m_now ())");
       list = sql_last_insert_rowid ();
       RANGE (PORT_PROTOCOL_TCP, 1, 65535);
     }
@@ -17968,7 +17968,7 @@ report_severity (report_t report, int overrides)
                  " FROM report_counts"
                  " WHERE report = %llu"
                  " AND override = %d"
-                 " AND (end_time = 0 or end_time >= now());",
+                 " AND (end_time = 0 or end_time >= m_now ());",
                  report, overrides);
   if (next (&iterator)
       && (iterator_null (&iterator, 0) == 0))
@@ -35282,7 +35282,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
            "  '%s', %i, %i, %i, %i,"
            "  '%s',"
-           "  %li, now(), now());",
+           "  %li, m_now (), m_now ());",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
            period, period_months, duration, insert_timezone, offset);
       g_free (quoted_comment);
@@ -35297,7 +35297,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
          "  (SELECT id FROM users WHERE users.uuid = '%s'),"
          "  '', %i, %i, %i, %i,"
          "  '%s',"
-         "  %li, now(), now());",
+         "  %li, m_now (), m_now ());",
          quoted_name, current_credentials.uuid, first_time, period,
          period_months, duration, insert_timezone, offset);
 
@@ -36282,7 +36282,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
        " period_months = %s,"
        " duration = %s,"
        " initial_offset = %s,"
-       " modification_time = now()"
+       " modification_time = m_now ()"
        " WHERE id = %llu;",
        quoted_name ? "'" : "",
        quoted_name ? quoted_name : "name",
