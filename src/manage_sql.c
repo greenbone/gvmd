@@ -11446,8 +11446,8 @@ manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
   quoted_name = sql_quote (name);
   quoted_method = sql_quote (method);
   sql ("DELETE FROM role_users"
-       " WHERE user = (SELECT id FROM users"
-       "               WHERE name = '%s' AND method = '%s');",
+       " WHERE \"user\" = (SELECT id FROM users"
+       "                   WHERE name = '%s' AND method = '%s');",
        quoted_name,
        quoted_method);
   sql ("INSERT INTO role_users (role, user)"
@@ -14314,7 +14314,7 @@ report_add_result (report_t report, result_t result)
   sql_int64 (&rowid,
              "SELECT id FROM report_counts"
              " WHERE report = %llu"
-             " AND user = (SELECT id FROM users WHERE users.uuid = '%s')"
+             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
              " AND override = 0"
              " AND severity = %1.1f;",
              report, current_credentials.uuid, severity);
@@ -14372,7 +14372,7 @@ report_add_result (report_t report, result_t result)
   sql_int64 (&rowid,
              "SELECT id FROM report_counts"
              " WHERE report = %llu"
-             " AND user = (SELECT id FROM users WHERE users.uuid = '%s')"
+             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
              " AND override = 1"
              " AND severity = %1.1f;",
              report, current_credentials.uuid, ov_severity);
@@ -16990,8 +16990,8 @@ report_scan_result_count (report_t report, const char* levels,
                         " FROM report_counts"
                         " WHERE report = %llu"
                         "   AND override = %d"
-                        "   AND user = (SELECT id FROM users"
-                        "               WHERE users.uuid = '%s')"
+                        "   AND \"user\" = (SELECT id FROM users"
+                        "                   WHERE users.uuid = '%s')"
                         "   AND severity >= " G_STRINGIFY (SEVERITY_FP) ";",
                         report, override, current_credentials.uuid);
       return 0;
@@ -17661,8 +17661,8 @@ report_counts_cache_exists (report_t report, int override)
     return sql_int ("SELECT EXISTS (SELECT * FROM report_counts"
                     " WHERE report = %llu"
                     "   AND override = %d"
-                    "   AND user = (SELECT id FROM users"
-                    "               WHERE users.uuid = '%s')"
+                    "   AND \"user\" = (SELECT id FROM users"
+                    "                   WHERE users.uuid = '%s')"
                     "   AND (end_time = 0 OR end_time >= m_now ()));",
                     report, override, current_credentials.uuid);
 }
@@ -17682,8 +17682,8 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
                  "SELECT severity, count FROM report_counts"
                  " WHERE report = %llu"
                  "   AND override = %i"
-                 "   AND user = (SELECT id FROM users"
-                 "               WHERE users.uuid = '%s')"
+                 "   AND \"user\" = (SELECT id FROM users"
+                 "                   WHERE users.uuid = '%s')"
                  "   AND (end_time = 0 OR end_time >= m_now ());",
                  report, override, current_credentials.uuid);
   while (next (&iterator))
@@ -17726,8 +17726,8 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   ret = sql_giveup ("DELETE FROM report_counts"
                     " WHERE report = %llu"
                     "   AND override = %i"
-                    "   AND user = (SELECT id FROM users"
-                    "               WHERE users.uuid = '%s');",
+                    "   AND \"user\" = (SELECT id FROM users"
+                    "                   WHERE users.uuid = '%s');",
                     report, override, current_credentials.uuid);
   if (ret)
     {
@@ -47181,13 +47181,13 @@ copy_user (const char* name, const char* comment, const char *user_id,
 
   sql ("INSERT INTO group_users (user, `group`)"
        " SELECT %llu, `group` FROM group_users"
-       " WHERE user = (SELECT id FROM users WHERE uuid = '%s');",
+       " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
        user,
        quoted_uuid);
 
   sql ("INSERT INTO role_users (user, role)"
        " SELECT %llu, role FROM role_users"
-       " WHERE user = (SELECT id FROM users WHERE uuid = '%s');",
+       " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
        user,
        quoted_uuid);
 
@@ -47388,7 +47388,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("DELETE FROM report_formats WHERE owner = %llu;", user);
   sql ("DELETE FROM report_formats_trash WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM report_counts WHERE user = %llu", user);
+  sql ("DELETE FROM report_counts WHERE \"user\" = %llu", user);
   sql ("DELETE FROM report_host_details"
        " WHERE report_host IN (SELECT id FROM report_hosts"
        "                       WHERE report IN (SELECT id FROM reports"
@@ -47434,10 +47434,10 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   sql ("UPDATE roles SET owner = 0 WHERE owner = %llu;", user);
   sql ("UPDATE users SET owner = 0 WHERE owner = %llu;", user);
 
-  sql ("DELETE FROM group_users WHERE user = %llu;", user);
-  sql ("DELETE FROM group_users_trash WHERE user = %llu;", user);
-  sql ("DELETE FROM role_users WHERE user = %llu;", user);
-  sql ("DELETE FROM role_users_trash WHERE user = %llu;", user);
+  sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
+  sql ("DELETE FROM group_users_trash WHERE \"user\" = %llu;", user);
+  sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
+  sql ("DELETE FROM role_users_trash WHERE \"user\" = %llu;", user);
 
   sql ("DELETE FROM users WHERE id = %llu;", user);
 
@@ -47606,7 +47606,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
     {
       int index;
 
-      sql ("DELETE FROM group_users WHERE user = %llu;", user);
+      sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
       index = 0;
       while (groups && (index < groups->len))
         {
@@ -47647,7 +47647,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
     {
       int index;
 
-      sql ("DELETE FROM role_users WHERE user = %llu;", user);
+      sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
       index = 0;
       while (roles && (index < roles->len))
         {
@@ -47790,13 +47790,13 @@ trash_user_writable (user_t user)
   GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow,"             \
   " coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"     \
   "            JOIN roles ON role = roles.id"                              \
-  "            WHERE user = users.id"                                      \
+  "            WHERE \"user\" = users.id"                                  \
   "            ORDER BY name ASC),"                                        \
   "           '')"                                                         \
   " AS roles,"                                                             \
   " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
   "            JOIN groups ON `group` = groups.id"                         \
-  "            WHERE user = users.id"                                      \
+  "            WHERE \"user\" = users.id"                                  \
   "            ORDER BY groups.name ASC),"                                 \
   "           '')"                                                         \
   " AS groups,"                                                            \
@@ -47919,7 +47919,7 @@ init_user_group_iterator (iterator_t *iterator, user_t user)
   init_iterator (iterator,
                  "SELECT DISTINCT id, uuid, name FROM groups"
                  " WHERE id IN (SELECT `group` FROM group_users"
-                 "              WHERE user = %llu)"
+                 "              WHERE \"user\" = %llu)"
                  " ORDER by name;",
                  user);
 }
@@ -47954,7 +47954,7 @@ init_user_role_iterator (iterator_t *iterator, user_t user)
   init_iterator (iterator,
                  "SELECT DISTINCT id, uuid, name FROM roles"
                  " WHERE id IN (SELECT role FROM role_users"
-                 "              WHERE user = %llu)"
+                 "              WHERE \"user\" = %llu)"
                  " ORDER by name;",
                  user);
 }
