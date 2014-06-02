@@ -85,6 +85,13 @@ manage_create_sql_functions ()
        "  SELECT uuid_generate_v4 ()::text AS result;"
        "$$ LANGUAGE SQL;");
 
+  sql ("CREATE OR REPLACE FUNCTION tag (text, text) RETURNS text AS $$"
+       /* Extract a tag from an OTP tag list. */
+       "  SELECT split_part (unnest, '=', 2)"
+       "  FROM unnest (string_to_array ($1, '|'))"
+       "  WHERE split_part (unnest, '=', 1) = $2;"
+       "$$ LANGUAGE SQL;");
+
   return 0;
 }
 

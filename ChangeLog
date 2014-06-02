@@ -1,6 +1,12 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (filter_clause): Use "lower" instead of COLLATE
+	* src/manage_pg.c (manage_create_sql_functions): Add "tag".
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (set_nvts_feed_version)
+	(manage_nvt_preferences_enable): DELETE then INSERT instead of using
+	INSERT OR REPLACE, for Postgres.
 
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
