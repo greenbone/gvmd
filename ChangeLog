@@ -1,3 +1,15 @@
+2014-06-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Fix errors found when building with Clang 3.4
+
+	* src/manage_sql.c (alive_test_from_string): Change return value to int
+	as -1 is returned on error.
+	(create_target, modify_target): Adjust variable type for
+	alive_test_from_string() change.
+
+	* src/omp.c (omp_xml_handle_end_element): Fix variables use before
+	initialization error.
+
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Correct column name in targets.

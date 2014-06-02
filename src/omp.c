@@ -16450,10 +16450,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               time_t next_time;
               char *owner, *observers;
               int target_in_trash, schedule_in_trash;
-              int debugs, holes, infos, logs, warnings;
+              int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2, infos_2, warnings_2;
               int false_positives;
-              double severity, severity_2;
+              double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
               gchar *in_assets, *max_checks, *max_hosts, *source_iface;
