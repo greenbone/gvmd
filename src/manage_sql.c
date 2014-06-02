@@ -2392,12 +2392,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE ASC",
+                g_string_append_printf (order, " ORDER BY lower (%s) ASC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt ASC, %ss%s.text COLLATE NOCASE ASC",
+                                        " ORDER BY nvt ASC,"
+                                        "          lower (%ss%s.text) ASC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -2459,12 +2460,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s COLLATE NOCASE DESC",
+                g_string_append_printf (order, " ORDER BY lower (%s) DESC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
-                                        " ORDER BY nvt DESC, %ss%s.text COLLATE NOCASE DESC",
+                                        " ORDER BY nvt DESC,"
+                                        " lower (%ss%s.text) DESC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -11202,13 +11204,13 @@ cleanup_tables ()
    * This should be a migrator, but this way is easier to backport.  */
 
   sql ("DELETE FROM group_users"
-       " WHERE user NOT IN (SELECT id FROM users);");
+       " WHERE \"user\" NOT IN (SELECT id FROM users);");
   sql ("DELETE FROM group_users_trash"
-       " WHERE user NOT IN (SELECT id FROM users);");
+       " WHERE \"user\" NOT IN (SELECT id FROM users);");
   sql ("DELETE FROM role_users"
-       " WHERE user NOT IN (SELECT id FROM users);");
+       " WHERE \"user\" NOT IN (SELECT id FROM users);");
   sql ("DELETE FROM role_users_trash"
-       " WHERE user NOT IN (SELECT id FROM users);");
+       " WHERE \"user\" NOT IN (SELECT id FROM users);");
 }
 
 /**
@@ -12843,10 +12845,10 @@ task_severity (task_t task, int overrides, int offset)
              " AND (overrides.result = results.id"
              "      OR overrides.result = 0)"
              " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = \"\""
+             "      OR overrides.hosts = ''"
              "      OR hosts_contains (overrides.hosts, results.host))"
              " AND (overrides.port is NULL"
-             "      OR overrides.port = \"\""
+             "      OR overrides.port = ''"
              "      OR overrides.port = results.port)"
              " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -13556,12 +13558,12 @@ prognosis_order_by (const char* sort_field, int ascending)
   else if (strcmp (sort_field, "vulnerability") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " vulnerability COLLATE NOCASE %s",
+                            " vulnerability COLLATE lower (%s)",
                             ascending ? "ASC" : "DESC");
   else if (strcmp (sort_field, "location") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " location COLLATE NOCASE %s,"
+                            " location COLLATE lower (%s),"
                             " severity DESC",
                             ascending ? "ASC" : "DESC");
   else
@@ -14322,13 +14324,11 @@ report_add_result (report_t report, result_t result)
     sql ("UPDATE report_counts SET count = count + 1"
          " WHERE id = %llu;", rowid);
   else
-    sql ("INSERT OR IGNORE"
-        " INTO report_counts (report, user, override, severity, count,"
-        "                     end_time)"
-        " VALUES (%llu,"
-        "         (SELECT id FROM users WHERE uuid='%s'),"
-        "         0, %1.1f, 1, 0);",
-        report, current_credentials.uuid, severity);
+    sql ("INSERT INTO report_counts"
+         " (report, \"user\", override, severity, count, end_time)"
+         " VALUES"
+         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, 1, 0);",
+         report, current_credentials.uuid, severity);
 
   ov_severity_str
     = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
@@ -14348,10 +14348,10 @@ report_add_result (report_t report, result_t result)
                   " AND (overrides.result = results.id"
                   "      OR overrides.result = 0)"
                   " AND (overrides.hosts is NULL"
-                  "      OR overrides.hosts = \"\""
+                  "      OR overrides.hosts = ''"
                   "      OR hosts_contains (overrides.hosts, results.host))"
                   " AND (overrides.port is NULL"
-                  "      OR overrides.port = \"\""
+                  "      OR overrides.port = ''"
                   "      OR overrides.port = results.port)"
                   " AND severity_matches_ov (%1.1f, overrides.severity)"
                   " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -14382,13 +14382,11 @@ report_add_result (report_t report, result_t result)
          " WHERE id = %llu;",
          rowid);
   else
-    sql ("INSERT OR IGNORE"
-        " INTO report_counts (report, user, override, severity, count,"
-        "                     end_time)"
-        " VALUES (%llu,"
-        "         (SELECT id FROM users WHERE uuid='%s'),"
-        "         1, %1.1f, 1, 0);",
-        report, current_credentials.uuid, ov_severity);
+    sql ("INSERT INTO report_counts"
+         " (report, \"user\", override, severity, count, end_time)"
+         " VALUES"
+         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %1.1f, 1, 0);",
+         report, current_credentials.uuid, ov_severity);
 
   sql ("UPDATE report_counts"
        " SET end_time = (SELECT coalesce(min(overrides.end_time), -1)"
@@ -15105,10 +15103,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
                  " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
+                 "      OR overrides.hosts = ''"
                  "      OR hosts_contains (overrides.hosts, results.host))"
                  " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = ''"
                  "      OR overrides.port = results.port)"
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -15227,7 +15225,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      ascending ? "ASC" : "DESC");
       else if (strcmp (sort_field, "vulnerability") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
-                                     " vulnerability COLLATE NOCASE %s,"
+                                     " vulnerability COLLATE lower (%s),"
                                      " port COLLATE collate_location,"
                                      " host COLLATE collate_ip,"
                                      " (CASE WHEN auto_type IS NULL"
@@ -15332,10 +15330,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
                  " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
+                 "      OR overrides.hosts = ''"
                  "      OR hosts_contains (overrides.hosts, results.host))"
                  " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = ''"
                  "      OR overrides.port = results.port)"
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -16311,10 +16309,10 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
                  " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
+                 "      OR overrides.hosts = ''"
                  "      OR hosts_contains (overrides.hosts, results.host))"
                  " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = ''"
                  "      OR overrides.port = results.port)"
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -17030,10 +17028,10 @@ report_scan_result_count (report_t report, const char* levels,
              " AND (overrides.result = results.id"
              "      OR overrides.result = 0)"
              " AND (overrides.hosts is NULL"
-             "      OR overrides.hosts = \"\""
+             "      OR overrides.hosts = ''"
              "      OR hosts_contains (overrides.hosts, results.host))"
              " AND (overrides.port is NULL"
-             "      OR overrides.port = \"\""
+             "      OR overrides.port = ''"
              "      OR overrides.port = results.port)"
              " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -17314,10 +17312,10 @@ report_severity_data (report_t report, int override,
                      " AND (overrides.result = 0"
                      "      OR overrides.result = $2)" // 2
                      " AND (overrides.hosts is NULL"
-                     "      OR overrides.hosts = \"\""
+                     "      OR overrides.hosts = ''"
                      "      OR hosts_contains (overrides.hosts, $3))" // 3
                      " AND (overrides.port is NULL"
-                     "      OR overrides.port = \"\""
+                     "      OR overrides.port = ''"
                      "      OR overrides.port = $4)" // 4
                      " AND severity_matches_ov ($5," // 5
                      "                          overrides.severity)"
@@ -19477,10 +19475,10 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
                  " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = \"\""
+                 "      OR overrides.hosts = ''"
                  "      OR hosts_contains (overrides.hosts, results.host))"
                  " AND (overrides.port is NULL"
-                 "      OR overrides.port = \"\""
+                 "      OR overrides.port = ''"
                  "      OR overrides.port = results.port)"
                  " AND (severity_matches_ov (%s, overrides.severity))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
@@ -33337,12 +33335,12 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "      (SELECT results.nvt FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
-                                       "      OR hosts = \"\""
+                                       "      OR hosts = ''"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (port is NULL"
-                                       "      OR port = \"\""
+                                       "      OR port = ''"
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.id = %llu))"
@@ -33476,12 +33474,12 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "      (SELECT results.nvt FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
-                                       "      OR hosts = \"\""
+                                       "      OR hosts = ''"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (port is NULL"
-                                       "      OR port = \"\""
+                                       "      OR port = ''"
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.id = %llu))"
@@ -34312,12 +34310,12 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "      (SELECT results.nvt FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
-                                       "      OR hosts = \"\""
+                                       "      OR hosts = ''"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (port is NULL"
-                                       "      OR port = \"\""
+                                       "      OR port = ''"
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.id = %llu))"
@@ -34452,12 +34450,12 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "      (SELECT results.nvt FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
-                                       "      OR hosts = \"\""
+                                       "      OR hosts = ''"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
                                        " AND (port is NULL"
-                                       "      OR port = \"\""
+                                       "      OR port = ''"
                                        "      OR port ="
                                        "      (SELECT results.port FROM results"
                                        "       WHERE results.id = %llu))"

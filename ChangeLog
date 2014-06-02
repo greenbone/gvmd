@@ -1,3 +1,19 @@
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Adjust SQL slightly for Postgres compatibility.
+
+	* src/manage_sql.c (filter_clause): Use "lower" instead of COLLATE
+	NOCASE.
+	(cleanup_tables, prognosis_order_by): Quote "user" in SQL, for Postgres.
+	(task_severity, init_asset_iterator, report_scan_result_count)
+	(report_severity_data, filtered_host_count, note_count)
+	(init_note_iterator, override_count, init_override_iterator): Use single
+	instead of double quotes in SQL.
+	(report_add_result): Remove "OR IGNORE" because the previous statement
+	checks if the row exists.  Quote "user".  Use single quotes.
+	(init_result_iterator): Use single quotes.  Use "lower" instead of
+	COLLATE NOCASE.
+
 2014-06-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Fix errors found when building with Clang 3.4
