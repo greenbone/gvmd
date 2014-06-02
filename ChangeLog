@@ -1,3 +1,12 @@
+2014-06-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (modify_task_check_config_scanner): New function.
+
+	* src/manage.h: Add function prototypes.
+
+	* src/omp.c (omp_xml_handle_end_element): In MODIFY_TASK case, check
+	that the specified config's type matches the scanner set for the task.
+
 2014-05-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add make_uuid.

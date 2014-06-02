@@ -23750,6 +23750,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_task",
                                   "For container tasks only name, comment and"
                                   " observers can be modified"));
+            else if (!modify_task_check_config_scanner
+                       (task, modify_task_data->config_id,
+                        modify_task_data->scanner_id))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task", "Config and Scanner types mismatch."));
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)

@@ -1452,6 +1452,9 @@ int
 config_nvts_growing (config_t);
 
 int
+modify_task_check_config_scanner (task_t, const char *, const char *);
+
+int
 manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
@@ -2042,6 +2045,9 @@ modify_scanner (const char*, const char*, const char*, const char *,
 
 int
 delete_scanner (const char *, int);
+
+gboolean
+find_scanner_with_permission (const char *, scanner_t *, const char *);
 
 int
 scanner_in_use (scanner_t);

@@ -26915,6 +26915,45 @@ config_nvt_timeout (config_t config, const char *oid)
 }
 
 /**
+ * @brief Check scanner and config values match for a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  config_id    ID of config. "0" to use task's config.
+ * @param[in]  scanner_id   ID of scanner.
+ *
+ * @return 1 if config and scanner types match, 0 otherwise.
+ */
+int
+modify_task_check_config_scanner (task_t task, const char *config_id,
+                                  const char *scanner_id)
+{
+  config_t config = 0;
+  scanner_t scanner = 0;
+  int type;
+
+  if (config_id == NULL && scanner_id == NULL)
+    return 1;
+
+  if (strcmp (config_id, "0"))
+    find_config_with_permission (config_id, &config, "get_configs");
+  else
+    config = task_config (task);
+
+  find_scanner_with_permission (scanner_id, &scanner, "get_scanners");
+
+  type = config_type (config);
+  /* OSPD Scanner with OSPD config. */
+  if (scanner > 0 && type > 0)
+    return 1;
+
+  /* No Scanner with Normal config. */
+  if (scanner == 0 && type == 0)
+    return 1;
+
+  return 0;
+}
+
+/**
  * @brief Create a config from an existing config.
  *
  * @param[in]  name        Name of new config and NVT selector.
