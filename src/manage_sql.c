@@ -30278,7 +30278,7 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
 void
 manage_nvt_preferences_enable ()
 {
-  sql ("DELETE FROM %s.meta WHERE name = 'nvts_feed_version';",
+  sql ("DELETE FROM %s.meta WHERE name = 'nvt_preferences_enabled';",
        sql_schema ());
   sql ("INSERT INTO %s.meta (name, value)"
        " VALUES ('nvt_preferences_enabled', 1);",
