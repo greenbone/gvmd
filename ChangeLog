@@ -1,5 +1,9 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Use "lower" instead of COLLATE
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Adjust SQL slightly for Postgres compatibility.
 
 	* src/manage_sql.c (filter_clause): Use "lower" instead of COLLATE

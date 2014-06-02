@@ -28212,7 +28212,9 @@ void
 set_nvts_feed_version (const char *feed_version)
 {
   gchar* quoted = sql_quote (feed_version);
-  sql ("INSERT OR REPLACE INTO %s.meta (name, value)"
+  sql ("DELETE FROM %s.meta WHERE name = 'nvts_feed_version';",
+       sql_schema ());
+  sql ("INSERT INTO %s.meta (name, value)"
        " VALUES ('nvts_feed_version', '%s');",
        sql_schema (),
        quoted);
@@ -30276,7 +30278,9 @@ manage_nvt_preference_add (const char* name, const char* value, int remove)
 void
 manage_nvt_preferences_enable ()
 {
-  sql ("INSERT OR REPLACE INTO %s.meta (name, value)"
+  sql ("DELETE FROM %s.meta WHERE name = 'nvts_feed_version';",
+       sql_schema ());
+  sql ("INSERT INTO %s.meta (name, value)"
        " VALUES ('nvt_preferences_enabled', 1);",
        sql_schema ());
 }
