@@ -3886,7 +3886,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
   if (resource)
     /* Ownership test is done above by find function. */
-    owned_clause = g_strdup (" 1");
+    owned_clause = g_strdup (" t ()");
   else
     owned_clause = where_owned (type, get, owned, owner_filter, resource,
                                 permissions);

@@ -77,6 +77,23 @@ collate_role (void *, int, const void *, int, const void *);
 /* SQL functions. */
 
 /**
+ * @brief Return 1.
+ *
+ * This is a callback for a scalar SQL function of zero arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_t (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  assert (argc == 0);
+
+  sqlite3_result_int (context, 1);
+}
+
+/**
  * @brief Make a UUID.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -1369,6 +1386,20 @@ sql_user_can_everything (sqlite3_context *context, int argc,
 int
 manage_create_sql_functions ()
 {
+  if (sqlite3_create_function (task_db,
+                               "t",
+                               0,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_t,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to t", __FUNCTION__);
+      return -1;
+    }
+
   if (sqlite3_create_function (task_db,
                                "make_uuid",
                                0,               /* Number of args. */

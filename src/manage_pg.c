@@ -51,6 +51,10 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
+  sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
+       "  SELECT true;"
+       "$$ LANGUAGE SQL;");
+
   sql ("CREATE OR REPLACE FUNCTION iso_time (integer) RETURNS text AS $$"
        "  SELECT CASE"
        "         WHEN $1 = 0 THEN ''"

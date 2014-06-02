@@ -1,5 +1,17 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get truth with a dedicated SQL function.
+
+	* src/manage_sql.c (init_get_iterator): Use "t ()" to get truth value,
+	because SQLite3 uses 1 and Postgres uses "true".
+
+	* src/manage_sqlite3.c (sql_t): New function.
+	(manage_create_sql_functions): Create "t".
+
+	* src/manage_pg.c (manage_create_sql_functions): Create "t".
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add "tag".
 
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
