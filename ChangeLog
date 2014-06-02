@@ -1,10 +1,16 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Correct column name in targets.
+	Remove explicit references that are optional in tasks, for now.
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_user_set_role, report_add_result)
 	(report_add_result, report_scan_result_count, report_counts_cache_exists)
 	(report_counts_from_cache, cache_report_counts, copy_user, delete_user)
 	(delete_user, modify_user, modify_user, trash_user_writable)
-	(init_user_group_iterator, init_user_role_iterator): Quote "user" in SQL.
+	(init_user_group_iterator, init_user_role_iterator): Quote "user" in SQL
+	because it is reserved in Postgres.
 
 2014-06-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
