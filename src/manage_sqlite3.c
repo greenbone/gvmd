@@ -73,6 +73,12 @@ collate_location (void *, int, const void *, int, const void *);
 int
 collate_role (void *, int, const void *, int, const void *);
 
+int
+parse_time (const gchar *, int *);
+
+gchar *
+tag_value (const gchar *tags, const gchar *tag);
+
 
 /* SQL functions. */
 
@@ -311,6 +317,8 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
  *
  * This is a callback for a scalar SQL function of one argument.
  *
+ * This is only used by the SQLite backend, in the SQL of some older migrators.
+ *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
  * @param[in]  argv     Argument array.
@@ -318,87 +326,32 @@ sql_iso_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 void
 sql_parse_time (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
-  const unsigned char *string;
-  int epoch_time, offset;
-  struct tm tm;
+  const gchar *string;
+  int epoch_time;
 
   assert (argc == 1);
 
-  string = sqlite3_value_text (argv[0]);
+  string = (const gchar *) sqlite3_value_text (argv[0]);
 
-  if ((strcmp ((char*) string, "") == 0)
-      || (strcmp ((char*) string, "$Date: $") == 0)
-      || (strcmp ((char*) string, "$Date$") == 0)
-      || (strcmp ((char*) string, "$Date:$") == 0)
-      || (strcmp ((char*) string, "$Date") == 0)
-      || (strcmp ((char*) string, "$$") == 0))
+  switch (parse_time (string, &epoch_time))
     {
-      sqlite3_result_int (context, 0);
-      return;
+      case -1:
+        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
+        sqlite3_result_int (context, 0);
+        break;
+      case -2:
+        g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
+        sqlite3_result_int (context, 0);
+        break;
+      case -3:
+        g_warning ("%s: Failed to parse timezone offset: %s",
+                   __FUNCTION__,
+                   string);
+        sqlite3_result_int (context, 0);
+        break;
+      default:
+        sqlite3_result_int (context, epoch_time);
     }
-
-  /* Parse the time. */
-
-  /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
-  /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
-  /* $Date: Fri, 11 Nov 2011 14:42:28 +0100 $ */
-  if ((strptime ((char*) string, "%F %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm) == NULL)
-      && (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm) == NULL))
-    {
-      g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
-      sqlite3_result_int (context, 0);
-      return;
-    }
-  epoch_time = mktime (&tm);
-  if (epoch_time == -1)
-    {
-      g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
-      sqlite3_result_int (context, 0);
-      return;
-    }
-
-  /* Get the timezone offset from the string. */
-
-  if ((sscanf ((char*) string, "%*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
-               != 1)
-      && (sscanf ((char*) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string,
-                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]",
-                  &offset)
-          != 1)
-      && (sscanf ((char*) string, "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
-                  &offset)
-          != 1))
-    {
-      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
-                 string);
-      sqlite3_result_int (context, 0);
-      return;
-    }
-
-  /* Use the offset to convert to UTC. */
-
-  if (offset < 0)
-    {
-      epoch_time += ((-offset) / 100) * 60 * 60;
-      epoch_time += ((-offset) % 100) * 60;
-    }
-  else if (offset > 0)
-    {
-      epoch_time -= (offset / 100) * 60 * 60;
-      epoch_time -= (offset % 100) * 60;
-    }
-
-  sqlite3_result_int (context, epoch_time);
-  return;
 }
 
 /**
@@ -455,7 +408,7 @@ void
 sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   const char *tags, *tag;
-  gchar **split, **point;
+  gchar *value;
 
   assert (argc == 2);
 
@@ -473,27 +426,10 @@ sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
       return;
     }
 
-  /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
+  value = tag_value (tags, tag);
+  sqlite3_result_text (context, value, -1, SQLITE_TRANSIENT);
+  g_free (value);
 
-  split = g_strsplit (tags, "|", 0);
-  point = split;
-
-  while (*point)
-    {
-      if ((strlen (*point) > strlen (tag))
-          && (strncmp (*point, tag, strlen (tag)) == 0)
-          && ((*point)[strlen (tag)] == '='))
-        {
-          sqlite3_result_text (context, *point + strlen (tag) + 1, -1,
-                               SQLITE_TRANSIENT);
-          g_strfreev (split);
-          return;
-        }
-      point++;
-    }
-  g_strfreev (split);
-
-  sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
   return;
 }
 

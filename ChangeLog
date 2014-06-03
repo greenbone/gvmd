@@ -1,5 +1,18 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove use of the "parse_time" SQL function, except in the SQLite3
+	migrators.
+
+	* src/manage_sql.c (tag_value, parse_time): New functions.  Bodies from
+	manage_sqlite3.c.
+	(make_nvt_from_nvti): Extract and parse date tags in C instead of via
+	SQL functions.
+
+	* src/manage_sqlite3.c (sql_parse_time, sql_tag): Call new manage_sql.c
+	functions to do the work.
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_nvt_preferences_enable): Correct name.
 
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -1123,6 +1123,133 @@ vector_find_filter (const gchar **vector, const gchar *string)
   return 0;
 }
 
+/**
+ * @brief Extract a tag from an OTP tag list.
+ *
+ * @param[in]   tags  Tag list.
+ * @param[out]  tag   Tag name.
+ *
+ * @return Newly allocated tag value.
+ */
+gchar *
+tag_value (const gchar *tags, const gchar *tag)
+{
+  gchar **split, **point;
+
+  /* creation_date=2009-04-09 14:18:58 +0200 (Thu, 09 Apr 2009)|... */
+
+  if (tags == NULL)
+    return g_strdup ("");
+
+  split = g_strsplit (tags, "|", 0);
+  point = split;
+
+  while (*point)
+    {
+      if ((strlen (*point) > strlen (tag))
+          && (strncmp (*point, tag, strlen (tag)) == 0)
+          && ((*point)[strlen (tag)] == '='))
+        {
+          gchar *ret;
+          ret = g_strdup (*point + strlen (tag) + 1);
+          g_strfreev (split);
+          return ret;
+        }
+      point++;
+    }
+  g_strfreev (split);
+  return g_strdup ("");
+}
+
+/**
+ * @brief Try convert an OTP NVT tag time string into epoch time.
+ *
+ * @param[in]   string   String.
+ * @param[out]  seconds  Time as seconds since the epoch.
+ *
+ * @return -1 failed to parse time, -2 failed to make time, -3 failed to parse
+ *         timezone offset, 0 success.
+ */
+int
+parse_time (const gchar *string, int *seconds)
+{
+  int epoch_time, offset;
+  struct tm tm;
+
+  if ((strcmp ((char*) string, "") == 0)
+      || (strcmp ((char*) string, "$Date: $") == 0)
+      || (strcmp ((char*) string, "$Date$") == 0)
+      || (strcmp ((char*) string, "$Date:$") == 0)
+      || (strcmp ((char*) string, "$Date") == 0)
+      || (strcmp ((char*) string, "$$") == 0))
+    {
+      if (seconds)
+        *seconds = 0;
+      return 0;
+    }
+
+  /* Parse the time. */
+
+  /* 2011-08-09 08:20:34 +0200 (Tue, 09 Aug 2011) */
+  /* $Date: 2012-02-17 16:05:26 +0100 (Fr, 17. Feb 2012) $ */
+  /* $Date: Fri, 11 Nov 2011 14:42:28 +0100 $ */
+  if ((strptime ((char*) string, "%F %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %F %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "%a %b %d %T %Y %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %a, %d %b %Y %T %z", &tm) == NULL)
+      && (strptime ((char*) string, "$Date: %a %b %d %T %Y %z", &tm) == NULL))
+    {
+      g_warning ("%s: Failed to parse time: %s", __FUNCTION__, string);
+      return -1;
+    }
+  epoch_time = mktime (&tm);
+  if (epoch_time == -1)
+    {
+      g_warning ("%s: Failed to make time: %s", __FUNCTION__, string);
+      return -2;
+    }
+
+  /* Get the timezone offset from the string. */
+
+  if ((sscanf ((char*) string, "%*u-%*u-%*u %*u:%*u:%*u %d%*[^]]", &offset)
+               != 1)
+      && (sscanf ((char*) string, "$Date: %*u-%*u-%*u %*u:%*u:%*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string, "%*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string,
+                  "$Date: %*s %*s %*s %*u %*u:%*u:%*u %d%*[^]]",
+                  &offset)
+          != 1)
+      && (sscanf ((char*) string, "$Date: %*s %*s %*s %*u:%*u:%*u %*u %d%*[^]]",
+                  &offset)
+          != 1))
+    {
+      g_warning ("%s: Failed to parse timezone offset: %s", __FUNCTION__,
+                 string);
+      return -3;
+    }
+
+  /* Use the offset to convert to UTC. */
+
+  if (offset < 0)
+    {
+      epoch_time += ((-offset) / 100) * 60 * 60;
+      epoch_time += ((-offset) % 100) * 60;
+    }
+  else if (offset > 0)
+    {
+      epoch_time -= (offset / 100) * 60 * 60;
+      epoch_time -= (offset % 100) * 60;
+    }
+
+  if (seconds)
+    *seconds = epoch_time;
+  return 0;
+}
+
 
 /* Filter utilities. */
 
@@ -28268,8 +28395,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_cvss_base;
-  gchar *quoted_family, *quoted_original_tag;
+  gchar *quoted_cvss_base, *quoted_family, *value;
+  int creation_time, modification_time;
 
   if (remove)
     {
@@ -28341,18 +28468,56 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     }
   else
     quoted_tag = g_strdup ("");
-  quoted_original_tag = sql_quote (nvti_tag (nvti) ? nvti_tag (nvti) : "");
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
+  value = tag_value (nvti_tag (nvti), "creation_date");
+  switch (parse_time (value, &creation_time))
+    {
+      case -1:
+        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, value);
+        creation_time = 0;
+        break;
+      case -2:
+        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
+        creation_time = 0;
+        break;
+      case -3:
+        g_warning ("%s: Failed to parse timezone offset: %s",
+                   __FUNCTION__,
+                   value);
+        creation_time = 0;
+        break;
+    }
+  g_free (value);
+
+  value = tag_value (nvti_tag (nvti), "modification_date");
+  switch (parse_time (value, &modification_time))
+    {
+      case -1:
+        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, value);
+        modification_time = 0;
+        break;
+      case -2:
+        g_warning ("%s: Failed to make time: %s", __FUNCTION__, value);
+        modification_time = 0;
+        break;
+      case -3:
+        g_warning ("%s: Failed to parse timezone offset: %s",
+                   __FUNCTION__,
+                   value);
+        modification_time = 0;
+        break;
+    }
+  g_free (value);
+
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', parse_time (tag ('%s', 'creation_date')),"
-       " parse_time (tag ('%s', 'last_modification')), '%s');",
+       " '%s', %i, '%s', '%s', %i, %i, '%s');",
        nvti_oid (nvti),
        quoted_version,
        quoted_name,
@@ -28365,8 +28530,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
        nvti_category (nvti),
        quoted_family,
        quoted_cvss_base,
-       quoted_original_tag,
-       quoted_original_tag,
+       creation_time,
+       modification_time,
        nvti_oid (nvti));
 
   if (remove)
@@ -28379,7 +28544,6 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_cve);
   g_free (quoted_bid);
   g_free (quoted_xref);
-  g_free (quoted_original_tag);
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
