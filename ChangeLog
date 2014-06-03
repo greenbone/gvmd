@@ -1,5 +1,10 @@
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Use bigint for the type_min and
+	type_max columns, because they may contain LLONG_MAX and LLONG_MIN.
+
+2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove use of the "parse_time" SQL function, except in the SQLite3
 	migrators.
 

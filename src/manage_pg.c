@@ -661,8 +661,8 @@ create_tables ()
        "  name text,"
        "  type integer,"
        "  value text,"
-       "  type_min integer,"
-       "  type_max integer,"
+       "  type_min bigint,"
+       "  type_max bigint,"
        "  type_regex text,"
        "  fallback text);");
 
@@ -672,8 +672,8 @@ create_tables ()
        "  name text,"
        "  type integer,"
        "  value text,"
-       "  type_min integer,"
-       "  type_max integer,"
+       "  type_min bigint,"
+       "  type_max bigint,"
        "  type_regex text,"
        "  fallback text);");
 
