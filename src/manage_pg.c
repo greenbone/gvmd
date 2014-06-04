@@ -24,6 +24,7 @@
  */
 
 #include "sql.h"
+#include "manage.h"
 
 
 /* SQL functions. */
@@ -51,6 +52,41 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
+#if 0
+  empty below, hard to implement
+    max_hosts (calls lib hosts functions)
+    task_trend
+    task_threat_level
+    task_severity
+
+  hard to implement
+    report_progress  calls manage_count_hosts which calls libs host funcs
+                     also does iterated progress calc
+    report_severity  result counting with caching
+    report_severity_count  result counting with caching
+
+  can duplicate with pl/pgsql probably
+    uniquify (given table type, will need exec)
+    resource_exists (given table type, will need exec)
+
+  can duplicate
+    hosts_contains
+    clean_hosts
+    resource_name
+    next_time (will be hairy)
+    common_cve
+    current_offset (maybe with SHOW TIMEZONE and hairy date stuff)
+    severity_matches_ov
+    severity_to_level
+    severity_to_type
+    severity_in_level
+
+  duplicated below
+    iso_time
+    run_status_name
+    user_can_everything
+#endif
+
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
        "  SELECT true;"
        "$$ LANGUAGE SQL;");
@@ -94,6 +130,108 @@ manage_create_sql_functions ()
        "  SELECT split_part (unnest, '=', 2)"
        "  FROM unnest (string_to_array ($1, '|'))"
        "  WHERE split_part (unnest, '=', 1) = $2;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
+       " RETURNS double precision AS $$"
+       /* TODO Calculate the severity of a task. */
+       "  SELECT CAST (0.0 AS double precision);"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
+       " RETURNS text AS $$"
+       /* TODO Calculate the threat level of a task. */
+       "  SELECT 'None'::text;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
+       " RETURNS text AS $$"
+       /* TODO Calculate the trend of a task. */
+       "  SELECT 'same'::text;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION run_status_name (integer)"
+       " RETURNS text AS $$"
+       /* Get the name of a task run status. */
+       "  SELECT CASE"
+       "         WHEN $1 = %i"
+       "              OR $1 = %i"
+       "         THEN 'Delete Requested'"
+       "         WHEN $1 = %i OR $1 = %i"
+       "         THEN 'Ultimate Delete Requested'"
+       "         WHEN $1 = %i"
+       "         THEN 'Done'"
+       "         WHEN $1 = %i"
+       "         THEN 'New'"
+       "         WHEN $1 = %i OR $1 = %i"
+       "         THEN 'Requested'"
+       "         WHEN $1 = %i"
+       "         THEN 'Paused'"
+       "         WHEN $1 = %i"
+       "         THEN 'Requested'"
+       "         WHEN $1 = %i OR $1 = %i"
+       "         THEN 'Resume Requested'"
+       "         WHEN $1 = %i"
+       "         THEN 'Running'"
+       "         WHEN $1 = %i OR $1 = %i OR $1 = %i"
+       "         THEN 'Stop Requested'"
+       "         WHEN $1 = %i"
+       "         THEN 'Stopped'"
+       "         ELSE 'Internal Error'"
+       "         END;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DELETE_REQUESTED,
+       TASK_STATUS_DELETE_WAITING,
+       TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
+       TASK_STATUS_DELETE_ULTIMATE_WAITING,
+       TASK_STATUS_DONE,
+       TASK_STATUS_NEW,
+       TASK_STATUS_PAUSE_REQUESTED,
+       TASK_STATUS_PAUSE_WAITING,
+       TASK_STATUS_PAUSED,
+       TASK_STATUS_REQUESTED,
+       TASK_STATUS_RESUME_REQUESTED,
+       TASK_STATUS_RESUME_WAITING,
+       TASK_STATUS_RUNNING,
+       TASK_STATUS_STOP_REQUESTED_GIVEUP,
+       TASK_STATUS_STOP_REQUESTED,
+       TASK_STATUS_STOP_WAITING,
+       TASK_STATUS_STOPPED);
+
+  sql ("CREATE OR REPLACE FUNCTION user_can_everything (text)"
+       " RETURNS boolean AS $$"
+       /* Test whether a user may perform any operation.
+        *
+        * This must match user_can_everything in manage_acl.c. */
+       "  SELECT count(*) > 0 FROM permissions"
+       "  WHERE resource = 0"
+       "  AND ((subject_type = 'user'"
+       "        AND subject"
+       "            = (SELECT id FROM users"
+       "               WHERE users.uuid = $1))"
+       "       OR (subject_type = 'group'"
+       "           AND subject"
+       "               IN (SELECT DISTINCT \"group\""
+       "                   FROM group_users"
+       "                   WHERE \"user\"  = (SELECT id"
+       "                                     FROM users"
+       "                                     WHERE users.uuid"
+       "                                           = $1)))"
+       "       OR (subject_type = 'role'"
+       "           AND subject"
+       "               IN (SELECT DISTINCT role"
+       "                   FROM role_users"
+       "                   WHERE \"user\"  = (SELECT id"
+       "                                     FROM users"
+       "                                     WHERE users.uuid"
+       "                                           = $1))))"
+       "  AND name = 'Everything';"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
+       " RETURNS text AS $$"
+       /* TODO Return number of hosts. */
+       "  SELECT '0'::text;"
        "$$ LANGUAGE SQL;");
 
   return 0;

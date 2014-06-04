@@ -1,5 +1,11 @@
 2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add dummies for
+	task_severity, task_threat_level and task_trend.  Add run_status_name
+	and user_can_everything.
+
+2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add missing Postgres tables and columns.
 
 	* src/manage_pg.c (create_tables): Add missing fields to schedules.
