@@ -478,7 +478,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
             if (strcasecmp (permission, "any") == 0)
               {
                 g_string_free (permission_or, TRUE);
-                permission_or = g_string_new ("1");
+                permission_or = g_string_new ("t ()");
                 index = 1;
                 break;
               }
@@ -578,7 +578,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
 
       if (resource || (current_credentials.uuid == NULL))
         owned_clause
-         = g_strdup (" (1)");
+         = g_strdup (" (t ())");
       else if (get->trash && (strcasecmp (type, "task") == 0))
         owned_clause
          = g_strdup_printf (" (%ss.hidden = 2"
@@ -713,7 +713,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
       owned_clause = filter_owned_clause;
     }
   else
-   owned_clause = g_strdup (" 1");
+   owned_clause = g_strdup (" t ()");
 
   return owned_clause;
 }
