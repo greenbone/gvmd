@@ -16437,7 +16437,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               slave_t slave;
               scanner_t scanner;
               const char *first_report_id, *last_report_id;
-              char *config, *config_uuid;
+              char *config_name, *config_uuid;
               char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
@@ -16711,7 +16711,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               owner = task_owner_name (index);
               observers = task_observers (index);
-              config = task_config_name (index);
+              config_name = task_config_name (index);
               config_uuid = task_config_uuid (index);
               if (target_in_trash)
                 {
@@ -16763,6 +16763,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           ("<alterable>%i</alterable>"
                            "<config id=\"%s\">"
                            "<name>%s</name>"
+                           "<type>%i</type>"
                            "<trash>%i</trash>"
                            "</config>"
                            "<target id=\"%s\">"
@@ -16791,7 +16792,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             ? 0
                             : task_alterable (index),
                            config_uuid ?: "",
-                           config ?: "",
+                           config_name ?: "",
+                           config_type (task_config (index)),
                            task_config_in_trash (index),
                            task_target_uuid ?: "",
                            task_target_name ?: "",
@@ -16819,7 +16821,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            first_report,
                            last_report,
                            second_last_report);
-              free (config);
+              g_free (config_name);
+              g_free (config_uuid);
               free (task_target_name);
               free (task_target_uuid);
               g_free (progress_xml);

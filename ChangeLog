@@ -1,3 +1,10 @@
+2014-06-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Send config type value in
+	CLIENT_GET_TASKS case.
+
 2014-06-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Use bigint for the type_min and

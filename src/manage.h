@@ -1397,6 +1397,9 @@ find_config (const char*, config_t*);
 int
 config_uuid (config_t, char **);
 
+int
+config_type (config_t);
+
 char *
 config_nvt_timeout (config_t, const char *);
 
