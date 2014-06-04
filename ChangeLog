@@ -1,5 +1,10 @@
 2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (setting_count, init_setting_iterator): Use = instead
+	of == in SQL, for Postgres.
+
+2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c, src/manage_sql.c: Quote Postgres reserved words in
 	SQL.
 

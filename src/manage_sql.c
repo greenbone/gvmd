@@ -45323,12 +45323,12 @@ setting_count (const char *filter)
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
                  " WHERE"
-                 " (owner == (SELECT id FROM users WHERE uuid = '%s')"
+                 " (owner = (SELECT id FROM users WHERE uuid = '%s')"
                  "  OR (owner IS NULL"
                  "      AND uuid"
                  "      NOT IN (SELECT uuid FROM settings"
-                 "              WHERE owner == (SELECT id FROM users"
-                 "                              WHERE uuid = '%s'))))"
+                 "              WHERE owner = (SELECT id FROM users"
+                 "                             WHERE uuid = '%s'))))"
                  "%s%s;",
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -45444,12 +45444,12 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "SELECT id, uuid, name, comment, value"
                    " FROM settings"
                    " WHERE"
-                   " (owner == (SELECT id FROM users WHERE uuid = '%s')"
+                   " (owner = (SELECT id FROM users WHERE uuid = '%s')"
                    "  OR (owner IS NULL"
                    "      AND uuid"
                    "      NOT IN (SELECT uuid FROM settings"
-                   "              WHERE owner == (SELECT id FROM users"
-                   "                              WHERE uuid = '%s'))))"
+                   "              WHERE owner = (SELECT id FROM users"
+                   "                             WHERE uuid = '%s'))))"
                    "%s%s"
                    " ORDER BY %s %s"
                    " LIMIT %i OFFSET %i;",
