@@ -89,6 +89,28 @@ sql_schema ()
 }
 
 /**
+ * @brief Setup a LIMIT argument.
+ *
+ * @param[in]  max  Max.
+ *
+ * @return Argument for LIMIT as a static string.
+ */
+const char *
+sql_select_limit (int max)
+{
+  static char string[20];
+  if (max < 0)
+    return "ALL";
+  if (snprintf (string, 19, "%i", max) < 0)
+    {
+      g_warning ("%s: snprintf failed\n", __FUNCTION__);
+      abort ();
+    }
+  string[19] = '\0';
+  return string;
+}
+
+/**
  * @brief Add param to statement.
  *
  * @param[in]  stmt          Statement.

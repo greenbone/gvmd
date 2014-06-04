@@ -62,6 +62,9 @@ sql_is_sqlite3 ();
 const char *
 sql_schema ();
 
+const char *
+sql_select_limit (int);
+
 int
 sql_is_open ();
 

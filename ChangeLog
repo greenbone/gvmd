@@ -1,5 +1,16 @@
 2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Use function for LIMIT arg in SQL, to cater for both backend syntaxes.
+
+	* src/manage_sql.c (init_get_iterator): Use sql_select_limit to provide
+	LIMIT arg.
+
+	* src/sql_sqlite3.c, src/sql_pg.c (sql_select_limit): New function.
+
+	* src/sql.h: Add header accordingly.
+
+2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (setting_count, init_setting_iterator): Use = instead
 	of == in SQL, for Postgres.
 

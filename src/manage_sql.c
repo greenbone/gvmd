@@ -4068,7 +4068,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s"
-                   " LIMIT %i OFFSET %i;",
+                   " LIMIT %s OFFSET %i;",
                    distinct ? " DISTINCT" : "",
                    columns,
                    type,
@@ -4079,7 +4079,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
-                   max,
+                   sql_select_limit (max),
                    first);
     }
 
