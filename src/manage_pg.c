@@ -491,6 +491,7 @@ create_tables ()
        "  first_time integer,"
        "  period integer,"
        "  period_months integer,"
+       "  duration integer,"
        "  timezone text,"
        "  initial_offset integer,"
        "  creation_time integer,"
@@ -506,6 +507,8 @@ create_tables ()
        "  period integer,"
        "  period_months integer,"
        "  duration integer,"
+       "  timezone text,"
+       "  initial_offset integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -535,6 +538,30 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS scanners"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  host text,"
+       "  port text,"
+       "  type text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  host text,"
+       "  port text,"
+       "  type text,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -551,6 +578,7 @@ create_tables ()
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
        "  slave integer," // REFERENCES slaves (id) ON DELETE RESTRICT,"
+       "  scanner integer," // REFERENCES scanner (id) ON DELETE RESTRICT,"
        "  config_location integer,"
        "  target_location integer,"
        "  schedule_location integer,"
@@ -558,8 +586,6 @@ create_tables ()
        "  upload_result_count integer,"
        "  hosts_ordering text,"
        "  alterable integer,"
-// FIX
-//       "  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
        "  modification_time integer);");
 

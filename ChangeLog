@@ -1,3 +1,15 @@
+2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add missing Postgres tables and columns.
+
+	* src/manage_pg.c (create_tables): Add missing fields to schedules.
+	Add scanners and scanners_trash.  Move scanner up in tasks.
+
+	* doc/db_postgres.sql (tasks): Move scanner up.
+	(schedules, schedules_trash): Add missing fields.
+
+	* doc/db.png: Update from source.
+
 2014-06-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add function prototype.

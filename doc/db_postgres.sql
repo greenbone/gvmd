@@ -328,6 +328,30 @@ CREATE TABLE config_preferences_trash
   name text,
   value text);
 
+CREATE TABLE scanners
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  host text,
+  port text,
+  type text,
+  creation_time date,
+  modification_time date);
+
+CREATE TABLE scanners_trash
+ (id SERIAL PRIMARY KEY,
+  uuid text UNIQUE NOT NULL,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  name text NOT NULL,
+  comment text,
+  host text,
+  port text,
+  type text,
+  creation_time date,
+  modification_time date);
+
 CREATE TABLE tasks
  (id SERIAL PRIMARY KEY,
   uuid text UNIQUE NOT NULL,
@@ -344,6 +368,7 @@ CREATE TABLE tasks
   schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
   schedule_next_time date,
   slave integer REFERENCES slaves (id) ON DELETE RESTRICT,
+  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   config_location integer,
   target_location integer,
   schedule_location integer,
@@ -351,7 +376,6 @@ CREATE TABLE tasks
   upload_result_count integer,
   hosts_ordering text,
   alterable integer,
-  scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
   creation_time date,
   modification_time date);
 
@@ -705,6 +729,7 @@ CREATE TABLE schedules
   first_time date,
   period integer,
   period_months integer,
+  duration integer,
   timezone text,
   initial_offset integer,
   creation_time date,
@@ -720,6 +745,8 @@ CREATE TABLE schedules_trash
   period integer,
   period_months integer,
   duration integer,
+  timezone text,
+  initial_offset integer,
   creation_time date,
   modification_time date);
 
