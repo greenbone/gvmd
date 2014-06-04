@@ -11579,7 +11579,7 @@ manage_user_set_role (const gchar *name, const gchar *method, const gchar *role)
        "                   WHERE name = '%s' AND method = '%s');",
        quoted_name,
        quoted_method);
-  sql ("INSERT INTO role_users (role, user)"
+  sql ("INSERT INTO role_users (role, \"user\")"
        " VALUE ((SELECT id FROM users"
        "         WHERE name = '%s' AND method = '%s'),"
        "        (SELECT id FROM roles"
@@ -39652,9 +39652,9 @@ copy_group (const char *name, const char *comment, const char *group_id,
       return ret;
     }
 
-  sql ("INSERT INTO group_users (`group`, user)"
-       " SELECT %llu, user FROM group_users"
-       " WHERE `group` = %llu;",
+  sql ("INSERT INTO group_users (\"group\", \"user\")"
+       " SELECT %llu, \"user\" FROM group_users"
+       " WHERE \"group\" = %llu;",
        new,
        old);
 
@@ -39777,7 +39777,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
               g_free (uuid);
             }
 
-          sql ("INSERT INTO %s_users (`%s`, user) VALUES (%llu, %llu);",
+          sql ("INSERT INTO %s_users (\"%s\", user) VALUES (%llu, %llu);",
                type,
                type,
                resource,
@@ -39918,7 +39918,7 @@ delete_group (const char *group_id, int ultimate)
       tags_set_orphans ("group", group, LOCATION_TRASH);
 
       sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
-      sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", group);
+      sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", group);
       sql ("COMMIT;");
       return 0;
     }
@@ -39943,9 +39943,9 @@ delete_group (const char *group_id, int ultimate)
       trash_group = sql_last_insert_rowid ();
 
       sql ("INSERT INTO group_users_trash"
-           " (`group`, user)"
-           " SELECT `group`, user"
-           " FROM group_users WHERE `group` = %llu;",
+           " (\"group\", \"user\")"
+           " SELECT \"group\", \"user\""
+           " FROM group_users WHERE \"group\" = %llu;",
            group);
 
       tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
@@ -39968,7 +39968,7 @@ delete_group (const char *group_id, int ultimate)
   tags_set_orphans ("group", group, LOCATION_TABLE);
 
   sql ("DELETE FROM groups WHERE id = %llu;", group);
-  sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
+  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
 
   sql ("COMMIT;");
   return 0;
@@ -39999,7 +39999,7 @@ gchar *
 group_users (group_t group)
 {
   return sql_string ("SELECT group_concat (name, ', ') FROM users, group_users"
-                     " WHERE group_users.`group` = %llu"
+                     " WHERE group_users.\"group\" = %llu"
                      " AND group_users.user = users.id;",
                      group);
 }
@@ -40191,7 +40191,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  sql ("DELETE FROM group_users WHERE `group` = %llu;", group);
+  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
 
   ret = add_users ("group", group, users);
 
@@ -42857,9 +42857,9 @@ delete_role (const char *role_id, int ultimate)
       trash_role = sql_last_insert_rowid ();
 
       sql ("INSERT INTO role_users_trash"
-           " (`role`, user)"
-           " SELECT `role`, user"
-           " FROM role_users WHERE `role` = %llu;",
+           " (\"role\", \"user\")"
+           " SELECT \"role\", \"user\""
+           " FROM role_users WHERE \"role\" = %llu;",
            role);
 
       tags_set_locations ("role", role, trash_role, LOCATION_TRASH);
@@ -42881,7 +42881,7 @@ delete_role (const char *role_id, int ultimate)
     }
 
   sql ("DELETE FROM roles WHERE id = %llu;", role);
-  sql ("DELETE FROM role_users WHERE `role` = %llu;", role);
+  sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
 
   sql ("COMMIT;");
   return 0;
@@ -43073,7 +43073,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  sql ("DELETE FROM role_users WHERE `role` = %llu;", role);
+  sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
 
   ret = add_users ("role", role, users);
 
@@ -44354,9 +44354,9 @@ manage_restore (const char *id)
       group = sql_last_insert_rowid ();
 
       sql ("INSERT INTO group_users"
-           " (`group`, user)"
-           " SELECT `group`, user"
-           " FROM group_users_trash WHERE `group` = %llu;",
+           " (\"group\", \"user\")"
+           " SELECT \"group\", \"user\""
+           " FROM group_users_trash WHERE \"group\" = %llu;",
            resource);
 
       permissions_set_locations ("group", resource, group, LOCATION_TABLE);
@@ -44365,7 +44365,7 @@ manage_restore (const char *id)
       permissions_set_subjects ("group", resource, group, LOCATION_TABLE);
 
       sql ("DELETE FROM groups_trash WHERE id = %llu;", resource);
-      sql ("DELETE FROM group_users_trash WHERE `group` = %llu;", resource);
+      sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -44778,8 +44778,8 @@ manage_restore (const char *id)
       role = sql_last_insert_rowid ();
 
       sql ("INSERT INTO role_users"
-           " (role, user)"
-           " SELECT role, user"
+           " (role, \"user\")"
+           " SELECT role, \"user\""
            " FROM role_users_trash WHERE role = %llu;",
            resource);
 
@@ -47260,7 +47260,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           return 1;
         }
 
-      sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+      sql ("INSERT INTO group_users (\"group\", \"user\") VALUES (%llu, %llu);",
            group,
            user);
 
@@ -47295,7 +47295,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           return 2;
         }
 
-      sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
+      sql ("INSERT INTO role_users (role, \"user\") VALUES (%llu, %llu);",
            role,
            user);
 
@@ -47344,13 +47344,13 @@ copy_user (const char* name, const char* comment, const char *user_id,
 
   quoted_uuid = sql_quote (user_id);
 
-  sql ("INSERT INTO group_users (user, `group`)"
-       " SELECT %llu, `group` FROM group_users"
+  sql ("INSERT INTO group_users (\"user\", \"group\")"
+       " SELECT %llu, \"group\" FROM group_users"
        " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
        user,
        quoted_uuid);
 
-  sql ("INSERT INTO role_users (user, role)"
+  sql ("INSERT INTO role_users (\"user\", role)"
        " SELECT %llu, role FROM role_users"
        " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
        user,
@@ -47798,7 +47798,8 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
               return 1;
             }
 
-          sql ("INSERT INTO group_users (`group`, user) VALUES (%llu, %llu);",
+          sql ("INSERT INTO group_users (\"group\", \"user\")"
+               " VALUES (%llu, %llu);",
                group,
                user);
 
@@ -47839,7 +47840,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
               return 1;
             }
 
-          sql ("INSERT INTO role_users (role, user) VALUES (%llu, %llu);",
+          sql ("INSERT INTO role_users (role, \"user\") VALUES (%llu, %llu);",
                role,
                user);
 
@@ -47960,7 +47961,7 @@ trash_user_writable (user_t user)
   "           '')"                                                         \
   " AS roles,"                                                             \
   " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
-  "            JOIN groups ON `group` = groups.id"                         \
+  "            JOIN groups ON \"group\" = groups.id"                       \
   "            WHERE \"user\" = users.id"                                  \
   "            ORDER BY groups.name ASC),"                                 \
   "           '')"                                                         \
@@ -48083,7 +48084,7 @@ init_user_group_iterator (iterator_t *iterator, user_t user)
 {
   init_iterator (iterator,
                  "SELECT DISTINCT id, uuid, name FROM groups"
-                 " WHERE id IN (SELECT `group` FROM group_users"
+                 " WHERE id IN (SELECT \"group\" FROM group_users"
                  "              WHERE \"user\" = %llu)"
                  " ORDER by name;",
                  user);

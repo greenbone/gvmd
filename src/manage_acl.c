@@ -97,20 +97,20 @@ user_can_everything (const char *user_id)
                   "              WHERE users.uuid = '%s'))"
                   "      OR (subject_type = 'group'"
                   "          AND subject"
-                  "              IN (SELECT DISTINCT `group`"
+                  "              IN (SELECT DISTINCT \"group\""
                   "                  FROM group_users"
-                  "                  WHERE user = (SELECT id"
-                  "                                FROM users"
-                  "                                WHERE users.uuid"
-                  "                                      = '%s')))"
+                  "                  WHERE \"user\" = (SELECT id"
+                  "                                    FROM users"
+                  "                                    WHERE users.uuid"
+                  "                                          = '%s')))"
                   "      OR (subject_type = 'role'"
                   "          AND subject"
                   "              IN (SELECT DISTINCT role"
                   "                  FROM role_users"
-                  "                  WHERE user = (SELECT id"
-                  "                                FROM users"
-                  "                                WHERE users.uuid"
-                  "                                      = '%s'))))"
+                  "                  WHERE \"user\" = (SELECT id"
+                  "                                    FROM users"
+                  "                                    WHERE users.uuid"
+                  "                                          = '%s'))))"
                   " AND name = 'Everything';",
                   user_id,
                   user_id,
@@ -134,7 +134,7 @@ user_is_admin (const char *uuid)
   ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_ADMIN "')"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -157,7 +157,7 @@ user_is_observer (const char *uuid)
   ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_OBSERVER "')"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -180,7 +180,7 @@ user_is_user (const char *uuid)
   ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_USER "')"
-                 " AND user = (SELECT id FROM users WHERE uuid = '%s');",
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
   return ret;
@@ -347,20 +347,20 @@ user_has_access_uuid (const char *type, const char *uuid,
                      "              WHERE users.uuid = '%s'))"
                      "      OR (subject_type = 'group'"
                      "          AND subject"
-                     "              IN (SELECT DISTINCT `group`"
+                     "              IN (SELECT DISTINCT \"group\""
                      "                  FROM group_users"
-                     "                  WHERE user = (SELECT id"
-                     "                                FROM users"
-                     "                                WHERE users.uuid"
-                     "                                      = '%s')))"
+                     "                  WHERE \"user\" = (SELECT id"
+                     "                                    FROM users"
+                     "                                    WHERE users.uuid"
+                     "                                          = '%s')))"
                      "      OR (subject_type = 'role'"
                      "          AND subject"
                      "              IN (SELECT DISTINCT role"
                      "                  FROM role_users"
-                     "                  WHERE user = (SELECT id"
-                     "                                FROM users"
-                     "                                WHERE users.uuid"
-                     "                                      = '%s'))));",
+                     "                  WHERE \"user\" = (SELECT id"
+                     "                                    FROM users"
+                     "                                    WHERE users.uuid"
+                     "                                          = '%s'))));",
                      uuid_task ? uuid_task : uuid,
                      uuid_task ? uuid_task : uuid,
                      current_credentials.uuid,
@@ -390,20 +390,20 @@ user_has_access_uuid (const char *type, const char *uuid,
                  "              WHERE users.uuid = '%s'))"
                  "      OR (subject_type = 'group'"
                  "          AND subject"
-                 "              IN (SELECT DISTINCT `group`"
+                 "              IN (SELECT DISTINCT \"group\""
                  "                  FROM group_users"
-                 "                  WHERE user = (SELECT id"
-                 "                                FROM users"
-                 "                                WHERE users.uuid"
-                 "                                      = '%s')))"
+                 "                  WHERE \"user\" = (SELECT id"
+                 "                                    FROM users"
+                 "                                    WHERE users.uuid"
+                 "                                          = '%s')))"
                  "      OR (subject_type = 'role'"
                  "          AND subject"
                  "              IN (SELECT DISTINCT role"
                  "                  FROM role_users"
-                 "                  WHERE user = (SELECT id"
-                 "                                FROM users"
-                 "                                WHERE users.uuid"
-                 "                                      = '%s'))))"
+                 "                  WHERE \"user\" = (SELECT id"
+                 "                                    FROM users"
+                 "                                    WHERE users.uuid"
+                 "                                          = '%s'))))"
                  " %s%s%s;",
                  uuid_task ? uuid_task : uuid,
                  current_credentials.uuid,
@@ -506,20 +506,22 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "               WHERE users.uuid = '%s'))"
                               "       OR (subject_type = 'group'"
                               "           AND subject"
-                              "               IN (SELECT DISTINCT `group`"
+                              "               IN (SELECT DISTINCT \"group\""
                               "                   FROM group_users"
-                              "                   WHERE user = (SELECT id"
-                              "                                 FROM users"
-                              "                                 WHERE users.uuid"
-                              "                                       = '%s')))"
+                              "                   WHERE \"user\""
+                              "                         = (SELECT id"
+                              "                            FROM users"
+                              "                            WHERE users.uuid"
+                              "                                  = '%s')))"
                               "       OR (subject_type = 'role'"
                               "           AND subject"
                               "               IN (SELECT DISTINCT role"
                               "                   FROM role_users"
-                              "                   WHERE user = (SELECT id"
-                              "                                 FROM users"
-                              "                                 WHERE users.uuid"
-                              "                                       = '%s'))))"
+                              "                   WHERE \"user\""
+                              "                         = (SELECT id"
+                              "                            FROM users"
+                              "                            WHERE users.uuid"
+                              "                                  = '%s'))))"
                               "  AND (%s))",
                               type,
                               get->trash && strcmp (type, "task") ? "_trash" : "",
@@ -543,20 +545,22 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 "               WHERE users.uuid = '%s'))"
                                 "       OR (subject_type = 'group'"
                                 "           AND subject"
-                                "               IN (SELECT DISTINCT `group`"
+                                "               IN (SELECT DISTINCT \"group\""
                                 "                   FROM group_users"
-                                "                   WHERE user = (SELECT id"
-                                "                                 FROM users"
-                                "                                 WHERE users.uuid"
-                                "                                       = '%s')))"
+                                "                   WHERE \"user\""
+                                "                         = (SELECT id"
+                                "                            FROM users"
+                                "                            WHERE users.uuid"
+                                "                                  = '%s')))"
                                 "       OR (subject_type = 'role'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT role"
                                 "                   FROM role_users"
-                                "                   WHERE user = (SELECT id"
-                                "                                 FROM users"
-                                "                                 WHERE users.uuid"
-                                "                                       = '%s'))))"
+                                "                   WHERE \"user\""
+                                "                         = (SELECT id"
+                                "                            FROM users"
+                                "                            WHERE users.uuid"
+                                "                                  = '%s'))))"
                                 "  AND (%s))",
                                 clause,
                                 get->trash ? "_trash" : "",
@@ -628,20 +632,20 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "             WHERE users.uuid = '%s'))"
                               "  OR (%ss.subject_type = 'group'"
                               "      AND %ss.subject"
-                              "          IN (SELECT DISTINCT `group`"
+                              "          IN (SELECT DISTINCT \"group\""
                               "              FROM group_users"
-                              "              WHERE user = (SELECT id"
-                              "                            FROM users"
-                              "                            WHERE users.uuid"
-                              "                                  = '%s')))"
+                              "              WHERE \"user\" = (SELECT id"
+                              "                                FROM users"
+                              "                                WHERE users.uuid"
+                              "                                      = '%s')))"
                               "  OR (%ss.subject_type = 'role'"
                               "      AND %ss.subject"
                               "          IN (SELECT DISTINCT role"
                               "              FROM role_users"
-                              "              WHERE user = (SELECT id"
-                              "                            FROM users"
-                              "                            WHERE users.uuid"
-                              "                                  = '%s')))"
+                              "              WHERE \"user\" = (SELECT id"
+                              "                                FROM users"
+                              "                                WHERE users.uuid"
+                              "                                      = '%s')))"
                               "  %s)",
                               type,
                               current_credentials.uuid,
