@@ -1,5 +1,11 @@
 2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (count): Use a subselect to prevent having regular
+	columns alongside the "count" aggregate in the result columns, for
+	Postgres.
+
+2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use function for LIMIT arg in SQL, to cater for both backend syntaxes.
 
 	* src/manage_sql.c (init_get_iterator): Use sql_select_limit to provide

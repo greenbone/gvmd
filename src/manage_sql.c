@@ -4445,10 +4445,11 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 
   array_free (permissions);
 
-  ret = sql_int ("SELECT count (%s%ss%s.id), %s"
-                 " FROM %ss%s%s"
-                 " WHERE %s"
-                 "%s%s%s;",
+  ret = sql_int ("SELECT count (%scount_id)"
+                 " FROM (SELECT %ss%s.id AS count_id, %s"
+                 "       FROM %ss%s%s"
+                 "       WHERE %s"
+                 "       %s%s%s) AS subquery;",
                  distinct ? "DISTINCT " : "",
                  type,
                  get->trash && strcmp (type, "task") ? "_trash" : "",
