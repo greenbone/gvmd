@@ -1,3 +1,14 @@
+2014-06-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (load_cas): New function. Moved from openvasmd.c
+	(openvas_scanner_connect): New function.
+	(serve_omp): Remove scanner_session, scanner_credentials and
+	scanner_socket_addr function parameters. Create scanner session by
+	calling openvas_scanner_connect() and adjust accordingly.
+
+	* src/openvasmd.c (serve_client, update_or_rebuild_nvt_cache): Update
+	for serve_omp() call change.
+
 2014-06-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (where_owned): Use "t ()" instead of 1 in SQL, to
