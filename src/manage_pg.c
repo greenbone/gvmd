@@ -198,35 +198,40 @@ manage_create_sql_functions ()
        TASK_STATUS_STOP_WAITING,
        TASK_STATUS_STOPPED);
 
-  sql ("CREATE OR REPLACE FUNCTION user_can_everything (text)"
-       " RETURNS boolean AS $$"
-       /* Test whether a user may perform any operation.
-        *
-        * This must match user_can_everything in manage_acl.c. */
-       "  SELECT count(*) > 0 FROM permissions"
-       "  WHERE resource = 0"
-       "  AND ((subject_type = 'user'"
-       "        AND subject"
-       "            = (SELECT id FROM users"
-       "               WHERE users.uuid = $1))"
-       "       OR (subject_type = 'group'"
-       "           AND subject"
-       "               IN (SELECT DISTINCT \"group\""
-       "                   FROM group_users"
-       "                   WHERE \"user\"  = (SELECT id"
-       "                                     FROM users"
-       "                                     WHERE users.uuid"
-       "                                           = $1)))"
-       "       OR (subject_type = 'role'"
-       "           AND subject"
-       "               IN (SELECT DISTINCT role"
-       "                   FROM role_users"
-       "                   WHERE \"user\"  = (SELECT id"
-       "                                     FROM users"
-       "                                     WHERE users.uuid"
-       "                                           = $1))))"
-       "  AND name = 'Everything';"
-       "$$ LANGUAGE SQL;");
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = 'tasks'"
+               "               AND table_schema = 'information_schema'"
+               "               AND table_name = 'permissions')"
+               " ::integer;"))
+    sql ("CREATE OR REPLACE FUNCTION user_can_everything (text)"
+         " RETURNS boolean AS $$"
+         /* Test whether a user may perform any operation.
+          *
+          * This must match user_can_everything in manage_acl.c. */
+         "  SELECT count(*) > 0 FROM permissions"
+         "  WHERE resource = 0"
+         "  AND ((subject_type = 'user'"
+         "        AND subject"
+         "            = (SELECT id FROM users"
+         "               WHERE users.uuid = $1))"
+         "       OR (subject_type = 'group'"
+         "           AND subject"
+         "               IN (SELECT DISTINCT \"group\""
+         "                   FROM group_users"
+         "                   WHERE \"user\"  = (SELECT id"
+         "                                     FROM users"
+         "                                     WHERE users.uuid"
+         "                                           = $1)))"
+         "       OR (subject_type = 'role'"
+         "           AND subject"
+         "               IN (SELECT DISTINCT role"
+         "                   FROM role_users"
+         "                   WHERE \"user\"  = (SELECT id"
+         "                                     FROM users"
+         "                                     WHERE users.uuid"
+         "                                           = $1))))"
+         "  AND name = 'Everything';"
+         "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
        " RETURNS text AS $$"

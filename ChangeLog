@@ -1,14 +1,8 @@
 2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Add group_concat to Postgres.
-
-	* src/manage_pg.c (manage_create_sql_functions): Add aggregate
-	"group_concat".
-
-	* src/manage_sql.c (group_users, role_users)
-	(USER_ITERATOR_COLUMNS): Group by name, because Posgres requires a GROUP
-	BY clause for any table column used in an aggregate in the SELECT
-	columns.
+	* src/manage_pg.c (manage_create_sql_functions): Check if permissions
+	table exists before trying to create user_can_everything, which requires
+	the table.
 
 2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
