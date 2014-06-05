@@ -1216,7 +1216,6 @@ serve_omp (gnutls_session_t* client_session,
                 }
               nfds = 1 + (client_socket > scanner_socket
                           ? client_socket : scanner_socket);
-              //*scanner_socket_addr = scanner_socket;
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -1410,7 +1409,6 @@ serve_omp (gnutls_session_t* client_session,
                 }
               nfds = 1 + (client_socket > scanner_socket
                           ? client_socket : scanner_socket);
-              //*scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)
             {
@@ -1542,7 +1540,6 @@ serve_omp (gnutls_session_t* client_session,
                 }
               nfds = 1 + (client_socket > scanner_socket
                           ? client_socket : scanner_socket);
-              //*scanner_socket_addr = scanner_socket;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
@@ -1658,7 +1655,6 @@ serve_omp (gnutls_session_t* client_session,
                 }
               nfds = 1 + (client_socket > scanner_socket
                           ? client_socket : scanner_socket);
-              //*scanner_socket_addr = scanner_socket;
             }
           else if (ret == 2)
             {
