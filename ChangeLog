@@ -1,5 +1,11 @@
 2014-06-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c: Add include. Fixes build on some environments.
+
+	* src/openvasmd.c: Remove unused include.
+
+2014-06-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (load_cas): New function. Moved from openvasmd.c
 	(openvas_scanner_connect): New function.
 	(serve_omp): Remove scanner_session, scanner_credentials and
