@@ -2519,13 +2519,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY lower (%s) ASC",
+                g_string_append_printf (order, " ORDER BY %s ASC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
                                         " ORDER BY nvt ASC,"
-                                        "          lower (%ss%s.text) ASC",
+                                        "          %ss%s.text ASC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -2587,13 +2587,13 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY lower (%s) DESC",
+                g_string_append_printf (order, " ORDER BY %s DESC",
                                         keyword->string);
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
                                         " ORDER BY nvt DESC,"
-                                        " lower (%ss%s.text) DESC",
+                                        " %ss%s.text DESC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -13686,13 +13686,13 @@ prognosis_order_by (const char* sort_field, int ascending)
   else if (strcmp (sort_field, "vulnerability") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " vulnerability COLLATE lower (%s)",
+                            " vulnerability %s",
                             ascending ? "ASC" : "DESC");
   else if (strcmp (sort_field, "location") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " location COLLATE lower (%s),"
-                            " severity DESC",
+                            " location,"
+                            " severity %s",
                             ascending ? "ASC" : "DESC");
   else
     g_string_append_printf (order_sql,
@@ -15353,7 +15353,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      ascending ? "ASC" : "DESC");
       else if (strcmp (sort_field, "vulnerability") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
-                                     " vulnerability COLLATE lower (%s),"
+                                     " vulnerability %s,"
                                      " port COLLATE collate_location,"
                                      " host COLLATE collate_ip,"
                                      " (CASE WHEN auto_type IS NULL"
