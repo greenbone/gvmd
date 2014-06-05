@@ -40001,7 +40001,8 @@ group_users (group_t group)
 {
   return sql_string ("SELECT group_concat (name, ', ') FROM users, group_users"
                      " WHERE group_users.\"group\" = %llu"
-                     " AND group_users.user = users.id;",
+                     " AND group_users.user = users.id"
+                     " GROUP BY users.name;",
                      group);
 }
 
@@ -42943,7 +42944,8 @@ role_users (role_t role)
 {
   return sql_string ("SELECT group_concat (name, ', ') FROM users, role_users"
                      " WHERE role_users.role = %llu"
-                     " AND role_users.user = users.id;",
+                     " AND role_users.user = users.id"
+                     " GROUP BY users.name;",
                      role);
 }
 
@@ -47958,12 +47960,14 @@ trash_user_writable (user_t user)
   " coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"     \
   "            JOIN roles ON role = roles.id"                              \
   "            WHERE \"user\" = users.id"                                  \
+  "            GROUP BY roles.name"                                        \
   "            ORDER BY name ASC),"                                        \
   "           '')"                                                         \
   " AS roles,"                                                             \
   " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
   "            JOIN groups ON \"group\" = groups.id"                       \
   "            WHERE \"user\" = users.id"                                  \
+  "            GROUP BY groups.name"                                       \
   "            ORDER BY groups.name ASC),"                                 \
   "           '')"                                                         \
   " AS groups,"                                                            \

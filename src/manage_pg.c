@@ -234,6 +234,22 @@ manage_create_sql_functions ()
        "  SELECT '0'::text;"
        "$$ LANGUAGE SQL;");
 
+  sql ("CREATE OR REPLACE FUNCTION group_concat_pair (text, text, text)"
+       " RETURNS text AS $$"
+       "  SELECT CASE"
+       "         WHEN $1 IS NULL OR $1 = ''"
+       "         THEN $2"
+       "         ELSE $1 || $3 || $2"
+       "         END;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("DROP AGGREGATE IF EXISTS group_concat (text, text);");
+
+  sql ("CREATE AGGREGATE group_concat (text, text)"
+       " (sfunc       = group_concat_pair,"
+       "  stype       = text,"
+       "  initcond    = '');");
+
   return 0;
 }
 

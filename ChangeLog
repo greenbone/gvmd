@@ -1,5 +1,17 @@
 2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add group_concat to Postgres.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add aggregate
+	"group_concat".
+
+	* src/manage_sql.c (group_users, role_users)
+	(USER_ITERATOR_COLUMNS): Group by name, because Posgres requires a GROUP
+	BY clause for any table column used in an aggregate in the SELECT
+	columns.
+
+2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (filter_clause, prognosis_order_by)
 	(init_result_iterator): Remove conversion to lowercase in ORDER BY,
 	for now, because Postgres does not allow named SELECT columns in
