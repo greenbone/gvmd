@@ -794,6 +794,8 @@ CREATE TABLE tags
   resource integer,
   resource_uuid text,
   resource_location integer,
+  active integer,
+  value text,
   creation_time date,
   modification_time date);
 

@@ -1,5 +1,13 @@
 2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Add missing tags columns.
+
+	* doc/db_postgres.sql (tags): Add missing tags columns.
+
+	* doc/db.png: Update from source.
+
+2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Check if permissions
 	table exists before trying to create user_can_everything, which requires
 	the table.
