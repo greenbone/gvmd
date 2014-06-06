@@ -1,3 +1,17 @@
+2014-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (openvas_scanner_session, openvas_scanner_socket)
+	(openvas_scanner_credentials): New variables for the currently connected
+	to scanner.
+	(write_to_scanner): Rename to openvas_scanner_write. Adjust for using
+	new scanner variables.
+	(wait_for_connection): Rename to openvas_scanner_wait. Adjust for using
+	new scanner variables.
+	(openvas_scanner_close): New function.
+	(openvas_scanner_connect): Use new variables.
+	(serve_omp): Adjust modified functions calls and use new variables
+	accordingly.
+
 2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add missing tags columns.
