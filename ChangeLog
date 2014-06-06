@@ -1,5 +1,16 @@
 2014-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (read_from_server): Rename to openvas_scanner_read. Adjust
+	to use shared current scanner connection variables.
+	(recreate_session): Remove function.
+	(openvas_scanner_close): Add return code for success or error.
+	(openvas_scanner_reconnect): New function.
+	(serve_omp): Use openvas_scanner helper functions where possible instead
+	of accessing the connection variables directly. Adjust to call new and
+	renamed functions.
+
+2014-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (openvas_scanner_session, openvas_scanner_socket)
 	(openvas_scanner_credentials): New variables for the currently connected
 	to scanner.

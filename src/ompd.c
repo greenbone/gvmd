@@ -246,67 +246,6 @@ read_from_client (gnutls_session_t* client_session,
   return -2;
 }
 
-/** @todo Consider combining with read_from_client. */
-/**
- * @brief Read as much from the server as the \ref from_scanner buffer will
- * @brief hold.
- *
- * @param[in]  server_session  The TLS session with the server.
- * @param[in]  server_socket   The socket connected to the server.
- *
- * @return 0 on reading everything available, -1 on error, -2 if
- * from_scanner buffer is full or -3 on reaching end of file.
- */
-static int
-read_from_server (gnutls_session_t* server_session,
-                  /*@unused@*/ int server_socket)
-{
-  while (from_scanner_end < from_buffer_size)
-    {
-      ssize_t count;
-      count = gnutls_record_recv (*server_session,
-                                  from_scanner + from_scanner_end,
-                                  from_buffer_size - from_scanner_end);
-      if (count < 0)
-        {
-          if (count == GNUTLS_E_AGAIN)
-            /* Got everything available, return to `select'. */
-            return 0;
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try read again. */
-            continue;
-          if (count == GNUTLS_E_REHANDSHAKE)
-            {
-              /** @todo Rehandshake. */
-              tracef ("   should rehandshake\n");
-              continue;
-            }
-          if (gnutls_error_is_fatal (count) == 0
-              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
-                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
-            {
-              int alert = gnutls_alert_get (*server_session);
-              /*@dependent@*/
-              const char* alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s\n",
-                         __FUNCTION__, alert, alert_name);
-            }
-          g_warning ("%s: failed to read from server: %s\n",
-                     __FUNCTION__,
-                     gnutls_strerror (count));
-          return -1;
-        }
-      if (count == 0)
-        /* End of file. */
-        return -3;
-      assert (count > 0);
-      from_scanner_end += count;
-    }
-
-  /* Buffer full. */
-  return -2;
-}
-
 /** @todo Move to openvas-libraries? */
 /**
  * @brief Write as much as possible from \ref to_client to the client.
@@ -419,6 +358,61 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
 gnutls_session_t openvas_scanner_session = NULL;
 gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
 int openvas_scanner_socket = -1;
+
+/**
+ * @brief Read as much from the server as the \ref from_scanner buffer will
+ * @brief hold.
+ *
+ * @return 0 on reading everything available, -1 on error, -2 if
+ * from_scanner buffer is full or -3 on reaching end of file.
+ */
+static int
+openvas_scanner_read ()
+{
+  while (from_scanner_end < from_buffer_size)
+    {
+      ssize_t count;
+      count = gnutls_record_recv (openvas_scanner_session,
+                                  from_scanner + from_scanner_end,
+                                  from_buffer_size - from_scanner_end);
+      if (count < 0)
+        {
+          if (count == GNUTLS_E_AGAIN)
+            /* Got everything available, return to `select'. */
+            return 0;
+          if (count == GNUTLS_E_INTERRUPTED)
+            /* Interrupted, try read again. */
+            continue;
+          if (count == GNUTLS_E_REHANDSHAKE)
+            {
+              /** @todo Rehandshake. */
+              tracef ("   should rehandshake\n");
+              continue;
+            }
+          if (gnutls_error_is_fatal (count) == 0
+              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
+                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
+            {
+              int alert = gnutls_alert_get (openvas_scanner_session);
+              /*@dependent@*/
+              const char* alert_name = gnutls_alert_get_name (alert);
+              g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
+                         alert_name);
+            }
+          g_warning ("%s: failed to read from server: %s\n", __FUNCTION__,
+                     gnutls_strerror (count));
+          return -1;
+        }
+      if (count == 0)
+        /* End of file. */
+        return -3;
+      assert (count > 0);
+      from_scanner_end += count;
+    }
+
+  /* Buffer full. */
+  return -2;
+}
 
 /**
  * @brief Write as much as possible from the to_scanner buffer to the scanner.
@@ -553,56 +547,6 @@ openvas_scanner_write ()
 }
 
 /**
- * @brief Recreate a server session.
- *
- * @param  server_socket       Server socket.  0 to skip freeing
- * @param  server_session      Server session.
- * @param  server_credentials  Server credentials.
- *
- * @return New server socket, or -1 on error.
- */
-int
-recreate_session (int server_socket,
-                  gnutls_session_t* server_session,
-                  gnutls_certificate_credentials_t* server_credentials)
-{
-  if (server_socket
-      && openvas_server_free (server_socket,
-                              *server_session,
-                              *server_credentials))
-    return -1;
-  /* Make the server socket. */
-  server_socket = socket (PF_INET, SOCK_STREAM, 0);
-  if (server_socket == -1)
-    {
-      g_warning ("%s: failed to create server socket: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      return -1;
-    }
-  if (openvas_server_new (GNUTLS_CLIENT,
-                          CACERT,
-                          CLIENTCERT,
-                          CLIENTKEY,
-                          server_session,
-                          server_credentials))
-    return -1;
-  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-   * error" removes the data between `select' and `read'. */
-  if (fcntl (server_socket, F_SETFL, O_NONBLOCK) == -1)
-    {
-      g_warning ("%s: failed to set scanner socket flag: %s\n",
-                 __FUNCTION__,
-                 strerror (errno));
-      openvas_server_free (server_socket,
-                           *server_session,
-                           *server_credentials);
-      return -1;
-    }
-  return server_socket;
-}
-
-/**
  * @brief Wait for the scanner socket to be writable.
  *
  * @return 0 on success, -1 on error.
@@ -709,14 +653,16 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
   return 0;
 }
 
-static void
+static int
 openvas_scanner_close ()
 {
-  openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
-                       openvas_scanner_credentials);
+  int rc;
+  rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
+                            openvas_scanner_credentials);
   openvas_scanner_socket = -1;
   openvas_scanner_session = NULL;
   openvas_scanner_credentials = NULL;
+  return rc;
 }
 
 /**
@@ -764,6 +710,19 @@ openvas_scanner_connect ()
 }
 
 /**
+ * @brief Reconnect to the scanner.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+openvas_scanner_reconnect ()
+{
+  if (openvas_scanner_socket != -1 && openvas_scanner_close ())
+    return -1;
+  return openvas_scanner_connect ();
+}
+
+/**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
  * Loop reading input from the sockets, processing
@@ -776,7 +735,7 @@ openvas_scanner_connect ()
  *
  * \if STATIC
  *
- * Read input with \ref read_from_client and \ref read_from_server.
+ * Read input with \ref read_from_client and \ref openvas_scanner_read.
  * Write the results with \ref write_to_client.  Write to the server
  * with \ref openvas_scanner_write.
  *
@@ -1205,13 +1164,9 @@ serve_omp (gnutls_session_t* client_session,
               /** @todo Probably need to close and free some of the existing
                *        session. */
               set_scanner_init_state (SCANNER_INIT_TOP);
-              openvas_scanner_socket = recreate_session
-                                        (0, &openvas_scanner_session,
-                                         &openvas_scanner_credentials);
-              if (openvas_scanner_socket == -1)
+              if (openvas_scanner_connect () == -1)
                 {
-                  openvas_server_free (client_socket,
-                                       *client_session,
+                  openvas_server_free (client_socket, *client_session,
                                        *client_credentials);
                   rc = -1;
                   goto scanner_free;
@@ -1315,8 +1270,7 @@ serve_omp (gnutls_session_t* client_session,
 #endif
           tracef ("   FD_SCANNER_READ\n");
 
-          switch (read_from_server (&openvas_scanner_session,
-                                    openvas_scanner_socket))
+          switch (openvas_scanner_read ())
             {
               case  0:       /* Read everything. */
                 break;
@@ -1399,14 +1353,9 @@ serve_omp (gnutls_session_t* client_session,
                   rc = 0;
                   goto scanner_free;
                 }
-              openvas_scanner_socket = recreate_session
-                                        (openvas_scanner_socket,
-                                         &openvas_scanner_session,
-                                         &openvas_scanner_credentials);
-              if (openvas_scanner_socket == -1)
+              if (openvas_scanner_reconnect () == -1)
                 {
-                  openvas_server_free (client_socket,
-                                       *client_session,
+                  openvas_server_free (client_socket, *client_session,
                                        *client_credentials);
                   rc = -1;
                   goto scanner_free;
@@ -1531,13 +1480,9 @@ serve_omp (gnutls_session_t* client_session,
               /** @todo Probably need to close and free some of the existing
                *        session. */
               set_scanner_init_state (SCANNER_INIT_TOP);
-              openvas_scanner_socket = recreate_session
-                                        (0, &openvas_scanner_session,
-                                         &openvas_scanner_credentials);
-              if (openvas_scanner_socket == -1)
+              if (openvas_scanner_connect () == -1)
                 {
-                  openvas_server_free (client_socket,
-                                       *client_session,
+                  openvas_server_free (client_socket, *client_session,
                                        *client_credentials);
                   rc = -1;
                   goto scanner_free;
@@ -1646,14 +1591,9 @@ serve_omp (gnutls_session_t* client_session,
                   rc = 0;
                   goto scanner_free;
                 }
-              openvas_scanner_socket = recreate_session
-                                        (openvas_scanner_socket,
-                                         &openvas_scanner_session,
-                                         &openvas_scanner_credentials);
-              if (openvas_scanner_socket == -1)
+              if (openvas_scanner_reconnect () == -1)
                 {
-                  openvas_server_free (client_socket,
-                                       *client_session,
+                  openvas_server_free (client_socket, *client_session,
                                        *client_credentials);
                   rc = -1;
                   goto scanner_free;
