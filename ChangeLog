@@ -1,5 +1,14 @@
 2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make report form "Verinice ISM" predefined.
+
+	* src/manage_sql.c (check_db_report_formats)
+	(format_predefined): Add Verinice ISM.
+
+	* CMakeLists.txt: Install Verinice ISM.
+
+2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/Verinice_ISM/create_report_import: Remove.
 
 	* src/report_formats/Verinice_ISM/gsm_verinice_ism.xsl: Remove.  Now

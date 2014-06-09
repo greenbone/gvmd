@@ -347,6 +347,14 @@ install (FILES src/report_formats/XML/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
+install (FILES src/report_formats/Verinice_ISM/generate
+               src/report_formats/Verinice_ISM/Verinice_ISM.xsl
+               src/report_formats/Verinice_ISM/classification.csv
+               src/report_formats/Verinice_ISM/classification.xsl
+               src/report_formats/Verinice_ISM/classification_generator.sh
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES src/schema_formats/HTML/generate
                src/schema_formats/RNC/rnc.xsl
                src/schema_formats/HTML/HTML.xsl
