@@ -556,19 +556,16 @@ openvas_scanner_wait ()
 {
   while (1)
     {
-      char ch;
       int ret;
       struct timeval timeout;
-      fd_set exceptfds, writefds;
+      fd_set writefds;
 
       timeout.tv_usec = 0;
       timeout.tv_sec = 1;
       FD_ZERO (&writefds);
-      FD_ZERO (&exceptfds);
       FD_SET (openvas_scanner_socket, &writefds);
-      FD_SET (openvas_scanner_socket, &exceptfds);
 
-      ret = select (1 + openvas_scanner_socket, NULL, &writefds, &exceptfds, &timeout);
+      ret = select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
       if (ret < 0)
         {
           if (errno == EINTR)
@@ -577,24 +574,6 @@ openvas_scanner_wait ()
                      __FUNCTION__,
                      strerror (errno));
           return -1;
-        }
-
-      /* Check for exception.  */
-      if (FD_ISSET (openvas_scanner_socket, &exceptfds))
-        {
-          while (recv (openvas_scanner_socket, &ch, 1, MSG_OOB) < 1)
-            {
-              if (errno == EINTR)
-                continue;
-              g_warning ("%s: after exception on scanner in child select:"
-                         " recv failed (connect)\n",
-                         __FUNCTION__);
-              return -1;
-            }
-          g_warning ("%s: after exception on scanner in child select:"
-                     " recv (connect): %c\n",
-                     __FUNCTION__,
-                     ch);
         }
 
       if (FD_ISSET (openvas_scanner_socket, &writefds))
@@ -797,7 +776,7 @@ serve_omp (gnutls_session_t* client_session,
            void (*progress) ())
 {
   int nfds, ret, rc;
-  fd_set readfds, exceptfds, writefds;
+  fd_set readfds, writefds;
   /* True if processing of the client input is waiting for space in the
    * to_scanner or to_client buffer. */
   short client_input_stalled;
@@ -900,7 +879,6 @@ serve_omp (gnutls_session_t* client_session,
       /** @todo nfds must only include a socket if it's in >= one set. */
 
       fd_info = 0;
-      FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
 
@@ -908,7 +886,6 @@ serve_omp (gnutls_session_t* client_session,
 
       if (client_active)
         {
-          FD_SET (client_socket, &exceptfds);
           /* See whether to read from the client.  */
           if (from_client_end < from_buffer_size)
             {
@@ -969,7 +946,6 @@ serve_omp (gnutls_session_t* client_session,
       if ((fd_info & FD_CLIENT_READ)
           && gnutls_record_check_pending (*client_session))
         {
-          FD_ZERO (&exceptfds);
           FD_ZERO (&readfds);
           FD_ZERO (&writefds);
           ret++;
@@ -981,7 +957,6 @@ serve_omp (gnutls_session_t* client_session,
             {
               if (!ret)
                 {
-                  FD_ZERO (&exceptfds);
                   FD_ZERO (&readfds);
                   FD_ZERO (&writefds);
                 }
@@ -1008,7 +983,7 @@ serve_omp (gnutls_session_t* client_session,
 
           timeout.tv_usec = 0;
           timeout.tv_sec = 1;
-          ret = select (nfds, &readfds, &writefds, &exceptfds, &timeout);
+          ret = select (nfds, &readfds, &writefds, NULL, &timeout);
         }
       if (ret < 0)
         {
@@ -1069,29 +1044,6 @@ serve_omp (gnutls_session_t* client_session,
               goto scanner_free;
             }
           continue;
-        }
-
-      /* Check for exceptions on the client socket. */
-      if (client_active && FD_ISSET (client_socket, &exceptfds))
-        {
-          char ch;
-          while (recv (client_socket, &ch, 1, MSG_OOB) < 1)
-            {
-              if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-                continue;
-              g_warning ("%s: after exception on client in child select:"
-                         " recv failed\n",
-                         __FUNCTION__);
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              rc = -1;
-              goto scanner_free;
-            }
-          g_warning ("%s: after exception on client in child select:"
-                     " recv: %c\n",
-                     __FUNCTION__,
-                     ch);
         }
 
       /* Read any data from the client. */

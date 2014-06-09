@@ -1,5 +1,10 @@
 2014-06-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (openvas_scanner_wait, serve_omp): Remove handling of
+	unused out-of-band data.
+
+2014-06-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (openvas_scanner_fd_isset, openvas_scanner_fd_set)
 	(openvas_scanner_peek, openvas_scanner_nfds_from_socket)
 	(openvas_scanner_session_peek): New functions.
