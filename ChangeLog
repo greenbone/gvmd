@@ -1,3 +1,12 @@
+2014-06-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (openvas_scanner_fd_isset, openvas_scanner_fd_set)
+	(openvas_scanner_peek, openvas_scanner_nfds_from_socket)
+	(openvas_scanner_session_peek): New functions.
+	(serve_omp): Use new functions instead of directly accessing the
+	openvas_scanner variables. Don't check scanner socket for out-of-band
+	data as none is sent by the scanner.
+
 2014-06-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (read_from_server): Rename to openvas_scanner_read. Adjust

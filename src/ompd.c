@@ -722,6 +722,40 @@ openvas_scanner_reconnect ()
   return openvas_scanner_connect ();
 }
 
+static int
+openvas_scanner_fd_isset (fd_set *fd)
+{
+  return FD_ISSET (openvas_scanner_socket, fd);
+}
+
+static void
+openvas_scanner_fd_set (fd_set *fd)
+{
+  FD_SET (openvas_scanner_socket, fd);
+}
+
+static int
+openvas_scanner_peek ()
+{
+  char chr;
+  return recv (openvas_scanner_socket, &chr, 1, MSG_PEEK);
+}
+
+static int
+openvas_scanner_get_nfds (int socket)
+{
+  if (socket > openvas_scanner_socket)
+    return 1 + socket;
+  else
+    return 1 + openvas_scanner_socket;
+}
+
+static int
+openvas_scanner_session_peek ()
+{
+  return gnutls_record_check_pending (openvas_scanner_session);
+}
+
 /**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
@@ -855,13 +889,11 @@ serve_omp (gnutls_session_t* client_session,
    *     to_scanner buffer filling up (during initialisation).
    */
 
-  nfds = 1 + (client_socket > openvas_scanner_socket
-              ? client_socket : openvas_scanner_socket);
+  nfds = openvas_scanner_get_nfds (client_socket);
   while (1)
     {
       int ret;
       uint8_t fd_info;  /* What `select' is going to watch. */
-      char recv_ch;
 
       /* Setup for select. */
 
@@ -871,8 +903,6 @@ serve_omp (gnutls_session_t* client_session,
       FD_ZERO (&exceptfds);
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
-      if (scanner_is_up ())
-        FD_SET (openvas_scanner_socket, &exceptfds);
 
       /** @todo Shutdown on failure (for example, if a read fails). */
 
@@ -903,7 +933,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && from_scanner_end < from_buffer_size)
         {
-          FD_SET (openvas_scanner_socket, &readfds);
+          openvas_scanner_fd_set (&readfds);
           fd_info |= FD_SCANNER_READ;
         }
 
@@ -919,7 +949,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
               || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))
         {
-          FD_SET (openvas_scanner_socket, &writefds);
+          openvas_scanner_fd_set (&writefds);
           fd_info |= FD_SCANNER_WRITE;
         }
 
@@ -947,7 +977,7 @@ serve_omp (gnutls_session_t* client_session,
         }
       if (fd_info & FD_SCANNER_READ)
         {
-          if (gnutls_record_check_pending (openvas_scanner_session))
+          if (openvas_scanner_session_peek ())
             {
               if (!ret)
                 {
@@ -956,9 +986,9 @@ serve_omp (gnutls_session_t* client_session,
                   FD_ZERO (&writefds);
                 }
               ret++;
-              FD_SET (openvas_scanner_socket, &readfds);
+              openvas_scanner_fd_set (&readfds);
             }
-          else if (recv (openvas_scanner_socket, &recv_ch, 1, MSG_PEEK) == 0)
+          else if (openvas_scanner_peek () == 0)
             {
               /* Scanner has gone down.  Exit. */
               if (client_active)
@@ -1012,12 +1042,11 @@ serve_omp (gnutls_session_t* client_session,
           && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
               || ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE))
           && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
-               ? FD_ISSET (openvas_scanner_socket, &readfds) == 0
+               ? openvas_scanner_fd_isset (&readfds) == 0
                : 1)
           && (((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
-               ? FD_ISSET (openvas_scanner_socket, &writefds) == 0
-               : 1)
-          && (recv (openvas_scanner_socket, &recv_ch, 1, MSG_PEEK) == 0))
+               ? openvas_scanner_fd_isset (&writefds) == 0 : 1)
+          && (openvas_scanner_peek () == 0))
         {
           /* Scanner has gone down.  Exit. */
           if (client_active)
@@ -1060,30 +1089,6 @@ serve_omp (gnutls_session_t* client_session,
               goto scanner_free;
             }
           g_warning ("%s: after exception on client in child select:"
-                     " recv: %c\n",
-                     __FUNCTION__,
-                     ch);
-        }
-
-      /* Check for exceptions on the scanner socket. */
-      if (scanner_is_up () && FD_ISSET (openvas_scanner_socket, &exceptfds))
-        {
-          char ch;
-          while (recv (openvas_scanner_socket, &ch, 1, MSG_OOB) < 1)
-            {
-              if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-                continue;
-              g_warning ("%s: after exception on scanner in child select:"
-                         " recv failed\n",
-                         __FUNCTION__);
-              if (client_active)
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-              rc = -1;
-              goto scanner_free;
-            }
-          g_warning ("%s: after exception on scanner in child select:"
                      " recv: %c\n",
                      __FUNCTION__,
                      ch);
@@ -1171,8 +1176,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = -1;
                   goto scanner_free;
                 }
-              nfds = 1 + (client_socket > openvas_scanner_socket
-                          ? client_socket : openvas_scanner_socket);
+              nfds = openvas_scanner_get_nfds (client_socket);
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
@@ -1263,7 +1267,7 @@ serve_omp (gnutls_session_t* client_session,
       /* Read any data from the scanner. */
       if (scanner_is_up ()
           && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
-          && FD_ISSET (openvas_scanner_socket, &readfds))
+          && openvas_scanner_fd_isset (&readfds))
         {
 #if TRACE || LOG
           buffer_size_t initial_start = from_scanner_end;
@@ -1360,8 +1364,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = -1;
                   goto scanner_free;
                 }
-              nfds = 1 + (client_socket > openvas_scanner_socket
-                          ? client_socket : openvas_scanner_socket);
+              nfds = openvas_scanner_get_nfds (client_socket);
             }
           else if (ret == 2)
             {
@@ -1414,7 +1417,7 @@ serve_omp (gnutls_session_t* client_session,
       /* Write any data to the scanner. */
       if (scanner_is_up ()
           && ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
-          && FD_ISSET (openvas_scanner_socket, &writefds))
+          && openvas_scanner_fd_isset (&writefds))
         {
           /* Write as much as possible to the scanner. */
 
@@ -1487,8 +1490,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = -1;
                   goto scanner_free;
                 }
-              nfds = 1 + (client_socket > openvas_scanner_socket
-                          ? client_socket : openvas_scanner_socket);
+              nfds = openvas_scanner_get_nfds (client_socket);
               /* Skip the rest of the loop because the scanner socket is
                * a new socket.  This is asking for select trouble, really. */
               continue;
@@ -1598,8 +1600,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = -1;
                   goto scanner_free;
                 }
-              nfds = 1 + (client_socket > openvas_scanner_socket
-                          ? client_socket : openvas_scanner_socket);
+              nfds = openvas_scanner_get_nfds (client_socket);
             }
           else if (ret == 2)
             {
