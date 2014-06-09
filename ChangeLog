@@ -1,3 +1,19 @@
+2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use new resource UUID when copying permissions in copy_task.  Hence
+	increase database version to 127.  Add database migration from version
+	126 to 127.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 127.
+
+	* src/manage_migrators.c (migrate_126_to_127): New function.
+	(database_migrators): Add migrate_126_to_127.
+
+	* src/manage_sql.c (copy_task): Use UUID of new task instead of old task
+	when copying permissions.
+
+	* doc/db.png: Update for version change.
+
 2014-06-09  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (openvas_scanner_wait, serve_omp): Remove handling of

@@ -24218,7 +24218,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
        "  resource_location, subject_type, subject, subject_location,"
        "  creation_time, modification_time)"
        " SELECT make_uuid (), (SELECT owner FROM tasks WHERE id = %llu),"
-       "        name, comment, resource_type, %llu, resource_uuid,"
+       "        name, comment, resource_type, %llu,"
+       "        (SELECT uuid FROM tasks WHERE id = %llu),"
        "        resource_location, subject_type, subject, subject_location,"
        "        m_now (), m_now ()"
        " FROM permissions"
@@ -24226,6 +24227,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
        " AND resource_type = 'task'"
        " AND resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " AND resource = %llu;",
+       new,
        new,
        new,
        old,

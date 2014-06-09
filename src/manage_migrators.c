@@ -9115,6 +9115,44 @@ migrate_125_to_126 ()
 }
 
 /**
+ * @brief Migrate the database from version 126 to version 127.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_126_to_127 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 126. */
+
+  if (manage_db_version () != 126)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* An error in copy_task gave some permissions wrong resource_uuid values. */
+
+  /* Copy the data into the new table. */
+
+  sql ("UPDATE permissions"
+       " SET resource_uuid = (SELECT uuid FROM tasks WHERE tasks.id = resource)"
+       " WHERE resource_type = 'task'"
+       " AND resource != 0;");
+
+  /* Set the database version to 127. */
+
+  set_db_version (127);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9245,6 +9283,7 @@ static migrator_t database_migrators[]
     {124, migrate_123_to_124},
     {125, migrate_124_to_125},
     {126, migrate_125_to_126},
+    {127, migrate_126_to_127},
     /* End marker. */
     {-1, NULL}};
 
