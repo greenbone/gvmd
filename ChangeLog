@@ -1,3 +1,12 @@
+2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport part of r19612.
+
+	Use new resource UUID when copying permissions in copy_task.
+
+	* src/manage_sql.c (copy_task): Use UUID of new task instead of old task
+	when copying permissions.
+
 2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19616.
