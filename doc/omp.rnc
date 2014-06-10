@@ -2201,13 +2201,6 @@ create_config_copy
        uuid
      }
 
-# An openvasrc style file that defines the config.
-create_config_rcfile
- = element rcfile
-     {
-       base64
-     }
-
 # A name for the config.
 create_config_name
  = element name

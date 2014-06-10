@@ -1,3 +1,11 @@
+2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml (create_config): Remove leftover
+	RCFILE element and example.
+	(create_task): Remove description of RCFILE option.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.h: Fix build on opensuse due to missing argument in

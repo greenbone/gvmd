@@ -5567,12 +5567,6 @@ create_config_copy
        uuid
      }
 
-create_config_rcfile
- = element rcfile
-     {
-       base64
-     }
-
 create_config_name
  = element name
      {
@@ -5592,18 +5586,6 @@ create_config_name
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
    &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
-   &lt;name&gt;Full&lt;/name&gt;
- &lt;/create_config&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
-                         status_text="OK, resource created"
-                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
-</pre></div>
-</div>
-<h4>7.4.3 Example: Create a config from an RC file</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
-   &lt;rcfile&gt;asdf3235saf3kjBVF...&lt;/rcfile&gt;
    &lt;name&gt;Full&lt;/name&gt;
  &lt;/create_config&gt;
 </pre></div>
@@ -8231,11 +8213,6 @@ create_target_port_list
 <p>In short: Create a task.</p>
 <p>
         The client uses the create_task command to create a new task.
-      </p>
-<p>
-        If an rcfile is given, then config and target should actually be
-        left out.  This form of the command is special support for
-        OpenVAS-Client, and will likely be removed in future versions.
       </p>
 <h4>7.21.1 Structure</h4>
 <ul style="list-style: none">
