@@ -1,4 +1,9 @@
-2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (check_db): Ensure that resource matches
+	resource_uuid, similar to migrate_126_to_127 in trunk.
+
+2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport part of r19612.
 

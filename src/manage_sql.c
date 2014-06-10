@@ -10736,6 +10736,16 @@ check_db ()
 
   set_db_version (OPENVASMD_DATABASE_VERSION);
 
+  /* Ensure that in task permissions resource_uuid matches the resource.
+   *
+   * This is a migrator in OpenVAS-8, but runs every time here to ease
+   * backporting. */
+
+  sql ("UPDATE permissions"
+       " SET resource_uuid = (SELECT uuid FROM tasks WHERE tasks.id = resource)"
+       " WHERE resource_type = 'task'"
+       " AND resource != 0;");
+
   /* Ensure the nvti cache update flag exists and is clear. */
 
   if (sql_int (0, 0,
