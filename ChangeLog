@@ -1,5 +1,9 @@
 2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/proto_postgres.sql: Remove.  Old prototype.
+
+2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml (create_config): Remove leftover
 	RCFILE element and example.
 	(create_task): Remove description of RCFILE option.
