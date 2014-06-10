@@ -1,5 +1,10 @@
 2014-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/otp.h: Fix build on opensuse due to missing argument in
+	process_otp_scanner_input() prototype.
+
+2014-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/scanner.h: Fix openvas_scanner_write() prototype.
 
 2014-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
