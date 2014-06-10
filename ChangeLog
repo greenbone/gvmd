@@ -1,3 +1,11 @@
+2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add support for multiple "To" addresses in Alerts.
+
+	* src/manage_sql.c (validate_email): Make static.
+	(validate_email_list): New function.
+	(create_alert, modify_alert): Validate "to_address" as list.
+
 2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make report form "Verinice ISM" predefined.
