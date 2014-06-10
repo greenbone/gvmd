@@ -38,6 +38,7 @@
  */
 
 #include "ompd.h"
+#include "scanner.h"
 #include "logf.h"
 #include "omp.h"
 /** @todo For scanner_init_state. */
@@ -116,12 +117,7 @@ int socket(int domain, int type, int protocol);
 char from_client[FROM_BUFFER_SIZE];
 
 /**
- * @brief Buffer of input from the scanner.
- */
-char from_scanner[FROM_BUFFER_SIZE];
-
-/**
- * @brief Size of \ref from_client and \ref from_scanner data buffers, in bytes.
+ * @brief Size of \ref from_client data buffer, in bytes.
  */
 buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 
@@ -131,19 +127,9 @@ buffer_size_t from_buffer_size = FROM_BUFFER_SIZE;
 buffer_size_t from_client_start = 0;
 
 /**
- * @brief The start of the data in the \ref from_scanner buffer.
- */
-buffer_size_t from_scanner_start = 0;
-
-/**
  * @brief The end of the data in the \ref from_client buffer.
  */
 buffer_size_t from_client_end = 0;
-
-/**
- * @brief The end of the data in the \ref from_scanner buffer.
- */
-buffer_size_t from_scanner_end = 0;
 
 /**
  * @brief The IP address of openvassd, the "scanner".
@@ -354,387 +340,6 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
   return FALSE;
 }
 
-/* Current OpenVAS Scanner connection. */
-gnutls_session_t openvas_scanner_session = NULL;
-gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
-int openvas_scanner_socket = -1;
-
-/**
- * @brief Read as much from the server as the \ref from_scanner buffer will
- * @brief hold.
- *
- * @return 0 on reading everything available, -1 on error, -2 if
- * from_scanner buffer is full or -3 on reaching end of file.
- */
-static int
-openvas_scanner_read ()
-{
-  while (from_scanner_end < from_buffer_size)
-    {
-      ssize_t count;
-      count = gnutls_record_recv (openvas_scanner_session,
-                                  from_scanner + from_scanner_end,
-                                  from_buffer_size - from_scanner_end);
-      if (count < 0)
-        {
-          if (count == GNUTLS_E_AGAIN)
-            /* Got everything available, return to `select'. */
-            return 0;
-          if (count == GNUTLS_E_INTERRUPTED)
-            /* Interrupted, try read again. */
-            continue;
-          if (count == GNUTLS_E_REHANDSHAKE)
-            {
-              /** @todo Rehandshake. */
-              tracef ("   should rehandshake\n");
-              continue;
-            }
-          if (gnutls_error_is_fatal (count) == 0
-              && (count == GNUTLS_E_WARNING_ALERT_RECEIVED
-                  || count == GNUTLS_E_FATAL_ALERT_RECEIVED))
-            {
-              int alert = gnutls_alert_get (openvas_scanner_session);
-              /*@dependent@*/
-              const char* alert_name = gnutls_alert_get_name (alert);
-              g_warning ("%s: TLS Alert %d: %s\n", __FUNCTION__, alert,
-                         alert_name);
-            }
-          g_warning ("%s: failed to read from server: %s\n", __FUNCTION__,
-                     gnutls_strerror (count));
-          return -1;
-        }
-      if (count == 0)
-        /* End of file. */
-        return -3;
-      assert (count > 0);
-      from_scanner_end += count;
-    }
-
-  /* Buffer full. */
-  return -2;
-}
-
-/**
- * @brief Write as much as possible from the to_scanner buffer to the scanner.
- *
- * @return 0 wrote everything, -1 error, -2 wrote as much as scanner accepted,
- *         -3 did an initialisation step.
- */
-static int
-openvas_scanner_write ()
-{
-  switch (scanner_init_state)
-    {
-      case SCANNER_INIT_CONNECT_INTR:
-      case SCANNER_INIT_TOP:
-        switch (openvas_server_connect (openvas_scanner_socket,
-                                        &scanner_address,
-                                        &openvas_scanner_session,
-                                        scanner_init_state
-                                        == SCANNER_INIT_CONNECT_INTR))
-          {
-            case 0:
-              switch (openvas_server_verify (openvas_scanner_session))
-                {
-                  case 0:
-                    break;
-                  default:
-                    return -1;
-                }
-              set_scanner_init_state (SCANNER_INIT_CONNECTED);
-              /* Fall through to SCANNER_INIT_CONNECTED case below, to write
-               * version string. */
-              break;
-            case -2:
-              set_scanner_init_state (SCANNER_INIT_CONNECT_INTR);
-              return -3;
-            default:
-              return -1;
-          }
-        /*@fallthrough@*/
-      case SCANNER_INIT_CONNECTED:
-        {
-          char* string = "< OTP/2.0 >\n";
-
-          scanner_init_offset = write_string_to_server (&openvas_scanner_session,
-                                                        string
-                                                        + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            set_scanner_init_state (SCANNER_INIT_SENT_VERSION);
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          if (ompd_nvt_cache_mode)
-            {
-              string = "CLIENT <|> NVT_INFO <|> CLIENT\n";
-              scanner_init_offset = write_string_to_server
-                                     (&openvas_scanner_session,
-                                      string + scanner_init_offset);
-              if (scanner_init_offset == -1)
-                {
-                  scanner_init_offset = 0;
-                  return -1;
-                }
-            }
-          break;
-        }
-      case SCANNER_INIT_SENT_VERSION:
-        assert (0);
-        break;
-      case SCANNER_INIT_SENT_COMPLETE_LIST:
-      case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
-        assert (0);
-        break;
-      case SCANNER_INIT_GOT_FEED_VERSION:
-        if (ompd_nvt_cache_mode)
-          {
-            static char* const ack = "CLIENT <|> COMPLETE_LIST <|> CLIENT\n";
-            scanner_init_offset = write_string_to_server
-                                   (&openvas_scanner_session,
-                                    ack + scanner_init_offset);
-            if (scanner_init_offset == 0)
-              set_scanner_init_state (ompd_nvt_cache_mode == -1
-                                      ? SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
-                                      : SCANNER_INIT_SENT_COMPLETE_LIST);
-            else if (scanner_init_offset == -1)
-              {
-                scanner_init_offset = 0;
-                return -1;
-              }
-            break;
-          }
-        /*@fallthrough@*/
-      case SCANNER_INIT_GOT_PLUGINS:
-        {
-          static char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
-                                   "CLIENT <|> CERTIFICATES <|> CLIENT\n";
-          scanner_init_offset = write_string_to_server
-                                 (&openvas_scanner_session,
-                                  ack + scanner_init_offset);
-          if (scanner_init_offset == 0)
-            {
-              if (ompd_nvt_cache_mode == -1)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE_UPDATE);
-              else if (ompd_nvt_cache_mode == -2)
-                set_scanner_init_state (SCANNER_INIT_DONE_CACHE_MODE);
-              else
-                set_scanner_init_state (SCANNER_INIT_DONE);
-            }
-          else if (scanner_init_offset == -1)
-            {
-              scanner_init_offset = 0;
-              return -1;
-            }
-          else
-            break;
-        }
-        /*@fallthrough@*/
-      case SCANNER_INIT_DONE:
-      case SCANNER_INIT_DONE_CACHE_MODE:
-      case SCANNER_INIT_DONE_CACHE_MODE_UPDATE:
-        while (1)
-          switch (write_to_server_buffer (&openvas_scanner_session))
-            {
-              case  0: return 0;
-              case -1: return -1;
-              case -2: return -2;
-              case -3: continue;  /* Interrupted. */
-            }
-    }
-  return -3;
-}
-
-/**
- * @brief Wait for the scanner socket to be writable.
- *
- * @return 0 on success, -1 on error.
- */
-int
-openvas_scanner_wait ()
-{
-  while (1)
-    {
-      int ret;
-      struct timeval timeout;
-      fd_set writefds;
-
-      timeout.tv_usec = 0;
-      timeout.tv_sec = 1;
-      FD_ZERO (&writefds);
-      FD_SET (openvas_scanner_socket, &writefds);
-
-      ret = select (1 + openvas_scanner_socket, NULL, &writefds, NULL, &timeout);
-      if (ret < 0)
-        {
-          if (errno == EINTR)
-            continue;
-          g_warning ("%s: select failed (connect): %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-
-      if (FD_ISSET (openvas_scanner_socket, &writefds))
-        break;
-    }
-  return 0;
-}
-
-/**
- * @brief Load certificates from the CA directory.
- *
- * @param[in]  scanner_credentials  Scanner credentials.
- *
- * @return 0 success, -1 error.
- */
-static int
-load_cas (gnutls_certificate_credentials_t *scanner_credentials)
-{
-  DIR *dir;
-  struct dirent *ent;
-
-  dir = opendir (CA_DIR);
-  if (dir == NULL)
-    {
-      if (errno != ENOENT)
-        {
-          g_warning ("%s: failed to open " CA_DIR ": %s\n", __FUNCTION__,
-                     strerror (errno));
-          return -1;
-        }
-    }
-  else while ((ent = readdir (dir)))
-    {
-      gchar *name;
-      struct stat state;
-
-      if ((strcmp (ent->d_name, ".") == 0) || (strcmp (ent->d_name, "..") == 0))
-        continue;
-
-      name = g_build_filename (CA_DIR, ent->d_name, NULL);
-      stat (name, &state);
-      if (S_ISREG (state.st_mode)
-          && (gnutls_certificate_set_x509_trust_file
-               (*scanner_credentials, name, GNUTLS_X509_FMT_PEM) < 0))
-        {
-          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s\n",
-                     __FUNCTION__, name);
-          g_free (name);
-          closedir (dir);
-          return -1;
-        }
-      g_free (name);
-    }
-  if (dir != NULL)
-    closedir (dir);
-  return 0;
-}
-
-static int
-openvas_scanner_close ()
-{
-  int rc;
-  rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
-                            openvas_scanner_credentials);
-  openvas_scanner_socket = -1;
-  openvas_scanner_session = NULL;
-  openvas_scanner_credentials = NULL;
-  return rc;
-}
-
-/**
- * @brief Create a new connection to the scanner and set it as current scanner.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-openvas_scanner_connect ()
-{
-  openvas_scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
-  if (openvas_scanner_socket == -1)
-    {
-      g_warning ("%s: failed to create scanner socket: %s\n",
-                 __FUNCTION__, strerror (errno));
-      return -1;
-    }
-
-  /* Make the scanner socket. */
-  if (openvas_server_new (GNUTLS_CLIENT, CACERT, CLIENTCERT, CLIENTKEY,
-                          &openvas_scanner_session,
-                          &openvas_scanner_credentials))
-    {
-      close (openvas_scanner_socket);
-      openvas_scanner_socket = -1;
-      return -1;
-    }
-
-  if (load_cas (&openvas_scanner_credentials))
-    {
-      openvas_scanner_close ();
-      return -1;
-    }
-
-  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-   * error" removes the data between `select' and `read'. */
-  if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-    {
-      g_warning ("%s: failed to set scanner socket flag: %s\n", __FUNCTION__,
-                 strerror (errno));
-      openvas_scanner_close ();
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Reconnect to the scanner.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-openvas_scanner_reconnect ()
-{
-  if (openvas_scanner_socket != -1 && openvas_scanner_close ())
-    return -1;
-  return openvas_scanner_connect ();
-}
-
-static int
-openvas_scanner_fd_isset (fd_set *fd)
-{
-  return FD_ISSET (openvas_scanner_socket, fd);
-}
-
-static void
-openvas_scanner_fd_set (fd_set *fd)
-{
-  FD_SET (openvas_scanner_socket, fd);
-}
-
-static int
-openvas_scanner_peek ()
-{
-  char chr;
-  return recv (openvas_scanner_socket, &chr, 1, MSG_PEEK);
-}
-
-static int
-openvas_scanner_get_nfds (int socket)
-{
-  if (socket > openvas_scanner_socket)
-    return 1 + socket;
-  else
-    return 1 + openvas_scanner_socket;
-}
-
-static int
-openvas_scanner_session_peek ()
-{
-  return gnutls_record_check_pending (openvas_scanner_session);
-}
-
 /**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
@@ -814,7 +419,7 @@ serve_omp (gnutls_session_t* client_session,
 #endif
 
   /* Initiate connection (to_scanner is empty so this will just init). */
-  while ((ret = openvas_scanner_write ()) == -3
+  while ((ret = openvas_scanner_write (ompd_nvt_cache_mode)) == -3
          && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
     if (openvas_scanner_wait ())
       {
@@ -908,7 +513,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
-          && from_scanner_end < from_buffer_size)
+          && !openvas_scanner_full ())
         {
           openvas_scanner_fd_set (&readfds);
           fd_info |= FD_SCANNER_READ;
@@ -1221,9 +826,6 @@ serve_omp (gnutls_session_t* client_session,
           && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
           && openvas_scanner_fd_isset (&readfds))
         {
-#if TRACE || LOG
-          buffer_size_t initial_start = from_scanner_end;
-#endif
           tracef ("   FD_SCANNER_READ\n");
 
           switch (openvas_scanner_read ())
@@ -1265,34 +867,6 @@ serve_omp (gnutls_session_t* client_session,
                 assert (0);
             }
 
-#if TRACE || LOG
-          /* This check prevents output in the "asynchronous network
-           * error" case. */
-          if (from_scanner_end > initial_start)
-            {
-              /* Convert to UTF-8. */
-              gsize size_dummy;
-              gchar *utf8 = g_convert (from_scanner,
-                                       from_scanner_end - initial_start,
-                                       "UTF-8", "ISO_8859-1",
-                                       NULL, &size_dummy, NULL);
-              if (utf8 == NULL)
-                {
-                  rc = -1;
-                  goto scanner_free;
-                }
-
-              logf ("<= scanner %s\n", utf8);
-#if TRACE_TEXT
-              tracef ("<= scanner %s\n", utf8);
-#else
-              tracef ("<= scanner  %i bytes\n",
-                      from_scanner_end - initial_start);
-#endif
-              g_free (utf8);
-            }
-#endif /* TRACE || LOG */
-
           ret = process_otp_scanner_input (progress);
           if (ret == 0)
             /* Processed all input. */
@@ -1302,7 +876,7 @@ serve_omp (gnutls_session_t* client_session,
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).  If the client is still connected then recreate the
                * scanner session, else exit. */
-              openvas_scanner_write ();
+              openvas_scanner_write (ompd_nvt_cache_mode);
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 {
@@ -1373,7 +947,7 @@ serve_omp (gnutls_session_t* client_session,
         {
           /* Write as much as possible to the scanner. */
 
-          switch (openvas_scanner_write ())
+          switch (openvas_scanner_write (ompd_nvt_cache_mode))
             {
               case  0:      /* Wrote everything in to_scanner. */
                 break;
@@ -1538,7 +1112,7 @@ serve_omp (gnutls_session_t* client_session,
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).  If the client is still connected then recreate the
                * scanner session, else exit. */
-              openvas_scanner_write ();
+              openvas_scanner_write (ompd_nvt_cache_mode);
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
                 {

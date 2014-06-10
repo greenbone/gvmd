@@ -1,3 +1,15 @@
+2014-06-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/scanner.c, src/scanner.h: New files.
+	(openvas_scanner_write): Add argument for nvt cache mode.
+	(openvas_scanner_buf_filled): New function.
+
+	* src/ompd.c: Move openvas_scanner and related variables to scanner.c.
+	Include scanner.h
+	(serve_omp): Adjust for new and modified functions usage.
+
+	* src/CMakeLists.txt: Add scanner.c to build process.
+
 2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add support for multiple "To" addresses in Alerts.
