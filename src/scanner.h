@@ -32,7 +32,7 @@ int
 openvas_scanner_read ();
 
 int
-openvas_scanner_write ();
+openvas_scanner_write (int);
 
 int
 openvas_scanner_wait ();
