@@ -5249,7 +5249,7 @@ find_alert_with_permission (const char* uuid, alert_t* alert,
  *
  * @return 0 success, 1 failure.
  */
-int
+static int
 validate_email (const char* address)
 {
   gchar **split, *point;
@@ -5297,6 +5297,46 @@ validate_email (const char* address)
         g_strfreev (split);
         return 1;
       }
+
+  g_strfreev (split);
+  return 0;
+}
+
+/**
+ * @brief Validate an email address list.
+ *
+ * @param[in]  list  Comma separated list of email addresses.
+ *
+ * @return 0 success, 1 failure.
+ */
+static int
+validate_email_list (const char *list)
+{
+  gchar **split, **point;
+
+  assert (list);
+
+  split = g_strsplit (list, ",", 0);
+
+  if (split[0] == NULL)
+    {
+      g_strfreev (split);
+      return 1;
+    }
+
+  point = split;
+  while (*point)
+    {
+      const char *address;
+      address = *point;
+      while (*address && (*address == ' ')) address++;
+      if (validate_email (address))
+        {
+          g_strfreev (split);
+          return 1;
+        }
+      point++;
+    }
 
   g_strfreev (split);
   return 0;
@@ -5507,9 +5547,19 @@ create_alert (const char* name, const char* comment, const char* filter_id,
     {
       gchar *name = sql_quote (item);
       gchar *data = sql_quote (item + strlen (item) + 1);
+
       if (method == ALERT_METHOD_EMAIL
-          && (strcmp (name, "to_address") == 0
-              || strcmp (name, "from_address") == 0)
+          && strcmp (name, "to_address") == 0
+          && validate_email_list (data))
+        {
+          g_free (name);
+          g_free (data);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+
+      if (method == ALERT_METHOD_EMAIL
+          && strcmp (name, "from_address") == 0
           && validate_email (data))
         {
           g_free (name);
@@ -5795,8 +5845,17 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
           gchar *name = sql_quote (item);
           gchar *data = sql_quote (item + strlen (item) + 1);
           if (method == ALERT_METHOD_EMAIL
-              && (strcmp (name, "to_address") == 0
-                  || strcmp (name, "from_address") == 0)
+              && strcmp (name, "to_address") == 0
+              && validate_email_list (data))
+            {
+              g_free (name);
+              g_free (data);
+              sql ("ROLLBACK;");
+              return 6;
+            }
+
+          if (method == ALERT_METHOD_EMAIL
+              && strcmp (name, "from_address") == 0
               && validate_email (data))
             {
               g_free (name);
