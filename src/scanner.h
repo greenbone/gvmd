@@ -64,4 +64,10 @@ openvas_scanner_session_peek ();
 int
 openvas_scanner_full ();
 
+int
+openvas_scanner_connected ();
+
+int
+openvas_scanner_init (int);
+
 #endif /* not OPENVAS_MANAGER_SCANNER_H */

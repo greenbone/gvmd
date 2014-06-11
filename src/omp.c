@@ -26857,17 +26857,6 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
 }
 
 /**
- * @brief Return whether the scanner is up.
- *
- * @return 1 if the scanner is available, else 0.
- */
-short
-scanner_is_up ()
-{
-  return scanner_up;
-}
-
-/**
  * @brief Return whether the scanner is active.
  *
  * @return 1 if the scanner is doing something that the manager

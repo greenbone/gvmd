@@ -436,7 +436,7 @@ serve_omp (gnutls_session_t* client_session,
           rc = 1;
           goto scanner_free;
         }
-      scanner_up = 0;
+      openvas_scanner_close ();
     }
 
   client_input_stalled = 0;
@@ -506,7 +506,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* See whether we need to read from the scannner.  */
-      if (scanner_is_up ()
+      if (openvas_scanner_connected ()
           && (scanner_init_state == SCANNER_INIT_DONE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
               || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE
@@ -520,7 +520,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* See whether we need to write to the scanner.  */
-      if (scanner_is_up ()
+      if (openvas_scanner_connected ()
           && (((scanner_init_state == SCANNER_INIT_TOP
                 || scanner_init_state == SCANNER_INIT_DONE
                 || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
@@ -618,7 +618,7 @@ serve_omp (gnutls_session_t* client_session,
 
 
       /* When using the Scanner, check if the socket has closed. */
-      if (scanner_is_up ()
+      if (openvas_scanner_connected ()
           && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
               || ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE))
           && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
@@ -822,7 +822,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Read any data from the scanner. */
-      if (scanner_is_up ()
+      if (openvas_scanner_connected ()
           && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
           && openvas_scanner_fd_isset (&readfds))
         {
@@ -909,13 +909,13 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == 3)
             {
               /* Calls via serve_client() should continue. */
-              scanner_up = 0;
               if (ompd_nvt_cache_mode)
                 {
                   rc = 2;
                   goto scanner_free;
                 }
               scanner_input_stalled = FALSE;
+              openvas_scanner_close ();
             }
           else if (ret == -1)
            {
@@ -941,7 +941,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Write any data to the scanner. */
-      if (scanner_is_up ()
+      if (openvas_scanner_connected ()
           && ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
           && openvas_scanner_fd_isset (&writefds))
         {
@@ -1098,7 +1098,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if (scanner_is_up () && scanner_input_stalled)
+      if (openvas_scanner_connected () && scanner_input_stalled)
         {
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */

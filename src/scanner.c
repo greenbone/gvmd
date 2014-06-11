@@ -69,6 +69,9 @@ buffer_size_t from_scanner_end = 0;
 int
 openvas_scanner_read ()
 {
+  if (openvas_scanner_socket == -1)
+    return -1;
+
   while (from_scanner_end < FROM_BUFFER_SIZE)
     {
       ssize_t count;
@@ -129,6 +132,8 @@ openvas_scanner_full ()
 int
 openvas_scanner_write (int nvt_cache_mode)
 {
+  if (openvas_scanner_socket == -1)
+    return -1;
   switch (scanner_init_state)
     {
       case SCANNER_INIT_CONNECT_INTR:
@@ -259,6 +264,9 @@ openvas_scanner_write (int nvt_cache_mode)
 int
 openvas_scanner_wait ()
 {
+  if (openvas_scanner_socket == -1)
+    return -1;
+
   while (1)
     {
       int ret;
@@ -340,6 +348,8 @@ int
 openvas_scanner_close ()
 {
   int rc;
+  if (openvas_scanner_socket == -1)
+    return -1;
   rc = openvas_server_free (openvas_scanner_socket, openvas_scanner_session,
                             openvas_scanner_credentials);
   openvas_scanner_socket = -1;
@@ -408,12 +418,16 @@ openvas_scanner_reconnect ()
 int
 openvas_scanner_fd_isset (fd_set *fd)
 {
+  if (openvas_scanner_socket == -1)
+    return 0;
   return FD_ISSET (openvas_scanner_socket, fd);
 }
 
 void
 openvas_scanner_fd_set (fd_set *fd)
 {
+  if (openvas_scanner_socket == -1)
+    return;
   FD_SET (openvas_scanner_socket, fd);
 }
 
@@ -421,6 +435,8 @@ int
 openvas_scanner_peek ()
 {
   char chr;
+  if (openvas_scanner_socket == -1)
+    return 0;
   return recv (openvas_scanner_socket, &chr, 1, MSG_PEEK);
 }
 
@@ -436,5 +452,26 @@ openvas_scanner_get_nfds (int socket)
 int
 openvas_scanner_session_peek ()
 {
+  if (openvas_scanner_socket == -1)
+    return 0;
   return gnutls_record_check_pending (openvas_scanner_session);
+}
+
+int
+openvas_scanner_connected ()
+{
+  return openvas_scanner_socket == -1 ? 0 : 1;
+}
+
+int
+openvas_scanner_init (int nvt_cache_mode)
+{
+  int ret;
+  if (openvas_scanner_socket == -1)
+    return -1;
+  while ((ret = openvas_scanner_write (nvt_cache_mode)) == -3
+         && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
+    if (openvas_scanner_wait ())
+      return -2;
+  return 0;
 }

@@ -127,7 +127,6 @@ manage_encrypt_all_credentials (const gchar *, gboolean);
 
 /* Task structures. */
 
-extern short scanner_up;
 extern short scanner_active;
 
 /** @todo Should be in otp.c/h. */

@@ -41,6 +41,7 @@
 #define _XOPEN_SOURCE
 
 #include "manage.h"
+#include "scanner.h"
 #include "sql.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
@@ -717,11 +718,6 @@ severity_data_level_counts (const severity_data_t *severity_data,
 
 
 /* Task globals. */
-
-/**
- * @brief Scanner available flag.
- */
-short scanner_up = 1;
 
 /**
  * @brief Scanner active flag.
@@ -2984,7 +2980,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (task_scanner (task) > 0)
     return run_osp_task  (task, report_id);
 
-  if (scanner_up == 0)
+  if (openvas_scanner_connected () == 0)
     return -5;
 
   if (set_task_requested (task, &run_status))
@@ -3589,7 +3585,7 @@ stop_task_internal (task_t task)
     {
       if (current_scanner_task == task)
         {
-          if (scanner_up == 0)
+          if (openvas_scanner_connected () == 0)
             return -5;
           if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
             return -1;
@@ -3676,7 +3672,7 @@ pause_task (const char *task_id)
   if (task_scanner (task) > 0)
     return 2;
 
-  if (scanner_up == 0)
+  if (openvas_scanner_connected () == 0)
     return -5;
 
   run_status = task_run_status (task);
@@ -3720,7 +3716,7 @@ resume_paused_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (scanner_up == 0)
+  if (openvas_scanner_connected () == 0)
     return -5;
 
   run_status = task_run_status (task);

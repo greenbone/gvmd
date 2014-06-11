@@ -1,3 +1,26 @@
+2014-06-11  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (scanner_up): Remove variable.
+	(run_task, stop_task_internal, pause_task, resume_paused_task): Use
+	openvas_scanner_connected() instead of directly checking scanner_up
+	value.
+
+	* src/manage.h: Remove variable declaration.
+
+	* src/omp.c (scanner_is_up): Remove function.
+
+	* src/ompd.c (serve_omp): Remove scanner_up and scanner_is_up() usage
+	and use openvas_scanner_connected() accordingly.
+
+	* src/scanner.c (openvas_scanner_read, openvas_scanner_write)
+	(openvas_scanner_wait, openvas_scanner_close, openvas_scanner_fd_isset)
+	(openvas_scanner_fd_set, openvas_scanner_peek)
+	(openvas_scanner_session_peek): Add checks for when the scanner isn't
+	connected.
+	(openvas_scanner_connected, openvas_scanner_init): New functions.
+
+	* src/scanner.h: Add new functions prototypes.
+
 2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/proto_postgres.sql: Remove.  Old prototype.
