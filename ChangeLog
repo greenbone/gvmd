@@ -1,3 +1,26 @@
+2014-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19628.
+
+	Separate init for command options like --create-user into new function,
+	otherwise these options affect active tasks.
+
+	* src/manage_sql.c (manage_encrypt_all_credentials): Init with
+	init_manage_helper, to ensure the database is up to date.
+	(init_manage_process): Improve doc slightly.
+	(init_manage_internal): New function.  Body from init_manage.  Add
+	summary of init cases and stop_tasks arg.
+	(init_manage): Call init_manage_internal.
+	(init_manage_helper): New function.
+	(manage_create_user, manage_delete_user, manage_list_users)
+	(manage_set_password): Call init_manage_helper instead of init_manage,
+	which stops active tasks.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/openvasmd.c (main): Handle new returns from encrypt and decrypt
+	functions.
+
 2014-06-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db): Ensure that resource matches

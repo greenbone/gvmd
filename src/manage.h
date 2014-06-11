@@ -50,6 +50,9 @@ typedef struct
 int
 init_manage (GSList*, int, const gchar*, int, void (*) ());
 
+int
+init_manage_helper (GSList *, const gchar *, int, void (*) ());
+
 void
 init_manage_process (int, const gchar*);
 
@@ -121,7 +124,7 @@ int
 manage_migrate (GSList*, const gchar*);
 
 int
-manage_encrypt_all_credentials (const gchar *, gboolean);
+manage_encrypt_all_credentials (GSList *, const gchar *, gboolean);
 
 
 /* Task structures. */

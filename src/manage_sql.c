@@ -4720,19 +4720,27 @@ encrypt_all_credentials (gboolean decrypt_flag)
  * encrypted, all already encrypted credentials are encrypted again
  * using the latest key.
  *
- * This function shall be used only by a command line option because
- * under SQLlite it locks the entire DB.
- *
+ * @param[in] log_config    Log configuration.
  * @param[in] database      Location of manage database.
  * @param[in] decrypt_flag  If true decrypt all credentials.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
  */
 int
-manage_encrypt_all_credentials (const gchar *database, gboolean decrypt_flag)
+manage_encrypt_all_credentials (GSList *log_config, const gchar *database,
+                                gboolean decrypt_flag)
 {
   int ret;
-  const gchar *db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  const gchar *db;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
 
   init_manage_process (0, db);
 
@@ -8755,7 +8763,8 @@ trash_task_writable (task_t task)
 /**
  * @brief Initialize the manage library for a process.
  *
- * Open the SQL database.
+ * Open the SQL database, attach secondary databases, and define functions and
+ * collations.
  *
  * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
  *                               -2 just rebuild NVT cache.
@@ -11707,25 +11716,64 @@ cleanup_tables ()
 /**
  * @brief Initialize the manage library.
  *
- * Ensure all tasks are in a clean initial state.
- *
- * Beware that calling this function while tasks are running may lead to
- * problems.
+ * Check DB version, do startup database checks, load the NVT cache.
+ * Optionally also stop active tasks.
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
  * @param[in]  update_progress     Function to update progress, or NULL. *
+ * @param[in]  stop_tasks          Stop any active tasks.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range.
  */
-int
-init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
-             int max_ips_per_target, void (*update_progress) ())
+static int
+init_manage_internal (GSList *log_config,
+                      int nvt_cache_mode,
+                      const gchar *database,
+                      int max_ips_per_target,
+                      void (*update_progress) (),
+                      int stop_tasks)
 {
   int ret;
+
+  /* Summary of init cases:
+   *
+   *     daemon [--foreground]
+   *         init_ompd  cache 0
+   *             init_manage
+   *         serve_and_schedule
+   *             forks child (serve_omp)
+   *                 init_ompd_process
+   *                     init_manage_process
+   *             manage_schedule
+   *                 fork_connection_for_schedular
+   *                     fork one
+   *                         init_ompd_process
+   *                             init_manage_process
+   *                         serve_client
+   *                     fork two
+   *                         omp_auth, omp_resume_or_start_task
+   *     --rebuild --update
+   *         rebuild_nvt_cache_retry
+   *             forks update_or_rebuild_nvt_cache
+   *                 init_ompd  cache -1 or -2
+   *                     init_manage
+   *                 serve_omp
+   *                     init_ompd_process
+   *     --create-user --delete-user --list-users
+   *         manage_create, ...
+   *             init_manage_helper
+   *     --encrypt/decrypt-all-credentials
+   *         manage_encrypt_...
+   *             init_manage_helper
+   *     --backup-database
+   *         (no init because no db access required)
+   *     --migrate
+   *         manage_migrate
+   *             init_manage_process (sorts out db state itself) */
 
   /* The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255" */
   if ((max_ips_per_target <= 0)
@@ -11750,16 +11798,20 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   if (ret)
     return ret;
 
-  /* Ensure the database is complete. */
+  /* Ensure the database is complete, removing superfluous rows.
+   *
+   * Assume that all other running processes are from the same Manager version,
+   * because some of these checks will modify the database if it is out of
+   * date.  This is relevant because the caller may be a command option process
+   * like a --create-user process.  */
 
   ret = check_db ();
   if (ret)
     return ret;
 
-  /* Remove unused / superfluous entries from tables */
   cleanup_tables ();
 
-  if (nvt_cache_mode == 0)
+  if (stop_tasks && (nvt_cache_mode == 0))
     /* Stop any active tasks. */
     stop_active_tasks ();
 
@@ -11772,6 +11824,65 @@ init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
   task_db = NULL;
   task_db_name = g_strdup (database);
   return 0;
+}
+
+/**
+ * @brief Initialize the manage library.
+ *
+ * Check DB version, do startup database checks, load the NVT cache.
+ *
+ * Ensure all tasks are in a clean initial state.
+ *
+ * Beware that calling this function while tasks are running may lead to
+ * problems.
+ *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  update_progress     Function to update progress, or NULL. *
+ *
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range.
+ */
+int
+init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
+             int max_ips_per_target, void (*update_progress) ())
+{
+  return init_manage_internal (log_config,
+                               nvt_cache_mode,
+                               database,
+                               max_ips_per_target,
+                               update_progress,
+                               1);  /* Stop active tasks. */
+}
+
+/**
+ * @brief Initialize the manage library for a helper program.
+ *
+ * This should be called at the beginning of any program that accesses the
+ * database.  Forked processes should call init_manage_process.  The daemon
+ * itself calls init_manage, including in NVT cache mode (--rebuild/update).
+ *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
+ * @param[in]  database        Location of database.
+ * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  update_progress     Function to update progress, or NULL. *
+ *
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server, -4 max_ips_per_target out of range.
+ */
+int
+init_manage_helper (GSList *log_config, const gchar *database,
+                    int max_ips_per_target, void (*update_progress) ())
+{
+  return init_manage_internal (log_config,
+                               0,   /* Run daemon in NVT cache mode. */
+                               database,
+                               max_ips_per_target,
+                               update_progress,
+                               0);  /* Stop active tasks. */
 }
 
 /**
@@ -48510,7 +48621,7 @@ manage_create_user (GSList *log_config, const gchar *database,
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
-  ret = init_manage (log_config, 0, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -48595,7 +48706,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
-  ret = init_manage (log_config, 0, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -48649,7 +48760,7 @@ manage_list_users (GSList *log_config, const gchar *database)
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
-  ret = init_manage (log_config, 0, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -48728,7 +48839,7 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
 
-  ret = init_manage (log_config, 0, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
   if (ret)
     return ret;

@@ -1595,7 +1595,7 @@ main (int argc, char** argv)
     }
 
   /* Option to create an encryption key for credentials.  This is
-     optional because such a key will be created anyway if needed.  */
+   * optional because such a key will be created anyway if needed.  */
   if (create_cred_enc_key)
     {
       infof ("   Creating credentials encryption key.\n");
@@ -1619,26 +1619,63 @@ main (int argc, char** argv)
   if (encrypt_all_credentials)
     {
       infof ("   (Re-)encrypting all credentials.\n");
-      if (!manage_encrypt_all_credentials (database, FALSE))
+      switch (manage_encrypt_all_credentials (log_config, database, FALSE))
         {
-          fprintf (stderr, "Encryption succeeded.\n");
-          return EXIT_SUCCESS;
+          case 0:
+            break;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
         }
-
-      fprintf (stderr, "Encryption failed.\n");
-      return EXIT_FAILURE;
+      fprintf (stderr, "Encryption succeeded.\n");
+      free_log_configuration (log_config);
+      return EXIT_SUCCESS;
     }
+
   if (decrypt_all_credentials)
     {
       infof ("   Decrypting all credentials.\n");
-      if (!manage_encrypt_all_credentials (database, TRUE))
+      switch (manage_encrypt_all_credentials (log_config, database, TRUE))
         {
-          fprintf (stderr, "Decryption succeeded.\n");
-          return EXIT_SUCCESS;
+          case 0:
+            break;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            fprintf (stderr, "Decryption failed.\n");
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
         }
-
-      fprintf (stderr, "Decryption failed.\n");
-      return EXIT_FAILURE;
+      fprintf (stderr, "Decryption succeeded.\n");
+      free_log_configuration (log_config);
+      return EXIT_SUCCESS;
     }
 
   /* Complete option processing. */
