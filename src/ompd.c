@@ -88,23 +88,6 @@ int socket(int domain, int type, int protocol);
 #define CLIENTKEY  "/var/lib/openvas/private/CA/clientkey.pem"
 #endif
 
-/**
- * @brief File descriptor set mask: selecting on client read.
- */
-#define FD_CLIENT_READ  1
-/**
- * @brief File descriptor set mask: selecting on client write.
- */
-#define FD_CLIENT_WRITE 2
-/**
- * @brief File descriptor set mask: selecting on scanner read.
- */
-#define FD_SCANNER_READ  4
-/**
- * @brief File descriptor set mask: selecting on scanner write.
- */
-#define FD_SCANNER_WRITE 8
-
 #ifndef S_SPLINT_S
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
@@ -381,7 +364,6 @@ serve_omp (gnutls_session_t* client_session,
            void (*progress) ())
 {
   int nfds, ret, rc;
-  fd_set readfds, writefds;
   /* True if processing of the client input is waiting for space in the
    * to_scanner or to_client buffer. */
   short client_input_stalled;
@@ -477,13 +459,12 @@ serve_omp (gnutls_session_t* client_session,
   while (1)
     {
       int ret;
-      uint8_t fd_info;  /* What `select' is going to watch. */
+      fd_set readfds, writefds;
 
       /* Setup for select. */
 
       /** @todo nfds must only include a socket if it's in >= one set. */
 
-      fd_info = 0;
       FD_ZERO (&readfds);
       FD_ZERO (&writefds);
 
@@ -493,16 +474,10 @@ serve_omp (gnutls_session_t* client_session,
         {
           /* See whether to read from the client.  */
           if (from_client_end < from_buffer_size)
-            {
-              FD_SET (client_socket, &readfds);
-              fd_info |= FD_CLIENT_READ;
-            }
+            FD_SET (client_socket, &readfds);
           /* See whether to write to the client.  */
           if (to_client_start < to_client_end)
-            {
-              FD_SET (client_socket, &writefds);
-              fd_info |= FD_CLIENT_WRITE;
-            }
+            FD_SET (client_socket, &writefds);
         }
 
       /* See whether we need to read from the scannner.  */
@@ -514,10 +489,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE
               || scanner_init_state == SCANNER_INIT_SENT_VERSION)
           && !openvas_scanner_full ())
-        {
-          openvas_scanner_fd_set (&readfds);
-          fd_info |= FD_SCANNER_READ;
-        }
+        openvas_scanner_fd_set (&readfds);
 
       /* See whether we need to write to the scanner.  */
       if (openvas_scanner_connected ()
@@ -530,16 +502,7 @@ serve_omp (gnutls_session_t* client_session,
               || scanner_init_state == SCANNER_INIT_CONNECTED
               || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
               || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))
-        {
-          openvas_scanner_fd_set (&writefds);
-          fd_info |= FD_SCANNER_WRITE;
-        }
-
-      tracef ("   SELECT ON:%s%s%s%s",
-              (fd_info & FD_CLIENT_READ)? " read-client":"",
-              (fd_info & FD_CLIENT_WRITE)? " write-client":"",
-              (fd_info & FD_SCANNER_READ)? " read-scanner":"",
-              (fd_info & FD_SCANNER_WRITE)? " write-scanner":"");
+        openvas_scanner_fd_set (&writefds);
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -548,7 +511,7 @@ serve_omp (gnutls_session_t* client_session,
        * exhibit a problem in OpenVAS due to a different buffering
        * strategy.  */
       ret = 0;
-      if ((fd_info & FD_CLIENT_READ)
+      if (client_socket > 0 && FD_ISSET (client_socket, &readfds)
           && gnutls_record_check_pending (*client_session))
         {
           FD_ZERO (&readfds);
@@ -556,7 +519,7 @@ serve_omp (gnutls_session_t* client_session,
           ret++;
           FD_SET (client_socket, &readfds);
         }
-      if (fd_info & FD_SCANNER_READ)
+      if (openvas_scanner_fd_isset (&readfds))
         {
           if (openvas_scanner_session_peek ())
             {
@@ -619,12 +582,12 @@ serve_omp (gnutls_session_t* client_session,
 
       /* When using the Scanner, check if the socket has closed. */
       if (openvas_scanner_connected ()
-          && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
-              || ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE))
-          && (((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
+          && ((openvas_scanner_fd_isset (&readfds))
+              || (openvas_scanner_fd_isset (&writefds)))
+          && ((openvas_scanner_fd_isset (&readfds))
                ? openvas_scanner_fd_isset (&readfds) == 0
                : 1)
-          && (((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
+          && ((openvas_scanner_fd_isset (&writefds))
                ? openvas_scanner_fd_isset (&writefds) == 0 : 1)
           && (openvas_scanner_peek () == 0))
         {
@@ -652,14 +615,11 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Read any data from the client. */
-      if ((fd_info & FD_CLIENT_READ) == FD_CLIENT_READ
-          && FD_ISSET (client_socket, &readfds))
+      if (client_socket > 0 && FD_ISSET (client_socket, &readfds))
         {
 #if TRACE || LOG
           buffer_size_t initial_start = from_client_end;
 #endif
-          tracef ("   FD_CLIENT_READ\n");
-
           switch (read_from_client (client_session, client_socket))
             {
               case  0:       /* Read everything. */
@@ -823,11 +783,8 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Read any data from the scanner. */
       if (openvas_scanner_connected ()
-          && ((fd_info & FD_SCANNER_READ) == FD_SCANNER_READ)
           && openvas_scanner_fd_isset (&readfds))
         {
-          tracef ("   FD_SCANNER_READ\n");
-
           switch (openvas_scanner_read ())
             {
               case  0:       /* Read everything. */
@@ -942,7 +899,6 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Write any data to the scanner. */
       if (openvas_scanner_connected ()
-          && ((fd_info & FD_SCANNER_WRITE) == FD_SCANNER_WRITE)
           && openvas_scanner_fd_isset (&writefds))
         {
           /* Write as much as possible to the scanner. */
@@ -970,8 +926,7 @@ serve_omp (gnutls_session_t* client_session,
         }
 
       /* Write any data to the client. */
-      if ((fd_info & FD_CLIENT_WRITE) == FD_CLIENT_WRITE
-          && FD_ISSET (client_socket, &writefds))
+      if (client_socket > 0 && FD_ISSET (client_socket, &writefds))
         {
           /* Write as much as possible to the client. */
 

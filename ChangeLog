@@ -1,3 +1,10 @@
+2014-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (FD_CLIENT_READ, FD_CLIENT_WRITE, FD_SCANNER_READ)
+	(FD_SCANNER_READ, FD_SCANNER_WRITE): Remove constants.
+	(serve_omp): Replace redundant constants usage with adequate fd_set
+	checks.
+
 2014-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Separate init for command options like --create-user into new function,
