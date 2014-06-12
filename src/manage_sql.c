@@ -9921,11 +9921,12 @@ check_db_tasks ()
                task, TASK_STATUS_DONE);
           report = sql_last_insert_rowid ();
           sql ("INSERT into results (uuid, task, host, port, nvt, type,"
-               " severity, description)"
+               " severity, description, qod)"
                " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
                " '127.0.0.1', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
-               " 'A telnet server seems to be running on this port');",
+               " 'A telnet server seems to be running on this port',"
+               " -1);",
                task);
           result = sql_last_insert_rowid ();
           report_add_result (report, result);
@@ -13439,11 +13440,27 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   result_t result;
   gchar *nvt_revision, *severity;
   gchar *quoted_descr = sql_quote (description);
+  int qod;
 
-  if (nvt && strcmp(nvt, ""))
+  if (nvt && strcmp (nvt, ""))
     {
+      nvti_t *nvti;
+
       nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
                                  nvt);
+
+      nvti = nvtis_lookup (nvti_cache, nvt);
+      if (nvti)
+        {
+          gchar *value;
+          value = tag_value (nvti_tag (nvti), "qod_type");
+          if (strcmp (value, "remote_banner_unreliable") == 0)
+            qod = 30;
+          else
+            qod = -1;
+        }
+      else
+        qod = -1;
 
       if (strcasecmp (type, "Alarm") == 0)
         {
@@ -13474,6 +13491,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   else
     {
       nvt_revision = g_strdup ("");
+      qod = -1;
       if (strcasecmp (type, "Log Message") == 0)
         severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
       else if (strcasecmp (type, "Debug Message") == 0)
@@ -13495,11 +13513,11 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid)"
+       "  description, uuid, qod)"
        " VALUES"
        " (%llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid ());",
-       task, host, port, nvt, nvt_revision, severity, type, quoted_descr);
+       "  '%s', make_uuid (), %i);",
+       task, host, port, nvt, nvt_revision, severity, type, quoted_descr, qod);
 
   g_free (quoted_descr);
   g_free (nvt_revision);
@@ -14309,10 +14327,10 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
       sql ("INSERT INTO results"
            " (uuid, task, host, port, nvt, type, description,"
-           "  nvt_version, severity)"
+           "  nvt_version, severity, qod)"
            " VALUES"
            " (make_uuid (), %llu, '%s', '%s', '%s', '%s', '%s',"
-           "  '%s', '%s');",
+           "  '%s', '%s', -1);",
            task,
            quoted_host,
            quoted_port,

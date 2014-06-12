@@ -9153,6 +9153,40 @@ migrate_126_to_127 ()
 }
 
 /**
+ * @brief Migrate the database from version 127 to version 128.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_127_to_128 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 127. */
+
+  if (manage_db_version () != 127)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Results got a Quality of Detection column. */
+
+  sql ("ALTER TABLE results ADD COLUMN qod INTEGER;");
+  sql ("UPDATE results SET qod = -1;");
+
+  /* Set the database version to 128. */
+
+  set_db_version (128);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9284,6 +9318,7 @@ static migrator_t database_migrators[]
     {125, migrate_124_to_125},
     {126, migrate_125_to_126},
     {127, migrate_126_to_127},
+    {128, migrate_127_to_128},
     /* End marker. */
     {-1, NULL}};
 

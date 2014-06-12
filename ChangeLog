@@ -1,3 +1,22 @@
+2014-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add Quality of Detection storage to results.  Hence increase database
+	version to 128.  Add database migration from version 127 to 128.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 128.
+
+	* src/manage_migrators.c (migrate_127_to_128): New function.
+	(database_migrators): Add migrate_127_to_128.
+
+	* src/manage_sql.c (check_db_tasks): Init example result QOD.
+	(make_result): Set QOD of result, according to remote_banner_unreliable
+	tag.
+	(create_report): Init result QODs.
+
+	* src/manage_sqlite3.c (create_tables): Add qod to results.
+
+	* doc/db.png: Update for version change.
+
 2014-06-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (FD_CLIENT_READ, FD_CLIENT_WRITE, FD_SCANNER_READ)
