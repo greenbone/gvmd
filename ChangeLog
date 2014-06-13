@@ -1,5 +1,22 @@
 2014-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove preemptive Scanner connecting. Connect only on NVT cache update
+	or task starting, resuming, pausing and stopping.
+
+	* src/manage.c (run_task, stop_task_internal, pause_task)
+	(resume_paused_task): Try to initialize a connection with the scanner
+	when not connected already.
+
+	* src/ompd.c (serve_omp): Connect only in nvt cache update. Call
+	openvas_scanner_init() accordingly and adjust loop for scan handler
+	forked process.
+
+	* src/scanner.c (openvas_scanner_connect): Call init_otp_data().
+	(openvas_scanner_init): Handle openvas_scanner_write() returning an
+	error value.
+
+2014-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (serve_omp): Refactor code. Remove redundant check for
 	scanner being dead.
 

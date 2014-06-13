@@ -363,7 +363,7 @@ serve_omp (gnutls_session_t* client_session,
            int client_socket, const gchar* database, gchar **disable,
            void (*progress) ())
 {
-  int nfds, ret, rc;
+  int nfds, ret, rc = 0, scan_handler = 0;
   /* True if processing of the client input is waiting for space in the
    * to_scanner or to_client buffer. */
   short client_input_stalled;
@@ -374,17 +374,16 @@ serve_omp (gnutls_session_t* client_session,
    * while the scanner is active. */
   short client_active = client_socket > 0;
 
-  openvas_scanner_connect ();
   if (client_socket < 0)
     ompd_nvt_cache_mode = client_socket;
+
+  if (ompd_nvt_cache_mode && openvas_scanner_connect ())
+    return -1;
 
   if (ompd_nvt_cache_mode)
     infof ("   Updating NVT cache.\n");
   else
     tracef ("   Serving OMP.\n");
-
-  /* Initialise scanner information. */
-  init_otp_data ();
 
   /* Initialise the XML parser and the manage library. */
   init_omp_process (ompd_nvt_cache_mode,
@@ -401,17 +400,16 @@ serve_omp (gnutls_session_t* client_session,
 #endif
 
   /* Initiate connection (to_scanner is empty so this will just init). */
-  while ((ret = openvas_scanner_write (ompd_nvt_cache_mode)) == -3
-         && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
-    if (openvas_scanner_wait ())
-      {
-        if (client_socket > 0)
-          openvas_server_free (client_socket, *client_session,
-                               *client_credentials);
-        rc = -1;
-        goto scanner_free;
-      }
-  if (ret == -1)
+  ret = openvas_scanner_init (ompd_nvt_cache_mode);
+  if (ret == -2)
+    {
+      if (client_socket > 0)
+        openvas_server_free (client_socket, *client_session,
+                             *client_credentials);
+      rc = -1;
+      goto scanner_free;
+    }
+  else if (ret == -1)
     {
       if (ompd_nvt_cache_mode)
         {
@@ -564,7 +562,8 @@ serve_omp (gnutls_session_t* client_session,
               rc = -1;
               goto scanner_free;
             }
-          continue;
+          if (!scan_handler)
+            continue;
         }
       else if (ret < 0)
         {
@@ -679,6 +678,7 @@ serve_omp (gnutls_session_t* client_session,
 #endif
               client_active = 0;
               client_input_stalled = 0;
+              scan_handler = 1;
             }
           else if (ret == 4)
             {
@@ -748,7 +748,7 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Read any data from the scanner. */
       if (openvas_scanner_connected ()
-          && openvas_scanner_fd_isset (&readfds))
+          && (openvas_scanner_fd_isset (&readfds) || scan_handler))
         {
           switch (openvas_scanner_read ())
             {
@@ -864,7 +864,7 @@ serve_omp (gnutls_session_t* client_session,
 
       /* Write any data to the scanner. */
       if (openvas_scanner_connected ()
-          && openvas_scanner_fd_isset (&writefds))
+          && (openvas_scanner_fd_isset (&writefds) || scan_handler))
         {
           /* Write as much as possible to the scanner. */
 
@@ -954,6 +954,7 @@ serve_omp (gnutls_session_t* client_session,
                                    *client_session,
                                    *client_credentials);
 #endif
+              scan_handler = 1;
               client_active = 0;
             }
           else if (ret == 4)
@@ -1018,7 +1019,7 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if (openvas_scanner_connected () && scanner_input_stalled)
+      if (openvas_scanner_connected () && (scanner_input_stalled || scan_handler))
         {
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */

@@ -399,6 +399,8 @@ openvas_scanner_connect ()
       openvas_scanner_close ();
       return -1;
     }
+  init_otp_data ();
+
   return 0;
 }
 
@@ -464,14 +466,18 @@ openvas_scanner_connected ()
 }
 
 int
-openvas_scanner_init (int nvt_cache_mode)
+openvas_scanner_init (int cache_mode)
 {
   int ret;
+
   if (openvas_scanner_socket == -1)
     return -1;
-  while ((ret = openvas_scanner_write (nvt_cache_mode)) == -3
+  while ((ret = openvas_scanner_write (cache_mode)) == -3
          && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
     if (openvas_scanner_wait ())
       return -2;
+  if (ret != -3)
+    return -1;
+
   return 0;
 }
