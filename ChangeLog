@@ -1,3 +1,8 @@
+2014-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): Refactor code. Remove redundant check for
+	scanner being dead.
+
 2014-06-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add Quality of Detection storage to results.  Hence increase database

@@ -553,54 +553,7 @@ serve_omp (gnutls_session_t* client_session,
           timeout.tv_sec = 1;
           ret = select (nfds, &readfds, &writefds, NULL, &timeout);
         }
-      if (ret < 0)
-        {
-          if (errno == EINTR)
-            {
-              if (process_omp_change () == -1)
-                {
-                  if (client_active)
-                    openvas_server_free (client_socket,
-                                         *client_session,
-                                         *client_credentials);
-                  rc = -1;
-                  goto scanner_free;
-                }
-              continue;
-            }
-          g_warning ("%s: child select failed: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          if (client_active)
-            openvas_server_free (client_socket,
-                                 *client_session,
-                                 *client_credentials);
-          rc = -1;
-          goto scanner_free;
-        }
-
-
-      /* When using the Scanner, check if the socket has closed. */
-      if (openvas_scanner_connected ()
-          && ((openvas_scanner_fd_isset (&readfds))
-              || (openvas_scanner_fd_isset (&writefds)))
-          && ((openvas_scanner_fd_isset (&readfds))
-               ? openvas_scanner_fd_isset (&readfds) == 0
-               : 1)
-          && ((openvas_scanner_fd_isset (&writefds))
-               ? openvas_scanner_fd_isset (&writefds) == 0 : 1)
-          && (openvas_scanner_peek () == 0))
-        {
-          /* Scanner has gone down.  Exit. */
-          if (client_active)
-            openvas_server_free (client_socket,
-                                 *client_session,
-                                 *client_credentials);
-          rc = -1;
-          goto scanner_free;
-        }
-
-      if (ret == 0)
+      if ((ret < 0 && errno == EINTR) || ret == 0)
         {
           if (process_omp_change () == -1)
             {
@@ -612,6 +565,18 @@ serve_omp (gnutls_session_t* client_session,
               goto scanner_free;
             }
           continue;
+        }
+      else if (ret < 0)
+        {
+          g_warning ("%s: child select failed: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          if (client_active)
+            openvas_server_free (client_socket,
+                                 *client_session,
+                                 *client_credentials);
+          rc = -1;
+          goto scanner_free;
         }
 
       /* Read any data from the client. */
