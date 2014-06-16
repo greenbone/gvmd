@@ -26196,7 +26196,7 @@ validate_results_port (const char *port)
  *
  * @return Alive test, or -1 on error.
  */
-alive_test_t
+static int
 alive_test_from_string (const char* alive_tests)
 {
   alive_test_t alive_test;
@@ -26271,8 +26271,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
   gchar *port_list_comment, *quoted_ssh_port;
   port_list_t port_list;
-  int ret;
-  alive_test_t alive_test;
+  int ret, alive_test;
 
   assert (current_credentials.uuid);
 
@@ -26283,7 +26282,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
     return 5;
 
   alive_test = alive_test_from_string (alive_tests);
-  if (alive_test == -1)
+  if (alive_test <= -1)
     return 7;
 
   sql ("BEGIN IMMEDIATE;");
@@ -26772,10 +26771,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (alive_tests)
     {
-      alive_test_t alive_test;
+      int alive_test;
 
       alive_test = alive_test_from_string (alive_tests);
-      if (alive_test == -1)
+      if (alive_test <= -1)
         {
           sql ("ROLLBACK;");
           return 10;

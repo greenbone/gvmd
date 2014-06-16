@@ -1,3 +1,17 @@
+2014-06-16  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Backport r19570 from Hani Benhabiles.
+
+	Fix errors found when building with Clang 3.4
+
+	* src/manage_sql.c (alive_test_from_string): Change return value to int
+	as -1 is returned on error.
+	(create_target, modify_target): Adjust variable type for
+	alive_test_from_string() change.
+
+	* src/omp.c (omp_xml_handle_end_element): Fix variables use before
+	initialization error.
+
 2014-06-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19628.
