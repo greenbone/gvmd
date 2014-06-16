@@ -806,7 +806,8 @@ create_tables ()
        "  description text,"
        "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
        "  nvt_version text,"
-       "  severity real);");
+       "  severity real,"
+       "  qod integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"

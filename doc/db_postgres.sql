@@ -408,7 +408,8 @@ CREATE TABLE results
   description text,
   report integer REFERENCES reports (id) ON DELETE RESTRICT,
   nvt_version text,
-  severity real);
+  severity real,
+  qod integer);
 
 CREATE TABLE reports
  (id SERIAL PRIMARY KEY,

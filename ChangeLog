@@ -1,3 +1,11 @@
+2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Add qod to results.
+
+	* doc/db_postgres.sql (results): Add qod.
+
+	* doc/db.png: Update from source.
+
 2014-06-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (scanner_address): Remove variable.
