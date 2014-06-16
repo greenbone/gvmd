@@ -219,8 +219,7 @@ openvas_scanner_write (int nvt_cache_mode)
         /*@fallthrough@*/
       case SCANNER_INIT_GOT_PLUGINS:
         {
-          static char* const ack = "CLIENT <|> GO ON <|> CLIENT\n"
-                                   "CLIENT <|> CERTIFICATES <|> CLIENT\n";
+          static char* const ack = "\n";
           scanner_init_offset = write_string_to_server
                                  (&openvas_scanner_session,
                                   ack + scanner_init_offset);
