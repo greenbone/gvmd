@@ -1,3 +1,28 @@
+openvas-manager 5.0.2 (2014-06-16)
+
+This is the second maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release adresses a couple of issues with report formats, synchronisation
+scripts and user management, as well as adds Chinese language support.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Hani Benhabiles, Timo Pollmeier and Jan-Oliver Wagner.
+
+Main changes since 5.0.1:
+* Add support for multiple "To" addresses in Alerts.
+* Added Chinese as allowed value for interface language.
+* Ensure timestamps are based on the UTC timezone in the synchronisation
+  scripts.
+* Consistently check the return values in the synchronisation scripts.
+* Separate init for command options like --create-user into new function,
+  otherwise these options affect active tasks.
+* Fix issues around report format deletion.
+* Code cleanup.
+
+
 openvas-manager 5.0.1 (2014-05-09)
 
 This is the first maintenance release of the openvas-manager 5.0 module for the

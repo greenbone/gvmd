@@ -1,5 +1,9 @@
 2014-06-16  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* CHANGES: Prepare release of openvas-manager-5.0.2
+
+2014-06-16  Benoît Allard  <benoit.allard@greenbone.net>
+
 	Backport r19570 from Hani Benhabiles.
 
 	Fix errors found when building with Clang 3.4
