@@ -1,3 +1,9 @@
+2014-06-16  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Post release version bump.
+
+	* CMakeLists.txt: 5.0.3
+
 2014-06-16  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* CHANGES: Fix typos.
