@@ -1,5 +1,9 @@
 2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add resource_name.
+
+2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.h (USER_MAY): Make the column a comparison so that the
 	result is boolean.  Use id instead of ROWID.  Quote with " instead of `.
 	Quote user too.  All for Postgres.

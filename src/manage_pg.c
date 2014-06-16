@@ -25,6 +25,7 @@
 
 #include "sql.h"
 #include "manage.h"
+#include "manage_sql.h"
 
 
 /* SQL functions. */
@@ -72,7 +73,6 @@ manage_create_sql_functions ()
   can duplicate
     hosts_contains
     clean_hosts
-    resource_name
     next_time (will be hairy)
     common_cve
     current_offset (maybe with SHOW TIMEZONE and hairy date stuff)
@@ -83,6 +83,7 @@ manage_create_sql_functions ()
 
   duplicated below
     iso_time
+    resource_name
     run_status_name
     user_can_everything
 #endif
@@ -254,6 +255,91 @@ manage_create_sql_functions ()
        " (sfunc       = group_concat_pair,"
        "  stype       = text,"
        "  initcond    = '');");
+
+  sql ("CREATE OR REPLACE FUNCTION resource_name (text, text, integer)"
+       " RETURNS text AS $$"
+       /* Get the name of a resource by its type and ID. */
+       // FIX check valid_db_resource_type (type)
+       "  SELECT CASE"
+       "         WHEN $1 = 'note' AND $3 = " G_STRINGIFY (LOCATION_TABLE)
+       "         THEN (SELECT 'Note for: '"
+       "                      || (SELECT name"
+       "                          FROM nvts"
+       "                          WHERE nvts.uuid = notes.nvt)"
+       "               FROM notes"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'note'"
+       "         THEN (SELECT 'Note for: '"
+       "                      || (SELECT name"
+       "                          FROM nvts"
+       "                          WHERE nvts.uuid = notes_trash.nvt)"
+       "               FROM notes_trash"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'override' AND $3 = " G_STRINGIFY (LOCATION_TABLE)
+       "         THEN (SELECT 'Override for: '"
+       "                      || (SELECT name"
+       "                          FROM nvts"
+       "                          WHERE nvts.uuid = overrides.nvt)"
+       "               FROM overrides"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'override'"
+       "         THEN (SELECT 'Override for: '"
+       "                      || (SELECT name"
+       "                          FROM nvts"
+       "                          WHERE nvts.uuid = overrides_trash.nvt)"
+       "               FROM overrides_trash"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'report'"
+       "         THEN (SELECT (SELECT name FROM tasks WHERE id = task)"
+       "               || ' - '"
+       "               || (SELECT"
+       "                     CASE (SELECT end_time FROM tasks"
+       "                           WHERE id = task)"
+       "                     WHEN 0 THEN 'N/A'"
+       "                     ELSE (SELECT end_time::text"
+       "                           FROM tasks WHERE id = task)"
+       "                   END)"
+       "               FROM reports"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'result'"
+       "         THEN (SELECT (SELECT name FROM tasks WHERE id = task)"
+       "               || ' - '"
+       "               || (SELECT name FROM nvts WHERE oid = nvt)"
+       "               || ' - '"
+       "               || (SELECT"
+       "                     CASE (SELECT end_time FROM tasks"
+       "                           WHERE id = task)"
+       "                     WHEN 0 THEN 'N/A'"
+       "                     ELSE (SELECT end_time::text"
+       "                           FROM tasks WHERE id = task)"
+       "                   END)"
+       "               FROM results"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'target' AND $3 = " G_STRINGIFY (LOCATION_TABLE)
+       "         THEN (SELECT name"
+       "               FROM targets"
+       "               WHERE uuid = $2)"
+       "         WHEN $1 = 'target'"
+       "         THEN (SELECT name"
+       "               FROM targets_trash"
+       "               WHERE uuid = $2)"
+       // FIX more
+       "         ELSE 'ERROR'"
+       "         END;"
+       "$$ LANGUAGE SQL;");
+
+#if 0
+  /* Server side functions. */
+
+  sql ("SET role dba;");
+
+  sql ("CREATE FUNCTION resource_name (text, text, int) RETURNS text"
+       " AS '%s/openvasmd/pg/libmanage-pg-server.so', 'sql_resource_name'"
+       " LANGUAGE C STRICT;",
+       OPENVAS_STATE_DIR);
+
+  sql ("RESET role;");
+#endif
 
   return 0;
 }
