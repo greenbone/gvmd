@@ -35,17 +35,17 @@
  * @param[in]  resource  Resource.
  */
 #define USER_MAY(resource)                                            \
-  "SELECT count(*) FROM permissions"                                  \
+  "SELECT count(*) > 0 FROM permissions"                              \
   " WHERE resource = " resource                                       \
   " AND ((subject_type = 'user'"                                      \
   "       AND subject"                                                \
-  "           = (SELECT ROWID FROM users"                             \
+  "           = (SELECT id FROM users"                                \
   "              WHERE users.uuid = '%s'))"                           \
   "      OR (subject_type = 'group'"                                  \
   "          AND subject"                                             \
-  "              IN (SELECT DISTINCT `group`"                         \
+  "              IN (SELECT DISTINCT \"group\""                       \
   "                  FROM group_users"                                \
-  "                  WHERE user = (SELECT ROWID"                      \
+  "                  WHERE \"user\" = (SELECT id"                     \
   "                                FROM users"                        \
   "                                WHERE users.uuid"                  \
   "                                      = '%s')))"                   \
@@ -53,10 +53,10 @@
   "          AND subject"                                             \
   "              IN (SELECT DISTINCT role"                            \
   "                  FROM role_users"                                 \
-  "                  WHERE user = (SELECT ROWID"                      \
-  "                                FROM users"                        \
-  "                                WHERE users.uuid"                  \
-  "                                      = '%s'))))"                  \
+  "                  WHERE \"user\" = (SELECT id"                     \
+  "                                    FROM users"                    \
+  "                                    WHERE users.uuid"              \
+  "                                          = '%s'))))"              \
   /* Any permission implies GET. */                                   \
   " AND ((lower (substr ('%s', 1, 3)) = 'get'"                        \
   "       AND name LIKE '%%'"                                         \

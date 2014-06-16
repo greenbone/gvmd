@@ -1,3 +1,12 @@
+2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.h (USER_MAY): Make the column a comparison so that the
+	result is boolean.  Use id instead of ROWID.  Quote with " instead of `.
+	Quote user too.  All for Postgres.
+
+	* src/manage_sql.c (init_port_range_iterator): Quote end, and cast
+	integer terms to boolean, for Postgres.
+
 2014-06-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/scanner.c (openvas_scanner_write): Don't send CERTIFICATES and GO

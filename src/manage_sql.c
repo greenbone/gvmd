@@ -42645,7 +42645,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
 
   if (port_list)
     init_iterator (iterator,
-                   "SELECT uuid, comment, start, end, type, exclude"
+                   "SELECT uuid, comment, start, \"end\", type, exclude"
                    " FROM port_ranges%s"
                    " WHERE port_list = %llu"
                    " AND"
@@ -42653,7 +42653,8 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    "   IS NULL)"
                    "  OR ((SELECT owner FROM port_lists WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
-                   "  OR (%i AND (" USER_MAY ("port_list") ")))"
+                   "  OR (CAST (%i AS boolean)"
+                   "      AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    port_list,
@@ -42677,7 +42678,8 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    "   IS NULL)"
                    "  OR ((SELECT owner FROM port_lists WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
-                   "  OR (%i AND (" USER_MAY ("port_list") ")))"
+                   "  OR (CAST (%i AS boolean)"
+                   "      AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
