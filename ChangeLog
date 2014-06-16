@@ -1,5 +1,10 @@
 2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_pg.c (log_notice): New function.
+	(sql_open): Divert NOTICE messages to log.
+
+2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Add qod to results.
 
 	* doc/db_postgres.sql (results): Add qod.

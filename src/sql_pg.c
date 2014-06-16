@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <endian.h>
 #include <arpa/inet.h>
+#include <glib.h>
 #include <netinet/in.h>
 #include <postgresql/libpq-fe.h>
 #include <string.h>
@@ -154,6 +155,20 @@ sql_is_open ()
 }
 
 /**
+ * @brief Log a NOTICE message.
+ *
+ * @param[in]  arg      Dummy arg.
+ * @param[in]  message  Arg.
+ *
+ * @return 0 success, -1 error.
+ */
+static void
+log_notice (void *arg, const char *message)
+{
+  g_debug ("%s", message);
+}
+
+/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.
@@ -172,6 +187,8 @@ sql_open (const char *database)
                  PQerrorMessage (conn));
       return -1;
     }
+
+  PQsetNoticeProcessor (conn, log_notice, NULL);
 
   tracef ("%s:   db: %s\n", __FUNCTION__, PQdb (conn));
   tracef ("%s: user: %s\n", __FUNCTION__, PQuser (conn));
