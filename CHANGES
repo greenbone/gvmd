@@ -5,7 +5,7 @@ the Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
 Manager is the central management service between the actual security scanner
 and various user clients.
 
-This release adresses a couple of issues with report formats, synchronisation
+This release addresses a couple of issues with report formats, synchronisation
 scripts and user management, as well as adds Chinese language support.
 
 Many thanks to everyone who contributed to this release:
@@ -30,7 +30,7 @@ Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
 Manager is the central management service between the actual security scanner
 and various user clients.
 
-This release adresses a couple of issues regarding database migration, user
+This release addresses a couple of issues regarding database migration, user
 permissions, and report format handling.
 
 Many thanks to everyone who has contributed to this release:
