@@ -42,7 +42,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Create the System Discovery config. */
 
@@ -51,11 +51,11 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        " creation_time, modification_time)"
        " VALUES ('%s', 'System Discovery', NULL,"
        "         '%s', 'Network System Discovery scan configuration.',"
-       "         0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, now (), now ());",
        uuid,
        selector_name);
 
-  config = sql_last_insert_rowid ();
+  config = sqlite3_last_insert_rowid (task_db);
 
   /* Add NVTs to the config. */
 
@@ -176,8 +176,8 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
-       "     modification_time = m_now ()"
-       " WHERE id = %llu;",
+       "     modification_time = now ()"
+       " WHERE ROWID = %llu;",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);

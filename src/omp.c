@@ -114,10 +114,8 @@
 #include <openvas/base/nvti.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
-#include <openvas/base/pwpolicy.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
-#include <openvas/misc/openvas_ssh_login.h>
 #include <openvas/misc/resource_request.h>
 #include <openvas/omp/xml.h>
 
@@ -429,7 +427,7 @@ auth_conf_setting_from_xml (const gchar * element_name,
   return kvp;
 }
 
-/**
+/*
  * @brief Init for a GET handler.
  *
  * @param[in]  command       OMP command name.
@@ -874,6 +872,7 @@ typedef struct
   char *copy;                        ///< Config to copy.
   import_config_data_t import;       ///< Config to import.
   char *name;                        ///< Name.
+  char *rcfile;                      ///< RC file from which to create config.
 } create_config_data_t;
 
 /**
@@ -918,6 +917,7 @@ create_config_data_reset (create_config_data_t *data)
   free (import->preference_value);
 
   free (data->name);
+  free (data->rcfile);
 
   memset (data, 0, sizeof (create_config_data_t));
 }
@@ -1038,6 +1038,7 @@ typedef struct
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
+  char *key_public;        ///< Public key from key.
   char *login;             ///< Login name.
   char *name;              ///< LSC credential name.
   char *password;          ///< Password associated with login name.
@@ -1055,6 +1056,7 @@ create_lsc_credential_data_reset (create_lsc_credential_data_t *data)
   free (data->copy);
   free (data->key_phrase);
   free (data->key_private);
+  free (data->key_public);
   free (data->login);
   free (data->name);
   free (data->password);
@@ -1469,37 +1471,6 @@ create_role_data_reset (create_role_data_t *data)
 }
 
 /**
- * @brief Command data for the create_scanner command.
- */
-typedef struct
-{
-  char *name;               ///< Name for new scanner.
-  char *copy;               ///< UUID of scanner to copy.
-  char *comment;            ///< Comment.
-  char *host;               ///< Host of new scanner.
-  char *port;               ///< Port of new scanner.
-  char *type;               ///< Type of new scanner.
-} create_scanner_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_scanner_data_reset (create_scanner_data_t *data)
-{
-  free (data->name);
-  free (data->copy);
-  free (data->comment);
-  free (data->host);
-  free (data->port);
-  free (data->type);
-
-  memset (data, 0, sizeof (create_scanner_data_t));
-}
-
-/**
  * @brief Command data for the create_schedule command.
  */
 typedef struct
@@ -1670,7 +1641,6 @@ typedef struct
   char *alterable;      ///< Boolean.  Whether task is alterable.
   char *config_id;      ///< ID of task config.
   char *hosts_ordering; ///< Order for scanning target hosts.
-  char *scanner_id;     ///< ID of task scanner.
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
   array_t *groups;      ///< IDs of groups.
@@ -1694,7 +1664,6 @@ create_task_data_reset (create_task_data_t *data)
   free (data->alterable);
   free (data->config_id);
   free (data->hosts_ordering);
-  free (data->scanner_id);
   free (data->copy);
   array_free (data->alerts);
   array_free (data->groups);
@@ -2080,28 +2049,6 @@ typedef struct
 } delete_schedule_data_t;
 
 /**
- * @brief Command data for the delete_scanner command.
- */
-typedef struct
-{
-  char *scanner_id; ///< ID of scanner to delete.
-  int ultimate;     ///< Boolean.  Whether to remove entirely or to trashcan.
-} delete_scanner_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-delete_scanner_data_reset (delete_scanner_data_t *data)
-{
-  g_free (data->scanner_id);
-
-  memset (data, 0, sizeof (delete_scanner_data_t));
-}
-
-/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -2314,35 +2261,6 @@ get_agents_data_reset (get_agents_data_t *data)
 
   memset (data, 0, sizeof (get_agents_data_t));
 }
-
-/**
- * @brief Command data for the get_aggregates command.
- */
-typedef struct
-{
-  get_data_t get;        ///< Get args.
-  char *type;            ///< Resource type.
-  char *subtype;         ///< Resource subtype.
-  char *data_column;     ///< Column to calculate aggregate for.
-  char *group_column;    ///< Column to group data by.
-} get_aggregates_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_aggregates_data_reset (get_aggregates_data_t *data)
-{
-  get_data_reset (&data->get);
-  free (data->type);
-  free (data->data_column);
-  free (data->group_column);
-
-  memset (data, 0, sizeof (get_aggregates_data_t));
-}
-
 
 /**
  * @brief Command data for the get_configs command.
@@ -2796,27 +2714,6 @@ typedef struct
 } get_schedules_data_t;
 
 /**
- * @brief Command data for the get_scanners command.
- */
-typedef struct
-{
-  get_data_t get;        ///< Get args.
-} get_scanners_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-get_scanners_data_reset (get_scanners_data_t *data)
-{
-  get_data_reset (&data->get);
-
-  memset (data, 0, sizeof (get_scanners_data_t));
-}
-
-/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -2995,6 +2892,7 @@ typedef struct
 typedef struct
 {
   get_data_t get;        ///< Get args.
+  int rcfile;            ///< Boolean.  Whether to include RC defining task.
 } get_tasks_data_t;
 
 /**
@@ -3413,37 +3311,6 @@ modify_role_data_reset (modify_role_data_t *data)
 }
 
 /**
- * @brief Command data for the modify_scanner command.
- */
-typedef struct
-{
-  char *comment;            ///< Comment.
-  char *name;               ///< Name of scanner.
-  char *host;               ///< Host of scanner.
-  char *port;               ///< Port of scanner.
-  char *type;               ///< Type of scanner.
-  char *scanner_id;         ///< scanner UUID.
-} modify_scanner_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_scanner_data_reset (modify_scanner_data_t *data)
-{
-  g_free (data->comment);
-  g_free (data->name);
-  g_free (data->host);
-  g_free (data->port);
-  g_free (data->type);
-  g_free (data->scanner_id);
-
-  memset (data, 0, sizeof (modify_scanner_data_t));
-}
-
-/**
  * @brief Command data for the modify_schedule command.
  */
 typedef struct
@@ -3638,7 +3505,6 @@ typedef struct
   char *alterable;     ///< Boolean. Whether the task is alterable.
   char *comment;       ///< Comment.
   char *hosts_ordering; ///< Order for scanning of target hosts.
-  char *scanner_id;    ///< ID of new scanner for task.
   char *config_id;     ///< ID of new config for task.
   array_t *alerts;     ///< IDs of new alerts for task.
   char *file;          ///< File to attach to task.
@@ -3648,6 +3514,7 @@ typedef struct
   char *observers;     ///< Space separated list of observer user names.
   name_value_t *preference;  ///< Current preference.
   array_t *preferences;   ///< Preferences.
+  char *rcfile;        ///< New definition for task, as an RC file.
   char *schedule_id;   ///< ID of new schedule for task.
   char *slave_id;      ///< ID of new slave for task.
   char *target_id;     ///< ID of new target for task.
@@ -3668,7 +3535,6 @@ modify_task_data_reset (modify_task_data_t *data)
   array_free (data->groups);
   free (data->comment);
   free (data->hosts_ordering);
-  free (data->scanner_id);
   free (data->config_id);
   free (data->file);
   free (data->file_name);
@@ -3689,6 +3555,7 @@ modify_task_data_reset (modify_task_data_t *data)
         }
     }
   array_free (data->preferences);
+  free (data->rcfile);
   free (data->schedule_id);
   free (data->slave_id);
   free (data->target_id);
@@ -4034,27 +3901,6 @@ verify_report_format_data_reset (verify_report_format_data_t *data)
 }
 
 /**
- * @brief Command data for the verify_scanner command.
- */
-typedef struct
-{
-  char *scanner_id;   ///< ID of scanner to verify.
-} verify_scanner_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-verify_scanner_data_reset (verify_scanner_data_t *data)
-{
-  g_free (data->scanner_id);
-
-  memset (data, 0, sizeof (verify_scanner_data_t));
-}
-
-/**
  * @brief Command data for the wizard command.
  */
 typedef struct
@@ -4115,7 +3961,6 @@ typedef union
   create_report_data_t create_report;                 ///< create_report
   create_report_format_data_t create_report_format;   ///< create_report_format
   create_role_data_t create_role;                     ///< create_role
-  create_scanner_data_t create_scanner;               ///< create_scanner
   create_schedule_data_t create_schedule;             ///< create_schedule
   create_slave_data_t create_slave;                   ///< create_slave
   create_tag_data_t create_tag;                       ///< create_tag
@@ -4136,7 +3981,6 @@ typedef union
   delete_report_data_t delete_report;                 ///< delete_report
   delete_report_format_data_t delete_report_format;   ///< delete_report_format
   delete_role_data_t delete_role;                     ///< delete_role
-  delete_scanner_data_t delete_scanner;               ///< delete_scanner
   delete_schedule_data_t delete_schedule;             ///< delete_schedule
   delete_slave_data_t delete_slave;                   ///< delete_slave
   delete_tag_data_t delete_tag;                       ///< delete_tag
@@ -4144,7 +3988,6 @@ typedef union
   delete_task_data_t delete_task;                     ///< delete_task
   delete_user_data_t delete_user;                     ///< delete_user
   get_agents_data_t get_agents;                       ///< get_agents
-  get_aggregates_data_t get_aggregates;               ///< get_aggregates
   get_configs_data_t get_configs;                     ///< get_configs
   get_alerts_data_t get_alerts;                       ///< get_alerts
   get_filters_data_t get_filters;                     ///< get_filters
@@ -4163,7 +4006,6 @@ typedef union
   get_results_data_t get_results;                     ///< get_results
   get_roles_data_t get_roles;                         ///< get_roles
   get_schedules_data_t get_schedules;                 ///< get_schedules
-  get_scanners_data_t get_scanners;                   ///< get_scanners
   get_settings_data_t get_settings;                   ///< get_settings
   get_slaves_data_t get_slaves;                       ///< get_slaves
   get_system_reports_data_t get_system_reports;       ///< get_system_reports
@@ -4184,7 +4026,6 @@ typedef union
   modify_report_data_t modify_report;                 ///< modify_report
   modify_report_format_data_t modify_report_format;   ///< modify_report_format
   modify_role_data_t modify_role;                     ///< modify_role
-  modify_scanner_data_t modify_scanner;               ///< modify_scanner
   modify_schedule_data_t modify_schedule;             ///< modify_schedule
   modify_setting_data_t modify_setting;               ///< modify_setting
   modify_slave_data_t modify_slave;                   ///< modify_slave
@@ -4202,7 +4043,6 @@ typedef union
   test_alert_data_t test_alert;                       ///< test_alert
   verify_agent_data_t verify_agent;                   ///< verify_agent
   verify_report_format_data_t verify_report_format;   ///< verify_report_format
-  verify_scanner_data_t verify_scanner;               ///< verify_scanner
   run_wizard_data_t wizard;                           ///< run_wizard
 } command_data_t;
 
@@ -4306,12 +4146,6 @@ create_report_data_t *create_report_data
  */
 create_report_format_data_t *create_report_format_data
  = (create_report_format_data_t*) &(command_data.create_report_format);
-
-/**
- * @brief Parser callback data for CREATE_SCANNER.
- */
-create_scanner_data_t *create_scanner_data
- = (create_scanner_data_t*) &(command_data.create_scanner);
 
 /**
  * @brief Parser callback data for CREATE_SCHEDULE.
@@ -4434,12 +4268,6 @@ delete_role_data_t *delete_role_data
  = (delete_role_data_t*) &(command_data.delete_role);
 
 /**
- * @brief Parser callback data for DELETE_SCANNER.
- */
-delete_scanner_data_t *delete_scanner_data
- = (delete_scanner_data_t*) &(command_data.delete_scanner);
-
-/**
  * @brief Parser callback data for DELETE_SCHEDULE.
  */
 delete_schedule_data_t *delete_schedule_data
@@ -4480,12 +4308,6 @@ delete_user_data_t *delete_user_data
  */
 get_agents_data_t *get_agents_data
  = &(command_data.get_agents);
-
-/**
- * @brief Parser callback data for GET_AGGREGATES.
- */
-get_aggregates_data_t *get_aggregates_data
- = &(command_data.get_aggregates);
 
 /**
  * @brief Parser callback data for GET_CONFIGS.
@@ -4588,12 +4410,6 @@ get_results_data_t *get_results_data
  */
 get_roles_data_t *get_roles_data
  = &(command_data.get_roles);
-
-/**
- * @brief Parser callback data for GET_scannerS.
- */
-get_scanners_data_t *get_scanners_data
- = &(command_data.get_scanners);
 
 /**
  * @brief Parser callback data for GET_SCHEDULES.
@@ -4740,12 +4556,6 @@ modify_role_data_t *modify_role_data
  = &(command_data.modify_role);
 
 /**
- * @brief Parser callback data for MODIFY_SCANNER.
- */
-modify_scanner_data_t *modify_scanner_data
- = &(command_data.modify_scanner);
-
-/**
  * @brief Parser callback data for MODIFY_SCHEDULE.
  */
 modify_schedule_data_t *modify_schedule_data
@@ -4847,12 +4657,6 @@ verify_report_format_data_t *verify_report_format_data
  = (verify_report_format_data_t*) &(command_data.verify_report_format);
 
 /**
- * @brief Parser callback data for VERIFY_SCANNER.
- */
-verify_scanner_data_t *verify_scanner_data
- = (verify_scanner_data_t*) &(command_data.verify_scanner);
-
-/**
  * @brief Parser callback data for WIZARD.
  */
 run_wizard_data_t *run_wizard_data
@@ -4952,6 +4756,7 @@ typedef enum
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
   CLIENT_CREATE_CONFIG_NAME,
+  CLIENT_CREATE_CONFIG_RCFILE,
   /* get_configs_response (GCR) is used for config export.  CLIENT_C_C is
    * for CLIENT_CREATE_CONFIG. */
   CLIENT_C_C_GCR,
@@ -4990,6 +4795,7 @@ typedef enum
   CLIENT_CREATE_LSC_CREDENTIAL_KEY,
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
+  CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
   CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
   CLIENT_CREATE_LSC_CREDENTIAL_NAME,
   CLIENT_CREATE_LSC_CREDENTIAL_PASSWORD,
@@ -5135,13 +4941,6 @@ typedef enum
   CLIENT_CREATE_ROLE_COPY,
   CLIENT_CREATE_ROLE_NAME,
   CLIENT_CREATE_ROLE_USERS,
-  CLIENT_CREATE_SCANNER,
-  CLIENT_CREATE_SCANNER_COMMENT,
-  CLIENT_CREATE_SCANNER_COPY,
-  CLIENT_CREATE_SCANNER_NAME,
-  CLIENT_CREATE_SCANNER_HOST,
-  CLIENT_CREATE_SCANNER_PORT,
-  CLIENT_CREATE_SCANNER_TYPE,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -5196,7 +4995,6 @@ typedef enum
   CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_HOSTS_ORDERING,
-  CLIENT_CREATE_TASK_SCANNER,
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_COPY,
   CLIENT_CREATE_TASK_NAME,
@@ -5206,6 +5004,7 @@ typedef enum
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
+  CLIENT_CREATE_TASK_RCFILE,
   CLIENT_CREATE_TASK_SCHEDULE,
   CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
@@ -5234,7 +5033,6 @@ typedef enum
   CLIENT_DELETE_REPORT,
   CLIENT_DELETE_REPORT_FORMAT,
   CLIENT_DELETE_ROLE,
-  CLIENT_DELETE_SCANNER,
   CLIENT_DELETE_SCHEDULE,
   CLIENT_DELETE_SLAVE,
   CLIENT_DELETE_TAG,
@@ -5247,7 +5045,6 @@ typedef enum
   CLIENT_DESCRIBE_SCAP,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_GET_AGENTS,
-  CLIENT_GET_AGGREGATES,
   CLIENT_GET_ALERTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_FILTERS,
@@ -5266,7 +5063,6 @@ typedef enum
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
-  CLIENT_GET_SCANNERS,
   CLIENT_GET_SCHEDULES,
   CLIENT_GET_SETTINGS,
   CLIENT_GET_SLAVES,
@@ -5370,12 +5166,6 @@ typedef enum
   CLIENT_MODIFY_ROLE_COMMENT,
   CLIENT_MODIFY_ROLE_NAME,
   CLIENT_MODIFY_ROLE_USERS,
-  CLIENT_MODIFY_SCANNER,
-  CLIENT_MODIFY_SCANNER_COMMENT,
-  CLIENT_MODIFY_SCANNER_NAME,
-  CLIENT_MODIFY_SCANNER_HOST,
-  CLIENT_MODIFY_SCANNER_PORT,
-  CLIENT_MODIFY_SCANNER_TYPE,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -5435,11 +5225,11 @@ typedef enum
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
+  CLIENT_MODIFY_TASK_RCFILE,
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
-  CLIENT_MODIFY_TASK_SCANNER,
   CLIENT_MODIFY_USER,
   CLIENT_MODIFY_USER_GROUPS,
   CLIENT_MODIFY_USER_GROUPS_GROUP,
@@ -5469,8 +5259,7 @@ typedef enum
   CLIENT_SYNC_SCAP,
   CLIENT_TEST_ALERT,
   CLIENT_VERIFY_AGENT,
-  CLIENT_VERIFY_REPORT_FORMAT,
-  CLIENT_VERIFY_SCANNER,
+  CLIENT_VERIFY_REPORT_FORMAT
 } client_state_t;
 
 /**
@@ -6452,8 +6241,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT);
         else if (strcasecmp ("CREATE_REPORT_FORMAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_FORMAT);
-        else if (strcasecmp ("CREATE_SCANNER", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER);
         else if (strcasecmp ("CREATE_SLAVE", element_name) == 0)
           {
             openvas_append_string (&create_slave_data->comment, "");
@@ -6648,18 +6435,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               delete_role_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_ROLE);
           }
-        else if (strcasecmp ("DELETE_SCANNER", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "scanner_id", &delete_scanner_data->scanner_id);
-            if (find_attribute (attribute_names, attribute_values, "ultimate",
-                                &attribute))
-              delete_scanner_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_scanner_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_SCANNER);
-          }
         else if (strcasecmp ("DELETE_SCHEDULE", element_name) == 0)
           {
             const gchar* attribute;
@@ -6752,31 +6527,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "format",
                               &get_agents_data->format);
             set_client_state (CLIENT_GET_AGENTS);
-          }
-        else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "type",
-                              &get_aggregates_data->type);
-
-            if (get_aggregates_data->type
-                && strcasecmp (get_aggregates_data->type, "info") == 0)
-            {
-              append_attribute (attribute_names, attribute_values, "info_type",
-                                &get_aggregates_data->subtype);
-            }
-            append_attribute (attribute_names, attribute_values, "data_column",
-                              &get_aggregates_data->data_column);
-
-            append_attribute (attribute_names, attribute_values, "group_column",
-                              &get_aggregates_data->group_column);
-
-            get_data_parse_attributes (&get_aggregates_data->get,
-                                       get_aggregates_data->type
-                                        ? get_aggregates_data->type
-                                        : "",
-                                       attribute_names,
-                                       attribute_values);
-            set_client_state (CLIENT_GET_AGGREGATES);
           }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
@@ -7249,12 +6999,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                                        attribute_values);
             set_client_state (CLIENT_GET_ROLES);
           }
-        else if (strcasecmp ("GET_SCANNERS", element_name) == 0)
-          {
-            get_data_parse_attributes (&get_scanners_data->get, "scanner",
-                                       attribute_names, attribute_values);
-            set_client_state (CLIENT_GET_SCANNERS);
-          }
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -7369,9 +7113,17 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("GET_TASKS", element_name) == 0)
           {
+            const gchar* attribute;
+
             get_data_parse_attributes (&get_tasks_data->get, "task",
                                        attribute_names,
                                        attribute_values);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "rcfile", &attribute))
+              get_tasks_data->rcfile = atoi (attribute);
+            else
+              get_tasks_data->rcfile = 0;
 
             set_client_state (CLIENT_GET_TASKS);
           }
@@ -7503,12 +7255,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_role_data->role_id);
             set_client_state (CLIENT_MODIFY_ROLE);
           }
-        else if (strcasecmp ("MODIFY_SCANNER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "scanner_id",
-                              &modify_scanner_data->scanner_id);
-            set_client_state (CLIENT_MODIFY_SCANNER);
-          }
         else if (strcasecmp ("MODIFY_SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "schedule_id",
@@ -7629,12 +7375,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &verify_report_format_data->report_format_id);
             set_client_state (CLIENT_VERIFY_REPORT_FORMAT);
           }
-        else if (strcasecmp ("VERIFY_SCANNER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "scanner_id",
-                              &verify_scanner_data->scanner_id);
-            set_client_state (CLIENT_VERIFY_SCANNER);
-          }
         else
           {
             if (send_to_client (XML_ERROR_SYNTAX ("omp", "Bogus command name"),
@@ -7666,21 +7406,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
         ELSE_ERROR ("authenticate");
-
-      case CLIENT_CREATE_SCANNER:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_COMMENT);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_COPY);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_NAME);
-        else if (strcasecmp ("HOST", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_HOST);
-        else if (strcasecmp ("PORT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_PORT);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_SCANNER_TYPE);
-        ELSE_ERROR ("create_scanner");
 
       case CLIENT_CREATE_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8052,34 +7777,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         ELSE_ERROR ("modify_role");
 
-      case CLIENT_MODIFY_SCANNER:
-        if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->comment, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_COMMENT);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->name, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_NAME);
-          }
-        else if (strcasecmp ("HOST", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->host, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_HOST);
-          }
-        else if (strcasecmp ("PORT", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->port, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_PORT);
-          }
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          {
-            openvas_append_string (&modify_scanner_data->type, "");
-            set_client_state (CLIENT_MODIFY_SCANNER_TYPE);
-          }
-        ELSE_ERROR ("modify_scanner");
-
       case CLIENT_MODIFY_SCHEDULE:
         if (strcasecmp ("COMMENT", element_name) == 0)
           {
@@ -8277,12 +7974,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_HOSTS_ORDERING);
-        else if (strcasecmp ("SCANNER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &modify_task_data->scanner_id);
-            set_client_state (CLIENT_MODIFY_TASK_SCANNER);
-          }
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -8309,6 +8000,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             modify_task_data->preferences = make_array ();
             set_client_state (CLIENT_MODIFY_TASK_PREFERENCES);
           }
+        else if (strcasecmp ("RCFILE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_RCFILE);
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -8516,6 +8209,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_NAME);
+        else if (strcasecmp ("RCFILE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_RCFILE);
         ELSE_ERROR ("create_config");
 
       case CLIENT_C_C_GCR:
@@ -8718,6 +8413,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE);
+        else if (strcasecmp ("PUBLIC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC);
         ELSE_ERROR ("create_lsc_credential");
 
       case CLIENT_CREATE_NOTE:
@@ -9454,6 +9151,13 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_ALTERABLE);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COPY);
+        else if (strcasecmp ("RCFILE", element_name) == 0)
+          {
+            /* Initialise the task description. */
+            if (create_task_data->task)
+              add_task_description_line (create_task_data->task, "", 0);
+            set_client_state (CLIENT_CREATE_TASK_RCFILE);
+          }
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
           {
             create_task_data->preferences = make_array ();
@@ -9465,12 +9169,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
         else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
-        else if (strcasecmp ("SCANNER", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "id",
-                              &create_task_data->scanner_id);
-            set_client_state (CLIENT_CREATE_TASK_SCANNER);
-          }
         else if (strcasecmp ("CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -11285,7 +10983,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 {
                   const char *timezone;
-                  char *severity, *pw_warning;
+                  char *severity;
 
                   timezone = (current_credentials.timezone
                               && strlen (current_credentials.timezone))
@@ -11303,40 +11001,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   tzset ();
 
                   severity = setting_severity ();
-                  pw_warning = openvas_validate_password (
-                                 current_credentials.password,
-                                 current_credentials.username);
-
-                  if (pw_warning)
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "<password_warning>%s</password_warning>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      timezone,
-                      severity,
-                      pw_warning ? pw_warning : "");
-                  else
-                    SENDF_TO_CLIENT_OR_FAIL
-                    ("<authenticate_response"
-                      " status=\"" STATUS_OK "\""
-                      " status_text=\"" STATUS_OK_TEXT "\">"
-                      "<role>%s</role>"
-                      "<timezone>%s</timezone>"
-                      "<severity>%s</severity>"
-                      "</authenticate_response>",
-                      current_credentials.role
-                        ? current_credentials.role
-                        : "",
-                      timezone,
-                      severity);
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<authenticate_response"
+                    " status=\"" STATUS_OK "\""
+                    " status_text=\"" STATUS_OK_TEXT "\">"
+                    "<role>%s</role>"
+                    "<timezone>%s</timezone>"
+                    "<severity>%s</severity>"
+                    "</authenticate_response>",
+                    current_credentials.role
+                      ? current_credentials.role
+                      : "",
+                    timezone,
+                    severity);
                   g_free (severity);
 
                   set_client_state (CLIENT_AUTHENTIC);
@@ -11398,7 +11075,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CASE_DELETE (REPORT, report, "Report");
       CASE_DELETE (REPORT_FORMAT, report_format, "Report format");
       CASE_DELETE (ROLE, role, "Role");
-      CASE_DELETE (SCANNER, scanner, "Scanner");
       CASE_DELETE (SCHEDULE, schedule, "Schedule");
       CASE_DELETE (SLAVE, slave, "Slave");
       CASE_DELETE (TAG, tag, "Tag");
@@ -12102,7 +11778,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        alert_condition_name
                                         (alert_iterator_condition
                                           (&alerts)));
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
                                         get_alerts_data->get.trash,
                                         "condition");
               while (next (&data))
@@ -12121,8 +11799,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SENDF_TO_CLIENT_OR_FAIL ("<event>%s",
                                        event_name (alert_iterator_event
                                         (&alerts)));
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
-                                        get_alerts_data->get.trash, "event");
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
+                                        get_alerts_data->get.trash,
+                                        "event");
               while (next (&data))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                          "<name>%s</name>"
@@ -12139,8 +11820,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        alert_method_name
                                         (alert_iterator_method
                                           (&alerts)));
-              init_alert_data_iterator (&data, get_iterator_resource (&alerts),
-                                        get_alerts_data->get.trash, "method");
+              init_alert_data_iterator (&data,
+                                        alert_iterator_alert
+                                         (&alerts),
+                                        get_alerts_data->get.trash,
+                                        "method");
               while (next (&data))
                 SENDF_TO_CLIENT_OR_FAIL ("<data>"
                                          "<name>%s</name>"
@@ -12157,7 +11841,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                   init_alert_task_iterator (&tasks,
-                                            get_iterator_resource (&alerts), 0);
+                                            alert_iterator_alert
+                                             (&alerts),
+                                            0);
                   while (next (&tasks))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<task id=\"%s\">"
@@ -12233,7 +11919,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START ("config");
           while (1)
             {
-              int config_nvts_growing, config_families_growing, config_type;
+              int config_nvts_growing, config_families_growing;
               const char *selector;
               config_t config;
 
@@ -12251,9 +11937,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /** @todo This should really be an nvt_selector_t. */
               selector = config_iterator_nvt_selector (&configs);
-              config = get_iterator_resource (&configs);
+              config = config_iterator_config (&configs);
               config_nvts_growing = config_iterator_nvts_growing (&configs);
-              config_type = config_iterator_type (&configs);
               config_families_growing = config_iterator_families_growing
                                          (&configs);
 
@@ -12264,16 +11949,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         * by the selector. */
                                        "<nvt_count>"
                                        "%i<growing>%i</growing>"
-                                       "</nvt_count>"
-                                       "<type>%i</type>",
+                                       "</nvt_count>",
                                        config_iterator_family_count (&configs),
                                        config_families_growing,
                                        config_iterator_nvt_count (&configs),
-                                       config_nvts_growing,
-                                       config_type);
+                                       config_nvts_growing);
 
-              if (config_type == 0 && (get_configs_data->families
-                                       || get_configs_data->get.details))
+              if (get_configs_data->families
+                  || get_configs_data->get.details)
                 {
                   iterator_t families;
                   int max_nvt_count = 0, known_nvt_count = 0;
@@ -12345,48 +12028,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     known_nvt_count);
                 }
 
-              if (config_type > 0)
+              if (get_configs_data->preferences
+                  || get_configs_data->get.details)
                 {
                   iterator_t prefs;
-                  config_t config = get_iterator_resource (&configs);
-
-                  assert (config);
-
-                  SEND_TO_CLIENT_OR_FAIL ("<preferences>");
-
-                  init_preference_iterator (&prefs, config, "SERVER_PREFS");
-                  while (next (&prefs))
-                    {
-                      const char *name, *value, *def, *type = "";
-
-                      name = preference_iterator_name (&prefs);
-                      value = def = preference_iterator_value (&prefs);
-                      /* Work-around to differentiate OSP preferences types as
-                       * config_preferences table doesn't have a type column and
-                       * *normal* configs rely on nvt_preferences naming scheme.
-                       */
-                      if (g_str_has_suffix (name, "_file"))
-                        {
-                          type = "osp_file";
-                          def = "";
-                        }
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<preference>"
-                        "<nvt oid=\"\"><name></name></nvt>"
-                        "<name>%s</name><type>%s</type>"
-                        "<value>%s</value>"
-                        "<default>%s</default></preference>",
-                        name, type, value, def);
-                    }
-                  cleanup_iterator (&prefs);
-
-                  SEND_TO_CLIENT_OR_FAIL ("</preferences>");
-                }
-              else if (get_configs_data->preferences
-                       || get_configs_data->get.details)
-                {
-                  iterator_t prefs;
-                  config_t config = get_iterator_resource (&configs);
+                  config_t config = config_iterator_config (&configs);
 
                   assert (config);
 
@@ -12405,7 +12051,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("</preferences>");
                 }
 
-              if (config_type == 0 && get_configs_data->get.details)
+              if (get_configs_data->get.details)
                 {
                   iterator_t selectors;
 
@@ -12443,7 +12089,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                   init_config_task_iterator
-                   (&tasks, get_iterator_resource (&configs), 0);
+                   (&tasks,
+                    config_iterator_config (&configs),
+                    0);
                   while (next (&tasks))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<task id=\"%s\">"
@@ -13207,7 +12855,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           SEND_GET_START("lsc_credential");
           while (1)
             {
-              const char* private_key;
+              const char* public_key;
 
               ret = get_next (&credentials, &get_lsc_credentials_data->get,
                               &first, &count, init_lsc_credential_iterator);
@@ -13221,41 +12869,41 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (lsc_credential, &get_lsc_credentials_data->get,
                                &credentials);
-              private_key = lsc_credential_iterator_private_key (&credentials);
+              public_key = lsc_credential_iterator_public_key (&credentials);
               SENDF_TO_CLIENT_OR_FAIL
                ("<login>%s</login>"
                 "<type>%s</type>",
                 lsc_credential_iterator_login (&credentials),
-                private_key ? "gen" : "pass");
+                public_key ? "gen" : "pass");
 
               switch (format)
                 {
                   case 1: /* key */
-                    {
-                      char *pub;
-                      const char *pass;
-
-                      pass = lsc_credential_iterator_password (&credentials);
-                      pub = openvas_ssh_public_from_private (private_key, pass);
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<public_key>%s</public_key>", pub ?: "");
-                      g_free (pub);
-                      break;
-                    }
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<public_key>%s</public_key>",
+                      public_key ? public_key
+                                 : "");
+                    break;
                   case 2: /* rpm */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"rpm\">%s</package>",
-                      lsc_credential_iterator_rpm (&credentials) ?: "");
+                      lsc_credential_iterator_rpm (&credentials)
+                        ? lsc_credential_iterator_rpm (&credentials)
+                        : "");
                     break;
                   case 3: /* deb */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"deb\">%s</package>",
-                      lsc_credential_iterator_deb (&credentials) ?: "");
+                      lsc_credential_iterator_deb (&credentials)
+                        ? lsc_credential_iterator_deb (&credentials)
+                        : "");
                     break;
                   case 4: /* exe */
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<package format=\"exe\">%s</package>",
-                      lsc_credential_iterator_exe (&credentials) ?: "");
+                      lsc_credential_iterator_exe (&credentials)
+                        ? lsc_credential_iterator_exe (&credentials)
+                        : "");
                     break;
                 }
 
@@ -13265,7 +12913,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SENDF_TO_CLIENT_OR_FAIL ("<targets>");
                   init_lsc_credential_target_iterator
-                   (&targets, get_iterator_resource (&credentials), 0);
+                   (&targets,
+                    lsc_credential_iterator_lsc_credential
+                     (&credentials),
+                    0);
                   while (next (&targets))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<target id=\"%s\">"
@@ -13976,8 +13627,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("<port_ranges>");
 
                   init_port_range_iterator (&ranges,
-                                            get_iterator_resource (&port_lists),
-                                            0, 1, NULL);
+                                            port_list_iterator_port_list (&port_lists),
+                                            0, 1,
+                                            NULL);
                   while (next (&ranges))
                     SENDF_TO_CLIENT_OR_FAIL
                      ("<port_range id=\"%s\">"
@@ -14005,7 +13657,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL ("<targets>");
 
                   init_port_list_target_iterator (&targets,
-                                                  get_iterator_resource
+                                                  port_list_iterator_port_list
                                                    (&port_lists), 0);
                   while (next (&targets))
                     SENDF_TO_CLIENT_OR_FAIL
@@ -14894,13 +14546,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     report_format_iterator_description (&report_formats),
                     get_report_formats_data->get.trash
                       ? trash_report_format_global
-                         (get_iterator_resource (&report_formats))
+                         (report_format_iterator_report_format
+                          (&report_formats))
                       : report_format_global
-                         (get_iterator_resource (&report_formats)),
+                         (report_format_iterator_report_format
+                          (&report_formats)),
                     get_report_formats_data->get.trash
                       ? 0
                       : report_format_predefined
-                         (get_iterator_resource (&report_formats)));
+                         (report_format_iterator_report_format
+                           (&report_formats)));
 
                   if (get_report_formats_data->alerts)
                     {
@@ -14926,8 +14581,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       iterator_t params;
                       init_report_format_param_iterator
-                       (&params, get_iterator_resource (&report_formats),
-                        get_report_formats_data->get.trash, 1, NULL);
+                       (&params,
+                        report_format_iterator_report_format (&report_formats),
+                        get_report_formats_data->get.trash,
+                        1,
+                        NULL);
                       while (next (&params))
                         {
                           long long int min, max;
@@ -14982,7 +14640,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       file_iterator_t files;
                       if (init_report_format_file_iterator
-                           (&files, get_iterator_resource (&report_formats)))
+                           (&files,
+                            report_format_iterator_report_format
+                             (&report_formats)))
                         {
                           cleanup_iterator (&report_formats);
                           error_send_to_client (error);
@@ -15245,78 +14905,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_SCANNERS:
-        {
-          iterator_t scanners;
-          int ret, count, filtered, first;
-
-          assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
-
-          INIT_GET (scanner, Scanner);
-          ret = init_scanner_iterator (&scanners, &get_scanners_data->get);
-          switch (ret)
-            {
-              case 0:
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("get_scanners", "scanners", get_scanners_data->get.id,
-                      write_to_client, write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("get_scanners", "filter", get_scanners_data->get.filt_id,
-                      write_to_client, write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_scanners"));
-                break;
-            }
-          if (ret)
-            {
-              get_scanners_data_reset (get_scanners_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("scanner");
-          while (1)
-            {
-              ret = get_next (&scanners, &get_scanners_data->get, &first,
-                              &count, init_scanner_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<host>%s</host><port>%d</port><type>%d</type></scanner>",
-                scanner_iterator_host (&scanners),
-                scanner_iterator_port (&scanners),
-                scanner_iterator_type (&scanners));
-              count++;
-            }
-          cleanup_iterator (&scanners);
-          filtered = get_scanners_data->get.id
-                      ? 1 : scanner_count (&get_scanners_data->get);
-          SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
-          get_scanners_data_reset (get_scanners_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
       case CLIENT_GET_SCHEDULES:
         {
           assert (strcasecmp ("GET_SCHEDULES", element_name) == 0);
@@ -15506,8 +15094,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_schedule_task_iterator (&tasks,
-                                                   get_iterator_resource
-                                                    (&schedules));
+                                                 schedule_iterator_schedule
+                                                  (&schedules));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
                                                  "<name>%s</name>"
@@ -15684,7 +15272,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_slave_task_iterator (&tasks,
-                                                get_iterator_resource
+                                                slave_iterator_slave
                                                  (&slaves));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -15706,183 +15294,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_END ("slave", &get_slaves_data->get, count, filtered);
             }
           get_slaves_data_reset (get_slaves_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-
-      case CLIENT_GET_AGGREGATES:
-        {
-          assert (strcasecmp ("GET_AGGREGATES", element_name) == 0);
-
-          iterator_t aggregate;
-          const char *type;
-          get_data_t *get;
-          const char *columns, *trash_columns, **filter_columns;
-          const char *data_column, *group_column;
-          int ret;
-          GString *xml;
-
-          type = get_aggregates_data->type;
-          if (type == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                      "GET_AGGREGATES requires a"
-                                      " 'type' attribute"));
-              return;
-            }
-
-          get = &get_aggregates_data->get;
-          data_column = get_aggregates_data->data_column;
-          group_column = get_aggregates_data->group_column;
-
-          if (data_column == NULL && group_column == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                      "GET_AGGREGATES requires at least one of"
-                                      " the attributes 'data_column'"
-                                      " and 'group_column'"));
-              return;
-            }
-
-          columns = type_columns (type);
-          trash_columns = type_trash_columns (type);
-          filter_columns = type_filter_columns (type);
-
-          if (columns == NULL || filter_columns == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                     "Invalid resource type"));
-              return;
-            }
-          if (get->trash && trash_columns == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                     "Trashcan not used by resource type"));
-              return;
-            }
-
-          ret = init_aggregate_iterator (&aggregate, type, get, columns,
-                                         trash_columns, filter_columns,
-                                         0 /* distinct */,
-                                         data_column, group_column,
-                                         NULL /* extra_tables */,
-                                         NULL /* extra_where */,
-                                         1, /* no_pagination */
-                                         0 /* owned */);
-
-          switch (ret)
-            {
-              case 0:
-                break;
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Failed to find resource"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Failed to find filter"));
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid data_column"));
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Invalid group_column"));
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("get_aggregates",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-                /*@fallthrough@*/
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("get_aggregates"));
-                break;
-            }
-
-          if (ret)
-            return;
-
-          xml = g_string_new ("<get_aggregates_response"
-                              "  status_text=\"" STATUS_OK_TEXT "\""
-                              "  status=\"" STATUS_OK "\">");
-
-          g_string_append (xml, "<aggregate>");
-          if (type)
-            g_string_append_printf (xml,
-                                    "<data_type>%s</data_type>",
-                                    type);
-          if (data_column)
-            g_string_append_printf (xml,
-                                    "<data_column>%s</data_column>",
-                                    data_column);
-          if (group_column)
-            g_string_append_printf (xml,
-                                    "<group_column>%s</group_column>",
-                                    group_column);
-
-          while (next (&aggregate))
-            {
-              if (group_column && data_column)
-                g_string_append_printf (xml,
-                                        "<group>"
-                                        "<value>%s</value>"
-                                        "<count>%d</count>"
-                                        "<min>%g</min>"
-                                        "<max>%g</max>"
-                                        "<mean>%g</mean>"
-                                        "<sum>%g</sum>"
-                                        "</group>",
-                                        aggregate_iterator_value (&aggregate),
-                                        aggregate_iterator_count (&aggregate),
-                                        aggregate_iterator_min (&aggregate),
-                                        aggregate_iterator_max (&aggregate),
-                                        aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate));
-              else if (group_column)
-                g_string_append_printf (xml,
-                                        "<group>"
-                                        "<value>%s</value>"
-                                        "<count>%d</count>"
-                                        "</group>",
-                                        aggregate_iterator_value (&aggregate),
-                                        aggregate_iterator_count (&aggregate));
-              else
-                g_string_append_printf (xml,
-                                        "<overall>"
-                                        "<count>%d</count>"
-                                        "<min>%g</min>"
-                                        "<max>%g</max>"
-                                        "<mean>%g</mean>"
-                                        "<sum>%g</sum>"
-                                        "</overall>",
-                                        aggregate_iterator_count (&aggregate),
-                                        aggregate_iterator_min (&aggregate),
-                                        aggregate_iterator_max (&aggregate),
-                                        aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate));
-            }
-          g_string_append (xml, "</aggregate>");
-          g_string_append (xml, "</get_aggregates_response>");
-
-
-          SEND_TO_CLIENT_OR_FAIL (xml->str);
-
-          cleanup_iterator (&aggregate);
-          g_string_free (xml, TRUE);
-          get_aggregates_data_reset (get_aggregates_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
@@ -16307,7 +15718,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   if (get_targets_data->get.details)
                     SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
                                              target_port_range
-                                              (get_iterator_resource
+                                              (target_iterator_target
                                                 (&targets)));
 
                   if (get_targets_data->tasks)
@@ -16316,7 +15727,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                       SEND_TO_CLIENT_OR_FAIL ("<tasks>");
                       init_target_task_iterator (&tasks,
-                                                 get_iterator_resource
+                                                 target_iterator_target
                                                   (&targets));
                       while (next (&tasks))
                         SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
@@ -16435,14 +15846,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               gchar *progress_xml;
               target_t target;
               slave_t slave;
-              scanner_t scanner;
-              const char *first_report_id, *last_report_id;
-              char *config_name, *config_uuid;
+              char *config, *config_uuid;
               char *task_target_uuid, *task_target_name;
               char *task_slave_uuid, *task_slave_name;
               char *task_schedule_uuid, *task_schedule_name;
-              char *task_scanner_uuid, *task_scanner_name;
-              gchar *first_report, *last_report;
+              gchar *first_report_id, *first_report;
+              char *description, *hosts_ordering;
+              gchar *description64, *last_report_id, *last_report;
               gchar *second_last_report_id, *second_last_report;
               gchar *current_report;
               report_t running_report;
@@ -16476,7 +15886,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               target_in_trash = task_target_in_trash (index);
               if ((target == 0)
-                  && (task_iterator_run_status (&tasks) == TASK_STATUS_RUNNING))
+                  && (task_run_status (index) == TASK_STATUS_RUNNING))
                 {
                   progress_xml = g_strdup_printf
                                   ("%i",
@@ -16488,11 +15898,32 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   int progress;
                   gchar *host_xml;
 
-                  running_report = task_iterator_current_report (&tasks);
+                  running_report = task_current_report (index);
                   progress = report_progress (running_report, index, &host_xml);
                   progress_xml = g_strdup_printf ("%i%s", progress, host_xml);
                   g_free (host_xml);
                 }
+
+              if (get_tasks_data->rcfile)
+                {
+                  description = task_description (index);
+                  if (description && strlen (description))
+                    {
+                      gchar *d64;
+                      d64 = g_base64_encode ((guchar*) description,
+                                             strlen (description));
+                      description64 = g_strdup_printf ("<rcfile>"
+                                                       "%s"
+                                                       "</rcfile>",
+                                                       d64);
+                      g_free (d64);
+                    }
+                  else
+                    description64 = g_strdup ("<rcfile></rcfile>");
+                  free (description);
+                }
+              else
+                description64 = g_strdup ("");
 
               if (running_report)
                 {
@@ -16524,7 +15955,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 current_report = g_strdup ("");
 
-              first_report_id = task_iterator_first_report (&tasks);
+              first_report_id = task_first_report_id (index);
               if (first_report_id)
                 {
                   gchar *timestamp;
@@ -16638,7 +16069,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 second_last_report = g_strdup ("");
 
-              last_report_id = task_iterator_last_report (&tasks);
+              last_report_id = task_last_report_id (index);
               if (last_report_id)
                 {
                   gchar *timestamp;
@@ -16703,15 +16134,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  severity);
                   free (scan_end);
                   g_free (timestamp);
+                  g_free (last_report_id);
                 }
               else
                 last_report = g_strdup ("");
 
+              g_free (first_report_id);
               g_free (second_last_report_id);
 
               owner = task_owner_name (index);
               observers = task_observers (index);
-              config_name = task_config_name (index);
+              config = task_config_name (index);
               config_uuid = task_config_uuid (index);
               if (target_in_trash)
                 {
@@ -16746,24 +16179,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_schedule_name = (char*) g_strdup ("");
                   schedule_in_trash = 0;
                 }
-              scanner = task_scanner (index);
-              if (scanner)
-                {
-                  task_scanner_uuid = scanner_uuid (scanner);
-                  task_scanner_name = scanner_name (scanner);
-                }
-              else
-                {
-                  task_scanner_uuid = g_strdup ("");
-                  task_scanner_name = g_strdup ("");
-                }
               next_time = task_schedule_next_time_tz (index);
-              scanner = task_iterator_scanner (&tasks);
+              hosts_ordering = task_hosts_ordering (index);
+
               response = g_strdup_printf
                           ("<alterable>%i</alterable>"
                            "<config id=\"%s\">"
                            "<name>%s</name>"
-                           "<type>%i</type>"
                            "<trash>%i</trash>"
                            "</config>"
                            "<target id=\"%s\">"
@@ -16771,13 +16193,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "</target>"
                            "<hosts_ordering>%s</hosts_ordering>"
-                           "<scanner id='%s'><name>%s</name></scanner>"
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
                            "</slave>"
                            "<status>%s</status>"
                            "<progress>%s</progress>"
+                           "%s"
                            "<report_count>"
                            "%u<finished>%u</finished>"
                            "</report_count>"
@@ -16791,25 +16213,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            get_tasks_data->get.trash
                             ? 0
                             : task_alterable (index),
-                           config_uuid ?: "",
-                           config_name ?: "",
-                           config_type (task_config (index)),
+                           config_uuid ? config_uuid : "",
+                           config ? config : "",
                            task_config_in_trash (index),
-                           task_target_uuid ?: "",
-                           task_target_name ?: "",
+                           task_target_uuid ? task_target_uuid : "",
+                           task_target_name ? task_target_name : "",
                            target_in_trash,
-                           task_iterator_hosts_ordering (&tasks),
-                           task_scanner_uuid,
-                           task_scanner_name,
-                           task_slave_uuid ?: "",
-                           task_slave_name ?: "",
+                           hosts_ordering,
+                           task_slave_uuid ? task_slave_uuid : "",
+                           task_slave_name ? task_slave_name : "",
                            task_slave_in_trash (index),
-                           task_iterator_run_status_name (&tasks),
+                           task_run_status_name (index),
                            progress_xml,
-                           task_iterator_total_reports (&tasks),
-                           task_iterator_finished_reports (&tasks),
-                           task_iterator_trend_counts
-                            (&tasks, holes, warnings, infos, severity,
+                           description64,
+                           /* TODO These can come from iterator now. */
+                           task_report_count (index),
+                           task_finished_report_count (index),
+                           task_trend_counts
+                            (index, holes, warnings, infos, severity,
                              holes_2, warnings_2, infos_2, severity_2),
                            task_schedule_uuid,
                            task_schedule_name,
@@ -16821,19 +16242,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            first_report,
                            last_report,
                            second_last_report);
-              g_free (config_name);
-              g_free (config_uuid);
+              free (config);
               free (task_target_name);
               free (task_target_uuid);
+              free (hosts_ordering);
               g_free (progress_xml);
               g_free (current_report);
               g_free (first_report);
               g_free (last_report);
               g_free (second_last_report);
+              g_free (description64);
               g_free (task_schedule_uuid);
               g_free (task_schedule_name);
-              g_free (task_scanner_uuid);
-              g_free (task_scanner_name);
               free (task_slave_uuid);
               free (task_slave_name);
               if (send_to_client (response,
@@ -17090,7 +16510,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         SEND_TO_CLIENT_OR_FAIL ("<get_version_response"
                                 " status=\"" STATUS_OK "\""
                                 " status_text=\"" STATUS_OK_TEXT "\">"
-                                "<version>6.0</version>"
+                                "<version>5.0</version>"
                                 "</get_version_response>");
         if (client_state == CLIENT_GET_VERSION_AUTHENTIC)
           set_client_state (CLIENT_AUTHENTIC);
@@ -17480,12 +16900,69 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   "CREATE_CONFIG name and base config to copy"
                                   " must be at least one character long"));
             }
-          else if (create_config_data->copy == NULL)
+          else if ((create_config_data->rcfile
+                    && create_config_data->copy)
+                   || (create_config_data->rcfile == NULL
+                       && create_config_data->copy == NULL))
             {
               log_event_fail ("config", "Scan config", NULL, "created");
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_config",
-                                  "CREATE_CONFIG requires a COPY element"));
+                                  "CREATE_CONFIG requires either a COPY or an"
+                                  " RCFILE element"));
+            }
+          else if (create_config_data->rcfile)
+            {
+              int ret;
+              gsize base64_len;
+              guchar *base64;
+
+              base64 = g_base64_decode (create_config_data->rcfile,
+                                        &base64_len);
+              /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
+               * when create_config_data->rcfile is zero length. */
+              if (base64 == NULL)
+                {
+                  base64 = (guchar*) g_strdup ("");
+                  base64_len = 0;
+                }
+
+              ret = create_config_rc (create_config_data->name,
+                                      create_config_data->comment,
+                                      (char*) base64,
+                                      &new_config);
+              g_free (base64);
+              switch (ret)
+                {
+                  case 0:
+                    {
+                      char *uuid;
+                      config_uuid (new_config, &uuid);
+                      SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                                ("create_config"),
+                                               uuid);
+                      log_event ("config", "Scan config", uuid, "created");
+                      free (uuid);
+                      break;
+                    }
+                  case 1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Config exists already"));
+                    log_event_fail ("config", "Scan config", NULL, "created");
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Permission denied"));
+                    log_event_fail ("config", "Scan config", NULL, "created");
+                    break;
+                  case -1:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_config"));
+                    log_event_fail ("config", "Scan config", NULL, "created");
+                    break;
+                }
             }
           else switch (copy_config (create_config_data->name,
                                     create_config_data->comment,
@@ -17540,6 +17017,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CONFIG, COMMENT);
       CLOSE (CLIENT_CREATE_CONFIG, COPY);
       CLOSE (CLIENT_CREATE_CONFIG, NAME);
+      CLOSE (CLIENT_CREATE_CONFIG, RCFILE);
 
       case CLIENT_C_C_GCR:
         assert (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0);
@@ -18204,21 +17682,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                   " least one character long"));
             }
           else if (create_lsc_credential_data->key
-                   && create_lsc_credential_data->key_private == NULL)
+                   && ((create_lsc_credential_data->key_public == NULL)
+                       || (create_lsc_credential_data->key_private == NULL)))
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_lsc_credential",
-                                  "CREATE_LSC_CREDENTIAL KEY requires a PRIVATE"
-                                  " key"));
+                                  "CREATE_LSC_CREDENTIAL KEY requires a PUBLIC"
+                                  " and a PRIVATE"));
             }
           else switch (create_lsc_credential
                         (create_lsc_credential_data->name,
                          create_lsc_credential_data->comment,
                          create_lsc_credential_data->login,
-                         create_lsc_credential_data->key_private
+                         create_lsc_credential_data->key_public
                           ? create_lsc_credential_data->key_phrase
                           : create_lsc_credential_data->password,
                          create_lsc_credential_data->key_private,
+                         create_lsc_credential_data->key_public,
                          &new_lsc_credential))
             {
               case 0:
@@ -18264,6 +17744,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PRIVATE);
+      CLOSE (CLIENT_CREATE_LSC_CREDENTIAL_KEY, PUBLIC);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, LOGIN);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, NAME);
       CLOSE (CLIENT_CREATE_LSC_CREDENTIAL, PASSWORD);
@@ -19853,132 +19334,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, NAME);
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
-      case CLIENT_CREATE_SCANNER:
-        {
-          scanner_t new_scanner;
-
-          assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
-
-          if (create_scanner_data->copy)
-            switch (copy_scanner (create_scanner_data->name,
-                                  create_scanner_data->comment,
-                                  create_scanner_data->copy,
-                                  &new_scanner))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = scanner_uuid (new_scanner);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_scanner"),
-                                             uuid);
-                    log_event ("scanner", "scanner", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_scanner",
-                                      "Scanner name exists already"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_scanner",
-                                                 "scanner",
-                                                 create_scanner_data->copy,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_scanner",
-                                      "Permission denied"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_scanner"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-              }
-          else if (create_scanner_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a NAME entity"));
-          else if (create_scanner_data->host == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a HOST entity"));
-          else if (create_scanner_data->port == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a PORT entity"));
-          else if (create_scanner_data->type == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a TYPE entity"));
-          else switch (create_scanner (create_scanner_data->name,
-                                       create_scanner_data->comment,
-                                       create_scanner_data->host,
-                                       create_scanner_data->port,
-                                       create_scanner_data->type,
-                                       &new_scanner))
-            {
-              case 0:
-                {
-                  char *uuid = scanner_uuid (new_scanner);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_scanner"), uuid);
-                  log_event ("scanner", "Scanner", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Scanner exists already"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Invalid entity value"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Permission denied"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_scanner"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              default:
-                assert (0);
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_scanner"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-            }
-          create_scanner_data_reset (create_scanner_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
-      CLOSE (CLIENT_CREATE_SCANNER, COPY);
-      CLOSE (CLIENT_CREATE_SCANNER, NAME);
-      CLOSE (CLIENT_CREATE_SCANNER, HOST);
-      CLOSE (CLIENT_CREATE_SCANNER, PORT);
-      CLOSE (CLIENT_CREATE_SCANNER, TYPE);
-
       case CLIENT_CREATE_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -20674,11 +20029,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           config_t config = 0;
           target_t target = 0;
-          scanner_t scanner = 0;
           slave_t slave = 0;
-          char *tsk_uuid, *name;
+          char *tsk_uuid, *name, *description;
           guint index;
-          int fail, type;
+          int fail;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -20689,7 +20043,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("CREATE_TASK", element_name) == 0);
           assert (create_task_data->task != (task_t) 0);
 
-          /* The task already exists in the database at this point, so on
+          /* The task already exists in the database at this point,
+           * including the RC file (in the description column), so on
            * failure be sure to call request_delete_task to remove the
            * task. */
           /** @todo Any fail cases of the CLIENT_CREATE_TASK_* states must do
@@ -20786,23 +20141,30 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          /* Check for the right combination of target and config. */
+          /* Check for the right combination of rcfile, target and config. */
 
-          if (create_task_data->config_id == NULL
-              || create_task_data->target_id == NULL)
+          description = task_description (create_task_data->task);
+          if ((description
+               && (create_task_data->config_id || create_task_data->target_id))
+              || (description == NULL
+                  && (create_task_data->config_id == NULL
+                      || create_task_data->target_id == NULL)))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
+              free (description);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires both a config"
-                                  " and a target"));
+                                  "CREATE_TASK requires either an rcfile"
+                                  " or both a config and a target"));
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
 
-          assert (create_task_data->config_id && create_task_data->target_id);
+          assert (description
+                  || (create_task_data->config_id
+                      && create_task_data->target_id));
 
           /* Set any alert. */
 
@@ -20822,6 +20184,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -20832,6 +20195,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK alert must exist"));
@@ -20860,6 +20224,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
@@ -20869,6 +20234,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK schedule must exist"));
@@ -20923,6 +20289,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
@@ -20967,6 +20334,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   request_delete_task (&create_task_data->task);
                   free (tsk_uuid);
+                  free (description);
                   create_task_data_reset (create_task_data);
                   set_client_state (CLIENT_AUTHENTIC);
                   break;
@@ -20980,6 +20348,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
+              free (description);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
@@ -20988,7 +20357,70 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          if (find_config (create_task_data->config_id, &config))
+          /* If there's an rc file, setup the target and config, otherwise
+           * check that the target and config exist. */
+
+          if (description)
+            {
+              int ret;
+              char *hosts;
+              gchar *target_name, *config_name;
+
+              /* Create the config. */
+
+              config_name = g_strdup_printf ("Imported config for task %s",
+                                             tsk_uuid);
+              ret = create_config_rc (config_name, NULL, (char*) description,
+                                      &config);
+              set_task_config (create_task_data->task, config);
+              g_free (config_name);
+              if (ret)
+                {
+                  request_delete_task (&create_task_data->task);
+                  free (description);
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+
+              /* Create the target. */
+
+              hosts = rc_preference (description, "targets");
+              if (hosts == NULL)
+                {
+                  request_delete_task (&create_task_data->task);
+                  free (description);
+                  free (tsk_uuid);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX
+                     ("create_task",
+                      "CREATE_TASK rcfile must have targets"));
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              free (description);
+
+              target_name = g_strdup_printf ("Imported target for task %s",
+                                             tsk_uuid);
+              if (create_target (target_name, hosts, NULL, NULL, NULL, NULL, 0,
+                                 NULL, 0, NULL, NULL, NULL, "0", "0", NULL, 0,
+                                 &target))
+                {
+                  request_delete_task (&create_task_data->task);
+                  g_free (target_name);
+                  free (tsk_uuid);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_INTERNAL_ERROR ("create_task"));
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
+              set_task_target (create_task_data->task, target);
+              g_free (target_name);
+            }
+          else if (find_config (create_task_data->config_id, &config))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -21041,44 +20473,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          else if (create_task_data->scanner_id
-                   && find_scanner (create_task_data->scanner_id, &scanner))
-            {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          else if (create_task_data->scanner_id && scanner == 0)
-            {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                {
-                  /* Out of space. */
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-          else if (((type = config_type (config)) > 0 && scanner == 0)
-                   || (type == 0 && scanner > 0))
-            {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
-                                      "Scanner and config mismatched types."));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
           else if (create_task_data->slave_id
                    && find_slave (create_task_data->slave_id, &slave))
             {
@@ -21112,12 +20506,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_task_config (create_task_data->task, config);
               set_task_slave (create_task_data->task, slave);
               set_task_target (create_task_data->task, target);
-              set_task_scanner (create_task_data->task, scanner);
               set_task_hosts_ordering (create_task_data->task,
                                        create_task_data->hosts_ordering);
               if (create_task_data->preferences)
                 set_task_preferences (create_task_data->task,
                                       create_task_data->preferences);
+
+              /* Generate the rcfile in the task. */
+
+              if (make_task_rcfile (create_task_data->task))
+                {
+                  request_delete_task (&create_task_data->task);
+                  free (tsk_uuid);
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Failed to generate task rcfile"));
+                  create_task_data_reset (create_task_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
+                }
             }
 
           /* Send success response. */
@@ -21134,13 +20541,40 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, ALTERABLE);
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
       CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
-      CLOSE (CLIENT_CREATE_TASK, SCANNER);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
       CLOSE (CLIENT_CREATE_TASK, COPY);
       CLOSE (CLIENT_CREATE_TASK, ALERT);
       CLOSE (CLIENT_CREATE_TASK, NAME);
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
+      case CLIENT_CREATE_TASK_RCFILE:
+        assert (strcasecmp ("RCFILE", element_name) == 0);
+        if (create_task_data->task)
+          {
+            gsize out_len;
+            guchar* out;
+            char* description = task_description (create_task_data->task);
+            if (description)
+              {
+                out = g_base64_decode (description, &out_len);
+                /* g_base64_decode can return NULL (Glib 2.12.4-2), at least
+                 * when description is zero length. */
+                if (out == NULL)
+                  {
+                    out = (guchar*) g_strdup ("");
+                    out_len = 0;
+                  }
+              }
+            else
+              {
+                out = (guchar*) g_strdup ("");
+                out_len = 0;
+              }
+            free (description);
+            set_task_description (create_task_data->task, (char*) out, out_len);
+            set_client_state (CLIENT_CREATE_TASK);
+          }
+        break;
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SLAVE);
@@ -23022,79 +22456,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_ROLE, NAME);
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
-      case CLIENT_MODIFY_SCANNER:
-        {
-          assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
-
-          switch (modify_scanner
-                   (modify_scanner_data->scanner_id, modify_scanner_data->name,
-                    modify_scanner_data->comment, modify_scanner_data->host,
-                    modify_scanner_data->port, modify_scanner_data->type))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
-                log_event ("scanner", "Scanner",
-                           modify_scanner_data->scanner_id, "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_scanner",
-                                               "scanner",
-                                               modify_scanner_data->scanner_id,
-                                               write_to_client,
-                                               write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "scanner with new name exists already"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "MODIFY_SCANNER requires a scanner_id"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "MODIFY_SCANNER invalid value"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "Permission denied"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_scanner"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-            }
-
-          modify_scanner_data_reset (modify_scanner_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
-      CLOSE (CLIENT_MODIFY_SCANNER, PORT);
-      CLOSE (CLIENT_MODIFY_SCANNER, HOST);
-      CLOSE (CLIENT_MODIFY_SCANNER, COMMENT);
-      CLOSE (CLIENT_MODIFY_SCANNER, NAME);
-
       case CLIENT_MODIFY_SCHEDULE:
         {
           time_t first_time, period, period_months, duration;
@@ -23741,23 +23102,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                      && (modify_task_data->comment
                          || modify_task_data->alerts->len
                          || modify_task_data->groups->len
-                         || modify_task_data->name))
+                         || modify_task_data->name
+                         || modify_task_data->rcfile))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
                                   "Too many parameters at once"));
             else if ((task_target (task) == 0)
-                     && (modify_task_data->alerts->len
+                     && (modify_task_data->rcfile
+                         || modify_task_data->alerts->len
                          || modify_task_data->schedule_id
                          || modify_task_data->slave_id))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
                                   "For container tasks only name, comment and"
                                   " observers can be modified"));
-            else if (!modify_task_check_config_scanner
-                       (task, modify_task_data->config_id,
-                        modify_task_data->scanner_id))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task", "Config and Scanner types mismatch."));
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)
@@ -23805,7 +23163,23 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                  * returned while some part of the command actually
                  * succeeded. */
 
-                if (modify_task_data->name)
+                if (modify_task_data->rcfile)
+                  {
+                    fail = set_task_parameter (task,
+                                               "RCFILE",
+                                               modify_task_data->rcfile);
+                    modify_task_data->rcfile = NULL;
+                    if (fail)
+                      {
+                        SEND_TO_CLIENT_OR_FAIL
+                          (XML_INTERNAL_ERROR ("modify_task"));
+                        log_event_fail ("task", "Task",
+                                        modify_task_data->task_id,
+                                        "modified");
+                      }
+                  }
+
+                if (fail == 0 && modify_task_data->name)
                   {
                     fail = set_task_parameter (task,
                                                "NAME",
@@ -24092,40 +23466,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       set_task_target (task, target);
                   }
 
-                if (fail == 0 && modify_task_data->scanner_id)
-                  {
-                    scanner_t scanner = 0;
-
-                    if (strcmp (modify_task_data->scanner_id, "0") == 0)
-                      {
-                        set_task_scanner (task, 0);
-                      }
-                    else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW
-                                      && (task_alterable (task) == 0))))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX
-                         ("modify_task", "Status must be New to edit Scanner"));
-                    else if ((fail = find_scanner
-                                      (modify_task_data->scanner_id, &scanner)))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (scanner == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task", "scanner",
-                              modify_task_data->scanner_id, write_to_client,
-                              write_to_client_data))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      set_task_scanner (task, scanner);
-                  }
-
                 if (fail == 0 && modify_task_data->preferences)
                   set_task_preferences (task,
                                         modify_task_data->preferences);
@@ -24153,12 +23493,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, ALTERABLE);
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
       CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
-      CLOSE (CLIENT_MODIFY_TASK, SCANNER);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
       CLOSE (CLIENT_MODIFY_TASK, ALERT);
       CLOSE (CLIENT_MODIFY_TASK, NAME);
       CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
       CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
+      CLOSE (CLIENT_MODIFY_TASK, RCFILE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SLAVE);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
@@ -24383,12 +23723,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   log_event ("task", "Task", pause_task_data->task_id,
                              "requested to pause");
                   break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("pause_task", "Pausing not supported"));
-                  log_event_fail ("task", "Task", pause_task_data->task_id,
-                                  "paused");
-                  break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("pause_task",
                                                  "task",
@@ -24567,14 +23901,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                           return;
                         }
                       break;
-                    case 4:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Resuming not supported"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "resumed");
-                      break;
                     case 99:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("resume_or_start_task",
@@ -24670,13 +23996,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
-                  break;
-                case 4:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("resume_paused_task",
-                                      "Resuming not supported"));
-                  log_event_fail ("task", "Task",
-                                  resume_paused_task_data->task_id, "resumed");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -24774,14 +24093,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    G_MARKUP_ERROR,
                                    G_MARKUP_ERROR_INVALID_CONTENT,
                                    "Dummy error for current_error");
-                      break;
-                    case 4:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
-                                          "Resuming not supported"));
-                      log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
-                                      "resumed");
                       break;
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client
@@ -25136,13 +24447,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       start_task_data->task_id,
                                       "started");
                       break;
-                    case -1:
-                      /* Internal error. */
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task", "Internal error."));
-                      log_event_fail ("task", "Task", start_task_data->task_id,
-                                      "started");
-                      break;
                     case -2:
                       /* Task lacks target.  This is true for container
                        * tasks. */
@@ -25202,12 +24506,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   log_event ("task", "Task", stop_task_data->task_id,
                              "requested to stop");
-                  break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("stop_task", "Stopping not supported"));
-                  log_event_fail ("task", "Task", stop_task_data->task_id,
-                                  "stopped");
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task",
@@ -25479,52 +24777,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_VERIFY_SCANNER:
-        assert (strcasecmp ("VERIFY_SCANNER", element_name) == 0);
-        if (verify_scanner_data->scanner_id)
-          {
-            char *version = NULL;
-            switch (verify_scanner (verify_scanner_data->scanner_id, &version))
-              {
-                case 0:
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<verify_scanner_response status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">"
-                    "<version>%s</version>"
-                    "</verify_scanner_response>", version);
-                  break;
-                case 1:
-                  if (send_find_error_to_client
-                       ("verify_scanner", "scanner",
-                        verify_scanner_data->scanner_id, write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_UNAVAILABLE ("verify_scanner"));
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("verify_scanner", "Permission denied"));
-                  break;
-                default:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
-                                           ("verify_scanner"));
-                  break;
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("verify_scanner", "VERIFY_SCANNER requires a"
-                              " scanner_id attribute"));
-        verify_scanner_data_reset (verify_scanner_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       default:
         assert (0);
         break;
@@ -25548,7 +24800,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
  * React to the addition of text to the value of an XML element.
  * React according to the current value of \ref client_state,
  * usually appending the text to some part of the current task
- * with functions like openvas_append_text and \ref append_to_task_comment.
+ * with functions like openvas_append_text,
+ * \ref add_task_description_line and \ref append_to_task_comment.
  *
  * @param[in]  context           Parser context.
  * @param[in]  text              The text.
@@ -25659,6 +24912,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TASK_OBSERVERS,
               &modify_task_data->observers);
 
+      APPEND (CLIENT_MODIFY_TASK_RCFILE,
+              &modify_task_data->rcfile);
+
       APPEND (CLIENT_MODIFY_TASK_FILE,
               &modify_task_data->file);
 
@@ -25720,6 +24976,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_CONFIG_NAME,
               &create_config_data->name);
 
+      APPEND (CLIENT_CREATE_CONFIG_RCFILE,
+              &create_config_data->rcfile);
+
       APPEND (CLIENT_C_C_GCR_CONFIG_COMMENT,
               &import_config_data->comment);
 
@@ -25765,6 +25024,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PRIVATE,
               &create_lsc_credential_data->key_private);
+
+      APPEND (CLIENT_CREATE_LSC_CREDENTIAL_KEY_PUBLIC,
+              &create_lsc_credential_data->key_public);
 
       APPEND (CLIENT_CREATE_LSC_CREDENTIAL_LOGIN,
               &create_lsc_credential_data->login);
@@ -26084,23 +25346,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_ROLE_USERS,
               &create_role_data->users);
 
-      APPEND (CLIENT_CREATE_SCANNER_NAME,
-              &create_scanner_data->name);
-
-      APPEND (CLIENT_CREATE_SCANNER_COMMENT,
-              &create_scanner_data->comment);
-
-      APPEND (CLIENT_CREATE_SCANNER_COPY,
-              &create_scanner_data->copy);
-
-      APPEND (CLIENT_CREATE_SCANNER_HOST,
-              &create_scanner_data->host);
-
-      APPEND (CLIENT_CREATE_SCANNER_PORT,
-              &create_scanner_data->port);
-
-      APPEND (CLIENT_CREATE_SCANNER_TYPE,
-              &create_scanner_data->type);
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
@@ -26245,6 +25490,13 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TASK_OBSERVERS,
               &create_task_data->observers);
+
+      case CLIENT_CREATE_TASK_RCFILE:
+        /* Append the text to the task description. */
+        add_task_description_line (create_task_data->task,
+                                   text,
+                                   text_len);
+        break;
 
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
               &create_task_data->preference->name);
@@ -26407,21 +25659,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_ROLE_USERS,
               &modify_role_data->users);
-
-      APPEND (CLIENT_MODIFY_SCANNER_COMMENT,
-              &modify_scanner_data->comment);
-
-      APPEND (CLIENT_MODIFY_SCANNER_NAME,
-              &modify_scanner_data->name);
-
-      APPEND (CLIENT_MODIFY_SCANNER_HOST,
-              &modify_scanner_data->host);
-
-      APPEND (CLIENT_MODIFY_SCANNER_PORT,
-              &modify_scanner_data->port);
-
-      APPEND (CLIENT_MODIFY_SCANNER_TYPE,
-              &modify_scanner_data->type);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
@@ -26854,6 +26091,17 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
   if (forked)
     return 3;
   return 0;
+}
+
+/**
+ * @brief Return whether the scanner is up.
+ *
+ * @return 1 if the scanner is available, else 0.
+ */
+short
+scanner_is_up ()
+{
+  return scanner_up;
 }
 
 /**

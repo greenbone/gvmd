@@ -730,7 +730,7 @@ scanner_is_loading (char *messages)
   return 0;
 }
 
-/**
+/*
  * @brief Parses SCANNER_LOADING response, updating scanner_current_loading and
  *        scanner_total_loading values.
  */

@@ -7,7 +7,7 @@
 <body style="background-color: #FFFFFF; margin: 0px; font: small Verdana, sans-serif; font-size: 12px; color: #1A1A1A;"><div style="width: 98%; width:700px; align: center; margin-left: auto; margin-right: auto;"><table style="width: 100%;" cellpadding="3" cellspacing="0"><tr><td valign="top">
 <h1>OMP:
                   OpenVAS Management Protocol</h1>
-<p>Version: 6.0</p>
+<p>Version: 5.0</p>
 <p>The "management" protocol of the Open Vulnerability Assessment System.</p>
 <h2 id="contents">Contents</h2>
 <ol>
@@ -20,7 +20,7 @@
 <li><a href="#command_details">Command Details</a></li>
 <li><a href="#changes">
                       Compatibility Changes in Version
-                      6.0</a></li>
+                      5.0</a></li>
 </ol>
 <h2 id="type_summary">1 Summary of Data Types</h2>
 <table id="index">
@@ -363,10 +363,6 @@
 <td id="index"><div style="margin-left: 15px;">Get all configs.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_get_aggregates">get_aggregates</a></td>
-<td id="index"><div style="margin-left: 15px;">Get aggregates of various resources.</div></td>
-</tr>
-<tr id="index">
 <td id="index"><a href="#command_get_alerts">get_alerts</a></td>
 <td id="index"><div style="margin-left: 15px;">Get all alerts.</div></td>
 </tr>
@@ -674,7 +670,6 @@ command
     | empty_trashcan
     | get_agents
     | get_configs
-    | get_aggregates
     | get_alerts
     | get_filters
     | get_groups
@@ -789,7 +784,6 @@ response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
-    | get_aggregates_response
     | get_alerts_response
     | get_filters_response
     | get_groups_response
@@ -5496,6 +5490,11 @@ create_agent_howto_use
           config with this name, then a number is attached to the name to
           make it unique.
         </li>
+<li>
+          With an rcfile element. The config is created as described in
+          the RC file.  In this case a name element is required.  The new
+          config is given this name.
+        </li>
 </ul></p>
 <h4>7.4.1 Structure</h4>
 <ul style="list-style: none">
@@ -5517,6 +5516,11 @@ create_agent_howto_use
           &lt;<b>get_configs_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_get_configs">get_configs</a> command.
           </div>
+</li>
+<li>
+              &lt;<b>rcfile</b>&gt;
+              <div style="margin-left: 15px; display: inline;">An openvasrc style file that defines the config.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -5551,7 +5555,8 @@ create_agent_howto_use
      {
        create_config_comment?
        &amp; ( create_config_copy
-           | get_configs_response )
+           | get_configs_response
+           | create_config_rcfile )
        &amp; create_config_name
      }
 
@@ -5565,6 +5570,12 @@ create_config_copy
  = element copy
      {
        uuid
+     }
+
+create_config_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 create_config_name
@@ -5586,6 +5597,18 @@ create_config_name
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
    &lt;copy&gt;daba56c8-73ec-11df-a475-002264764cea&lt;/copy&gt;
+   &lt;name&gt;Full&lt;/name&gt;
+ &lt;/create_config&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config_response status="201"
+                         status_text="OK, resource created"
+                         id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/&gt;
+</pre></div>
+</div>
+<h4>7.4.3 Example: Create a config from an RC file</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_config&gt;
+   &lt;rcfile&gt;asdf3235saf3kjBVF...&lt;/rcfile&gt;
    &lt;name&gt;Full&lt;/name&gt;
  &lt;/create_config&gt;
 </pre></div>
@@ -6120,6 +6143,11 @@ create_group_users
               <div style="margin-left: 15px; display: inline;">Private key.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>public</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Public key.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -6187,6 +6215,7 @@ create_lsc_credential_key
      {
        create_lsc_credential_key_phrase
        &amp; create_lsc_credential_key_private
+       &amp; create_lsc_credential_key_public
      }
 
 create_lsc_credential_key_phrase
@@ -6197,6 +6226,12 @@ create_lsc_credential_key_phrase
 
 create_lsc_credential_key_private
  = element private
+     {
+       text
+     }
+
+create_lsc_credential_key_public
+ = element public
      {
        text
      }
@@ -8214,6 +8249,11 @@ create_target_port_list
 <p>
         The client uses the create_task command to create a new task.
       </p>
+<p>
+        If an rcfile is given, then config and target should actually be
+        left out.  This form of the command is special support for
+        OpenVAS-Client, and will likely be removed in future versions.
+      </p>
 <h4>7.21.1 Structure</h4>
 <ul style="list-style: none">
 <li>
@@ -8300,6 +8340,11 @@ create_target_port_list
 </ul>
 </li></ul>
 </li>
+<li>
+              &lt;<b>rcfile</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">An openvasrc style file defining the task.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -8335,6 +8380,7 @@ create_target_port_list
        &amp; create_task_slave?
        &amp; create_task_observers?
        &amp; create_task_preferences?
+       &amp; create_task_rcfile?
      }
 
 create_task_name
@@ -8420,6 +8466,12 @@ create_task_preferences_preference_value
  = element value
      {
        text
+     }
+
+create_task_rcfile
+ = element rcfile
+     {
+       base64
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_task_response
@@ -12041,287 +12093,7 @@ get_configs_response_config_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_aggregates">7.50
-        Command <tt>get_aggregates</tt>
-</h3></div>
-<p>In short: Get aggregates of various resources.</p>
-<p>
-        The client uses the get_aggregate command to get aggregated data like
-        counts or averages of various resources.
-      </p>
-<h4>7.50.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none">
-<li>
-          @<b>type</b>
-          (text)
-          The OMP resource type to gather data from.
-          </li>
-<li>
-          @<b>data_column</b>
-          (text)
-          The column to get the data to aggregate from.
-          </li>
-<li>
-          @<b>group_column</b>
-          (text)
-          The field to group the resources by.
-          </li>
-</ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-<li>
-              &lt;<b>aggregate</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">A collection of aggregated data of the selected type.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>data_type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The resource type the data is aggregated from.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>data_column</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The column the data is aggregated from.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>group_column</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The column the data is grouped by.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-              &lt;<b>group</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Aggregate data for a group of resources.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Value of the group column.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of resources in the group.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-<i>The group</i><b>?</b><ul style="list-style: none">
-<li>
-              &lt;<b>min</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Minimum value of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>max</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Maximum value of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>mean</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Arithmetic mean of the numeric values of the data.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>sum</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Sum of the numeric values of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>overall</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Aggregate data for all resources of the selected type.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Overall number of resources.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>min</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Overall minimum value of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>max</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Overall maximum value of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>mean</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Overall arithmetic mean of the numeric values of the data.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>sum</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Overall sum of the numeric values of the data column.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h4>7.50.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>get_aggregates
- = element get_aggregates
-     {
-       attribute type { text }
-       &amp; attribute data_column { text }?
-       &amp; attribute group_column { text }?
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>get_aggregates_response
- = element get_aggregates_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-       &amp; get_aggregates_response_aggregate*
-     }
-
-get_aggregates_response_aggregate
- = element aggregate
-     {
-       get_aggregates_response_aggregate_data_type
-       &amp; get_aggregates_response_aggregate_data_column?
-       &amp; get_aggregates_response_aggregate_group_column?
-       &amp; ( get_aggregates_response_aggregate_group*
-           | get_aggregates_response_aggregate_overall )
-     }
-
-get_aggregates_response_aggregate_data_type
- = element data_type
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_data_column
- = element data_column
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group_column
- = element group_column
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group
- = element group
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group
- = element group
-     {
-       get_aggregates_response_aggregate_group_value
-       &amp; get_aggregates_response_aggregate_group_count
-       &amp; ( get_aggregates_response_aggregate_group_min
-           &amp; get_aggregates_response_aggregate_group_max
-           &amp; get_aggregates_response_aggregate_group_mean
-           &amp; get_aggregates_response_aggregate_group_sum )?
-     }
-
-get_aggregates_response_aggregate_group_value
- = element value
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group_count
- = element count
-     {
-       integer
-     }
-
-get_aggregates_response_aggregate_group_min
- = element min
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group_max
- = element max
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group_mean
- = element mean
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_group_sum
- = element sum
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_overall
- = element overall
-     {
-       get_aggregates_response_aggregate_overall_count
-       &amp; get_aggregates_response_aggregate_overall_min
-       &amp; get_aggregates_response_aggregate_overall_max
-       &amp; get_aggregates_response_aggregate_overall_mean
-       &amp; get_aggregates_response_aggregate_overall_sum
-     }
-
-get_aggregates_response_aggregate_overall_count
- = element count
-     {
-       integer
-     }
-
-get_aggregates_response_aggregate_overall_min
- = element min
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_overall_max
- = element max
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_overall_mean
- = element mean
-     {
-       text
-     }
-
-get_aggregates_response_aggregate_overall_sum
- = element sum
-     {
-       text
-     }
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_get_alerts">7.51
+<div><h3 id="command_get_alerts">7.50
         Command <tt>get_alerts</tt>
 </h3></div>
 <p>In short: Get all alerts.</p>
@@ -12330,7 +12102,7 @@ get_aggregates_response_aggregate_overall_sum
       If the command sent by the client was valid, the manager will
       reply with a list of alerts to the client.
     </p>
-<h4>7.51.1 Structure</h4>
+<h4>7.50.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -12529,7 +12301,7 @@ get_aggregates_response_aggregate_overall_sum
 </ul>
 </li>
 </ul>
-<h4>7.51.2 RNC</h4>
+<h4>7.50.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_alerts
  = element get_alerts
@@ -12755,7 +12527,7 @@ get_alerts_response_alert_filter_trash
      }
 </pre></div>
 </div>
-<h4>7.51.3 Example: Get the alerts</h4>
+<h4>7.50.3 Example: Get the alerts</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_alerts/&gt;
 </pre></div>
@@ -12807,14 +12579,14 @@ get_alerts_response_alert_filter_trash
 </div>
 </div>
 <div>
-<div><h3 id="command_get_filters">7.52
+<div><h3 id="command_get_filters">7.51
         Command <tt>get_filters</tt>
 </h3></div>
 <p>In short: Get all filters.</p>
 <p>
       The client uses the get_filters command to get filter information.
     </p>
-<h4>7.52.1 Structure</h4>
+<h4>7.51.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -13106,7 +12878,7 @@ get_alerts_response_alert_filter_trash
 </ul>
 </li>
 </ul>
-<h4>7.52.2 RNC</h4>
+<h4>7.51.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_filters
  = element get_filters
@@ -13379,7 +13151,7 @@ get_filters_response_filter_count_page
      }
 </pre></div>
 </div>
-<h4>7.52.3 Example: Get all filters</h4>
+<h4>7.51.3 Example: Get all filters</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_filters/&gt;
 </pre></div>
@@ -13402,7 +13174,7 @@ get_filters_response_filter_count_page
  &lt;/get_filters_response&gt;
 </pre></div>
 </div>
-<h4>7.52.3 Example: Get single filter, including alerts that use the filter</h4>
+<h4>7.51.3 Example: Get single filter, including alerts that use the filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_filters filter_id="c33864a9-d3fd-44b3-8717-972bfb01dfc0"
               tasks="1"/&gt;
@@ -13433,14 +13205,14 @@ get_filters_response_filter_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_groups">7.53
+<div><h3 id="command_get_groups">7.52
         Command <tt>get_groups</tt>
 </h3></div>
 <p>In short: Get all groups.</p>
 <p>
       The client uses the get_groups command to get group information.
     </p>
-<h4>7.53.1 Structure</h4>
+<h4>7.52.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -13660,7 +13432,7 @@ get_filters_response_filter_count_page
 </ul>
 </li>
 </ul>
-<h4>7.53.2 RNC</h4>
+<h4>7.52.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_groups
  = element get_groups
@@ -13905,7 +13677,7 @@ get_groups_response_group_count_page
      }
 </pre></div>
 </div>
-<h4>7.53.3 Example: Get all groups</h4>
+<h4>7.52.3 Example: Get all groups</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_groups/&gt;
 </pre></div>
@@ -13953,7 +13725,7 @@ get_groups_response_group_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_info">7.54
+<div><h3 id="command_get_info">7.53
         Command <tt>get_info</tt>
 </h3></div>
 <p>In short: Get information for items of given type.</p>
@@ -13963,7 +13735,7 @@ get_groups_response_group_count_page
       If the command sent by the client was valid, the manager will
       reply with a list of info elements of a given type to the client.
     </p>
-<h4>7.54.1 Structure</h4>
+<h4>7.53.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -14446,7 +14218,7 @@ get_groups_response_group_count_page
 </ul>
 </li>
 </ul>
-<h4>7.54.2 RNC</h4>
+<h4>7.53.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_info
  = element get_info
@@ -15025,7 +14797,7 @@ get_info_response_details
      }
 </pre></div>
 </div>
-<h4>7.54.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</h4>
+<h4>7.53.3 Example: Get a info about cpe:/a:gnu:gzip:1.3.3 with all details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info type="CPE"
            name="cpe:/a:gnu:gzip:1.3.3"
@@ -15125,7 +14897,7 @@ get_info_response_details
  &lt;/get_info_response&gt;
 </pre></div>
 </div>
-<h4>7.54.3 Example: Get a info CVE-1999-0010 without details</h4>
+<h4>7.53.3 Example: Get a info CVE-1999-0010 without details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_info name="CVE-2011-0018"
            type="cve"/&gt;
@@ -15179,7 +14951,7 @@ get_info_response_details
 </div>
 </div>
 <div>
-<div><h3 id="command_get_lsc_credentials">7.55
+<div><h3 id="command_get_lsc_credentials">7.54
         Command <tt>get_lsc_credentials</tt>
 </h3></div>
 <p>In short: Get all LSC credentials.</p>
@@ -15188,7 +14960,7 @@ get_info_response_details
       If the command sent by the client was valid, the manager will
       reply with a list of LSC credentials to the client.
     </p>
-<h4>7.55.1 Structure</h4>
+<h4>7.54.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -15451,7 +15223,7 @@ get_info_response_details
 </ul>
 </li>
 </ul>
-<h4>7.55.2 RNC</h4>
+<h4>7.54.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_lsc_credentials
  = element get_lsc_credentials
@@ -15740,7 +15512,7 @@ get_lsc_credentials_response_lsc_credential_count_page
      }
 </pre></div>
 </div>
-<h4>7.55.3 Example: Get all the LSC credentials</h4>
+<h4>7.54.3 Example: Get all the LSC credentials</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials/&gt;
 </pre></div>
@@ -15773,7 +15545,7 @@ get_lsc_credentials_response_lsc_credential_count_page
  &lt;/get_lsc_credentials_response&gt;
 </pre></div>
 </div>
-<h4>7.55.3 Example: Get a single LSC credential, its public key and targets using it</h4>
+<h4>7.54.3 Example: Get a single LSC credential, its public key and targets using it</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
                       format="key"
@@ -15805,7 +15577,7 @@ get_lsc_credentials_response_lsc_credential_count_page
  &lt;/get_lsc_credentials_response&gt;
 </pre></div>
 </div>
-<h4>7.55.3 Example: Get the Debian package of a single LSC credential</h4>
+<h4>7.54.3 Example: Get the Debian package of a single LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_lsc_credentials lsc_credential_id="8e305b0b-260d-450d-91a8-dadf0b144e15"
                       format="deb"/&gt;
@@ -15836,7 +15608,7 @@ get_lsc_credentials_response_lsc_credential_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_notes">7.56
+<div><h3 id="command_get_notes">7.55
         Command <tt>get_notes</tt>
 </h3></div>
 <p>In short: Get all notes.</p>
@@ -15845,7 +15617,7 @@ get_lsc_credentials_response_lsc_credential_count_page
       If the command sent by the client was valid, the manager will
       reply with a list of notes to the client.
     </p>
-<h4>7.56.1 Structure</h4>
+<h4>7.55.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -16176,7 +15948,7 @@ get_lsc_credentials_response_lsc_credential_count_page
 </ul>
 </li>
 </ul>
-<h4>7.56.2 RNC</h4>
+<h4>7.55.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_notes
  = element get_notes
@@ -16550,7 +16322,7 @@ get_notes_response_note_result_description
      }
 </pre></div>
 </div>
-<h4>7.56.3 Example: Get all notes</h4>
+<h4>7.55.3 Example: Get all notes</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes/&gt;
 </pre></div>
@@ -16575,7 +16347,7 @@ get_notes_response_note_result_description
  &lt;/get_notes_response&gt;
 </pre></div>
 </div>
-<h4>7.56.3 Example: Get details of a single note and result to which it applies</h4>
+<h4>7.55.3 Example: Get details of a single note and result to which it applies</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_notes note_id="7f618bbb-4664-419e-9bbf-367d93954cb0"
             details="1"
@@ -16624,7 +16396,7 @@ get_notes_response_note_result_description
 </div>
 </div>
 <div>
-<div><h3 id="command_get_nvts">7.57
+<div><h3 id="command_get_nvts">7.56
         Command <tt>get_nvts</tt>
 </h3></div>
 <p>In short: Get all NVTs.</p>
@@ -16657,7 +16429,7 @@ get_notes_response_note_result_description
         NVT information.  If the manager cannot access a list of available
         NVTs at that time, it will reply with the 503 response.
       </p>
-<h4>7.57.1 Structure</h4>
+<h4>7.56.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -16918,7 +16690,7 @@ get_notes_response_note_result_description
 </ul>
 </li>
 </ul>
-<h4>7.57.2 RNC</h4>
+<h4>7.56.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_nvts
  = element get_nvts
@@ -17218,7 +16990,7 @@ get_nvts_response_nvt_preferences_preference_default
      }
 </pre></div>
 </div>
-<h4>7.57.3 Example: Get full NVT listing with details</h4>
+<h4>7.56.3 Example: Get full NVT listing with details</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts details="1"/&gt;
 </pre></div>
@@ -17281,7 +17053,7 @@ get_nvts_response_nvt_preferences_preference_default
  &lt;/get_nvts_response&gt;
 </pre></div>
 </div>
-<h4>7.57.3 Example: Get minimal information about one NVT</h4>
+<h4>7.56.3 Example: Get minimal information about one NVT</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvts nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre></div>
@@ -17302,7 +17074,7 @@ get_nvts_response_nvt_preferences_preference_default
 </div>
 </div>
 <div>
-<div><h3 id="command_get_nvt_families">7.58
+<div><h3 id="command_get_nvt_families">7.57
         Command <tt>get_nvt_families</tt>
 </h3></div>
 <p>In short: Get a list of all NVT families.</p>
@@ -17311,7 +17083,7 @@ get_nvts_response_nvt_preferences_preference_default
         information.  If the command sent by the client was valid, the
         manager will reply with a list of NVT families to the client.
       </p>
-<h4>7.58.1 Structure</h4>
+<h4>7.57.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -17350,7 +17122,7 @@ get_nvts_response_nvt_preferences_preference_default
 </ul>
 </li>
 </ul>
-<h4>7.58.2 RNC</h4>
+<h4>7.57.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_nvt_families
  = element get_nvt_families
@@ -17392,7 +17164,7 @@ get_nvt_families_response_families_family_max_nvt_count
      }
 </pre></div>
 </div>
-<h4>7.58.3 Example: Get the NVT families</h4>
+<h4>7.57.3 Example: Get the NVT families</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_families/&gt;
 </pre></div>
@@ -17414,7 +17186,7 @@ get_nvt_families_response_families_family_max_nvt_count
 </div>
 </div>
 <div>
-<div><h3 id="command_get_nvt_feed_version">7.59
+<div><h3 id="command_get_nvt_feed_version">7.58
         Command <tt>get_nvt_feed_version</tt>
 </h3></div>
 <p>In short: Get NVT Feed version.</p>
@@ -17429,7 +17201,7 @@ get_nvt_families_response_families_family_max_nvt_count
         manager cannot access a list of available NVTs at present, it will reply
         with the 503 response.
       </p>
-<h4>7.59.1 Structure</h4>
+<h4>7.58.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
@@ -17453,7 +17225,7 @@ get_nvt_families_response_families_family_max_nvt_count
 </ul>
 </li>
 </ul>
-<h4>7.59.2 RNC</h4>
+<h4>7.58.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_nvt_feed_version
  = element get_nvt_feed_version
@@ -17474,7 +17246,7 @@ get_nvt_feed_version_response_version
      }
 </pre></div>
 </div>
-<h4>7.59.3 Example: Get the NVT feed version</h4>
+<h4>7.58.3 Example: Get the NVT feed version</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_nvt_feed_version/&gt;
 </pre></div>
@@ -17486,7 +17258,7 @@ get_nvt_feed_version_response_version
 </div>
 </div>
 <div>
-<div><h3 id="command_get_overrides">7.60
+<div><h3 id="command_get_overrides">7.59
         Command <tt>get_overrides</tt>
 </h3></div>
 <p>In short: Get all overrides.</p>
@@ -17495,7 +17267,7 @@ get_nvt_feed_version_response_version
       If the command sent by the client was valid, the manager will
       reply with a list of overrides to the client.
     </p>
-<h4>7.60.1 Structure</h4>
+<h4>7.59.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -17844,7 +17616,7 @@ get_nvt_feed_version_response_version
 </ul>
 </li>
 </ul>
-<h4>7.60.2 RNC</h4>
+<h4>7.59.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_overrides
  = element get_overrides
@@ -18246,7 +18018,7 @@ get_overrides_response_override_result_description
      }
 </pre></div>
 </div>
-<h4>7.60.3 Example: Get all overrides</h4>
+<h4>7.59.3 Example: Get all overrides</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides/&gt;
 </pre></div>
@@ -18273,7 +18045,7 @@ get_overrides_response_override_result_description
  &lt;/get_overrides_response&gt;
 </pre></div>
 </div>
-<h4>7.60.3 Example: Get details of a single override</h4>
+<h4>7.59.3 Example: Get details of a single override</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_overrides override_id="7f618bbb-4664-419e-9bbf-367d93954cb0"
                 details="1"/&gt;
@@ -18311,14 +18083,14 @@ get_overrides_response_override_result_description
 </div>
 </div>
 <div>
-<div><h3 id="command_get_permissions">7.61
+<div><h3 id="command_get_permissions">7.60
         Command <tt>get_permissions</tt>
 </h3></div>
 <p>In short: Get all permissions.</p>
 <p>
       The client uses the get_permissions command to get permission information.
     </p>
-<h4>7.61.1 Structure</h4>
+<h4>7.60.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -18593,7 +18365,7 @@ get_overrides_response_override_result_description
 </ul>
 </li>
 </ul>
-<h4>7.61.2 RNC</h4>
+<h4>7.60.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_permissions
  = element get_permissions
@@ -18901,7 +18673,7 @@ get_permissions_response_permission_count_page
      }
 </pre></div>
 </div>
-<h4>7.61.3 Example: Get all permissions</h4>
+<h4>7.60.3 Example: Get all permissions</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_permissions/&gt;
 </pre></div>
@@ -18949,7 +18721,7 @@ get_permissions_response_permission_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_port_lists">7.62
+<div><h3 id="command_get_port_lists">7.61
         Command <tt>get_port_lists</tt>
 </h3></div>
 <p>In short: Get all port lists.</p>
@@ -18957,7 +18729,7 @@ get_permissions_response_permission_count_page
         The client uses the get_port_lists command to get port list
         information.
       </p>
-<h4>7.62.1 Structure</h4>
+<h4>7.61.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19254,7 +19026,7 @@ get_permissions_response_permission_count_page
 </ul>
 </li>
 </ul>
-<h4>7.62.2 RNC</h4>
+<h4>7.61.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_port_lists
  = element get_port_lists
@@ -19582,7 +19354,7 @@ get_port_lists_response_port_list_count_page
      }
 </pre></div>
 </div>
-<h4>7.62.3 Example: Export a port list</h4>
+<h4>7.61.3 Example: Export a port list</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_port_lists port_list_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
                  details="1"
@@ -19623,7 +19395,7 @@ get_port_lists_response_port_list_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_preferences">7.63
+<div><h3 id="command_get_preferences">7.62
         Command <tt>get_preferences</tt>
 </h3></div>
 <p>In short: Get all preferences.</p>
@@ -19639,7 +19411,7 @@ get_port_lists_response_port_list_count_page
         preference applies.  Otherwise, the preference element includes just the
         name and value, with the NVT and type built into the name.
       </p>
-<h4>7.63.1 Structure</h4>
+<h4>7.62.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -19712,7 +19484,7 @@ get_port_lists_response_port_list_count_page
 </ul>
 </li>
 </ul>
-<h4>7.63.2 RNC</h4>
+<h4>7.62.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_preferences
  = element get_preferences
@@ -19778,7 +19550,7 @@ get_preferences_response_preference_default
      }
 </pre></div>
 </div>
-<h4>7.63.3 Example: Get default preferences for all NVTs</h4>
+<h4>7.62.3 Example: Get default preferences for all NVTs</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences/&gt;
 </pre></div>
@@ -19792,7 +19564,7 @@ get_preferences_response_preference_default
  &lt;/get_preferences_response&gt;
 </pre></div>
 </div>
-<h4>7.63.3 Example: Get default preferences for a single NVT</h4>
+<h4>7.62.3 Example: Get default preferences for a single NVT</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
 </pre></div>
@@ -19807,7 +19579,7 @@ get_preferences_response_preference_default
  &lt;/get_preferences_response&gt;
 </pre></div>
 </div>
-<h4>7.63.3 Example: Get preferences from a config for all NVTs</h4>
+<h4>7.62.3 Example: Get preferences from a config for all NVTs</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea"/&gt;
 </pre></div>
@@ -19825,7 +19597,7 @@ get_preferences_response_preference_default
  &lt;/get_preferences_response&gt;
 </pre></div>
 </div>
-<h4>7.63.3 Example: Get preferences from a config for a single NVT</h4>
+<h4>7.62.3 Example: Get preferences from a config for a single NVT</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_preferences config_id="daba56c8-73ec-11df-a475-002264764cea"
                   nvt_oid="1.3.6.1.4.1.25623.1.0.10330"/&gt;
@@ -19845,7 +19617,7 @@ get_preferences_response_preference_default
 </div>
 </div>
 <div>
-<div><h3 id="command_get_reports">7.64
+<div><h3 id="command_get_reports">7.63
         Command <tt>get_reports</tt>
 </h3></div>
 <p>In short: Get all reports.</p>
@@ -19856,7 +19628,7 @@ get_preferences_response_preference_default
         The XML report format is sent as XML.  All other formats are sent in
         Base64 encoding.
       </p>
-<h4>7.64.1 Structure</h4>
+<h4>7.63.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -20102,7 +19874,7 @@ get_preferences_response_preference_default
 </ul>
 </li>
 </ul>
-<h4>7.64.2 RNC</h4>
+<h4>7.63.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_reports
  = element get_reports
@@ -20262,7 +20034,7 @@ get_reports_response_report_count_page
      }
 </pre></div>
 </div>
-<h4>7.64.3 Example: Get a report in PDF</h4>
+<h4>7.63.3 Example: Get a report in PDF</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports report_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
               format_id="1a60a67e-97d0-4cbf-bc77-f71b08e7043d"/&gt;
@@ -20276,7 +20048,7 @@ get_reports_response_report_count_page
  &lt;/get_reports_response&gt;
 </pre></div>
 </div>
-<h4>7.64.3 Example: Get a report in XML</h4>
+<h4>7.63.3 Example: Get a report in XML</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_reports report_id="f0fdf522-276d-4893-9274-fb8699dc2270"/&gt;
 </pre></div>
@@ -20391,7 +20163,7 @@ get_reports_response_report_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_report_formats">7.65
+<div><h3 id="command_get_report_formats">7.64
         Command <tt>get_report_formats</tt>
 </h3></div>
 <p>In short: Get all report formats.</p>
@@ -20399,7 +20171,7 @@ get_reports_response_report_count_page
         The client uses the get_report_formats command to get report format
         information.
       </p>
-<h4>7.65.1 Structure</h4>
+<h4>7.64.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -20755,7 +20527,7 @@ get_reports_response_report_count_page
 </ul>
 </li>
 </ul>
-<h4>7.65.2 RNC</h4>
+<h4>7.64.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_report_formats
  = element get_report_formats
@@ -21149,7 +20921,7 @@ get_report_formats_response_report_format_count_page
      }
 </pre></div>
 </div>
-<h4>7.65.3 Example: Get information about a report format</h4>
+<h4>7.64.3 Example: Get information about a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"/&gt;
 </pre></div>
@@ -21183,7 +20955,7 @@ get_report_formats_response_report_format_count_page
  &lt;/get_report_formats_response&gt;
 </pre></div>
 </div>
-<h4>7.65.3 Example: Export a report format</h4>
+<h4>7.64.3 Example: Export a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_report_formats report_format_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
                      details="1"/&gt;
@@ -21225,7 +20997,7 @@ get_report_formats_response_report_format_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_results">7.66
+<div><h3 id="command_get_results">7.65
         Command <tt>get_results</tt>
 </h3></div>
 <p>In short: Get results.</p>
@@ -21237,7 +21009,7 @@ get_report_formats_response_report_format_count_page
         apply_overrides flag and any of these is true, then the request
         must also include a task ID.
       </p>
-<h4>7.66.1 Structure</h4>
+<h4>7.65.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -21489,7 +21261,7 @@ get_report_formats_response_report_format_count_page
 </ul>
 </li>
 </ul>
-<h4>7.66.2 RNC</h4>
+<h4>7.65.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_results
  = element get_results
@@ -21739,7 +21511,7 @@ get_results_response_results_result_overrides
      }
 </pre></div>
 </div>
-<h4>7.66.3 Example: Get all results</h4>
+<h4>7.65.3 Example: Get all results</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results/&gt;
 </pre></div>
@@ -21770,7 +21542,7 @@ get_results_response_results_result_overrides
  &lt;/get_results_response&gt;
 </pre></div>
 </div>
-<h4>7.66.3 Example: Get a result, including notes and overrides</h4>
+<h4>7.65.3 Example: Get a result, including notes and overrides</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results result_id="cac9e7c8-c726-49fd-a710-5f99079ab93e"
               task_id="40b236a9-2b0f-4813-b8c7-bc2b98d9d7e4"
@@ -21817,14 +21589,14 @@ get_results_response_results_result_overrides
 </div>
 </div>
 <div>
-<div><h3 id="command_get_roles">7.67
+<div><h3 id="command_get_roles">7.66
         Command <tt>get_roles</tt>
 </h3></div>
 <p>In short: Get all roles.</p>
 <p>
       The client uses the get_roles command to get role information.
     </p>
-<h4>7.67.1 Structure</h4>
+<h4>7.66.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -22044,7 +21816,7 @@ get_results_response_results_result_overrides
 </ul>
 </li>
 </ul>
-<h4>7.67.2 RNC</h4>
+<h4>7.66.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_roles
  = element get_roles
@@ -22289,7 +22061,7 @@ get_roles_response_role_count_page
      }
 </pre></div>
 </div>
-<h4>7.67.3 Example: Get all roles</h4>
+<h4>7.66.3 Example: Get all roles</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_roles/&gt;
 </pre></div>
@@ -22337,14 +22109,14 @@ get_roles_response_role_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_schedules">7.68
+<div><h3 id="command_get_schedules">7.67
         Command <tt>get_schedules</tt>
 </h3></div>
 <p>In short: Get all schedules.</p>
 <p>
         The client uses the get_schedules command to get schedule information.
       </p>
-<h4>7.68.1 Structure</h4>
+<h4>7.67.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -22627,7 +22399,7 @@ get_roles_response_role_count_page
 </ul>
 </li>
 </ul>
-<h4>7.68.2 RNC</h4>
+<h4>7.67.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_schedules
  = element get_schedules
@@ -22956,7 +22728,7 @@ get_schedules_response_schedule_count_page
      }
 </pre></div>
 </div>
-<h4>7.68.3 Example: Get full details of a single schedule</h4>
+<h4>7.67.3 Example: Get full details of a single schedule</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_schedules schedule_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
 </pre></div>
@@ -22998,14 +22770,14 @@ get_schedules_response_schedule_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_settings">7.69
+<div><h3 id="command_get_settings">7.68
         Command <tt>get_settings</tt>
 </h3></div>
 <p>In short: Get all settings.</p>
 <p>
         The client uses the get_settings command to get the settings.
       </p>
-<h4>7.69.1 Structure</h4>
+<h4>7.68.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -23107,7 +22879,7 @@ get_schedules_response_schedule_count_page
 </ul>
 </li>
 </ul>
-<h4>7.69.2 RNC</h4>
+<h4>7.68.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_settings
  = element get_settings
@@ -23196,7 +22968,7 @@ get_settings_response_setting_count_page
      }
 </pre></div>
 </div>
-<h4>7.69.3 Example: Get all settings</h4>
+<h4>7.68.3 Example: Get all settings</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_settings/&gt;
 </pre></div>
@@ -23213,14 +22985,14 @@ get_settings_response_setting_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_slaves">7.70
+<div><h3 id="command_get_slaves">7.69
         Command <tt>get_slaves</tt>
 </h3></div>
 <p>In short: Get all slaves.</p>
 <p>
         The client uses the get_slaves command to get slave information.
       </p>
-<h4>7.70.1 Structure</h4>
+<h4>7.69.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -23470,7 +23242,7 @@ get_settings_response_setting_count_page
 </ul>
 </li>
 </ul>
-<h4>7.70.2 RNC</h4>
+<h4>7.69.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_slaves
  = element get_slaves
@@ -23750,7 +23522,7 @@ get_slaves_response_slave_count_page
      }
 </pre></div>
 </div>
-<h4>7.70.3 Example: Get all slaves, including task lists</h4>
+<h4>7.69.3 Example: Get all slaves, including task lists</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_slaves tasks="1"/&gt;
 </pre></div>
@@ -23781,14 +23553,14 @@ get_slaves_response_slave_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_system_reports">7.71
+<div><h3 id="command_get_system_reports">7.70
         Command <tt>get_system_reports</tt>
 </h3></div>
 <p>In short: Get all system reports.</p>
 <p>
         The client uses the get_system_reports command to get system reports.
       </p>
-<h4>7.71.1 Structure</h4>
+<h4>7.70.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -23855,7 +23627,7 @@ get_slaves_response_slave_count_page
 </ul>
 </li>
 </ul>
-<h4>7.71.2 RNC</h4>
+<h4>7.70.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_system_reports
  = element get_system_reports
@@ -23903,7 +23675,7 @@ get_system_reports_response_system_report_report
      }
 </pre></div>
 </div>
-<h4>7.71.3 Example: Get listing of available system reports</h4>
+<h4>7.70.3 Example: Get listing of available system reports</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports brief="1"/&gt;
 </pre></div>
@@ -23925,7 +23697,7 @@ get_system_reports_response_system_report_report
  &lt;/get_system_reports_response&gt;
 </pre></div>
 </div>
-<h4>7.71.3 Example: Get a system report</h4>
+<h4>7.70.3 Example: Get a system report</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_system_reports name="proc"/&gt;
 </pre></div>
@@ -23944,14 +23716,14 @@ get_system_reports_response_system_report_report
 </div>
 </div>
 <div>
-<div><h3 id="command_get_tags">7.72
+<div><h3 id="command_get_tags">7.71
         Command <tt>get_tags</tt>
 </h3></div>
 <p>In short: Get all tags.</p>
 <p>
         The client uses the get_tags command to get tag information.
       </p>
-<h4>7.72.1 Structure</h4>
+<h4>7.71.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -24169,7 +23941,7 @@ get_system_reports_response_system_report_report
 </ul>
 </li>
 </ul>
-<h4>7.72.2 RNC</h4>
+<h4>7.71.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_tags
  = element get_tags
@@ -24397,7 +24169,7 @@ get_tags_response_tag_count_page
      }
 </pre></div>
 </div>
-<h4>7.72.3 Example: Get all tags</h4>
+<h4>7.71.3 Example: Get all tags</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_tags/&gt;
 </pre></div>
@@ -24425,14 +24197,14 @@ get_tags_response_tag_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_target_locators">7.73
+<div><h3 id="command_get_target_locators">7.72
         Command <tt>get_target_locators</tt>
 </h3></div>
 <p>In short: Get configured target locators.</p>
 <p>
         The client uses the get_target_locators command to get target locators.
       </p>
-<h4>7.73.1 Structure</h4>
+<h4>7.72.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
@@ -24458,7 +24230,7 @@ get_tags_response_tag_count_page
 </ul>
 </li>
 </ul>
-<h4>7.73.2 RNC</h4>
+<h4>7.72.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_target_locators
  = element get_target_locators
@@ -24487,7 +24259,7 @@ get_target_locators_response_target_locator_name
      }
 </pre></div>
 </div>
-<h4>7.73.3 Example: Get target locators</h4>
+<h4>7.72.3 Example: Get target locators</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_target_locators/&gt;
 </pre></div>
@@ -24502,14 +24274,14 @@ get_target_locators_response_target_locator_name
 </div>
 </div>
 <div>
-<div><h3 id="command_get_targets">7.74
+<div><h3 id="command_get_targets">7.73
         Command <tt>get_targets</tt>
 </h3></div>
 <p>In short: Get all targets.</p>
 <p>
       The client uses the get_targets command to get target information.
     </p>
-<h4>7.74.1 Structure</h4>
+<h4>7.73.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -24851,7 +24623,7 @@ get_target_locators_response_target_locator_name
 </ul>
 </li>
 </ul>
-<h4>7.74.2 RNC</h4>
+<h4>7.73.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_targets
  = element get_targets
@@ -25223,7 +24995,7 @@ get_targets_response_target_count_page
      }
 </pre></div>
 </div>
-<h4>7.74.3 Example: Get all targets</h4>
+<h4>7.73.3 Example: Get all targets</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_targets/&gt;
 </pre></div>
@@ -25252,7 +25024,7 @@ get_targets_response_target_count_page
  &lt;/get_targets_response&gt;
 </pre></div>
 </div>
-<h4>7.74.3 Example: Get a single target, including tasks using the target</h4>
+<h4>7.73.3 Example: Get a single target, including tasks using the target</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_targets target_id="1f28d970-17ef-4c69-ba8a-13827059f2b9"
               tasks="1"/&gt;
@@ -25289,7 +25061,7 @@ get_targets_response_target_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_tasks">7.75
+<div><h3 id="command_get_tasks">7.74
         Command <tt>get_tasks</tt>
 </h3></div>
 <p>In short: Get all tasks.</p>
@@ -25301,7 +25073,7 @@ get_targets_response_target_count_page
         the values of the sort order, sort field and apply overrides flag
         that the manager applied when selecting the tasks.
       </p>
-<h4>7.75.1 Structure</h4>
+<h4>7.74.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -25329,6 +25101,11 @@ get_targets_response_target_count_page
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include full task details.
+          </li>
+<li>
+          @<b>rcfile</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include task RC file (for openvas-client).
           </li>
 <li>
           @<b>apply_overrides</b>
@@ -25775,6 +25552,10 @@ get_targets_response_target_count_page
 </li></ul>
 </li>
 <li>
+              &lt;<b>rcfile</b>&gt;
+              ?<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>reports</b>&gt;
               *<ul style="list-style: none"><li>
               &lt;<b>report</b>&gt;
@@ -25932,7 +25713,7 @@ get_targets_response_target_count_page
 </ul>
 </li>
 </ul>
-<h4>7.75.2 RNC</h4>
+<h4>7.74.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_tasks
  = element get_tasks
@@ -25942,6 +25723,7 @@ get_targets_response_target_count_page
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
+       &amp; attribute rcfile { boolean }?
        &amp; attribute apply_overrides { boolean }?
      }
 </pre></div>
@@ -25992,6 +25774,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_first_report?
        &amp; get_tasks_response_task_last_report?
        &amp; get_tasks_response_task_second_last_report?
+       &amp; get_tasks_response_task_rcfile?
        &amp; get_tasks_response_task_reports*
        &amp; get_tasks_response_task_preferences
      }
@@ -26507,6 +26290,12 @@ get_tasks_response_task_second_last_report_report_severity
        severity
      }
 
+get_tasks_response_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
 get_tasks_response_task_reports
  = element reports
      {
@@ -26707,7 +26496,7 @@ get_tasks_response_task_count_page
      }
 </pre></div>
 </div>
-<h4>7.75.3 Example: Get all tasks</h4>
+<h4>7.74.3 Example: Get all tasks</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_tasks/&gt;
 </pre></div>
@@ -26816,7 +26605,7 @@ get_tasks_response_task_count_page
  &lt;/get_tasks_response&gt;
 </pre></div>
 </div>
-<h4>7.75.3 Example: Get a single task, including all reports</h4>
+<h4>7.74.3 Example: Get a single task, including all reports</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_tasks task_id="f14747d3-a4d7-4e79-99bb-a0a1276cb78c"
             details="1"/&gt;
@@ -26965,7 +26754,7 @@ get_tasks_response_task_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_users">7.76
+<div><h3 id="command_get_users">7.75
         Command <tt>get_users</tt>
 </h3></div>
 <p>In short: Get all users.</p>
@@ -26973,7 +26762,7 @@ get_tasks_response_task_count_page
         The client uses the "get_users" command to retrieve the list of user
         accounts on the Scanner.
       </p>
-<h4>7.76.1 Structure</h4>
+<h4>7.75.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -27237,7 +27026,7 @@ get_tasks_response_task_count_page
 </ul>
 </li>
 </ul>
-<h4>7.76.2 RNC</h4>
+<h4>7.75.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_users
  = element get_users
@@ -27523,7 +27312,7 @@ get_users_response_user_count_page
      }
 </pre></div>
 </div>
-<h4>7.76.3 Example: Get the users</h4>
+<h4>7.75.3 Example: Get the users</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_users/&gt;
 </pre></div>
@@ -27547,11 +27336,11 @@ get_users_response_user_count_page
 </div>
 </div>
 <div>
-<div><h3 id="command_get_version">7.77
+<div><h3 id="command_get_version">7.76
         Command <tt>get_version</tt>
 </h3></div>
 <p>In short: Get the OpenVAS Manager Protocol version.</p>
-<h4>7.77.1 Structure</h4>
+<h4>7.76.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
@@ -27573,7 +27362,7 @@ get_users_response_user_count_page
 </ul>
 </li>
 </ul>
-<h4>7.77.2 RNC</h4>
+<h4>7.76.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>get_version
  = element get_version
@@ -27596,7 +27385,7 @@ get_version_response_version
      }
 </pre></div>
 </div>
-<h4>7.77.3 Example: Get the version</h4>
+<h4>7.76.3 Example: Get the version</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_version/&gt;
 </pre></div>
@@ -27608,11 +27397,11 @@ get_version_response_version
 </div>
 </div>
 <div>
-<div><h3 id="command_help">7.78
+<div><h3 id="command_help">7.77
         Command <tt>help</tt>
 </h3></div>
 <p>In short: Get the help text.</p>
-<h4>7.78.1 Structure</h4>
+<h4>7.77.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -27698,7 +27487,7 @@ get_version_response_version
 </ul>
 </li>
 </ul>
-<h4>7.78.2 RNC</h4>
+<h4>7.77.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>help
  = element help
@@ -27810,7 +27599,7 @@ help_response_schema_protocol_command
      }
 </pre></div>
 </div>
-<h4>7.78.3 Example: Get the help text</h4>
+<h4>7.77.3 Example: Get the help text</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;help/&gt;
 </pre></div>
@@ -27931,7 +27720,7 @@ help_response_schema_protocol_command
  &lt;/help_response&gt;
 </pre></div>
 </div>
-<h4>7.78.3 Example: Get the OMP schema</h4>
+<h4>7.77.3 Example: Get the OMP schema</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;help format="XML"/&gt;
 </pre></div>
@@ -28029,14 +27818,14 @@ help_response_schema_protocol_command
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_agent">7.79
+<div><h3 id="command_modify_agent">7.78
         Command <tt>modify_agent</tt>
 </h3></div>
 <p>In short: Modify an existing agent.</p>
 <p>
         The client uses the modify_agent command to change an existing agent.
       </p>
-<h4>7.79.1 Structure</h4>
+<h4>7.78.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28070,7 +27859,7 @@ help_response_schema_protocol_command
 </ul>
 </li>
 </ul>
-<h4>7.79.2 RNC</h4>
+<h4>7.78.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_agent
  = element modify_agent
@@ -28100,7 +27889,7 @@ modify_agent_name
      }
 </pre></div>
 </div>
-<h4>7.79.3 Example: Modify the comment on an agent</h4>
+<h4>7.78.3 Example: Modify the comment on an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_agent agent_id="c737f787-9473-410d-8956-9d7b57bdd11f"&gt;
    &lt;comment&gt;Old Agent 1&lt;/comment&gt;
@@ -28112,14 +27901,14 @@ modify_agent_name
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_alert">7.80
+<div><h3 id="command_modify_alert">7.79
         Command <tt>modify_alert</tt>
 </h3></div>
 <p>In short: Modify an existing alert.</p>
 <p>
         The client uses the modify_alert command to change an existing alert.
       </p>
-<h4>7.80.1 Structure</h4>
+<h4>7.79.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28200,7 +27989,7 @@ modify_agent_name
 </ul>
 </li>
 </ul>
-<h4>7.80.2 RNC</h4>
+<h4>7.79.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_alert
  = element modify_alert
@@ -28300,7 +28089,7 @@ modify_alert_filter
      }
 </pre></div>
 </div>
-<h4>7.80.3 Example: Modify the name and report filter of an alert and the condition that triggers it</h4>
+<h4>7.79.3 Example: Modify the name and report filter of an alert and the condition that triggers it</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_alert alert_id="914b59f8-25f5-4c8f-832c-2379cd625236"&gt;
    &lt;name&gt;Low Level Alert 2&lt;/name&gt;
@@ -28320,7 +28109,7 @@ modify_alert_filter
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_auth">7.81
+<div><h3 id="command_modify_auth">7.80
         Command <tt>modify_auth</tt>
 </h3></div>
 <p>In short: Modify the authentication methods.</p>
@@ -28328,7 +28117,7 @@ modify_alert_filter
         The client uses the "modify_auth" command to modify the authentication
         methods.
       </p>
-<h4>7.81.1 Structure</h4>
+<h4>7.80.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -28362,7 +28151,7 @@ modify_alert_filter
 </ul>
 </li>
 </ul>
-<h4>7.81.2 RNC</h4>
+<h4>7.80.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_auth
  = element modify_auth
@@ -28391,7 +28180,7 @@ modify_auth_group_auth_conf_setting
      }
 </pre></div>
 </div>
-<h4>7.81.3 Example: Modify a single setting for an authentication method</h4>
+<h4>7.80.3 Example: Modify a single setting for an authentication method</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_auth&gt;
    &lt;group name="Foo"&gt;
@@ -28406,7 +28195,7 @@ modify_auth_group_auth_conf_setting
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_config">7.82
+<div><h3 id="command_modify_config">7.81
         Command <tt>modify_config</tt>
 </h3></div>
 <p>In short: Modify an existing config.</p>
@@ -28457,7 +28246,7 @@ modify_auth_group_auth_conf_setting
         apply the changes to the config and will reply with a response code indicating
         success.
       </p>
-<h4>7.82.1 Structure</h4>
+<h4>7.81.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28564,7 +28353,7 @@ modify_auth_group_auth_conf_setting
 </ul>
 </li>
 </ul>
-<h4>7.82.2 RNC</h4>
+<h4>7.81.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_config
  = element modify_config
@@ -28681,7 +28470,7 @@ modify_config_nvt_selection_nvt
      }
 </pre></div>
 </div>
-<h4>7.82.3 Example: Modify a config NVT preference</h4>
+<h4>7.81.3 Example: Modify a config NVT preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
@@ -28695,7 +28484,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.82.3 Example: Modify a config Scanner preference</h4>
+<h4>7.81.3 Example: Modify a config Scanner preference</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;preference&gt;
@@ -28708,7 +28497,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.82.3 Example: Modify the families that a config selects</h4>
+<h4>7.81.3 Example: Modify the families that a config selects</h4>
 <p>
           The outer "growing" element sets the config to add any new families
           that arrive.
@@ -28735,7 +28524,7 @@ modify_config_nvt_selection_nvt
                          status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.82.3 Example: Modify the NVTs that a config selects in a particular family</h4>
+<h4>7.81.3 Example: Modify the NVTs that a config selects in a particular family</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_config config_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;nvt_selection&gt;
@@ -28753,14 +28542,14 @@ modify_config_nvt_selection_nvt
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_filter">7.83
+<div><h3 id="command_modify_filter">7.82
         Command <tt>modify_filter</tt>
 </h3></div>
 <p>In short: Modify an existing filter.</p>
 <p>
         The client uses the modify_filter command to change an existing filter.
       </p>
-<h4>7.83.1 Structure</h4>
+<h4>7.82.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28804,7 +28593,7 @@ modify_config_nvt_selection_nvt
 </ul>
 </li>
 </ul>
-<h4>7.83.2 RNC</h4>
+<h4>7.82.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_filter
  = element modify_filter
@@ -28848,7 +28637,7 @@ modify_filter_type
      }
 </pre></div>
 </div>
-<h4>7.83.3 Example: Modify the term of a filter</h4>
+<h4>7.82.3 Example: Modify the term of a filter</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_filter filter_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;term&gt;name=local&lt;/term&gt;
@@ -28860,14 +28649,14 @@ modify_filter_type
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_group">7.84
+<div><h3 id="command_modify_group">7.83
         Command <tt>modify_group</tt>
 </h3></div>
 <p>In short: Modify an existing group.</p>
 <p>
         The client uses the modify_group command to change an existing group.
       </p>
-<h4>7.84.1 Structure</h4>
+<h4>7.83.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28895,7 +28684,7 @@ modify_filter_type
 </li>
 <li style="margin-top: 15px;"><i>Response</i></li>
 </ul>
-<h4>7.84.2 RNC</h4>
+<h4>7.83.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_group
  = element modify_group
@@ -28930,7 +28719,7 @@ modify_group_users
      }
 </pre></div>
 </div>
-<h4>7.84.3 Example: Modify the name of a group</h4>
+<h4>7.83.3 Example: Modify the name of a group</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_group group_id="d94211b6-ba40-11e3-bcb1-406186ea4fc5"&gt;
    &lt;name&gt;Line Managers&lt;/name&gt;
@@ -28942,7 +28731,7 @@ modify_group_users
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_lsc_credential">7.85
+<div><h3 id="command_modify_lsc_credential">7.84
         Command <tt>modify_lsc_credential</tt>
 </h3></div>
 <p>In short: Modify an existing LSC credential.</p>
@@ -28954,7 +28743,7 @@ modify_group_users
         The login and password can only be changed for password LSC credentials.
         Modification of login or password on package credentials is forbidden.
       </p>
-<h4>7.85.1 Structure</h4>
+<h4>7.84.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -28998,7 +28787,7 @@ modify_group_users
 </ul>
 </li>
 </ul>
-<h4>7.85.2 RNC</h4>
+<h4>7.84.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_lsc_credential
  = element modify_lsc_credential
@@ -29042,7 +28831,7 @@ modify_lsc_credential_password
      }
 </pre></div>
 </div>
-<h4>7.85.3 Example: Modify the comment of an LSC credential</h4>
+<h4>7.84.3 Example: Modify the comment of an LSC credential</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_lsc_credential lsc_credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Credential for all machines in lab 4.&lt;/comment&gt;
@@ -29054,7 +28843,7 @@ modify_lsc_credential_password
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_note">7.86
+<div><h3 id="command_modify_note">7.85
         Command <tt>modify_note</tt>
 </h3></div>
 <p>In short: Modify an existing note.</p>
@@ -29065,7 +28854,7 @@ modify_lsc_credential_password
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>7.86.1 Structure</h4>
+<h4>7.85.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29135,7 +28924,7 @@ modify_lsc_credential_password
 </ul>
 </li>
 </ul>
-<h4>7.86.2 RNC</h4>
+<h4>7.85.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_note
  = element modify_note
@@ -29207,7 +28996,7 @@ modify_note_result
      }
 </pre></div>
 </div>
-<h4>7.86.3 Example: Modify the text and result of a note</h4>
+<h4>7.85.3 Example: Modify the text and result of a note</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_note note_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue should be resolved after the upgrade.&lt;/text&gt;
@@ -29220,7 +29009,7 @@ modify_note_result
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_override">7.87
+<div><h3 id="command_modify_override">7.86
         Command <tt>modify_override</tt>
 </h3></div>
 <p>In short: Modify an existing override.</p>
@@ -29232,7 +29021,7 @@ modify_note_result
         If an optional element is left out, the existing value will be
         cleared, generalising that constraint.
       </p>
-<h4>7.87.1 Structure</h4>
+<h4>7.86.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29312,7 +29101,7 @@ modify_note_result
 </ul>
 </li>
 </ul>
-<h4>7.87.2 RNC</h4>
+<h4>7.86.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_override
  = element modify_override
@@ -29398,7 +29187,7 @@ modify_override_result
      }
 </pre></div>
 </div>
-<h4>7.87.3 Example: Set the override threat to Low</h4>
+<h4>7.86.3 Example: Set the override threat to Low</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_override override_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;text&gt;This issue is less important in our setup.&lt;/text&gt;
@@ -29411,14 +29200,14 @@ modify_override_result
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_permission">7.88
+<div><h3 id="command_modify_permission">7.87
         Command <tt>modify_permission</tt>
 </h3></div>
 <p>In short: Modify a permission.</p>
 <p>
         The client uses the modify_permission command to change an existing permission.
       </p>
-<h4>7.88.1 Structure</h4>
+<h4>7.87.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29475,7 +29264,7 @@ modify_override_result
 </ul>
 </li>
 </ul>
-<h4>7.88.2 RNC</h4>
+<h4>7.87.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_permission
  = element modify_permission
@@ -29526,7 +29315,7 @@ modify_permission_subject_type
      }
 </pre></div>
 </div>
-<h4>7.88.3 Example: Change user of a permission</h4>
+<h4>7.87.3 Example: Change user of a permission</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_permission permission_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;subject id="76e47468-c095-11e3-9285-406186ea4fc5"&gt;
@@ -29540,14 +29329,14 @@ modify_permission_subject_type
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_port_list">7.89
+<div><h3 id="command_modify_port_list">7.88
         Command <tt>modify_port_list</tt>
 </h3></div>
 <p>In short: Modify an existing port list.</p>
 <p>
         The client uses the modify_port_list command to change an existing port list.
       </p>
-<h4>7.89.1 Structure</h4>
+<h4>7.88.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29581,7 +29370,7 @@ modify_permission_subject_type
 </ul>
 </li>
 </ul>
-<h4>7.89.2 RNC</h4>
+<h4>7.88.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_port_list
  = element modify_port_list
@@ -29611,7 +29400,7 @@ modify_port_list_comment
      }
 </pre></div>
 </div>
-<h4>7.89.3 Example: Modify the name of a port list</h4>
+<h4>7.88.3 Example: Modify the name of a port list</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_port_list port_list_id="27140836-05ae-4e8b-9abf-f725ddc2888f"&gt;
    &lt;name&gt;PL-WS1&lt;/name&gt;
@@ -29624,7 +29413,7 @@ modify_port_list_comment
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_report">7.90
+<div><h3 id="command_modify_report">7.89
         Command <tt>modify_report</tt>
 </h3></div>
 <p>In short: Modify an existing report.</p>
@@ -29632,7 +29421,7 @@ modify_port_list_comment
         The client uses the modify_report command to change an existing
         report.
       </p>
-<h4>7.90.1 Structure</h4>
+<h4>7.89.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29661,7 +29450,7 @@ modify_port_list_comment
 </ul>
 </li>
 </ul>
-<h4>7.90.2 RNC</h4>
+<h4>7.89.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_report
  = element modify_report
@@ -29684,7 +29473,7 @@ modify_report_comment
      }
 </pre></div>
 </div>
-<h4>7.90.3 Example: Modify a report comment</h4>
+<h4>7.89.3 Example: Modify a report comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report report_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
@@ -29696,7 +29485,7 @@ modify_report_comment
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_report_format">7.91
+<div><h3 id="command_modify_report_format">7.90
         Command <tt>modify_report_format</tt>
 </h3></div>
 <p>In short: Update an existing report format.</p>
@@ -29704,7 +29493,7 @@ modify_report_comment
         The client uses the modify_report_format command to change an existing
         report format.
       </p>
-<h4>7.91.1 Structure</h4>
+<h4>7.90.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29762,7 +29551,7 @@ modify_report_comment
 </ul>
 </li>
 </ul>
-<h4>7.91.2 RNC</h4>
+<h4>7.90.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_report_format
  = element modify_report_format
@@ -29819,7 +29608,7 @@ modify_report_format_param_value
      }
 </pre></div>
 </div>
-<h4>7.91.3 Example: Modify a report format param</h4>
+<h4>7.90.3 Example: Modify a report format param</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;param&gt;
@@ -29832,7 +29621,7 @@ modify_report_format_param_value
                                 status_text="OK"/&gt;
 </pre></div>
 </div>
-<h4>7.91.3 Example: Modify the name of a report format</h4>
+<h4>7.90.3 Example: Modify the name of a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_report_format report_format_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;New name&lt;/name&gt;
@@ -29844,14 +29633,14 @@ modify_report_format_param_value
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_role">7.92
+<div><h3 id="command_modify_role">7.91
         Command <tt>modify_role</tt>
 </h3></div>
 <p>In short: Modify an existing role.</p>
 <p>
         The client uses the modify_role command to change an existing role.
       </p>
-<h4>7.92.1 Structure</h4>
+<h4>7.91.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -29879,7 +29668,7 @@ modify_report_format_param_value
 </li>
 <li style="margin-top: 15px;"><i>Response</i></li>
 </ul>
-<h4>7.92.2 RNC</h4>
+<h4>7.91.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_role
  = element modify_role
@@ -29914,7 +29703,7 @@ modify_role_users
      }
 </pre></div>
 </div>
-<h4>7.92.3 Example: Modify the name of a role</h4>
+<h4>7.91.3 Example: Modify the name of a role</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_role role_id="914b59f8-25f5-4c8f-832c-2379cd625236"&gt;
    &lt;name&gt;SCAP User&lt;/name&gt;
@@ -29926,14 +29715,14 @@ modify_role_users
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_schedule">7.93
+<div><h3 id="command_modify_schedule">7.92
         Command <tt>modify_schedule</tt>
 </h3></div>
 <p>In short: Modify an existing schedule.</p>
 <p>
         The client uses the modify_schedule command to change an existing schedule.
       </p>
-<h4>7.93.1 Structure</h4>
+<h4>7.92.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30014,7 +29803,7 @@ modify_role_users
 </ul>
 </li>
 </ul>
-<h4>7.93.2 RNC</h4>
+<h4>7.92.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_schedule
  = element modify_schedule
@@ -30120,7 +29909,7 @@ modify_schedule_period_unit
      }
 </pre></div>
 </div>
-<h4>7.93.3 Example: Modify the name of a schedule</h4>
+<h4>7.92.3 Example: Modify the name of a schedule</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_schedule schedule_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;Weekly Scan&lt;/name&gt;
@@ -30132,7 +29921,7 @@ modify_schedule_period_unit
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_setting">7.94
+<div><h3 id="command_modify_setting">7.93
         Command <tt>modify_setting</tt>
 </h3></div>
 <p>In short: Modify an existing setting.</p>
@@ -30142,7 +29931,7 @@ modify_schedule_period_unit
         The settings "Password" and "Timezone" can be modified by name, the
         rest by UUID.
       </p>
-<h4>7.94.1 Structure</h4>
+<h4>7.93.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30175,7 +29964,7 @@ modify_schedule_period_unit
 </ul>
 </li>
 </ul>
-<h4>7.94.2 RNC</h4>
+<h4>7.93.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_setting
  = element modify_setting
@@ -30205,7 +29994,7 @@ modify_setting_value
      }
 </pre></div>
 </div>
-<h4>7.94.3 Example: Modify the timezone</h4>
+<h4>7.93.3 Example: Modify the timezone</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_setting&gt;
    &lt;name&gt;Timezone&lt;/name&gt;
@@ -30218,14 +30007,14 @@ modify_setting_value
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_slave">7.95
+<div><h3 id="command_modify_slave">7.94
         Command <tt>modify_slave</tt>
 </h3></div>
 <p>In short: Modify an existing slave.</p>
 <p>
         The client uses the modify_slave command to change an existing slave.
       </p>
-<h4>7.95.1 Structure</h4>
+<h4>7.94.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30279,7 +30068,7 @@ modify_setting_value
 </ul>
 </li>
 </ul>
-<h4>7.95.2 RNC</h4>
+<h4>7.94.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_slave
  = element modify_slave
@@ -30337,7 +30126,7 @@ modify_slave_password
      }
 </pre></div>
 </div>
-<h4>7.95.3 Example: Update slave information</h4>
+<h4>7.94.3 Example: Update slave information</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_slave slave_id="f1e4dd0c-155c-4ac1-b43b-8d40a1b99dd0"&gt;
    &lt;name&gt;BK-1&lt;/name&gt;
@@ -30354,14 +30143,14 @@ modify_slave_password
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_target">7.96
+<div><h3 id="command_modify_target">7.95
         Command <tt>modify_target</tt>
 </h3></div>
 <p>In short: Modify an existing target.</p>
 <p>
         The client uses the modify_target command to change an existing target.
       </p>
-<h4>7.96.1 Structure</h4>
+<h4>7.95.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30452,7 +30241,7 @@ modify_slave_password
 </ul>
 </li>
 </ul>
-<h4>7.96.2 RNC</h4>
+<h4>7.95.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_target
  = element modify_target
@@ -30551,7 +30340,7 @@ modify_target_reverse_lookup_unify
      }
 </pre></div>
 </div>
-<h4>7.96.3 Example: Modify the name of a target</h4>
+<h4>7.95.3 Example: Modify the name of a target</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_target target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;name&gt;Upstairs Lab&lt;/name&gt;
@@ -30563,14 +30352,14 @@ modify_target_reverse_lookup_unify
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_tag">7.97
+<div><h3 id="command_modify_tag">7.96
         Command <tt>modify_tag</tt>
 </h3></div>
 <p>In short: Modify a tag.</p>
 <p>
         The client uses the modify_tag command to change an existing tag.
       </p>
-<h4>7.97.1 Structure</h4>
+<h4>7.96.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30629,7 +30418,7 @@ modify_target_reverse_lookup_unify
 </ul>
 </li>
 </ul>
-<h4>7.97.2 RNC</h4>
+<h4>7.96.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_tag
  = element modify_tag
@@ -30687,7 +30476,7 @@ modify_tag_active
      }
 </pre></div>
 </div>
-<h4>7.97.3 Example: Deactivate a tag</h4>
+<h4>7.96.3 Example: Deactivate a tag</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_tag tag_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;active&gt;0&lt;/active&gt;
@@ -30699,7 +30488,7 @@ modify_tag_active
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_task">7.98
+<div><h3 id="command_modify_task">7.97
         Command <tt>modify_task</tt>
 </h3></div>
 <p>In short: Modify an existing task.</p>
@@ -30707,7 +30496,7 @@ modify_tag_active
         The client uses the modify_task command to change an existing
         task.
       </p>
-<h4>7.98.1 Structure</h4>
+<h4>7.97.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30759,6 +30548,11 @@ modify_tag_active
 </li></ul>
 </li>
 <li>
+              &lt;<b>rcfile</b>&gt;
+              <div style="margin-left: 15px; display: inline;">An openvasrc style file describing the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>schedule</b>&gt;
               <div style="margin-left: 15px; display: inline;">Task schedule.</div>
 <ul style="list-style: none"><li>
@@ -30805,7 +30599,7 @@ modify_tag_active
 </ul>
 </li>
 </ul>
-<h4>7.98.2 RNC</h4>
+<h4>7.97.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_task
  = element modify_task
@@ -30816,6 +30610,7 @@ modify_tag_active
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
+           | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
            | modify_task_file )
@@ -30870,6 +30665,12 @@ modify_task_preferences_preference_value
        text
      }
 
+modify_task_rcfile
+ = element rcfile
+     {
+       base64
+     }
+
 modify_task_schedule
  = element schedule
      {
@@ -30898,7 +30699,7 @@ modify_task_file
      }
 </pre></div>
 </div>
-<h4>7.98.3 Example: Modify a task comment</h4>
+<h4>7.97.3 Example: Modify a task comment</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_task task_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"&gt;
    &lt;comment&gt;Monthly scan of the webserver.&lt;/comment&gt;
@@ -30910,7 +30711,7 @@ modify_task_file
 </div>
 </div>
 <div>
-<div><h3 id="command_modify_user">7.99
+<div><h3 id="command_modify_user">7.98
         Command <tt>modify_user</tt>
 </h3></div>
 <p>In short: Modify a user.</p>
@@ -30918,7 +30719,7 @@ modify_task_file
         The client uses the "modify_user" command to modify an user account
         on the OpenVAS server.
       </p>
-<h4>7.99.1 Structure</h4>
+<h4>7.98.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -30969,7 +30770,7 @@ modify_task_file
 </ul>
 </li>
 </ul>
-<h4>7.99.2 RNC</h4>
+<h4>7.98.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>modify_user
  = element modify_user
@@ -31019,7 +30820,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.99.3 Example: Modify a user</h4>
+<h4>7.98.3 Example: Modify a user</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;modify_user&gt;
    &lt;name&gt;Foobar&lt;/name&gt;
@@ -31034,14 +30835,14 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_pause_task">7.100
+<div><h3 id="command_pause_task">7.99
         Command <tt>pause_task</tt>
 </h3></div>
 <p>In short: Pause a running task.</p>
 <p>
         The client uses the pause_task command to manually pause a running task.
       </p>
-<h4>7.100.1 Structure</h4>
+<h4>7.99.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -31062,7 +30863,7 @@ modify_user_sources
 </ul>
 </li>
 </ul>
-<h4>7.100.2 RNC</h4>
+<h4>7.99.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>pause_task
  = element pause_task
@@ -31078,7 +30879,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.100.3 Example: Pause a running task</h4>
+<h4>7.99.3 Example: Pause a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -31088,14 +30889,14 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_restore">7.101
+<div><h3 id="command_restore">7.100
         Command <tt>restore</tt>
 </h3></div>
 <p>In short: Restore a resource.</p>
 <p>
         The client uses the restore a resource from the trashcan.
       </p>
-<h4>7.101.1 Structure</h4>
+<h4>7.100.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -31116,7 +30917,7 @@ modify_user_sources
 </ul>
 </li>
 </ul>
-<h4>7.101.2 RNC</h4>
+<h4>7.100.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>restore
  = element restore
@@ -31132,7 +30933,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.101.3 Example: Restore a target</h4>
+<h4>7.100.3 Example: Restore a target</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -31142,7 +30943,7 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_resume_or_start_task">7.102
+<div><h3 id="command_resume_or_start_task">7.101
         Command <tt>resume_or_start_task</tt>
 </h3></div>
 <p>In short: Resume task if stopped, else start task.</p>
@@ -31150,6 +30951,61 @@ modify_user_sources
         The client uses the resume_or_start_task command to manually start
         an existing task, ensuring that the task will resume from its
         previous position if the task is in the Stopped state.
+      </p>
+<h4>7.101.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.101.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.101.3 Example: Resume a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
+                                status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_paused_task">7.102
+        Command <tt>resume_paused_task</tt>
+</h3></div>
+<p>In short: Resume a paused task.</p>
+<p>
+        The client uses the resume_paused_task command to manually resume a
+        paused task.
       </p>
 <h4>7.102.1 Structure</h4>
 <ul style="list-style: none">
@@ -31174,37 +31030,37 @@ modify_user_sources
 </ul>
 <h4>7.102.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
- = element resume_or_start_task
+<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
+ = element resume_paused_task
      {
        attribute task_id { uuid }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
- = element resume_or_start_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
+ = element resume_paused_task_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.102.3 Example: Resume a running task</h4>
+<h4>7.102.3 Example: Resume a paused task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
-                                status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
+                              status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_resume_paused_task">7.103
-        Command <tt>resume_paused_task</tt>
+<div><h3 id="command_resume_stopped_task">7.103
+        Command <tt>resume_stopped_task</tt>
 </h3></div>
-<p>In short: Resume a paused task.</p>
+<p>In short: Resume a stopped task.</p>
 <p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
       </p>
 <h4>7.103.1 Structure</h4>
 <ul style="list-style: none">
@@ -31229,61 +31085,6 @@ modify_user_sources
 </ul>
 <h4>7.103.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
- = element resume_paused_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
- = element resume_paused_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.103.3 Example: Resume a paused task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
-                              status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_stopped_task">7.104
-        Command <tt>resume_stopped_task</tt>
-</h3></div>
-<p>In short: Resume a stopped task.</p>
-<p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
-      </p>
-<h4>7.104.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.104.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>resume_stopped_task
  = element resume_stopped_task
      {
@@ -31298,7 +31099,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.104.3 Example: Resume a stopped task</h4>
+<h4>7.103.3 Example: Resume a stopped task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -31308,14 +31109,14 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_run_wizard">7.105
+<div><h3 id="command_run_wizard">7.104
         Command <tt>run_wizard</tt>
 </h3></div>
 <p>In short: Run a wizard.</p>
 <p>
         The client uses the run_wizard command to run a wizard.
       </p>
-<h4>7.105.1 Structure</h4>
+<h4>7.104.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -31373,7 +31174,7 @@ modify_user_sources
 </ul>
 </li>
 </ul>
-<h4>7.105.2 RNC</h4>
+<h4>7.104.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>run_wizard
  = element run_wizard
@@ -31436,7 +31237,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.105.3 Example: Run the Quick Start wizard to scan localhost</h4>
+<h4>7.104.3 Example: Run the Quick Start wizard to scan localhost</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard&gt;
    &lt;name&gt;quick_first_scan&lt;/name&gt;
@@ -31461,13 +31262,68 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_start_task">7.106
+<div><h3 id="command_start_task">7.105
         Command <tt>start_task</tt>
 </h3></div>
 <p>In short: Manually start an existing task.</p>
 <p>
         The client uses the start_task command to manually start an
         existing task.
+      </p>
+<h4>7.105.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.105.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.105.3 Example: Start a task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
+                      status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_stop_task">7.106
+        Command <tt>stop_task</tt>
+</h3></div>
+<p>In short: Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
       </p>
 <h4>7.106.1 Structure</h4>
 <ul style="list-style: none">
@@ -31492,45 +31348,42 @@ run_wizard_response_response
 </ul>
 <h4>7.106.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>start_task
- = element start_task
+<i>Command</i><div style="margin-left: 5%"><pre>stop_task
+ = element stop_task
      {
        attribute task_id { uuid }
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
- = element start_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
+ = element stop_task_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.106.3 Example: Start a task</h4>
+<h4>7.106.3 Example: Stop a running task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
-                      status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200"
+                     status_text="OK"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_stop_task">7.107
-        Command <tt>stop_task</tt>
+<div><h3 id="command_sync_cert">7.107
+        Command <tt>sync_cert</tt>
 </h3></div>
-<p>In short: Stop a running task.</p>
+<p>In short: Synchronize with a CERT feed.</p>
 <p>
-        The client uses the stop_task command to manually stop a
-        running task.
+        The client uses the "sync_cert" command to request a
+        synchronization with the CERT feed service the Manager uses.
       </p>
 <h4>7.107.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -31547,37 +31400,37 @@ run_wizard_response_response
 </ul>
 <h4>7.107.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>stop_task
- = element stop_task
+<i>Command</i><div style="margin-left: 5%"><pre>sync_cert
+ = element sync_cert
      {
-       attribute task_id { uuid }
+       ""
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
- = element stop_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>sync_cert_response
+ = element sync_cert_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.107.3 Example: Stop a running task</h4>
+<h4>7.107.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200"
-                     status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert_response status="202"
+                     status_text="OK, request submitted"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_sync_cert">7.108
-        Command <tt>sync_cert</tt>
+<div><h3 id="command_sync_feed">7.108
+        Command <tt>sync_feed</tt>
 </h3></div>
-<p>In short: Synchronize with a CERT feed.</p>
+<p>In short: Synchronize with an NVT feed.</p>
 <p>
-        The client uses the "sync_cert" command to request a
-        synchronization with the CERT feed service the Manager uses.
+        The client uses the "sync_feed" command to request a
+        synchronization with the NVT feed service the Manager uses.
       </p>
 <h4>7.108.1 Structure</h4>
 <ul style="list-style: none">
@@ -31599,14 +31452,14 @@ run_wizard_response_response
 </ul>
 <h4>7.108.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>sync_cert
- = element sync_cert
+<i>Command</i><div style="margin-left: 5%"><pre>sync_feed
+ = element sync_feed
      {
        ""
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>sync_cert_response
- = element sync_cert_response
+<i>Response</i><div style="margin-left: 5%"><pre>sync_feed_response
+ = element sync_feed_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
@@ -31615,21 +31468,21 @@ run_wizard_response_response
 </div>
 <h4>7.108.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert_response status="202"
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed_response status="202"
                      status_text="OK, request submitted"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_sync_feed">7.109
-        Command <tt>sync_feed</tt>
+<div><h3 id="command_sync_scap">7.109
+        Command <tt>sync_scap</tt>
 </h3></div>
-<p>In short: Synchronize with an NVT feed.</p>
+<p>In short: Synchronize with a SCAP feed.</p>
 <p>
-        The client uses the "sync_feed" command to request a
-        synchronization with the NVT feed service the Manager uses.
+        The client uses the "sync_scap" command to request a
+        synchronization with the SCAP feed service the Manager uses.
       </p>
 <h4>7.109.1 Structure</h4>
 <ul style="list-style: none">
@@ -31651,58 +31504,6 @@ run_wizard_response_response
 </ul>
 <h4>7.109.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>sync_feed
- = element sync_feed
-     {
-       ""
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>sync_feed_response
- = element sync_feed_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.109.3 Example: Sync the feed</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed_response status="202"
-                     status_text="OK, request submitted"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_sync_scap">7.110
-        Command <tt>sync_scap</tt>
-</h3></div>
-<p>In short: Synchronize with a SCAP feed.</p>
-<p>
-        The client uses the "sync_scap" command to request a
-        synchronization with the SCAP feed service the Manager uses.
-      </p>
-<h4>7.110.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.110.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>sync_scap
  = element sync_scap
      {
@@ -31717,7 +31518,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.110.3 Example: Sync the feed</h4>
+<h4>7.109.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_scap/&gt;
 </pre></div>
@@ -31727,7 +31528,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_test_alert">7.111
+<div><h3 id="command_test_alert">7.110
         Command <tt>test_alert</tt>
 </h3></div>
 <p>In short: Run an alert.</p>
@@ -31735,7 +31536,7 @@ run_wizard_response_response
         The client uses the test_alert command to invoke a test run of
         an alert.
       </p>
-<h4>7.111.1 Structure</h4>
+<h4>7.110.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -31756,7 +31557,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.111.2 RNC</h4>
+<h4>7.110.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_alert
  = element test_alert
@@ -31772,7 +31573,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.111.3 Example: Test an alert</h4>
+<h4>7.110.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -31782,7 +31583,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_agent">7.112
+<div><h3 id="command_verify_agent">7.111
         Command <tt>verify_agent</tt>
 </h3></div>
 <p>In short: Verify an agent.</p>
@@ -31796,7 +31597,7 @@ run_wizard_response_response
         The Manager searches for the signature first in the feed, then
         in the agent itself.
       </p>
-<h4>7.112.1 Structure</h4>
+<h4>7.111.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -31817,7 +31618,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.112.2 RNC</h4>
+<h4>7.111.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_agent
  = element verify_agent
@@ -31833,7 +31634,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.112.3 Example: Verify an agent</h4>
+<h4>7.111.3 Example: Verify an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -31843,7 +31644,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_report_format">7.113
+<div><h3 id="command_verify_report_format">7.112
         Command <tt>verify_report_format</tt>
 </h3></div>
 <p>In short: Verify a report format.</p>
@@ -31857,7 +31658,7 @@ run_wizard_response_response
         to generate reports of this format.  The Manager searches for the
         signature first in the feed, then in the report format itself.
       </p>
-<h4>7.113.1 Structure</h4>
+<h4>7.112.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -31878,7 +31679,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.113.2 RNC</h4>
+<h4>7.112.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_report_format
  = element verify_report_format
@@ -31894,7 +31695,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.113.3 Example: Verify a report format</h4>
+<h4>7.112.3 Example: Verify a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -31905,39 +31706,101 @@ run_wizard_response_response
 </div>
 <h2 id="changes">
       8 Compatibility Changes in Version
-      6.0</h2>
+      5.0</h2>
 <div>
 <div><h3>8.1
-          Change in <tt>GET_TASKS</tt>
+          Change in <tt>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</tt>
 </h3></div>
-<p>In short: Attribute "rcfile" and associate RCFILE removed.</p>
+<p>In short: Filter type "report" is now "result".</p>
 <p>
-        The attribute "rcfile" and associate response element RCFILE were
-        removed.  It is no longer possible to get an openvasrc configuration
-        for a task.  This feature was primarily introduced to support the
-        GTK frontend openvas-client, which is no longer maintained.
+        The filter type "report" has been renamed to "result".  Filters of
+        this type apply to the results in a report, as used for example on
+        the GSA "Report: Results" page.
+      </p>
+<p>
+        The name "report" is now used for a new filter type.  This filter
+        type applies to lists of reports, as used for example on the GSA
+        "Reports" page.
       </p>
 </div>
 <div>
 <div><h3>8.2
-          Change in <tt>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</tt>
+          Change in <tt>CREATE_USER, MODIFY_USER</tt>
 </h3></div>
-<p>In short: RCFILE removed.</p>
+<p>In short: ROLE is identified by "id" attribute.</p>
 <p>
-        The element RCFILE was removed.  It is no longer possible to create
-        or modify a config or task from an openvasrc file.  This feature was
-        primarily introduced to support the GTK frontend openvas-client, which
-        is no longer maintained.
+        In OMP 4.0 these commands were served by OpenVAS Administrator.
+      </p>
+<p>
+        The attribute "id" is now used to specify a user's role, in the
+        ROLE element.  Previously this was done using the NAME element inside
+        ROLE.
       </p>
 </div>
 <div>
 <div><h3>8.3
-          Change in <tt>CREATE_LSC_CREDENTIAL</tt>
+          Change in <tt>GET_USERS</tt>
 </h3></div>
-<p>In short: KEY/PUBLIC removed.</p>
+<p>In short: Attributes name and sort_order removed.</p>
 <p>
-        The child PUBLIC of element KEY was removed, because public keys are
-        now extracted from the private key.
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+<p>
+        The attributes name and sort_order have been remove from the
+        GET_USERS in OpenVAS Manager.  Equivalent functionality is available
+        using filters (with the filter and filt_id attributes).
+      </p>
+</div>
+<div>
+<div><h3>8.4
+          Change in <tt>GET_USERS</tt>
+</h3></div>
+<p>In short: ROLE is optional, and role name has moved into NAME.</p>
+<p>
+        In OMP 4.0 this command was served by OpenVAS Administrator.
+      </p>
+<p>
+        With the new role management, zero or more ROLEs may be present in
+        USER.  The name of the role is now in ROLE/NAME instead of directly
+        in the text of ROLE.
+      </p>
+</div>
+<div>
+<div><h3>8.5
+          Change in <tt>GET_NVTS</tt>
+</h3></div>
+<p>In short: Fingerprint element removed.</p>
+<p>
+        The fingerprint element has been removed as signature keys aren't sent
+        by the scanner anymore and thus, aren't stored in Manager DB anymore.
+      </p>
+</div>
+<div>
+<div><h3>8.6
+          Change in <tt>GET_DEPENDENCIES</tt>
+</h3></div>
+<p>In short: Command removed.</p>
+<p>
+        The command GET_DEPENDENCIES has been removed.
+      </p>
+</div>
+<div>
+<div><h3>8.7
+          Change in <tt>MODIFY_TARGET</tt>
+</h3></div>
+<p>In short: Missing elements now leave the associate target property alone.</p>
+<p>
+        MODIFY_TARGET now allows the user to modify one or more of the
+        Target elements in a single command, instead of requiring all
+        elements to be modified at once.
+      </p>
+<p>
+        As a side effect of this, leaving out an element will no longer
+        set the associated target value to a default, but will leave the
+        associated target value untouched.  For example, if SSH_LSC_CREDENTIAL
+        is omitted from the MODIFY_TARGET command, the command will no
+        longer reset the SSH credential of the target, but will leave the
+        target's current SSH credential intact.
       </p>
 </div>
 <div style="text-align: center; padding: 5px;">

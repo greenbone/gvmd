@@ -140,37 +140,7 @@
 #include <openvas/base/openvas_file.h>
 #include <openvas/misc/openvas_logging.h>
 
-
-/* Old config IDs. */
-
-/**
- * @brief Database ROWID of 'Full and fast' config.
- */
-#define CONFIG_ID_FULL_AND_FAST 1
-
-/**
- * @brief Database ROWID of 'Full and fast ultimate' config.
- */
-#define CONFIG_ID_FULL_AND_FAST_ULTIMATE 2
-
-/**
- * @brief Database ROWID of 'Full and very deep' config.
- */
-#define CONFIG_ID_FULL_AND_VERY_DEEP 3
-
-/**
- * @brief Database ROWID of 'Full and very deep ultimate' config.
- */
-#define CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE 4
-
-
-/* Headers from backend specific manage_xxx.c file. */
-
-int
-manage_create_migrate_51_to_52_convert ();
-
-
-/* Types. */
+/* Types */
 
 /**
  * @brief A migrator.
@@ -181,8 +151,7 @@ typedef struct
   int (*function) ();  ///< Function that does the migration.  NULL if too hard.
 } migrator_t;
 
-
-/* Functions. */
+/* Functions */
 
 /**
  * @brief Create all tables, using the version 4 schema.
@@ -245,7 +214,7 @@ create_tables_version_4 ()
 int
 migrate_0_to_1 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 0. */
 
@@ -301,7 +270,7 @@ migrate_1_to_2 ()
 {
   iterator_t nvts;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 1. */
 
@@ -323,7 +292,7 @@ migrate_1_to_2 ()
       int category;
       const char *category_string;
 
-      category_string = iterator_string (&nvts, 1);
+      category_string = (const char*) sqlite3_column_text (nvts.stmt, 1);
 
       category = atoi (category_string);
       sql ("UPDATE nvts SET category = %i WHERE ROWID = %llu;",
@@ -349,7 +318,7 @@ migrate_1_to_2 ()
 int
 migrate_2_to_3 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 2. */
 
@@ -403,7 +372,7 @@ migrate_3_to_4 ()
 {
   iterator_t nvts;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 3. */
 
@@ -903,7 +872,7 @@ migrate_4_to_5_copy_data ()
 int
 migrate_4_to_5 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 4. */
 
@@ -979,11 +948,13 @@ void
 migrate_5_to_6_move_other_config (const char *predefined_config_name,
                                   config_t predefined_config_id)
 {
-  if (sql_int ("SELECT COUNT(*) = 0 FROM configs"
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) = 0 FROM configs"
                " WHERE name = '%s';",
                predefined_config_name)
-      && sql_int ("SELECT COUNT(*) = 1 FROM configs"
-                  " WHERE id = %llu;",
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 1 FROM configs"
+                  " WHERE ROWID = %llu;",
                   predefined_config_id))
     {
       config_t config;
@@ -995,16 +966,17 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
            " SELECT nvt_selector, comment, family_count,"
            " nvt_count, nvts_growing, families_growing"
            " FROM configs"
-           " WHERE id = %llu;",
+           " WHERE ROWID = %llu;",
            predefined_config_id);
       /* This ID will be larger then predefined_config_id because
        * predefined_config_id exists already.  At worst the ID will be one
        * larger. */
-      config = sql_last_insert_rowid ();
+      config = sqlite3_last_insert_rowid (task_db);
       sql ("UPDATE config_preferences SET config = %llu WHERE config = %llu;",
            config,
            predefined_config_id);
-      name = sql_string ("SELECT name FROM configs WHERE id = %llu;",
+      name = sql_string (0, 0,
+                         "SELECT name FROM configs WHERE ROWID = %llu;",
                          predefined_config_id);
       if (name == NULL)
         {
@@ -1014,9 +986,9 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
       quoted_name = sql_quote (name);
       free (name);
       /* Table tasks references config by name, so it stays the same. */
-      sql ("DELETE FROM configs WHERE id = %llu;",
+      sql ("DELETE FROM configs WHERE ROWID = %llu;",
            predefined_config_id);
-      sql ("UPDATE configs SET name = '%s' WHERE id = %llu;",
+      sql ("UPDATE configs SET name = '%s' WHERE ROWID = %llu;",
            quoted_name,
            config);
       g_free (quoted_name);
@@ -1031,7 +1003,7 @@ migrate_5_to_6_move_other_config (const char *predefined_config_name,
 int
 migrate_5_to_6 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 5. */
 
@@ -1049,13 +1021,17 @@ migrate_5_to_6 ()
   /* Fail with a message if the predefined configs have somehow got ID's
    * other than the usual ones. */
 
-  if (sql_int ("SELECT COUNT(*) = 0 OR id == 1 FROM configs"
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) = 0 OR ROWID == 1 FROM configs"
                " WHERE name = 'Full and fast';")
-      && sql_int ("SELECT COUNT(*) = 0 OR id == 2 FROM configs"
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 2 FROM configs"
                   " WHERE name = 'Full and fast ultimate';")
-      && sql_int ("SELECT COUNT(*) = 0 OR id == 3 FROM configs"
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 3 FROM configs"
                   " WHERE name = 'Full and very deep';")
-      && sql_int ("SELECT COUNT(*) = 0 OR id == 4 FROM configs"
+      && sql_int (0, 0,
+                  "SELECT COUNT(*) = 0 OR ROWID == 4 FROM configs"
                   " WHERE name = 'Full and very deep ultimate';"))
     {
       /* Any predefined configs are OK.  Move any other configs that have the
@@ -1103,7 +1079,7 @@ migrate_5_to_6 ()
 int
 migrate_6_to_7 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 6. */
 
@@ -1136,7 +1112,7 @@ migrate_6_to_7 ()
 int
 migrate_7_to_8 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 7. */
 
@@ -1170,7 +1146,7 @@ migrate_7_to_8 ()
 int
 migrate_8_to_9 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 8. */
 
@@ -1277,7 +1253,7 @@ migrate_9_to_10 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 9. */
 
@@ -1299,7 +1275,7 @@ migrate_9_to_10 ()
   sql ("CREATE TABLE users"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, name, password);");
 
-  init_iterator (&rows, "SELECT id, name, password FROM users_9;");
+  init_iterator (&rows, "SELECT rowid, name, password FROM users_9;");
   while (next (&rows))
     {
       gchar *quoted_name, *quoted_password, *uuid;
@@ -1348,7 +1324,7 @@ migrate_9_to_10 ()
 int
 migrate_10_to_11 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 10. */
 
@@ -1361,7 +1337,7 @@ migrate_10_to_11 ()
   /* Update the database. */
 
   /* The config and target columns of the tasks table changed from the name
-   * of the config/target to the id of the config/target.
+   * of the config/target to the ROWID of the config/target.
    *
    * Recreate the table, in order to add INTEGER to the column definitions. */
 
@@ -1380,8 +1356,8 @@ migrate_10_to_11 ()
        " SELECT"
        "  id, uuid, owner, name, hidden, time, comment, description,"
        "  run_status, start_time, end_time,"
-       "  (SELECT id FROM configs WHERE configs.name = tasks_10.config),"
-       "  (SELECT id FROM targets WHERE targets.name = tasks_10.target)"
+       "  (SELECT ROWID FROM configs WHERE configs.name = tasks_10.config),"
+       "  (SELECT ROWID FROM targets WHERE targets.name = tasks_10.target)"
        " FROM tasks_10;");
 
   sql ("DROP TABLE tasks_10;");
@@ -1403,7 +1379,7 @@ migrate_10_to_11 ()
 int
 migrate_11_to_12 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 11. */
 
@@ -1486,7 +1462,7 @@ migrate_12_to_13 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 12. */
 
@@ -1536,7 +1512,8 @@ migrate_12_to_13 ()
     }
   cleanup_iterator (&rows);
 
-  if (sql_int ("SELECT COUNT(*) FROM nvt_selectors WHERE name = '"
+  if (sql_int (0, 0,
+               "SELECT COUNT(*) FROM nvt_selectors WHERE name = '"
                MANAGE_NVT_SELECTOR_UUID_ALL "';"))
     sql ("DELETE FROM nvt_selectors WHERE name = 'All';");
   else
@@ -1565,7 +1542,7 @@ migrate_12_to_13 ()
 int
 migrate_13_to_14 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 13. */
 
@@ -1601,7 +1578,7 @@ migrate_13_to_14 ()
 int
 migrate_14_to_15 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 14. */
 
@@ -1638,7 +1615,7 @@ migrate_14_to_15 ()
 int
 migrate_15_to_16 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 15. */
 
@@ -1685,7 +1662,7 @@ migrate_16_to_17 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 16. */
 
@@ -1706,7 +1683,7 @@ migrate_16_to_17 ()
 
   /* Move the CVSS and risk values out of any existing tags. */
 
-  init_iterator (&rows, "SELECT id, tag FROM nvts;");
+  init_iterator (&rows, "SELECT ROWID, tag FROM nvts;");
   while (next (&rows))
     {
       gchar *tags, *cvss_base, *risk_factor;
@@ -1714,7 +1691,7 @@ migrate_16_to_17 ()
       parse_tags (iterator_string (&rows, 1), &tags, &cvss_base, &risk_factor);
 
       sql ("UPDATE nvts SET cvss_base = '%s', risk_factor = '%s', tag = '%s'"
-           " WHERE id = %llu;",
+           " WHERE ROWID = %llu;",
            cvss_base ? cvss_base : "",
            risk_factor ? risk_factor : "",
            tags ? tags : "",
@@ -1743,7 +1720,8 @@ migrate_16_to_17 ()
 void
 migrate_17_to_18_set_pref (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM config_preferences"
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM config_preferences"
                " WHERE config = %llu"
                " AND name ="
                " 'Ping Host[checkbox]:Mark unrechable Hosts as dead"
@@ -1765,7 +1743,7 @@ migrate_17_to_18_set_pref (config_t config)
 int
 migrate_17_to_18 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 17. */
 
@@ -1784,7 +1762,8 @@ migrate_17_to_18 ()
 
   /* Add "Ping Host" to the "All" NVT selector. */
 
-  if (sql_int ("SELECT count(*) FROM nvt_selectors WHERE name ="
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM nvt_selectors WHERE name ="
                " '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
                " AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.100315';")
       == 0)
@@ -1821,7 +1800,7 @@ migrate_17_to_18 ()
 int
 migrate_18_to_19 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 18. */
 
@@ -1920,19 +1899,19 @@ migrate_18_to_19 ()
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_FAST "'"
-       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_FAST_ULTIMATE "'"
-       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_FAST_ULTIMATE) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP "'"
-       " WHERE id = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
+       " WHERE ROWID = " G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP) ";");
 
   sql ("UPDATE configs"
        " SET uuid = '" CONFIG_UUID_FULL_AND_VERY_DEEP_ULTIMATE "'"
-       " WHERE id = "
+       " WHERE ROWID = "
        G_STRINGIFY (CONFIG_ID_FULL_AND_VERY_DEEP_ULTIMATE) ";");
 
   sql ("UPDATE configs"
@@ -1962,7 +1941,7 @@ migrate_19_to_20 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 19. */
 
@@ -1984,32 +1963,50 @@ migrate_19_to_20 ()
   sql ("ALTER TABLE agents ADD COLUMN installer_signature_64 TEXT;");
   sql ("ALTER TABLE agents ADD COLUMN installer_trust INTEGER;");
 
-  init_iterator (&rows, "SELECT id, installer FROM agents;");
+  init_iterator (&rows, "SELECT ROWID, installer FROM agents;");
   while (next (&rows))
     {
-      const char *installer_64 = iterator_string (&rows, 1);
-      gchar *installer;
+      const char *tail, *installer_64 = iterator_string (&rows, 1);
+      gchar *installer, *formatted;
       gsize installer_size;
       int ret;
-      sql_stmt_t* stmt;
+      sqlite3_stmt* stmt;
 
       sql ("UPDATE agents SET"
            " installer_trust = %i,"
            " installer_64 = installer,"
            " installer_signature_64 = ''"
-           " WHERE id = %llu",
+           " WHERE ROWID = %llu",
            TRUST_UNKNOWN,
            iterator_int64 (&rows, 0));
 
-      stmt = sql_prepare ("UPDATE agents SET installer = $1"
-                          " WHERE id = %llu;",
-                          iterator_int64 (&rows, 0));
+      formatted = g_strdup_printf ("UPDATE agents SET installer = $installer"
+                                   " WHERE ROWID = %llu;",
+                                   iterator_int64 (&rows, 0));
 
       /* Prepare statement. */
 
-      if (stmt == NULL)
+      while (1)
         {
-          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+          ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
+          if (ret == SQLITE_BUSY) continue;
+          g_free (formatted);
+          if (ret == SQLITE_OK)
+            {
+              if (stmt == NULL)
+                {
+                  g_warning ("%s: sqlite3_prepare failed with NULL stmt: %s\n",
+                             __FUNCTION__,
+                             sqlite3_errmsg (task_db));
+                  cleanup_iterator (&rows);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+              break;
+            }
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           cleanup_iterator (&rows);
           sql ("ROLLBACK;");
           return -1;
@@ -2023,11 +2020,20 @@ migrate_19_to_20 ()
           installer_size = 0;
         }
 
-      /* Bind the packages to the "$1" in the SQL statement. */
+      /* Bind the packages to the "$values" in the SQL statement. */
 
-      if (sql_bind_text (stmt, 1, installer, installer_size))
+      while (1)
         {
-          g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+          ret = sqlite3_bind_text (stmt,
+                                   1,
+                                   installer,
+                                   installer_size,
+                                   SQLITE_TRANSIENT);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_OK) break;
+          g_warning ("%s: sqlite3_prepare failed: %s\n",
+                     __FUNCTION__,
+                     sqlite3_errmsg (task_db));
           cleanup_iterator (&rows);
           sql ("ROLLBACK;");
           g_free (installer);
@@ -2037,16 +2043,24 @@ migrate_19_to_20 ()
 
       /* Run the statement. */
 
-      while ((ret = sql_exec (stmt)) > 0);
-      if (ret < 0)
+      while (1)
         {
-          g_warning ("%s: sql_exec failed\n", __FUNCTION__);
-          cleanup_iterator (&rows);
-          sql ("ROLLBACK;");
-          return -1;
+          ret = sqlite3_step (stmt);
+          if (ret == SQLITE_BUSY) continue;
+          if (ret == SQLITE_DONE) break;
+          if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
+            {
+              if (ret == SQLITE_ERROR) ret = sqlite3_reset (stmt);
+              g_warning ("%s: sqlite3_step failed: %s\n",
+                         __FUNCTION__,
+                         sqlite3_errmsg (task_db));
+              cleanup_iterator (&rows);
+              sql ("ROLLBACK;");
+              return -1;
+            }
         }
 
-      sql_finalize (stmt);
+      sqlite3_finalize (stmt);
     }
   cleanup_iterator (&rows);
 
@@ -2067,7 +2081,7 @@ migrate_19_to_20 ()
 int
 migrate_20_to_21 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 20. */
 
@@ -2104,7 +2118,7 @@ migrate_21_to_22 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 21. */
 
@@ -2129,7 +2143,7 @@ migrate_21_to_22 ()
 
   /* Ensure that the predefined formats all exist in the database. */
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'CPE';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'CPE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2147,7 +2161,7 @@ migrate_21_to_22 ()
          "as a comma separated values file.\n',"
          " 'csv', 'text/csv');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'HTML';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'HTML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2156,7 +2170,7 @@ migrate_21_to_22 ()
          "the HTML, so the page is suitable for viewing in a browser as is.\n',"
          " 'html', 'text/html');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'ITG';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'ITG';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2166,7 +2180,7 @@ migrate_21_to_22 ()
          "as published and maintained by the German Federal Agency for IT-Security.\n',"
          " 'csv', 'text/csv');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'LaTeX';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2175,7 +2189,7 @@ migrate_21_to_22 ()
          " 'Report as LaTeX source file for further processing.\n',"
          " 'tex', 'text/plain');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'NBE';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'NBE';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2183,7 +2197,7 @@ migrate_21_to_22 ()
          " 'The traditional OpenVAS Scanner text based format.',"
          " 'nbe', 'text/plain');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'PDF';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'PDF';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2192,7 +2206,7 @@ migrate_21_to_22 ()
          " 'Scan results in Portable Document Format (PDF).',"
          "'pdf', 'application/pdf');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'TXT';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'TXT';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2200,7 +2214,7 @@ migrate_21_to_22 ()
          " 'Plain text report, best viewed with fixed font size.',"
          " 'txt', 'text/plain');");
 
-  if (sql_int ("SELECT count(*) FROM report_formats WHERE name = 'XML';")
+  if (sql_int (0, 0, "SELECT count(*) FROM report_formats WHERE name = 'XML';")
       == 0)
     sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
          " extension, content_type)"
@@ -2237,7 +2251,7 @@ migrate_21_to_22 ()
 
   /* Rename the directories. */
 
-  init_iterator (&rows, "SELECT id, uuid, owner, name FROM report_formats;");
+  init_iterator (&rows, "SELECT ROWID, uuid, owner, name FROM report_formats;");
   while (next (&rows))
     {
       const char *name, *uuid;
@@ -2247,8 +2261,9 @@ migrate_21_to_22 ()
       uuid = iterator_string (&rows, 1);
       name = iterator_string (&rows, 3);
 
-      if (sql_int ("SELECT owner is NULL FROM report_formats"
-                   " WHERE id = %llu;",
+      if (sql_int (0, 0,
+                   "SELECT owner is NULL FROM report_formats"
+                   " WHERE ROWID = %llu;",
                    iterator_int64 (&rows, 0)))
         {
           /* Global. */
@@ -2266,8 +2281,9 @@ migrate_21_to_22 ()
       else
         {
           char *owner_uuid;
-          owner_uuid = sql_string ("SELECT uuid FROM users"
-                                   " WHERE id = %llu;",
+          owner_uuid = sql_string (0, 0,
+                                   "SELECT uuid FROM users"
+                                   " WHERE ROWID = %llu;",
                                    iterator_int64 (&rows, 2));
           if (owner_uuid == NULL)
             {
@@ -2337,7 +2353,7 @@ migrate_21_to_22 ()
 int
 migrate_22_to_23 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 22. */
 
@@ -2376,7 +2392,7 @@ migrate_22_to_23 ()
 int
 migrate_23_to_24 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 23. */
 
@@ -2413,7 +2429,7 @@ migrate_24_to_25 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 24. */
 
@@ -2428,7 +2444,7 @@ migrate_24_to_25 ()
   /* Missing parameter chunking handling in the GSA may have resulted in
    * empty options in NVT radio preference values. */
 
-  init_iterator (&rows, "SELECT id, name, value FROM nvt_preferences;");
+  init_iterator (&rows, "SELECT ROWID, name, value FROM nvt_preferences;");
   while (next (&rows))
     {
       const char *name;
@@ -2467,7 +2483,7 @@ migrate_24_to_25 ()
 
           quoted_value = sql_nquote (string->str, string->len);
           g_string_free (string, TRUE);
-          sql ("UPDATE nvt_preferences SET value = '%s' WHERE id = %llu",
+          sql ("UPDATE nvt_preferences SET value = '%s' WHERE ROWID = %llu",
                quoted_value,
                iterator_int64 (&rows, 0));
           g_free (quoted_value);
@@ -2476,7 +2492,7 @@ migrate_24_to_25 ()
   cleanup_iterator (&rows);
 
   init_iterator (&rows,
-                 "SELECT id, name, value FROM config_preferences"
+                 "SELECT ROWID, name, value FROM config_preferences"
                  " WHERE type = 'PLUGINS_PREFS';");
   while (next (&rows))
     {
@@ -2516,7 +2532,7 @@ migrate_24_to_25 ()
 
           quoted_value = sql_nquote (string->str, string->len);
           g_string_free (string, TRUE);
-          sql ("UPDATE config_preferences SET value = '%s' WHERE id = %llu",
+          sql ("UPDATE config_preferences SET value = '%s' WHERE ROWID = %llu",
                quoted_value,
                iterator_int64 (&rows, 0));
           g_free (quoted_value);
@@ -2541,7 +2557,7 @@ migrate_24_to_25 ()
 int
 migrate_25_to_26 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 25. */
 
@@ -2575,7 +2591,7 @@ migrate_25_to_26 ()
 int
 migrate_26_to_27 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 26. */
 
@@ -2613,7 +2629,7 @@ migrate_26_to_27 ()
 int
 migrate_27_to_28 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 27. */
 
@@ -2647,7 +2663,7 @@ migrate_27_to_28 ()
 int
 migrate_28_to_29 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 28. */
 
@@ -2681,7 +2697,7 @@ migrate_28_to_29 ()
 int
 migrate_29_to_30 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 29. */
 
@@ -2715,7 +2731,7 @@ migrate_29_to_30 ()
 int
 migrate_30_to_31 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 30. */
 
@@ -2749,7 +2765,7 @@ migrate_30_to_31 ()
 int
 migrate_31_to_32 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 31. */
 
@@ -2788,7 +2804,7 @@ migrate_31_to_32 ()
 int
 migrate_32_to_33 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 32. */
 
@@ -2831,7 +2847,8 @@ migrate_32_to_33 ()
 void
 migrate_33_to_34_set_pref (config_t config)
 {
-  if (sql_int ("SELECT count(*) FROM config_preferences"
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM config_preferences"
                " WHERE config = %llu"
                " AND name ="
                " 'Login configurations[checkbox]:NTLMSSP';",
@@ -2852,7 +2869,7 @@ migrate_33_to_34_set_pref (config_t config)
 int
 migrate_33_to_34 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 33. */
 
@@ -2890,7 +2907,7 @@ migrate_33_to_34 ()
 int
 migrate_34_to_35 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 34. */
 
@@ -2936,11 +2953,11 @@ migrate_35_to_36_duplicate_target (target_t target, const char *name)
        "  smb_lsc_credential)"
        " SELECT make_uuid (), owner, uniquify ('target', '%s', owner, ''),"
        "        hosts, comment, lsc_credential, smb_lsc_credential"
-       " FROM targets WHERE id = %llu;",
+       " FROM targets WHERE ROWID = %llu;",
        quoted_name,
        target);
   g_free (quoted_name);
-  return sql_last_insert_rowid ();
+  return sqlite3_last_insert_rowid (task_db);
 }
 
 /**
@@ -2954,7 +2971,7 @@ migrate_35_to_36 ()
   iterator_t tasks;
   char *scanner_range, *quoted_scanner_range;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 35. */
 
@@ -2971,8 +2988,8 @@ migrate_35_to_36 ()
    * of ID references.  Correct this now. */
 
   sql ("UPDATE tasks SET"
-       " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
-       " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
+       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
        " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
 
   /* Scanner preference "port_range" moved from config into target. */
@@ -2982,7 +2999,8 @@ migrate_35_to_36 ()
   sql ("ALTER TABLE targets ADD column port_range;");
   sql ("UPDATE targets SET port_range = NULL;");
 
-  scanner_range = sql_string ("SELECT value FROM nvt_preferences"
+  scanner_range = sql_string (0, 0,
+                              "SELECT value FROM nvt_preferences"
                               " WHERE name = 'port_range'");
   if (scanner_range)
     {
@@ -2992,7 +3010,7 @@ migrate_35_to_36 ()
   else
     quoted_scanner_range = NULL;
 
-  init_iterator (&tasks, "SELECT id, target, config FROM tasks;");
+  init_iterator (&tasks, "SELECT ROWID, target, config FROM tasks;");
   while (next (&tasks))
     {
       char *config_range, *quoted_config_range;
@@ -3000,7 +3018,8 @@ migrate_35_to_36 ()
 
       target = iterator_int64 (&tasks, 1);
 
-      if (sql_int ("SELECT port_range IS NULL FROM targets WHERE id = %llu;",
+      if (sql_int (0, 0,
+                   "SELECT port_range IS NULL FROM targets WHERE ROWID = %llu;",
                    target)
           == 0)
         {
@@ -3008,19 +3027,21 @@ migrate_35_to_36 ()
 
           /* Already used this target, use a copy of it. */
 
-          name = sql_string ("SELECT name || ' Migration' FROM targets"
-                             " WHERE id = %llu;",
+          name = sql_string (0, 0,
+                             "SELECT name || ' Migration' FROM targets"
+                             " WHERE ROWID = %llu;",
                              target);
           assert (name);
           target = migrate_35_to_36_duplicate_target (target, name);
           free (name);
 
-          sql ("UPDATE tasks SET target = %llu WHERE id = %llu",
+          sql ("UPDATE tasks SET target = %llu WHERE ROWID = %llu",
                target,
                iterator_int64 (&tasks, 0));
         }
 
-      config_range = sql_string ("SELECT value FROM config_preferences"
+      config_range = sql_string (0, 0,
+                                 "SELECT value FROM config_preferences"
                                  " WHERE config = %llu"
                                  " AND name = 'port_range';",
                                  iterator_int64 (&tasks, 2));
@@ -3034,7 +3055,7 @@ migrate_35_to_36 ()
         quoted_config_range = NULL;
 
       sql ("UPDATE targets SET port_range = '%s'"
-           " WHERE id = %llu;",
+           " WHERE ROWID = %llu;",
            quoted_config_range
             ? quoted_config_range
             : (quoted_scanner_range ? quoted_scanner_range : "default"),
@@ -3068,7 +3089,7 @@ migrate_35_to_36 ()
 int
 migrate_36_to_37 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 36. */
 
@@ -3085,8 +3106,8 @@ migrate_36_to_37 ()
      the correct clauses. */
 
   sql ("UPDATE tasks SET"
-       " target = (SELECT id FROM targets WHERE name = 'Localhost'),"
-       " config = (SELECT id FROM configs WHERE name = 'Full and fast')"
+       " target = (SELECT ROWID FROM targets WHERE name = 'Localhost'),"
+       " config = (SELECT ROWID FROM configs WHERE name = 'Full and fast')"
        " WHERE uuid = '" MANAGE_EXAMPLE_TASK_UUID "';");
 
   /* Set the database version to 37. */
@@ -3108,7 +3129,7 @@ migrate_37_to_38 ()
 {
   gchar *old_dir, *new_dir;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 37. */
 
@@ -3221,7 +3242,7 @@ migrate_37_to_38 ()
 int
 migrate_38_to_39 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 38. */
 
@@ -3288,7 +3309,7 @@ migrate_39_to_40_set_pref (config_t config)
 int
 migrate_39_to_40 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 39. */
 
@@ -3327,7 +3348,7 @@ migrate_39_to_40 ()
 int
 migrate_40_to_41 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 40. */
 
@@ -3379,7 +3400,7 @@ migrate_40_to_41 ()
 int
 migrate_41_to_42 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 41. */
 
@@ -3432,7 +3453,7 @@ migrate_41_to_42 ()
 int
 migrate_42_to_43 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 42. */
 
@@ -3479,7 +3500,7 @@ migrate_42_to_43 ()
 int
 migrate_43_to_44 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 43. */
 
@@ -3522,7 +3543,7 @@ migrate_43_to_44 ()
 int
 migrate_44_to_45 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 44. */
 
@@ -3556,7 +3577,7 @@ migrate_44_to_45 ()
 int
 migrate_45_to_46 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 45. */
 
@@ -3590,7 +3611,7 @@ migrate_45_to_46 ()
 int
 migrate_46_to_47 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 46. */
 
@@ -3609,7 +3630,7 @@ migrate_46_to_47 ()
        " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
 
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " SELECT tasks.id, config_preferences.name, config_preferences.value"
+       " SELECT tasks.ROWID, config_preferences.name, config_preferences.value"
        " FROM tasks, config_preferences"
        " WHERE tasks.config = config_preferences.config"
        " AND (config_preferences.name = 'max_checks'"
@@ -3632,7 +3653,7 @@ migrate_46_to_47 ()
 int
 migrate_47_to_48 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 47. */
 
@@ -3670,7 +3691,7 @@ migrate_47_to_48 ()
 int
 migrate_48_to_49 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Require that the database is currently version 48. */
 
@@ -3714,7 +3735,7 @@ migrate_48_to_49 ()
 int
 migrate_49_to_50 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 49. */
 
@@ -3766,7 +3787,7 @@ migrate_49_to_50 ()
 int
 migrate_50_to_51 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 50. */
 
@@ -3793,6 +3814,61 @@ migrate_50_to_51 ()
 }
 
 /**
+ * @brief Convert a UTC text time to an integer time since the Epoch.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+migrate_51_to_52_sql_convert (sqlite3_context *context, int argc,
+                              sqlite3_value** argv)
+{
+  const unsigned char *text_time;
+  int epoch_time;
+  struct tm tm;
+
+  assert (argc == 1);
+
+  text_time = sqlite3_value_text (argv[0]);
+  if (text_time)
+    {
+      /* Scanner uses ctime: "Wed Jun 30 21:49:08 1993".
+       *
+       * The dates being converted are in the timezone that the Scanner was using.
+       *
+       * As a special case for this migrator, openvasmd.c uses the timezone
+       * from the environment, instead of forcing UTC.  This allows the user
+       * to set the timezone to be the same as the Scanner timezone, so
+       * that these dates are converted from the Scanner timezone.  Even if
+       * the user just leaves the timezone as is, it is likely to be the same
+       * timezone she/he is running the Scanner under.
+       */
+      if (text_time && (strlen ((char*) text_time) > 0))
+        {
+          if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
+            {
+              sqlite3_result_error (context, "Failed to parse time", -1);
+              return;
+            }
+          epoch_time = mktime (&tm);
+          if (epoch_time == -1)
+            {
+              sqlite3_result_error (context, "Failed to make time", -1);
+              return;
+            }
+        }
+      else
+        epoch_time = 0;
+    }
+  else
+    epoch_time = 0;
+  sqlite3_result_int (context, epoch_time);
+}
+
+/**
  * @brief Migrate the database from version 51 to version 52.
  *
  * @return 0 success, -1 error.
@@ -3800,7 +3876,7 @@ migrate_50_to_51 ()
 int
 migrate_51_to_52 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 51. */
 
@@ -3812,10 +3888,18 @@ migrate_51_to_52 ()
 
   /* Add an SQL helper. */
 
-  if (manage_create_migrate_51_to_52_convert ())
+  if (sqlite3_create_function (task_db,
+                               "convert",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               migrate_51_to_52_sql_convert,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
     {
+      g_warning ("%s: failed to create convert", __FUNCTION__);
       sql ("ROLLBACK;");
-      g_critical ("%s: failed to create convert", __FUNCTION__);
       return -1;
     }
 
@@ -3847,7 +3931,7 @@ migrate_51_to_52 ()
 int
 migrate_52_to_53 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 52. */
 
@@ -3887,7 +3971,7 @@ migrate_52_to_53 ()
 int
 migrate_53_to_54 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 53. */
 
@@ -3963,7 +4047,7 @@ migrate_54_to_55_format (const char *old_uuid, const char *new_uuid)
 int
 migrate_54_to_55 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 54. */
 
@@ -4049,15 +4133,15 @@ migrate_54_to_55 ()
 /**
  * @brief Insert a port range.
  */
-#define MIGRATE_55_TO_56_RANGE(type, start, end)                    \
-  sql ("INSERT INTO port_ranges"                                    \
-       " (uuid, port_list, type, start, \"end\", comment, exclude)" \
-       " VALUES"                                                    \
-       " (make_uuid (), %llu, %i,"                                  \
-       "  '" G_STRINGIFY (start) "',"                               \
-       "  '" G_STRINGIFY (end) "',"                                 \
-       "  '', 0)",                                                  \
-       list,                                                        \
+#define MIGRATE_55_TO_56_RANGE(type, start, end)                         \
+  sql ("INSERT INTO port_ranges"                                 \
+       " (uuid, port_list, type, start, end, comment, exclude)"  \
+       " VALUES"                                                 \
+       " (make_uuid (), %llu, %i,"                               \
+       "  '" G_STRINGIFY (start) "',"                            \
+       "  '" G_STRINGIFY (end) "',"                              \
+       "  '', 0)",                                               \
+       list,                                                     \
        type)
 
 /**
@@ -4066,7 +4150,8 @@ migrate_54_to_55 ()
 void
 migrate_55_to_56_ensure_predefined_port_lists_exist ()
 {
-  if (sql_int ("SELECT count(*) FROM port_lists"
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM port_lists"
                " WHERE uuid = '" PORT_LIST_UUID_DEFAULT "';")
       == 0)
     {
@@ -4074,7 +4159,7 @@ migrate_55_to_56_ensure_predefined_port_lists_exist ()
       sql ("INSERT INTO port_lists (uuid, owner, name, comment)"
            " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
            " '')");
-      list = sql_last_insert_rowid ();
+      list = sqlite3_last_insert_rowid (task_db);
 
       MIGRATE_55_TO_56_RANGE (PORT_PROTOCOL_TCP, 1, 5);
       MIGRATE_55_TO_56_RANGE (PORT_PROTOCOL_TCP, 7, 7);
@@ -4724,7 +4809,7 @@ migrate_55_to_56 ()
 {
   iterator_t rows;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 55. */
 
@@ -4765,7 +4850,7 @@ migrate_55_to_56 ()
 
   /* Make a port list and port range(s) for each target. */
 
-  init_iterator (&rows, "SELECT id, owner, name, port_range FROM targets;");
+  init_iterator (&rows, "SELECT ROWID, owner, name, port_range FROM targets;");
   while (next (&rows))
     {
       resource_t target;
@@ -4795,7 +4880,7 @@ migrate_55_to_56 ()
 
           g_free (quoted_name);
 
-          list = sql_last_insert_rowid ();
+          list = sqlite3_last_insert_rowid (task_db);
 
           /* Convert old range (1-100,1649,210-214) to multiple new ranges. */
 
@@ -4820,7 +4905,7 @@ migrate_55_to_56 ()
                     /* A range. */
 
                     sql ("INSERT INTO port_ranges"
-                         " (uuid, port_list, type, start, \"end\", comment,"
+                         " (uuid, port_list, type, start, end, comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, %s, '', 0)",
@@ -4834,7 +4919,7 @@ migrate_55_to_56 ()
                     /* A single port. */
 
                     sql ("INSERT INTO port_ranges"
-                         " (uuid, port_list, type, start, \"end\", comment,"
+                         " (uuid, port_list, type, start, end, comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, NULL, '',"
@@ -4851,9 +4936,9 @@ migrate_55_to_56 ()
         }
       else
         sql ("UPDATE targets SET port_range"
-             " = (SELECT id FROM port_lists"
+             " = (SELECT ROWID FROM port_lists"
              "    WHERE uuid = '" PORT_LIST_UUID_DEFAULT "')"
-             " WHERE id = %llu;",
+             " WHERE ROWID = %llu;",
              target);
     }
   cleanup_iterator (&rows);
@@ -4861,23 +4946,23 @@ migrate_55_to_56 ()
   /* Set the port_ranges of the targets to the new port lists. */
 
   sql ("UPDATE targets SET"
-       " port_range = (SELECT id FROM port_lists"
-       "               WHERE comment = targets.id)"
+       " port_range = (SELECT ROWID FROM port_lists"
+       "               WHERE comment = targets.ROWID)"
        " WHERE port_range"
-       " != (SELECT id FROM port_lists"
+       " != (SELECT ROWID FROM port_lists"
        "     WHERE uuid = '" PORT_LIST_UUID_DEFAULT "');");
 
   sql ("UPDATE port_lists SET"
        " comment = 'Migrated from target '"
        "           || (SELECT targets.name FROM targets"
-       "               WHERE port_lists.id = targets.port_range)"
+       "               WHERE port_lists.ROWID = targets.port_range)"
        "           || '.'"
        " WHERE uuid != '" PORT_LIST_UUID_DEFAULT "';");
 
   /* Make a port list and port range(s) for each trash target. */
 
   init_iterator (&rows,
-                 "SELECT id, owner, name, port_range FROM targets_trash;");
+                 "SELECT ROWID, owner, name, port_range FROM targets_trash;");
   while (next (&rows))
     {
       resource_t target;
@@ -4907,7 +4992,7 @@ migrate_55_to_56 ()
 
           g_free (quoted_name);
 
-          list = sql_last_insert_rowid ();
+          list = sqlite3_last_insert_rowid (task_db);
 
           /* Convert old range (1-100,1649,210-214) to multiple new ranges. */
 
@@ -4932,7 +5017,7 @@ migrate_55_to_56 ()
                     /* A range. */
 
                     sql ("INSERT INTO port_ranges_trash"
-                         " (uuid, port_list, type, start, \"end\", comment,"
+                         " (uuid, port_list, type, start, end, comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, %s, '', 0)",
@@ -4946,7 +5031,7 @@ migrate_55_to_56 ()
                     /* A single port. */
 
                     sql ("INSERT INTO port_ranges_trash"
-                         " (uuid, port_list, type, start, \"end\", comment,"
+                         " (uuid, port_list, type, start, end, comment,"
                          "  exclude)"
                          " VALUES"
                          " (make_uuid (), %llu, %i, %s, NULL, '',"
@@ -4963,10 +5048,10 @@ migrate_55_to_56 ()
         }
       else
         sql ("UPDATE targets_trash SET port_range"
-             " = (SELECT id FROM port_lists"
+             " = (SELECT ROWID FROM port_lists"
              "    WHERE uuid = '" PORT_LIST_UUID_DEFAULT "'),"
              " port_list_location = " G_STRINGIFY (LOCATION_TABLE)
-             " WHERE id = %llu;",
+             " WHERE ROWID = %llu;",
              target);
 
       g_free (range);
@@ -4976,16 +5061,16 @@ migrate_55_to_56 ()
   /* Set the port_ranges of the trash targets to the new port lists. */
 
   sql ("UPDATE targets_trash SET"
-       " port_range = (SELECT id FROM port_lists_trash"
-       "               WHERE comment = targets_trash.id)"
+       " port_range = (SELECT ROWID FROM port_lists_trash"
+       "               WHERE comment = targets_trash.ROWID)"
        " WHERE port_range"
-       " != (SELECT id FROM port_lists"
+       " != (SELECT ROWID FROM port_lists"
        "     WHERE uuid = '" PORT_LIST_UUID_DEFAULT "');");
 
   sql ("UPDATE port_lists_trash SET"
        " comment = 'Migrated from trashcan target '"
        "           || (SELECT targets_trash.name FROM targets_trash"
-       "               WHERE port_lists_trash.id = targets_trash.port_range)"
+       "               WHERE port_lists_trash.ROWID = targets_trash.port_range)"
        "           || '.'");
 
   /* Set the database version to 56. */
@@ -5005,7 +5090,7 @@ migrate_55_to_56 ()
 int
 migrate_56_to_57 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 56. */
 
@@ -5124,7 +5209,7 @@ migrate_56_to_57 ()
 int
 migrate_57_to_58 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 57. */
 
@@ -5181,7 +5266,7 @@ migrate_57_to_58 ()
 int
 migrate_58_to_59 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 58. */
 
@@ -5247,7 +5332,7 @@ migrate_58_to_59 ()
 int
 migrate_59_to_60 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 59. */
 
@@ -5264,7 +5349,7 @@ migrate_59_to_60 ()
   /* Every task must now have an in_assets task preference. */
 
   sql ("INSERT INTO task_preferences (task, name, value)"
-       " SELECT id, 'in_assets', 'yes' FROM tasks;");
+       " SELECT ROWID, 'in_assets', 'yes' FROM tasks;");
 
   /* Set the database version to 60. */
 
@@ -5283,7 +5368,7 @@ migrate_59_to_60 ()
 int
 migrate_60_to_61 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 60. */
 
@@ -5325,7 +5410,7 @@ migrate_60_to_61 ()
 int
 migrate_61_to_62 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 61. */
 
@@ -5371,7 +5456,7 @@ migrate_61_to_62 ()
 int
 migrate_62_to_63 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 62. */
 
@@ -5398,7 +5483,7 @@ migrate_62_to_63 ()
 
   sql ("UPDATE schedules"
        " SET timezone = (SELECT users.timezone FROM users"
-       "                 WHERE id = schedules.owner);");
+       "                 WHERE ROWID = schedules.owner);");
 
   sql ("UPDATE schedules SET initial_offset = current_offset (timezone);");
 
@@ -5407,7 +5492,7 @@ migrate_62_to_63 ()
 
   sql ("UPDATE schedules_trash"
        " SET timezone = (SELECT users.timezone FROM users"
-       "                 WHERE id = schedules_trash.owner);");
+       "                 WHERE ROWID = schedules_trash.owner);");
 
   sql ("UPDATE schedules_trash"
        " SET initial_offset = current_offset (timezone);");
@@ -5429,7 +5514,7 @@ migrate_62_to_63 ()
 int
 migrate_63_to_64 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 63. */
 
@@ -5448,7 +5533,7 @@ migrate_63_to_64 ()
   sql ("ALTER TABLE results ADD COLUMN report;");
 
   sql ("UPDATE results SET report = (SELECT report FROM report_results"
-       "                             WHERE result = results.id);");
+       "                             WHERE result = results.rowid);");
 
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"
        " ON results (report, host);");
@@ -5470,7 +5555,7 @@ migrate_63_to_64 ()
 int
 migrate_64_to_65 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 64. */
 
@@ -5487,7 +5572,7 @@ migrate_64_to_65 ()
   /* The report column on new results was left blank. */
 
   sql ("UPDATE results SET report = (SELECT report FROM report_results"
-       "                             WHERE result = results.id);");
+       "                             WHERE result = results.rowid);");
 
   sql ("REINDEX results_by_report_host;");
 
@@ -5508,7 +5593,7 @@ migrate_64_to_65 ()
 int
 migrate_65_to_66 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 65. */
 
@@ -5549,7 +5634,7 @@ migrate_65_to_66 ()
 int
 migrate_66_to_67 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 66. */
 
@@ -5586,7 +5671,7 @@ migrate_66_to_67 ()
 int
 migrate_67_to_68 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 67. */
 
@@ -5633,7 +5718,7 @@ migrate_67_to_68 ()
 int
 migrate_68_to_69 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 68. */
 
@@ -5682,7 +5767,7 @@ migrate_68_to_69 ()
 int
 migrate_69_to_70 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 69. */
 
@@ -5724,7 +5809,7 @@ migrate_69_to_70 ()
 int
 migrate_70_to_71 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 70. */
 
@@ -5766,7 +5851,7 @@ migrate_70_to_71 ()
 int
 migrate_71_to_72 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 71. */
 
@@ -5815,7 +5900,7 @@ migrate_71_to_72 ()
 int
 migrate_72_to_73 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 72. */
 
@@ -5863,7 +5948,7 @@ migrate_72_to_73 ()
 int
 migrate_73_to_74 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 73. */
 
@@ -5908,7 +5993,7 @@ migrate_73_to_74 ()
 int
 migrate_74_to_75 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 74. */
 
@@ -5940,10 +6025,10 @@ migrate_74_to_75 ()
        "  resource_location, subject_type, subject, creation_time,"
        "  modification_time)"
        " SELECT make_uuid (),"
-       "        (SELECT owner FROM tasks WHERE id = task),"
+       "        (SELECT owner FROM tasks WHERE ROWID = task),"
        "        'get', '', 'task', task,"
-       "        (SELECT uuid FROM tasks WHERE id = task),"
-       "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, m_now (), m_now ()"
+       "        (SELECT uuid FROM tasks WHERE ROWID = task),"
+       "        " G_STRINGIFY (LOCATION_TABLE) ", 'user', user, now (), now ()"
        " FROM task_users;");
 
   sql ("DROP TABLE task_users;");
@@ -5965,7 +6050,7 @@ migrate_74_to_75 ()
 int
 migrate_75_to_76 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 75. */
 
@@ -5978,13 +6063,11 @@ migrate_75_to_76 ()
   /* Update the database. */
 
   /* Delete any nvts_checksum leftovers. */
-  sql ("DELETE FROM %s.meta WHERE name = \"nvts_checksum\";",
-       sql_schema ());
+  sql ("DELETE FROM main.meta WHERE name = \"nvts_checksum\";");
 
   /* Rename nvts_md5sum into nvts_feed_version */
-  sql ("UPDATE %s.meta SET name = \"nvts_feed_version\""
-       " WHERE name = \"nvts_md5sum\";",
-       sql_schema ());
+  sql ("UPDATE main.meta SET name = \"nvts_feed_version\""
+       " WHERE name = \"nvts_md5sum\";");
 
   /* Set the database version to 76. */
 
@@ -6003,7 +6086,7 @@ migrate_75_to_76 ()
 int
 migrate_76_to_77 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 76. */
 
@@ -6051,7 +6134,7 @@ migrate_76_to_77 ()
 int
 migrate_77_to_78 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 77. */
   if (manage_db_version () != 77)
@@ -6097,7 +6180,7 @@ migrate_77_to_78 ()
 int
 migrate_78_to_79 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 78. */
 
@@ -6117,13 +6200,13 @@ migrate_78_to_79 ()
 
   /* Add preferences for "Ping Host" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');");
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
@@ -6131,7 +6214,7 @@ migrate_78_to_79 ()
 
   /* Add preferences for "Services" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '"
                   CONFIG_UUID_DISCOVERY "'),"
        "         'PLUGINS_PREFS',"
        "         'Services[radio]:Test SSL based services',"
@@ -6148,7 +6231,7 @@ migrate_78_to_79 ()
 
 #define MIGRATE_79_to_80_DELETE(table)                                \
  sql ("DELETE FROM " table                                            \
-      " WHERE owner IN (SELECT id FROM users WHERE %s);",             \
+      " WHERE owner IN (SELECT ROWID FROM users WHERE %s);",          \
       where)
 
 /**
@@ -6163,50 +6246,50 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("agents");
   MIGRATE_79_to_80_DELETE ("agents_trash");
   sql ("DELETE FROM config_preferences"
-       " WHERE config IN (SELECT id FROM configs"
-       "                  WHERE owner IN (SELECT id FROM users"
+       " WHERE config IN (SELECT ROWID FROM configs"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM config_preferences_trash"
-       " WHERE config IN (SELECT id FROM configs"
-       "                  WHERE owner IN (SELECT id FROM users"
+       " WHERE config IN (SELECT ROWID FROM configs"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM nvt_selectors"
        " WHERE name IN (SELECT nvt_selector FROM configs"
-       "                WHERE owner IN (SELECT id FROM users"
+       "                WHERE owner IN (SELECT ROWID FROM users"
        "                                WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("configs");
   MIGRATE_79_to_80_DELETE ("configs_trash");
   sql ("DELETE FROM alert_condition_data"
-       " WHERE alert IN (SELECT id FROM alerts"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_condition_data_trash"
-       " WHERE alert IN (SELECT id FROM alerts_trash"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_event_data"
-       " WHERE alert IN (SELECT id FROM alerts"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_event_data_trash"
-       " WHERE alert IN (SELECT id FROM alerts_trash"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_method_data"
-       " WHERE alert IN (SELECT id FROM alerts"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   sql ("DELETE FROM alert_method_data_trash"
-       " WHERE alert IN (SELECT id FROM alerts_trash"
-       "                 WHERE owner IN (SELECT id FROM users"
+       " WHERE alert IN (SELECT ROWID FROM alerts_trash"
+       "                 WHERE owner IN (SELECT ROWID FROM users"
        "                                 WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("alerts");
@@ -6214,8 +6297,8 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("filters");
   MIGRATE_79_to_80_DELETE ("filters_trash");
   sql ("DELETE FROM group_users"
-       " WHERE `group` IN (SELECT id FROM groups"
-       "                   WHERE owner IN (SELECT id FROM users"
+       " WHERE `group` IN (SELECT ROWID FROM groups"
+       "                   WHERE owner IN (SELECT ROWID FROM users"
        "                                   WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("groups");
@@ -6230,58 +6313,58 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("port_lists");
   MIGRATE_79_to_80_DELETE ("port_lists_trash");
   sql ("DELETE FROM port_ranges"
-       " WHERE port_list IN (SELECT id FROM port_lists"
-       "                     WHERE owner IN (SELECT id FROM users"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
        "                                     WHERE %s));",
        where);
   sql ("DELETE FROM port_ranges_trash"
-       " WHERE port_list IN (SELECT id FROM port_lists_trash"
-       "                     WHERE owner IN (SELECT id FROM users"
+       " WHERE port_list IN (SELECT ROWID FROM port_lists_trash"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
        "                                     WHERE %s));",
        where);
   sql ("DELETE FROM report_format_param_options"
        " WHERE report_format_param"
-       "       IN (SELECT id FROM report_format_params"
+       "       IN (SELECT ROWID FROM report_format_params"
        "           WHERE report_format"
-       "                 IN (SELECT id FROM report_formats"
-       "                     WHERE owner IN (SELECT id FROM users"
+       "                 IN (SELECT ROWID FROM report_formats"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
        "                                     WHERE %s)));",
        where);
   sql ("DELETE FROM report_format_param_options_trash"
        " WHERE report_format_param"
-       "       IN (SELECT id FROM report_format_params_trash"
+       "       IN (SELECT ROWID FROM report_format_params_trash"
        "           WHERE report_format"
-       "                 IN (SELECT id FROM report_formats"
-       "                     WHERE owner IN (SELECT id FROM users"
+       "                 IN (SELECT ROWID FROM report_formats"
+       "                     WHERE owner IN (SELECT ROWID FROM users"
        "                                     WHERE %s)));",
        where);
   sql ("DELETE FROM report_format_params"
-       " WHERE report_format IN (SELECT id FROM report_formats"
-       "                         WHERE owner IN (SELECT id FROM users"
+       " WHERE report_format IN (SELECT ROWID FROM report_formats"
+       "                         WHERE owner IN (SELECT ROWID FROM users"
        "                                         WHERE %s));",
        where);
   sql ("DELETE FROM report_format_params_trash"
-       " WHERE report_format IN (SELECT id FROM report_formats"
-       "                         WHERE owner IN (SELECT id FROM users"
+       " WHERE report_format IN (SELECT ROWID FROM report_formats"
+       "                         WHERE owner IN (SELECT ROWID FROM users"
        "                                         WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("report_formats");
   MIGRATE_79_to_80_DELETE ("report_formats_trash");
   sql ("DELETE FROM report_host_details"
        " WHERE report_host"
-       "       IN (SELECT id FROM report_hosts"
-       "           WHERE report IN (SELECT id FROM reports"
-       "                            WHERE owner IN (SELECT id FROM users"
+       "       IN (SELECT ROWID FROM report_hosts"
+       "           WHERE report IN (SELECT ROWID FROM reports"
+       "                            WHERE owner IN (SELECT ROWID FROM users"
        "                                            WHERE %s)));",
        where);
   sql ("DELETE FROM report_results"
-       " WHERE report IN (SELECT id FROM reports"
-       "                  WHERE owner IN (SELECT id FROM users"
+       " WHERE report IN (SELECT ROWID FROM reports"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
        "                                  WHERE %s));",
        where);
   sql ("DELETE FROM results"
-       " WHERE report IN (SELECT id FROM reports"
-       "                  WHERE owner IN (SELECT id FROM users"
+       " WHERE report IN (SELECT ROWID FROM reports"
+       "                  WHERE owner IN (SELECT ROWID FROM users"
        "                                  WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("reports");
@@ -6295,18 +6378,18 @@ migrate_79_to_80_remove_users (const char *where)
   MIGRATE_79_to_80_DELETE ("targets");
   MIGRATE_79_to_80_DELETE ("targets_trash");
   sql ("DELETE FROM task_files"
-       " WHERE task IN (SELECT id FROM tasks"
-       "                WHERE owner IN (SELECT id FROM users"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
        "                                WHERE %s));",
        where);
   sql ("DELETE FROM task_alerts"
-       " WHERE task IN (SELECT id FROM tasks"
-       "                WHERE owner IN (SELECT id FROM users"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
        "                                WHERE %s));",
        where);
   sql ("DELETE FROM task_preferences"
-       " WHERE task IN (SELECT id FROM tasks"
-       "                WHERE owner IN (SELECT id FROM users"
+       " WHERE task IN (SELECT ROWID FROM tasks"
+       "                WHERE owner IN (SELECT ROWID FROM users"
        "                                WHERE %s));",
        where);
   MIGRATE_79_to_80_DELETE ("tasks");
@@ -6416,7 +6499,7 @@ migrate_79_to_80 ()
   gchar *dir;
   struct stat state;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 79. */
 
@@ -6616,8 +6699,8 @@ migrate_79_to_80 ()
       /* Find user in db. */
 
       quoted_uuid = sql_quote (uuid);
-      switch (sql_int64 (&user,
-                         "SELECT id FROM users WHERE uuid = '%s';",
+      switch (sql_int64 (&user, 0, 0,
+                         "SELECT ROWID FROM users WHERE uuid = '%s';",
                          quoted_uuid))
         {
           case 0:
@@ -6632,7 +6715,7 @@ migrate_79_to_80 ()
                  quoted_uuid,
                  quoted_name);
             g_free (quoted_name);
-            user = sql_last_insert_rowid ();
+            user = sqlite3_last_insert_rowid (task_db);
             break;
           default:       /* Programming error. */
             assert (0);
@@ -6713,7 +6796,7 @@ migrate_79_to_80 ()
            "     password = %s%s%s,"
            "     hosts = '%s',"
            "     hosts_allow = %i"
-           " WHERE id = %llu;",
+           " WHERE ROWID = %llu;",
            role,
            quoted_uuid,
            quoted_method,
@@ -6731,7 +6814,7 @@ migrate_79_to_80 ()
       /* Remove all other users with this name from the db. */
 
       quoted_name = sql_quote (names[index]->d_name);
-      where = g_strdup_printf ("name = '%s' AND id != %llu",
+      where = g_strdup_printf ("name = '%s' AND ROWID != %llu",
                                quoted_name,
                                user);
       g_free (quoted_name);
@@ -6789,7 +6872,7 @@ migrate_79_to_80 ()
 int
 migrate_80_to_81 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 80. */
 
@@ -6813,23 +6896,23 @@ migrate_80_to_81 ()
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_ADMIN "', NULL, 'Admin', 'Administrator', m_now (),"
-       "  m_now ());");
+       " ('" ROLE_UUID_ADMIN "', NULL, 'Admin', 'Administrator', now (),"
+       "  now ());");
 
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_USER "', NULL, 'User', 'User', m_now (), m_now ());");
+       " ('" ROLE_UUID_USER "', NULL, 'User', 'User', now (), now ());");
 
   sql ("INSERT INTO roles"
        " (uuid, owner, name, comment, creation_time, modification_time)"
        " VALUES"
-       " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer', 'Observer', m_now (),"
-       "  m_now ());");
+       " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer', 'Observer', now (),"
+       "  now ());");
 
   sql ("INSERT INTO role_users (role, user)"
-       " SELECT (SELECT id FROM roles WHERE roles.name = users.role),"
-       "        users.id"
+       " SELECT (SELECT ROWID FROM roles WHERE roles.name = users.role),"
+       "        users.ROWID"
        " FROM users;");
 
   sql ("UPDATE users SET role = NULL;");
@@ -6851,7 +6934,7 @@ migrate_80_to_81 ()
 int
 migrate_81_to_82 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 80. */
 
@@ -6880,7 +6963,7 @@ migrate_81_to_82 ()
 int
 migrate_82_to_83 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 82. */
 
@@ -6939,7 +7022,7 @@ migrate_82_to_83 ()
 int
 migrate_83_to_84 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 83. */
 
@@ -6971,7 +7054,7 @@ migrate_83_to_84 ()
 int
 migrate_84_to_85 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 84. */
 
@@ -7007,7 +7090,7 @@ migrate_84_to_85 ()
 int
 migrate_85_to_86 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 85. */
 
@@ -7042,7 +7125,7 @@ migrate_85_to_86 ()
 int
 migrate_86_to_87 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 86. */
 
@@ -7092,7 +7175,7 @@ migrate_86_to_87 ()
 int
 migrate_87_to_88 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 87. */
 
@@ -7144,7 +7227,7 @@ migrate_87_to_88 ()
 int
 migrate_88_to_89 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 87. */
 
@@ -7254,7 +7337,7 @@ migrate_88_to_89 ()
 int
 migrate_89_to_90 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 89. */
 
@@ -7289,7 +7372,7 @@ migrate_89_to_90 ()
 int
 migrate_90_to_91 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 90. */
 
@@ -7376,7 +7459,7 @@ migrate_90_to_91 ()
 int
 migrate_91_to_92 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 91. */
 
@@ -7419,7 +7502,7 @@ migrate_91_to_92 ()
 int
 migrate_92_to_93 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 92. */
 
@@ -7453,7 +7536,7 @@ migrate_92_to_93 ()
 int
 migrate_93_to_94 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 93. */
 
@@ -7485,7 +7568,7 @@ migrate_93_to_94 ()
 int
 migrate_94_to_95 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 94. */
 
@@ -7519,7 +7602,7 @@ migrate_94_to_95 ()
 int
 migrate_95_to_96 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 95. */
 
@@ -7557,7 +7640,7 @@ migrate_95_to_96 ()
 int
 migrate_96_to_97 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 96. */
 
@@ -7589,7 +7672,7 @@ migrate_96_to_97 ()
 int
 migrate_97_to_98 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 97. */
 
@@ -7622,7 +7705,7 @@ migrate_97_to_98 ()
 int
 migrate_98_to_99 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 98. */
 
@@ -7660,7 +7743,7 @@ migrate_98_to_99 ()
 int
 migrate_99_to_100 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 99. */
 
@@ -7707,7 +7790,7 @@ migrate_99_to_100 ()
 int
 migrate_100_to_101 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 100. */
 
@@ -7761,7 +7844,7 @@ migrate_100_to_101 ()
 int
 migrate_101_to_102 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 101. */
 
@@ -7813,7 +7896,7 @@ migrate_101_to_102 ()
 int
 migrate_102_to_103 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 102. */
 
@@ -7857,7 +7940,7 @@ migrate_102_to_103 ()
 int
 migrate_103_to_104 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 103. */
 
@@ -7890,7 +7973,7 @@ migrate_103_to_104 ()
 int
 migrate_104_to_105 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 104. */
 
@@ -7920,7 +8003,7 @@ migrate_104_to_105 ()
 
   /* Clear cache for reports with already expired overrides */
   sql ("DELETE FROM report_counts"
-       " WHERE end_time != 0 AND end_time <= m_now ()");
+       " WHERE end_time != 0 AND end_time <= now()");
 
   /* Set the database version to 105. */
 
@@ -7939,7 +8022,7 @@ migrate_104_to_105 ()
 int
 migrate_105_to_106 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 105. */
 
@@ -7972,7 +8055,7 @@ migrate_105_to_106 ()
 int
 migrate_106_to_107 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 106. */
 
@@ -7986,7 +8069,7 @@ migrate_106_to_107 ()
 
   /* Results in container tasks were being given a task of 0. */
   sql ("UPDATE results"
-       " SET task = (SELECT task FROM reports WHERE reports.id = report);");
+       " SET task = (SELECT task FROM reports WHERE reports.ROWID = report);");
 
   /* Set the database version to 107. */
 
@@ -8005,7 +8088,7 @@ migrate_106_to_107 ()
 int
 migrate_107_to_108 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 107. */
 
@@ -8040,7 +8123,7 @@ migrate_107_to_108 ()
 int
 migrate_108_to_109 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 108. */
 
@@ -8087,7 +8170,7 @@ migrate_108_to_109 ()
 int
 migrate_109_to_110 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 109. */
 
@@ -8124,7 +8207,7 @@ migrate_109_to_110 ()
 int
 migrate_110_to_111 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 110. */
 
@@ -8161,7 +8244,7 @@ migrate_110_to_111 ()
 int
 migrate_111_to_112 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 111. */
 
@@ -8177,7 +8260,7 @@ migrate_111_to_112 ()
    * defaults will be used instead. */
 
   sql ("DELETE FROM config_preferences"
-       " WHERE config = (SELECT id FROM configs"
+       " WHERE config = (SELECT ROWID FROM configs"
        "                 WHERE uuid = '" CONFIG_UUID_HOST_DISCOVERY "')"
        " AND (name = 'Ping Host[checkbox]:Do a TCP ping'"
        "      OR name = 'Ping Host[checkbox]:Do an ICMP ping'"
@@ -8203,7 +8286,7 @@ migrate_111_to_112 ()
 int
 migrate_112_to_113 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 112. */
 
@@ -8237,7 +8320,7 @@ migrate_112_to_113 ()
 int
 migrate_113_to_114 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 113. */
 
@@ -8274,7 +8357,7 @@ migrate_113_to_114 ()
 int
 migrate_114_to_115 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 114. */
 
@@ -8323,7 +8406,7 @@ migrate_114_to_115 ()
 int
 migrate_115_to_116 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 115. */
 
@@ -8353,15 +8436,15 @@ migrate_115_to_116 ()
 
 #define ID_WHEN_WITH_TRASH(type)                                 \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
- "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
+ "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
  "               WHERE uuid = attach_id),"                       \
- "             (SELECT id FROM " G_STRINGIFY (type) "s_trash"    \
+ "             (SELECT ROWID FROM " G_STRINGIFY (type) "s_trash" \
  "               WHERE uuid = attach_id),"                       \
  "             0)"
 
 #define ID_WHEN_WITHOUT_TRASH(type)                              \
  " WHEN '" G_STRINGIFY (type) "' THEN"                           \
- "   COALESCE ((SELECT id FROM " G_STRINGIFY (type) "s"          \
+ "   COALESCE ((SELECT ROWID FROM " G_STRINGIFY (type) "s"       \
  "                WHERE uuid = attach_id),"                      \
  "             0)"
 
@@ -8383,7 +8466,7 @@ migrate_116_to_117 ()
 {
   int scap_loaded = manage_scap_loaded ();
   int cert_loaded = manage_cert_loaded ();
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 116. */
 
@@ -8396,7 +8479,7 @@ migrate_116_to_117 ()
   /* Update the database. */
 
   /* Rename attach_[...] columns in tags to resource_[...], reference
-   * resources by id and add new column for resource UUID. */
+   * resources by ROWID and add new column for resource UUID. */
 
   sql ("ALTER TABLE tags RENAME TO tags_117;");
   sql ("ALTER TABLE tags_trash RENAME TO tags_trash_117;");
@@ -8419,7 +8502,7 @@ migrate_116_to_117 ()
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value)"
        " SELECT"
-       "  id, uuid, owner, name, comment, creation_time, modification_time,"
+       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
        "  attach_type,"
        "  (SELECT CASE attach_type"
        ID_WHEN_WITH_TRASH (agent)
@@ -8477,7 +8560,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = attach_id) AS report_task"
-       "               JOIN tasks ON tasks.id = report_task.task),"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8487,7 +8570,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = attach_id) AS result_task"
-       "               JOIN tasks ON tasks.id = result_task.task),"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
@@ -8503,7 +8586,7 @@ migrate_116_to_117 ()
   sql ("DROP TABLE tags_117;");
 
   /* Rename attach_[...] columns in tags_trash to resource_[...], reference
-   * resources by id and add new column for resource UUID. */
+   * resources by ROWID and add new column for resource UUID. */
   sql ("CREATE TABLE IF NOT EXISTS tags_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner, name, comment,"
        "  creation_time, modification_time, resource_type, resource,"
@@ -8514,7 +8597,7 @@ migrate_116_to_117 ()
        "  creation_time, modification_time, resource_type, resource,"
        "  resource_uuid, resource_location, active, value)"
        " SELECT"
-       "  id, uuid, owner, name, comment, creation_time, modification_time,"
+       "  ROWID, uuid, owner, name, comment, creation_time, modification_time,"
        "  attach_type,"
        "  (SELECT CASE attach_type"
        ID_WHEN_WITH_TRASH (agent)
@@ -8572,7 +8655,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = attach_id) AS report_task"
-       "               JOIN tasks ON tasks.id = report_task.task),"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8582,7 +8665,7 @@ migrate_116_to_117 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = attach_id) AS result_task"
-       "               JOIN tasks ON tasks.id = result_task.task),"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END),"
        " active, value"
@@ -8626,7 +8709,7 @@ migrate_116_to_117 ()
 int
 migrate_117_to_118 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 117. */
 
@@ -8670,7 +8753,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = resource_uuid) AS report_task"
-       "               JOIN tasks ON tasks.id = report_task.task),"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8680,7 +8763,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = resource_uuid) AS result_task"
-       "               JOIN tasks ON tasks.id = result_task.task),"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
 
@@ -8715,7 +8798,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM reports"
        "                     WHERE reports.uuid = resource_uuid) AS report_task"
-       "               JOIN tasks ON tasks.id = report_task.task),"
+       "               JOIN tasks ON tasks.ROWID = report_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  WHEN 'result' THEN"
        "    COALESCE ((SELECT CASE WHEN tasks.hidden = 2 THEN "
@@ -8725,7 +8808,7 @@ migrate_117_to_118 ()
        "               END"
        "               FROM (SELECT task FROM results"
        "                     WHERE results.uuid = resource_uuid) AS result_task"
-       "               JOIN tasks ON tasks.id = result_task.task),"
+       "               JOIN tasks ON tasks.ROWID = result_task.task),"
                        G_STRINGIFY (LOCATION_TABLE) ")"
        "  ELSE " G_STRINGIFY (LOCATION_TABLE) " END);");
 
@@ -8747,7 +8830,7 @@ migrate_117_to_118 ()
 int
 migrate_118_to_119 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 118. */
 
@@ -8764,10 +8847,10 @@ migrate_118_to_119 ()
   sql ("DELETE FROM results"
        " WHERE NOT EXISTS (SELECT * FROM report_results"
        "                   WHERE report_results.result = results.id);");
-  if (sql_changes () > 0)
+  if (sqlite3_changes (task_db) > 0)
     {
       g_debug ("%s: Removed %d orphaned result(s).",
-               __FUNCTION__, sql_changes ());
+               __FUNCTION__, sqlite3_changes (task_db));
       sql ("DELETE FROM report_counts WHERE override = 0;");
       sql ("DELETE FROM report_counts WHERE override = 1;");
     }
@@ -8789,7 +8872,7 @@ migrate_118_to_119 ()
 int
 migrate_119_to_120 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 119. */
 
@@ -8831,7 +8914,7 @@ migrate_119_to_120 ()
 int
 migrate_120_to_121 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 120. */
 
@@ -8847,7 +8930,7 @@ migrate_120_to_121 ()
    * its permissions and they will be recreated (along with AUTHENTICATE
    * permission) on start-up. */
   sql ("DELETE FROM permissions WHERE subject_type = 'role'"
-       " AND subject = (SELECT id FROM roles"
+       " AND subject = (SELECT ROWID FROM roles"
        "                WHERE uuid = '" ROLE_UUID_OBSERVER "');");
 
   /* Set the database version to 121. */
@@ -8867,7 +8950,7 @@ migrate_120_to_121 ()
 int
 migrate_121_to_122 ()
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 121. */
 
@@ -8883,7 +8966,7 @@ migrate_121_to_122 ()
    * and they will be recreated (along with HELP permission) on start-up. */
   sql ("DELETE FROM permissions"
        " WHERE subject_type = 'role' AND subject IN"
-       "   (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
+       "   (SELECT ROWID FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
        "    OR uuid = '" ROLE_UUID_INFO"');");
 
   /* Set the database version to 122. */
@@ -8906,7 +8989,7 @@ migrate_122_to_123 ()
   int column_found = 0;
   iterator_t column_data;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Ensure that the database is currently version 122. */
 
@@ -8919,13 +9002,13 @@ migrate_122_to_123 ()
   /* Update the database. */
 
   /* Check if targets_trash has alive_test column, which was added in the
-   * migration to version 111 but previously missing in create_tables. */
+   *  migration to version 111 but previously missing in create_tables.   */
   init_iterator (&column_data, "PRAGMA table_info (targets_trash);");
   while (next (&column_data) && column_found == 0)
     {
       const char* column_name;
 
-      column_name = iterator_string (&column_data, 1);
+      column_name = (const char*)(sqlite3_column_text (column_data.stmt, 1));
       column_found = (strcmp (column_name, "alive_test") == 0);
     }
   cleanup_iterator (&column_data);
@@ -8939,247 +9022,6 @@ migrate_122_to_123 ()
   /* Set the database version to 123. */
 
   set_db_version (123);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 123 to version 124.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_123_to_124 ()
-{
-  sql_begin_exclusive ();
-
-  /* Ensure that the database is currently version 123. */
-
-  if (manage_db_version () != 123)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Rename lsc_credentials tables. */
-  sql ("ALTER TABLE lsc_credentials RENAME TO lsc_credentials_123;");
-  sql ("ALTER TABLE lsc_credentials_trash RENAME TO lsc_credentials_trash_123;");
-
-  /* Create new ones without public_key. */
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
-       "  login, password, comment, private_key, rpm, deb, exe,"
-       "  creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
-       "  login, password, comment, private_key, rpm, deb, exe,"
-       "  creation_time, modification_time);");
-
-  /* Migrate old data to new tables. */
-  sql ("INSERT INTO lsc_credentials"
-       " (id, uuid, owner , name, login, password, comment, private_key, rpm,"
-       "  deb, exe, creation_time, modification_time)"
-       " SELECT id, uuid, owner, name, login, password, comment, private_key,"
-       "  rpm, deb, exe, creation_time, modification_time"
-       " FROM lsc_credentials_123;");
-
-  sql ("INSERT INTO lsc_credentials_trash"
-       " (id, uuid, owner , name, login, password, comment, private_key, rpm,"
-       "  deb, exe, creation_time, modification_time)"
-       " SELECT id, uuid, owner, name, login, password, comment, private_key,"
-       "  rpm, deb, exe, creation_time, modification_time"
-       " FROM lsc_credentials_123;");
-
-  /* Delete old tables. */
-  sql ("DROP TABLE lsc_credentials_123;");
-  sql ("DROP TABLE lsc_credentials_trash_123;");
-
-  /* Set the database version 124. */
-
-  set_db_version (124);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 124 to version 125.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_124_to_125 ()
-{
-  sql_begin_exclusive ();
-
-  /* Ensure that the database is currently version 124. */
-
-  if (manage_db_version () != 124)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Add tasks scanner and configs type. */
-  sql ("ALTER TABLE tasks ADD COLUMN scanner;");
-  sql ("ALTER TABLE configs ADD COLUMN type;");
-  sql ("ALTER TABLE configs_trash ADD COLUMN type;");
-  sql ("UPDATE tasks SET scanner = 0;");
-  sql ("UPDATE configs SET type = 0;");
-  sql ("UPDATE configs_trash SET type = 0;");
-
-  /* Set the database version 125. */
-
-  set_db_version (125);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 125 to version 126.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_125_to_126 ()
-{
-  sql_begin_exclusive ();
-
-  /* Ensure that the database is currently version 125. */
-
-  if (manage_db_version () != 125)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* The description column was removed from table tasks. */
-
-  /* Move the table away. */
-
-  sql ("ALTER TABLE tasks RENAME TO tasks_125;");
-
-  /* Create the table in the new format. */
-
-  sql ("CREATE TABLE IF NOT EXISTS tasks"
-       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
-       "  time, comment, run_status INTEGER, start_time, end_time,"
-       "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
-       "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
-       "  schedule_location INTEGER, slave_location INTEGER,"
-       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
-       "  creation_time, modification_time);");
-
-  /* Copy the data into the new table. */
-
-  sql ("INSERT into tasks"
-       " (id, uuid, owner, name, hidden,"
-       "  time, comment, run_status, start_time, end_time,"
-       "  config, target, schedule, schedule_next_time,"
-       "  slave, config_location, target_location,"
-       "  schedule_location, slave_location,"
-       "  upload_result_count, hosts_ordering, scanner, alterable,"
-       "  creation_time, modification_time)"
-       " SELECT"
-       "  id, uuid, owner, name, hidden,"
-       "  time, comment, run_status, start_time, end_time,"
-       "  config, target, schedule, schedule_next_time,"
-       "  slave, config_location, target_location,"
-       "  schedule_location, slave_location,"
-       "  upload_result_count, hosts_ordering, scanner, alterable,"
-       "  creation_time, modification_time"
-       " FROM tasks_125;");
-
-  /* Drop the old table. */
-
-  sql ("DROP TABLE tasks_125;");
-
-  /* Set the database version to 126. */
-
-  set_db_version (126);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 126 to version 127.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_126_to_127 ()
-{
-  sql_begin_exclusive ();
-
-  /* Ensure that the database is currently version 126. */
-
-  if (manage_db_version () != 126)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* An error in copy_task gave some permissions wrong resource_uuid values. */
-
-  /* Copy the data into the new table. */
-
-  sql ("UPDATE permissions"
-       " SET resource_uuid = (SELECT uuid FROM tasks WHERE tasks.id = resource)"
-       " WHERE resource_type = 'task'"
-       " AND resource != 0;");
-
-  /* Set the database version to 127. */
-
-  set_db_version (127);
-
-  sql ("COMMIT;");
-
-  return 0;
-}
-
-/**
- * @brief Migrate the database from version 127 to version 128.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_127_to_128 ()
-{
-  sql_begin_exclusive ();
-
-  /* Ensure that the database is currently version 127. */
-
-  if (manage_db_version () != 127)
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Results got a Quality of Detection column. */
-
-  sql ("ALTER TABLE results ADD COLUMN qod INTEGER;");
-  sql ("UPDATE results SET qod = -1;");
-
-  /* Set the database version to 128. */
-
-  set_db_version (128);
 
   sql ("COMMIT;");
 
@@ -9314,11 +9156,6 @@ static migrator_t database_migrators[]
     {121, migrate_120_to_121},
     {122, migrate_121_to_122},
     {123, migrate_122_to_123},
-    {124, migrate_123_to_124},
-    {125, migrate_124_to_125},
-    {126, migrate_125_to_126},
-    {127, migrate_126_to_127},
-    {128, migrate_127_to_128},
     /* End marker. */
     {-1, NULL}};
 

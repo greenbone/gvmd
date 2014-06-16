@@ -42,7 +42,7 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 {
   config_t config;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* Create the Host Discovery config. */
 
@@ -51,11 +51,11 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
        " creation_time, modification_time)"
        " VALUES ('%s', 'Host Discovery', NULL,"
        "         '%s', 'Network Host Discovery scan configuration.',"
-       "         0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, now (), now ());",
        uuid,
        selector_name);
 
-  config = sql_last_insert_rowid ();
+  config = sqlite3_last_insert_rowid (task_db);
 
   /* Add the Ping Host NVT to the config. */
 
@@ -68,8 +68,8 @@ make_config_host_discovery (char *const uuid, char *const selector_name)
 
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
-       "     modification_time = m_now ()"
-       " WHERE id = %llu;",
+       "     modification_time = now ()"
+       " WHERE ROWID = %llu;",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
        config);
@@ -117,21 +117,22 @@ check_config_host_discovery (char *const uuid)
 {
   int update;
 
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   update = 0;
 
   /* Check new preference. */
 
-  if (sql_int ("SELECT count (*) FROM config_preferences"
-               " WHERE config = (SELECT id FROM configs WHERE uuid = '%s')"
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM config_preferences"
+               " WHERE config = (SELECT ROWID FROM configs WHERE uuid = '%s')"
                "       AND type = 'PLUGINS_PREFS'"
                "       AND name = '" NAME "';",
                uuid)
       == 0)
     {
       sql ("INSERT INTO config_preferences (config, type, name, value)"
-           " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
+           " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
            "         'PLUGINS_PREFS',"
            "         '" NAME "',"
            "         'yes');",
@@ -141,7 +142,8 @@ check_config_host_discovery (char *const uuid)
 
   /* Check new NVT. */
 
-  if (sql_int ("SELECT count (*) FROM nvt_selectors"
+  if (sql_int (0, 0,
+               "SELECT count (*) FROM nvt_selectors"
                " WHERE name = (SELECT nvt_selector FROM configs"
                "               WHERE uuid = '%s')"
                "       AND family_or_nvt = '1.3.6.1.4.1.25623.1.0.12288';",

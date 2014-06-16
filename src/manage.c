@@ -41,7 +41,6 @@
 #define _XOPEN_SOURCE
 
 #include "manage.h"
-#include "scanner.h"
 #include "sql.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
@@ -66,12 +65,10 @@
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
-#include <openvas/base/osp.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
 #include <openvas/misc/openvas_uuid.h>
-#include <openvas/misc/openvas_proctitle.h>
 
 #ifdef S_SPLINT_S
 #include "splint.h"
@@ -165,8 +162,6 @@ threat_message_type (const char *threat)
     return "Log Message";
   if (strcasecmp (threat, "Debug") == 0)
     return "Debug Message";
-  if (strcasecmp (threat, "Error") == 0)
-    return "Error Message";
   if (strcasecmp (threat, "False Positive") == 0)
     return "False Positive";
   return NULL;
@@ -194,8 +189,6 @@ message_type_threat (const char *type)
     return "Log";
   if (strcasecmp (type, "Debug Message") == 0)
     return "Debug";
-  if (strcasecmp (type, "Error Message") == 0)
-    return "Error";
   if (strcasecmp (type, "False Positive") == 0)
     return "False Positive";
   return NULL;
@@ -356,6 +349,51 @@ level_max_severity (const char *level, const gchar *class)
       else
         return SEVERITY_UNDEFINED;
     }
+}
+
+/**
+ * @brief Check whether a severity matches a message type.
+ *
+ * @param[in] severity  severity score
+ * @param[in] type      message type
+ *
+ * @return 1 if matches, else 0.
+ */
+int
+severity_matches_type (double severity, const char *type)
+{
+  if (type == NULL)
+    {
+      g_warning ("%s: type is NULL", __FUNCTION__);
+      return 0;
+    }
+  if (severity == SEVERITY_LOG)
+    return strcmp ("Log Message", type) == 0;
+  if (severity == SEVERITY_FP)
+    return strcmp ("False Positive", type) == 0;
+  if (severity == SEVERITY_DEBUG)
+    return strcmp ("Debug Message", type) == 0;
+  if (severity == SEVERITY_ERROR)
+    return strcmp ("Error Message", type) == 0;
+  if (severity > 0.0 && severity <= 10.0)
+    {
+      if (strcmp ("Alarm", type) == 0)
+        return 1;
+      if ((strcmp ("high", type) == 0)
+               || (strcmp ("medium", type) == 0)
+               || (strcmp ("low", type) == 0))
+        return severity_in_level (severity, type);
+      if (strcmp ("Security Hole", type) == 0)
+        return severity_in_level (severity, "high");
+      if (strcmp ("Security Warning", type) == 0)
+        return severity_in_level (severity, "medium");
+      if (strcmp ("Security Note", "type") == 0)
+        return severity_in_level (severity, "low");
+      return 0;
+    }
+  g_warning ("%s: Invalid severity score given: %f",
+             __FUNCTION__, severity);
+  return 0;
 }
 
 /**
@@ -720,6 +758,11 @@ severity_data_level_counts (const severity_data_t *severity_data,
 /* Task globals. */
 
 /**
+ * @brief Scanner available flag.
+ */
+short scanner_up = 1;
+
+/**
  * @brief Scanner active flag.
  *
  * This indicates whether the scanner is doing something that the manager
@@ -1036,6 +1079,76 @@ task_run_status_name (task_t task)
   return run_status_name (task_run_status (task));
 }
 
+/** @todo Test these RC parsing functions. */
+
+/**
+ * @brief Return a preference from an RC.
+ *
+ * @param[in]  desc  The RC.
+ * @param[in]  name  The name of the preference.
+ *
+ * @return The preference on success, else NULL.
+ */
+char*
+rc_preference (const char* desc, const char* name)
+{
+  char* seek;
+
+  if (desc == NULL)
+    {
+      tracef ("   desc NULL\n");
+      return NULL;
+    }
+
+  while ((seek = strchr (desc, '\n')))
+    {
+      char* eq = seek
+                 ? memchr (desc, '=', seek - desc)
+                 : strchr (desc, '=');
+      if (eq)
+        {
+#if 0
+          tracef ("   1 found: %.*s\n",
+                  seek ? seek - desc : strlen (seek),
+                  desc);
+#endif
+          if (strncmp (desc, name, eq - desc - 1) == 0)
+            {
+              gchar* ret;
+              if (seek > eq + 1)
+                ret = g_strndup (eq + 2,
+                                 seek ? seek - (eq + 2) : strlen (seek));
+              else
+                ret = g_strdup ("");
+              return ret;
+            }
+        }
+      else if ((seek ? seek - desc > 7 : 1)
+               && strncmp (desc, "begin(", 6) == 0)
+        {
+          /* Read over the section. */
+          desc = seek + 1;
+          while ((seek = strchr (desc, '\n')))
+            {
+              if ((seek ? seek - desc > 5 : 1)
+                  && strncmp (desc, "end(", 4) == 0)
+                {
+                  break;
+                }
+#if 0
+              tracef ("   1 skip: %.*s\n",
+                      seek ? seek - desc : strlen (seek),
+                      desc);
+#endif
+              desc = seek + 1;
+            }
+        }
+      if (seek == NULL) break;
+      desc = seek + 1;
+    }
+  return NULL;
+}
+
 /**
  * @brief Get files to send.
  *
@@ -1326,9 +1439,11 @@ send_ifaces_access_preferences (void)
   char *ifaces;
   int ifaces_allow;
 
-  ifaces = sql_string ("SELECT ifaces FROM users WHERE uuid = '%s';",
+  ifaces = sql_string (0, 0,
+                       "SELECT ifaces FROM users WHERE uuid = '%s';",
                        current_credentials.uuid);
-  ifaces_allow = sql_int ("SELECT ifaces_allow FROM users WHERE uuid = '%s';",
+  ifaces_allow = sql_int (0, 0,
+                          "SELECT ifaces_allow FROM users WHERE uuid = '%s';",
                           current_credentials.uuid);
 
   if (ifaces && strlen (ifaces))
@@ -1365,10 +1480,12 @@ send_hosts_access_preferences (void)
   char *hosts;
   int hosts_allow;
 
-  hosts = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
-                      current_credentials.uuid);
-  hosts_allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
-                         current_credentials.uuid);
+  hosts = sql_string (0, 0,
+                       "SELECT hosts FROM users WHERE uuid = '%s';",
+                       current_credentials.uuid);
+  hosts_allow = sql_int (0, 0,
+                          "SELECT hosts_allow FROM users WHERE uuid = '%s';",
+                          current_credentials.uuid);
 
   if (hosts && strlen (hosts))
     {
@@ -2008,23 +2125,24 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                              1, NULL);
           if (next (&credentials))
             {
-              const char *user, *password, *private_key;
+              const char *user, *password, *public_key, *private_key;
               gchar *user_copy, *password_copy;
 
               user = lsc_credential_iterator_login (&credentials);
               password = lsc_credential_iterator_password (&credentials);
+              public_key = lsc_credential_iterator_public_key (&credentials);
               private_key = lsc_credential_iterator_private_key (&credentials);
 
               if (user == NULL
-                  || (private_key == NULL && password == NULL))
+                  || (public_key == NULL && password == NULL))
                 {
                   cleanup_iterator (&credentials);
                   goto fail;
                 }
 
-              if (private_key)
+              if (public_key)
                 ret = omp_create_lsc_credential_key
-                       (session, name, user, password, private_key,
+                       (session, name, user, password, public_key, private_key,
                         "Slave SSH credential created by Master",
                         &slave_ssh_credential_uuid);
               else
@@ -2104,7 +2222,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
 
           hosts_copy = g_strdup (hosts);
-          port_range = target_port_range (get_iterator_resource (&targets));
+          port_range = target_port_range (target_iterator_target (&targets));
           cleanup_iterator (&targets);
 
           opts = omp_create_target_opts_defaults;
@@ -2698,241 +2816,6 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
 }
 
 /**
- * @brief Give a task's OSP scan options in a hash table.
- *
- * @param[in]   task        The task.
- *
- * @return Hash table with options names and their values.
- */
-static GHashTable *
-task_scanner_options (task_t task)
-{
-  GHashTable *table;
-  config_t config;
-  iterator_t prefs;
-
-  config = task_config (task);
-  init_preference_iterator (&prefs, config, "SERVER_PREFS");
-  table = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  while (next (&prefs))
-    {
-      char *name, *value;
-      name = g_strdup (preference_iterator_name (&prefs));
-      if (g_str_has_suffix (name, "_file"))
-        value = g_base64_encode ((guchar *) preference_iterator_value (&prefs),
-                                 strlen (preference_iterator_value (&prefs)));
-      else
-        value = g_strdup (preference_iterator_value (&prefs));
-      g_hash_table_insert (table, name, value);
-    }
-  cleanup_iterator (&prefs);
-  return table;
-}
-
-static void
-parse_osp_report (task_t task, report_t report, const char *report_xml)
-{
-  entity_t entity, child;
-  entities_t results;
-  const char *str, *target;
-  char *quoted_target;
-  time_t start_time, end_time;
-
-  assert (task);
-  assert (report);
-  assert (report_xml);
-
-  if (parse_entity (report_xml, &entity))
-    {
-      g_warning ("Couldn't parse %s OSP scan report\n", report_xml);
-      return;
-    }
-
-  /* Set the report's start and end times. */
-  str = entity_attribute (entity, "start_time");
-  assert (str);
-  start_time = atoi (str);
-  set_scan_start_time_epoch (report, start_time);
-  str = entity_attribute (entity, "end_time");
-  assert (str);
-  end_time = atoi (str);
-  set_scan_end_time_epoch (report, end_time);
-
-  /* Insert target as host */
-  target = entity_attribute (entity, "target");
-  assert (target);
-  quoted_target = sql_quote (target);
-  sql ("INSERT INTO report_hosts"
-       "  (report, host, start_time, end_time, current_port, max_port)"
-       " VALUES (%llu, '%s', %llu, %llu, 0, 0)", report, quoted_target,
-       start_time, end_time);
-  g_free (quoted_target);
-
-  /* Insert results. */
-  child = entity_child (entity, "results");
-  assert (child);
-  results = child->entities;
-  while (results)
-    {
-      result_t result;
-      const char *type, *mtype, *name;
-      char *desc;
-      entity_t r_entity = results->data;
-
-      type = entity_attribute (r_entity, "type");
-      /* XXX: Alarm messages are tied associated NVT at the moment. */
-      if (!strcmp (type, "Alarm"))
-        mtype = "Log Message";
-      else
-        mtype = threat_message_type (type);
-      name = entity_attribute (r_entity, "name");
-      assert (name);
-      desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
-      result = make_result (task, target, "", "", mtype, desc);
-      g_free (desc);
-      report_add_result (report, result);
-      results = next_entities (results);
-    }
-  free_entity (entity);
-}
-
-/**
- * @brief Fork a child to handle an OSP scan's fetching and inserting.
- *
- * @param[in]   task        The task.
- * @param[in]   report      The report.
- * @param[in]   host        The OSP scanner's host.
- * @param[in]   port        The OSP scanner's port.
- *
- * @return Parent returns with 0 if success, -1 if failure. Child process
- *         doesn't return and simply exits.
- */
-static int
-fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
-{
-  char *report_xml, *report_id, title[128];
-  int rc, retry_limit = 30;
-
-  switch (fork ())
-    {
-      case 0:
-        break;
-      case -1:
-        return -1;
-      default:
-        return 0;
-    }
-
-  /* Child: Re-open DB after fork and periodically check scan progress.
-   * If progress == 100%: Parse the report results and other info then exit(0).
-   * Else, exit(1) in error cases like connection to scanner failure.
-   */
-  reinit_manage_process ();
-  report_id = report_uuid (report);
-  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
-  proctitle_set (title);
-
-  while (1)
-    {
-      int progress;
-      osp_connection_t *connection;
-
-      connection = osp_connection_new (host, port, CACERT, CLIENTCERT,
-                                       CLIENTKEY);
-      if (!connection)
-        {
-          g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          exit (1);
-        }
-
-      report_xml = NULL;
-      progress = osp_get_scan (connection, report_id, &report_xml);
-      osp_connection_close (connection);
-      assert (progress <= 100);
-      if (progress < 0)
-        {
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
-          rc = 1;
-          break;
-        }
-      else if (progress == 100)
-        {
-          /* Parse the report XML. */
-          parse_osp_report (task, report, report_xml);
-          g_free (report_xml);
-          set_task_run_status (task, TASK_STATUS_DONE);
-          set_report_scan_run_status (report, TASK_STATUS_DONE);
-          rc = 0;
-          break;
-        }
-      g_free (report_xml);
-      sleep (10);
-      retry_limit--;
-      if (retry_limit < 0)
-        {
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
-          rc = 1;
-          break;
-        }
-    }
-  g_free (report_id);
-  exit (rc);
-}
-
-/**
- * @brief Start a task on an OSP scanner.
- *
- * @param[in]   task_id    The task ID.
- * @param[out]  report_id  The report ID.
- *
- * @return 0 success, -1 error, -5 scanner is down.
- */
-int
-run_osp_task (task_t task, char **report_id)
-{
-  char *host, *targets;
-  int port, ret;
-  GHashTable *options;
-  osp_connection_t *connection;
-  scanner_t scanner;
-  report_t report;
-
-  scanner = task_scanner (task);
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
-  if (!connection)
-    {
-      g_free (host);
-      return -5;
-    }
-  targets = target_hosts (task_target (task));
-  options = task_scanner_options (task);
-  *report_id = osp_start_scan (connection, targets, options);
-  osp_connection_close (connection);
-  g_free (targets);
-  g_hash_table_destroy (options);
-  if (*report_id == NULL)
-    return -1;
-
-  report = make_report (task, *report_id, TASK_STATUS_RUNNING);
-  set_task_run_status (task, TASK_STATUS_RUNNING);
-
-  /* Fork OSP scan handler. */
-  ret = fork_osp_scan_handler (task, report, host, port);
-  g_free (host);
-  if (ret)
-    {
-      g_warning ("Couldn't fork OSP scan handler.\n");
-      return -1;
-    }
-  return 0;
-}
-
-/**
  * @brief Start a task.
  *
  * Use \ref send_to_server to queue the task start sequence in the scanner
@@ -2947,11 +2830,11 @@ run_osp_task (task_t task, char **report_id)
  * @param[in]   permission  Permission required on task.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
- *         4 resuming task not supported, -1 error, -2 task is missing a target,
- *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
- *         down, -6 already a task running in this process, -9 fork failed.
- *         After forking: 0 success (parent), 2 success (child), -10 error
- *         (child).
+ *         -1 error, -2 task is missing a target, -3 creating the report failed,
+ *         -4 target missing hosts, -5 scanner is down, -6 already a task
+ *         running in this process, -9 fork failed.
+ *         After forking: 0 success (parent), 2 success (child),
+ *         -10 error (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from,
@@ -2975,13 +2858,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (task == 0)
     return 3;
 
-  if (from > 0 && task_scanner (task) > 0)
-    return 4;
-  if (task_scanner (task) > 0)
-    return run_osp_task  (task, report_id);
-
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+  if (scanner_up == 0)
     return -5;
 
   if (set_task_requested (task, &run_status))
@@ -3341,7 +3218,7 @@ run_task (const char *task_id, char **report_id, int from,
           if (sendf_to_server ("SSH Authorization[entry]:SSH login name:"
                                " <|> %s\n",
                                user)
-              || (lsc_credential_iterator_private_key (&credentials)
+              || (lsc_credential_iterator_public_key (&credentials)
                    ? sendf_to_server ("SSH Authorization[password]:"
                                       "SSH key passphrase:"
                                       " <|> %s\n",
@@ -3362,6 +3239,32 @@ run_task (const char *task_id, char **report_id, int from,
               set_report_scan_run_status (current_report, run_status);
               current_report = (report_t) 0;
               return -10;
+            }
+
+          if (lsc_credential_iterator_public_key (&credentials)
+              && (strlen (lsc_credential_iterator_public_key (&credentials))
+                  > 7))
+            {
+              gchar *public_key, *space;
+              char *uuid = openvas_uuid_make ();
+              if (uuid == NULL)
+                goto fail;
+
+              public_key = g_strdup (lsc_credential_iterator_public_key
+                                      (&credentials)
+                                     + 8);
+              space = memchr (public_key, ' ', strlen (public_key));
+              if (space)
+                *space = '\0';
+
+              g_ptr_array_add (preference_files, (gpointer) uuid);
+              g_ptr_array_add (preference_files, (gpointer) public_key);
+
+              if (sendf_to_server ("SSH Authorization[file]:"
+                                   "SSH public key:"
+                                   " <|> %s\n",
+                                   uuid))
+                goto fail;
             }
 
           if (lsc_credential_iterator_private_key (&credentials))
@@ -3586,8 +3489,7 @@ stop_task_internal (task_t task)
     {
       if (current_scanner_task == task)
         {
-          if (!openvas_scanner_connected ()
-              && (openvas_scanner_connect () || openvas_scanner_init (0)))
+          if (scanner_up == 0)
             return -5;
           if (send_to_server ("CLIENT <|> STOP_WHOLE_TEST <|> CLIENT\n"))
             return -1;
@@ -3622,7 +3524,7 @@ stop_task_internal (task_t task)
  *
  * @return 0 on success, 1 if stop requested, 3 failed to find task,
  *         99 permission denied, -1 if out of space in scanner output buffer,
- *         -5 scanner down, 2 if stopping the task is not supported.
+ *         -5 scanner down.
  */
 int
 stop_task (const char *task_id)
@@ -3638,9 +3540,6 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (task_scanner (task) > 0)
-    return 2;
-
   return stop_task_internal (task);
 }
 
@@ -3652,9 +3551,9 @@ stop_task (const char *task_id)
  *
  * @param[in]  task_id  Task UUID.
  *
- * @return 0 on success, 1 if pause requested, 2 Pausing not supported,
- *         3 failed to find task, 99 permission denied, -1 internal error, -3 if
- *         out of space in scanner output buffer, -5 scanner down.
+ * @return 0 on success, 1 if pause requested, 3 failed to find task,
+ *         99 permission denied, -1 internal error, -3 if out of space in
+ *         scanner output buffer, -5 scanner down.
  */
 int
 pause_task (const char *task_id)
@@ -3671,11 +3570,7 @@ pause_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (task_scanner (task) > 0)
-    return 2;
-
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+  if (scanner_up == 0)
     return -5;
 
   run_status = task_run_status (task);
@@ -3719,8 +3614,7 @@ resume_paused_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
+  if (scanner_up == 0)
     return -5;
 
   run_status = task_run_status (task);

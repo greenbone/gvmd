@@ -28,30 +28,17 @@
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
 set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
 
-if (BACKEND STREQUAL SQLITE3)
-  set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
-else (BACKEND STREQUAL SQLITE3)
-  set (BACKEND_FILES sql_pg.c manage_pg.c)
-endif (BACKEND STREQUAL SQLITE3)
-
 add_library (manage STATIC
-             manage.c sql.c
-             manage_ranges_all_tcp_nmap_5_51_top_100.c
+             manage.c sql.c manage_ranges_all_tcp_nmap_5_51_top_100.c
              manage_ranges_all_tcp_nmap_5_51_top_1000.c
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
              manage_ranges_nmap_5_51_top_2000_top_100.c
              manage_acl.c manage_config_discovery.c
              manage_config_host_discovery.c manage_config_system_discovery.c
-             manage_sql.c manage_migrators.c scanner.c
-			 ${BACKEND_FILES}
-             lsc_user.c lsc_crypt.c)
+             manage_sql.c manage_migrators.c lsc_user.c lsc_crypt.c)
 set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
-if (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
-else (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
-endif (BACKEND STREQUAL SQLITE3)
+target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 
 add_library (omp STATIC omp.c)
 set_target_properties (omp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
@@ -138,13 +125,8 @@ if (SBINDIR)
   add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
 endif (SBINDIR)
 
-if (BACKEND STREQUAL SQLITE3)
-  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-else (BACKEND STREQUAL SQLITE3)
-  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "-I${POSTGRESQL_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-endif (BACKEND STREQUAL SQLITE3)
+set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
+                       "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Install
 
@@ -173,7 +155,6 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ompd.c" "${CMAKE_CURRENT_SOURCE_DIR}/omp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/scanner.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_host_discovery.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_system_discovery.c"
@@ -183,12 +164,10 @@ set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_iana_tcp_udp_2012.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_ranges_nmap_5_51_top_2000_top_100.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sqlite3.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ovas-mngr-comm.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql_sqlite3.c")
+  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c" "${CMAKE_CURRENT_SOURCE_DIR}/sql.c")
 add_custom_target (etags COMMENT "Building TAGS..."
                    COMMAND etags ${C_FILES})
 add_custom_target (ctags COMMENT "Building tags..."

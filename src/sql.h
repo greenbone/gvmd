@@ -26,62 +26,13 @@
 #ifndef OPENVAS_MANAGER_SQL_H
 #define OPENVAS_MANAGER_SQL_H
 
-#include "lsc_crypt.h"  /* For lsc_crypt_ctx_t. */
+#include "manage.h"  /* For iterator_t. */
+
+#include <sqlite3.h>
 #include <glib.h>
 
-
-/* Types. */
-
-/**
- * @brief A resource, like a task or target.
- */
-typedef long long int resource_t;
-
-/**
- * @brief A prepared SQL statement.
- */
-typedef struct sql_stmt sql_stmt_t;
-
-/**
- * @brief A generic SQL iterator.
- */
-typedef struct
-{
-  sql_stmt_t* stmt;          ///< SQL statement.
-  gboolean done;             ///< End flag.
-  int prepared;              ///< Prepared flag.
-  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
-} iterator_t;
-
-
-/* Helpers. */
-
-int
-sql_is_sqlite3 ();
-
-const char *
-sql_schema ();
-
-const char *
-sql_select_limit (int);
-
-int
-sql_is_open ();
-
-int
-sql_open (const char *);
-
-void
-sql_close ();
-
-void
-sql_close_fork ();
-
-int
-sql_changes ();
-
-resource_t
-sql_last_insert_rowid ();
+extern sqlite3 *
+task_db;
 
 gchar *
 sql_nquote (const char *, size_t);
@@ -95,9 +46,6 @@ sql_insert (const char *);
 void
 sql (char * sql, ...);
 
-void
-sqli (resource_t *, char *, ...);
-
 int
 sql_error (char* sql, ...);
 
@@ -107,56 +55,125 @@ sql_giveup (char * sql, ...);
 void
 sql_quiet (char * sql, ...);
 
+int
+sql_x (unsigned int, unsigned int, char *, va_list, sqlite3_stmt **);
+
 double
-sql_double (char* sql, ...);
+sql_double (unsigned int, unsigned int, char* sql, ...);
 
 int
-sql_int (char *, ...);
+sql_int (unsigned int, unsigned int, char *, ...);
 
 char *
-sql_string (char *, ...);
+sql_string (unsigned int, unsigned int, char *, ...);
 
 char *
-sql_string_quiet (char *, ...);
+sql_string_quiet (unsigned int, unsigned int, char *, ...);
 
 int
-sql_int64 (long long int * ret, char *, ...);
+sql_int64 (long long int * ret, unsigned int, unsigned int, char *, ...);
+
+void
+sql_make_uuid (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_hosts_contains (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_clean_hosts (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_uniquify (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_iso_time (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_parse_time (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_next_time (sqlite3_context *, int, sqlite3_value **);
+
+void
+sql_now (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_tag (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_max_hosts (sqlite3_context *, int, sqlite3_value **);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
 
-
-/* Transactions. */
+void
+sql_common_cve (sqlite3_context *, int argc, sqlite3_value **);
 
 void
-sql_begin_exclusive ();
-
-int
-sql_begin_exclusive_giveup ();
+sql_current_offset (sqlite3_context *, int, sqlite3_value **);
 
 void
-sql_begin_immediate ();
+sql_report_progress (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_report_severity (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_report_severity_count (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_task_severity (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_severity_matches_type (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_severity_matches_ov (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_severity_to_level (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_severity_to_type (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_task_trend (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_threat_level (sqlite3_context *, int argc, sqlite3_value **);
+
+void
+sql_regexp (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_run_status_name (sqlite3_context *, int, sqlite3_value **);
+
+void
+sql_resource_name (sqlite3_context *, int, sqlite3_value **);
+
+void
+sql_resource_exists (sqlite3_context *, int, sqlite3_value **);
+
+void
+sql_severity_in_level (sqlite3_context *, int, sqlite3_value**);
+
+void
+sql_user_can_everything (sqlite3_context *, int, sqlite3_value **);
 
 
 /* Iterators. */
 
+sqlite3_stmt *
+sql_prepare (const char* sql, ...);
+
 void
-init_prepared_iterator (iterator_t*, sql_stmt_t*);
+init_prepared_iterator (iterator_t*, sqlite3_stmt*);
 
 void
 init_iterator (iterator_t*, const char*, ...);
 
-double
-iterator_double (iterator_t*, int);
-
-int
-iterator_int (iterator_t*, int);
-
 long long int
 iterator_int64 (iterator_t*, int);
-
-int
-iterator_null (iterator_t*, int);
 
 const char*
 iterator_string (iterator_t*, int);
@@ -172,44 +189,5 @@ cleanup_iterator (iterator_t*);
 
 gboolean
 next (iterator_t*);
-
-
-/* Prepared statements. */
-
-sql_stmt_t *
-sql_prepare (const char* sql, ...);
-
-int
-sql_bind_blob (sql_stmt_t *, int, const void *, int);
-
-int
-sql_bind_int64 (sql_stmt_t *, int, long long int);
-
-int
-sql_bind_text (sql_stmt_t *, int, const gchar *, gsize);
-
-int
-sql_bind_double (sql_stmt_t *, int, double);
-
-int
-sql_exec (sql_stmt_t *);
-
-void
-sql_finalize (sql_stmt_t *);
-
-int
-sql_reset (sql_stmt_t *);
-
-double
-sql_column_double (sql_stmt_t *, int);
-
-const char *
-sql_column_text (sql_stmt_t *, int);
-
-int
-sql_column_int (sql_stmt_t *, int);
-
-long long int
-sql_column_int64 (sql_stmt_t *, int);
 
 #endif /* not OPENVAS_MANAGER_SQL_H */

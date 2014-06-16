@@ -568,7 +568,7 @@ alien_found ()
   return found;
 }
 
-/**
+/*
  * @brief Recreate RPM package.
  *
  * @param[in]   name         User name.
@@ -750,7 +750,7 @@ lsc_user_deb_create (const gchar *user, const gchar *rpm_file)
   return deb_name;
 }
 
-/**
+/*
  * @brief Recreate Debian package.
  *
  * @param[in]   name         User name.
@@ -1027,7 +1027,7 @@ lsc_user_exe_create (const gchar *user_name, const gchar *password,
   return 0;
 }
 
-/**
+/*
  * @brief Recreate NSIS package.
  *
  * @param[in]   name         User name.

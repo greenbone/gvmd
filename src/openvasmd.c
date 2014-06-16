@@ -81,6 +81,7 @@
 #include <arpa/inet.h>
 #endif
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <glib.h>
@@ -109,7 +110,6 @@
 
 #include "logf.h"
 #include "manage.h"
-#include "scanner.h"
 #include "ompd.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
@@ -226,7 +226,7 @@ struct sockaddr_in manager_address_2;
 /**
  * @brief The Scanner port.
  */
-static int openvassd_port;
+static int scanner_port;
 
 /**
  * @brief The address of the Scanner.
@@ -288,6 +288,61 @@ gboolean scheduling_enabled;
 /* Forking, serving the client. */
 
 /**
+ * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
+ *
+ * @param[in]  scanner_credentials  Scanner credentials.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+load_cas (gnutls_certificate_credentials_t *scanner_credentials)
+{
+  DIR *dir;
+  struct dirent *entry;
+
+  dir = opendir (CA_DIR);
+  if (dir == NULL)
+    {
+      if (errno != ENOENT)
+        {
+          g_warning ("%s: failed to open " CA_DIR ": %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return -1;
+        }
+    }
+  else while ((entry = readdir (dir)))
+    {
+      gchar *name;
+      struct stat state;
+
+      if ((strcmp (entry->d_name, ".") == 0)
+          || (strcmp (entry->d_name, "..") == 0))
+        continue;
+
+      name = g_build_filename (CA_DIR, entry->d_name, NULL);
+      stat (name, &state);
+      if (S_ISREG (state.st_mode)
+          && (gnutls_certificate_set_x509_trust_file (*scanner_credentials,
+                                                      name,
+                                                      GNUTLS_X509_FMT_PEM)
+              < 0))
+        {
+          g_warning ("%s: gnutls_certificate_set_x509_trust_file failed: %s\n",
+                     __FUNCTION__,
+                     name);
+          g_free (name);
+          closedir (dir);
+          return -1;
+        }
+      g_free (name);
+    }
+  if (dir != NULL)
+    closedir (dir);
+  return 0;
+}
+
+/**
  * @brief Serve the client.
  *
  * Connect to the openvassd scanner, then call \ref serve_omp to serve OMP.
@@ -302,7 +357,22 @@ gboolean scheduling_enabled;
 int
 serve_client (int server_socket, int client_socket)
 {
-  int optval;
+  int scanner_socket, optval;
+  gnutls_session_t scanner_session;
+  gnutls_certificate_credentials_t scanner_credentials;
+
+  /* Make the scanner socket. */
+  scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
+  if (scanner_socket == -1)
+    {
+      g_warning ("%s: failed to create scanner socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
+      return EXIT_FAILURE;
+    }
 
   optval = 1;
   if (setsockopt (server_socket,
@@ -315,11 +385,42 @@ serve_client (int server_socket, int client_socket)
       exit (EXIT_FAILURE);
     }
 
+  if (openvas_server_new (GNUTLS_CLIENT,
+                          CACERT,
+                          CLIENTCERT,
+                          CLIENTKEY,
+                          &scanner_session,
+                          &scanner_credentials))
+    {
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
+      return EXIT_FAILURE;
+    }
+
+  if (load_cas (&scanner_credentials))
+    {
+      openvas_server_free (client_socket,
+                           client_session,
+                           client_credentials);
+      return EXIT_FAILURE;
+    }
+
   if (openvas_server_attach (client_socket, &client_session))
     {
       g_critical ("%s: failed to attach client session to socket %i\n",
                   __FUNCTION__,
                   client_socket);
+      goto fail;
+    }
+
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the data between `select' and `read'. */
+  if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("%s: failed to set scanner socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
       goto fail;
     }
 
@@ -336,16 +437,25 @@ serve_client (int server_socket, int client_socket)
   /* Serve OMP. */
 
   /* It's up to serve_omp to openvas_server_free client_*. */
-  if (serve_omp (&client_session, &client_credentials, client_socket, database,
-                 disabled_commands, NULL))
+  if (serve_omp (&client_session, &scanner_session,
+                 &client_credentials, &scanner_credentials,
+                 client_socket, &scanner_socket,
+                 database, disabled_commands, NULL))
     goto server_fail;
 
+  openvas_server_free (scanner_socket,
+                       scanner_session,
+                       scanner_credentials);
   return EXIT_SUCCESS;
+
  fail:
   openvas_server_free (client_socket,
                        client_session,
                        client_credentials);
  server_fail:
+  openvas_server_free (scanner_socket,
+                       scanner_session,
+                       scanner_credentials);
   return EXIT_FAILURE;
 }
 
@@ -773,6 +883,10 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
                              gchar* scanner_address_string, int scanner_port,
                              int register_cleanup, void (*progress) ())
 {
+  int scanner_socket;
+  gnutls_session_t scanner_session;
+  gnutls_certificate_credentials_t scanner_credentials;
+
   /* Initialise OMP daemon. */
 
   if (update_nvt_cache == 0)
@@ -829,35 +943,89 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /* Setup the scanner address. */
 
-  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
+  scanner_address.sin_family = AF_INET;
+  scanner_address.sin_port = scanner_port;
+  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
     {
-      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
+      g_critical ("%s: failed to create scanner address %s\n",
+                  __FUNCTION__,
                   scanner_address_string);
       exit (EXIT_FAILURE);
+    }
+
+  /* Setup security. */
+
+  infof ("   Set to connect to address %s port %i\n",
+          scanner_address_string,
+          ntohs (scanner_address.sin_port));
+
+  /* Make the scanner socket. */
+  scanner_socket = socket (PF_INET, SOCK_STREAM, 0);
+  if (scanner_socket == -1)
+    {
+      g_warning ("%s: failed to create scanner socket: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return EXIT_FAILURE;
+    }
+
+  if (openvas_server_new (GNUTLS_CLIENT,
+                          CACERT,
+                          CLIENTCERT,
+                          CLIENTKEY,
+                          &scanner_session,
+                          &scanner_credentials))
+    return EXIT_FAILURE;
+
+  if (load_cas (&scanner_credentials))
+    return EXIT_FAILURE;
+
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the data between `select' and `read'. */
+  if (fcntl (scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("%s: failed to set scanner socket flag: %s\n",
+                 __FUNCTION__,
+                 strerror (errno));
+      return EXIT_FAILURE;
     }
 
   /* Call the OMP client serving function with a special client socket
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
 
-  switch (serve_omp (NULL, NULL, update_nvt_cache ? -1 : -2,
-                     database, NULL, progress))
+  switch (serve_omp (NULL, &scanner_session,
+                     NULL, &scanner_credentials,
+                     update_nvt_cache ? -1 : -2,
+                     &scanner_socket,
+                     database,
+                     NULL,
+                     progress))
     {
       case 0:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
         return EXIT_SUCCESS;
 
       case 2:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
         return 2;
       case 1:
         g_critical ("%s: failed to connect to scanner\n", __FUNCTION__);
         /*@fallthrough@*/
       default:
       case -1:
+        openvas_server_free (scanner_socket,
+                             scanner_session,
+                             scanner_credentials);
         return EXIT_FAILURE;
     }
 }
 
-/**
+/*
  * @brief Rebuild NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -900,8 +1068,8 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
           /* Child: Try reload. */
           int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
                                                  scanner_address_string,
-                                                 openvassd_port,
-                                                 register_cleanup, progress);
+                                                 scanner_port, register_cleanup,
+                                                 progress);
 
           exit (ret);
         }
@@ -1055,7 +1223,7 @@ serve_and_schedule ()
   /*@notreached@*/
 }
 
-/**
+/*
  * @brief Sets the GnuTLS priorities for a given session.
  *
  * @param[in]   session     Session for which to set the priorities.
@@ -1517,24 +1685,24 @@ main (int argc, char** argv)
 
   if (scanner_port_string)
     {
-      openvassd_port = atoi (scanner_port_string);
-      if (openvassd_port <= 0 || openvassd_port >= 65536)
+      scanner_port = atoi (scanner_port_string);
+      if (scanner_port <= 0 || scanner_port >= 65536)
         {
           g_critical ("%s: Scanner port must be a number between 0 and 65536\n",
                       __FUNCTION__);
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
-      openvassd_port = htons (openvassd_port);
+      scanner_port = htons (scanner_port);
     }
   else
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
         /** @todo Free servent? */
-        openvassd_port = servent->s_port;
+        scanner_port = servent->s_port;
       else
-        openvassd_port = htons (OPENVASSD_PORT);
+        scanner_port = htons (OPENVASSD_PORT);
     }
 
   if (update_nvt_cache || rebuild_nvt_cache)
@@ -1749,9 +1917,12 @@ main (int argc, char** argv)
 
   /* Setup the scanner address. */
 
-  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
+  scanner_address.sin_family = AF_INET;
+  scanner_address.sin_port = scanner_port;
+  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
     {
-      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
+      g_critical ("%s: failed to create scanner address %s\n",
+                  __FUNCTION__,
                   scanner_address_string);
       exit (EXIT_FAILURE);
     }
@@ -1855,7 +2026,8 @@ main (int argc, char** argv)
          manager_address_string ? manager_address_string : "*",
          ntohs (manager_address.sin_port));
   infof ("   Set to connect to address %s port %i\n",
-         scanner_address_string, ntohs (openvassd_port));
+         scanner_address_string,
+         ntohs (scanner_address.sin_port));
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 

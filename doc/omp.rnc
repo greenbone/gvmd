@@ -1,6 +1,6 @@
 #### OpenVAS Management Protocol (OMP)
 ####
-#### Version: 6.0
+#### Version: 5.0
 ####
 #### The "management" protocol of the Open Vulnerability Assessment System.
 
@@ -58,7 +58,6 @@ command
     | empty_trashcan
     | get_agents
     | get_configs
-    | get_aggregates
     | get_alerts
     | get_filters
     | get_groups
@@ -173,7 +172,6 @@ response
     | empty_trashcan_response
     | get_agents_response
     | get_configs_response
-    | get_aggregates_response
     | get_alerts_response
     | get_filters_response
     | get_groups_response
@@ -2183,7 +2181,8 @@ create_config
      {
        create_config_comment?
        & ( create_config_copy
-           | get_configs_response )
+           | get_configs_response
+           | create_config_rcfile )
        & create_config_name
      }
 
@@ -2199,6 +2198,13 @@ create_config_copy
  = element copy
      {
        uuid
+     }
+
+# An openvasrc style file that defines the config.
+create_config_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 # A name for the config.
@@ -2460,6 +2466,7 @@ create_lsc_credential_key
      {
        create_lsc_credential_key_phrase
        & create_lsc_credential_key_private
+       & create_lsc_credential_key_public
      }
 
 # Key passphrase.
@@ -2472,6 +2479,13 @@ create_lsc_credential_key_phrase
 # Private key.
 create_lsc_credential_key_private
  = element private
+     {
+       text
+     }
+
+# Public key.
+create_lsc_credential_key_public
+ = element public
      {
        text
      }
@@ -3359,6 +3373,7 @@ create_task
        & create_task_slave?
        & create_task_observers?
        & create_task_preferences?
+       & create_task_rcfile?
      }
 
 # A name for the task.
@@ -3455,6 +3470,13 @@ create_task_preferences_preference_value
  = element value
      {
        text
+     }
+
+# An openvasrc style file defining the task.
+create_task_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 ## Command create_user
@@ -3846,21 +3868,6 @@ get_configs
        & attribute preferences { boolean }?
        & # Whether to get tasks using this config.
        attribute tasks { boolean }?
-     }
-
-## Command get_aggregates
-##
-## Get aggregates of various resources.
-
-get_aggregates
- = element get_aggregates
-     {
-       # The OMP resource type to gather data from.
-       attribute type { text }
-       & # The column to get the data to aggregate from.
-       attribute data_column { text }?
-       & # The field to group the resources by.
-       attribute group_column { text }?
      }
 
 ## Command get_alerts
@@ -4362,6 +4369,8 @@ get_tasks
        attribute trash { boolean }?
        & # Whether to include full task details.
        attribute details { boolean }?
+       & # Whether to include task RC file (for openvas-client).
+       attribute rcfile { boolean }?
        & # Whether to override result threat levels.
        attribute apply_overrides { boolean }?
      }
@@ -5527,6 +5536,7 @@ modify_task
            | modify_task_name
            | modify_task_observers
            | modify_task_preferences
+           | modify_task_rcfile
            | modify_task_schedule
            | modify_task_slave
            | modify_task_file )
@@ -5584,6 +5594,13 @@ modify_task_preferences_preference_value
  = element value
      {
        text
+     }
+
+# An openvasrc style file describing the task.
+modify_task_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 # Task schedule.
@@ -7337,155 +7354,6 @@ get_configs_response_config_count_page
  = element page
      {
        integer
-     }
-
-## Response to get_aggregates
-
-get_aggregates_response
- = element get_aggregates_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_aggregates_response_aggregate*
-     }
-
-# A collection of aggregated data of the selected type.
-get_aggregates_response_aggregate
- = element aggregate
-     {
-       get_aggregates_response_aggregate_data_type
-       & get_aggregates_response_aggregate_data_column?
-       & get_aggregates_response_aggregate_group_column?
-       & ( get_aggregates_response_aggregate_group*
-           | get_aggregates_response_aggregate_overall )
-     }
-
-# The resource type the data is aggregated from.
-get_aggregates_response_aggregate_data_type
- = element data_type
-     {
-       text
-     }
-
-# The column the data is aggregated from.
-get_aggregates_response_aggregate_data_column
- = element data_column
-     {
-       text
-     }
-
-# The column the data is grouped by.
-get_aggregates_response_aggregate_group_column
- = element group_column
-     {
-       text
-     }
-
-# Aggregate data for a group of resources.
-get_aggregates_response_aggregate_group
- = element group
-     {
-       text
-     }
-
-# Aggregate data for all resources of the selected type.
-get_aggregates_response_aggregate_group
- = element group
-     {
-       get_aggregates_response_aggregate_group_value
-       & get_aggregates_response_aggregate_group_count
-       & ( get_aggregates_response_aggregate_group_min
-           & get_aggregates_response_aggregate_group_max
-           & get_aggregates_response_aggregate_group_mean
-           & get_aggregates_response_aggregate_group_sum )?
-     }
-
-# Value of the group column.
-get_aggregates_response_aggregate_group_value
- = element value
-     {
-       text
-     }
-
-# Number of resources in the group.
-get_aggregates_response_aggregate_group_count
- = element count
-     {
-       integer
-     }
-
-# Minimum value of the data column.
-get_aggregates_response_aggregate_group_min
- = element min
-     {
-       text
-     }
-
-# Maximum value of the data column.
-get_aggregates_response_aggregate_group_max
- = element max
-     {
-       text
-     }
-
-# Arithmetic mean of the numeric values of the data.
-get_aggregates_response_aggregate_group_mean
- = element mean
-     {
-       text
-     }
-
-# Sum of the numeric values of the data column.
-get_aggregates_response_aggregate_group_sum
- = element sum
-     {
-       text
-     }
-
-# Aggregate data for all resources of the selected type.
-get_aggregates_response_aggregate_overall
- = element overall
-     {
-       get_aggregates_response_aggregate_overall_count
-       & get_aggregates_response_aggregate_overall_min
-       & get_aggregates_response_aggregate_overall_max
-       & get_aggregates_response_aggregate_overall_mean
-       & get_aggregates_response_aggregate_overall_sum
-     }
-
-# Overall number of resources.
-get_aggregates_response_aggregate_overall_count
- = element count
-     {
-       integer
-     }
-
-# Overall minimum value of the data column.
-get_aggregates_response_aggregate_overall_min
- = element min
-     {
-       text
-     }
-
-# Overall maximum value of the data column.
-get_aggregates_response_aggregate_overall_max
- = element max
-     {
-       text
-     }
-
-# Overall arithmetic mean of the numeric values of the data.
-get_aggregates_response_aggregate_overall_mean
- = element mean
-     {
-       text
-     }
-
-# Overall sum of the numeric values of the data column.
-get_aggregates_response_aggregate_overall_sum
- = element sum
-     {
-       text
      }
 
 ## Response to get_alerts
@@ -13741,6 +13609,7 @@ get_tasks_response_task
        & get_tasks_response_task_first_report?
        & get_tasks_response_task_last_report?
        & get_tasks_response_task_second_last_report?
+       & get_tasks_response_task_rcfile?
        & get_tasks_response_task_reports*
        & get_tasks_response_task_preferences
      }
@@ -14303,6 +14172,12 @@ get_tasks_response_task_second_last_report_report_severity
  = element severity
      {
        severity
+     }
+
+get_tasks_response_task_rcfile
+ = element rcfile
+     {
+       base64
      }
 
 get_tasks_response_task_reports

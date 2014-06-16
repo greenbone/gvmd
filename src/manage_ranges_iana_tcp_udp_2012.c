@@ -29,15 +29,15 @@
 /**
  * @brief Insert a port range.
  */
-#define RANGE(type, start, end)                                      \
-  sql ("INSERT INTO port_ranges"                                     \
-       " (uuid, port_list, type, start, \"end\", comment, exclude)"  \
-       " VALUES"                                                     \
-       " (make_uuid (), %llu, %i,"                                   \
-       "  '" G_STRINGIFY (start) "',"                                \
-       "  '" G_STRINGIFY (end) "',"                                  \
-       "  '', 0)",                                                   \
-       list,                                                         \
+#define RANGE(type, start, end)                                  \
+  sql ("INSERT INTO port_ranges"                                 \
+       " (uuid, port_list, type, start, end, comment, exclude)"  \
+       " VALUES"                                                 \
+       " (make_uuid (), %llu, %i,"                               \
+       "  '" G_STRINGIFY (start) "',"                            \
+       "  '" G_STRINGIFY (end) "',"                              \
+       "  '', 0)",                                               \
+       list,                                                     \
        type)
 
 /**
@@ -50,7 +50,7 @@
 void
 make_port_ranges_iana_tcp_udp_2012 (port_list_t list)
 {
-  sql_begin_immediate ();
+  sql ("BEGIN TRANSACTION");
 
   RANGE (PORT_PROTOCOL_TCP, 1, 80);
   RANGE (PORT_PROTOCOL_TCP, 82, 113);

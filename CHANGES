@@ -1,3 +1,52 @@
+openvas-manager 5.0.2 (2014-06-16)
+
+This is the second maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release addresses a couple of issues with report formats, synchronisation
+scripts and user management, as well as adds Chinese language support.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Hani Benhabiles, Timo Pollmeier and Jan-Oliver Wagner.
+
+Main changes since 5.0.1:
+* Add support for multiple "To" addresses in Alerts.
+* Added Chinese as allowed value for interface language.
+* Ensure timestamps are based on the UTC timezone in the synchronisation
+  scripts.
+* Consistently check the return values in the synchronisation scripts.
+* Separate init for command options like --create-user into new function,
+  otherwise these options affect active tasks.
+* Fix issues around report format deletion.
+* Code cleanup.
+
+
+openvas-manager 5.0.1 (2014-05-09)
+
+This is the first maintenance release of the openvas-manager 5.0 module for the
+Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release addresses a couple of issues regarding database migration, user
+permissions, and report format handling.
+
+Many thanks to everyone who has contributed to this release:
+Matthew Mundell, Michael Wiegand, Hani Benhabiles, and Timo Pollmeier.
+
+Main changes since 5.0.0:
+* Set the start time of a report once only, the first time the scan is started.
+  This ensures that the start time remains the same, even when the task is
+  resumed, because the start time is what identifies the scan.
+* For the command options, like --create-user, check the db version.
+* Prevent the Users role from losing all its permissions.
+* Prevent duplicate report format UUIDs.  Ensure all are unique at startup.
+* Remove group and role assignments of deleted users at startup and when
+  deleting users.
+
+
 openvas-manager 5.0.0 (2014-04-23)
 
 This is the first release of the openvas-manager 5.0 module for the Open

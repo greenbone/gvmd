@@ -61,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <name>OpenVAS Management Protocol</name>
   <abbreviation>OMP</abbreviation>
   <summary>The "management" protocol of the Open Vulnerability Assessment System</summary>
-  <version>6.0</version>
+  <version>5.0</version>
   <type>
     <name>alive_test</name>
     <summary>An alive test</summary>
@@ -2232,6 +2232,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           config with this name, then a number is attached to the name to
           make it unique.
         </li>
+        <li>
+          With an rcfile element. The config is created as described in
+          the RC file.  In this case a name element is required.  The new
+          config is given this name.
+        </li>
       </l>
     </description>
     <pattern>
@@ -2239,6 +2244,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <or>
         <e>copy</e>
         <r>get_configs</r>
+        <e>rcfile</e>
       </or>
       <e>name</e>
     </pattern>
@@ -2255,6 +2261,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>The UUID of an existing config</summary>
       <pattern>
         <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>An openvasrc style file that defines the config</summary>
+      <pattern>
+        <t>base64</t>
       </pattern>
     </ele>
     <ele>
@@ -2286,6 +2299,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <request>
         <create_config>
           <copy>daba56c8-73ec-11df-a475-002264764cea</copy>
+          <name>Full</name>
+        </create_config>
+      </request>
+      <response>
+        <create_config_response status="201" status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_config_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a config from an RC file</summary>
+      <request>
+        <create_config>
+          <rcfile>asdf3235saf3kjBVF...</rcfile>
           <name>Full</name>
         </create_config>
       </request>
@@ -2692,6 +2719,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <e>phrase</e>
         <e>private</e>
+        <e>public</e>
       </pattern>
       <ele>
         <name>phrase</name>
@@ -2703,6 +2731,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>private</name>
         <summary>Private key</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>public</name>
+        <summary>Public key</summary>
         <pattern>
           text
         </pattern>
@@ -4131,6 +4166,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The client uses the create_task command to create a new task.
       </p>
+      <p>
+        If an rcfile is given, then config and target should actually be
+        left out.  This form of the command is special support for
+        OpenVAS-Client, and will likely be removed in future versions.
+      </p>
     </description>
     <pattern>
       <e>name</e>
@@ -4144,6 +4184,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>slave</e></o>
       <o><e>observers</e></o>
       <o><e>preferences</e></o>
+      <o><e>rcfile</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -4250,6 +4291,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
       </ele>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>An openvasrc style file defining the task</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
     </ele>
     <response>
       <pattern>
@@ -6815,167 +6863,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
-
-  <command>
-    <name>get_aggregates</name>
-    <summary>Get aggregates of various resources</summary>
-    <description>
-      <p>
-        The client uses the get_aggregate command to get aggregated data like
-        counts or averages of various resources.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>type</name>
-        <summary>The OMP resource type to gather data from</summary>
-        <type>text</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>data_column</name>
-        <summary>The column to get the data to aggregate from</summary>
-        <type>text</type>
-      </attrib>
-      <attrib>
-        <name>group_column</name>
-        <summary>The field to group the resources by</summary>
-        <type>text</type>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>aggregate</e></any>
-      </pattern>
-      <ele>
-        <name>aggregate</name>
-        <summary>A collection of aggregated data of the selected type</summary>
-        <pattern>
-          <e>data_type</e>
-          <o><e>data_column</e></o>
-          <o><e>group_column</e></o>
-          <or>
-            <any><e>group</e></any>
-            <e>overall</e>
-          </or>
-        </pattern>
-        <ele>
-          <name>data_type</name>
-          <summary>The resource type the data is aggregated from</summary>
-          <pattern><t>text</t></pattern>
-        </ele>
-        <ele>
-          <name>data_column</name>
-          <summary>The column the data is aggregated from</summary>
-          <pattern><t>text</t></pattern>
-        </ele>
-        <ele>
-          <name>group_column</name>
-          <summary>The column the data is grouped by</summary>
-          <pattern><t>text</t></pattern>
-        </ele>
-        <ele>
-          <name>group</name>
-          <summary>Aggregate data for a group of resources</summary>
-          <pattern><t>text</t></pattern>
-        </ele>
-        <ele>
-          <name>group</name>
-          <summary>Aggregate data for all resources of the selected type</summary>
-          <pattern>
-            <e>value</e>
-            <e>count</e>
-            <o>
-              <g>
-                <e>min</e>
-                <e>max</e>
-                <e>mean</e>
-                <e>sum</e>
-              </g>
-            </o>
-          </pattern>
-          <ele>
-            <name>value</name>
-            <summary>Value of the group column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>count</name>
-            <summary>Number of resources in the group</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>min</name>
-            <summary>Minimum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>max</name>
-            <summary>Maximum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>mean</name>
-            <summary>Arithmetic mean of the numeric values of the data</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>sum</name>
-            <summary>Sum of the numeric values of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>overall</name>
-          <summary>Aggregate data for all resources of the selected type</summary>
-          <pattern>
-            <e>count</e>
-            <e>min</e>
-            <e>max</e>
-            <e>mean</e>
-            <e>sum</e>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Overall number of resources</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>min</name>
-            <summary>Overall minimum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>max</name>
-            <summary>Overall maximum value of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>mean</name>
-            <summary>Overall arithmetic mean of the numeric values of the data</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-          <ele>
-            <name>sum</name>
-            <summary>Overall sum of the numeric values of the data column</summary>
-            <pattern><t>text</t></pattern>
-          </ele>
-        </ele>
-      </ele>
-    </response>
-
-  </command>
-
   <command>
     <name>get_alerts</name>
     <summary>Get all alerts</summary>
@@ -15663,6 +15550,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
+        <name>rcfile</name>
+        <summary>Whether to include task RC file (for openvas-client)</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>apply_overrides</name>
         <summary>Whether to override result threat levels</summary>
         <type>boolean</type>
@@ -15725,6 +15617,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <o><e>first_report</e></o>
           <o><e>last_report</e></o>
           <o><e>second_last_report</e></o>
+          <o><e>rcfile</e></o>
           <any><e>reports</e></any>
           <e>preferences</e>
         </pattern>
@@ -16238,6 +16131,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>Maximum severity of the report</summary>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>rcfile</name>
+          <pattern><t>base64</t></pattern>
         </ele>
         <ele>
           <name>reports</name>
@@ -19284,6 +19181,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>name</e>
         <e>observers</e>
         <e>preferences</e>
+        <e>rcfile</e>
         <e>schedule</e>
         <e>slave</e>
         <e>file</e>
@@ -19338,6 +19236,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
       </ele>
+    </ele>
+    <ele>
+      <name>rcfile</name>
+      <summary>An openvasrc style file describing the task</summary>
+      <pattern>
+        <t>base64</t>
+      </pattern>
     </ele>
     <ele>
       <name>schedule</name>
@@ -20120,43 +20025,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
-  <change>
-    <command>GET_TASKS</command>
-    <summary>Attribute "rcfile" and associate RCFILE removed</summary>
-    <description>
-      <p>
-        The attribute "rcfile" and associate response element RCFILE were
-        removed.  It is no longer possible to get an openvasrc configuration
-        for a task.  This feature was primarily introduced to support the
-        GTK frontend openvas-client, which is no longer maintained.
-      </p>
-    </description>
-    <version>6.0</version>
-  </change>
-  <change>
-    <command>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</command>
-    <summary>RCFILE removed</summary>
-    <description>
-      <p>
-        The element RCFILE was removed.  It is no longer possible to create
-        or modify a config or task from an openvasrc file.  This feature was
-        primarily introduced to support the GTK frontend openvas-client, which
-        is no longer maintained.
-      </p>
-    </description>
-    <version>6.0</version>
-  </change>
-  <change>
-    <command>CREATE_LSC_CREDENTIAL</command>
-    <summary>KEY/PUBLIC removed</summary>
-    <description>
-      <p>
-        The child PUBLIC of element KEY was removed, because public keys are
-        now extracted from the private key.
-      </p>
-    </description>
-    <version>6.0</version>
-  </change>
   <change>
     <command>GET_FILTERS, CREATE_FILTER, MODIFY_FILTER</command>
     <summary>Filter type "report" is now "result"</summary>

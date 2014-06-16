@@ -39,8 +39,6 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set (BACKEND SQLITE3)
-
 ## Retrieve svn revision (at configure time)
 #  Not using Subversion_WC_INFO, as it would have to connect to the repo
 find_program (SVN_EXECUTABLE svn DOC "subversion command line client")
@@ -77,15 +75,15 @@ set (CPACK_SOURCE_GENERATOR "TGZ")
 set (CPACK_SOURCE_TOPLEVEL_TAG "")
 set (CPACK_SYSTEM_NAME "")
 set (CPACK_TOPLEVEL_TAG "")
-set (CPACK_PACKAGE_VERSION_MAJOR "6")
+set (CPACK_PACKAGE_VERSION_MAJOR "5")
 set (CPACK_PACKAGE_VERSION_MINOR "0")
 
 # Use this scheme for stable releases:
-#set (CPACK_PACKAGE_VERSION_PATCH "0${SVN_REVISION}")
-#set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set (CPACK_PACKAGE_VERSION_PATCH "2${SVN_REVISION}")
+set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 # Use this scheme for +betaN and +rcN releases:
-set (CPACK_PACKAGE_VERSION_PATCH "+beta1${SVN_REVISION}")
-set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}${CPACK_PACKAGE_VERSION_PATCH}")
+#set (CPACK_PACKAGE_VERSION_PATCH "+beta1${SVN_REVISION}")
+#set (CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}${CPACK_PACKAGE_VERSION_PATCH}")
 
 set (CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
 set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
@@ -114,7 +112,7 @@ include (CPack)
 
 ## Variables
 
-set (OPENVASMD_DATABASE_VERSION 128)
+set (OPENVASMD_DATABASE_VERSION 123)
 
 set (OPENVASMD_SCAP_DATABASE_VERSION 14)
 
@@ -191,24 +189,7 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=7.0.1)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
-if (BACKEND STREQUAL SQLITE3)
-  pkg_check_modules (SQLITE3 REQUIRED sqlite3)
-else (BACKEND STREQUAL SQLITE3)
-  message (STATUS "Looking for PostgreSQL...")
-  find_package (PostgreSQL REQUIRED)
-  message (STATUS "PostgreSQL_INCLUDE_DIRS: ${PostgreSQL_INCLUDE_DIRS}")
-  message (STATUS "PostgreSQL_LIBRARIES: ${PostgreSQL_LIBRARIES}")
-  message (STATUS "PostgreSQL_VERSION_STRING: ${PostgreSQL_VERSION_STRING}")
-  if (NOT PostgreSQL_FOUND)
-    message (FATAL_ERROR "The PostgreSQL library is required.")
-  endif (NOT PostgreSQL_FOUND)
-  message (STATUS "Looking for PostgreSQL... ${PostgreSQL_VERSION_STRING}")
-  set (POSTGRESQL_LDFLAGS ${PostgreSQL_LIBRARIES})
-  string (REGEX REPLACE "^([^;]*);" "\\1"
-          FIRST_INCLUDE_DIR "${PostgreSQL_INCLUDE_DIRS}")
-  set (POSTGRESQL_CFLAGS ${FIRST_INCLUDE_DIR})
-  unset (FIRST_INCLUDE_DIR)
-endif (BACKEND STREQUAL SQLITE3)
+pkg_check_modules (SQLITE3 REQUIRED sqlite3)
 
 message (STATUS "Looking for pcap...")
 find_library (PCAP pcap)
@@ -245,14 +226,12 @@ execute_process (COMMAND pkg-config --libs gnutls
   OUTPUT_VARIABLE GNUTLS_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-if (BACKEND STREQUAL SQLITE3)
-  execute_process (COMMAND pkg-config --cflags sqlite3
-    OUTPUT_VARIABLE SQLITE3_CFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process (COMMAND pkg-config --libs sqlite3
-    OUTPUT_VARIABLE SQLITE3_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif (BACKEND STREQUAL SQLITE3)
+execute_process (COMMAND pkg-config --cflags sqlite3
+  OUTPUT_VARIABLE SQLITE3_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs sqlite3
+  OUTPUT_VARIABLE SQLITE3_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 ## Version
 
@@ -345,14 +324,6 @@ install (FILES src/report_formats/TXT/generate src/report_formats/TXT/TXT.xsl
 
 install (FILES src/report_formats/XML/generate
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/a994b278-1f62-11e1-96ac-406186ea4fc5/
-         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
-
-install (FILES src/report_formats/Verinice_ISM/generate
-               src/report_formats/Verinice_ISM/Verinice_ISM.xsl
-               src/report_formats/Verinice_ISM/classification.csv
-               src/report_formats/Verinice_ISM/classification.xsl
-               src/report_formats/Verinice_ISM/classification_generator.sh
-         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/c15ad349-bd8d-457a-880a-c7056532ee15/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/HTML/generate

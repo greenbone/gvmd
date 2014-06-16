@@ -47,7 +47,7 @@
 void
 make_config_discovery (char *const uuid, char *const selector_name)
 {
-  sql_begin_exclusive ();
+  sql ("BEGIN EXCLUSIVE;");
 
   /* First, create the Discovery config. */
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
@@ -55,7 +55,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
        " creation_time, modification_time)"
        " VALUES ('%s', 'Discovery', NULL,"
        "         '%s', 'Network Discovery scan configuration.',"
-       "         0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, now (), now ());",
        uuid,
        selector_name);
 
@@ -1010,16 +1010,16 @@ make_config_discovery (char *const uuid, char *const selector_name)
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.100315", "Port scanners");
   NVT_SELECTOR (selector_name, "1.3.6.1.4.1.25623.1.0.14259", "Port scanners");
 
-  /* Add the Product Detection family. */
-  sql ("INSERT INTO nvt_selectors (name, exclude, type, family_or_nvt, family)"
-       " VALUES ('%s', 0, " G_STRINGIFY (NVT_SELECTOR_TYPE_FAMILY) ","
+  /* Add all the product detection family. */
+  sql ("INSERT INTO nvt_selectors"
+       " VALUES (NULL, '%s', 0, 1,"
        "         'Product detection', 'Product detection');",
        selector_name);
 
   /* Update number of families and nvts. */
   sql ("UPDATE configs"
        " SET family_count = %i, nvt_count = %i,"
-       " modification_time = m_now ()"
+       " modification_time = now ()"
        " WHERE uuid = '%s';",
        nvt_selector_family_count (selector_name, 0),
        nvt_selector_nvt_count (selector_name, NULL, 0),
@@ -1027,13 +1027,13 @@ make_config_discovery (char *const uuid, char *const selector_name)
 
   /* Add preferences for "ping host" nvt. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Mark unrechable Hosts as dead (not scanning)',"
        " 'yes');",
        uuid);
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Ping Host[checkbox]:Report about unrechable Hosts',"
        "         'yes');",
@@ -1041,7 +1041,7 @@ make_config_discovery (char *const uuid, char *const selector_name)
 
   /* Add preferences for "Services" nvt in Discovery Scan Config. */
   sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES ((SELECT id FROM configs WHERE uuid = '%s'),"
+       " VALUES ((SELECT ROWID FROM configs WHERE uuid = '%s'),"
        "         'PLUGINS_PREFS',"
        "         'Services[radio]:Test SSL based services',"
        "         'All;Known SSL ports;None');",

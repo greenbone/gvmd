@@ -27,11 +27,10 @@
 #ifndef OPENVAS_MANAGER_MANAGE_H
 #define OPENVAS_MANAGER_MANAGE_H
 
-#include "sql.h"
-
 #include <stdio.h>
 #include <glib.h>
 #include <gnutls/gnutls.h>
+
 
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/base/array.h> /* for array_t */
@@ -130,6 +129,7 @@ manage_encrypt_all_credentials (GSList *, const gchar *, gboolean);
 
 /* Task structures. */
 
+extern short scanner_up;
 extern short scanner_active;
 
 /** @todo Should be in otp.c/h. */
@@ -199,18 +199,6 @@ typedef enum
   ALIVE_TEST_TCP_SYN_SERVICE = 16
 } alive_test_t;
 
-/**
- * @brief Scanner types.
- *
- * These numbers are used in the database, so if the number associated with
- * any symbol changes then a migrator must be added to update existing data.
- */
-typedef enum scanner_type {
-  SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_OSP_OVALDI,
-  SCANNER_TYPE_MAX,
-} scanner_type_t;
-
 typedef long long int agent_t;
 typedef long long int config_t;
 typedef long long int alert_t;
@@ -225,6 +213,7 @@ typedef long long int report_t;
 typedef long long int report_host_t;
 typedef long long int report_format_t;
 typedef long long int report_format_param_t;
+typedef long long int resource_t;
 typedef long long int role_t;
 typedef long long int note_t;
 typedef long long int nvt_t;
@@ -234,9 +223,23 @@ typedef long long int port_list_t;
 typedef long long int port_range_t;
 typedef long long int lsc_credential_t;
 typedef long long int schedule_t;
-typedef long long int scanner_t;
 typedef long long int setting_t;
 typedef long long int user_t;
+
+#include <sqlite3.h>
+
+#include "lsc_crypt.h"  /* (lsc_crypt_ctx_t) */
+
+/**
+ * @brief A generic SQL iterator.
+ */
+typedef struct
+{
+  sqlite3_stmt* stmt;        ///< SQL statement.
+  gboolean done;             ///< End flag.
+  int prepared;              ///< Prepared flag.
+  lsc_crypt_ctx_t crypt_ctx; ///< Encryption context.
+} iterator_t;
 
 
 /* OMP GET. */
@@ -371,6 +374,18 @@ alert_count (const get_data_t *);
 int
 init_alert_iterator (iterator_t*, const get_data_t*);
 
+alert_t
+alert_iterator_alert (iterator_t*);
+
+const char*
+alert_iterator_uuid (iterator_t*);
+
+const char*
+alert_iterator_name (iterator_t*);
+
+const char *
+alert_iterator_comment (iterator_t*);
+
 int
 alert_iterator_event (iterator_t*);
 
@@ -464,32 +479,14 @@ task_count (const get_data_t *);
 int
 init_task_iterator (iterator_t*, const get_data_t *);
 
+task_t
+task_iterator_task (iterator_t*);
+
+const char *
+task_iterator_uuid (iterator_t*);
+
 task_status_t
 task_iterator_run_status (iterator_t*);
-
-const char *
-task_iterator_run_status_name (iterator_t*);
-
-int
-task_iterator_total_reports (iterator_t*);
-
-int
-task_iterator_finished_reports (iterator_t *);
-
-const char *
-task_iterator_first_report (iterator_t*);
-
-const char *
-task_iterator_last_report (iterator_t *);
-
-report_t
-task_iterator_current_report (iterator_t *);
-
-const char *
-task_iterator_hosts_ordering (iterator_t *);
-
-scanner_t
-task_iterator_scanner (iterator_t *);
 
 unsigned int
 task_id (task_t);
@@ -527,9 +524,6 @@ task_comment (task_t);
 char*
 task_hosts_ordering (task_t);
 
-scanner_t
-task_scanner (task_t);
-
 config_t
 task_config (task_t);
 
@@ -557,10 +551,7 @@ set_task_target (task_t, target_t);
 void
 set_task_hosts_ordering (task_t, const char *);
 
-void
-set_task_scanner (task_t, scanner_t);
-
-slave_t
+target_t
 task_slave (task_t);
 
 void
@@ -583,6 +574,9 @@ set_task_run_status (task_t, task_status_t);
 
 report_t
 task_running_report (task_t);
+
+report_t
+task_current_report (task_t);
 
 int
 task_upload_progress (task_t);
@@ -617,12 +611,14 @@ set_task_schedule (task_t, schedule_t);
 unsigned int
 task_report_count (task_t);
 
+unsigned int
+task_finished_report_count (task_t);
+
 int
 task_last_report (task_t, report_t*);
 
 const char *
-task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
-                            double);
+task_trend_counts (task_t, int, int, int, double, int, int, int, double);
 
 const char *
 task_trend (task_t, int);
@@ -739,6 +735,9 @@ set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 void
 append_task_open_port (task_t task, const char *, const char*);
 
+int
+make_task_rcfile (task_t);
+
 void
 manage_task_update_file (task_t, const char *, const void *);
 
@@ -791,6 +790,9 @@ level_min_severity (const char*, const gchar*);
 
 double
 level_max_severity (const char*, const gchar*);
+
+int
+severity_matches_type (double, const char *);
 
 int
 severity_matches_ov (double, double);
@@ -912,9 +914,6 @@ report_severity (report_t, int);
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 
-report_t
-make_report (task_t, const char *, task_status_t);
-
 result_t
 make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);
@@ -974,8 +973,16 @@ report_set_slave_port (report_t, int);
 void
 report_set_source_iface (report_t, const gchar *);
 
+/*@-exportlocal@*/
+/*@only@*/ /*@null@*/
+gchar*
+task_first_report_id (task_t);
+
 int
 task_last_stopped_report (task_t, report_t *);
+
+gchar*
+task_last_report_id (task_t);
 
 gchar*
 task_second_last_report_id (task_t);
@@ -1023,9 +1030,6 @@ set_scan_start_time (report_t, const char*);
 void
 set_scan_start_time_otp (report_t, const char*);
 
-void
-set_scan_start_time_epoch (report_t, time_t);
-
 char*
 scan_end_time (report_t);
 
@@ -1034,9 +1038,6 @@ set_scan_end_time (report_t, const char*);
 
 void
 set_scan_end_time_otp (report_t, const char*);
-
-void
-set_scan_end_time_epoch (report_t, time_t);
 
 void
 set_scan_host_start_time (report_t, const char*, const char*);
@@ -1194,6 +1195,12 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     const char *, int, int, const gchar *);
 
 
+/* RC's. */
+
+char*
+rc_preference (const char*, const char*);
+
+
 /* Targets. */
 
 /**
@@ -1250,6 +1257,15 @@ init_user_target_iterator (iterator_t*, target_t);
 
 int
 init_target_iterator (iterator_t*, const get_data_t *);
+
+target_t
+target_iterator_target (iterator_t*);
+
+const char*
+target_iterator_uuid (iterator_t*);
+
+const char*
+target_iterator_name (iterator_t*);
 
 const char*
 target_iterator_hosts (iterator_t*);
@@ -1385,6 +1401,9 @@ create_config (const char*, const char*, const array_t*, const array_t*,
                config_t*, char**);
 
 int
+create_config_rc (const char*, const char*, char*, config_t*);
+
+int
 copy_config (const char*, const char*, const char *, config_t*);
 
 int
@@ -1399,9 +1418,6 @@ find_config (const char*, config_t*);
 int
 config_uuid (config_t, char **);
 
-int
-config_type (config_t);
-
 char *
 config_nvt_timeout (config_t, const char *);
 
@@ -1411,8 +1427,20 @@ init_user_config_iterator (iterator_t*, config_t, int, int, const char*);
 int
 init_config_iterator (iterator_t*, const get_data_t*);
 
+config_t
+config_iterator_config (iterator_t*);
+
+const char*
+config_iterator_uuid (iterator_t*);
+
+const char*
+config_iterator_name (iterator_t*);
+
 const char*
 config_iterator_nvt_selector (iterator_t*);
+
+const char*
+config_iterator_comment (iterator_t*);
 
 int
 config_iterator_nvt_count (iterator_t*);
@@ -1424,16 +1452,10 @@ int
 config_iterator_nvts_growing (iterator_t*);
 
 int
-config_iterator_type (iterator_t*);
-
-int
 config_iterator_families_growing (iterator_t*);
 
 char*
 config_nvt_selector (config_t);
-
-int
-config_type (config_t);
 
 int
 config_in_use (config_t);
@@ -1457,20 +1479,8 @@ int
 config_nvts_growing (config_t);
 
 int
-modify_task_check_config_scanner (task_t, const char *, const char *);
-
-int
 manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
-
-void
-init_preference_iterator (iterator_t *, config_t, const char *);
-
-const char*
-preference_iterator_name (iterator_t *);
-
-const char*
-preference_iterator_value (iterator_t *);
 
 int
 manage_set_config_comment (config_t, const char*);
@@ -1694,7 +1704,7 @@ find_lsc_credential (const char*, lsc_credential_t*);
 
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
-                       const char*, lsc_credential_t*);
+                       const char*, const char*, lsc_credential_t*);
 int
 copy_lsc_credential (const char*, const char*, const char*,
                      lsc_credential_t*);
@@ -1731,8 +1741,23 @@ init_user_lsc_credential_iterator (iterator_t*, lsc_credential_t, int, int,
 int
 init_lsc_credential_iterator (iterator_t*, const get_data_t *);
 
+lsc_credential_t
+lsc_credential_iterator_lsc_credential (iterator_t*);
+
+const char*
+lsc_credential_iterator_uuid (iterator_t*);
+
+const char*
+lsc_credential_iterator_name (iterator_t*);
+
 const char*
 lsc_credential_iterator_login (iterator_t*);
+
+const char*
+lsc_credential_iterator_comment (iterator_t*);
+
+const char*
+lsc_credential_iterator_public_key (iterator_t*);
 
 const char*
 lsc_credential_iterator_private_key (iterator_t*);
@@ -1820,6 +1845,15 @@ int
 init_agent_iterator (iterator_t*, const get_data_t *);
 
 const char*
+agent_iterator_uuid (iterator_t*);
+
+const char*
+agent_iterator_name (iterator_t*);
+
+const char*
+agent_iterator_comment (iterator_t*);
+
+const char*
 agent_iterator_installer (iterator_t*);
 
 gsize
@@ -1874,6 +1908,9 @@ note_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
 init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
+
+const char*
+note_iterator_uuid (iterator_t*);
 
 const char*
 note_iterator_nvt_oid (iterator_t*);
@@ -1945,6 +1982,9 @@ override_count (const get_data_t *, nvt_t, result_t, task_t);
 int
 init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
+
+const char*
+override_iterator_uuid (iterator_t*);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -2034,71 +2074,7 @@ report_type_iterator_title (report_type_iterator_t*);
 int
 manage_system_report (const char *, const char *, const char *, char **);
 
-gboolean
-find_scanner (const char *, scanner_t *);
-
-int
-create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *);
-
-int
-copy_scanner (const char*, const char*, const char *, scanner_t *);
-
-int
-modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *);
-
-int
-delete_scanner (const char *, int);
-
-gboolean
-find_scanner_with_permission (const char *, scanner_t *, const char *);
-
-int
-scanner_in_use (scanner_t);
-
-int
-trash_scanner_in_use (scanner_t);
-
-int
-trash_scanner_writable (scanner_t);
-
-int
-scanner_writable (scanner_t);
-
-char *
-scanner_uuid (scanner_t);
-
-char *
-scanner_host (scanner_t);
-
-int
-scanner_port (scanner_t);
-
-int
-scanner_count (const get_data_t *);
-
-int
-init_scanner_iterator (iterator_t*, const get_data_t *);
-
-const char*
-scanner_iterator_host (iterator_t*);
-
-int
-scanner_iterator_port (iterator_t*);
-
-int
-scanner_iterator_type (iterator_t*);
-
-char *
-scanner_name (scanner_t);
-
-char *
-scanner_uuid (scanner_t);
-
-int
-verify_scanner (const char *, char **);
-
+
 /* Scheduling. */
 
 long
@@ -2147,6 +2123,21 @@ schedule_name (schedule_t);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
+
+schedule_t
+schedule_iterator_schedule (iterator_t*);
+
+const char*
+schedule_iterator_uuid (iterator_t *);
+
+const char*
+schedule_iterator_name (iterator_t *);
+
+const char*
+schedule_iterator_uuid (iterator_t *);
+
+const char*
+schedule_iterator_comment (iterator_t *);
 
 time_t
 schedule_iterator_first_time (iterator_t *);
@@ -2297,6 +2288,15 @@ report_format_count (const get_data_t *);
 int
 init_report_format_iterator (iterator_t*, const get_data_t *);
 
+report_format_t
+report_format_iterator_report_format (iterator_t*);
+
+const char*
+report_format_iterator_uuid (iterator_t *);
+
+const char*
+report_format_iterator_name (iterator_t *);
+
 const char*
 report_format_iterator_extension (iterator_t *);
 
@@ -2438,6 +2438,18 @@ delete_slave (const char*, int);
 int
 init_slave_iterator (iterator_t*, const get_data_t *);
 
+slave_t
+slave_iterator_slave (iterator_t*);
+
+const char*
+slave_iterator_uuid (iterator_t*);
+
+const char*
+slave_iterator_name (iterator_t*);
+
+const char*
+slave_iterator_comment (iterator_t*);
+
 const char*
 slave_iterator_host (iterator_t*);
 
@@ -2569,6 +2581,12 @@ int
 init_permission_iterator (iterator_t*, const get_data_t *);
 
 const char*
+permission_iterator_uuid (iterator_t*);
+
+const char*
+permission_iterator_permission (iterator_t*);
+
+const char*
 permission_iterator_resource_type (iterator_t*);
 
 const char*
@@ -2636,6 +2654,18 @@ port_list_count (const get_data_t *);
 
 int
 init_port_list_iterator (iterator_t*, const get_data_t *);
+
+port_list_t
+port_list_iterator_port_list (iterator_t*);
+
+const char*
+port_list_iterator_uuid (iterator_t*);
+
+const char*
+port_list_iterator_name (iterator_t*);
+
+const char*
+port_list_iterator_comment (iterator_t*);
 
 int
 port_list_iterator_count_all (iterator_t*);
@@ -3236,6 +3266,9 @@ tag_count (const get_data_t *get);
 const char*
 tag_iterator_resource_type (iterator_t*);
 
+resource_t
+tag_iterator_resource (iterator_t*);
+
 const char*
 tag_iterator_resource_uuid (iterator_t*);
 
@@ -3295,33 +3328,6 @@ int
 trash_tag_writable (tag_t);
 
 
-/* Resource aggregates */
-
-int
-init_aggregate_iterator (iterator_t*, const char *, const get_data_t *,
-                          const char *, const char *, const char **, int,
-                          const char *, const char *, const char *,
-                          const char *, int, int);
-
-int
-aggregate_iterator_count (iterator_t*);
-
-double
-aggregate_iterator_min (iterator_t*);
-
-double
-aggregate_iterator_max (iterator_t*);
-
-double
-aggregate_iterator_mean (iterator_t*);
-
-double
-aggregate_iterator_sum (iterator_t*);
-
-const char*
-aggregate_iterator_value (iterator_t*);
-
-
 /* Feeds. */
 
 /* For feed syncing */
@@ -3372,15 +3378,6 @@ xsl_transform (gchar *, gchar *, gchar **, gchar **);
 
 int
 valid_db_resource_type (const char*);
-
-const char*
-type_columns (const char *);
-
-const char**
-type_filter_columns (const char *);
-
-const char*
-type_trash_columns (const char *);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
