@@ -109,6 +109,7 @@
 
 #include "logf.h"
 #include "manage.h"
+#include "scanner.h"
 #include "ompd.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
@@ -828,12 +829,9 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
 
   /* Setup the scanner address. */
 
-  scanner_address.sin_family = AF_INET;
-  scanner_address.sin_port = openvassd_port;
-  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
+  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
     {
-      g_critical ("%s: failed to create scanner address %s\n",
-                  __FUNCTION__,
+      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
                   scanner_address_string);
       exit (EXIT_FAILURE);
     }
@@ -1751,12 +1749,9 @@ main (int argc, char** argv)
 
   /* Setup the scanner address. */
 
-  scanner_address.sin_family = AF_INET;
-  scanner_address.sin_port = openvassd_port;
-  if (!inet_aton (scanner_address_string, &scanner_address.sin_addr))
+  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
     {
-      g_critical ("%s: failed to create scanner address %s\n",
-                  __FUNCTION__,
+      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
                   scanner_address_string);
       exit (EXIT_FAILURE);
     }
@@ -1860,8 +1855,7 @@ main (int argc, char** argv)
          manager_address_string ? manager_address_string : "*",
          ntohs (manager_address.sin_port));
   infof ("   Set to connect to address %s port %i\n",
-         scanner_address_string,
-         ntohs (scanner_address.sin_port));
+         scanner_address_string, ntohs (openvassd_port));
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 

@@ -1,3 +1,17 @@
+2014-06-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (scanner_address): Remove variable.
+
+	* src/openvasmd.c: Include scanner.h. Use new
+	openvas_scanner_set_address() call instead of directly accessing
+	scanner_address variable.
+
+	* src/scanner.c (openvas_scanner_address): New variable.
+	(openvas_scanner_write): Use new variable instead of scanner_address.
+	(openvas_scanner_set_address): New function.
+
+	* src/scanner.h: Add new function prototype.
+
 2014-06-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Remove preemptive Scanner connecting. Connect only on NVT cache update

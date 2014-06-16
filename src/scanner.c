@@ -43,6 +43,7 @@
 gnutls_session_t openvas_scanner_session = NULL;
 gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
 int openvas_scanner_socket = -1;
+struct sockaddr_in openvas_scanner_address;
 
 /**
  * @brief Buffer of input from the scanner.
@@ -139,7 +140,7 @@ openvas_scanner_write (int nvt_cache_mode)
       case SCANNER_INIT_CONNECT_INTR:
       case SCANNER_INIT_TOP:
         switch (openvas_server_connect
-                 (openvas_scanner_socket, &scanner_address,
+                 (openvas_scanner_socket, &openvas_scanner_address,
                   &openvas_scanner_session,
                   scanner_init_state == SCANNER_INIT_CONNECT_INTR))
           {
@@ -477,6 +478,20 @@ openvas_scanner_init (int cache_mode)
     if (openvas_scanner_wait ())
       return -2;
   if (ret != -3)
+    return -1;
+
+  return 0;
+}
+
+int
+openvas_scanner_set_address (const char *addr, int port)
+{
+  if (port < 1 || port > 65535)
+    return -1;
+  memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
+  openvas_scanner_address.sin_family = AF_INET;
+  openvas_scanner_address.sin_port = port;
+  if (!inet_aton (addr, &openvas_scanner_address.sin_addr))
     return -1;
 
   return 0;

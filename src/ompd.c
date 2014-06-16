@@ -115,11 +115,6 @@ buffer_size_t from_client_start = 0;
 buffer_size_t from_client_end = 0;
 
 /**
- * @brief The IP address of openvassd, the "scanner".
- */
-struct sockaddr_in scanner_address;
-
-/**
  * @brief Flag for running in NVT cache mode.
  */
 static int ompd_nvt_cache_mode = 0;
