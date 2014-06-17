@@ -14226,7 +14226,6 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     }
   else
     task = make_task (g_strdup (task_name),
-                      0,
                       task_comment ? g_strdup (task_comment) : NULL);
 
   /* Generate report UUID. */
@@ -24225,13 +24224,12 @@ free_tasks ()
  * when the task is freed.
  *
  * @param[in]  name     The name of the task.
- * @param[in]  time     The period of the task, in seconds.
  * @param[in]  comment  A comment associated the task.
  *
  * @return A pointer to the new task.
  */
 task_t
-make_task (char* name, unsigned int time, char* comment)
+make_task (char* name, char* comment)
 {
   task_t task;
   char* uuid = openvas_uuid_make ();
@@ -24240,17 +24238,16 @@ make_task (char* name, unsigned int time, char* comment)
   quoted_name = name ? sql_quote ((gchar*) name) : NULL;
   quoted_comment = comment ? sql_quote ((gchar*) comment) : NULL;
   sql ("INSERT into tasks"
-       " (owner, uuid, name, hidden, time, comment, schedule,"
+       " (owner, uuid, name, hidden, comment, schedule,"
        "  schedule_next_time, slave, config_location, target_location,"
        "  schedule_location, slave_location, alterable, creation_time,"
        "  modification_time)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, %u, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now ());",
        current_credentials.uuid,
        uuid,
        quoted_name ? quoted_name : "",
-       time,
        quoted_comment ? quoted_comment : "");
   task = sql_last_insert_rowid ();
   set_task_run_status (task, TASK_STATUS_NEW);

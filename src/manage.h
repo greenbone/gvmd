@@ -671,7 +671,7 @@ free_tasks ();
 
 /*@null@*/ /*@dependent@*/ /*@special@*/
 task_t
-make_task (/*@only@*/ char*, unsigned int, /*@only@*/ char*)
+make_task (/*@only@*/ char*, /*@only@*/ char*)
   /*@defines result->open_ports@*/
   /*@ensures isnull result->description@*/;
 

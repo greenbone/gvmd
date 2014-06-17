@@ -2078,6 +2078,7 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, task INTEGER, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, hidden INTEGER,"
+       /* TODO Remove column time, no longer used. */
        "  time, comment, run_status INTEGER, start_time, end_time,"
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
        "  slave INTEGER, config_location INTEGER, target_location INTEGER,"

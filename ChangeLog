@@ -1,5 +1,18 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove last use of tasks column "time".
+
+	* src/manage_sql.c (make_task): Remove time argument, column is not
+	used.  Update caller.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/manage_sqlite3.c (create_tables): Add note about time column.
+
+	* src/omp.c (omp_xml_handle_start_element): Update make_task call.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (manage_port_name, setting_severity)
 	(setting_dynamic_severity): Use Postgres friendly syntax for LIMIT.
 	Also consistent with rest of code.
