@@ -1,5 +1,16 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19615.
+
+	Make report form "Verinice ISM" predefined.
+
+	* src/manage_sql.c (check_db, report_format_predefined): Add Verinice
+	ISM.
+
+	* CMakeLists.txt: Install Verinice ISM.
+
+2014-06-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19614.
 
 	* src/report_formats/Verinice_ISM/create_report_import: Remove.
