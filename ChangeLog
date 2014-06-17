@@ -1,5 +1,11 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_port_name, setting_severity)
+	(setting_dynamic_severity): Use Postgres friendly syntax for LIMIT.
+	Also consistent with rest of code.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_pg.c (sql_column_double, sql_column_text, sql_column_int)
 	(sql_column_int64): Add NULL checks.
 

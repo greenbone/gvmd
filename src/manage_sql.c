@@ -4684,7 +4684,7 @@ manage_port_name (int number, const char *protocol)
     return NULL;
 
   return sql_string ("SELECT name FROM port_names"
-                     " WHERE number = %i AND protocol = '%s' LIMIT 0,1;",
+                     " WHERE number = %i AND protocol = '%s' LIMIT 1;",
                      number, protocol);
 }
 
@@ -45484,7 +45484,7 @@ setting_severity ()
                            "      OR (owner ="
                            "          (SELECT id FROM users"
                            "           WHERE users.uuid = '%s')))"
-                           " ORDER BY owner DESC LIMIT 0,1;",
+                           " ORDER BY owner DESC LIMIT 1;",
                            current_credentials.uuid);
 }
 
@@ -45503,7 +45503,7 @@ setting_dynamic_severity_int ()
                   "      OR (owner ="
                   "          (SELECT id FROM users"
                   "           WHERE users.uuid = '%s')))"
-                  " ORDER BY owner DESC LIMIT 0,1;",
+                  " ORDER BY owner DESC LIMIT 1;",
                   current_credentials.uuid);
 }
 
