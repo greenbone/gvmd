@@ -24395,7 +24395,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   // FIX task names are allowed to clash
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "time, config, target, schedule,"
+                            "config, target, schedule,"
                             " schedule_next_time, slave, config_location,"
                             " target_location, schedule_location,"
                             " slave_location, hosts_ordering, scanner",
@@ -24677,10 +24677,10 @@ delete_task (task_t task, int ultimate)
                           : LOCATION_TABLE);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
-      sql ("DELETE FROM tasks WHERE id = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE id = %llu;", task);
     }
   else
     {

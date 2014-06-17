@@ -1,5 +1,10 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_task): Remove another use of tasks column time.
+	(delete_task): Delete task after resources that refer to task.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_port_range, port_list_is_predefined): Quote
 	UUIDs with single quote in SQL, for consistency and Postgres.
 
