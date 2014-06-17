@@ -1,3 +1,12 @@
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19613.
+
+	* report_formats/verinice-ism: Remove.  Now in src/report_formats.
+
+	* src/report_formats/Verinice_ISM: New directory.  Was
+	report_formats/verinice-ism.
+
 2014-06-16  Benoît Allard  <benoit.allard@greenbone.net>
 
 	Post release version bump.
