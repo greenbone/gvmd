@@ -619,6 +619,8 @@ sql_reset (sql_stmt_t *stmt)
 double
 sql_column_double (sql_stmt_t *stmt, int position)
 {
+  if (PQgetisnull (stmt->result, stmt->current_row, position))
+    return 0.0;
   return *((double*) PQgetvalue (stmt->result, stmt->current_row, position));
 }
 
@@ -635,7 +637,8 @@ sql_column_double (sql_stmt_t *stmt, int position)
 const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
-  // FIX these need null checks to be sqlite compatible?
+  if (PQgetisnull (stmt->result, stmt->current_row, position))
+    return NULL;
   return (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
 }
 
@@ -653,6 +656,9 @@ int
 sql_column_int (sql_stmt_t *stmt, int position)
 {
   char *cell;
+
+  if (PQgetisnull (stmt->result, stmt->current_row, position))
+    return 0;
 
   cell = PQgetvalue (stmt->result, stmt->current_row, position);
 
@@ -686,6 +692,9 @@ long long int
 sql_column_int64 (sql_stmt_t *stmt, int position)
 {
   char *cell;
+
+  if (PQgetisnull (stmt->result, stmt->current_row, position))
+    return 0;
 
   cell = PQgetvalue (stmt->result, stmt->current_row, position);
 
