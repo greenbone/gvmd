@@ -220,7 +220,7 @@ manage_create_sql_functions ()
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = 'tasks'"
-               "               AND table_schema = 'information_schema'"
+               "               AND table_schema = 'public'"
                "               AND table_name = 'permissions')"
                " ::integer;"))
     sql ("CREATE OR REPLACE FUNCTION user_can_everything (text)"

@@ -1,5 +1,10 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Correct schema name in
+	table check.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add Postgres SQL functions "severity_in_level" and "severity_to_level".
 
 	* src/manage_pg.c (manage_session_init): New function.  Creates
