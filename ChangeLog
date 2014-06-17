@@ -1,5 +1,11 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Only create function
+	resource_name if the tables exist, because it uses tables.  Add pl/pgsql
+	function "uniquify".
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_task): Remove another use of tasks column time.
 	(delete_task): Delete task after resources that refer to task.
 
