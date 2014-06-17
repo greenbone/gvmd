@@ -13431,7 +13431,7 @@ find_result_with_permission (const char* uuid, result_t* result,
  * @param[in]  type         Type of result.  "Security Hole", etc.
  * @param[in]  description  Description of the result.
  *
- * @return A result descriptor for the new result.
+ * @return A result descriptor for the new result, 0 if error.
  */
 result_t
 make_result (task_t task, const char* host, const char* port, const char* nvt,
@@ -13441,8 +13441,14 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   gchar *nvt_revision, *severity;
   gchar *quoted_descr = sql_quote (description);
   int qod;
+  nvt_t nvt_id = 0;
 
-  if (nvt && strcmp (nvt, ""))
+  if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
+    {
+      g_warning ("NVT '%s' not found. Result not created.\n", nvt);
+      return 0;
+    }
+  else if (nvt && strcmp (nvt, ""))
     {
       nvti_t *nvti;
 
@@ -14634,6 +14640,9 @@ report_add_result (report_t report, result_t result)
   char *ov_severity_str;
   double severity, ov_severity;
   rowid_t rowid;
+
+  if (report == 0 || result == 0)
+    return;
 
   sql ("INSERT into report_results (report, result)"
        " VALUES (%llu, %llu);",

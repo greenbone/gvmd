@@ -1,3 +1,9 @@
+2014-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (make_result): Check for the provided NVT's presence
+	in the DB. Fix function documentation.
+	(report_add_result): Add function parameters values check.
+
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove last use of tasks column "time".
