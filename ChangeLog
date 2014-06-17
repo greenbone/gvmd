@@ -1,5 +1,10 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_port_range, port_list_is_predefined): Quote
+	UUIDs with single quote in SQL, for consistency and Postgres.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (PORT_LIST_ITERATOR_COLUMNS)
 	(PORT_LIST_ITERATOR_TRASH_COLUMNS): Quote end in SQL for Postgres.
 

@@ -42241,15 +42241,14 @@ delete_port_range (const char *port_range_id, int dummy)
         " id = (SELECT port_list FROM port_ranges"
         "       WHERE port_ranges.id = %llu)"
         " AND"
-        " (uuid == " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-        "  OR uuid == " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012)
-        "  OR uuid"
-        "     == " G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100) ");",
+        " (uuid = '" PORT_LIST_UUID_DEFAULT "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "'"
+        "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "'"
+        "  OR uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "');",
         port_range))
     return 3;
 
@@ -42453,19 +42452,15 @@ port_list_is_predefined (port_list_t port_list)
   return !!sql_int
             ("SELECT COUNT (*) FROM port_lists"
              " WHERE id = %llu AND"
-             " (uuid = " G_STRINGIFY (PORT_LIST_UUID_DEFAULT)
-             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_TCP)
-             "  OR uuid = "
-             G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100)
-             "  OR uuid = "
-             G_STRINGIFY (PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000)
-             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP)
-             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_PRIV_TCP_UDP)
-             "  OR uuid = " G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_2012)
-             "  OR uuid = "
-             G_STRINGIFY (PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100)
-             "  OR uuid = "
-             G_STRINGIFY (PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012) ");",
+             " (uuid = '" PORT_LIST_UUID_DEFAULT "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_2012 "'"
+             "  OR uuid = '" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "'"
+             "  OR uuid = '" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "');",
              port_list);
 }
 
