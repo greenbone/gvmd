@@ -30,6 +30,7 @@
 #include <endian.h>
 #include <arpa/inet.h>
 #include <glib.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <postgresql/libpq-fe.h>
 #include <string.h>
@@ -54,6 +55,7 @@ struct sql_stmt
   array_t *param_values;  ///< Parameter values.
   GArray *param_lengths;  ///< Parameter lengths (int's).
   GArray *param_formats;  ///< Parameter formats (int's).
+  array_t *store;         ///< Strings returned to client.
 };
 
 
@@ -112,6 +114,23 @@ sql_select_limit (int max)
 }
 
 /**
+ * @brief Store a string on a statement.
+ *
+ * The string is freed when the statement is finalized or reset.
+ *
+ * @param[in]  stmt    Statement.
+ * @param[in]  string  String to store.
+ *
+ * @return String.
+ */
+static char *
+sql_stmt_store (sql_stmt_t *stmt, char *string)
+{
+  array_add (stmt->store, string);
+  return string;
+}
+
+/**
  * @brief Add param to statement.
  *
  * @param[in]  stmt          Statement.
@@ -140,6 +159,7 @@ sql_stmt_init (sql_stmt_t *stmt)
   stmt->param_values = make_array ();
   stmt->param_lengths = g_array_new (FALSE, TRUE, sizeof (int));
   stmt->param_formats = g_array_new (FALSE, TRUE, sizeof (int));
+  stmt->store = make_array ();
   stmt->current_row = -1;
 }
 
@@ -580,6 +600,7 @@ sql_finalize (sql_stmt_t *stmt)
   array_free (stmt->param_values);
   g_array_free (stmt->param_lengths, TRUE);
   g_array_free (stmt->param_formats, TRUE);
+  array_free (stmt->store);
   g_free (stmt);
 }
 
@@ -599,6 +620,7 @@ sql_reset (sql_stmt_t *stmt)
   array_free (stmt->param_values);
   g_array_free (stmt->param_lengths, TRUE);
   g_array_free (stmt->param_formats, TRUE);
+  array_free (stmt->store);
 
   sql = stmt->sql;
   sql_stmt_init (stmt);
@@ -632,14 +654,44 @@ sql_column_double (sql_stmt_t *stmt, int position)
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
  *
- * @return 0 success, -1 error.
+ * @return Column value.  NULL if column is NULL.
  */
 const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
+  char *cell;
+
   if (PQgetisnull (stmt->result, stmt->current_row, position))
     return NULL;
-  return (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
+
+  cell = PQgetvalue (stmt->result, stmt->current_row, position);
+
+  switch (PQftype (stmt->result, position))
+    {
+      case 21:  /* INT2OID */
+        return (const char*) sql_stmt_store
+                              (stmt,
+                               g_strdup_printf ("%" SCNu16,
+                                                ntohs (*((uint16_t *) cell))));
+
+      case 23:  /* INT4OID */
+        return (const char*) sql_stmt_store
+                              (stmt,
+                               g_strdup_printf ("%" SCNu32,
+                                               ntohl (*((uint32_t *) cell))));
+
+      case 20:  /* INT8OID */
+        return (const char*) sql_stmt_store
+                              (stmt,
+                               g_strdup_printf
+                                ("%" SCNu64,
+                                 /* be64 is network byte order. */
+                                 be64toh (*((uint64_t *) cell))));
+
+      default:
+        /* Assume text. */
+        return (const char*) cell;
+    }
 }
 
 /**
@@ -650,7 +702,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
  *
- * @return 0 success, -1 error.
+ * @return Column value.  0 if column is NULL.
  */
 int
 sql_column_int (sql_stmt_t *stmt, int position)
@@ -686,7 +738,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
  *
- * @return 0 success, -1 error.
+ * @return Column value.  0 if column is NULL.
  */
 long long int
 sql_column_int64 (sql_stmt_t *stmt, int position)

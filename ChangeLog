@@ -1,3 +1,15 @@
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Handle integer columns in Postgres sql_column_text.
+
+	* src/sql_pg.c (struct sql_stmt): Add store.
+	(sql_stmt_store): New function.
+	(sql_finalize, sql_reset): Free store.
+	(sql_column_text): Correct return in doc.  If the column is actually an
+	int then convert it to a string, to match SQLite behaviour.  Store the
+	return in the sql_stmt_t, so that it is freed with the statement.
+	(sql_column_int, sql_column_int64): Correct return in doc.
+
 2014-06-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_result): Check for the provided NVT's presence
