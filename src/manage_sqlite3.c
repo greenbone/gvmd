@@ -27,6 +27,7 @@
 
 #include "sql.h"
 #include "manage.h"
+#include "manage_utils.h"
 #include "tracef.h"
 
 #include <sqlite3.h>

@@ -204,10 +204,17 @@ else (BACKEND STREQUAL SQLITE3)
   endif (NOT PostgreSQL_FOUND)
   message (STATUS "Looking for PostgreSQL... ${PostgreSQL_VERSION_STRING}")
   set (POSTGRESQL_LDFLAGS ${PostgreSQL_LIBRARIES})
-  string (REGEX REPLACE "^([^;]*);" "\\1"
+  string (REGEX REPLACE "^([^;]*);.*" "\\1"
           FIRST_INCLUDE_DIR "${PostgreSQL_INCLUDE_DIRS}")
   set (POSTGRESQL_CFLAGS ${FIRST_INCLUDE_DIR})
   unset (FIRST_INCLUDE_DIR)
+  message (STATUS "PostgreSQL_CFLAGS: ${POSTGRESQL_CFLAGS}")
+
+  find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
+
+  execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
+	OUTPUT_VARIABLE POSTGRESQL_SERVER_CFLAGS
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (BACKEND STREQUAL SQLITE3)
 
 message (STATUS "Looking for pcap...")

@@ -28,6 +28,7 @@
 #define OPENVAS_MANAGER_MANAGE_SQL_H
 
 #include "manage.h"
+#include "manage_utils.h"
 #include <openvas/omp/xml.h>
 
 /* Internal types and preprocessor definitions. */
@@ -256,10 +257,6 @@ const char *lsc_credential_iterator_password (iterator_t *);
 int create_current_report (task_t, char **, task_status_t);
 
 char *alert_data (alert_t, const char *, const char *);
-
-time_t add_months (time_t, int);
-
-time_t months_between (time_t, time_t);
 
 int init_task_schedule_iterator (iterator_t *);
 

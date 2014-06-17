@@ -1,5 +1,36 @@
 2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add server side Postgres function "resource_name".  Move some functions
+	to new file manage_utils.c to make linking the Postgres shared library
+	easier.
+
+	* CMakeLists.txt: Improve regex used to hack PostgreSQL_INCLUDE_DIRS.
+	Use pg_config to setup POSTGRESQL_SERVER_CFLAGS.
+
+	* src/CMakeLists.txt: Add shared library manage-pg-server, for server
+	side functions.  Add manage_utils.c.
+
+	* src/manage_pg.c (manage_create_sql_functions): Create server side
+	"resource_name".
+
+	* src/manage_pg_server.c: New file.  Postgres server side functions.
+
+	* src/manage_utils.c, src/manage_utils.h: New files.  Self-contained
+	manage functions.
+
+	* src/manage.c (next_time): Remove.  Now in manage_utils.c.
+
+	* src/manage.h: Remove header accordingly.
+
+	* src/manage_sql.c (MONTHS_WITHIN_YEAR, months_between)
+	(add_months): Remove.  Now in manage_utils.c.
+
+	* src/manage_sql.h: Update headers accordingly.
+
+	* src/manage_sqlite3.c: Include manage_utils.h.
+
+2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add resource_name.
 
 2014-06-16  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -73,7 +73,6 @@ manage_create_sql_functions ()
   can duplicate
     hosts_contains
     clean_hosts
-    next_time (will be hairy)
     common_cve
     current_offset (maybe with SHOW TIMEZONE and hairy date stuff)
     severity_matches_ov
@@ -86,6 +85,9 @@ manage_create_sql_functions ()
     resource_name
     run_status_name
     user_can_everything
+
+  server side below
+    next_time
 #endif
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
@@ -328,18 +330,17 @@ manage_create_sql_functions ()
        "         END;"
        "$$ LANGUAGE SQL;");
 
-#if 0
   /* Server side functions. */
 
   sql ("SET role dba;");
 
-  sql ("CREATE FUNCTION resource_name (text, text, int) RETURNS text"
-       " AS '%s/openvasmd/pg/libmanage-pg-server.so', 'sql_resource_name'"
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
+       " RETURNS integer"
+       " AS '%s/openvasmd/pg/libmanage-pg-server.so', 'sql_next_time'"
        " LANGUAGE C STRICT;",
        OPENVAS_STATE_DIR);
 
   sql ("RESET role;");
-#endif
 
   return 0;
 }

@@ -32,10 +32,15 @@ if (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
 else (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_pg.c manage_pg.c)
+
+  add_library (manage-pg-server SHARED
+               manage_pg_server.c manage_utils.c)
+  set_target_properties (manage-pg-server PROPERTIES COMPILE_FLAGS
+						 "-I${POSTGRESQL_SERVER_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 endif (BACKEND STREQUAL SQLITE3)
 
 add_library (manage STATIC
-             manage.c sql.c
+             manage_utils.c manage.c sql.c
              manage_ranges_all_tcp_nmap_5_51_top_100.c
              manage_ranges_all_tcp_nmap_5_51_top_1000.c
              manage_ranges_iana_tcp_2012.c manage_ranges_iana_tcp_udp_2012.c
@@ -51,6 +56,7 @@ if (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 else (BACKEND STREQUAL SQLITE3)
   target_link_libraries (manage m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+  target_link_libraries (manage-pg-server m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
 endif (BACKEND STREQUAL SQLITE3)
 
 add_library (omp STATIC omp.c)
@@ -172,6 +178,7 @@ add_dependencies (check splint rats flawfinder)
 set (C_FILES "${CMAKE_CURRENT_SOURCE_DIR}/openvasmd.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ompd.c" "${CMAKE_CURRENT_SOURCE_DIR}/omp.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/otp.c" "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/scanner.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_config_discovery.c"
