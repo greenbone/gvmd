@@ -1,5 +1,10 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (PORT_LIST_ITERATOR_COLUMNS)
+	(PORT_LIST_ITERATOR_TRASH_COLUMNS): Quote end in SQL for Postgres.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Handle integer columns in Postgres sql_column_text.
 
 	* src/sql_pg.c (struct sql_stmt): Add store.

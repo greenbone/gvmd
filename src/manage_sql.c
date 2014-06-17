@@ -42272,7 +42272,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT ALL ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
@@ -42281,7 +42281,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT TCP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
@@ -42291,7 +42291,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT UDP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
@@ -42307,7 +42307,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT ALL ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
@@ -42316,7 +42316,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT TCP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
@@ -42326,7 +42326,7 @@ delete_port_range (const char *port_range_id, int dummy)
     /* COUNT UDP ports */                                                       \
   ", (SELECT"                                                                   \
   "   sum ((CASE"                                                               \
-  "         WHEN end IS NULL THEN start ELSE end"                               \
+  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
   "         END)"                                                               \
   "        - start"                                                             \
   "        + 1)"                                                                \
