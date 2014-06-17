@@ -1,5 +1,24 @@
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add Postgres SQL functions "severity_in_level" and "severity_to_level".
+
+	* src/manage_pg.c (manage_session_init): New function.  Creates
+	temporary table for storing session info.  Automatically removed at end
+	of session.
+	(manage_create_sql_functions): Add "severity_in_level" and
+	"severity_to_level".
+	(create_tables): Add current_credentials so that the table exists when
+	functions that refer to it are created.  The temporary tables will be
+	used instead.
+
+	* src/manage_sql.h (manage_session_init): New header.
+
+	* src/manage_sql.c (authenticate): Call session init to store user uuid.
+
+	* src/manage_sqlite3.c (manage_session_init): New function.  Dummy.
+
+2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Only create function
 	resource_name if the tables exist, because it uses tables.  Add pl/pgsql
 	function "uniquify".

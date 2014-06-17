@@ -306,4 +306,7 @@ void update_config_cache_init (const char *);
 
 alive_test_t target_alive_tests (target_t);
 
+void
+manage_session_init (const char *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_SQL_H */

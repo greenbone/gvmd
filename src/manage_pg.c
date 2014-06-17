@@ -28,6 +28,23 @@
 #include "manage_sql.h"
 
 
+/* Session. */
+
+/**
+ * @brief Setup session.
+ *
+ * @param[in]  uuid  User UUID.
+ */
+void
+manage_session_init (const char *uuid)
+{
+  sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL);");
+  sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
+}
+
+
 /* SQL functions. */
 
 /**
@@ -76,14 +93,14 @@ manage_create_sql_functions ()
     common_cve
     current_offset (maybe with SHOW TIMEZONE and hairy date stuff)
     severity_matches_ov
-    severity_to_level
     severity_to_type
-    severity_in_level
 
   duplicated below
     iso_time
     resource_name
     run_status_name
+    severity_in_level
+    severity_to_level
     user_can_everything
 
   server side below
@@ -347,6 +364,84 @@ manage_create_sql_functions ()
            "         ELSE 'ERROR'"
            "         END;"
            "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_in_level (text, text)"
+           " RETURNS boolean AS $$"
+           "  SELECT CASE (SELECT value FROM settings"
+           "               WHERE name = 'Severity Class'"
+           "               AND ((owner IS NULL)"
+           "                    OR (owner = (SELECT id FROM users"
+           "                                 WHERE users.uuid"
+           "                                       = (SELECT uuid"
+           "                                          FROM current_credentials))))"
+           "               ORDER BY owner DESC LIMIT 1)"
+           "         WHEN 'classic'"
+           "         THEN (CASE $2"
+           "               WHEN 'high'"
+           "               THEN $1::double precision > 5"
+           "                    AND $1::double precision <= 10"
+           "               WHEN 'medium'"
+           "               THEN $1::double precision > 2"
+           "                    AND $1::double precision <= 5"
+           "               WHEN 'low'"
+           "               THEN $1::double precision > 0"
+           "                    AND $1::double precision <= 2"
+           "               WHEN 'none'"
+           "               THEN $1::double precision = 0"
+           "               ELSE 0::boolean"
+           "               END)"
+           "         WHEN 'pci-dss'"
+           "         THEN (CASE $2"
+           "               WHEN 'high'"
+           "               THEN $1::double precision >= 4.3"
+           "               WHEN 'none'"
+           "               THEN $1::double precision = 0"
+           "               ELSE 0::boolean"
+           "               END)"
+           "         ELSE " /* NIST/BSI */
+           "              (CASE $2"
+           "               WHEN 'high'"
+           "               THEN $1::double precision >= 7"
+           "                    AND $1::double precision <= 10"
+           "               WHEN 'medium'"
+           "               THEN $1::double precision >= 4"
+           "                    AND $1::double precision < 7"
+           "               WHEN 'low'"
+           "               THEN $1::double precision > 0"
+           "                    AND $1::double precision < 4"
+           "               WHEN 'none'"
+           "               THEN $1::double precision = 0"
+           "               ELSE 0::boolean"
+           "               END)"
+           "         END;"
+           "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_to_level (text, integer)"
+           " RETURNS text AS $$"
+           "  SELECT CASE"
+           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_LOG)
+           "         THEN 'Log'"
+           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_FP)
+           "         THEN 'False Positive'"
+           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_DEBUG)
+           "         THEN 'Debug'"
+           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_ERROR)
+           "         THEN 'Error'"
+           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_ERROR)
+           "         THEN (SELECT CASE"
+           "                      WHEN $2 = 1"
+           "                      THEN 'Alarm'"
+           "                      WHEN severity_in_level ($1, 'high')"
+           "                      THEN 'High'"
+           "                      WHEN severity_in_level ($1, 'medium')"
+           "                      THEN 'Medium'"
+           "                      WHEN severity_in_level ($1, 'low')"
+           "                      THEN 'Low'"
+           "                      ELSE 'Log'"
+           "                      END)"
+           "         ELSE 'Internal Error'"
+           "         END;"
+           "$$ LANGUAGE SQL;");
     }
 
   /* Functions in pl/pgsql. */
@@ -414,6 +509,10 @@ manage_create_sql_collations ()
 void
 create_tables ()
 {
+  sql ("CREATE TABLE IF NOT EXISTS current_credentials"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL);");
+
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"

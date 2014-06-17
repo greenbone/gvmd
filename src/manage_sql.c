@@ -11882,6 +11882,8 @@ authenticate (credentials_t* credentials)
                                               " WHERE uuid = '%s';",
                                               credentials->uuid);
 
+          manage_session_init (credentials->uuid);
+
           return 0;
         }
       return fail;

@@ -81,6 +81,20 @@ gchar *
 tag_value (const gchar *tags, const gchar *tag);
 
 
+/* Session. */
+
+/**
+ * @brief Setup session.
+ *
+ * @param[in]  uuid  User UUID.
+ */
+void
+manage_session_init (const char *uuid)
+{
+  return;
+}
+
+
 /* SQL functions. */
 
 /**
