@@ -1,3 +1,8 @@
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_pg.c (sql_column_int, sql_column_int64): If the column is
+	boolean, convert to int.
+
 2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (scanner_type): New function.

@@ -702,7 +702,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
  *
- * @return Column value.  0 if column is NULL.
+ * @return Column value.  0 if column is NULL or false.  1 if column true.
  */
 int
 sql_column_int (sql_stmt_t *stmt, int position)
@@ -716,6 +716,9 @@ sql_column_int (sql_stmt_t *stmt, int position)
 
   switch (PQftype (stmt->result, position))
     {
+      case 16:  /* BOOLOID */
+        return *cell ? 1 : 0;
+
       case 21:  /* INT2OID */
         return (int) ntohs (*((uint16_t *) cell));
 
@@ -738,7 +741,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
  * @param[in]  stmt      Statement.
  * @param[in]  position  Column position.
  *
- * @return Column value.  0 if column is NULL.
+ * @return Column value.  0 if column is NULL or false.  1 if column true.
  */
 long long int
 sql_column_int64 (sql_stmt_t *stmt, int position)
@@ -752,6 +755,9 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 
   switch (PQftype (stmt->result, position))
     {
+      case 16:  /* BOOLOID */
+        return *cell ? 1 : 0;
+
       case 21:  /* INT2OID */
         return (long long int) ntohs (*((uint16_t *) cell));
 
