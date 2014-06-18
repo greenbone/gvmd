@@ -1,5 +1,11 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): In iso_time use "FM" in
+	strings to prevent leading spaces, add missing "+" before timezone and
+	treat the timezone as minutes instead of hundreds.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql: Correct table name in group_users_trash
 	REFERENCES. Add missing columns to targets_trash, report_formats_trash
 	and tags_trash.  Change port and type in scanners and scanners_trash to
