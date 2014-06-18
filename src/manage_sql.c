@@ -39931,7 +39931,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
               g_free (uuid);
             }
 
-          sql ("INSERT INTO %s_users (\"%s\", user) VALUES (%llu, %llu);",
+          sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
                type,
                type,
                resource,

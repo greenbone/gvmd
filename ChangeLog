@@ -1,5 +1,9 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (add_users): Quote "user" for Postgres.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_group, manage_restore): Use the new group ID
 	when moving the group-user relation to/from the trashcan, otherwise the
 	users could be attached to the wrong group.
