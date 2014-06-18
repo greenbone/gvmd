@@ -1,3 +1,9 @@
+2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (session_clean): New function.
+	(serve_omp): Free the client session buffers without closing it as it
+	may still be in use by the parent process.
+
 2014-06-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Correct schema name in

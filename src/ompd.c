@@ -318,6 +318,21 @@ ompd_send_to_client (const char* msg, void* write_to_client_data)
   return FALSE;
 }
 
+static void
+session_clean (gnutls_session_t *sess, gnutls_certificate_credentials_t *creds)
+{
+  if (sess && *sess)
+    {
+      gnutls_deinit (*sess);
+      *sess = NULL;
+    }
+  if (creds && *creds)
+    {
+      gnutls_certificate_free_credentials (*creds);
+      *creds = NULL;
+    }
+}
+
 /**
  * @brief Serve the OpenVAS Management Protocol (OMP).
  *
@@ -664,13 +679,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully started the task.  Close the client
                * connection, as the parent process has continued the
                * session with the client. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               client_active = 0;
               client_input_stalled = 0;
               scan_handler = 1;
@@ -681,13 +690,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully completed.  Close the client connection,
                * and exit, as the parent process has continued the
                * session with the client. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               rc = 0;
               goto scanner_free;
             }
@@ -695,13 +698,7 @@ serve_omp (gnutls_session_t* client_session,
             {
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               rc = -1;
               goto scanner_free;
             }
@@ -942,13 +939,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully started the task.  Close the client
                * connection, as the parent process has continued the
                * session with the client. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               scan_handler = 1;
               client_active = 0;
             }
@@ -958,13 +949,7 @@ serve_omp (gnutls_session_t* client_session,
                * successfully completed.  Close the client connection,
                * and exit, as the parent process has continued the
                * session with the client. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               rc = 0;
               goto scanner_free;
             }
@@ -972,13 +957,7 @@ serve_omp (gnutls_session_t* client_session,
             {
               /* Now in a process forked to run a task, which has
                * failed in starting the task. */
-#if 0
-              /** @todo This seems to close the parent connections.  Maybe just do
-               *        part of this? */
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-#endif
+              session_clean (client_session, client_credentials);
               rc = -1;
               goto scanner_free;
             }
