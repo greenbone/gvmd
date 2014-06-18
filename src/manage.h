@@ -2077,6 +2077,9 @@ int
 scanner_port (scanner_t);
 
 int
+scanner_type (scanner_t);
+
+int
 scanner_count (const get_data_t *);
 
 int

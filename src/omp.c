@@ -20678,7 +20678,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           slave_t slave = 0;
           char *tsk_uuid, *name;
           guint index;
-          int fail, type;
+          int fail;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -21068,8 +21068,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          else if (((type = config_type (config)) > 0 && scanner == 0)
-                   || (type == 0 && scanner > 0))
+          else if ((config_type (config) == 1
+                    && scanner_type (scanner) != SCANNER_TYPE_OSP_OVALDI)
+                   || (config_type (config) == 0 && scanner
+                       && scanner_type (scanner) != SCANNER_TYPE_OPENVAS))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -21094,7 +21096,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
-                                             "target",
+                                             "slave",
                                              create_task_data->slave_id,
                                              write_to_client,
                                              write_to_client_data))

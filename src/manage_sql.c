@@ -27270,7 +27270,7 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 {
   config_t config = 0;
   scanner_t scanner = 0;
-  int type;
+  int ctype, stype;
 
   if (config_id == NULL && scanner_id == NULL)
     return 1;
@@ -27282,13 +27282,18 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   find_scanner_with_permission (scanner_id, &scanner, "get_scanners");
 
-  type = config_type (config);
+  ctype = config_type (config);
+  stype = scanner_type (scanner);
   /* OSPD Scanner with OSPD config. */
-  if (scanner > 0 && type > 0)
+  if (stype == SCANNER_TYPE_OSP_OVALDI && ctype == 1)
     return 1;
 
-  /* No Scanner with Normal config. */
-  if (scanner == 0 && type == 0)
+  /* OpenVAS Scanner with OpenVAS config. */
+  if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
+    return 1;
+
+  /* Default Scanner with OpenVAS Config. */
+  if (scanner == 0 && ctype == 0)
     return 1;
 
   return 0;
@@ -35535,6 +35540,26 @@ scanner_port (scanner_t scanner)
   port = atoi (str);
   g_free (str);
   return port;
+}
+
+/**
+ * @brief Return the type of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Scanner type, -1 if not found;
+ */
+int
+scanner_type (scanner_t scanner)
+{
+  int type;
+  char *str;
+  str = sql_string ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+  if (!str)
+    return -1;
+  type = atoi (str);
+  g_free (str);
+  return type;
 }
 
 /**

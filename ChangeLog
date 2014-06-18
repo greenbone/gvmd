@@ -1,5 +1,16 @@
 2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (scanner_type): New function.
+	(modify_task_check_config_scanner): Adjust to handle openvas non-default
+	scanners.
+
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust checking for scanner
+	and config types matching in CREATE_TASK.
+
+2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/openvasmd.c (main), src/manage_sql.c (verify_scanner): Keep port
 	value in host order.
 
