@@ -480,7 +480,7 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
        " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server.so', 'sql_next_time'"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
        " LANGUAGE C STRICT;",
        OPENVAS_STATE_DIR);
 

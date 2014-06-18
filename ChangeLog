@@ -1,5 +1,10 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Remove ".so" from
+	library name, because Postgres adds it.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): In iso_time use "FM" in
 	strings to prevent leading spaces, add missing "+" before timezone and
 	treat the timezone as minutes instead of hundreds.
