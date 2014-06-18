@@ -1,5 +1,12 @@
 2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.h (scanner_type_t): Add SCANNER_TYPE_OPENVAS.
+
+	* src/manage_sql.c (verify_scanner): Handle OpenVAS Scanner type
+	verification.
+
+2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (serve_omp): Fix scanner sessions preemptive connections
 	after scan starting. Fix memory leaks.
 

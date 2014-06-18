@@ -38,6 +38,7 @@
 #include "manage_acl.h"
 #include "lsc_user.h"
 #include "sql.h"
+#include "scanner.h"
 #include "tracef.h"
 
 #include <arpa/inet.h>
@@ -35563,33 +35564,46 @@ scanner_count (const get_data_t *get)
 int
 verify_scanner (const char *scanner_id, char **version)
 {
-  int ret;
   get_data_t get;
   iterator_t scanner;
-  osp_connection_t *connection = NULL;
 
   if (user_may ("verify_scanner") == 0)
     return 99;
   memset (&get, '\0', sizeof (get));
   get.id = g_strdup (scanner_id);
-  ret = init_scanner_iterator (&scanner, &get);
-  if (!next (&scanner))
+  if (init_scanner_iterator (&scanner, &get) || !next (&scanner))
     return 1;
   g_free (get.id);
   if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OVALDI)
-    connection = osp_connection_new (scanner_iterator_host (&scanner),
-                                     scanner_iterator_port (&scanner),
-                                     CACERT, CLIENTCERT, CLIENTKEY);
-  cleanup_iterator (&scanner);
-  if (!connection)
-    return 2;
+    {
+      osp_connection_t *connection;
 
-  ret = osp_get_scanner_version (connection, version);
-  osp_connection_close (connection);
-
-  if (ret)
-    return 2;
-  return 0;
+      connection = osp_connection_new (scanner_iterator_host (&scanner),
+                                       scanner_iterator_port (&scanner),
+                                       CACERT, CLIENTCERT, CLIENTKEY);
+      cleanup_iterator (&scanner);
+      if (!connection)
+        return 2;
+      if (osp_get_scanner_version (connection, version))
+        return 2;
+      osp_connection_close (connection);
+      return 0;
+    }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
+    {
+      openvas_scanner_set_address (scanner_iterator_host (&scanner),
+                                   htons (scanner_iterator_port (&scanner)));
+      cleanup_iterator (&scanner);
+      if (openvas_scanner_connected ())
+        openvas_scanner_close ();
+      if (openvas_scanner_connect () || openvas_scanner_init (0)
+          || openvas_scanner_close ())
+        return 2;
+      if (version)
+        *version = g_strdup ("OTP/2.0");
+      return 0;
+    }
+  assert (0);
 }
 
 /* Schedules. */

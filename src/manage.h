@@ -208,6 +208,7 @@ typedef enum
 typedef enum scanner_type {
   SCANNER_TYPE_NONE = 0,
   SCANNER_TYPE_OSP_OVALDI,
+  SCANNER_TYPE_OPENVAS,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
