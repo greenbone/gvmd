@@ -147,7 +147,7 @@ CREATE TABLE group_users
 
 CREATE TABLE group_users_trash
  (id SERIAL PRIMARY KEY,
-  group integer REFERENCES groups (id) ON DELETE RESTRICT,
+  group integer REFERENCES groups_trash (id) ON DELETE RESTRICT,
   user integer REFERENCES users (id) ON DELETE RESTRICT);
 
 CREATE TABLE roles
@@ -336,8 +336,8 @@ CREATE TABLE scanners
   name text NOT NULL,
   comment text,
   host text,
-  port text,
-  type text,
+  port integer,
+  type integer,
   creation_time date,
   modification_time date);
 
@@ -348,8 +348,8 @@ CREATE TABLE scanners_trash
   name text NOT NULL,
   comment text,
   host text,
-  port text,
-  type text,
+  port integer,
+  type integer,
   creation_time date,
   modification_time date);
 
@@ -502,6 +502,7 @@ CREATE TABLE report_formats_trash
   trust integer,
   trust_time date,
   flags integer,
+  original_uuid text,
   creation_time date,
   modification_time date);
 
@@ -811,5 +812,7 @@ CREATE TABLE tags_trash
   resource integer,
   resource_uuid text,
   resource_location integer,
+  active integer,
+  value text,
   creation_time date,
   modification_time date);

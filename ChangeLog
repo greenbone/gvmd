@@ -1,5 +1,14 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db_postgres.sql: Correct table name in group_users_trash
+	REFERENCES. Add missing columns to targets_trash, report_formats_trash
+	and tags_trash.  Change port and type in scanners and scanners_trash to
+	integers, because they're treated as integers.
+
+	* doc/db.png: Update from source.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Correct table name in
 	group_users_trash REFERENCES.  Add missing columns to targets_trash,
 	report_formats_trash and tags_trash.  Change port and type in scanners
