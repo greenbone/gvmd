@@ -1,3 +1,11 @@
+2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): Only try to initialize scanner connection when
+	in nvt cache mode.
+
+	* src/scanner.c (openvas_scanner_init): Free internal buffers before
+	returning error.
+
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Correct column name and add missing

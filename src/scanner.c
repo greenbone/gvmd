@@ -479,7 +479,10 @@ openvas_scanner_init (int cache_mode)
     if (openvas_scanner_wait ())
       return -2;
   if (ret != -3)
-    return -1;
+    {
+      openvas_scanner_free ();
+      return -1;
+    }
 
   return 0;
 }

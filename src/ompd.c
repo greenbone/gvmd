@@ -410,23 +410,26 @@ serve_omp (gnutls_session_t* client_session,
 #endif
 
   /* Initiate connection (to_scanner is empty so this will just init). */
-  ret = openvas_scanner_init (ompd_nvt_cache_mode);
-  if (ret == -2)
+  if (ompd_nvt_cache_mode)
     {
-      if (client_socket > 0)
-        openvas_server_free (client_socket, *client_session,
-                             *client_credentials);
-      rc = -1;
-      goto scanner_free;
-    }
-  else if (ret == -1)
-    {
-      if (ompd_nvt_cache_mode)
+      ret = openvas_scanner_init (ompd_nvt_cache_mode);
+      if (ret == -2)
         {
-          rc = 1;
+          if (client_socket > 0)
+            openvas_server_free (client_socket, *client_session,
+                                 *client_credentials);
+          rc = -1;
           goto scanner_free;
         }
-      openvas_scanner_close ();
+      else if (ret == -1)
+        {
+          if (ompd_nvt_cache_mode)
+            {
+              rc = 1;
+              goto scanner_free;
+            }
+          openvas_scanner_close ();
+        }
     }
 
   client_input_stalled = 0;
