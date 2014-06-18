@@ -680,7 +680,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS group_users_trash"
        " (id SERIAL PRIMARY KEY,"
-       "  \"group\" integer REFERENCES groups (id) ON DELETE RESTRICT,"
+       "  \"group\" integer REFERENCES groups_trash (id) ON DELETE RESTRICT,"
        "  \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);");
 
   sql ("CREATE TABLE IF NOT EXISTS roles"
@@ -829,6 +829,7 @@ create_tables ()
        "  ssh_location integer,"
        "  smb_location integer,"
        "  port_list_location integer,"
+       "  alive_test integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -939,8 +940,8 @@ create_tables ()
        "  name text,"
        "  comment text,"
        "  host text,"
-       "  port text,"
-       "  type text,"
+       "  port integer,"
+       "  type integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -951,8 +952,8 @@ create_tables ()
        "  name text,"
        "  comment text,"
        "  host text,"
-       "  port text,"
-       "  type text,"
+       "  port integer,"
+       "  type integer,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1073,6 +1074,7 @@ create_tables ()
        "  trust integer,"
        "  trust_time integer,"
        "  flags integer,"
+       "  original_uuid text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1289,6 +1291,8 @@ create_tables ()
        "  resource integer,"
        "  resource_uuid text,"
        "  resource_location integer,"
+       "  active integer,"
+       "  value text,"
        "  creation_time integer,"
        "  modification_time integer);");
 }

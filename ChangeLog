@@ -1,5 +1,12 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Correct table name in
+	group_users_trash REFERENCES.  Add missing columns to targets_trash,
+	report_formats_trash and tags_trash.  Change port and type in scanners
+	and scanners_trash to integers, because they're treated as integers.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_pg.c (sql_column_int, sql_column_int64): If the column is
 	boolean, convert to int.
 
