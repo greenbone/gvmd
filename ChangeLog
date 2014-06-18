@@ -1,3 +1,9 @@
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Update function list.
+	(create_tables): Remove unique constraint from uuid in settings because
+	they are only unique per user at the moment.
+
 2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h (scanner_type_t): Add SCANNER_TYPE_OPENVAS.

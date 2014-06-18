@@ -84,14 +84,13 @@ manage_create_sql_functions ()
     report_severity_count  result counting with caching
 
   can duplicate with pl/pgsql probably
-    uniquify (given table type, will need exec)
-    resource_exists (given table type, will need exec)
+    resource_exists (only used in migrator (given table type, will need exec))
 
   can duplicate
     hosts_contains
-    clean_hosts
+    clean_hosts  (only used in migrator)
     common_cve
-    current_offset (maybe with SHOW TIMEZONE and hairy date stuff)
+    current_offset (only used in migrator (maybe with SHOW TIMEZONE and hairy date stuff))
     severity_matches_ov
     severity_to_type
 
@@ -102,6 +101,9 @@ manage_create_sql_functions ()
     severity_in_level
     severity_to_level
     user_can_everything
+
+  duplicated with pl/pgsql below
+    uniquify (given table type, will need exec)
 
   server side below
     next_time
@@ -1255,7 +1257,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS settings"
        " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
+       "  uuid text NOT NULL,"     /* Note: not UNIQUE. */
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
