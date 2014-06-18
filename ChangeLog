@@ -1,5 +1,15 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Correct column name and add missing
+	ssh_port column to targets_trash.
+
+	* doc/db_postgres.sql (targets, targets_trash): Correct name, add
+	column.
+
+	* doc/db.png: Update from source.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_port_list): Quote an "end" missed earlier, for
 	Postgres.
 

@@ -260,7 +260,7 @@ CREATE TABLE targets
   lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
   ssh_port text,
   smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
-  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   alive_test integer,
   creation_time date,
   modification_time date);
@@ -276,8 +276,9 @@ CREATE TABLE targets_trash
   reverse_lookup_unify integer,
   comment text,
   lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT, -- SSH
+  ssh_port text,
   smb_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT,
-  port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   ssh_location integer,
   smb_location integer,
   port_list_location integer,
