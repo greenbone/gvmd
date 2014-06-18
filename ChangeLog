@@ -1,5 +1,15 @@
 2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (serve_omp): Fix scanner sessions preemptive connections
+	after scan starting. Fix memory leaks.
+
+	* src/scanner.c (openvas_scanner_reconnect): Remove function.
+	(openvas_scanner_free): New function.
+
+	* src/scanner.h: Add and remove function prototypes.
+
+2014-06-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (session_clean): New function.
 	(serve_omp): Free the client session buffers without closing it as it
 	may still be in use by the parent process.

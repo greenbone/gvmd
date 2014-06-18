@@ -43,8 +43,8 @@ openvas_scanner_close ();
 int
 openvas_scanner_connect ();
 
-int
-openvas_scanner_reconnect ();
+void
+openvas_scanner_free ();
 
 int
 openvas_scanner_fd_isset (fd_set *);

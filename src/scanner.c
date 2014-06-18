@@ -405,16 +405,18 @@ openvas_scanner_connect ()
 }
 
 /**
- * @brief Reconnect to the scanner.
- *
- * @return 0 on success, -1 on error.
+ * @brief Free the scanner allocated data. Doesn't close socket and terminate
+ *        the session.
  */
-int
-openvas_scanner_reconnect ()
+void
+openvas_scanner_free ()
 {
-  if (openvas_scanner_socket != -1 && openvas_scanner_close ())
-    return -1;
-  return openvas_scanner_connect ();
+  openvas_scanner_socket = -1;
+  if (openvas_scanner_session)
+    gnutls_deinit (openvas_scanner_session);
+  if (openvas_scanner_credentials)
+    gnutls_certificate_free_credentials (openvas_scanner_credentials);
+  memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
 }
 
 int

@@ -654,19 +654,10 @@ serve_omp (gnutls_session_t* client_session,
             client_input_stalled = 0;
           else if (ret == 3)
             {
-              /* In the parent after a start_task fork.  Create a new
-               * server session, leaving the existing session as it is
-               * so that the child can continue using it. */
-              /** @todo Probably need to close and free some of the existing
-               *        session. */
+              /* In the parent after a start_task fork. Free the scanner session
+               * without closing it, for usage by the child process. */
               set_scanner_init_state (SCANNER_INIT_TOP);
-              if (openvas_scanner_connect () == -1)
-                {
-                  openvas_server_free (client_socket, *client_session,
-                                       *client_credentials);
-                  rc = -1;
-                  goto scanner_free;
-                }
+              openvas_scanner_free ();
               nfds = openvas_scanner_get_nfds (client_socket);
               client_input_stalled = 0;
               /* Skip the rest of the loop because the scanner socket is
@@ -788,8 +779,8 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == 1)
             {
               /* Received scanner BYE.  Write out the rest of to_scanner (the
-               * BYE ACK).  If the client is still connected then recreate the
-               * scanner session, else exit. */
+               * BYE ACK).
+               */
               openvas_scanner_write (ompd_nvt_cache_mode);
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
@@ -797,13 +788,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = 0;
                   goto scanner_free;
                 }
-              if (openvas_scanner_reconnect () == -1)
-                {
-                  openvas_server_free (client_socket, *client_session,
-                                       *client_credentials);
-                  rc = -1;
-                  goto scanner_free;
-                }
+              openvas_scanner_free ();
               nfds = openvas_scanner_get_nfds (client_socket);
             }
           else if (ret == 2)
@@ -915,11 +900,9 @@ serve_omp (gnutls_session_t* client_session,
             client_input_stalled = 0;
           else if (ret == 3)
             {
-              /* In the parent after a start_task fork.  Create a new
-               * server session, leaving the existing session as it is
-               * so that the child can continue using it. */
-              /** @todo Probably need to close and free some of the existing
-               *        session. */
+              /* In the parent after a start_task fork. Free the scanner session
+               * without closing it, for usage by the child process. */
+              openvas_scanner_free ();
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (openvas_scanner_connect () == -1)
                 {
@@ -1005,8 +988,8 @@ serve_omp (gnutls_session_t* client_session,
           else if (ret == 1)
             {
               /* Received scanner BYE.  Write out the rest of to_scanner (the
-               * BYE ACK).  If the client is still connected then recreate the
-               * scanner session, else exit. */
+               * BYE ACK).
+               */
               openvas_scanner_write (ompd_nvt_cache_mode);
               set_scanner_init_state (SCANNER_INIT_TOP);
               if (client_active == 0)
@@ -1014,13 +997,7 @@ serve_omp (gnutls_session_t* client_session,
                   rc = 0;
                   goto scanner_free;
                 }
-              if (openvas_scanner_reconnect () == -1)
-                {
-                  openvas_server_free (client_socket, *client_session,
-                                       *client_credentials);
-                  rc = -1;
-                  goto scanner_free;
-                }
+              openvas_scanner_free ();
               nfds = openvas_scanner_get_nfds (client_socket);
             }
           else if (ret == 2)
