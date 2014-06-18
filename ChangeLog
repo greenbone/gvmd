@@ -1,5 +1,10 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_setting_iterator): Use sql_select_limit to get
+	the LIMIT arg, for Postgres.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Remove explicit references that are
 	optional in targets, for now.
 

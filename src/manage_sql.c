@@ -45580,14 +45580,14 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "                             WHERE uuid = '%s'))))"
                    "%s%s"
                    " ORDER BY %s %s"
-                   " LIMIT %i OFFSET %i;",
+                   " LIMIT %s OFFSET %i;",
                    current_credentials.uuid,
                    current_credentials.uuid,
                    clause ? " AND " : "",
                    clause ? clause : "",
                    sort_field ? sort_field : "id",
                    ascending ? "ASC" : "DESC",
-                   max,
+                   sql_select_limit (max),
                    first);
 
   g_free (clause);
