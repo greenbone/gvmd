@@ -41887,7 +41887,7 @@ copy_port_list (const char* name, const char* comment,
 
   sql ("INSERT INTO port_ranges "
        " (uuid, port_list, type, start, \"end\", comment, exclude)"
-       " SELECT make_uuid(), %llu, type, start, end, comment, exclude"
+       " SELECT make_uuid(), %llu, type, start, \"end\", comment, exclude"
        "  FROM port_ranges WHERE port_list = %llu;",
        new,
        old);
