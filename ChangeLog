@@ -1,5 +1,11 @@
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format, delete_group)
+	(delete_port_list, manage_restore, manage_empty_trashcan): Delete
+	dependent resources first, at least to prevent constraint errors.
+
+2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Remove ".so" from
 	library name, because Postgres adds it.
 

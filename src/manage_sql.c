@@ -37874,12 +37874,12 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   /* Remove from "real" tables. */
 
-  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
   sql ("DELETE FROM report_format_param_options WHERE report_format_param"
        " IN (SELECT id from report_format_params WHERE report_format = %llu);",
        report_format);
   sql ("DELETE FROM report_format_params WHERE report_format = %llu;",
        report_format);
+  sql ("DELETE FROM report_formats WHERE id = %llu;", report_format);
 
   /* Move the dir last, in case any SQL rolls back. */
 
@@ -40071,8 +40071,8 @@ delete_group (const char *group_id, int ultimate)
 
       tags_set_orphans ("group", group, LOCATION_TRASH);
 
-      sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
       sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", group);
+      sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
       sql ("COMMIT;");
       return 0;
     }
@@ -40121,8 +40121,8 @@ delete_group (const char *group_id, int ultimate)
 
   tags_set_orphans ("group", group, LOCATION_TABLE);
 
-  sql ("DELETE FROM groups WHERE id = %llu;", group);
   sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
+  sql ("DELETE FROM groups WHERE id = %llu;", group);
 
   sql ("COMMIT;");
   return 0;
@@ -42181,8 +42181,8 @@ delete_port_list (const char *port_list_id, int ultimate)
       permissions_set_orphans ("port_list", port_list, LOCATION_TRASH);
       tags_set_orphans ("port_list", port_list, LOCATION_TRASH);
 
-      sql ("DELETE FROM port_lists_trash WHERE id = %llu;", port_list);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", port_list);
+      sql ("DELETE FROM port_lists_trash WHERE id = %llu;", port_list);
       sql ("COMMIT;");
       return 0;
     }
@@ -42235,8 +42235,8 @@ delete_port_list (const char *port_list_id, int ultimate)
       tags_set_orphans ("port_list", port_list, LOCATION_TABLE);
     }
 
-  sql ("DELETE FROM port_lists WHERE id = %llu;", port_list);
   sql ("DELETE FROM port_ranges WHERE port_list = %llu;", port_list);
+  sql ("DELETE FROM port_lists WHERE id = %llu;", port_list);
 
   sql ("COMMIT;");
   return 0;
@@ -44517,8 +44517,8 @@ manage_restore (const char *id)
 
       permissions_set_subjects ("group", resource, group, LOCATION_TABLE);
 
-      sql ("DELETE FROM groups_trash WHERE id = %llu;", resource);
       sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", resource);
+      sql ("DELETE FROM groups_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -44729,8 +44729,8 @@ manage_restore (const char *id)
                           sql_last_insert_rowid (),
                           LOCATION_TABLE);
 
-      sql ("DELETE FROM port_lists_trash WHERE id = %llu;", resource);
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
+      sql ("DELETE FROM port_lists_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -44834,14 +44834,14 @@ manage_restore (const char *id)
 
       /* Remove from trash tables. */
 
-      sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
-           resource);
       sql ("DELETE FROM report_format_param_options_trash"
            " WHERE report_format_param"
            " IN (SELECT id from report_format_params_trash"
            "     WHERE report_format = %llu);",
            resource);
       sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+           resource);
+      sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
            resource);
 
       /* Move the dir last, in case any SQL rolls back. */
@@ -45275,8 +45275,8 @@ manage_empty_trashcan ()
        " WHERE subject_type = 'group'"
        " AND subject IN (SELECT id from groups_trash)"
        " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
-  sql ("DELETE FROM groups_trash;");
   sql ("DELETE FROM group_users_trash;");
+  sql ("DELETE FROM groups_trash;");
   sql ("DELETE FROM alert_condition_data_trash;");
   sql ("DELETE FROM alert_event_data_trash;");
   sql ("DELETE FROM alert_method_data_trash;");
