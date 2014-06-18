@@ -1525,16 +1525,15 @@ main (int argc, char** argv)
           free_log_configuration (log_config);
           exit (EXIT_FAILURE);
         }
-      openvassd_port = htons (openvassd_port);
     }
   else
     {
       struct servent *servent = getservbyname ("omp", "tcp");
       if (servent)
         /** @todo Free servent? */
-        openvassd_port = servent->s_port;
+        openvassd_port = ntohs (servent->s_port);
       else
-        openvassd_port = htons (OPENVASSD_PORT);
+        openvassd_port = OPENVASSD_PORT;
     }
 
   if (update_nvt_cache || rebuild_nvt_cache)

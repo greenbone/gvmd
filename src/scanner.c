@@ -494,7 +494,7 @@ openvas_scanner_set_address (const char *addr, int port)
     return -1;
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
   openvas_scanner_address.sin_family = AF_INET;
-  openvas_scanner_address.sin_port = port;
+  openvas_scanner_address.sin_port = htons (port);
   if (!inet_aton (addr, &openvas_scanner_address.sin_addr))
     return -1;
 

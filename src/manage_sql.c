@@ -35592,7 +35592,7 @@ verify_scanner (const char *scanner_id, char **version)
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
       openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                   htons (scanner_iterator_port (&scanner)));
+                                   scanner_iterator_port (&scanner));
       cleanup_iterator (&scanner);
       if (openvas_scanner_connected ())
         openvas_scanner_close ();
