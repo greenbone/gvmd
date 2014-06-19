@@ -1,3 +1,7 @@
+2014-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/postgres-HOWTO: New file.
+
 2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* CMakeLists.txt: Check for libgcrypt presence at configure time.
