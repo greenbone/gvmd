@@ -2932,6 +2932,19 @@ run_osp_task (task_t task, char **report_id)
   return 0;
 }
 
+static void
+scanner_connect (scanner_t scanner)
+{
+  if (scanner)
+    {
+      char *host = scanner_host (scanner);
+      int port = scanner_port (scanner);
+
+      openvas_scanner_set_address (host, port);
+      g_free (host);
+    }
+}
+
 /**
  * @brief Start a task.
  *
@@ -2959,6 +2972,7 @@ run_task (const char *task_id, char **report_id, int from,
 {
   task_t task;
   target_t target;
+  scanner_t scanner;
   char *hosts, *port_range, *port;
   gchar *plugins;
   int fail, pid;
@@ -2975,11 +2989,18 @@ run_task (const char *task_id, char **report_id, int from,
   if (task == 0)
     return 3;
 
-  if (from > 0 && task_scanner (task) > 0)
+  config = task_config (task);
+  if (config == 0)
+    return -1;
+  if (from > 0 && config_type (config) > 0)
     return 4;
-  if (task_scanner (task) > 0)
+
+  scanner = task_scanner (task);
+  if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task, report_id);
 
+  /* Classic OpenVAS Scanner. */
+  scanner_connect (scanner);
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;
@@ -3144,19 +3165,6 @@ run_task (const char *task_id, char **report_id, int from,
   if (send_to_server ("CLIENT <|> PREFERENCES <|>\n"))
     {
       free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
-  /* Get the config and selector. */
-
-  config = task_config (task);
-  if (config == 0)
-    {
-      free (hosts);
-      tracef ("   task config is 0.\n");
       set_task_run_status (task, run_status);
       set_report_scan_run_status (current_report, run_status);
       current_report = (report_t) 0;
@@ -3586,6 +3594,7 @@ stop_task_internal (task_t task)
     {
       if (current_scanner_task == task)
         {
+          scanner_connect (task_scanner (task));
           if (!openvas_scanner_connected ()
               && (openvas_scanner_connect () || openvas_scanner_init (0)))
             return -5;
@@ -3638,7 +3647,7 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (task_scanner (task) > 0)
+  if (config_type (task_config (task)) != 0)
     return 2;
 
   return stop_task_internal (task);
@@ -3661,6 +3670,7 @@ pause_task (const char *task_id)
 {
   task_t task;
   task_status_t run_status;
+  scanner_t scanner;
 
   if (user_may ("pause_task") == 0)
     return 99;
@@ -3671,9 +3681,11 @@ pause_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  if (task_scanner (task) > 0)
+  scanner = task_scanner (task);
+  if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return 2;
 
+  scanner_connect (scanner);
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;
@@ -3719,6 +3731,7 @@ resume_paused_task (const char *task_id)
   if (task == 0)
     return 3;
 
+  scanner_connect (task_scanner (task));
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;

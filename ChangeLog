@@ -1,3 +1,14 @@
+2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add per-task Scanner support.
+
+	* src/manage.c (scanner_connect): New function.
+	(run_task): Check earlier for config value error. Use task specific
+	scanner if present to run the task.
+	(stop_task_internal, pause_task, resume_paused_task): Use task specific
+	scanner if present for the specified action.
+	(stop_task): Check for task stopping support depending on config type.
+
 2014-06-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (add_users): Quote "user" for Postgres.
