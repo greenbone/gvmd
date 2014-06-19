@@ -224,6 +224,13 @@ if (NOT PCAP)
   message (FATAL_ERROR "The pcap library is required.")
 endif (NOT PCAP)
 
+message (STATUS "Looking for libgcrypt...")
+find_library (LIBGCRYPT gcrypt)
+message (STATUS "Looking for libgcrypt... ${LIBGCRYPT}")
+if (NOT LIBGCRYPT)
+  message (FATAL_ERROR "The libgcrypt library is required.")
+endif (NOT LIBGCRYPT)
+
 message (STATUS "Looking for gpgme...")
 find_library (GPGME gpgme)
 message (STATUS "Looking for gpgme... ${GPGME}")

@@ -1,5 +1,9 @@
 2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* CMakeLists.txt: Check for libgcrypt presence at configure time.
+
+2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Add per-task Scanner support.
 
 	* src/manage.c (scanner_connect): New function.
