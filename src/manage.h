@@ -1710,9 +1710,6 @@ delete_lsc_credential (const char *, int);
 int
 lsc_credential_count (const get_data_t *);
 
-int
-lsc_credential_packaged (lsc_credential_t);
-
 void
 set_lsc_credential_name (lsc_credential_t, const char *);
 

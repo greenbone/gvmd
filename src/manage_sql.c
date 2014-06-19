@@ -31353,6 +31353,30 @@ copy_lsc_credential (const char* name, const char* comment,
 }
 
 /**
+ * @brief Return whether an LSC credential is the packaged type.
+ *
+ * @param[in]  cred_id  The LSC Credential uuid.
+ *
+ * @return 0 false, 1 true.
+ */
+static int
+lsc_credential_packaged (const char *cred_id)
+{
+  get_data_t get;
+  iterator_t iter;
+  const char *key;
+
+  memset (&get, '\0', sizeof (get));
+  get.id = g_strdup (cred_id);
+  if (init_lsc_credential_iterator (&iter, &get) || !next (&iter))
+    return 0;
+
+  key = lsc_credential_iterator_private_key (&iter);
+  cleanup_iterator (&iter);
+  return key ? 1 : 0;
+}
+
+/**
  * @brief Modify a LSC Credential.
  *
  * @param[in]   lsc_credential_id   UUID of lsc credential.
@@ -31400,7 +31424,7 @@ modify_lsc_credential (const char *lsc_credential_id,
     }
 
   /* Check attempt to change login or password of packaged LSC credential */
-  if ((login || password) && lsc_credential_packaged (lsc_credential))
+  if ((login || password) && lsc_credential_packaged (lsc_credential_id))
     return 4;
 
   /* Check whether a lsc_credential with the same name exists already. */
@@ -31749,21 +31773,6 @@ set_lsc_credential_password (lsc_credential_t lsc_credential,
   g_free (quoted_password);
   g_free (quoted_private);
   lsc_crypt_release (crypt_ctx);
-}
-
-/**
- * @brief Return whether an LSC credential is the packaged type.
- *
- * @param[in]  lsc_credential  The LSC credential.
- *
- * @return 0 false, else true.
- */
-int
-lsc_credential_packaged (lsc_credential_t lsc_credential)
-{
-  return sql_int ("SELECT private_key NOTNULL FROM lsc_credentials"
-                  " WHERE id = %llu;",
-                  lsc_credential);
 }
 
 /**

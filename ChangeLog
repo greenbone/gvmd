@@ -1,3 +1,11 @@
+2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (lsc_credential_packaged): Adjust to handle encrypted
+	credentials case. Move function up in file.
+	(modify_lsc_credential): Adjust lsc_credential_packaged() call.
+
+	* src/manage.h: Remove useless prototype.
+
 2014-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/postgres-HOWTO: New file.
