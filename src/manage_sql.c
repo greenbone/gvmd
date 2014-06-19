@@ -41597,8 +41597,9 @@ delete_group (const char *group_id, int ultimate)
 
       sql ("INSERT INTO group_users_trash"
            " (`group`, user)"
-           " SELECT `group`, user"
+           " SELECT %llu, user"
            " FROM group_users WHERE `group` = %llu;",
+           trash_group,
            group);
 
       tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
@@ -46178,8 +46179,9 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO group_users"
            " (`group`, user)"
-           " SELECT `group`, user"
+           " SELECT %llu, user"
            " FROM group_users_trash WHERE `group` = %llu;",
+           group,
            resource);
 
       permissions_set_locations ("group", resource, group, LOCATION_TABLE);
