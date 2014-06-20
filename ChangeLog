@@ -1,3 +1,12 @@
+2014-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/scanner.c (openvas_scanner_full, openvas_scanner_close)
+	(openvas_scanner_fd_isset, openvas_scanner_fd_set, openvas_scanner_peek)
+	(openvas_scanner_get_nfds, openvas_scanner_session_peek)
+	(openvas_scanner_connected, openvas_scanner_init)
+	(openvas_scanner_set_address): Add functions documentation.
+	(openvas_scanner_peek): Always return 1 on success.
+
 2014-06-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (lsc_credential_packaged): Adjust to handle encrypted

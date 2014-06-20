@@ -118,6 +118,11 @@ openvas_scanner_read ()
   return -2;
 }
 
+/**
+ * @brief Check whether the buffer for data from Scanner is full.
+ *
+ * @return 1 if full, 0 otherwise.
+ */
 int
 openvas_scanner_full ()
 {
@@ -344,6 +349,11 @@ load_cas (gnutls_certificate_credentials_t *scanner_credentials)
   return 0;
 }
 
+/**
+ * @brief Finish the connection to the Scanner and free internal buffers.
+ *
+ * @return -1 if error, 0 if success.
+ */
 int
 openvas_scanner_close ()
 {
@@ -419,6 +429,13 @@ openvas_scanner_free ()
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
 }
 
+/**
+ * @brief Check if connected to Scanner is set in an fd_set.
+ *
+ * @param[in]  fd       File descriptor set.
+ *
+ * @return 1 if scanner socket in fd_set, 0 if not connected or or not set.
+ */
 int
 openvas_scanner_fd_isset (fd_set *fd)
 {
@@ -427,6 +444,11 @@ openvas_scanner_fd_isset (fd_set *fd)
   return FD_ISSET (openvas_scanner_socket, fd);
 }
 
+/**
+ * @brief Add connected to Scanner's socket to an fd_set.
+ *
+ * @param[in]  fd   File Descriptor set.
+ */
 void
 openvas_scanner_fd_set (fd_set *fd)
 {
@@ -435,6 +457,12 @@ openvas_scanner_fd_set (fd_set *fd)
   FD_SET (openvas_scanner_socket, fd);
 }
 
+/**
+ * @brief Check if there is any data to receive from connected Scanner socket.
+ *
+ * @return 1 if there is data in socket buffer, 0 if no data or not connected
+ *         to a scanner.
+ */
 int
 openvas_scanner_peek ()
 {
@@ -444,6 +472,14 @@ openvas_scanner_peek ()
   return recv (openvas_scanner_socket, &chr, 1, MSG_PEEK);
 }
 
+/**
+ * @brief Get the nfds value to use for a select() call.
+ *
+ * @param[in]  socket       Socket to compare to.
+ *
+ * @return socket + 1 if socket value is higher then scanner's or not
+ *         connected to a scanner, scanner socket + 1 otherwise.
+ */
 int
 openvas_scanner_get_nfds (int socket)
 {
@@ -453,20 +489,40 @@ openvas_scanner_get_nfds (int socket)
     return 1 + openvas_scanner_socket;
 }
 
+/**
+ * @brief Check if there is any data to receive from connected Scanner session.
+ *
+ * @return 1 if there is data in session buffer, 0 if no data or not connected
+ *         to a scanner.
+ */
 int
 openvas_scanner_session_peek ()
 {
   if (openvas_scanner_socket == -1)
     return 0;
-  return gnutls_record_check_pending (openvas_scanner_session);
+  return !!gnutls_record_check_pending (openvas_scanner_session);
 }
 
+/**
+ * @brief Whether we have started a connection to the Scanner using
+ *        openvas_scanner_connect().
+ *
+ * @return 1 if connected, 0 otherwise.
+ */
 int
 openvas_scanner_connected ()
 {
   return openvas_scanner_socket == -1 ? 0 : 1;
 }
 
+/**
+ * @brief Initializes the already setup connection with the Scanner.
+ *
+ * @param[in]  cache_mode   NVT Cache mode if true, which means sending NVT_INFO
+ *                          command to scanner in initial negotiation.
+ *
+ * @return 0 success, -1 error.
+ */
 int
 openvas_scanner_init (int cache_mode)
 {
@@ -487,6 +543,14 @@ openvas_scanner_init (int cache_mode)
   return 0;
 }
 
+/**
+ * @brief Set the scanner's address and port.
+ *
+ * @param[in]  addr     Scanner address string.
+ * @param[in]  port     Scanner port.
+ *
+ * @return 0 success, -1 error.
+ */
 int
 openvas_scanner_set_address (const char *addr, int port)
 {
