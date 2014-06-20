@@ -1,5 +1,13 @@
 2014-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/ompd.c (serve_omp): Never connect to scanner, let caller decide on
+	this. Clean-up code and adjust return values.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Try to connect to
+	scanner before serve_omp() call. Free scanner buffers after finish.
+
+2014-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/scanner.c (openvas_scanner_full, openvas_scanner_close)
 	(openvas_scanner_fd_isset, openvas_scanner_fd_set, openvas_scanner_peek)
 	(openvas_scanner_get_nfds, openvas_scanner_session_peek)
