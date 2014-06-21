@@ -13,11 +13,6 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 
 3 Build Manager as usual.
 
-  Actually there's currently an extra install step for server side library,
-  but these have little effect.
-
-	cp openvas-manager/src/libmanage-pg-server.so PREFIX/var/lib/openvas/openvasmd/pg/
-
 4 Setup Postgres User and DB (/usr/share/doc/postgresql-common/README.Debian.gz)
 
 	sudo -u postgres sh
