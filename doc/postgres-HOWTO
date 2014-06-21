@@ -7,16 +7,16 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 
 	(Debian: postgresql, postgresql-contrib, postgresql-server-dev-9.1).
 
-2 Comment out this line in openvas-manager/CMakeLists.txt
+2 Run cmake with this additional parameter:
 
-	set (BACKEND SQLITE3)
+	-DBACKEND=POSTGRESQL
 
 3 Build Manager as usual.
 
   Actually there's currently an extra install step for server side library,
   but these have little effect.
 
-		cp openvas-manager/src/libmanage-pg-server.so PREFIX/var/lib/openvas/openvasmd/pg/
+	cp openvas-manager/src/libmanage-pg-server.so PREFIX/var/lib/openvas/openvasmd/pg/
 
 4 Setup Postgres User and DB (/usr/share/doc/postgresql-common/README.Debian.gz)
 

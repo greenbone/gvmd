@@ -1,3 +1,10 @@
+2014-06-21  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Made variable BACKEND configurable.
+
+	* doc/postgres-HOWTO: Adjusted so that PostgreSQL can be
+	configured without need to change CMakeLists.txt.
+
 2014-06-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): Never connect to scanner, let caller decide on

@@ -39,7 +39,9 @@ if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
 
-set (BACKEND SQLITE3)
+if (NOT BACKEND STREQUAL POSTGRESQL)
+  set (BACKEND SQLITE3)
+endif (NOT BACKEND STREQUAL POSTGRESQL)
 
 ## Retrieve svn revision (at configure time)
 #  Not using Subversion_WC_INFO, as it would have to connect to the repo
