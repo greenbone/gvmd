@@ -15,9 +15,6 @@ A related service is OpenVAS Administrator, openvasad(8) which among other tasks
 .BR -a ", " --listen= \fIADDRESS\fR
 Listen on ADDRESS.
 .TP
-.BR -l ", " --slisten=\fIADDRESS\fR
-Connect to server (openvassd) at address \fIADDRESS\fR.
-.TP
 .BR -u ", " --update
 Updates the database with information from a running scanner (openvassd) and exits.
 .TP
@@ -27,8 +24,11 @@ Listen on port number \fINUMBER\f1.
 .BR --rebuild
 Rebuild the database with information from a running scanner (openvassd) and exits.
 .TP
-.BR -s ", " --sport=\fINUMBER\fR
-Connect to server (openvassd) on port number \fINUMBER\f1.
+.BR --get-users
+List users and exit.
+.TP
+.BR --get-scanners
+List scanners and exit.
 .TP
 .TP
 .BR --gnutls-priorities=\fISTRING\fR

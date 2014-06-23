@@ -11478,7 +11478,7 @@ init_manage_internal (GSList *log_config,
    *                     init_manage
    *                 serve_omp
    *                     init_ompd_process
-   *     --create-user --delete-user --list-users
+   *     --create-user --delete-user --get-users
    *         manage_create, ...
    *             init_manage_helper
    *     --encrypt/decrypt-all-credentials
@@ -47122,7 +47122,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
  * @return 0 success, -1 error.
  */
 int
-manage_list_users (GSList *log_config, const gchar *database)
+manage_get_users (GSList *log_config, const gchar *database)
 {
   iterator_t users;
   const gchar *db;
@@ -47145,6 +47145,44 @@ manage_list_users (GSList *log_config, const gchar *database)
   while (next (&users))
     printf ("%s\n", iterator_string (&users, 0));
   cleanup_iterator (&users);
+
+  cleanup_manage_process (TRUE);
+
+  return 0;
+}
+
+/**
+ * @brief List scanners.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_get_scanners (GSList *log_config, const gchar *database)
+{
+  iterator_t scanners;
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  init_iterator (&scanners, "SELECT name FROM scanners;");
+  while (next (&scanners))
+    printf ("%s\n", iterator_string (&scanners, 0));
+  cleanup_iterator (&scanners);
 
   cleanup_manage_process (TRUE);
 

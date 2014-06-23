@@ -3103,7 +3103,10 @@ int
 manage_delete_user (GSList *, const gchar *, const gchar *);
 
 int
-manage_list_users (GSList *, const gchar *);
+manage_get_users (GSList *, const gchar *);
+
+int
+manage_get_scanners (GSList *, const gchar *);
 
 int
 manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);

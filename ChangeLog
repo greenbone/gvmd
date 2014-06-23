@@ -1,3 +1,22 @@
+2014-06-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Remove --slisten and --sport options. Rename --list-users to
+	--get-users. Add --get-scanners.
+
+	* doc/openvasmd.8: Update documentation.
+
+	* src/manage.h: Add and rename function prototypes.
+
+	* src/manage_sql.c (manage_list_users): Rename to manage_get_users.
+	(manage_get_scanners): New function.
+
+	* src/openvasmd.c (main): Remove --slisten and --sport options. Rename
+	--list-users to --get-users. Add --get-scanners options.
+	(openvassd_port, scanner_address_string): Remove variables.
+	(update_or_rebuild_nvt_cache): Remove scanner address and port
+	arguments.
+	(rebuild_nvt_cache_retry): Adjust update_or_rebuild_nvt_cache() call.
+
 2014-06-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/postgres-HOWTO: Minor hint to avoid confusion.

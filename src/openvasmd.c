@@ -223,16 +223,6 @@ struct sockaddr_in manager_address;
  */
 struct sockaddr_in manager_address_2;
 
-/**
- * @brief The Scanner port.
- */
-static int openvassd_port;
-
-/**
- * @brief The address of the Scanner.
- */
-static gchar *scanner_address_string = NULL;
-
 #if LOG
 /**
  * @brief The log stream.
@@ -761,17 +751,14 @@ spin_progress ()
  *
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
  *                                     (1) or rebuilt (0).
- * @param[in]  scanner_address_string  Address of the scanner as string.
- * @param[in]  scanner_port            Port of the scanner.
  * @param[in]  register_cleanup        Whether to register cleanup with atexit.
  * @param[in]  progress                Function to update progress, or NULL.
  *
  * @return If this function did not exit itself, returns exit code.
  */
 static int
-update_or_rebuild_nvt_cache (int update_nvt_cache,
-                             gchar* scanner_address_string, int scanner_port,
-                             int register_cleanup, void (*progress) ())
+update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
+                             void (*progress) ())
 {
   int ret;
   /* Initialise OMP daemon. */
@@ -829,10 +816,10 @@ update_or_rebuild_nvt_cache (int update_nvt_cache,
     }
 
   /* Setup the scanner address and try to connect. */
-  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
+  if (openvas_scanner_set_address (OPENVASSD_ADDRESS, OPENVASSD_PORT))
     {
       g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
-                  scanner_address_string);
+                  OPENVASSD_ADDRESS);
       exit (EXIT_FAILURE);
     }
   if (openvas_scanner_connect () || openvas_scanner_init (1))
@@ -902,8 +889,6 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
         {
           /* Child: Try reload. */
           int ret = update_or_rebuild_nvt_cache (update_or_rebuild,
-                                                 scanner_address_string,
-                                                 openvassd_port,
                                                  register_cleanup, progress);
 
           exit (ret);
@@ -1105,7 +1090,8 @@ main (int argc, char** argv)
   static gboolean create_cred_enc_key = FALSE;
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
-  static gboolean list_users = FALSE;
+  static gboolean get_users = FALSE;
+  static gboolean get_scanners = FALSE;
   static gboolean update_nvt_cache = FALSE;
   static gboolean rebuild_nvt_cache = FALSE;
   static gboolean foreground = FALSE;
@@ -1122,7 +1108,6 @@ main (int argc, char** argv)
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
-  static gchar *scanner_port_string = NULL;
   static gchar *rc_name = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
@@ -1143,7 +1128,8 @@ main (int argc, char** argv)
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
-        { "list-users", '\0', 0, G_OPTION_ARG_NONE, &list_users, "List users and exit.", NULL },
+        { "get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users, "List users and exit.", NULL },
+        { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
@@ -1161,8 +1147,6 @@ main (int argc, char** argv)
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
         { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user.", "<role>" },
-        { "slisten", 'l', 0, G_OPTION_ARG_STRING, &scanner_address_string, "Scanner (openvassd) address.", "<address>" },
-        { "sport", 's', 0, G_OPTION_ARG_STRING, &scanner_port_string, "Scanner (openvassd) port number.", "<number>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &gnutls_priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -1320,10 +1304,10 @@ main (int argc, char** argv)
         }
     }
 
-  if (list_users)
+  if (get_users)
     {
       /* List the users and then exit. */
-      switch (manage_list_users (log_config, database))
+      switch (manage_get_users (log_config, database))
         {
           case 0:
             free_log_configuration (log_config);
@@ -1342,6 +1326,29 @@ main (int argc, char** argv)
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
             free_log_configuration (log_config);
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (get_scanners)
+    {
+      /* List the users and then exit. */
+      int ret = manage_get_scanners (log_config, database);
+      free_log_configuration (log_config);
+      switch (ret)
+        {
+          case 0:
+            return EXIT_SUCCESS;
+          case -2:
+            g_warning ("%s: database is wrong version\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -3:
+            g_warning ("%s: database must be initialised"
+                       " (with --update or --rebuild)\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_warning ("%s: internal error\n", __FUNCTION__);
             return EXIT_FAILURE;
         }
     }
@@ -1514,31 +1521,6 @@ main (int argc, char** argv)
     }
 
   /* Complete option processing. */
-
-  if (scanner_address_string == NULL)
-    scanner_address_string = OPENVASSD_ADDRESS;
-
-  if (scanner_port_string)
-    {
-      openvassd_port = atoi (scanner_port_string);
-      if (openvassd_port <= 0 || openvassd_port >= 65536)
-        {
-          g_critical ("%s: Scanner port must be a number between 0 and 65536\n",
-                      __FUNCTION__);
-          free_log_configuration (log_config);
-          exit (EXIT_FAILURE);
-        }
-    }
-  else
-    {
-      struct servent *servent = getservbyname ("omp", "tcp");
-      if (servent)
-        /** @todo Free servent? */
-        openvassd_port = ntohs (servent->s_port);
-      else
-        openvassd_port = OPENVASSD_PORT;
-    }
-
   if (update_nvt_cache || rebuild_nvt_cache)
     {
       /* Run the NVT caching manager: update NVT cache and then exit. */
@@ -1748,13 +1730,11 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-
-  /* Setup the scanner address. */
-
-  if (openvas_scanner_set_address (scanner_address_string, openvassd_port))
+  /* Setup the default scanner address. */
+  if (openvas_scanner_set_address (OPENVASSD_ADDRESS, OPENVASSD_PORT))
     {
       g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
-                  scanner_address_string);
+                  OPENVASSD_ADDRESS);
       exit (EXIT_FAILURE);
     }
 
@@ -1856,8 +1836,6 @@ main (int argc, char** argv)
   infof ("   Manager bound to address %s port %i\n",
          manager_address_string ? manager_address_string : "*",
          ntohs (manager_address.sin_port));
-  infof ("   Set to connect to address %s port %i\n",
-         scanner_address_string, ntohs (openvassd_port));
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 
