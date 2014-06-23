@@ -21,6 +21,7 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 
 5 Setup DB extensions and permission.
 
+	sudo -u postgres sh  # if you logged out after step 4
 	psql tasks
 	create role dba with superuser noinherit;
 	grant dba to mattm;
