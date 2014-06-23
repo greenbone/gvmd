@@ -24,8 +24,26 @@ Listen on port number \fINUMBER\f1.
 .BR --rebuild
 Rebuild the database with information from a running scanner (openvassd) and exits.
 .TP
+.BR --create-user=\fI<username>\fR
+Create admin user <username> and exit.
+.TP
+.BR --role=\fI<role>\fR
+Role for --create-user option.
+.TP
 .BR --get-users
 List users and exit.
+.TP
+.BR --create-scanner=\fI<scanner>\fR
+Create scanner with name <scanner> and exit.
+.TP
+.BR --scanner-host=\fI<host>\fR
+Host for --create-scanner option.
+.TP
+.BR --scanner-port=\fI<port>\fR
+Port for --create-scanner option.
+.TP
+.BR --scanner-type=\fI<type>\fR
+Type for --create-scanner option. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.
 .TP
 .BR --get-scanners
 List scanners and exit.
@@ -49,7 +67,7 @@ Show help.
 .SH SIGNALS
 SIGHUP causes openvasmd to rebuild the database with information from the Scanner (openvassd).
 .SH EXAMPLES
-openvasmd \-\-port 1241 \-\-sport 7772
+openvasmd \-\-port 1241
 
 Serve OMP clients on port 1241 and connect to a OTP server on 7772.
 .SH SEE ALSO

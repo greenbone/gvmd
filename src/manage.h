@@ -2032,6 +2032,13 @@ report_type_iterator_title (report_type_iterator_t*);
 int
 manage_system_report (const char *, const char *, const char *, char **);
 
+int
+manage_create_scanner (GSList *, const char *, const char *, const char *,
+                       const char *, const char *);
+
+int
+manage_get_scanners (GSList *, const gchar *);
+
 gboolean
 find_scanner (const char *, scanner_t *);
 
@@ -3104,9 +3111,6 @@ manage_delete_user (GSList *, const gchar *, const gchar *);
 
 int
 manage_get_users (GSList *, const gchar *);
-
-int
-manage_get_scanners (GSList *, const gchar *);
 
 int
 manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);

@@ -1101,6 +1101,10 @@ main (int argc, char** argv)
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
   static gchar *user = NULL;
+  static gchar *create_scanner = NULL;
+  static gchar *scanner_host = NULL;
+  static gchar *scanner_port = NULL;
+  static gchar *scanner_type = NULL;
   static gchar *gnutls_priorities = "NORMAL";
   static gchar *dh_params = NULL;
   static gchar *new_password = NULL;
@@ -1127,9 +1131,19 @@ main (int argc, char** argv)
         { "disable-scheduling", '\0', 0, G_OPTION_ARG_NONE, &disable_scheduling, "Disable task scheduling.", NULL },
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
-        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users, "List users and exit.", NULL },
+        { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner, "Create scanner <scanner> and exit.", "<scanner>" },
+        { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
+          "Scanner host for --create-scanner. Default is " OPENVASSD_ADDRESS ".",
+          "<scanner-host>" },
+        { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
+          "Scanner port for --create-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          "<scanner-port>" },
+        { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
+          "Scanner type for --create-scanner. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.",
+          "<scanner-type>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
+        { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
@@ -1245,6 +1259,52 @@ main (int argc, char** argv)
                    __FUNCTION__,
                    password_policy);
       g_free (password_policy);
+    }
+
+  if (create_scanner)
+    {
+      int ret;
+      scanner_type_t type;
+      char *stype;
+      if (!scanner_host)
+        scanner_host = OPENVASSD_ADDRESS;
+      if (!scanner_port)
+        scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+
+      if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS Scanner"))
+        type = SCANNER_TYPE_OPENVAS;
+      else if (!strcasecmp (scanner_type, "OSP Ovaldi"))
+        type = SCANNER_TYPE_OSP_OVALDI;
+      else
+        {
+          g_warning ("Invalid scanner type value.\n");
+          return EXIT_FAILURE;
+        }
+      /* Create the scanner and then exit. */
+      stype = g_strdup_printf ("%u", type);
+      ret = manage_create_scanner (log_config, database, create_scanner,
+                                   scanner_host, scanner_port, stype);
+      g_free (stype);
+      free_log_configuration (log_config);
+      switch (ret)
+        {
+          case 0:
+            return EXIT_SUCCESS;
+          case -2:
+            g_warning ("%s: database is wrong version\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -3:
+            g_warning ("%s: database must be initialised"
+                       " (with --update or --rebuild)\n",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_warning ("%s: internal error\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          default:
+            return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
     }
 
   if (create_user)

@@ -1,3 +1,14 @@
+2014-06-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/openvasmd.c (main): Add --create-scanner with --scanner-host,
+	--scanner-port and --scanner-type options.
+
+	* src/manage_sql.c (manage_create_scanner): New function.
+
+	* src/manage.h: Add function prototype.
+
+	* doc/openvasmd.8: Update documentation.
+
 2014-06-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Send timezone abbreviation with schedule in GET_SCHEDULES.

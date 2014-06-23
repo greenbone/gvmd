@@ -35108,6 +35108,62 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /* Scanners */
 
 /**
+ * @brief Create the given scanner.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  name        Name of scanner.
+ * @param[in]  host        Host of scanner.
+ * @param[in]  port        Port of scanner.
+ * @param[in]  type        Type of scanner.
+ *
+ * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server.
+ */
+int
+manage_create_scanner (GSList *log_config, const gchar *database,
+                       const char *name, const char *host, const char *port,
+                       const char *type)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  current_credentials.uuid = "";
+  ret = create_scanner (name, NULL, host, port, type, NULL);
+  switch (ret)
+    {
+      case 0:
+        printf ("Scanner created.\n");
+        break;
+      case 1:
+        printf ("Scanner exists already.\n");
+        break;
+      case 2:
+        printf ("Invalid value provided.\n");
+        break;
+      default:
+        printf ("Failed to create scanner.\n");
+        break;
+    }
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
+
+/**
  * @brief Find a scanner given a UUID.
  *
  * @param[in]   uuid    UUID of scanner.
