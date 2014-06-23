@@ -843,11 +843,12 @@ parse_iso_time (const char *text_time)
  * @brief Create an ISO time from seconds since epoch.
  *
  * @param[in]  epoch_time  Time in seconds from epoch.
+ * @param[out] abbrev      Abbreviation for current timezone.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
-char *
-iso_time (time_t *epoch_time)
+static char *
+iso_time_internal (time_t *epoch_time, const char **abbrev)
 {
   struct tm *tm;
   static char time_string[100];
@@ -857,6 +858,9 @@ iso_time (time_t *epoch_time)
     {
       if (strftime (time_string, 98, "%FT%TZ", tm) == 0)
         return NULL;
+
+      if (abbrev)
+        *abbrev = "UTC";
     }
   else
     {
@@ -871,9 +875,30 @@ iso_time (time_t *epoch_time)
       time_string[len] = time_string[len - 1];
       time_string[len - 1] = time_string[len - 2];
       time_string[len - 2] = ':';
+
+      if (abbrev)
+        {
+          static char abbrev_string[100];
+          if (strftime (abbrev_string, 98, "%Z", tm) == 0)
+            return NULL;
+          *abbrev = abbrev_string;
+        }
     }
 
   return time_string;
+}
+
+/**
+ * @brief Create an ISO time from seconds since epoch.
+ *
+ * @param[in]  epoch_time  Time in seconds from epoch.
+ *
+ * @return Pointer to ISO time in static memory, or NULL on error.
+ */
+char *
+iso_time (time_t *epoch_time)
+{
+  return iso_time_internal (epoch_time, NULL);
 }
 
 /**
@@ -881,11 +906,12 @@ iso_time (time_t *epoch_time)
  *
  * @param[in]  epoch_time  Time in seconds from epoch.
  * @param[in]  timezone    Timezone.
+ * @param[out] abbrev      Timezone abbreviation.
  *
  * @return Pointer to ISO time in static memory, or NULL on error.
  */
 char *
-iso_time_tz (time_t *epoch_time, const char *timezone)
+iso_time_tz (time_t *epoch_time, const char *timezone, const char **abbrev)
 {
   gchar *tz;
   char *ret;
@@ -906,7 +932,7 @@ iso_time_tz (time_t *epoch_time, const char *timezone)
     }
 
   tzset ();
-  ret = iso_time (epoch_time);
+  ret = iso_time_internal (epoch_time, abbrev);
 
   /* Revert to stored TZ. */
   if (tz)

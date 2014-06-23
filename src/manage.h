@@ -3366,7 +3366,7 @@ char *
 iso_time (time_t *);
 
 char *
-iso_time_tz (time_t *, const char *);
+iso_time_tz (time_t *, const char *, const char **);
 
 gchar *
 xsl_transform (gchar *, gchar *, gchar **, gchar **);
