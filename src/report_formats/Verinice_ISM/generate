@@ -60,7 +60,7 @@ fi
 
 xsltproc --stringparam htmlfilename "$HTML_FILE" \
          --stringparam htmlmimetype "$HTML_MIMETYPE" \
-         --stringparam filedate `stat -c %Z $XMLFILE` ./gsm_verinice_ism.xsl $1 | \
+         --stringparam filedate `stat -c %Z $XMLFILE` ./Verinice_ISM.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \
         xmlstarlet fo >  $TMP/verinice.xml && \
 cd $TMP && zip -r - *
