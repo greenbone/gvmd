@@ -1,3 +1,9 @@
+2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19736.
+
+	* src/report_formats/Verinice_ISM/generate: Correct XSL file name.
+
 2014-06-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19706.
