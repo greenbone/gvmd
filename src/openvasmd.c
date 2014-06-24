@@ -1105,6 +1105,7 @@ main (int argc, char** argv)
   static gchar *scanner_host = NULL;
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
+  static gchar *delete_scanner = NULL;
   static gchar *gnutls_priorities = "NORMAL";
   static gchar *dh_params = NULL;
   static gchar *new_password = NULL;
@@ -1142,6 +1143,7 @@ main (int argc, char** argv)
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
           "Scanner type for --create-scanner. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.",
           "<scanner-type>" },
+        { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
@@ -1407,6 +1409,32 @@ main (int argc, char** argv)
                        " (with --update or --rebuild)\n", __FUNCTION__);
             return EXIT_FAILURE;
           case -1:
+          default:
+            g_warning ("%s: internal error\n", __FUNCTION__);
+            return EXIT_FAILURE;
+        }
+    }
+
+  if (delete_scanner)
+    {
+      int ret;
+
+      /* Delete the scanner and then exit. */
+      ret = manage_delete_scanner (log_config, database, delete_scanner);
+      free_log_configuration (log_config);
+      switch (ret)
+        {
+          case 0:
+            return EXIT_SUCCESS;
+          case 2:
+            return EXIT_FAILURE;
+          case -2:
+            g_warning ("%s: database is wrong version\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -3:
+            g_warning ("%s: database must be initialised"
+                       " (with --update or --rebuild)\n", __FUNCTION__);
+            return EXIT_FAILURE;
           default:
             g_warning ("%s: internal error\n", __FUNCTION__);
             return EXIT_FAILURE;

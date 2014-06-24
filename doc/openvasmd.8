@@ -30,11 +30,14 @@ Create admin user <username> and exit.
 .BR --role=\fI<role>\fR
 Role for --create-user option.
 .TP
+.BR --delete-user=\fI<username>\fR
+Delete user <username> and exit.
+.TP
 .BR --get-users
 List users and exit.
 .TP
-.BR --create-scanner=\fI<scanner>\fR
-Create scanner with name <scanner> and exit.
+.BR --create-scanner=\fI<scanner-name>\fR
+Create scanner with name <scanner-name> and exit.
 .TP
 .BR --scanner-host=\fI<host>\fR
 Host for --create-scanner option.
@@ -44,6 +47,9 @@ Port for --create-scanner option.
 .TP
 .BR --scanner-type=\fI<type>\fR
 Type for --create-scanner option. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.
+.TP
+.BR --delete-scanner=\fI<scanner-uuid>\fR
+Delete scanner <scanner-uuid> and exit.
 .TP
 .BR --get-scanners
 List scanners and exit.

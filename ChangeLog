@@ -1,3 +1,15 @@
+2014-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add --delete-scanner option.
+
+	* doc/openvasmd.8: Update documentation.
+
+	* src/manage.h: Add function prototype.
+
+	* src/manage_sql.c (manage_delete_scanner): New function.
+
+	* src/openvasmd.c (main): Add --delete-scanner cli option.
+
 2014-06-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (main): Add --create-scanner with --scanner-host,

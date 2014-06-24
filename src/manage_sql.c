@@ -35164,6 +35164,56 @@ manage_create_scanner (GSList *log_config, const gchar *database,
 }
 
 /**
+ * @brief Delete the given scanner.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  uuid        UUID of scanner.
+ *
+ * @return 0 success, 2 failed to find scanner, 4 scanner has active tasks, -1 error.
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_delete_scanner (GSList *log_config, const gchar *database,
+                       const gchar *uuid)
+{
+  const gchar *db;
+  int ret;
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  current_credentials.uuid = "";
+  switch ((ret = delete_scanner (uuid, 1)))
+    {
+      case 0:
+        printf ("Scanner deleted.\n");
+        break;
+      case 2:
+        printf ("Failed to find scanner.\n");
+        break;
+      default:
+        printf ("Internal Error.\n");
+        break;
+    }
+  current_credentials.uuid = NULL;
+
+  cleanup_manage_process (TRUE);
+  return ret;
+}
+
+/**
  * @brief Find a scanner given a UUID.
  *
  * @param[in]   uuid    UUID of scanner.

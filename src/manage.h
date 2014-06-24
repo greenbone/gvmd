@@ -2037,6 +2037,9 @@ manage_create_scanner (GSList *, const char *, const char *, const char *,
                        const char *, const char *);
 
 int
+manage_delete_scanner (GSList *, const gchar *, const gchar *);
+
+int
 manage_get_scanners (GSList *, const gchar *);
 
 gboolean
