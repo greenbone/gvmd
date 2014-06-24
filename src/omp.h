@@ -45,12 +45,6 @@ init_omp_process (int, const gchar*, int (*) (const char*, void*), void*,
 int
 process_omp_client_input ();
 
-short
-scanner_is_up ();
-
-short
-scanner_is_active ();
-
 int
 process_omp_change ();
 

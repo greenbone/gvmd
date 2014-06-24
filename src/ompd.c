@@ -566,14 +566,8 @@ serve_omp (gnutls_session_t* client_session,
                 break;
               case -3:       /* End of file. */
                 tracef ("   EOF reading from client.\n");
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-                if (scanner_is_active ())
-                  client_active = 0;
-                else
-                  return 0;
-                break;
+                rc = 0;
+                goto client_free;
               default:       /* Programming error. */
                 assert (0);
             }

@@ -953,7 +953,6 @@ process_otp_scanner_input (void (*progress) ())
                   {
                     case  0:
                       if (sync_buffer ()) goto return_error;
-                      scanner_active = 0;
                       if (acknowledge_bye ()) goto return_error;
                       goto return_bye;
                     case -1: goto return_error;
@@ -1328,7 +1327,6 @@ process_otp_scanner_input (void (*progress) ())
                           manage_nvt_preferences_enable ();
                           /* Return 1, as though the scanner sent BYE. */
                           /** @todo Exit more formally with Scanner? */
-                          scanner_active = 0;
                           goto return_bye;
                         }
                       break;

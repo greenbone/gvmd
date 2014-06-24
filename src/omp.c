@@ -26887,19 +26887,6 @@ process_omp (omp_parser_t *parser, const gchar *command, gchar **response)
   return 0;
 }
 
-/**
- * @brief Return whether the scanner is active.
- *
- * @return 1 if the scanner is doing something that the manager
- *         must wait for, else 0.
- */
-short
-scanner_is_active ()
-{
-  return scanner_active;
-}
-
-
 /* OMP change processor. */
 
 /**

@@ -720,16 +720,6 @@ severity_data_level_counts (const severity_data_t *severity_data,
 /* Task globals. */
 
 /**
- * @brief Scanner active flag.
- *
- * This indicates whether the scanner is doing something that the manager
- * must wait for.  Set, for example, by \ref start_task.  If this variable
- * is true then the manager keeps the management process alive until the
- * scanner closes its connection, even if the client closes its connection.
- */
-short scanner_active = 0;
-
-/**
  * @brief The task currently running on the scanner.
  */
 /*@null@*/ task_t current_scanner_task = (task_t) 0;
@@ -3525,7 +3515,6 @@ run_task (const char *task_id, char **report_id, int from,
       current_report = (report_t) 0;
       return -10;
     }
-  scanner_active = 1;
 
   current_scanner_task = task;
 

@@ -1,5 +1,20 @@
 2014-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (scanner_active): Remove redundant variable.
+	(run_task): Don't set scanner_active value.
+
+	* src/omp.c (scanner_is_active): Remove function.
+
+	* src/omp.h: Delete removed functions prototypes.
+
+	* src/openvasmd.c (serve_omp): Remove check for scanner with
+	scanner_is_active() as connections aren't preemptive anymore.
+
+	* src/otp.c (process_otp_scanner_input): Don't set scanner_active
+	values.
+
+2014-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/ompd.c (serve_omp): Adjust condition to call
 	process_otp_scanner_input() and remove redundant call. Code clean-up and
 	style update.
