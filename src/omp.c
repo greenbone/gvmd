@@ -7897,6 +7897,33 @@ buffer_xml_append_printf (GString *buffer, const char *format, ...)
 }
 
 /**
+ * @brief Get substring of UTF8 string.
+ *
+ * @param[in]  str        String
+ * @param[in]  start_pos  Start.
+ * @param[in]  end_pos    End.
+ *
+ * @return Substring.
+ */
+static gchar *
+utf8_substring (const gchar *str, glong start_pos, glong end_pos)
+{
+  gchar *start, *end, *out;
+
+  /* TODO This is a copy of g_utf8_substring from glib 2.38.2.  Once our glib
+   * minimum goes past 2.30 we can just use g_utf8_substring. */
+
+  start = g_utf8_offset_to_pointer (str, start_pos);
+  end = g_utf8_offset_to_pointer (start, end_pos - start_pos);
+
+  out = g_malloc (end - start + 1);
+  memcpy (out, start, end - start);
+  out[end - start] = 0;
+
+  return out;
+}
+
+/**
  * @brief Buffer XML for some notes.
  *
  * @param[in]  buffer                 Buffer into which to buffer notes.
@@ -7931,7 +7958,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
       if (include_notes_details == 0)
         {
           const char *text = note_iterator_text (notes);
-          gchar *excerpt = g_utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<note id=\"%s\">"
@@ -8088,7 +8115,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
       if (include_overrides_details == 0)
         {
           const char *text = override_iterator_text (overrides);
-          gchar *excerpt = g_utf8_substring (text, 0, 60);
+          gchar *excerpt = utf8_substring (text, 0, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
                                     "<override id=\"%s\">"

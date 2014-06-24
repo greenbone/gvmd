@@ -1,3 +1,11 @@
+2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19745.
+
+	* src/omp.c (utf8_substring): New function.
+	(buffer_notes_xml, buffer_overrides_xml): Use utf8_substring instead of
+	g_utf8_substring, which only appears in Glib 2.30.
+
 2014-06-24  Matthew Mundell <matthew.mund...@greenbone.net>
 
 	Backport r18939.
