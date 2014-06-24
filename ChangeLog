@@ -1,5 +1,11 @@
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml (get_schedules): Add TIMEZONE_ABBREV.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/Verinice_ISM/generate: Correct XSL file name.
 
 2014-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
