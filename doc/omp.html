@@ -22266,6 +22266,11 @@ get_roles_response_role_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>timezone_abbrev</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The abbreviated name of the timezone.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>period</b>&gt;
               <div style="margin-left: 15px; display: inline;">How often the task will run, in seconds.</div>
 <ul style="list-style: none"></ul>
@@ -22439,6 +22444,7 @@ get_schedules_response_schedule
        &amp; get_schedules_response_schedule_first_time
        &amp; get_schedules_response_schedule_next_time
        &amp; get_schedules_response_schedule_timezone
+       &amp; get_schedules_response_schedule_timezone_abbrev
        &amp; get_schedules_response_schedule_period
        &amp; get_schedules_response_schedule_period_months
        &amp; get_schedules_response_schedule_simple_period
@@ -22567,6 +22573,12 @@ get_schedules_response_schedule_next_time
 
 get_schedules_response_schedule_timezone
  = element timezone
+     {
+       text
+     }
+
+get_schedules_response_schedule_timezone_abbrev
+ = element timezone_abbrev
      {
        text
      }
@@ -22758,6 +22770,7 @@ get_schedules_response_schedule_count_page
        &lt;unit&gt;hour&lt;/unit&gt;
      &lt;/simple_duration&gt;
      &lt;timezone&gt;Europe/Berlin&lt;/timezone&gt;
+     &lt;timezone_abbrev&gt;CEST&lt;/timezone_abbrev&gt;
      &lt;tasks&gt;
        &lt;task id="d4daf4c4-25c7-40ac-87d3-38e489f34330"&gt;
          &lt;name&gt;Task 1&lt;/name&gt;

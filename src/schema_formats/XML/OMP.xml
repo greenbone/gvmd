@@ -13664,6 +13664,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>first_time</e>
           <e>next_time</e>
           <e>timezone</e>
+          <e>timezone_abbrev</e>
           <e>period</e>
           <e>period_months</e>
           <e>simple_period</e>
@@ -13796,6 +13797,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>timezone</name>
           <summary>The timezone that the schedule follows</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>timezone_abbrev</name>
+          <summary>The abbreviated name of the timezone</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -13999,6 +14005,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <duration>10800</duration>
             <simple_duration>3<unit>hour</unit></simple_duration>
             <timezone>Europe/Berlin</timezone>
+            <timezone_abbrev>CEST</timezone_abbrev>
             <tasks>
               <task id="d4daf4c4-25c7-40ac-87d3-38e489f34330">
                 <name>Task 1</name>

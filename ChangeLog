@@ -1,5 +1,13 @@
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19739.
+
+	* src/schema_formats/XML/OMP.xml (get_schedules): Add TIMEZONE_ABBREV.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19730.
 
 	Send timezone abbreviation with schedule in GET_SCHEDULES.

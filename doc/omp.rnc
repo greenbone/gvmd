@@ -12147,6 +12147,7 @@ get_schedules_response_schedule
        & get_schedules_response_schedule_first_time
        & get_schedules_response_schedule_next_time
        & get_schedules_response_schedule_timezone
+       & get_schedules_response_schedule_timezone_abbrev
        & get_schedules_response_schedule_period
        & get_schedules_response_schedule_period_months
        & get_schedules_response_schedule_simple_period
@@ -12293,6 +12294,13 @@ get_schedules_response_schedule_next_time
 # The timezone that the schedule follows.
 get_schedules_response_schedule_timezone
  = element timezone
+     {
+       text
+     }
+
+# The abbreviated name of the timezone.
+get_schedules_response_schedule_timezone_abbrev
+ = element timezone_abbrev
      {
        text
      }
