@@ -197,12 +197,10 @@ openvas_scanner_write (int nvt_cache_mode)
           break;
         }
       case SCANNER_INIT_SENT_VERSION:
-        assert (0);
-        break;
+        return 0;
       case SCANNER_INIT_SENT_COMPLETE_LIST:
       case SCANNER_INIT_SENT_COMPLETE_LIST_UPDATE:
-        assert (0);
-        break;
+        return 0;
       case SCANNER_INIT_GOT_FEED_VERSION:
         if (nvt_cache_mode)
           {

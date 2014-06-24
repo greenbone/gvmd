@@ -1,3 +1,15 @@
+2014-06-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): Adjust condition to call
+	process_otp_scanner_input() and remove redundant call. Code clean-up and
+	style update.
+
+	* src/otp.c (process_otp_scanner_input): Remove knowledge about where
+	the function was called from in serve_omp and make it more reentrant.
+
+	* src/scanner.c (openvas_scanner_write): Return success if there is
+	nothing to do for current init state.
+
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (utf8_substring): New function.

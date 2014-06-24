@@ -843,19 +843,11 @@ process_otp_scanner_input (void (*progress) ())
         set_scanner_init_state (SCANNER_INIT_DONE);
         return 0;
       case SCANNER_INIT_GOT_FEED_VERSION:
-        /* Somehow called to process the input from the scanner that followed
-         * the initial feed version, before the initial response to the feed
-         * version has been sent. A programming error, most likely in setting
-         * up for select in serve_omp. */
-        assert (0);
-        return -1;
+        /* Nothing to parse. */
+        return 0;
       case SCANNER_INIT_GOT_PLUGINS:
-        /* Somehow called to process the input from the scanner that followed
-         * the initial plugin list, before the initial response to the list has
-         * been sent.  A programming error, most likely in setting up for
-         * select in serve_omp. */
-        assert (0);
-        return -1;
+        /* Nothing to parse. */
+        return 0;
       case SCANNER_INIT_CONNECT_INTR:
       case SCANNER_INIT_CONNECTED:
         /* Input from scanner before version string sent. */

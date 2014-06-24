@@ -372,13 +372,10 @@ serve_omp (gnutls_session_t* client_session,
            int client_socket, const gchar* database, gchar **disable,
            void (*progress) ())
 {
-  int nfds, scan_handler = 0;
+  int nfds, scan_handler = 0, rc = 0;
   /* True if processing of the client input is waiting for space in the
    * to_scanner or to_client buffer. */
   short client_input_stalled;
-  /* True if processing of the scanner input is waiting for space in the
-   * to_client buffer. */
-  gboolean scanner_input_stalled = FALSE;
   /* Client status flag.  Set to 0 when the client closes the connection
    * while the scanner is active. */
   short client_active = client_socket > 0;
@@ -518,11 +515,8 @@ serve_omp (gnutls_session_t* client_session,
           else if (openvas_scanner_peek () == 0)
             {
               /* Scanner has gone down.  Exit. */
-              if (client_active)
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
             }
         }
 
@@ -540,25 +534,18 @@ serve_omp (gnutls_session_t* client_session,
         {
           if (process_omp_change () == -1)
             {
-              if (client_active)
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
             }
-          if (!scan_handler)
+          if (!scan_handler && !ompd_nvt_cache_mode)
             continue;
         }
       else if (ret < 0)
         {
-          g_warning ("%s: child select failed: %s\n",
-                     __FUNCTION__,
+          g_warning ("%s: child select failed: %s\n", __FUNCTION__,
                      strerror (errno));
-          if (client_active)
-            openvas_server_free (client_socket,
-                                 *client_session,
-                                 *client_credentials);
-          return -1;
+          rc = -1;
+          goto client_free;
         }
 
       /* Read any data from the client. */
@@ -572,10 +559,8 @@ serve_omp (gnutls_session_t* client_session,
               case  0:       /* Read everything. */
                 break;
               case -1:       /* Error. */
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-                return -1;
+                rc = -1;
+                goto client_free;
               case -2:       /* from_client buffer full. */
                 /* There may be more to read. */
                 break;
@@ -666,10 +651,8 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
             }
           else if (ret == -2)
             {
@@ -708,11 +691,8 @@ serve_omp (gnutls_session_t* client_session,
                  * at the end of a command. */
                 /** @todo Then should get EOF (-3). */
                 set_scanner_init_state (SCANNER_INIT_TOP);
-                if (client_active)
-                  openvas_server_free (client_socket,
-                                       *client_session,
-                                       *client_credentials);
-                return -1;
+                rc = -1;
+                goto client_free;
               case -2:       /* from_scanner buffer full. */
                 /* There may be more to read. */
                 break;
@@ -722,69 +702,11 @@ serve_omp (gnutls_session_t* client_session,
                   /* The client has closed the connection, so exit. */
                   return 0;
                 /* Scanner went down, exit. */
-                if (client_active)
-                  openvas_server_free (client_socket,
-                                       *client_session,
-                                       *client_credentials);
-                return -1;
+                rc = -1;
+                goto client_free;
               default:       /* Programming error. */
                 assert (0);
             }
-
-          ret = process_otp_scanner_input (progress);
-          if (ret == 0)
-            /* Processed all input. */
-            scanner_input_stalled = FALSE;
-          else if (ret == 1)
-            {
-              /* Received scanner BYE.  Write out the rest of to_scanner (the
-               * BYE ACK).
-               */
-              openvas_scanner_write (ompd_nvt_cache_mode);
-              set_scanner_init_state (SCANNER_INIT_TOP);
-              if (client_active == 0)
-                return 0;
-              openvas_scanner_free ();
-              nfds = openvas_scanner_get_nfds (client_socket);
-            }
-          else if (ret == 2)
-            {
-              /* Bad login to scanner. */
-              if (client_active == 0)
-                return 0;
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
-            }
-          else if (ret == 3)
-            {
-              /* Calls via serve_client() should continue. */
-              if (ompd_nvt_cache_mode)
-                return 1;
-              scanner_input_stalled = FALSE;
-              openvas_scanner_close ();
-            }
-          else if (ret == -1)
-           {
-             /* Error. */
-             if (client_active)
-               openvas_server_free (client_socket,
-                                    *client_session,
-                                    *client_credentials);
-             return -1;
-           }
-          else if (ret == -3)
-            {
-              /* to_scanner buffer full. */
-              tracef ("   scanner input stalled\n");
-              scanner_input_stalled = TRUE;
-              /* Break to write to scanner. */
-              break;
-            }
-          else
-            /* Programming error. */
-            assert (0);
         }
 
       /* Write any data to the scanner. */
@@ -800,11 +722,8 @@ serve_omp (gnutls_session_t* client_session,
               case -1:      /* Error. */
                 /** @todo This may be because the scanner closed the connection
                  * at the end of a command? */
-                if (client_active)
-                  openvas_server_free (client_socket,
-                                       *client_session,
-                                       *client_credentials);
-                return -1;
+                rc = -1;
+                goto client_free;
               case -2:      /* Wrote as much as scanner was willing to accept. */
                 break;
               case -3:      /* Did an initialisation step. */
@@ -824,10 +743,8 @@ serve_omp (gnutls_session_t* client_session,
               case  0:      /* Wrote everything in to_client. */
                 break;
               case -1:      /* Error. */
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-                return -1;
+                rc = -1;
+                goto client_free;
               case -2:      /* Wrote as much as client was willing to accept. */
                 break;
               default:      /* Programming error. */
@@ -887,10 +804,8 @@ serve_omp (gnutls_session_t* client_session,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_session);
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
             }
           else if (ret == -2)
             {
@@ -912,16 +827,13 @@ serve_omp (gnutls_session_t* client_session,
             }
         }
 
-      if (openvas_scanner_connected () && (scanner_input_stalled || scan_handler))
+      if (openvas_scanner_connected ())
         {
           /* Try process the scanner input, in case writing to the scanner
            * has freed some space in to_scanner. */
 
           ret = process_otp_scanner_input (progress);
-          if (ret == 0)
-            /* Processed all input. */
-            scanner_input_stalled = FALSE;
-          else if (ret == 1)
+          if (ret == 1)
             {
               /* Received scanner BYE.  Write out the rest of to_scanner (the
                * BYE ACK).
@@ -938,42 +850,42 @@ serve_omp (gnutls_session_t* client_session,
               /* Bad login to scanner. */
               if (client_active == 0)
                 return 0;
-              openvas_server_free (client_socket,
-                                   *client_session,
-                                   *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
+            }
+          else if (ret == 3)
+            {
+              /* Calls via serve_client() should continue. */
+              if (ompd_nvt_cache_mode)
+                return 1;
+              openvas_scanner_close ();
             }
           else if (ret == -1)
             {
               /* Error. */
-              if (client_active)
-                openvas_server_free (client_socket,
-                                     *client_session,
-                                     *client_credentials);
-              return -1;
+              rc = -1;
+              goto client_free;
             }
           else if (ret == -3)
             /* to_scanner buffer still full. */
             tracef ("   scanner input stalled\n");
           else
             /* Programming error. */
-            assert (0);
+            assert (ret == 0);
         }
 
       if (process_omp_change () == -1)
         {
-          if (client_active)
-            openvas_server_free (client_socket,
-                                 *client_session,
-                                 *client_credentials);
-          return -1;
+          rc = -1;
+          goto client_free;
         }
 
     } /* while (1) */
 
+client_free:
   if (client_active)
     openvas_server_free (client_socket,
                          *client_session,
                          *client_credentials);
-  return 0;
+  return rc;
 }
