@@ -1,3 +1,11 @@
+2014-06-24  Matthew Mundell <matthew.mund...@greenbone.net>
+
+	Backport r18939.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Use utf8 function
+	to truncate text, as strndup could truncate in the middle of a
+	character.
+
 2014-05-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync:
