@@ -1,5 +1,21 @@
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r19730.
+
+	Send timezone abbreviation with schedule in GET_SCHEDULES.
+
+	* src/manage_sql.c (iso_time_internal): New function.  Body from
+	iso_time.
+	(iso_time): Call iso_time_internal.
+	(iso_time_tz): Add abbrev arg.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Add TIMEZONE_ABBREV to
+	GET_SCHEDULES.
+
+2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r19736.
 
 	* src/report_formats/Verinice_ISM/generate: Correct XSL file name.

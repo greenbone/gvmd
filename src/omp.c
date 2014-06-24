@@ -14963,7 +14963,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   time_t first_time, next_time;
                   gchar *iso;
-                  const char *timezone;
+                  const char *timezone, *abbrev;
                   char *simple_period_unit, *simple_duration_unit;
                   int period, period_minutes, period_hours, period_days;
                   int period_weeks, period_months, duration, duration_minutes;
@@ -14993,7 +14993,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    - time_offset (timezone, next_time);
 
                   /* Duplicate static string because there's an iso_time_tz below. */
-                  iso = g_strdup (iso_time_tz (&first_time, timezone));
+                  iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
 
                   period = schedule_iterator_period (&schedules);
                   if (period)
@@ -15073,9 +15073,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     "<simple_period>%i<unit>%s</unit></simple_period>"
                     "<duration>%ld</duration>"
                     "<simple_duration>%i<unit>%s</unit></simple_duration>"
-                    "<timezone>%s</timezone>",
+                    "<timezone>%s</timezone>"
+                    "<timezone_abbrev>%s</timezone_abbrev>",
                     iso,
-                    (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone)),
+                    (next_time == 0 ? "over" : iso_time_tz (&next_time, timezone, NULL)),
                     schedule_iterator_period (&schedules),
                     schedule_iterator_period_months (&schedules),
                     simple_period,
@@ -15085,7 +15086,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     simple_duration_unit,
                     schedule_iterator_timezone (&schedules)
                      ? schedule_iterator_timezone (&schedules)
-                     : "UTC");
+                     : "UTC",
+                    abbrev);
 
                   g_free (iso);
                   if (get_schedules_data->tasks)
