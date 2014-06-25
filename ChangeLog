@@ -1,3 +1,17 @@
+2014-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent any changes to the permissions of predefined roles.
+
+	* src/manage_sql.c (find_permission, permission_subject_type)
+	(permission_subject): New functions.
+	(create_permission, copy_permission): Prevent creation of permissions
+	that have predefined roles as subjects.
+	(permission_is_predefined): Include permissions of predefined roles.
+	(delete_permission, modify_permission): Prevent modification of
+	permissions of predefined roles.
+	(find_permission): Move up in file.
+	(role_is_predefined_id): New function.
+
 2014-06-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (scanner_connect): Adequately return value for success or
