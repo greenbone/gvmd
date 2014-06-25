@@ -47,6 +47,16 @@ VERSION=@OPENVASMD_VERSION@
 SCAP_RES_DIR=@OPENVAS_SCAP_RES_DIR@
 RESTRICTED=0
 
+# Maximum number of retries if database is locked
+if [ -z "$MAX_SQL_RETRIES" ]; then
+  MAX_SQL_RETRIES="1" # 0 : try only once
+fi
+
+# Delay between retries
+if [ -z "$SQL_RETRY_DELAY" ]; then
+  SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
+fi
+
 TIMESTAMP="$SCAP_DIR/timestamp"
 
 if [ -z "$FEED_NAME" ] ; then
@@ -121,7 +131,7 @@ do_help () {
 
 CMD_RSYNC=`which rsync`
 CMD_SQLITE=`which sqlite3`
-SQLITE="sqlite3 -noheader"
+SQLITE="sqlite3 -noheader -bail"
 TMP_SCAP="$SYNC_TMP_DIR/openvas-feed-`date +%F`-$$.tar.bz2"
 
 chk_system_tools () {
@@ -209,30 +219,76 @@ handle_interrupt () {
   echo "$1:X" >&3
 }
 
+reset_sql_tries () {
+  try_sql=1
+  sql_retries=0
+}
+
 test_exit_codes () {
+  try_sql=0
   if [ -n "$exit_codes" ]
   then
-    echo "[e] $1:"
     for item in $exit_codes
     do
       command=`echo "$item" | cut -d':' -f1`
       code=`echo "$item" | cut -d':' -f2`
       if [ "X" = "$code" ]
       then
-        echo "[w] Sync script was interrupted"
+        echo "[e] $1: Sync script was interrupted"
+        exit 1
+      elif [ "sqlite3" = "$command" ] \
+           && ( [ "5" = "$code" ] || [ "1" = "$code" ] )
+      then
+        if [ "5" = "$code" ]
+        then
+          echo "[w] SCAP database is locked"
+        else
+          echo "[w] Could not access SCAP database, file may be locked."
+        fi
+
+        if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
+        then
+          sql_retries=$((sql_retries + 1))
+          echo "[i] Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
+          try_sql=1
+          sleep "$SQL_RETRY_DELAY"
+        else
+          echo "[e] $1: Gave up trying to access SCAP database."
+          exit 1
+        fi
       else
-        echo "[w] $command exited with code $code"
+        echo "[e] $1: $command exited with code $code"
+        exit 1
       fi
     done
-    exit 1
   fi
 }
 
 test_sql_exit () {
   exit_code=$?
-  if [ 0 -ne "$exit_code" ]
+  try_sql=0
+  if ( [ "5" = "$exit_code" ] || [ "1" = "$exit_code" ] )
   then
-    echo "[e] $1. sqlite3 returned code $exit_code."
+    if [ "5" = "$exit_code" ]
+    then
+      echo "[w] SCAP database is locked."
+    else
+      echo "[w] Could not access SCAP database, file may be locked."
+    fi
+
+    if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
+    then
+      sql_retries=$((sql_retries + 1))
+      echo "[i] Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
+      try_sql=1
+      sleep "$SQL_RETRY_DELAY"
+    else
+      echo "[e] $1: Gave up trying to access SCAP database."
+      exit 1
+    fi
+  elif [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] $1: sqlite3 exited with code $exit_code."
     exit 1
   fi
 }
@@ -241,32 +297,44 @@ reinit () {
   echo "[i] Major change in internal SCAP data structures."
   echo "[i] Reinitialization of database necessary."
   echo "[i] This update might take a while.."
-  $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
-  test_sql_exit "Could not reinitialize SCAP database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+    test_sql_exit "Could not reinitialize SCAP database"
+  done
 }
 
 db_migrate_9 () {
   echo "[i] Migrating database to version 9."
-  sqlite3 "$SEC_DB" "DROP INDEX IF EXISTS afp_idx;
-                     CREATE INDEX afp_cpe_idx ON affected_products (cpe);
-                     CREATE INDEX afp_cve_idx ON affected_products (cve);
-                     UPDATE meta SET value = '9' WHERE name = 'database_version';"
-  test_sql_exit "Could not migrate SCAP database"
-  echo "[i] Migration done."
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE "$SEC_DB" "DROP INDEX IF EXISTS afp_idx;
+                      CREATE INDEX afp_cpe_idx ON affected_products (cpe);
+                      CREATE INDEX afp_cve_idx ON affected_products (cve);
+                      UPDATE meta SET value = '9' WHERE name = 'database_version';"
+    test_sql_exit "Could not migrate SCAP database"
+    echo "[i] Migration done."
+  done
 }
 
 db_migrate_10 () {
   echo "[i] Migrating database to version 10."
-  sqlite3 "$SEC_DB"  "DROP TRIGGER affected_delete;
-                      CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
-                      BEGIN
-                        UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
-                        UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
-                      END;
-                      UPDATE meta
-                        SET value = '10'
-                        WHERE name = 'database_version';"
-  test_sql_exit "Could not migrate SCAP database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE "$SEC_DB"  "DROP TRIGGER affected_delete;
+                        CREATE TRIGGER affected_delete AFTER DELETE ON affected_products
+                        BEGIN
+                          UPDATE cpes set max_cvss = 0.0 WHERE id = old.cpe;
+                          UPDATE cpes set cve_refs = cve_refs -1 WHERE id = old.cpe;
+                        END;
+                        UPDATE meta
+                          SET value = '10'
+                          WHERE name = 'database_version';"
+    test_sql_exit "Could not migrate SCAP database"
+  done
   echo "[i] Migration done."
 }
 
@@ -274,13 +342,17 @@ db_migrate_11 () {
   echo "[i] Migrating database to version 11."
   if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
   then
-    sqlite3 "$SEC_DB"  "ALTER TABLE ovaldefs
-                          ADD COLUMN status TEXT;
-                        UPDATE meta
-                          SET value = '11'
-                          WHERE name = 'database_version';
-                      "
-    test_sql_exit "Could not migrate SCAP database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE "$SEC_DB"  "ALTER TABLE ovaldefs
+                            ADD COLUMN status TEXT;
+                          UPDATE meta
+                            SET value = '11'
+                            WHERE name = 'database_version';
+                        "
+      test_sql_exit "Could not migrate SCAP database"
+    done
     REBUILD_OVAL=1
     echo "[i] Migration done."
   else
@@ -293,38 +365,42 @@ db_migrate_12 () {
   echo "[i] Migrating database to version 12."
   if [ 1 != "$REFRESH_PRIVATE_ONLY" ]
   then
-    sqlite3 "$SEC_DB"  "DROP TABLE ovaldefs;
-                        DROP INDEX IF EXISTS ovaldefs_idx;
-                        CREATE TABLE ovaldefs (
-                          id INTEGER PRIMARY KEY AUTOINCREMENT,
-                          uuid UNIQUE,
-                          name,
-                          comment,
-                          creation_time DATE,
-                          modification_time DATE,
-                          version INTEGER,
-                          deprecated BOOLEAN,
-                          def_class TEXT,
-                          title TEXT,
-                          description TEXT,
-                          xml_file TEXT,
-                          status TEXT
-                        );
-                        CREATE INDEX ovaldefs_idx ON ovaldefs (name);
-                        CREATE TABLE ovalfiles (
-                          id INTEGER PRIMARY KEY AUTOINCREMENT,
-                          xml_file TEXT UNIQUE
-                        );
-                        CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
-                        CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
-                        BEGIN
-                          DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
-                        END;
-                        UPDATE meta
-                          SET value = '12'
-                          WHERE name = 'database_version';
-                      "
-    test_sql_exit "Could not migrate SCAP database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE "$SEC_DB"  "DROP TABLE ovaldefs;
+                          DROP INDEX IF EXISTS ovaldefs_idx;
+                          CREATE TABLE ovaldefs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            uuid UNIQUE,
+                            name,
+                            comment,
+                            creation_time DATE,
+                            modification_time DATE,
+                            version INTEGER,
+                            deprecated BOOLEAN,
+                            def_class TEXT,
+                            title TEXT,
+                            description TEXT,
+                            xml_file TEXT,
+                            status TEXT
+                          );
+                          CREATE INDEX ovaldefs_idx ON ovaldefs (name);
+                          CREATE TABLE ovalfiles (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            xml_file TEXT UNIQUE
+                          );
+                          CREATE UNIQUE INDEX ovalfiles_idx ON ovalfiles (xml_file);
+                          CREATE TRIGGER ovalfiles_delete AFTER DELETE ON ovalfiles
+                          BEGIN
+                            DELETE FROM ovaldefs WHERE ovaldefs.xml_file = old.xml_file;
+                          END;
+                          UPDATE meta
+                            SET value = '12'
+                            WHERE name = 'database_version';
+                        "
+      test_sql_exit "Could not migrate SCAP database"
+    done
     REBUILD_OVAL=1
     echo "[i] Migration done."
   else
@@ -335,52 +411,60 @@ db_migrate_12 () {
 
 db_migrate_13 () {
   echo "[i] Migrating database to version 13."
-  sqlite3 "$SEC_DB"  "ALTER TABLE cpes ADD COLUMN nvd_id;
-                      UPDATE cpes SET nvd_id = uuid, uuid = name;
-                      UPDATE meta
-                        SET value = '13'
-                        WHERE name = 'database_version';
-                     "
-  test_sql_exit "Could not migrate SCAP database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE "$SEC_DB"  "ALTER TABLE cpes ADD COLUMN nvd_id;
+                        UPDATE cpes SET nvd_id = uuid, uuid = name;
+                        UPDATE meta
+                          SET value = '13'
+                          WHERE name = 'database_version';
+                      "
+    test_sql_exit "Could not migrate SCAP database"
+  done
   echo "[i] Migration done."
 }
 
 db_migrate_14 () {
   echo "[i] Migrating database to version 14."
-  sqlite3 "$SEC_DB"  "ALTER TABLE ovaldefs ADD COLUMN max_cvss FLOAT;
-                      ALTER TABLE ovaldefs ADD COLUMN cve_refs INTEGER;
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE "$SEC_DB"  "ALTER TABLE ovaldefs ADD COLUMN max_cvss FLOAT;
+                        ALTER TABLE ovaldefs ADD COLUMN cve_refs INTEGER;
 
-                      CREATE TABLE affected_ovaldefs (
-                        cve INTEGER NOT NULL,
-                        ovaldef INTEGER NOT NULL,
-                        FOREIGN KEY(cve) REFERENCES cves(id),
-                        FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id)
-                      );
-                      CREATE INDEX aff_ovaldefs_def_idx
-                        ON affected_ovaldefs (ovaldef);
-                      CREATE INDEX aff_ovaldefs_cve_idx
-                        ON affected_ovaldefs (cve);
+                        CREATE TABLE affected_ovaldefs (
+                          cve INTEGER NOT NULL,
+                          ovaldef INTEGER NOT NULL,
+                          FOREIGN KEY(cve) REFERENCES cves(id),
+                          FOREIGN KEY(ovaldef) REFERENCES ovaldefs(id)
+                        );
+                        CREATE INDEX aff_ovaldefs_def_idx
+                          ON affected_ovaldefs (ovaldef);
+                        CREATE INDEX aff_ovaldefs_cve_idx
+                          ON affected_ovaldefs (cve);
 
-                      DROP TRIGGER IF EXISTS cves_delete;
-                      CREATE TRIGGER cves_delete AFTER DELETE ON cves
-                      BEGIN
-                        DELETE FROM affected_products where cve = old.id;
-                        DELETE FROM affected_ovaldefs where cve = old.id;
-                      END;
+                        DROP TRIGGER IF EXISTS cves_delete;
+                        CREATE TRIGGER cves_delete AFTER DELETE ON cves
+                        BEGIN
+                          DELETE FROM affected_products where cve = old.id;
+                          DELETE FROM affected_ovaldefs where cve = old.id;
+                        END;
 
-                      CREATE TRIGGER affected_ovaldefs_delete AFTER DELETE
-                        ON affected_ovaldefs
-                      BEGIN
-                        UPDATE ovaldefs
-                          SET max_cvss = 0.0
-                          WHERE id = old.ovaldef;
-                      END;
+                        CREATE TRIGGER affected_ovaldefs_delete AFTER DELETE
+                          ON affected_ovaldefs
+                        BEGIN
+                          UPDATE ovaldefs
+                            SET max_cvss = 0.0
+                            WHERE id = old.ovaldef;
+                        END;
 
-                      UPDATE meta
-                        SET value = '14'
-                        WHERE name = 'database_version';
-                     "
-  test_sql_exit "Could not migrate SCAP database"
+                        UPDATE meta
+                          SET value = '14'
+                          WHERE name = 'database_version';
+                      "
+    test_sql_exit "Could not migrate SCAP database"
+  done
   echo "[i] Migration done."
   REBUILD_OVAL=1
 }
@@ -424,19 +508,31 @@ init_sec_db_update () {
   if [ ! -f $SEC_DB ]
   then
     echo "[i] Initializing scap database"
-    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
-    test_sql_exit "Could not initialize SCAP database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+      test_sql_exit "Could not initialize SCAP database"
+    done
     DB_LASTUPDATE=0
     CVE_REFDATE=0
     OVAL_REFDATE=0
   else
     check_db_version
-    CVE_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) from cves;"`
-    test_sql_exit "Could not get reference date for CVEs and CPEs"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      CVE_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) from cves;"`
+      test_sql_exit "Could not get reference date for CVEs and CPEs"
+    done
   fi
 
-  DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
-  test_sql_exit "Could not get last_update timestamp from database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
+    test_sql_exit "Could not get last_update timestamp from database"
+  done
 
   if [ -z "$CVE_REFDATE" ]
   then
@@ -448,8 +544,12 @@ init_sec_db_update () {
     # Happens when initial sync was aborted
     echo "[e] Error: Inconsistent data. Resetting SCAP database."
     rm -f $SEC_DB
-    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
-    test_sql_exit "Could not reinitialize SCAP database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+      test_sql_exit "Could not reinitialize SCAP database"
+    done
     CVE_REFDATE=0
     OVAL_REFDATE=0
     DB_LASTUPDATE=0
@@ -486,28 +586,32 @@ update_cvss () {
   if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_cpes ]
   then
     echo "[i] Updating CVSS scores and CVE counts for CPEs"
-    sqlite3 "$SEC_DB"  "
-    PRAGMA recursive_triggers = OFF;
-    UPDATE cpes
-      SET max_cvss =
-          (
-            SELECT coalesce(max(cvss), '')
-            FROM cves
-            WHERE id IN
-              (
-                SELECT cve
-                FROM affected_products
-                WHERE cpe=cpes.id
-              )
-          ),
-        cve_refs =
-          (
-            SELECT count(cve)
-            FROM affected_products
-            WHERE cpe=cpes.id
-          );
-    "
-    test_sql_exit "Could not update CVSS scores for CPEs"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE "$SEC_DB"  "
+      PRAGMA recursive_triggers = OFF;
+      UPDATE cpes
+        SET max_cvss =
+            (
+              SELECT coalesce(max(cvss), '')
+              FROM cves
+              WHERE id IN
+                (
+                  SELECT cve
+                  FROM affected_products
+                  WHERE cpe=cpes.id
+                )
+            ),
+          cve_refs =
+            (
+              SELECT count(cve)
+              FROM affected_products
+              WHERE cpe=cpes.id
+            );
+      "
+      test_sql_exit "Could not update CVSS scores for CPEs"
+    done
   else
     echo "[i] No CPEs or CVEs updated, skipping CVSS and CVE recount for CPEs."
   fi
@@ -515,23 +619,27 @@ update_cvss () {
   if [ 0 -ne $updated_cves ] || [ 0 -ne $updated_ovaldefs ]
   then
     echo "[i] Updating CVSS scores for OVAL definitions"
-    sqlite3 "$SEC_DB"  "
-    PRAGMA recursive_triggers = OFF;
-    UPDATE ovaldefs
-      SET max_cvss =
-          (
-            SELECT coalesce(max(cvss), '')
-            FROM cves
-            WHERE id IN
-              (
-                SELECT cve
-                FROM affected_ovaldefs
-                WHERE ovaldef=ovaldefs.id
-              )
-              AND cvss != ''
-          );
-    "
-    test_sql_exit "Could not update CVSS scores for OVAL definitions"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE "$SEC_DB"  "
+      PRAGMA recursive_triggers = OFF;
+      UPDATE ovaldefs
+        SET max_cvss =
+            (
+              SELECT coalesce(max(cvss), '')
+              FROM cves
+              WHERE id IN
+                (
+                  SELECT cve
+                  FROM affected_ovaldefs
+                  WHERE ovaldef=ovaldefs.id
+                )
+                AND cvss != ''
+            );
+      "
+      test_sql_exit "Could not update CVSS scores for OVAL definitions"
+    done
   else
     echo "[i] No OVAL definitions or CVEs updated, skipping CVSS recount for OVAL definitions."
   fi
@@ -595,8 +703,12 @@ update_sec_db_private () {
             then
               OVAL_REFDATE=0
             else
-              OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
-              test_sql_exit "Could not get OVAL reference date"
+              reset_sql_tries
+              until [ "$try_sql" -eq 0 ]
+              do
+                OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+                test_sql_exit "Could not get OVAL reference date"
+              done
               if [ -z "$OVAL_REFDATE" ]
               then
                 OVAL_REFDATE=0
@@ -621,16 +733,20 @@ update_sec_db_private () {
                   echo "[w] Validation of file '$ovalfile' failed: $validation_message"
                 else
                   echo "[i] Updating $ovalfile"
-                  exec 4>&1
-                  exit_codes=$(
-                    (
-                      set_interrupt_trap
-                      (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                      ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
-                    ) 3>&1 >&4
-                  )
-                  exec 4>&-
-                  test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
+                  reset_sql_tries
+                  until [ "$try_sql" -eq 0 ]
+                  do
+                    exec 4>&1
+                    exit_codes=$(
+                      (
+                        set_interrupt_trap
+                        (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+                        ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                      ) 3>&1 >&4
+                    )
+                    exec 4>&-
+                    test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
+                  done
                   updated_ovaldefs=1
                 fi
               fi
@@ -659,21 +775,34 @@ update_sec_db_private () {
       oval_files_shortened=${oval_files_shortened##"', "}"'"
     fi
 
-    deleted=`$SQLITE "$SEC_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
-    test_sql_exit "Could not get list of deleted OVAL XML files"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      deleted=`$SQLITE "$SEC_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+      test_sql_exit "Could not get list of deleted OVAL XML files"
+    done
+
     if [ -n "$deleted" ]
     then
       echo "[i] Removing definitions formerly inserted from:"
       echo "$deleted"
-      $SQLITE "$SEC_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
-      test_sql_exit "Could not remove deleted OVAL definitions from database"
+      reset_sql_tries
+      until [ "$try_sql" -eq 0 ]
+      do
+        $SQLITE "$SEC_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+        test_sql_exit "Could not remove deleted OVAL definitions from database"
+      done
     fi
 
     # TODO: This is not quite accurate as it uses the timestamp of the non-private data.
     LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | date +%s -f -`
 
-    $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-    test_sql_exit "Could not update last_update timestamp in database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+      test_sql_exit "Could not update last_update timestamp in database"
+    done
   else
     echo "[i] No user data directory '$SCAP_PRIVATE_DIR' found."
   fi
@@ -690,18 +819,22 @@ update_sec_db () {
     if [ $filedate -gt $DB_LASTUPDATE ]
     then
       echo "[i] Updating CPEs"
-      exec 4>&1
-      exit_codes=$(
-        (
-          set_interrupt_trap
-          (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
-          (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
-          (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-          ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3) \
-        ) 3>&1 >&4
-      )
-      exec 4>&-
-      test_exit_codes "Update of CPEs failed"
+      reset_sql_tries
+      until [ "$try_sql" -eq 0 ]
+      do
+        exec 4>&1
+        exit_codes=$(
+          (
+            set_interrupt_trap
+            (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
+            (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
+            (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
+            ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3) \
+          ) 3>&1 >&4
+        )
+        exec 4>&-
+        test_exit_codes "Update of CPEs failed"
+      done
       updated_cpes=1
     else
       echo "[i] Skipping CPEs, file is older than last revision"
@@ -730,33 +863,40 @@ update_sec_db () {
           for cvepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cvefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
           do
             echo "[i] Updating part $cvepart"
+            reset_sql_tries
+            until [ "$try_sql" -eq 0 ]
+            do
+              exec 4>&1
+              exit_codes=$(
+                (
+                  set_interrupt_trap
+                  (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
+                  (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
+                  ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                ) 3>&1 >&4
+              )
+              exec 4>&-
+              rm "$cvepart"
+              test_exit_codes "Update of CVEs failed at part '$cvepart'"
+            done
+          done
+        else
+          reset_sql_tries
+          until [ "$try_sql" -eq 0 ]
+          do
             exec 4>&1
             exit_codes=$(
               (
                 set_interrupt_trap
-                (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
+                (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
                 (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
                 ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
               ) 3>&1 >&4
             )
             exec 4>&-
-            rm "$cvepart"
-            test_exit_codes "Update of CVEs failed at part '$cvepart'"
+            test_exit_codes "Update of CVEs failed at file '$cvefile'"
           done
-        else
-          exec 4>&1
-          exit_codes=$(
-            (
-              set_interrupt_trap
-              (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
-              (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-              ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
-            ) 3>&1 >&4
-          )
-          exec 4>&-
-          test_exit_codes "Update of CVEs failed at file '$cvefile'"
         fi
-
         updated_cves=1
       else
         echo "[i] Skipping $cvefile, file is older than last revision"
@@ -794,8 +934,12 @@ update_sec_db () {
         then
           OVAL_REFDATE=0
         else
-          OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
-          test_sql_exit "Could not get OVAL reference date from database"
+          reset_sql_tries
+          until [ "$try_sql" -eq 0 ]
+          do
+            OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+            test_sql_exit "Could not get OVAL reference date from database"
+          done
           if [ -z "$OVAL_REFDATE" ]
           then
             OVAL_REFDATE=0
@@ -805,16 +949,20 @@ update_sec_db () {
         if [ $oval_timestamp -gt $OVAL_REFDATE ]
         then
           echo "[i] Updating $ovalfile"
-          exec 4>&1
-          exit_codes=$(
-            (
-              set_interrupt_trap
-              (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-              ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
-            ) 3>&1 >&4
-          )
-          exec 4>&-
-          test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
+          reset_sql_tries
+          until [ "$try_sql" -eq 0 ]
+          do
+            exec 4>&1
+            exit_codes=$(
+              (
+                set_interrupt_trap
+                (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
+                ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+              ) 3>&1 >&4
+            )
+            exec 4>&-
+            test_exit_codes "Update of OVAL definitions failed at file '$ovalfile'"
+          done
           updated_ovaldefs=1
         else
           echo "[i] Skipping $ovalfile, file has older timestamp than latest OVAL definition in database."
@@ -831,9 +979,12 @@ update_sec_db () {
   update_cvss
 
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
-
-  $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-  test_sql_exit "Could not update last_update timestamp in database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    test_sql_exit "Could not update last_update timestamp in database"
+  done
 }
 
 do_refresh () {

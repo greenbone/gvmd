@@ -76,7 +76,17 @@ ENABLED=1
 # Manager database. This can be controlled via the --refresh parameter.
 REFRESH_ONLY=0
 
-SQLITE3="sqlite3 -noheader"
+SQLITE3="sqlite3 -noheader -bail"
+
+# Maximum number of retries if database is locked
+if [ -z "$MAX_SQL_RETRIES" ]; then
+  MAX_SQL_RETRIES="1" # 0 : try only once
+fi
+
+# Delay between retries
+if [ -z "$SQL_RETRY_DELAY" ]; then
+  SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
+fi
 
 [ -r $PREFIX/etc/openvas/greenbone-certdata-sync.conf ] && . $PREFIX/etc/openvas/greenbone-certdata-sync.conf
 
@@ -152,10 +162,15 @@ handle_interrupt () {
   echo "$1:X" >&3
 }
 
+reset_sql_tries () {
+  try_sql=1
+  sql_retries=0
+}
+
 test_exit_codes () {
+  try_sql=0
   if [ -n "$exit_codes" ]
   then
-    log_err "$1:"
     for item in $exit_codes
     do
       command=`echo "$item" | cut -d':' -f1`
@@ -163,20 +178,61 @@ test_exit_codes () {
 
       if [ "X" = "$code" ]
       then
-        log_warning "Sync script was interrupted"
+        log_err "$1: Sync script was interrupted"
+        exit 1
+      elif [ "sqlite3" = "$command" ] \
+           && ( [ "5" = "$code" ] || [ "1" = "$code" ] )
+      then
+        if [ "5" = "$code" ]
+        then
+          log_warning "CERT database is locked"
+        else
+          log_warning "Could not access CERT database, file may be locked."
+        fi
+
+        if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
+        then
+          sql_retries=$((sql_retries + 1))
+          log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
+          try_sql=1
+          sleep "$SQL_RETRY_DELAY"
+        else
+          log_err "$1: Gave up trying to access SCAP database."
+          exit 1
+        fi
       else
-        log_warning "$command exited with code $code"
+        log_err "$1: $command exited with code $code"
+        exit 1
       fi
     done
-    exit 1
   fi
 }
 
 test_sql_exit () {
   exit_code=$?
-  if [ 0 -ne "$exit_code" ]
+  try_sql=0
+  if ( [ "5" = "$exit_code" ] || [ "1" = "$exit_code" ] )
   then
-    log_err "$1. sqlite3 returned code $exit_code."
+    if [ "5" = "$exit_code" ]
+    then
+      log_warning "CERT database is locked."
+    else
+      log_warning "Could not access CERT database, file may be locked."
+    fi
+
+    if [ "$MAX_SQL_RETRIES" -gt "$sql_retries" ]
+    then
+      sql_retries=$((sql_retries + 1))
+      log_notice "Will try to access database again later in $SQL_RETRY_DELAY. (Retry $sql_retries of $MAX_SQL_RETRIES)"
+      try_sql=1
+      sleep "$SQL_RETRY_DELAY"
+    else
+      log_err "$1: Gave up trying to access CERT database."
+      exit 1
+    fi
+  elif [ 0 -ne "$exit_code" ]
+  then
+    log_err "$1: sqlite3 exited with code $exit_code."
     exit 1
   fi
 }
@@ -269,7 +325,12 @@ is_db_broken () {
   then
     return
   fi
-  DB_INTEGRITY=`sqlite3 $CERT_DB "PRAGMA integrity_check;"`
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    DB_INTEGRITY=`$SQLITE3 $CERT_DB "PRAGMA integrity_check;"`
+    test_sql_exit "Could not check CERT database integrity"
+  done
   if [ "$DB_INTEGRITY" != "ok" ]
   then
     DB_BROKEN=1
@@ -280,17 +341,25 @@ is_db_broken () {
 reinit () {
   log_notice "Reinitialization of the database necessary."
   rm -f $CERT_DB
-  $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
-  test_sql_exit "Could not reinitialize CERT database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    test_sql_exit "Could not reinitialize CERT database"
+  done
 }
 
 db_migrate_4 () {
   log_notice "Migrating database to version 4."
-  $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
-                    UPDATE meta SET value = '4' WHERE name = 'database_version';"
-  test_sql_exit "Could not migrate CERT database"
-  updated_dfn=1
-  log_notice "Migration done."
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE3 $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
+                      UPDATE meta SET value = '4' WHERE name = 'database_version';"
+    test_sql_exit "Could not migrate CERT database"
+    updated_dfn=1
+    log_notice "Migration done."
+  done
 }
 
 check_db_version () {
@@ -322,28 +391,36 @@ update_cvss () {
   then
     log_warning "SCAP database not found. Cannot update max_cvss."
   else
-    SCAP_DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
-    test_sql_exit "Could not get last_update timestamp from SCAP database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      SCAP_DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+      test_sql_exit "Could not get last_update timestamp from SCAP database"
+    done
     if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
     then
       log_info "Updating Max CVSS for DFN-CERT"
 
-      $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
-                        PRAGMA recursive_triggers = OFF;
-                        UPDATE dfn_cert_advs
-                          SET max_cvss =
-                              (
-                                SELECT coalesce(max(cvss), '')
-                                FROM scap_db.cves
-                                WHERE name IN
-                                  (
-                                    SELECT cve_name
-                                    FROM dfn_cert_cves
-                                    WHERE adv_id=dfn_cert_advs.id
-                                  )
-                                  AND cvss != ''
-                              );"
-      test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
+      reset_sql_tries
+      until [ "$try_sql" -eq 0 ]
+      do
+        $SQLITE3 $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
+                           PRAGMA recursive_triggers = OFF;
+                           UPDATE dfn_cert_advs
+                             SET max_cvss =
+                                 (
+                                   SELECT coalesce(max(cvss), '')
+                                   FROM scap_db.cves
+                                   WHERE name IN
+                                     (
+                                       SELECT cve_name
+                                       FROM dfn_cert_cves
+                                       WHERE adv_id=dfn_cert_advs.id
+                                     )
+                                     AND cvss != ''
+                                 );"
+        test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
+      done
     else
       log_info "No DFN-CERT advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
     fi
@@ -359,17 +436,29 @@ update_cert_db() {
   if [ ! -f $CERT_DB ]
   then
     log_notice "Initializing CERT database."
-    $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
-    test_sql_exit "Could not initialize CERT database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+      test_sql_exit "Could not initialize CERT database"
+    done
     DB_LASTUPDATE=0
   else
     check_db_version
-    DFN_REFDATE=`$SQLITE3 $CERT_DB "SELECT max(modification_time) from dfn_cert_advs;"`
-    test_sql_exit "Could not get DFN-CERT reference date from database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      DFN_REFDATE=`$SQLITE3 $CERT_DB "SELECT max(modification_time) from dfn_cert_advs;"`
+      test_sql_exit "Could not get DFN-CERT reference date from database"
+    done
   fi
 
-  DB_LASTUPDATE=`$SQLITE3 $CERT_DB "select value from meta where name = 'last_update';"`
-  test_sql_exit "Could not get last_update timestamp from CERT database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    DB_LASTUPDATE=`$SQLITE3 $CERT_DB "select value from meta where name = 'last_update';"`
+    test_sql_exit "Could not get last_update timestamp from CERT database"
+  done
 
   if [ -z "$DFN_REFDATE" ]
   then
@@ -381,8 +470,12 @@ update_cert_db() {
     # Happens when initial sync was aborted
     log_warning "Inconsistent data. Resetting CERT database."
     rm -f $CERT_DB
-    $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
-    test_sql_exit "Could not reinitialize CERT database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      $SQLITE3 $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+      test_sql_exit "Could not reinitialize CERT database"
+    done
     DFN_REFDATE=0
     DB_LASTUPDATE=0
   fi
@@ -398,16 +491,20 @@ update_cert_db() {
       if [ $filedate -gt $DB_LASTUPDATE ]
       then
         log_info "Updating $certfile"
-        exec 4>&1
-        exit_codes=$(
-          (
-            set_interrupt_trap
-            (xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
-            ($SQLITE3 $CERT_DB || echo "sqlite3:$?" >&3)
-          ) 3>&1 >&4
-        )
-        exec 4>&-
-        test_exit_codes "Update of DFN-CERT Advisories failed at file '$certfile'"
+        reset_sql_tries
+        until [ "$try_sql" -eq 0 ]
+        do
+          exec 4>&1
+          exit_codes=$(
+            (
+              set_interrupt_trap
+              (xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
+              ($SQLITE3 $CERT_DB || echo "sqlite3:$?" >&3)
+            ) 3>&1 >&4
+          )
+          exec 4>&-
+          test_exit_codes "Update of DFN-CERT Advisories failed at file '$certfile'"
+        done
         updated_dfn=1
       else
         log_info "Skipping $certfile, file is older than last revision"
@@ -421,8 +518,12 @@ update_cert_db() {
 
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
 
-  $SQLITE3 $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
-  test_sql_exit "Could not update last_update timestamp in CERT database"
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE3 $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    test_sql_exit "Could not update last_update timestamp in CERT database"
+  done
 }
 
 sync_certdata(){
