@@ -245,12 +245,23 @@ permissions_set_subjects (const char *, resource_t, resource_t, int);
 static resource_t
 permission_resource (permission_t);
 
+resource_t
+permission_subject (permission_t);
+
+char *
+permission_subject_type (permission_t);
+
 void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
 void
 tags_set_orphans (const char *, resource_t, int);
 
+int
+role_is_predefined (role_t);
+
+int
+role_is_predefined_id (const char *);
 
 
 /* Variables. */
@@ -41992,6 +42003,22 @@ permissions_set_subjects (const char *type, resource_t old, resource_t new,
 }
 
 /**
+ * @brief Find a permission given a UUID.
+ *
+ * @param[in]   uuid        UUID of permission.
+ * @param[out]  permission  Permission return, 0 if succesfully failed to find
+ *                          permission.
+ *
+ * @return FALSE on success (including if failed to find permission), TRUE on
+ *         error.
+ */
+gboolean
+find_permission (const char* uuid, permission_t* permission)
+{
+  return find_resource ("permission", uuid, permission);
+}
+
+/**
  * @brief Create a permission.
  *
  * @param[in]   name_arg        Name of permission.
@@ -42043,6 +42070,12 @@ create_permission (const char *name_arg, const char *comment,
 
   if (subject_id && (subject_type == NULL))
     return 6;
+
+  /* Check if the subject is a predefined role. */
+  if (subject_id
+      && strcmp (subject_type, "role") == 0
+      && role_is_predefined_id (subject_id))
+    return 99;
 
   sql ("BEGIN IMMEDIATE;");
 
@@ -42172,9 +42205,38 @@ copy_permission (const char* comment, const char *permission_id,
                  permission_t* new_permission)
 {
   int ret;
-  permission_t new, old;
+  permission_t permission, new, old;
+  char *subject_type;
+  resource_t subject;
 
   sql ("BEGIN IMMEDIATE");
+
+  permission = 0;
+  if (find_permission (permission_id, &permission))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  if (permission == 0)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+
+  /* Check if the subject is a predefined role. */
+  subject_type = permission_subject_type (permission);
+  subject = permission_subject (permission);
+  if (subject_type
+      && strcmp (subject_type, "role") == 0
+      && subject
+      && role_is_predefined (subject))
+    {
+      free (subject_type);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  free (subject_type);
 
   ret = copy_resource_lock ("permission", NULL, comment, permission_id,
                             "resource_type, resource, resource_uuid,"
@@ -42232,6 +42294,38 @@ permission_resource (permission_t permission)
 }
 
 /**
+ * @brief Return the subject type of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated subject type if available, else NULL.
+ */
+char *
+permission_subject_type (permission_t permission)
+{
+  return sql_string (0, 0,
+                     "SELECT subject_type FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the subject of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Subject if there is one, else 0.
+ */
+resource_t
+permission_subject (permission_t permission)
+{
+  resource_t subject;
+  sql_int64 (&subject, 0, 0,
+             "SELECT subject FROM permissions WHERE id = %llu;",
+             permission);
+  return subject;
+}
+
+/**
  * @brief Return whether a permission is predefined.
  *
  * @param[in]  permission  Permission.
@@ -42245,7 +42339,14 @@ permission_is_predefined (permission_t permission)
             (0, 0,
              "SELECT COUNT (*) FROM permissions"
              " WHERE ROWID = %llu"
-             " AND uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';",
+             " AND (uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "'"
+             "      OR (subject_type = 'role'"
+             "          AND subject"
+             "              IN (SELECT id FROM roles"
+             "                  WHERE uuid = '" ROLE_UUID_ADMIN "'"
+             "                  OR uuid = '" ROLE_UUID_INFO "'"
+             "                  OR uuid = '" ROLE_UUID_USER "'"
+             "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
              permission);
 }
 
@@ -42594,6 +42695,8 @@ int
 delete_permission (const char *permission_id, int ultimate)
 {
   permission_t permission = 0;
+  char *subject_type;
+  resource_t subject;
 
   if (strcasecmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING) == 0)
     return 3;
@@ -42637,6 +42740,20 @@ delete_permission (const char *permission_id, int ultimate)
       return 0;
     }
 
+  /* Check if the subject is a predefined role. */
+  subject_type = permission_subject_type (permission);
+  subject = permission_subject (permission);
+  if (subject_type
+      && strcmp (subject_type, "role") == 0
+      && subject
+      && role_is_predefined (subject))
+    {
+      free (subject_type);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  free (subject_type);
+
   if (ultimate == 0)
     {
       sql ("INSERT INTO permissions_trash"
@@ -42660,22 +42777,6 @@ delete_permission (const char *permission_id, int ultimate)
 
   sql ("COMMIT;");
   return 0;
-}
-
-/**
- * @brief Find a permission given a UUID.
- *
- * @param[in]   uuid        UUID of permission.
- * @param[out]  permission  Permission return, 0 if succesfully failed to find
- *                          permission.
- *
- * @return FALSE on success (including if failed to find permission), TRUE on
- *         error.
- */
-gboolean
-find_permission (const char* uuid, permission_t* permission)
-{
-  return find_resource ("permission", uuid, permission);
 }
 
 /**
@@ -42717,6 +42818,7 @@ modify_permission (const char *permission_id, const char *name,
 {
   permission_t permission;
   resource_t resource, subject;
+  char *existing_subject_type;
 
   // TODO Does current user have permission to grant subject this permission?
 
@@ -42726,6 +42828,14 @@ modify_permission (const char *permission_id, const char *name,
   sql ("BEGIN IMMEDIATE;");
 
   if (user_may ("modify_permission") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+
+  /* Check if the desired subject is a predefined role. */
+  if (subject_type && strcmp (subject_type, "role") == 0
+      && subject_id && role_is_predefined_id (subject_id))
     {
       sql ("ROLLBACK;");
       return 99;
@@ -42743,6 +42853,20 @@ modify_permission (const char *permission_id, const char *name,
       sql ("ROLLBACK;");
       return 1;
     }
+
+  /* Check if the existing subject is a predefined role. */
+  existing_subject_type = permission_subject_type (permission);
+  subject = permission_subject (permission);
+  if (existing_subject_type
+      && strcmp (existing_subject_type, "role") == 0
+      && subject
+      && role_is_predefined (subject))
+    {
+      free (existing_subject_type);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  free (existing_subject_type);
 
   if (name)
     {
@@ -44553,6 +44677,22 @@ role_is_predefined (role_t role)
                   "      OR uuid = '" ROLE_UUID_OBSERVER "');",
                   role)
          != 0;
+}
+
+/**
+ * @brief Return whether a role is predefined.
+ *
+ * @param[in]  uuid  UUID of role.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+role_is_predefined_id (const char *uuid)
+{
+  return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
+                  || (strcmp (uuid, ROLE_UUID_INFO) == 0)
+                  || (strcmp (uuid, ROLE_UUID_USER) == 0)
+                  || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
 }
 
 /**
