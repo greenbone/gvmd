@@ -1,3 +1,45 @@
+2014-06-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Check if the last commands most likely failed due to a database lock
+	and retry in this case.
+	Make error messages for failed commands more consistent and replace
+	sqlite3 calls with $SQLITE3 where it makes more sense.
+
+	* tools/greenbone-certdata-sync (): Add -bail parameter to SQLITE3
+	variable. Add variables MAX_SQL_RERTRIES and SQL_RETRY_DELAY.
+	(reset_sql_tries): New function.
+	(test_exit_codes, test_sql_exit): Add checks for database lock and make
+	error messages more consistent.
+	(is_db_broken, reinit, db_migrate_4, update_cvss, update_cert_db): Add
+	retry loops.
+
+	* tools/greenbone-scapdata-sync (): Add -bail parameter to SQLITE3
+	variable. Add variables MAX_SQL_RERTRIES and SQL_RETRY_DELAY.
+	(reset_sql_tries): New function.
+	(test_exit_codes, test_sql_exit): Add checks for database lock and make
+	error messages more consistent.
+	(is_db_broken, reinit, db_migrate_9, db_migrate_10, db_migrate_11)
+	(db_migrate_12, db_migrate_13, db_migrate_14, init_scap_db_update)
+	(update_cvss, update_scap_db_private, update_scap_db): Add retry loops.
+	Use $SQLITE3 instead of sqlite3 without extra parameters.
+
+	* tools/openvas-certdata-sync.in (): Add -bail parameter to SQLITE3
+	variable. Add variables MAX_SQL_RERTRIES and SQL_RETRY_DELAY.
+	(reset_sql_tries): New function.
+	(test_exit_codes, test_sql_exit): Add checks for database lock and make
+	error messages more consistent.
+	(reinit, db_migrate_4, update_cvss, update_sec_db): Add retry loops.
+
+	* tools/openvas-scapdata-sync.in (): Add -bail parameter to SQLITE3
+	variable. Add variables MAX_SQL_RERTRIES and SQL_RETRY_DELAY.
+	(reset_sql_tries): New function.
+	(test_exit_codes, test_sql_exit): Add checks for database lock and make
+	error messages more consistent.
+	(reinit, db_migrate_9, db_migrate_10, db_migrate_11, db_migrate_12)
+	(db_migrate_13, db_migrate_14, update_sec_db_private)
+	(update_sec_db): Add retry loops. Use $SQLITE3 instead of sqlite3
+	without extra parameters.
+
 2014-06-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (check_db_scanners): New function.
