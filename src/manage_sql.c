@@ -47467,8 +47467,8 @@ find_user_by_name (const char* name, user_t *user)
  * @param[out] new_user     Created user.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
- *         2 failed to find role, 99 permission denied, -1 on error, -2 if
- *         user exists already.
+ *         2 failed to find role, 3 syntax error in hosts, 99 permission denied,
+ *         -1 on error, -2 if user exists already.
  */
 int
 create_user (const gchar * name, const gchar * password, const gchar * hosts,
@@ -47532,6 +47532,14 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
       return -2;
     }
   quoted_name = sql_quote (name);
+
+  /* Check hosts. */
+
+  if (hosts && (manage_count_hosts (hosts, NULL) < 0))
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
 
   /* Get the password hashes. */
 
@@ -47967,8 +47975,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find user, 3 success and user gained admin, 4 success
- *         and user lost admin, 5 failed to find role, 99 permission denied,
- *         -1 on error, -2 for an unknown role, -3 if wrong number of methods.
+ *         and user lost admin, 5 failed to find role, 6 syntax error in hosts,
+ *         99 permission denied, -1 on error, -2 for an unknown role, -3 if
+ *         wrong number of methods.
  */
 int
 modify_user (const gchar * user_id, gchar **name, const gchar * password,
@@ -48051,6 +48060,14 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
           sql ("ROLLBACK;");
           return -1;
         }
+    }
+
+  /* Check hosts. */
+
+  if (hosts && (manage_count_hosts (hosts, NULL) < 0))
+    {
+      sql ("ROLLBACK;");
+      return 6;
     }
 
   /* Get the password hashes. */
