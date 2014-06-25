@@ -2922,17 +2922,18 @@ run_osp_task (task_t task, char **report_id)
   return 0;
 }
 
-static void
+static int
 scanner_connect (scanner_t scanner)
 {
-  if (scanner)
-    {
-      char *host = scanner_host (scanner);
-      int port = scanner_port (scanner);
+  int ret, port;
+  char *host;
 
-      openvas_scanner_set_address (host, port);
-      g_free (host);
-    }
+  assert (scanner);
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ret = openvas_scanner_set_address (host, port);
+  g_free (host);
+  return ret;
 }
 
 /**
@@ -2989,8 +2990,12 @@ run_task (const char *task_id, char **report_id, int from,
   if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task, report_id);
 
-  /* Classic OpenVAS Scanner. */
-  scanner_connect (scanner);
+  /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
+  if (scanner && scanner_connect (scanner))
+    return -5;
+  else if (!scanner && manage_scanner_set_default ())
+    return -5;
+
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;
@@ -3583,7 +3588,13 @@ stop_task_internal (task_t task)
     {
       if (current_scanner_task == task)
         {
-          scanner_connect (task_scanner (task));
+          /* If task has no scanner, use default one. */
+          scanner_t scanner = task_scanner (task);
+
+          if (scanner && scanner_connect (scanner))
+            return -5;
+          else if (!scanner && manage_scanner_set_default ())
+            return -5;
           if (!openvas_scanner_connected ()
               && (openvas_scanner_connect () || openvas_scanner_init (0)))
             return -5;
@@ -3674,7 +3685,12 @@ pause_task (const char *task_id)
   if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return 2;
 
-  scanner_connect (scanner);
+  /* If task has no scanner, use default one. */
+  if (scanner && scanner_connect (scanner))
+    return -5;
+  else if (!scanner && manage_scanner_set_default ())
+    return -5;
+
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;
@@ -3709,6 +3725,7 @@ int
 resume_paused_task (const char *task_id)
 {
   task_t task;
+  scanner_t scanner;
   task_status_t run_status;
 
   if (user_may ("resume_paused_task") == 0)
@@ -3720,7 +3737,13 @@ resume_paused_task (const char *task_id)
   if (task == 0)
     return 3;
 
-  scanner_connect (task_scanner (task));
+  /* If task has no scanner, use default one. */
+  scanner = task_scanner (task);
+  if (scanner && scanner_connect (scanner))
+    return -5;
+  else if (!scanner && manage_scanner_set_default ())
+    return -5;
+
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;

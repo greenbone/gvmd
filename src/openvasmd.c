@@ -1805,14 +1805,6 @@ main (int argc, char** argv)
       exit (EXIT_FAILURE);
     }
 
-  /* Setup the default scanner address. */
-  if (openvas_scanner_set_address (OPENVASSD_ADDRESS, OPENVASSD_PORT))
-    {
-      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
-                  OPENVASSD_ADDRESS);
-      exit (EXIT_FAILURE);
-    }
-
   /* Setup security. */
 
   if (openvas_server_new (GNUTLS_SERVER,

@@ -1,3 +1,15 @@
+2014-06-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (scanner_connect): Adequately return value for success or
+	error.
+
+	(run_task, stop_task_internal, pause_task, resume_paused_task): Use the
+	default scanner when the task has no scanner associated. Check error
+	codes accordingly.
+
+	* src/openvasmd.c (main): Don't preemptively set the scanner's address
+	and port.
+
 2014-06-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Check if the last commands most likely failed due to a database lock
