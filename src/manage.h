@@ -3131,6 +3131,12 @@ int
 manage_user_exists (const gchar *, auth_method_t);
 
 int
+manage_scanner_set (const char *);
+
+int
+manage_scanner_set_default ();
+
+int
 copy_user (const char*, const char*, const char*, user_t*);
 
 gchar *

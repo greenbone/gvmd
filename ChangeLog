@@ -1,3 +1,23 @@
+2014-06-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (check_db_scanners): New function.
+	(check_db): Check or add default openvas scanner in db.
+	(manage_scanner_set, manage_scanner_set_default): New functions.
+	(verify_scanner): Verify openvas_scanner_set_address() return value for
+	errors.
+
+	* src/manage.h: Add functions prototypes.
+
+	* src/manage_sql.h (SCANNER_UUID_DEFAULT): New define.
+
+	* src/ompd.c (serve_omp): Connect to the default scanner in nvt cache mode.
+
+	* src/openvasmd.c (update_or_rebuild_nvt_cache): Do not attempt to
+	connect to the scanner.
+
+	* src/scanner.c (openvas_scanner_set_address): Resolve the address if
+	provided as a hostname.
+
 2014-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_user, modify_user): Validate the hosts arg.

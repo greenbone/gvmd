@@ -542,7 +542,8 @@ openvas_scanner_init (int cache_mode)
 }
 
 /**
- * @brief Set the scanner's address and port.
+ * @brief Set the scanner's address and port. Will try to resolve addr if it is
+ *        a hostname.
  *
  * @param[in]  addr     Scanner address string.
  * @param[in]  port     Scanner port.
@@ -557,7 +558,7 @@ openvas_scanner_set_address (const char *addr, int port)
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
   openvas_scanner_address.sin_family = AF_INET;
   openvas_scanner_address.sin_port = htons (port);
-  if (!inet_aton (addr, &openvas_scanner_address.sin_addr))
+  if (openvas_resolve (addr, &openvas_scanner_address.sin_addr, AF_INET))
     return -1;
 
   return 0;

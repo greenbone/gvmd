@@ -402,6 +402,18 @@ serve_omp (gnutls_session_t* client_session,
   maybe_free_scanner_preferences (); // old
 #endif
 
+  /* Setup the scanner address and try to connect. */
+  if (ompd_nvt_cache_mode)
+    {
+      if (manage_scanner_set_default ())
+        return -1;
+      if (openvas_scanner_connect () || openvas_scanner_init (1))
+        {
+          openvas_scanner_close ();
+          return -1;
+        }
+    }
+
   client_input_stalled = 0;
 
   /** @todo Confirm and clarify complications, especially last one. */

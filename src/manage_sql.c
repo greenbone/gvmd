@@ -9989,6 +9989,21 @@ check_db_targets ()
 }
 
 /**
+ * @brief Ensure the predefined scanner exists.
+ */
+static void
+check_db_scanners ()
+{
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+               SCANNER_UUID_DEFAULT) == 0)
+    sql ("INSERT INTO scanners"
+         " (uuid, owner, name, host, port, type,"
+         "  creation_time, modification_time)"
+         " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+         " 'localhost', 9391, %d, m_now (), m_now ());", SCANNER_TYPE_OPENVAS);
+}
+
+/**
  * @brief Ensure that the predefined port lists exist.
  */
 static void
@@ -11337,6 +11352,7 @@ check_db ()
   check_db_configs ();
   check_db_port_lists ();
   check_db_targets ();
+  check_db_scanners ();
   check_db_tasks ();
   if (check_db_report_formats ())
     return -1;
@@ -11834,6 +11850,64 @@ manage_user_exists (const gchar *name, auth_method_t method)
   g_free (quoted_method);
 
   return ret;
+}
+
+
+/**
+ * @brief Set the address of scanner to connect to.
+ *
+ * @param[in]  uuid     Scanner UUID.
+ *
+ * @return 0 if success, -1 if error.
+ */
+int
+manage_scanner_set (const char *uuid)
+{
+  scanner_t scanner = 0;
+  char *host;
+  int port, type;
+
+  if (uuid == NULL)
+    return -1;
+
+  if (!current_credentials.uuid)
+    current_credentials.uuid = "";
+  if (find_scanner (uuid, &scanner) || scanner == 0)
+    {
+      g_warning ("Failed to find scanner %s\n", uuid);
+      return -1;
+    }
+  if (!strcmp (current_credentials.uuid, ""))
+    current_credentials.uuid = NULL;
+
+  type = scanner_type (scanner);
+  if (type != SCANNER_TYPE_OPENVAS)
+    {
+      g_warning ("Scanner %s not an OpenVAS Scanner\n", uuid);
+      return -1;
+    }
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  if (openvas_scanner_set_address (host, port))
+    {
+      g_warning ("Failed to set %s:%d as scanner\n", host, port);
+      g_free (host);
+      return -1;
+    }
+
+  g_free (host);
+  return 0;
+}
+
+/**
+ * @brief Set the default scanner as the scanner to connect to.
+ *
+ * @return 0 if success, -1 if error.
+ */
+int
+manage_scanner_set_default ()
+{
+  return manage_scanner_set (SCANNER_UUID_DEFAULT);
 }
 
 /**
@@ -35757,9 +35831,11 @@ verify_scanner (const char *scanner_id, char **version)
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
     {
-      openvas_scanner_set_address (scanner_iterator_host (&scanner),
-                                   scanner_iterator_port (&scanner));
+      int ret = openvas_scanner_set_address (scanner_iterator_host (&scanner),
+                                             scanner_iterator_port (&scanner));
       cleanup_iterator (&scanner);
+      if (ret == -1)
+        return 2;
       if (openvas_scanner_connected ())
         openvas_scanner_close ();
       if (openvas_scanner_connect () || openvas_scanner_init (0)

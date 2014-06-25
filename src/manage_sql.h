@@ -188,6 +188,11 @@
 #define TARGET_UUID_LOCALHOST "b493b7a8-7489-11df-a3ec-002264764cea"
 
 /**
+ * @brief UUID of 'OpenVAS Default' scanner.
+ */
+#define SCANNER_UUID_DEFAULT "08b69003-5fc2-4037-a479-93b440211c73"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0

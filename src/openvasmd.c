@@ -815,19 +815,6 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
       exit (EXIT_FAILURE);
     }
 
-  /* Setup the scanner address and try to connect. */
-  if (openvas_scanner_set_address (OPENVASSD_ADDRESS, OPENVASSD_PORT))
-    {
-      g_critical ("%s: failed to create scanner address %s\n", __FUNCTION__,
-                  OPENVASSD_ADDRESS);
-      exit (EXIT_FAILURE);
-    }
-  if (openvas_scanner_connect () || openvas_scanner_init (1))
-    {
-      openvas_scanner_close ();
-      return EXIT_FAILURE;
-    }
-
   /* Call the OMP client serving function with a special client socket
    * value.  This invokes a scanner-only manager loop which will
    * request and cache the plugins, then exit. */
