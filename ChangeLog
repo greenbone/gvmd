@@ -1,3 +1,13 @@
+2014-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19753.
+
+	* src/manage_sql.c (create_user, modify_user): Validate the hosts arg.
+	This catches errors like forgotten commas in the hosts, for example.
+
+	* src/omp.c (omp_xml_handle_end_element): Handle new create_user and
+	modify_user returns.
+
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19745.
