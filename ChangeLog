@@ -1,3 +1,12 @@
+2014-06-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_get_scanners): Print both the Scanner's UUID
+	and its name.
+	(manage_delete_scanner): Don't allow deletion of the default scanner.
+
+	* doc/openvasmd.8, doc/openvasmd.8.xml, doc/openvasmd.html: Update
+	documentation.
+
 2014-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Send OWNER in both

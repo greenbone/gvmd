@@ -1120,7 +1120,8 @@ main (int argc, char** argv)
         { "create-user", '\0', 0, G_OPTION_ARG_STRING, &create_user, "Create admin user <username> and exit.", "<username>" },
         { "delete-user", '\0', 0, G_OPTION_ARG_STRING, &delete_user, "Delete user <username> and exit.", "<username>" },
         { "get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users, "List users and exit.", NULL },
-        { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner, "Create scanner <scanner> and exit.", "<scanner>" },
+        { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner,
+          "Create global scanner <scanner> and exit.", "<scanner>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
           "Scanner host for --create-scanner. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
@@ -1414,6 +1415,7 @@ main (int argc, char** argv)
           case 0:
             return EXIT_SUCCESS;
           case 2:
+          case 3:
             return EXIT_FAILURE;
           case -2:
             g_warning ("%s: database is wrong version\n", __FUNCTION__);

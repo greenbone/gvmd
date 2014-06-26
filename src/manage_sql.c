@@ -35255,9 +35255,9 @@ manage_create_scanner (GSList *log_config, const gchar *database,
  * @param[in]  database    Location of manage database.
  * @param[in]  uuid        UUID of scanner.
  *
- * @return 0 success, 2 failed to find scanner, 4 scanner has active tasks, -1 error.
- *         -2 database is wrong version, -3 database needs to be initialised
- *         from server.
+ * @return 0 success, 2 failed to find scanner, 3 scanner can't be deleted,
+ *         -1 error.  -2 database is wrong version, -3 database needs to be
+ *         initialised from server.
  */
 int
 manage_delete_scanner (GSList *log_config, const gchar *database,
@@ -35265,6 +35265,13 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 {
   const gchar *db;
   int ret;
+
+  assert (uuid);
+  if (!strcmp (uuid, SCANNER_UUID_DEFAULT))
+    {
+      printf ("Default OpenVAS Scanner can't be deleted.\n");
+      return 3;
+    }
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
                                manage_user_exists, manage_user_uuid))
@@ -47526,9 +47533,11 @@ manage_get_scanners (GSList *log_config, const gchar *database)
 
   init_manage_process (0, db);
 
-  init_iterator (&scanners, "SELECT name FROM scanners;");
+  init_iterator (&scanners, "SELECT uuid, name FROM scanners;");
   while (next (&scanners))
-    printf ("%s\n", iterator_string (&scanners, 0));
+    printf ("%s  %s\n", iterator_string (&scanners, 0),
+            iterator_string (&scanners, 1));
+
   cleanup_iterator (&scanners);
 
   cleanup_manage_process (TRUE);
