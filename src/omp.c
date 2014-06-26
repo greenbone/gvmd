@@ -10043,6 +10043,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           gchar *excerpt = utf8_substring (text, 0, 60);
           /* This must match send_get_common. */
           buffer_xml_append_printf (buffer,
+                                    "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
                                     "</nvt>"
@@ -10057,6 +10058,9 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                     "<count>%i</count>"
                                     "</user_tags>"
                                     "</note>",
+                                    get_iterator_owner_name (notes)
+                                     ? get_iterator_owner_name (notes)
+                                     : "",
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
                                     get_iterator_creation_time (notes),
@@ -10113,8 +10117,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
             get_iterator_owner_name (notes)
-            ? get_iterator_owner_name (notes)
-            : "",
+             ? get_iterator_owner_name (notes)
+             : "",
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
             get_iterator_creation_time (notes),
@@ -10296,8 +10300,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "</user_tags>"
                                     "</override>",
                                     get_iterator_owner_name (overrides)
-                                    ? get_iterator_owner_name (overrides)
-                                    : "",
+                                     ? get_iterator_owner_name (overrides)
+                                     : "",
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
                                     get_iterator_creation_time (overrides),
@@ -10306,11 +10310,11 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     strlen (excerpt) < strlen (text),
                                     excerpt,
                                     override_iterator_threat (overrides)
-                                      ? override_iterator_threat (overrides)
-                                      : "",
+                                     ? override_iterator_threat (overrides)
+                                     : "",
                                     override_iterator_severity (overrides)
-                                      ? override_iterator_severity (overrides)
-                                      : "",
+                                     ? override_iterator_severity (overrides)
+                                     : "",
                                     override_iterator_new_threat (overrides),
                                     override_iterator_new_severity (overrides),
                                     ((override_iterator_task (overrides)
@@ -10346,6 +10350,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           /* This must match send_get_common. */
           buffer_xml_append_printf
            (buffer,
+            "<owner><name>%s</name></owner>"
             "<nvt oid=\"%s\"><name>%s</name></nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
@@ -10362,6 +10367,9 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
             "<new_severity>%s</new_severity>"
             "<task id=\"%s\"><name>%s</name><trash>%i</trash></task>"
             "<orphan>%i</orphan>",
+            get_iterator_owner_name (overrides)
+             ? get_iterator_owner_name (overrides)
+             : "",
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
             get_iterator_creation_time (overrides),
