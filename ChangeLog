@@ -1,3 +1,10 @@
+2014-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19766.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Send OWNER in both
+	cases, else GSA assumes the note/override is global.
+
 2014-06-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19760.
