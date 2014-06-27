@@ -1,3 +1,11 @@
+2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Update iso_time to get
+	the required timezone according to the current user.  In SQLite the
+	user's timezone is the current timezone, but the Postgres functions run
+	on the server so they always have the server's timezone.  Use pspgsql
+	instead of plain SQL to help with reusing values in the calcuation.
+
 2014-06-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_task_check_config_scanner): New function.

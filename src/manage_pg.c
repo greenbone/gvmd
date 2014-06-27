@@ -113,25 +113,6 @@ manage_create_sql_functions ()
        "  SELECT true;"
        "$$ LANGUAGE SQL;");
 
-  sql ("CREATE OR REPLACE FUNCTION iso_time (integer) RETURNS text AS $$"
-       "  SELECT CASE"
-       "         WHEN $1 = 0 THEN ''"
-       "         WHEN extract (timezone FROM current_timestamp) = 0"
-       "         THEN to_char (to_timestamp ($1), 'FMIYYY-MM-DD')"
-       "              || to_char (to_timestamp ($1), 'FMTHH24:MI:SSZ')"
-       "         ELSE to_char (to_timestamp ($1), 'FMIYYY-MM-DD')"
-       "              || to_char (to_timestamp ($1), 'FMTHH24:MI:SS')"
-       "              || '+'"
-       "              || to_char (extract (timezone FROM to_timestamp ($1))"
-       "                          ::integer / 3600,"
-       "                          'FM00')"
-       "              || ':'"
-       "              || to_char (extract (timezone FROM to_timestamp ($1))"
-       "                          ::integer % 3600,"
-       "                          'FM00')"
-       "         END;"
-       "$$ LANGUAGE SQL;");
-
   sql ("CREATE OR REPLACE FUNCTION m_now () RETURNS integer AS $$"
        "  SELECT extract (epoch FROM now ())::integer;"
        "$$ LANGUAGE SQL;");
@@ -448,6 +429,39 @@ manage_create_sql_functions ()
     }
 
   /* Functions in pl/pgsql. */
+
+  sql ("CREATE OR REPLACE FUNCTION iso_time (seconds integer)"
+       " RETURNS text AS $$"
+       " DECLARE"
+       "   user_zone text;"
+       "   user_offset interval;"
+       " BEGIN"
+       "   user_zone := (SELECT timezone FROM users"
+       "                 WHERE uuid = (SELECT uuid"
+       "                               FROM current_credentials));"
+       "   user_offset := age (now () AT TIME ZONE user_zone,"
+       "                       now () AT TIME ZONE 'UTC');"
+       "   RETURN CASE"
+       "          WHEN $1 = 0"
+       "          THEN ''"
+       "          WHEN user_zone IS NULL"
+       "          THEN to_char (to_timestamp ($1) AT TIME ZONE 'UTC',"
+       "                        'FMIYYY-MM-DD')"
+       "               || to_char (to_timestamp ($1) AT TIME ZONE 'UTC',"
+       "                           'FMTHH24:MI:SSZ')"
+       "          ELSE to_char (to_timestamp ($1) AT TIME ZONE user_zone,"
+       "                        'FMIYYY-MM-DD')"
+       "               || to_char (to_timestamp ($1) AT TIME ZONE user_zone,"
+       "                           'FMTHH24:MI:SS')"
+       "               || '+'"
+       "               || to_char (extract (hours FROM user_offset)::integer,"
+       "                           'FM00')"
+       "               || ':'"
+       "               || to_char (extract (minutes FROM user_offset)::integer,"
+       "                           'FM00')"
+       "          END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION uniquify (type text, proposed_name text,"
        "                                     owner integer, suffix text)"
