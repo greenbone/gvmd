@@ -1,3 +1,7 @@
+2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/postgres-HOWTO: Add command to create uuid-ossp extension.
+
 2014-06-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Set all tasks to have an associated scanner.  Hence increase database

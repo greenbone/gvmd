@@ -25,6 +25,7 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 	psql tasks
 	create role dba with superuser noinherit;
 	grant dba to mattm;
+	create extension "uuid-ossp";
 
 6 Run Manager as usual.
 
