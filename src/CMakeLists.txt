@@ -161,7 +161,7 @@ install (TARGETS openvasmd
 
 if (BACKEND STREQUAL POSTGRESQL)
   install (TARGETS manage-pg-server
-           LIBRARY DESTINATION "${OPENVAS_STATE_DIR}/pg/")
+           LIBRARY DESTINATION "${OPENVAS_STATE_DIR}/openvasmd/pg/")
 endif (BACKEND STREQUAL POSTGRESQL)
 
 ## Static analysis
