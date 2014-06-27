@@ -2891,6 +2891,7 @@ run_osp_task (task_t task, char **report_id)
   report_t report;
 
   scanner = task_scanner (task);
+  assert (scanner);
   host = scanner_host (scanner);
   port = scanner_port (scanner);
   connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
@@ -2987,13 +2988,12 @@ run_task (const char *task_id, char **report_id, int from,
     return 4;
 
   scanner = task_scanner (task);
-  if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
+  assert (scanner);
+  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task, report_id);
 
   /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
-  if (scanner && scanner_connect (scanner))
-    return -5;
-  else if (!scanner && manage_scanner_set_default ())
+  if (scanner_connect (scanner))
     return -5;
 
   if (!openvas_scanner_connected ()
@@ -3591,7 +3591,8 @@ stop_task_internal (task_t task)
           /* If task has no scanner, use default one. */
           scanner_t scanner = task_scanner (task);
 
-          if (scanner && scanner_connect (scanner))
+          assert (scanner);
+          if (scanner_connect (scanner))
             return -5;
           else if (!scanner && manage_scanner_set_default ())
             return -5;
@@ -3682,13 +3683,12 @@ pause_task (const char *task_id)
     return 3;
 
   scanner = task_scanner (task);
-  if (scanner && scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
+  assert (scanner);
+  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return 2;
 
   /* If task has no scanner, use default one. */
   if (scanner && scanner_connect (scanner))
-    return -5;
-  else if (!scanner && manage_scanner_set_default ())
     return -5;
 
   if (!openvas_scanner_connected ()
@@ -3739,11 +3739,9 @@ resume_paused_task (const char *task_id)
 
   /* If task has no scanner, use default one. */
   scanner = task_scanner (task);
-  if (scanner && scanner_connect (scanner))
+  assert (scanner);
+  if (scanner_connect (scanner))
     return -5;
-  else if (!scanner && manage_scanner_set_default ())
-    return -5;
-
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;

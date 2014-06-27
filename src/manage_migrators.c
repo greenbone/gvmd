@@ -9187,6 +9187,42 @@ migrate_127_to_128 ()
 }
 
 /**
+ * @brief Migrate the database from version 128 to version 129.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_128_to_129 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 128. */
+
+  if (manage_db_version () != 128)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Tasks with no Scanner should use the default one. */
+
+  check_db_scanners ();
+  sql ("UPDATE tasks SET scanner ="
+       " (SELECT id FROM scanners WHERE uuid = '" SCANNER_UUID_DEFAULT "')"
+       " WHERE scanner = 0 OR scanner IS NULL;");
+
+  /* Set the database version to 129. */
+
+  set_db_version (129);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9319,6 +9355,7 @@ static migrator_t database_migrators[]
     {126, migrate_125_to_126},
     {127, migrate_126_to_127},
     {128, migrate_127_to_128},
+    {129, migrate_128_to_129},
     /* End marker. */
     {-1, NULL}};
 

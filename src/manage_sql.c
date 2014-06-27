@@ -10002,7 +10002,7 @@ check_db_targets ()
 /**
  * @brief Ensure the predefined scanner exists.
  */
-static void
+void
 check_db_scanners ()
 {
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",

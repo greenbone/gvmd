@@ -1,3 +1,20 @@
+2014-06-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Set all tasks to have an associated scanner.  Hence increase database
+	version to 129.  Add database migration from version 128 to 129.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 129.
+
+	* src/manage_migrators.c (migrate_128_to_129): New function.
+	(database_migrators): Add migrate_128_to_129.
+
+	* src/manage_sql.c (check_db_scanners): Export function.
+	(run_osp_task, run_task, stop_task_internal, pause_task)
+	(resume_paused_task): Check that the task has an associated scanner.
+	Adjust the functions accordingly.
+
+	* src/manage.h: Add function prototype.
+
 2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Update iso_time to get
