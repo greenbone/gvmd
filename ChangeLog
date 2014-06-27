@@ -1,5 +1,10 @@
 2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_get_iterator): Remove extra_tables arg, which
+	was always NULL.  Update callers.
+
+2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/CMakeLists.txt: Add "openvasmd" to manage-pg-server destination.
 
 2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>

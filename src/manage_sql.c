@@ -3964,8 +3964,6 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
- * @param[in]  extra_tables    Join tables.  Skipped for trash and single
- *                             resource.
  * @param[in]  extra_where     Extra WHERE clauses.  Skipped for single
  *                             resource.
  * @param[in]  owned           Only get items owned by the current user.
@@ -3977,8 +3975,7 @@ static int
 init_get_iterator (iterator_t* iterator, const char *type,
                    const get_data_t *get, const char *columns,
                    const char *trash_columns, const char **filter_columns,
-                   int distinct, const char *extra_tables,
-                   const char *extra_where, int owned)
+                   int distinct, const char *extra_where, int owned)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
@@ -4102,7 +4099,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
     {
       init_iterator (iterator,
                    "SELECT%s %s"
-                   " FROM %ss%s"
+                   " FROM %ss"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s"
@@ -4110,7 +4107,6 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    distinct ? " DISTINCT" : "",
                    columns,
                    type,
-                   extra_tables ? extra_tables : "",
                    owned_clause,
                    clause ? " AND (" : "",
                    clause ? clause : "",
@@ -6397,7 +6393,6 @@ init_alert_iterator (iterator_t* iterator, const get_data_t *get)
                             ALERT_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
-                            NULL,
                             NULL,
                             TRUE);
 }
@@ -8716,7 +8711,6 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                              : TASK_ITERATOR_TRASH_COLUMNS ("0"),
                             filter_columns,
                             0,
-                            NULL,
                             (get->id
                              && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
                                  == 0))
@@ -14951,7 +14945,6 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             NULL,
                             filter_columns,
                             0,
-                            NULL,
                             get->trash
                              ? " AND (SELECT hidden FROM tasks"
                                "      WHERE tasks.id = task)"
@@ -26424,7 +26417,6 @@ init_target_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -27776,7 +27768,6 @@ init_config_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -28978,7 +28969,6 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
                            NULL,
                            0);
 
@@ -31979,7 +31969,6 @@ init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -33214,7 +33203,6 @@ init_agent_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -34069,7 +34057,6 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            NOTE_ITERATOR_TRASH_COLUMNS,
                            filter_columns,
                            task || nvt,
-                           NULL,
                            result_clause,
                            TRUE);
 
@@ -35045,7 +35032,6 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                            OVERRIDE_ITERATOR_TRASH_COLUMNS,
                            filter_columns,
                            task || nvt,
-                           NULL,
                            result_clause,
                            TRUE);
 
@@ -35643,7 +35629,7 @@ init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
 
   return init_get_iterator (iterator, "scanner", get, SCANNER_ITERATOR_COLUMNS,
                             SCANNER_ITERATOR_TRASH_COLUMNS, filter_columns, 0,
-                            NULL, NULL, TRUE);
+                            NULL, TRUE);
 }
 
 /**
@@ -36321,7 +36307,6 @@ init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
                             SCHEDULE_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
-                            NULL,
                             NULL,
                             TRUE);
 }
@@ -39018,7 +39003,6 @@ init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -39790,7 +39774,6 @@ init_slave_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -40532,7 +40515,6 @@ init_group_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -41247,7 +41229,6 @@ init_permission_iterator (iterator_t* iterator, const get_data_t *get)
                             PERMISSION_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
-                            NULL,
                             NULL,
                             TRUE);
 }
@@ -42788,7 +42769,6 @@ init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -43686,7 +43666,6 @@ init_role_iterator (iterator_t* iterator, const get_data_t *get)
                             role_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -44194,7 +44173,6 @@ init_filter_iterator (iterator_t* iterator, const get_data_t *get)
                             FILTER_ITERATOR_TRASH_COLUMNS,
                             filter_columns,
                             0,
-                            NULL,
                             NULL,
                             TRUE);
 }
@@ -46637,7 +46615,6 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -46702,7 +46679,6 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -46903,7 +46879,6 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -47072,7 +47047,6 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
                            clause,
                            FALSE);
   g_free (clause);
@@ -48618,7 +48592,6 @@ init_user_iterator (iterator_t* iterator, const get_data_t *get)
                             user_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -49240,7 +49213,6 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
                             filter_columns,
                             0,
                             NULL,
-                            NULL,
                             TRUE);
 }
 
@@ -49365,7 +49337,6 @@ init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
                             TAG_NAME_ITERATOR_COLUMNS,
                             filter_columns,
                             1,
-                            NULL,
                             NULL,
                             TRUE);
 }
