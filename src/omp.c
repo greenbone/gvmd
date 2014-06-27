@@ -20826,14 +20826,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           /* Check for the right combination of target and config. */
 
           if (create_task_data->config_id == NULL
-              || create_task_data->target_id == NULL)
+              || create_task_data->target_id == NULL
+              || create_task_data->scanner_id == NULL)
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "CREATE_TASK requires both a config"
-                                  " and a target"));
+                                  "CREATE_TASK requires a config"
+                                  " a scanner, and a target"));
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
@@ -21078,8 +21079,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          else if (create_task_data->scanner_id
-                   && find_scanner (create_task_data->scanner_id, &scanner))
+          else if (find_scanner (create_task_data->scanner_id, &scanner))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -21105,10 +21105,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-          else if ((config_type (config) == 1
-                    && scanner_type (scanner) != SCANNER_TYPE_OSP_OVALDI)
-                   || (config_type (config) == 0 && scanner
-                       && scanner_type (scanner) != SCANNER_TYPE_OPENVAS))
+          else if (!create_task_check_config_scanner (config, scanner))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
@@ -24143,7 +24140,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                     if (strcmp (modify_task_data->scanner_id, "0") == 0)
                       {
-                        set_task_scanner (task, 0);
+                        /* Leave it as is. */
                       }
                     else if ((fail = (task_run_status (task)
                                       != TASK_STATUS_NEW

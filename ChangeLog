@@ -1,3 +1,12 @@
+2014-06-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_task_check_config_scanner): New function.
+
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Make scanner mandatory in task
+	creation and modification.
+
 2014-06-26  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_get_scanners): Print both the Scanner's UUID

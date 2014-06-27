@@ -27369,6 +27369,33 @@ config_nvt_timeout (config_t config, const char *oid)
 /**
  * @brief Check scanner and config values match for a task.
  *
+ * @param[in]  config       Scan Config.
+ * @param[in]  scanner      Scanner.
+ *
+ * @return 1 if config and scanner types match, 0 otherwise.
+ */
+int
+create_task_check_config_scanner (config_t config, scanner_t scanner)
+{
+  int ctype, stype;
+
+  assert (config);
+  assert (scanner);
+
+  ctype = config_type (config);
+  stype = scanner_type (scanner);
+
+  if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
+    return 1;
+  if (ctype == 1 && stype == SCANNER_TYPE_OSP_OVALDI)
+    return 1;
+
+  return 0;
+}
+
+/**
+ * @brief Check scanner and config values match for a task.
+ *
  * @param[in]  task         Task.
  * @param[in]  config_id    ID of config. "0" to use task's config.
  * @param[in]  scanner_id   ID of scanner.
