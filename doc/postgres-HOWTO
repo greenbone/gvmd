@@ -27,9 +27,13 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 	grant dba to mattm;
 	create extension "uuid-ossp";
 
-6 Run Manager as usual.
+6 Make Postgres aware of the openvas libraries if not installed
+  in a ld-aware directory. For example create file /etc/ld.so.conf.d/openvas.conf
+  with apropriate path and then run ldconfig.
 
-7 To run SQL on the the database.
+7 Run Manager as usual.
+
+8 To run SQL on the the database.
 
 	psql tasks
 
