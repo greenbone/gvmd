@@ -1,3 +1,8 @@
+2014-06-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_migrators.c (migrate_128_to_129): Use current sql instead
+	of calling check_db_scanners() as the function may change in the future.
+
 2014-06-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Remove extra_tables arg, which

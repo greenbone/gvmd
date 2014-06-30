@@ -9206,9 +9206,16 @@ migrate_128_to_129 ()
 
   /* Update the database. */
 
-  /* Tasks with no Scanner should use the default one. */
+  /* Insert the default OpenVAS Scanner, if not present. */
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+               SCANNER_UUID_DEFAULT) == 0)
+    sql ("INSERT INTO scanners"
+         " (uuid, owner, name, host, port, type,"
+         "  creation_time, modification_time)"
+         " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+         " 'localhost', 9391, %d, m_now (), m_now ());", SCANNER_TYPE_OPENVAS);
 
-  check_db_scanners ();
+  /* Tasks with no Scanner should use the default one. */
   sql ("UPDATE tasks SET scanner ="
        " (SELECT id FROM scanners WHERE uuid = '" SCANNER_UUID_DEFAULT "')"
        " WHERE scanner = 0 OR scanner IS NULL;");
