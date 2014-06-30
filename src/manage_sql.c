@@ -35305,6 +35305,9 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
       case 0:
         printf ("Scanner deleted.\n");
         break;
+      case 1:
+        printf ("Scanner in use.\n");
+        break;
       case 2:
         printf ("Failed to find scanner.\n");
         break;
@@ -35521,7 +35524,8 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
  * @param[in]  scanner_id   UUID of scanner.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
  *
- * @return 0 success, 2 failed to find scanner, 99 permission denied, -1 error.
+ * @return 0 success, 1 scanner in use, 2 failed to find scanner, 99 permission
+ *         denied, -1 error.
  */
 int
 delete_scanner (const char *scanner_id, int ultimate)
@@ -35568,6 +35572,9 @@ delete_scanner (const char *scanner_id, int ultimate)
       sql ("COMMIT;");
       return 0;
     }
+
+  if (scanner_in_use (scanner))
+    return 1;
 
   if (ultimate == 0)
     {

@@ -1,5 +1,13 @@
 2014-06-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (delete_scanner): Don't allow deleting a scanner in
+	use. Update function documentation accordingly.
+	(manage_delete_scanner): Handle new return code.
+
+	* src/main.c (manage_delete_scanner): Handle new return code.
+
+2014-06-30  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_migrators.c (migrate_128_to_129): Use current sql instead
 	of calling check_db_scanners() as the function may change in the future.
 

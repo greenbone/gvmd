@@ -1414,6 +1414,7 @@ main (int argc, char** argv)
         {
           case 0:
             return EXIT_SUCCESS;
+          case 1:
           case 2:
           case 3:
             return EXIT_FAILURE;
