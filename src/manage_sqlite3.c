@@ -451,7 +451,7 @@ sql_tag (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Return number of hosts.
  *
- * This is a callback for a scalar SQL function of one argument.
+ * This is a callback for a scalar SQL function of two arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.

@@ -1,5 +1,9 @@
 2014-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (sql_tag): Correct doc.
+
+2014-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	For Postgres add actual max_hosts implementation, and get next_time
 	working.
 
