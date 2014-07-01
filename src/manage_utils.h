@@ -35,4 +35,7 @@ time_t months_between (time_t, time_t);
 time_t
 next_time (time_t, int, int);
 
+int
+manage_count_hosts_FIX (const char *, const char *);
+
 #endif /* not OPENVAS_MANAGER_MANAGE_UTILS_H */

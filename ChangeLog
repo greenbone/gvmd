@@ -1,3 +1,19 @@
+2014-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	For Postgres add actual max_hosts implementation, and get next_time
+	working.
+
+	* src/manage_pg.c (manage_create_sql_functions): Implement max_hosts,
+	as a C function.  Remove STRICT from next_time.
+
+	* src/manage_pg_server.c (sql_next_time): Correct name in
+	PG_FUNCTION_INFO_V1.
+	(textndup, sql_max_hosts): New function.
+
+	* src/manage_utils.c (manage_count_hosts_FIX): New function.
+
+	* src/manage_utils.h: Add header accordingly.
+
 2014-06-30  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* doc/postgres-HOWTO: Added item about library path for postgres.

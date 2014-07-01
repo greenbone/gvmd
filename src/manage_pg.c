@@ -72,7 +72,6 @@ manage_create_sql_functions ()
 {
 #if 0
   empty below, hard to implement
-    max_hosts (calls lib hosts functions)
     task_trend
     task_threat_level
     task_severity
@@ -106,6 +105,7 @@ manage_create_sql_functions ()
     uniquify (given table type, will need exec)
 
   server side below
+    max_hosts
     next_time
 #endif
 
@@ -236,12 +236,6 @@ manage_create_sql_functions ()
          "                                           = $1))))"
          "  AND name = 'Everything';"
          "$$ LANGUAGE SQL;");
-
-  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
-       " RETURNS text AS $$"
-       /* TODO Return number of hosts. */
-       "  SELECT '0'::text;"
-       "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION group_concat_pair (text, text, text)"
        " RETURNS text AS $$"
@@ -492,10 +486,16 @@ manage_create_sql_functions ()
 
   sql ("SET role dba;");
 
+  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
+       " RETURNS integer"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_max_hosts'"
+       " LANGUAGE C;",
+       OPENVAS_STATE_DIR);
+
   sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
        " RETURNS integer"
        " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
-       " LANGUAGE C STRICT;",
+       " LANGUAGE C;",
        OPENVAS_STATE_DIR);
 
   sql ("RESET role;");

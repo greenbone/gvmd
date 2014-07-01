@@ -27,6 +27,8 @@
 
 #include <assert.h>
 
+#include <openvas/base/openvas_hosts.h>
+
 /**
  * @file  manage_utils.c
  * @brief The OpenVAS Manager management library.
@@ -169,4 +171,33 @@ next_time (time_t first, int period, int period_months)
         return add_months (first, periods_diff * period_months);
     }
   return 0;
+}
+
+/**
+ * @brief Return number of hosts described by a hosts string.
+ *
+ * @param[in]  given_hosts      String describing hosts.
+ * @param[in]  exclude_hosts    String describing hosts excluded from given set.
+ *
+ * @return Number of hosts, or -1 on error.
+ */
+int
+manage_count_hosts_FIX (const char *given_hosts, const char *exclude_hosts)
+{
+  int count;
+  openvas_hosts_t *hosts;
+
+  // FIX 4095 s/b manage_max_host () but this is used on pg side
+  hosts = openvas_hosts_new_with_max (given_hosts, 4095);
+  if (hosts == NULL)
+    return -1;
+
+  if (exclude_hosts)
+    /* Don't resolve hostnames in excluded hosts. */
+    openvas_hosts_exclude (hosts, exclude_hosts, 0);
+
+  count = openvas_hosts_count (hosts);
+  openvas_hosts_free (hosts);
+
+  return count;
 }
