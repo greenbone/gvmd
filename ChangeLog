@@ -1,3 +1,11 @@
+2014-07-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS, send the scanner
+	type too.
+
+	* src/manage_sql.c (modify_task_check_config_scanner): Handle unchanging
+	config and scanner case.
+
 2014-07-02  Henri Doreau <henri.doreau@gmail.com>
 
 	* CMakeLists.txt, src/CMakeLists.txt: Properly handle libgcrypt compile

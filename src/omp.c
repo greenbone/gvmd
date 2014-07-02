@@ -16489,7 +16489,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int target_in_trash, schedule_in_trash;
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2, infos_2, warnings_2;
-              int false_positives;
+              int false_positives, task_scanner_type;
               double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
@@ -16784,16 +16784,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   schedule_in_trash = 0;
                 }
               scanner = task_scanner (index);
-              if (scanner)
-                {
-                  task_scanner_uuid = scanner_uuid (scanner);
-                  task_scanner_name = scanner_name (scanner);
-                }
-              else
-                {
-                  task_scanner_uuid = g_strdup ("");
-                  task_scanner_name = g_strdup ("");
-                }
+              task_scanner_uuid = scanner_uuid (scanner);
+              task_scanner_name = scanner_name (scanner);
+              task_scanner_type = scanner_type (scanner);
               next_time = task_schedule_next_time_tz (index);
               scanner = task_iterator_scanner (&tasks);
               response = g_strdup_printf
@@ -16808,7 +16801,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "</target>"
                            "<hosts_ordering>%s</hosts_ordering>"
-                           "<scanner id='%s'><name>%s</name></scanner>"
+                           "<scanner id='%s'><name>%s</name>"
+                           "<type>%d</type></scanner>"
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
@@ -16838,6 +16832,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_iterator_hosts_ordering (&tasks),
                            task_scanner_uuid,
                            task_scanner_name,
+                           task_scanner_type,
                            task_slave_uuid ?: "",
                            task_slave_name ?: "",
                            task_slave_in_trash (index),

@@ -27405,6 +27405,9 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
   if (config_id == NULL && scanner_id == NULL)
     return 1;
 
+  if (!strcmp (config_id, "0") && !strcmp (scanner_id, "0"))
+    return 1;
+
   if (strcmp (config_id, "0"))
     find_config_with_permission (config_id, &config, "get_configs");
   else
