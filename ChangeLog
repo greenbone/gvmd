@@ -1,3 +1,7 @@
+2014-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_128_to_129): Ensure table exists.
+
 2014-07-02  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS, send the scanner
