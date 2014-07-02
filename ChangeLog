@@ -1,3 +1,8 @@
+2014-07-02  Henri Doreau <henri.doreau@gmail.com>
+
+	* CMakeLists.txt, src/CMakeLists.txt: Properly handle libgcrypt compile
+	switches.
+
 2014-07-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (sql_tag): Correct doc.

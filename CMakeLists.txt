@@ -261,6 +261,13 @@ execute_process (COMMAND pkg-config --libs gnutls
   OUTPUT_VARIABLE GNUTLS_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+execute_process (COMMAND libgcrypt-config --cflags
+  OUTPUT_VARIABLE GCRYPT_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND libgcrypt-config --libs
+  OUTPUT_VARIABLE GCRYPT_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 if (BACKEND STREQUAL SQLITE3)
   execute_process (COMMAND pkg-config --cflags sqlite3
     OUTPUT_VARIABLE SQLITE3_CFLAGS

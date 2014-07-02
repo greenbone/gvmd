@@ -68,7 +68,7 @@ set_target_properties (otp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CF
 ## Program
 
 add_executable (openvasmd openvasmd.c ompd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage "${GNUTLS_LDFLAGS}")
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage "${GNUTLS_LDFLAGS} ${GCRYPT_LDFLAGS}")
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 
@@ -146,10 +146,10 @@ endif (SBINDIR)
 
 if (BACKEND STREQUAL SQLITE3)
   set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+						 "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${GCRYPT_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 else (BACKEND STREQUAL SQLITE3)
   set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "-I${POSTGRESQL_CFLAGS} ${GNUTLS_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+						 "-I${POSTGRESQL_CFLAGS} ${GNUTLS_CFLAGS} ${GCRYPT_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 endif (BACKEND STREQUAL SQLITE3)
 
 ## Install
