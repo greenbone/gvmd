@@ -1,3 +1,14 @@
+2014-07-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/ompd.c (serve_omp): In NVT cache mode, do not attempt to connect
+	to the default scanner if already connected to another one.
+
+	* src/openvasmd.c (main): Take into account --scanner-port and
+	--scanner-host options when using --rebuild and --update.
+
+	* doc/openvasmd.8, doc/openvasmd.html, doc/openvasmd.8.xml: Update
+	documentation.
+
 2014-07-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_128_to_129): Ensure table exists.

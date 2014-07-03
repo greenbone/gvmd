@@ -88,12 +88,16 @@
 
     <option>
       <p><opt>--scanner-host=<arg>HOST</arg></opt></p>
-      <optdesc><p>Host for --create-scanner option.</p></optdesc>
+      <optdesc>
+        <p>Scanner host for --create-scanner, --rebuild and --update. Default is 127.0.0.1.</p>
+      </optdesc>
     </option>
 
     <option>
       <p><opt>--scanner-port=<arg>PORT</arg></opt></p>
-      <optdesc><p>Port for --create-scanner option.</p></optdesc>
+      <optdesc>
+        <p>Scanner port for --create-scanner, --rebuild and --update. Default is 9391.</p>
+      </optdesc>
     </option>
 
     <option>

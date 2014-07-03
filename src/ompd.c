@@ -403,8 +403,11 @@ serve_omp (gnutls_session_t* client_session,
 #endif
 
   /* Setup the scanner address and try to connect. */
-  if (ompd_nvt_cache_mode)
+  if (ompd_nvt_cache_mode && !openvas_scanner_connected ())
     {
+      /* Is here because it queries the DB and needs it initialized.
+       * XXX: Move outside serve_omp ().
+       */
       if (manage_scanner_set_default ())
         return -1;
       if (openvas_scanner_connect () || openvas_scanner_init (1))

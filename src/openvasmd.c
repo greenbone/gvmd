@@ -1123,10 +1123,10 @@ main (int argc, char** argv)
         { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner,
           "Create global scanner <scanner> and exit.", "<scanner>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
-          "Scanner host for --create-scanner. Default is " OPENVASSD_ADDRESS ".",
+          "Scanner host for --create-scanner, --rebuild and --update. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
         { "scanner-port", '\0', 0, G_OPTION_ARG_STRING, &scanner_port,
-          "Scanner port for --create-scanner. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
+          "Scanner port for --create-scanner, --rebuild and --update. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
           "Scanner type for --create-scanner. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.",
@@ -1604,6 +1604,29 @@ main (int argc, char** argv)
       /* Run the NVT caching manager: update NVT cache and then exit. */
       int ret;
 
+      /* If --scanner-host or --scanner-port are provided, use these, instead of
+       * the default scanner.
+       */
+      if (scanner_host || scanner_port)
+        {
+          if (!scanner_host)
+            scanner_host = OPENVASSD_ADDRESS;
+          if (!scanner_port)
+            scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+          if (openvas_scanner_set_address (scanner_host, atoi (scanner_port)))
+            {
+              g_warning ("Failed to set %s:%s as scanner\n", scanner_host,
+                         scanner_port);
+              return EXIT_FAILURE;
+            }
+
+          if (openvas_scanner_connect () || openvas_scanner_init (1))
+            {
+              openvas_scanner_close ();
+              return EXIT_FAILURE;
+            }
+        }
+
       if (progress)
         {
           if (update_nvt_cache)
@@ -1612,8 +1635,7 @@ main (int argc, char** argv)
             printf ("Rebuilding NVT cache... \\");
           fflush (stdout);
         }
-      ret = rebuild_nvt_cache_retry (update_nvt_cache,
-                                     1,
+      ret = rebuild_nvt_cache_retry (update_nvt_cache, 1,
                                      progress ? spin_progress : NULL);
       if (progress)
         {
