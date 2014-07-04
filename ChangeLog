@@ -1,3 +1,8 @@
+2014-07-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS, adjust scanner
+	element values when task is of type container.
+
 2014-07-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/ompd.c (serve_omp): In NVT cache mode, do not attempt to connect

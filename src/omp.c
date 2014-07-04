@@ -16784,9 +16784,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   schedule_in_trash = 0;
                 }
               scanner = task_scanner (index);
-              task_scanner_uuid = scanner_uuid (scanner);
-              task_scanner_name = scanner_name (scanner);
-              task_scanner_type = scanner_type (scanner);
+              if (scanner)
+                {
+                  task_scanner_uuid = scanner_uuid (scanner);
+                  task_scanner_name = scanner_name (scanner);
+                  task_scanner_type = scanner_type (scanner);
+                }
+              else
+                {
+                  /* Container tasks have no associated scanner. */
+                  task_scanner_uuid = g_strdup ("");
+                  task_scanner_name = g_strdup ("");
+                  task_scanner_type = 0;
+                }
               next_time = task_schedule_next_time_tz (index);
               scanner = task_iterator_scanner (&tasks);
               response = g_strdup_printf
