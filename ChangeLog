@@ -1,3 +1,11 @@
+2014-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19826.
+
+	* src/manage_sql.c (escalate_2): Use the value of alert method data
+	'verinice_server_report_format' to get the report format, if the method
+	data is set.
+
 2014-06-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19766.

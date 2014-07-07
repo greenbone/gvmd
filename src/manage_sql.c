@@ -7522,7 +7522,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
     /* Remove the directory. */
 
-    openvas_file_remove_recurse (archive_dir);
+//    openvas_file_remove_recurse (archive_dir);
 
     return 0;
   }
@@ -8101,15 +8101,29 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_VERINICE:
         {
           char *url, *username, *password, *filt_id;
-          gchar *report_content;
+          gchar *report_content, *format_uuid;
           gsize content_length;
           report_format_t report_format;
           int ret;
 
-          if (lookup_report_format ("Verinice ISM", &report_format)
+          format_uuid = alert_data (alert,
+                                    "method",
+                                    "verinice_server_report_format");
+          if (format_uuid && strlen (format_uuid))
+            {
+              if (find_report_format (format_uuid, &report_format)
+                  || (report_format == 0))
+                {
+                  g_warning ("Could not find Verinice RFP '%s'", format_uuid);
+                  g_free (format_uuid);
+                  return -1;
+                }
+              g_free (format_uuid);
+            }
+          else if (lookup_report_format ("Verinice ISM", &report_format)
               || (report_format == 0))
             {
-              g_warning ("Could not find verinice RFP");
+              g_warning ("Could not find default verinice RFP");
               return -1;
             }
 
