@@ -9915,13 +9915,14 @@ check_db_tasks ()
       == 0)
     {
       sql ("INSERT into tasks (uuid, owner, name, hidden, comment,"
-           " run_status, start_time, end_time, config, target, slave,"
+           " run_status, start_time, end_time, config, target, scanner, slave,"
            " alterable, creation_time, modification_time)"
            " VALUES ('" MANAGE_EXAMPLE_TASK_UUID "', NULL, 'Example task',"
            " 1, 'This is an example task for the help pages.', %u,"
            " 1251236905, 1251237136,"
            " (SELECT id FROM configs WHERE name = 'Full and fast'),"
            " (SELECT id FROM targets WHERE name = 'Localhost'),"
+           " (SELECT id FROM scanners WHERE uuid = '" SCANNER_UUID_DEFAULT "'),"
            " 0, 0, m_now (), m_now ());",
            TASK_STATUS_DONE);
     }

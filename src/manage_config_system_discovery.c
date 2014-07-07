@@ -48,10 +48,10 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
 
   sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
-       " creation_time, modification_time)"
+       " type, creation_time, modification_time)"
        " VALUES ('%s', 'System Discovery', NULL,"
        "         '%s', 'Network System Discovery scan configuration.',"
-       "         0, 0, 0, 0, m_now (), m_now ());",
+       "         0, 0, 0, 0, 0, m_now (), m_now ());",
        uuid,
        selector_name);
 

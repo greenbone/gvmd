@@ -1,3 +1,16 @@
+2014-07-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/make_config_discovery.c (make_config_discovery): Add config type.
+
+	* src/manage_config_host_discovery.c (make_config_host_discovery): Add
+	config type.
+
+	* src/manage_config_system_discovery.c (make_config_system_discovery):
+	Add config type.
+
+	* src/manage_sql.c (check_db_tasks): Add default scanner for the example
+	task.
+
 2014-07-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In GET_TASKS, adjust scanner
