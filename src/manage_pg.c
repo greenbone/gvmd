@@ -84,7 +84,6 @@ manage_create_sql_functions ()
     resource_exists (only used in migrator (given table type, will need exec))
 
   can duplicate
-    hosts_contains
     clean_hosts  (only used in migrator)
     common_cve
     current_offset (only used in migrator (maybe with SHOW TIMEZONE and hairy date stuff))
@@ -92,6 +91,7 @@ manage_create_sql_functions ()
     severity_to_type
 
   duplicated below
+    hosts_contains
     resource_name
     run_status_name
     severity_in_level
@@ -122,6 +122,13 @@ manage_create_sql_functions ()
       g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
       return -1;
     }
+
+  sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
+       " RETURNS boolean AS $$"
+       /* Check if a host list contains a host. */
+       "  SELECT trim ($2)"
+       "         IN (SELECT trim (unnest (string_to_array ($1, ','))));"
+       "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION make_uuid () RETURNS text AS $$"
        "  SELECT uuid_generate_v4 ()::text AS result;"

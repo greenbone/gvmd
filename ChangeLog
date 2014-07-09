@@ -1,5 +1,9 @@
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (manage_create_sql_functions): Add hosts_contains.
+
+2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (columns_select_column): Add check for filter
 	columns that have been prefixed with underscore to differentiate them
 	from columns that have the same name.
