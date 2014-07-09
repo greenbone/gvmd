@@ -2411,6 +2411,11 @@ columns_select_column (column_t *select_columns, const char *filter_column)
       if ((*columns).filter
           && strcmp ((*columns).filter, filter_column) == 0)
         return (*columns).select;
+      if ((*columns).filter
+          && *((*columns).filter)
+          && *((*columns).filter) == '_'
+          && strcmp (((*columns).filter) + 1, filter_column) == 0)
+        return (*columns).select;
       columns++;
     }
   columns = select_columns;
