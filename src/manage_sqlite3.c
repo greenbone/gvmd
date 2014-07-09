@@ -836,7 +836,7 @@ sql_report_progress (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Calculate the severity of a report.
  *
- * This is a callback for a scalar SQL function of one argument.
+ * This is a callback for a scalar SQL function of two argument.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.

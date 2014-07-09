@@ -1,5 +1,9 @@
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (sql_report_progress): Correct doc.
+
+2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add dummy functions for
 	task_trend, task_threat_level and task_severity, so that the Reports
 	page loads.
