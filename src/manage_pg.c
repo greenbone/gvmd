@@ -72,15 +72,13 @@ manage_create_sql_functions ()
 {
 #if 0
   empty below, hard to implement
-    task_trend
-    task_threat_level
-    task_severity
-
-  hard to implement
     report_progress  calls manage_count_hosts which calls libs host funcs
                      also does iterated progress calc
     report_severity  result counting with caching
     report_severity_count  result counting with caching
+    task_trend
+    task_threat_level
+    task_severity
 
   can duplicate with pl/pgsql probably
     resource_exists (only used in migrator (given table type, will need exec))
@@ -94,7 +92,6 @@ manage_create_sql_functions ()
     severity_to_type
 
   duplicated below
-    iso_time
     resource_name
     run_status_name
     severity_in_level
@@ -102,6 +99,7 @@ manage_create_sql_functions ()
     user_can_everything
 
   duplicated with pl/pgsql below
+    iso_time
     uniquify (given table type, will need exec)
 
   server side below
@@ -134,6 +132,25 @@ manage_create_sql_functions ()
        "  SELECT split_part (unnest, '=', 2)"
        "  FROM unnest (string_to_array ($1, '|'))"
        "  WHERE split_part (unnest, '=', 1) = $2;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
+       " RETURNS integer AS $$"
+       /* TODO Calculate the progress of a report. */
+       "  SELECT 0;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION report_severity (integer, integer)"
+       " RETURNS double precision AS $$"
+       /* TODO Calculate the severity of a report. */
+       "  SELECT CAST (0.0 AS double precision);"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION"
+       " report_severity_count (integer, integer, text)"
+       " RETURNS integer AS $$"
+       /* TODO Calculate the severity of a report. */
+       "  SELECT 0;"
        "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
@@ -1190,8 +1207,8 @@ create_tables ()
        "  hosts text,"
        "  port text,"
        "  severity text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS notes_trash"
@@ -1205,8 +1222,8 @@ create_tables ()
        "  hosts text,"
        "  port text,"
        "  severity text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS overrides"
@@ -1221,8 +1238,8 @@ create_tables ()
        "  new_severity text,"
        "  port text,"
        "  severity text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS overrides_trash"
@@ -1237,8 +1254,8 @@ create_tables ()
        "  new_severity text,"
        "  port text,"
        "  severity text,"
-       "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT,"
+       "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS permissions"
