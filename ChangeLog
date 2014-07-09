@@ -1,5 +1,12 @@
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (underscore_sql_quote): Remove.  No longer used.
+	(filter_clause): Lookup column from filter column in all cases.
+	(PERMISSION_ITERATOR_COLUMNS, PERMISSION_ITERATOR_TRASH_COLUMNS): Make
+	spacing consistent.
+
+2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (sql_report_progress): Correct doc.
 
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -2385,23 +2385,6 @@ get_join (int first, int last_was_and, int last_was_not)
 }
 
 /**
- * @brief SQL quote string after prepending an underscore.
- *
- * @param[in]  string  String.
- *
- * @return Quoted string with leading underscore.
- */
-static gchar *
-underscore_sql_quote (const char *string)
-{
-  gchar *under, *quoted_under;
-  under = g_strdup_printf ("_%s", string);
-  quoted_under = sql_quote (under);
-  g_free (under);
-  return quoted_under;
-}
-
-/**
  * @brief Iterator column.
  */
 typedef struct
@@ -2525,7 +2508,7 @@ filter_clause (const char* type, const char* filter,
   first_order = 1;
   while (*point)
     {
-      gchar *quoted_keyword, *quoted_column;
+      gchar *quoted_keyword;
       int index;
       keyword_t *keyword;
 
@@ -3065,6 +3048,7 @@ filter_clause (const char* type, const char* filter,
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
         {
+          gchar *column;
           int ret;
 
           if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
@@ -3076,35 +3060,33 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          // FIX select_column
-          quoted_column = ret == 2
-                           ? underscore_sql_quote (keyword->column)
-                           : sql_quote (keyword->column);
+          column = columns_select_column (select_columns, keyword->column);
+          assert (column);
           if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) > %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     keyword->integer_value);
           else if (keyword->type == KEYWORD_TYPE_DOUBLE)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) > %f",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     keyword->double_value);
           else
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS TEXT) > '%s'",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     quoted_keyword);
-          g_free (quoted_column);
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
         {
+          gchar *column;
           int ret;
 
           if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
@@ -3116,35 +3098,33 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          // FIX select_column
-          quoted_column = ret == 2
-                           ? underscore_sql_quote (keyword->column)
-                           : sql_quote (keyword->column);
+          column = columns_select_column (select_columns, keyword->column);
+          assert (column);
           if (keyword->type == KEYWORD_TYPE_INTEGER)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) < %i",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     keyword->integer_value);
           else if (keyword->type == KEYWORD_TYPE_DOUBLE)
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS NUMERIC) < %f",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     keyword->double_value);
           else
             g_string_append_printf (clause,
                                     "%s(CAST (%s AS TEXT) < '%s'",
                                     get_join (first_keyword, last_was_and,
                                               last_was_not),
-                                    quoted_column,
+                                    column,
                                     quoted_keyword);
-          g_free (quoted_column);
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
         {
+          gchar *column;
           int ret;
 
           if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
@@ -3156,17 +3136,14 @@ filter_clause (const char* type, const char* filter,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          // FIX select_column
-          quoted_column = ret == 2
-                           ? underscore_sql_quote (keyword->column)
-                           : sql_quote (keyword->column);
+          column = columns_select_column (select_columns, keyword->column);
+          assert (column);
           g_string_append_printf (clause,
                                   "%s(CAST (%s AS TEXT) REGEXP '%s'",
                                   get_join (first_keyword, last_was_and,
                                             last_was_not),
-                                  quoted_column,
+                                  column,
                                   quoted_keyword);
-          g_free (quoted_column);
         }
       else if (keyword->equal)
         {
@@ -41658,7 +41635,8 @@ trash_permission_writable (permission_t permission)
    { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
    { "resource = -1", NULL },                                                \
    { "subject_type", NULL },                                                 \
-   { "(CASE"                                                                 \
+   {                                                                         \
+     "(CASE"                                                                 \
      " WHEN subject_type = 'user'"                                           \
      " THEN (SELECT uuid FROM users WHERE users.id = subject)"               \
      " WHEN subject_type = 'group'"                                          \
@@ -41714,7 +41692,8 @@ trash_permission_writable (permission_t permission)
    { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
    { "resource = -1", NULL },                                                \
    { "subject_type", NULL },                                                 \
-   { "(CASE"                                                                 \
+   {                                                                         \
+     "(CASE"                                                                 \
      " WHEN subject_type = 'user'"                                           \
      " THEN (SELECT uuid FROM users WHERE users.id = subject)"               \
      " WHEN subject_type = 'group'"                                          \
