@@ -2402,6 +2402,77 @@ underscore_sql_quote (const char *string)
 }
 
 /**
+ * @brief Iterator column.
+ */
+typedef struct
+{
+  gchar *select;    ///< Column for SELECT.
+  gchar *filter;    ///< Filter column name.  NULL to use select_column.
+} column_t;
+
+/**
+ * @brief Get the SELECT column for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ * @param[in]  filter_column   Filter column.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_select_column (column_t *select_columns, const char *filter_column)
+{
+  column_t *columns;
+  columns = select_columns;
+  while ((*columns).select)
+    {
+      if ((*columns).filter
+          && strcmp ((*columns).filter, filter_column) == 0)
+        return (*columns).select;
+      columns++;
+    }
+  columns = select_columns;
+  while ((*columns).select)
+    {
+      if (strcmp ((*columns).select, filter_column) == 0)
+        return (*columns).select;
+      columns++;
+    }
+  return NULL;
+}
+
+/**
+ * @brief Get the SELECT column for a filter column.
+ *
+ * @param[in]  select_columns  SELECT columns.
+ *
+ * @return Column for the SELECT statement.
+ */
+static gchar *
+columns_build_select (column_t *select_columns)
+{
+  if (select_columns == NULL)
+    return g_strdup ("''");
+
+  if ((*select_columns).select)
+    {
+      column_t *columns;
+      GString *select;
+
+      columns = select_columns;
+      select = g_string_new ("");
+      g_string_append (select, (*columns).select);
+      columns++;
+      while ((*columns).select)
+       {
+         g_string_append_printf (select, ", %s", (*columns).select);
+         columns++;
+       }
+      return g_string_free (select, FALSE);
+    }
+  return g_strdup ("''");
+}
+
+/**
  * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
  *
  * @param[in]  type     Resource type.
@@ -2417,7 +2488,8 @@ underscore_sql_quote (const char *string)
  * @return WHERE clause for filter if one is required, else NULL.
  */
 static gchar *
-filter_clause (const char* type, const char* filter, const char **columns,
+filter_clause (const char* type, const char* filter,
+               const char **filter_columns, column_t *select_columns,
                int trash, gchar **order_return, int *first_return,
                int *max_return, array_t **permissions, gchar **owner_filter)
 {
@@ -2512,7 +2584,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
       if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
         {
           if (strcmp (keyword->string, "ROWID")
-              && (vector_find_filter (columns, keyword->string) == 0))
+              && (vector_find_filter (filter_columns, keyword->string) == 0))
             {
               point++;
               continue;
@@ -2557,8 +2629,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s ASC",
-                                        keyword->string);
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order, " ORDER BY %s ASC",
+                                          column);
+                }
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
@@ -2580,7 +2658,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
                && (strcasecmp (keyword->column, "sort-reverse") == 0))
         {
           if (strcmp (keyword->string, "ROWID")
-              && (vector_find_filter (columns, keyword->string) == 0))
+              && (vector_find_filter (filter_columns, keyword->string) == 0))
             {
               point++;
               continue;
@@ -2625,8 +2703,14 @@ filter_clause (const char* type, const char* filter, const char **columns,
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
                            && strcmp (keyword->string, "name")))
-                g_string_append_printf (order, " ORDER BY %s DESC",
-                                        keyword->string);
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order, " ORDER BY %s DESC",
+                                          column);
+                }
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
@@ -2851,7 +2935,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
         {
           int ret;
 
-          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2914,40 +2998,39 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
           else if (keyword->column && strcmp (keyword->column, "owner"))
             {
+              gchar *column;
               quoted_keyword = sql_quote (keyword->string);
-              quoted_column = ret == 2
-                               ? underscore_sql_quote (keyword->column)
-                               : sql_quote (keyword->column);
+              column = columns_select_column (select_columns, keyword->column);
+              assert (column);
               if (keyword->type == KEYWORD_TYPE_INTEGER)
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS NUMERIC) = %i",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
-                                        quoted_column,
+                                        column,
                                         keyword->integer_value);
               else if (keyword->type == KEYWORD_TYPE_DOUBLE)
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS NUMERIC) = %f",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
-                                        quoted_column,
+                                        column,
                                         keyword->double_value);
               else if (strcmp (quoted_keyword, ""))
                 g_string_append_printf (clause,
                                         "%s(CAST (%s AS TEXT) = '%s'",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
-                                        quoted_column,
+                                        column,
                                         quoted_keyword);
               else
                 g_string_append_printf (clause,
                                         "%s((%s IS NULL OR CAST (%s AS TEXT) = '%s')",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
-                                        quoted_column,
-                                        quoted_column,
+                                        column,
+                                        column,
                                         quoted_keyword);
-              g_free (quoted_column);
             }
           else
             {
@@ -2959,9 +3042,10 @@ filter_clause (const char* type, const char* filter, const char **columns,
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
+          gchar *column;
           int ret;
 
-          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2970,22 +3054,20 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
-          quoted_column = ret == 2
-                           ? underscore_sql_quote (keyword->column)
-                           : sql_quote (keyword->column);
+          column = columns_select_column (select_columns, keyword->column);
+          assert (column);
           g_string_append_printf (clause,
                                   "%s(CAST (%s AS TEXT) LIKE '%%%%%s%%%%'",
                                   get_join (first_keyword, last_was_and,
                                             last_was_not),
-                                  quoted_column,
+                                  column,
                                   quoted_keyword);
-          g_free (quoted_column);
         }
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
         {
           int ret;
 
-          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -2994,6 +3076,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
+          // FIX select_column
           quoted_column = ret == 2
                            ? underscore_sql_quote (keyword->column)
                            : sql_quote (keyword->column);
@@ -3024,7 +3107,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
         {
           int ret;
 
-          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3033,6 +3116,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
+          // FIX select_column
           quoted_column = ret == 2
                            ? underscore_sql_quote (keyword->column)
                            : sql_quote (keyword->column);
@@ -3063,7 +3147,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
         {
           int ret;
 
-          if ((ret = vector_find_filter (columns, keyword->column)) == 0)
+          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3072,6 +3156,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
             }
 
           quoted_keyword = sql_quote (keyword->string);
+          // FIX select_column
           quoted_column = ret == 2
                            ? underscore_sql_quote (keyword->column)
                            : sql_quote (keyword->column);
@@ -3085,7 +3170,7 @@ filter_clause (const char* type, const char* filter, const char **columns,
         }
       else if (keyword->equal)
         {
-          const char *column;
+          const char *filter_column;
 
           /* Keyword like "=example". */
 
@@ -3098,10 +3183,15 @@ filter_clause (const char* type, const char* filter, const char **columns,
           quoted_keyword = sql_quote (keyword->string);
           if (last_was_not)
             for (index = 0;
-                 (column = columns[index]) != NULL;
+                 (filter_column = filter_columns[index]) != NULL;
                  index++)
               {
-                quoted_column = sql_quote (column);
+                gchar *select_column;
+
+                select_column = columns_select_column (select_columns,
+                                                       filter_column);
+                assert (select_column);
+
                 if (keyword->type == KEYWORD_TYPE_INTEGER)
                   g_string_append_printf (clause,
                                           "%s"
@@ -3109,8 +3199,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                           " OR CAST (%s AS NUMERIC)"
                                           " != %i)",
                                           (index ? " AND " : ""),
-                                          quoted_column,
-                                          quoted_column,
+                                          select_column,
+                                          select_column,
                                           keyword->integer_value);
                 else if (keyword->type == KEYWORD_TYPE_DOUBLE)
                   g_string_append_printf (clause,
@@ -3119,8 +3209,8 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                           " OR CAST (%s AS NUMERIC)"
                                           " != %f)",
                                           (index ? " AND " : ""),
-                                          quoted_column,
-                                          quoted_column,
+                                          select_column,
+                                          select_column,
                                           keyword->double_value);
                 else
                   g_string_append_printf (clause,
@@ -3129,44 +3219,47 @@ filter_clause (const char* type, const char* filter, const char **columns,
                                           " OR CAST (%s AS TEXT)"
                                           " != '%s')",
                                           (index ? " AND " : ""),
-                                          quoted_column,
-                                          quoted_column,
+                                          select_column,
+                                          select_column,
                                           quoted_keyword);
-                g_free (quoted_column);
               }
           else
             for (index = 0;
-                 (column = columns[index]) != NULL;
+                 (filter_column = filter_columns[index]) != NULL;
                  index++)
               {
-                quoted_column = sql_quote (column);
+                gchar *select_column;
+
+                select_column = columns_select_column (select_columns,
+                                                       filter_column);
+                assert (select_column);
+
                 if (keyword->type == KEYWORD_TYPE_INTEGER)
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS NUMERIC)"
                                           " = %i",
                                           (index ? " OR " : ""),
-                                          quoted_column,
+                                          select_column,
                                           keyword->integer_value);
                 else if (keyword->type == KEYWORD_TYPE_DOUBLE)
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS NUMERIC)"
                                           " = %f",
                                           (index ? " OR " : ""),
-                                          quoted_column,
+                                          select_column,
                                           keyword->double_value);
                 else
                   g_string_append_printf (clause,
                                           "%sCAST (%s AS TEXT)"
                                           " = '%s'",
                                           (index ? " OR " : ""),
-                                          quoted_column,
+                                          select_column,
                                           quoted_keyword);
-                g_free (quoted_column);
               }
         }
       else
         {
-          const char *column;
+          const char *filter_column;
 
           g_string_append_printf (clause,
                                   "%s(",
@@ -3177,40 +3270,48 @@ filter_clause (const char* type, const char* filter, const char **columns,
           quoted_keyword = sql_quote (keyword->string);
           if (last_was_not)
             for (index = 0;
-                 (column = columns[index]) != NULL;
+                 (filter_column = filter_columns[index]) != NULL;
                  index++)
               {
-                quoted_column = sql_quote (column);
+                gchar *select_column;
+
+                select_column = columns_select_column (select_columns,
+                                                       filter_column);
+                assert (select_column);
+
                 g_string_append_printf (clause,
                                         "%s"
                                         "(%s IS NULL"
                                         " OR CAST (%s AS TEXT)"
                                         " NOT %s '%s%s%s')",
                                         (index ? " AND " : ""),
-                                        quoted_column,
-                                        quoted_column,
+                                        select_column,
+                                        select_column,
                                         last_was_re ? "REGEXP" : "LIKE",
                                         last_was_re ? "" : "%%",
                                         quoted_keyword,
                                         last_was_re ? "" : "%%");
-                g_free (quoted_column);
               }
           else
             for (index = 0;
-                 (column = columns[index]) != NULL;
+                 (filter_column = filter_columns[index]) != NULL;
                  index++)
               {
-                quoted_column = sql_quote (column);
+                gchar *select_column;
+
+                select_column = columns_select_column (select_columns,
+                                                       filter_column);
+                assert (select_column);
+
                 g_string_append_printf (clause,
                                         "%sCAST (%s AS TEXT)"
                                         " %s '%s%s%s'",
                                         (index ? " OR " : ""),
-                                        quoted_column,
+                                        select_column,
                                         last_was_re ? "REGEXP" : "LIKE",
                                         last_was_re ? "" : "%%",
                                         quoted_keyword,
                                         last_was_re ? "" : "%%");
-                g_free (quoted_column);
               }
         }
 
@@ -3263,26 +3364,42 @@ filter_clause (const char* type, const char* filter, const char **columns,
  "created", "modified", "_owner"
 
 /**
+ * @brief Columns for GET iterator, as a single string.
+ *
+ * @param[in]  prefix  Column prefix.
+ */
+#define GET_ITERATOR_COLUMNS_STRING                                \
+  "id, uuid, name, comment, iso_time (creation_time),"             \
+  " iso_time (modification_time), creation_time AS created,"       \
+  " modification_time AS modified"
+
+/**
  * @brief Columns for GET iterator.
  *
  * @param[in]  prefix  Column prefix.
  */
-#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                           \
-  prefix "id, " prefix "uuid, " prefix "name, " prefix "comment,"     \
-  " iso_time (" prefix "creation_time),"                              \
-  " iso_time (" prefix "modification_time),"                          \
-  " " prefix "creation_time AS created,"                              \
-  " " prefix "modification_time AS modified"
+#define GET_ITERATOR_COLUMNS_PREFIX(prefix)                             \
+  { prefix "id", NULL },                                                \
+  { prefix "uuid", NULL },                                              \
+  { prefix "name", NULL },                                              \
+  { prefix "comment", NULL },                                           \
+  { " iso_time (" prefix "creation_time)", NULL },                      \
+  { " iso_time (" prefix "modification_time)", NULL },                  \
+  { prefix "creation_time", "created" },                                \
+  { prefix "modification_time", "modified" }
 
 /**
  * @brief Columns for GET iterator.
  *
  * @param[in]  table  Table.
  */
-#define GET_ITERATOR_COLUMNS(table) GET_ITERATOR_COLUMNS_PREFIX("") ","        \
-  " (SELECT name FROM users"                                                   \
-  "  WHERE users.id = " G_STRINGIFY (table) ".owner)"                          \
-  " AS _owner"
+#define GET_ITERATOR_COLUMNS(table)                                             \
+  GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
+  {                                                                             \
+    "(SELECT name FROM users"                                                   \
+    " WHERE users.id = " G_STRINGIFY (table) ".owner)",                         \
+    "_owner"                                                                    \
+  }
 
 /**
  * @brief Number of columns for GET iterator.
@@ -3959,8 +4076,8 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  * @param[in]  iterator        Iterator.
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
- * @param[in]  columns         Columns for SQL.
- * @param[in]  trash_columns   Columns for SQL trash case.
+ * @param[in]  select_columns         Columns for SQL.
+ * @param[in]  trash_select_columns   Columns for SQL trash case.
  * @param[in]  filter_columns  Columns for filter.
  * @param[in]  distinct        Whether the query should be distinct.  Skipped
  *                             for trash and single resource.
@@ -3973,19 +4090,21 @@ resource_name (const char *type, const char *uuid, int location, char **name)
  */
 static int
 init_get_iterator (iterator_t* iterator, const char *type,
-                   const get_data_t *get, const char *columns,
-                   const char *trash_columns, const char **filter_columns,
-                   int distinct, const char *extra_where, int owned)
+                   const get_data_t *get, column_t *select_columns,
+                   column_t *trash_select_columns,
+                   const char **filter_columns, int distinct,
+                   const char *extra_where, int owned)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
+  gchar *columns;
 
   assert (get);
 
-  if (columns == NULL)
+  if (select_columns == NULL)
     {
       assert (0);
       return -1;
@@ -4041,6 +4160,9 @@ init_get_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          get->trash && trash_select_columns
+                           ? trash_select_columns
+                           : select_columns,
                           get->trash, &order, &first, &max, &permissions,
                           &owner_filter);
 
@@ -4056,6 +4178,11 @@ init_get_iterator (iterator_t* iterator, const char *type,
   g_free (owner_filter);
   array_free (permissions);
 
+  if (get->trash && trash_select_columns)
+    columns = columns_build_select (trash_select_columns);
+  else
+    columns = columns_build_select (select_columns);
+
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s"
@@ -4063,7 +4190,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    " WHERE id = %llu"
                    " AND %s"
                    "%s;",
-                   trash_columns ? trash_columns : columns,
+                   columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    resource,
@@ -4077,7 +4204,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    "%s"
                    "%s"
                    "%s;",
-                   trash_columns ? trash_columns : columns,
+                   columns,
                    type,
                    type_trash_in_table (type) ? "" : "_trash",
                    owned_clause,
@@ -4117,11 +4244,16 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    first);
     }
 
+  g_free (columns);
   g_free (owned_clause);
   g_free (order);
   g_free (clause);
   return 0;
 }
+
+// FIX
+column_t *
+type_select_columns (const char *type);
 
 /**
  * @brief Initialise a GET_AGGREGATES iterator, including observed resources.
@@ -4155,6 +4287,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *extra_tables, const char *extra_where,
                          int no_pagination, int owned)
 {
+  column_t *select_columns;
   int first, max;
   gchar *clause, *order, *filter, *owned_clause;
   array_t *permissions;
@@ -4169,6 +4302,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       assert (0);
       return -1;
     }
+
+  select_columns = type_select_columns (type);
 
   if (get->id)
     g_warning ("%s: Called with an id parameter", __FUNCTION__);
@@ -4194,8 +4329,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     filter = NULL;
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          get->trash, &order, &first, &max, &permissions,
-                          &owner_filter);
+                          select_columns, get->trash, &order, &first, &max,
+                          &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -4448,13 +4583,12 @@ aggregate_iterator_value (iterator_t* iterator)
  * @return Total number of resources in filtered set.
  */
 static int
-count (const char *type, const get_data_t *get, const char *iterator_columns,
-       const char *trash_columns, const char **extra_columns, int distinct,
+count (const char *type, const get_data_t *get, column_t *select_columns,
+       column_t *trash_select_columns, const char **filter_columns, int distinct,
        const char *extra_tables, const char *extra_where, int owned)
 {
   int ret;
-  gchar *clause, *owned_clause, *owner_filter;
-  gchar *filter;
+  gchar *clause, *owned_clause, *owner_filter, *columns, *filter;
   array_t *permissions;
 
   assert (current_credentials.uuid);
@@ -4469,7 +4603,10 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
   else
     filter = NULL;
 
-  clause = filter_clause (type, filter ? filter : get->filter, extra_columns,
+  clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
+                          get->trash && trash_select_columns
+                           ? trash_select_columns
+                           : select_columns,
                           get->trash, NULL, NULL, NULL, &permissions,
                           &owner_filter);
 
@@ -4479,6 +4616,11 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
 
   array_free (permissions);
 
+  if (get->trash && trash_select_columns)
+    columns = columns_build_select (trash_select_columns);
+  else
+    columns = columns_build_select (select_columns);
+
   ret = sql_int ("SELECT count (%scount_id)"
                  " FROM (SELECT %ss%s.id AS count_id, %s"
                  "       FROM %ss%s%s"
@@ -4487,9 +4629,7 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
                  distinct ? "DISTINCT " : "",
                  type,
                  get->trash && strcmp (type, "task") ? "_trash" : "",
-                 get->trash
-                  ? (trash_columns ? trash_columns : iterator_columns)
-                  : iterator_columns,
+                 columns,
                  type,
                  get->trash && strcmp (type, "task") ? "_trash" : "",
                  extra_tables ? extra_tables : "",
@@ -4497,6 +4637,8 @@ count (const char *type, const get_data_t *get, const char *iterator_columns,
                  clause ? " AND " : "",
                  clause ? clause : "",
                  extra_where ? extra_where : "");
+
+  g_free (columns);
   g_free (owned_clause);
   g_free (clause);
   return ret;
@@ -6289,15 +6431,29 @@ alert_method (alert_t alert)
  * @brief Alert iterator columns.
  */
 #define ALERT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS (alerts) ", event, condition, method, filter, "        \
-  G_STRINGIFY (LOCATION_TABLE)
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (alerts),                                             \
+   { "event", NULL },                                                         \
+   { "condition", NULL},                                                      \
+   { "method", NULL },                                                        \
+   { "filter", NULL},                                                         \
+   { G_STRINGIFY (LOCATION_TABLE), NULL},                                     \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Alert iterator columns for trash case.
  */
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (alerts_trash) ", event, condition, method, filter,"   \
-  " filter_location"
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (alerts),                                             \
+   { "event", NULL },                                                         \
+   { "condition", NULL},                                                      \
+   { "method", NULL },                                                        \
+   { "filter", NULL},                                                         \
+   { "filter_location", NULL},                                                \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Count the number of alerts.
@@ -6309,9 +6465,11 @@ alert_method (alert_t alert)
 int
 alert_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
-  return count ("alert", get, ALERT_ITERATOR_COLUMNS,
-                ALERT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
+  return count ("alert", get, columns, trash_columns, filter_columns, 0, 0, 0,
+                  TRUE);
 }
 
 /**
@@ -6383,14 +6541,14 @@ int
 init_alert_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "alert",
                             get,
-                            /* Columns. */
-                            ALERT_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            ALERT_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -8605,59 +8763,43 @@ append_to_task_string (task_t task, const char* field, const char* value)
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
    "trend", "severity", NULL }
 
-/**
- * @brief Task iterator columns.
- */
 #define TASK_ITERATOR_COLUMNS(overrides)                   \
-  GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
-  " (SELECT count(*) FROM reports"                         \
-  "  WHERE task = tasks.id)"                               \
-  " AS total,"                                             \
-  " (SELECT uuid FROM reports WHERE task = tasks.id"       \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  AND scan_run_status = 1"                              \
-  "  ORDER BY date ASC LIMIT 1)"                           \
-  " AS first,"                                             \
-  " task_threat_level (id, " overrides ") AS threat,"      \
-  " task_trend (id, " overrides ") AS trend,"              \
-  " run_status_name (run_status) AS status,"               \
-  " (SELECT uuid FROM reports WHERE task = tasks.id"       \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  AND scan_run_status = 1"                              \
-  "  ORDER BY date DESC LIMIT 1)"                          \
-  " AS last,"                                              \
-  " task_severity (id, " overrides ") AS severity,"        \
-  " (SELECT count(*) FROM reports"                         \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  WHERE task = tasks.id AND scan_run_status = 1),"      \
-  " hosts_ordering, scanner"
-
-
-/**
- * @brief Task iterator columns for trash case.
- */
-#define TASK_ITERATOR_TRASH_COLUMNS(overrides)             \
-  GET_ITERATOR_COLUMNS (tasks) ", run_status,"             \
-  " (SELECT count(*) FROM reports"                         \
-  "  WHERE task = tasks.id)"                               \
-  " AS total,"                                             \
-  " (SELECT uuid FROM reports WHERE task = tasks.id"       \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  AND scan_run_status = 1"                              \
-  "  ORDER BY date ASC LIMIT 1)"                           \
-  " AS first,"                                             \
-  " task_threat_level (id, " overrides ") AS threat,"      \
-  " task_trend (id, " overrides ") AS trend,"              \
-  " run_status_name (run_status) AS status,"               \
-  " (SELECT uuid FROM reports WHERE task = tasks.id"       \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  AND scan_run_status = 1"                              \
-  "  ORDER BY date DESC LIMIT 1)"                          \
-  " AS last,"                                              \
-  " (SELECT count(*) FROM reports"                         \
-  /* TODO 1 == TASK_STATUS_DONE */                         \
-  "  WHERE task = tasks.id AND scan_run_status = 1),"      \
-  " hosts_ordering, scanner"
+ {                                                         \
+   GET_ITERATOR_COLUMNS (tasks),                           \
+   { "run_status", NULL },                                 \
+   {                                                       \
+     "(SELECT count(*) FROM reports"                       \
+     " WHERE task = tasks.id)",                            \
+     "total"                                               \
+   },                                                      \
+   {                                                       \
+     "(SELECT uuid FROM reports WHERE task = tasks.id"     \
+     /* TODO 1 == TASK_STATUS_DONE */                      \
+     " AND scan_run_status = 1"                            \
+     " ORDER BY date ASC LIMIT 1)",                        \
+     "first"                                               \
+   },                                                      \
+   { "task_threat_level (id, " overrides ")", "threat" },  \
+   { "task_trend (id, " overrides ")", "trend" },          \
+   { "run_status_name (run_status)", "status" },           \
+   {                                                       \
+     "(SELECT uuid FROM reports WHERE task = tasks.id"     \
+     /* TODO 1 == TASK_STATUS_DONE */                      \
+     " AND scan_run_status = 1"                            \
+     " ORDER BY date DESC LIMIT 1)",                       \
+     "last"                                                \
+   },                                                      \
+   { "task_severity (id, " overrides ")", "severity" },    \
+   {                                                       \
+     "(SELECT count(*) FROM reports"                       \
+     /* TODO 1 == TASK_STATUS_DONE */                      \
+     " WHERE task = tasks.id AND scan_run_status = 1)",    \
+     NULL                                                  \
+   },                                                      \
+   { "hosts_ordering", NULL },                             \
+   { "scanner", NULL },                                    \
+   { NULL, NULL }                                          \
+ }
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
@@ -8668,6 +8810,11 @@ append_to_task_string (task_t task, const char* field, const char* value)
 static void
 init_user_task_iterator (iterator_t* iterator, int trash)
 {
+  static column_t select_columns[] = TASK_ITERATOR_COLUMNS ("0");
+  gchar *columns;
+
+  columns = columns_build_select (select_columns);
+
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM tasks"
@@ -8675,11 +8822,11 @@ init_user_task_iterator (iterator_t* iterator, int trash)
                  "        OR (owner = (SELECT id FROM users"
                  "                     WHERE users.uuid = '%s')))"
                  "%s;",
-                 trash
-                  ? TASK_ITERATOR_TRASH_COLUMNS ("0")
-                  : TASK_ITERATOR_COLUMNS ("0"),
+                 columns,
                  current_credentials.uuid,
                  trash ? " AND hidden = 2" : " AND hidden < 2");
+
+  g_free (columns);
 }
 
 /**
@@ -8695,6 +8842,8 @@ int
 init_task_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
+  static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
+  static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
   char *filter;
   gchar *value;
   int overrides;
@@ -8716,13 +8865,9 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
                             "task",
                             get,
                             /* Columns. */
-                            overrides
-                             ? TASK_ITERATOR_COLUMNS ("1")
-                             : TASK_ITERATOR_COLUMNS ("0"),
+                            overrides ? columns_overrides : columns,
                             /* Columns for trashcan. */
-                            overrides
-                             ? TASK_ITERATOR_TRASH_COLUMNS ("1")
-                             : TASK_ITERATOR_TRASH_COLUMNS ("0"),
+                            overrides ? columns_overrides : columns,
                             filter_columns,
                             0,
                             (get->id
@@ -12023,7 +12168,8 @@ authenticate (credentials_t* credentials)
 int
 resource_count (const char *type, const get_data_t *get)
 {
-  static const char *extra_columns[] = { "owner", NULL };
+  static const char *filter_columns[] = { "owner", NULL };
+  static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
   get_data_t count_get;
 
   memset (&count_get, '\0', sizeof (count_get));
@@ -12035,9 +12181,9 @@ resource_count (const char *type, const get_data_t *get)
 
   return count (get->subtype ? get->subtype : type,
                 &count_get,
-                type_owned (type) ? "owner" : NULL,
-                type_owned (type) ? "owner" : NULL,
-                type_owned (type) ? extra_columns : NULL,
+                type_owned (type) ? select_columns : NULL,
+                type_owned (type) ? select_columns : NULL,
+                type_owned (type) ? filter_columns : NULL,
                 0, NULL,
                 strcmp (type, "task")
                  ? (strcmp (type, "report")
@@ -12120,6 +12266,8 @@ unsigned int
 task_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TASK_ITERATOR_FILTER_COLUMNS;
+  static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
+  static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
   char *filter;
   gchar *value;
   int overrides;
@@ -12138,12 +12286,8 @@ task_count (const get_data_t *get)
   g_free (value);
 
   return count ("task", get,
-                overrides
-                 ? TASK_ITERATOR_COLUMNS ("1")
-                 : TASK_ITERATOR_COLUMNS ("0"),
-                overrides
-                 ? TASK_ITERATOR_TRASH_COLUMNS ("1")
-                 : TASK_ITERATOR_TRASH_COLUMNS ("0"),
+                overrides ? columns_overrides : columns,
+                overrides ? columns_overrides : columns,
                 extra_columns, 0, NULL,
                 (get->id
                  && (strcmp (get->id, MANAGE_EXAMPLE_TASK_UUID)
@@ -14874,28 +15018,43 @@ report_add_result (report_t report, result_t result)
  * @brief Report iterator columns.
  */
 #define REPORT_ITERATOR_COLUMNS(overrides)                                   \
-  "id, uuid, iso_time (start_time) AS name, '',"                             \
-  " iso_time (start_time), iso_time (end_time),"                             \
-  " start_time AS created, end_time AS modified, '',"                        \
-  " run_status_name (scan_run_status) AS status,"                            \
-  " (SELECT uuid FROM tasks WHERE tasks.id = task) AS task_id,"              \
-  " date,"                                                                   \
-  " (SELECT name FROM tasks WHERE tasks.id = task) AS task,"                 \
-  " report_severity (id, " overrides ") as severity,"                        \
-  " (CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"     \
-  "  THEN 'Container'"                                                       \
-  "  ELSE run_status_name (scan_run_status)"                                 \
-  "       || substr ('000' || report_progress (id), -3, 3)"                  \
-  "  END)"                                                                   \
-  " AS status_text,"                                                         \
-  " report_severity_count (id, " overrides ", 'False Positive')"             \
-  " AS false_positive,"                                                      \
-  " report_severity_count (id, " overrides ", 'Log') AS log,"                \
-  " report_severity_count (id, " overrides ", 'Low') AS low,"                \
-  " report_severity_count (id, " overrides ", 'Medium') AS medium,"          \
-  " report_severity_count (id, " overrides ", 'High') AS high,"              \
-  " (SELECT name FROM users WHERE users.id = reports.owner)"                 \
-  " AS _owner"
+ {                                                                           \
+   { "id", NULL },                                                           \
+   { "uuid", NULL },                                                         \
+   { "iso_time (start_time)", "name" },                                      \
+   { "''", NULL },                                                           \
+   { "iso_time (start_time)", NULL },                                        \
+   { "iso_time (end_time)", NULL },                                          \
+   { "start_time", "created" },                                              \
+   { "end_time", "modified" },                                               \
+   { "''", NULL },                                                           \
+   { "run_status_name (scan_run_status)", "status" },                        \
+   { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
+   { "date", NULL },                                                         \
+   { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
+   { "report_severity (id, " overrides ")", "severity" },                    \
+   {                                                                         \
+     "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
+     "  THEN 'Container'"                                                    \
+     "  ELSE run_status_name (scan_run_status)"                              \
+     "       || substr ('000' || report_progress (id), -3, 3)"               \
+     "  END)",                                                               \
+     "status_text"                                                           \
+   },                                                                        \
+   {                                                                         \
+     " report_severity_count (id, " overrides ", 'False Positive')",         \
+     "false_positive"                                                        \
+   },                                                                        \
+   { "report_severity_count (id, " overrides ", 'Log')", "log" },            \
+   { "report_severity_count (id, " overrides ", 'Low')", "low" },            \
+   { "report_severity_count (id, " overrides ", 'Medium')", "medium" },      \
+   { "report_severity_count (id, " overrides ", 'High')", "high" },          \
+   {                                                                         \
+     "(SELECT name FROM users WHERE users.id = reports.owner)",              \
+     "_owner"                                                                \
+   },                                                                        \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Count number of reports.
@@ -14907,9 +15066,10 @@ report_add_result (report_t report, result_t result)
 int
 report_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
-  return count ("report", get, REPORT_ITERATOR_COLUMNS ("0"), NULL,
-                extra_columns, 0, 0,
+  static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = REPORT_ITERATOR_COLUMNS ("0");
+  return count ("report", get, columns, NULL,
+                filter_columns, 0, 0,
                 get->trash
                  ? " AND (SELECT hidden FROM tasks"
                    "      WHERE tasks.id = task)"
@@ -14933,6 +15093,8 @@ int
 init_report_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns_overrides[] = REPORT_ITERATOR_COLUMNS ("1");
+  static column_t columns[] = REPORT_ITERATOR_COLUMNS ("0");
   char *filter;
   gchar *value;
   int overrides;
@@ -14954,8 +15116,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             "report",
                             get,
                             /* Columns. */
-                            overrides ? REPORT_ITERATOR_COLUMNS ("1")
-                                      : REPORT_ITERATOR_COLUMNS ("0"),
+                            overrides ? columns_overrides : columns,
                             /* Columns for trashcan. */
                             NULL,
                             filter_columns,
@@ -26327,49 +26488,82 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  * @brief Target iterator columns.
  */
 #define TARGET_ITERATOR_COLUMNS                             \
-  GET_ITERATOR_COLUMNS (targets) ", hosts, lsc_credential," \
-  " ssh_port, smb_lsc_credential, port_range, 0, 0,"        \
-  " (SELECT uuid FROM port_lists"                           \
-  "  WHERE port_lists.id = port_range),"                    \
-  " (SELECT name FROM port_lists"                           \
-  "  WHERE port_lists.id = port_range)"                     \
-  " AS port_list,"                                          \
-  " 0,"                                                     \
-  " exclude_hosts,"                                         \
-  " reverse_lookup_only, reverse_lookup_unify,"             \
-  " alive_test,"                                            \
-  " (SELECT name FROM lsc_credentials"                      \
-  "  WHERE lsc_credentials.id = lsc_credential)"            \
-  " AS ssh_credential,"                                     \
-  " (SELECT name FROM lsc_credentials"                      \
-  "  WHERE lsc_credentials.id = smb_lsc_credential)"        \
-  " AS smb_credential,"                                     \
-  " hosts,"                                                 \
-  " max_hosts (hosts, exclude_hosts) AS ips"
+ {                                                          \
+   GET_ITERATOR_COLUMNS (targets),                          \
+   { "hosts", NULL },                                       \
+   { "lsc_credential", NULL },                              \
+   { "ssh_port", NULL },                                    \
+   { "smb_lsc_credential", NULL },                          \
+   { "port_range", NULL },                                  \
+   { "0", NULL },                                           \
+   { "0", NULL },                                           \
+   {                                                        \
+     "(SELECT uuid FROM port_lists"                         \
+     " WHERE port_lists.id = port_range)",                  \
+     NULL                                                   \
+   },                                                       \
+   {                                                        \
+     "(SELECT name FROM port_lists"                         \
+     " WHERE port_lists.id = port_range)",                  \
+     "port_list"                                            \
+   },                                                       \
+   { "0", NULL },                                           \
+   { "exclude_hosts", NULL },                               \
+   { "reverse_lookup_only", NULL },                         \
+   { "reverse_lookup_unify", NULL },                        \
+   { "alive_test", NULL },                                  \
+   {                                                        \
+     "(SELECT name FROM lsc_credentials"                    \
+     " WHERE lsc_credentials.id = lsc_credential)",         \
+     "ssh_credential"                                       \
+   },                                                       \
+   {                                                        \
+     "(SELECT name FROM lsc_credentials"                    \
+     " WHERE lsc_credentials.id = smb_lsc_credential)",     \
+     "smb_credential"                                       \
+   },                                                       \
+   { "hosts", NULL },                                       \
+   { "max_hosts (hosts, exclude_hosts)", "ips" },           \
+   { NULL, NULL }                                           \
+ }
 
 /**
  * @brief Target iterator columns for trash case.
  */
-#define TARGET_ITERATOR_TRASH_COLUMNS                             \
-  GET_ITERATOR_COLUMNS (targets_trash) ", hosts, lsc_credential," \
-  " ssh_port, smb_lsc_credential, port_range, ssh_location,"      \
-  " smb_location,"                                                \
-  " (CASE"                                                        \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
-  "  THEN (SELECT uuid FROM port_lists_trash"                     \
-  "        WHERE port_lists_trash.id = port_range)"               \
-  "  ELSE (SELECT uuid FROM port_lists"                           \
-  "        WHERE port_lists.id = port_range)"                     \
-  "  END),"                                                       \
-  " (CASE"                                                        \
-  "  WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
-  "  THEN (SELECT name FROM port_lists_trash"                     \
-  "        WHERE port_lists_trash.id = port_range)"               \
-  "  ELSE (SELECT name FROM port_lists"                           \
-  "        WHERE port_lists.id = port_range)"                     \
-  "  END),"                                                       \
-  " port_list_location = " G_STRINGIFY (LOCATION_TRASH)           \
-  " , exclude_hosts"
+#define TARGET_ITERATOR_TRASH_COLUMNS                               \
+ {                                                                  \
+   GET_ITERATOR_COLUMNS (targets),                                  \
+   { "hosts", NULL },                                               \
+   { "lsc_credential", NULL },                                      \
+   { "ssh_port", NULL },                                            \
+   { "smb_lsc_credential", NULL },                                  \
+   { "port_range", NULL },                                          \
+   { "ssh_location", NULL },                                        \
+   { "smb_location", NULL },                                        \
+   {                                                                \
+     "(CASE"                                                        \
+     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
+     " THEN (SELECT uuid FROM port_lists_trash"                     \
+     "       WHERE port_lists_trash.id = port_range)"               \
+     " ELSE (SELECT uuid FROM port_lists"                           \
+     "       WHERE port_lists.id = port_range)"                     \
+     " END)",                                                       \
+     NULL                                                           \
+   },                                                               \
+   {                                                                \
+     "(CASE"                                                        \
+     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)     \
+     " THEN (SELECT name FROM port_lists_trash"                     \
+     "       WHERE port_lists_trash.id = port_range)"               \
+     " ELSE (SELECT name FROM port_lists"                           \
+     "       WHERE port_lists.id = port_range)"                     \
+     " END)",                                                       \
+     NULL                                                           \
+   },                                                               \
+   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH), NULL },  \
+   { "exclude_hosts", NULL },                                       \
+   { NULL, NULL }                                                   \
+ }
 
 /**
  * @brief Count number of targets.
@@ -26382,8 +26576,10 @@ int
 target_count (const get_data_t *get)
 {
   static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  return count ("target", get, TARGET_ITERATOR_COLUMNS,
-                TARGET_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
+  return count ("target", get, columns, trash_columns, extra_columns, 0, 0, 0,
+                TRUE);
 }
 
 /**
@@ -26395,7 +26591,13 @@ target_count (const get_data_t *get)
 void
 init_user_target_iterator (iterator_t* iterator, target_t target)
 {
+  static column_t select_columns[] = TARGET_ITERATOR_COLUMNS;
+  gchar *columns;
+
   assert (target);
+
+  columns = columns_build_select (select_columns);
+
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM targets"
@@ -26403,9 +26605,11 @@ init_user_target_iterator (iterator_t* iterator, target_t target)
                  " AND ((owner IS NULL)"
                  "      OR (owner = (SELECT id FROM users"
                  "                   WHERE users.uuid = '%s')));",
-                 TARGET_ITERATOR_COLUMNS,
+                 columns,
                  target,
                  current_credentials.uuid);
+
+  g_free (columns);
 }
 
 /**
@@ -26421,14 +26625,14 @@ int
 init_target_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "target",
                             get,
-                            /* Columns. */
-                            TARGET_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            TARGET_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -27689,18 +27893,31 @@ delete_config (const char *config_id, int ultimate)
  * @brief Scan config iterator columns.
  */
 #define CONFIG_ITERATOR_COLUMNS                                               \
-  GET_ITERATOR_COLUMNS (configs) ", nvt_selector,"                            \
-  " family_count AS families_total, nvt_count AS nvts_total,"                 \
-  " families_growing AS families_trend,"                                      \
-  " nvts_growing AS nvts_trend, type"
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (configs),                                            \
+   { "nvt_selector", NULL },                                                  \
+   { "family_count", "families_total" },                                      \
+   { "nvt_count", "nvts_total"},                                              \
+   { "families_growing", "families_trend"},                                   \
+   { "nvts_growing", "nvts_trend"},                                           \
+   { "type", NULL },                                                          \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Scan config iterator columns for trash case.
  */
 #define CONFIG_ITERATOR_TRASH_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS (configs_trash) ", nvt_selector,"                      \
-  " family_count AS families_total, nvt_count AS nvts_total,"                 \
-  " families_growing AS families_trend, nvts_growing AS nvts_trend, type"
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (configs_trash),                                      \
+   { "nvt_selector", NULL },                                                  \
+   { "family_count", "families_total" },                                      \
+   { "nvt_count", "nvts_total"},                                              \
+   { "families_growing", "families_trend"},                                   \
+   { "nvts_growing", "nvts_trend"},                                           \
+   { "type", NULL },                                                          \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Count the number of scan configs.
@@ -27712,9 +27929,11 @@ delete_config (const char *config_id, int ultimate)
 int
 config_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
-  return count ("config", get, CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
+  return count ("config", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -27730,34 +27949,40 @@ void
 init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
                            int ascending, const char* sort_field)
 {
+  static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
+  gchar *columns;
   gchar *sql;
 
   assert (current_credentials.uuid);
 
+  columns = columns_build_select (select_columns);
   if (config)
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_COLUMNS
+    sql = g_strdup_printf ("SELECT %s"
                            " FROM configs%s"
                            " WHERE id = %llu"
                            " AND ((owner IS NULL) OR (owner ="
                            " (SELECT id FROM users"
                            "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
+                           columns,
                            trash ? "_trash" : "",
                            config,
                            current_credentials.uuid,
                            sort_field ? sort_field : "id",
                            ascending ? "ASC" : "DESC");
   else
-    sql = g_strdup_printf ("SELECT " CONFIG_ITERATOR_COLUMNS
+    sql = g_strdup_printf ("SELECT %s"
                            " FROM configs%s"
                            " WHERE ((owner IS NULL) OR (owner ="
                            " (SELECT id FROM users"
                            "  WHERE users.uuid = '%s')))"
                            " ORDER BY %s %s;",
+                           columns,
                            trash ? "_trash" : "",
                            current_credentials.uuid,
                            sort_field ? sort_field : "id",
                            ascending ? "ASC" : "DESC");
+  g_free (columns);
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -27775,14 +28000,14 @@ int
 init_config_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = CONFIG_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CONFIG_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = CONFIG_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "config",
                             get,
-                            /* Columns. */
-                            CONFIG_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            CONFIG_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -28931,18 +29156,49 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
-  " summary, copyright, cve, bid, xref, tag,"                               \
-  " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
+ {                                                                          \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                                        \
+   { "''", "_owner" },                                                      \
+   { "oid", NULL },                                                         \
+   { "version", NULL },                                                     \
+   { "name", NULL },                                                        \
+   { "summary", NULL },                                                     \
+   { "copyright", NULL },                                                   \
+   { "cve", NULL },                                                         \
+   { "bid", NULL },                                                         \
+   { "xref", NULL },                                                        \
+   { "tag", NULL },                                                         \
+   { "category", NULL },                                                    \
+   { "family", NULL },                                                      \
+   { "cvss_base", NULL },                                                   \
+   { "cvss_base", "severity" },                                             \
+   { "cvss_base", "cvss" },                                                 \
+   { NULL, NULL }                                                           \
+ }
 
 /**
  * @brief NVT iterator columns.
  */
-#define NVT_ITERATOR_COLUMNS_NVTS                                             \
-  GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
-  " nvts.name, summary, copyright, cve, bid, xref, tag,"                      \
-  " category, nvts.family, cvss_base, cvss_base AS severity,"                 \
-  " cvss_base AS cvss"
+#define NVT_ITERATOR_COLUMNS_NVTS                                           \
+ {                                                                          \
+   GET_ITERATOR_COLUMNS_PREFIX ("nvts."),                                   \
+   { "''", "_owner" },                                                      \
+   { "oid", NULL },                                                         \
+   { "version", NULL },                                                     \
+   { "nvts.name", NULL },                                                   \
+   { "summary", NULL },                                                     \
+   { "copyright", NULL },                                                   \
+   { "cve", NULL },                                                         \
+   { "bid", NULL },                                                         \
+   { "xref", NULL },                                                        \
+   { "tag", NULL },                                                         \
+   { "category", NULL },                                                    \
+   { "nvts.family", NULL },                                                 \
+   { "cvss_base", NULL },                                                   \
+   { "cvss_base", "severity" },                                             \
+   { "cvss_base", "cvss" },                                                 \
+   { NULL, NULL }                                                           \
+ }
 
 /**
  * @brief Initialise an NVT iterator.
@@ -28958,6 +29214,7 @@ int
 init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 {
   static const char *filter_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = NVT_ITERATOR_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
@@ -28982,7 +29239,7 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            "nvt",
                            get,
                            /* Columns. */
-                           NVT_ITERATOR_COLUMNS,
+                           columns,
                            /* Columns for trashcan. */
                            NULL,
                            filter_columns,
@@ -28992,6 +29249,36 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 
   g_free (clause);
   return ret;
+}
+
+/**
+ * @brief Get NVT iterator SELECT columns.
+ *
+ * @return SELECT columns
+ */
+static gchar *
+nvt_iterator_columns ()
+{
+  static column_t select_columns[] = NVT_ITERATOR_COLUMNS;
+  static gchar *columns = NULL;
+  if (columns == NULL)
+    columns = columns_build_select (select_columns);
+  return columns;
+}
+
+/**
+ * @brief Get NVT iterator SELECT columns.
+ *
+ * @return SELECT columns
+ */
+static gchar *
+nvt_iterator_columns_nvts ()
+{
+  static column_t select_columns[] = NVT_ITERATOR_COLUMNS_NVTS;
+  static gchar *columns = NULL;
+  if (columns == NULL)
+    columns = columns_build_select (select_columns);
+  return columns;
 }
 
 /**
@@ -29005,7 +29292,8 @@ int
 nvt_info_count (const get_data_t *get)
 {
   static const char *extra_columns[] = NVT_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("nvt", get, NVT_ITERATOR_COLUMNS, NULL, extra_columns, 0, 0, 0,
+  static column_t columns[] = NVT_ITERATOR_COLUMNS;
+  return count ("nvt", get, columns, NULL, extra_columns, 0, 0, 0,
                 FALSE);
 }
 
@@ -29032,8 +29320,9 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
   if (nvt)
     {
       gchar* sql;
-      sql = g_strdup_printf ("SELECT " NVT_ITERATOR_COLUMNS
+      sql = g_strdup_printf ("SELECT %s"
                              " FROM nvts WHERE id = %llu;",
+                             nvt_iterator_columns (),
                              nvt);
       init_iterator (iterator, sql);
       g_free (sql);
@@ -29050,17 +29339,19 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
         }
       else
         init_iterator (iterator,
-                       "SELECT " NVT_ITERATOR_COLUMNS
-                       " FROM nvts LIMIT 0;");
+                       "SELECT %s"
+                       " FROM nvts LIMIT 0;",
+                       nvt_iterator_columns ());
     }
   else if (family)
     {
       gchar *quoted_family = sql_quote (family);
       init_iterator (iterator,
-                     "SELECT " NVT_ITERATOR_COLUMNS
+                     "SELECT %s"
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " ORDER BY %s %s;",
+                     nvt_iterator_columns (),
                      quoted_family,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
@@ -29071,10 +29362,11 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
       gchar *quoted_category;
       quoted_category = sql_quote (category);
       init_iterator (iterator,
-                     "SELECT " NVT_ITERATOR_COLUMNS
+                     "SELECT %s"
                      " FROM nvts"
                      " WHERE category = '%s'"
                      " ORDER BY %s %s;",
+                     nvt_iterator_columns (),
                      quoted_category,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
@@ -29082,9 +29374,10 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
     }
   else
     init_iterator (iterator,
-                   "SELECT " NVT_ITERATOR_COLUMNS
+                   "SELECT %s"
                    " FROM nvts"
                    " ORDER BY %s %s;",
+                   nvt_iterator_columns (),
                    sort_field ? sort_field : "name",
                    ascending ? "ASC" : "DESC");
 }
@@ -29102,10 +29395,11 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
                        const char* sort_field)
 {
   init_iterator (iterator,
-                 "SELECT " NVT_ITERATOR_COLUMNS
+                 "SELECT %s"
                  " FROM nvts"
                  " WHERE cve LIKE '%%%s%%'"
                  " ORDER BY %s %s;",
+                 nvt_iterator_columns (),
                  cve ? cve : "",
                  sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
@@ -29341,9 +29635,13 @@ update_config_caches (config_t config)
 static void
 update_all_config_caches ()
 {
+  static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
+  gchar *columns;
   iterator_t configs;
 
-  init_iterator (&configs, "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs;");
+  columns = columns_build_select (select_columns);
+  init_iterator (&configs, "SELECT %s FROM configs;", columns);
+  g_free (columns);
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -29361,12 +29659,16 @@ update_all_config_caches ()
 void
 update_config_cache_init (const char *uuid)
 {
+  static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
+  gchar *columns;
   iterator_t configs;
 
+  columns = columns_build_select (select_columns);
   init_iterator (&configs,
-                 "SELECT " CONFIG_ITERATOR_COLUMNS " FROM configs"
-                 " WHERE uuid = '%s';",
+                 "SELECT %s FROM configs WHERE uuid = '%s';",
+                 columns,
                  uuid);
+  g_free (columns);
   while (next (&configs))
     update_config_cache (&configs);
   cleanup_iterator (&configs);
@@ -29983,9 +30285,10 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               == 1)
             /* There is one selector, it should be the all selector. */
             return g_strdup_printf
-                    ("SELECT " NVT_ITERATOR_COLUMNS
+                    ("SELECT %s"
                      " FROM nvts WHERE family = '%s'"
                      " ORDER BY %s %s;",
+                     nvt_iterator_columns (),
                      family,
                      sort_field ? sort_field : "name",
                      ascending ? "ASC" : "DESC");
@@ -30002,7 +30305,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                        family))
             /* The family is excluded, just iterate the NVT includes. */
             return g_strdup_printf
-                    ("SELECT " NVT_ITERATOR_COLUMNS_NVTS
+                    ("SELECT %s"
                      " FROM nvts, nvt_selectors"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -30013,6 +30316,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.exclude = 0"
                      " AND nvts.oid == nvt_selectors.family_or_nvt"
                      " ORDER BY %s %s;",
+                     nvt_iterator_columns_nvts (),
                      family,
                      quoted_selector,
                      family,
@@ -30021,11 +30325,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
           /* The family is included.  Iterate all NVT's minus excluded NVT's. */
           return g_strdup_printf
-                  ("SELECT " NVT_ITERATOR_COLUMNS
+                  ("SELECT %s"
                    " FROM nvts"
                    " WHERE family = '%s'"
                    " EXCEPT"
-                   " SELECT " NVT_ITERATOR_COLUMNS_NVTS
+                   " SELECT %s"
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -30036,7 +30340,9 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.exclude = 1"
                    " AND nvts.oid == nvt_selectors.family_or_nvt"
                    " ORDER BY %s %s;",
+                   nvt_iterator_columns (),
                    family,
+                   nvt_iterator_columns_nvts (),
                    family,
                    quoted_selector,
                    family,
@@ -30060,11 +30366,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
           if (all)
             /* There is a family include for this family. */
             return g_strdup_printf
-                    ("SELECT " NVT_ITERATOR_COLUMNS
+                    ("SELECT %s"
                      " FROM nvts"
                      " WHERE family = '%s'"
                      " EXCEPT"
-                     " SELECT " NVT_ITERATOR_COLUMNS_NVTS
+                     " SELECT %s"
                      " FROM nvt_selectors, nvts"
                      " WHERE"
                      " nvts.family = '%s'"
@@ -30075,7 +30381,9 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.exclude = 1"
                      " AND nvts.oid == nvt_selectors.family_or_nvt"
                      " ORDER BY %s %s;",
+                     nvt_iterator_columns (),
                      family,
+                     nvt_iterator_columns_nvts (),
                      family,
                      quoted_selector,
                      family,
@@ -30083,7 +30391,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
-                  (" SELECT " NVT_ITERATOR_COLUMNS_NVTS
+                  (" SELECT %s"
                    " FROM nvt_selectors, nvts"
                    " WHERE"
                    " nvts.family = '%s'"
@@ -30094,6 +30402,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.exclude = 0"
                    " AND nvts.oid == nvt_selectors.family_or_nvt"
                    " ORDER BY %s %s;",
+                   nvt_iterator_columns_nvts (),
                    family,
                    quoted_selector,
                    family,
@@ -30110,7 +30419,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
 
       quoted_family = sql_quote (family);
       sql = g_strdup_printf
-             ("SELECT " NVT_ITERATOR_COLUMNS_NVTS
+             ("SELECT %s"
               " FROM nvt_selectors, nvts"
               " WHERE nvts.family = '%s'"
               " AND nvt_selectors.exclude = 0"
@@ -30118,6 +30427,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               " AND nvt_selectors.name = '%s'"
               " AND nvts.oid = nvt_selectors.family_or_nvt"
               " ORDER BY %s %s;",
+              nvt_iterator_columns_nvts (),
               quoted_family,
               quoted_selector,
               sort_field ? sort_field : "nvts.id",
@@ -31739,15 +32049,31 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
  * @brief LSC Credential iterator columns.
  */
 #define LSC_CREDENTIAL_ITERATOR_COLUMNS                                       \
-  GET_ITERATOR_COLUMNS (lsc_credentials) ", login, password, private_key,"    \
-  " rpm, deb, exe"
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (lsc_credentials),                                    \
+   { "login", NULL },                                                         \
+   { "password", NULL },                                                      \
+   { "private_key", NULL },                                                   \
+   { "rpm", NULL },                                                           \
+   { "deb", NULL },                                                           \
+   { "exe", NULL },                                                           \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief LSC Credential iterator columns for trash case.
  */
-#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                   \
-  GET_ITERATOR_COLUMNS (lsc_credentials_trash) ", login, password, "            \
-  " private_key, rpm, deb, exe"
+#define LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS                                 \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (lsc_credentials_trash),                              \
+   { "login", NULL },                                                         \
+   { "password", NULL },                                                      \
+   { "private_key", NULL },                                                   \
+   { "rpm", NULL },                                                           \
+   { "deb", NULL },                                                           \
+   { "exe", NULL },                                                           \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Count number of LSC Credentials.
@@ -31759,10 +32085,11 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 int
 lsc_credential_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
-  return count ("lsc_credential", get, LSC_CREDENTIAL_ITERATOR_COLUMNS,
-                LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  static const char *filter_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  return count ("lsc_credential", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -31935,16 +32262,22 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
                                    lsc_credential_t lsc_credential, int trash,
                                    int ascending, const char* sort_field)
 {
+  gchar *columns;
+  static column_t select_columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
+
   assert (current_credentials.uuid);
+
+  columns = columns_build_select (select_columns);
 
   if (lsc_credential)
     init_iterator (iterator,
-                   "SELECT " LSC_CREDENTIAL_ITERATOR_COLUMNS
+                   "SELECT %s"
                    " FROM lsc_credentials%s"
                    " WHERE id = %llu"
                    " AND ((owner IS NULL) OR (owner ="
                    " (SELECT id FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   columns,
                    trash ? "_trash" : "",
                    lsc_credential,
                    current_credentials.uuid,
@@ -31952,15 +32285,17 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
                    ascending ? "ASC" : "DESC");
   else
     init_iterator (iterator,
-                   "SELECT " LSC_CREDENTIAL_ITERATOR_COLUMNS
+                   "SELECT %s"
                    " FROM lsc_credentials%s"
                    " WHERE ((owner IS NULL) OR (owner ="
                    " (SELECT id FROM users WHERE users.uuid = '%s')))"
                    " ORDER BY %s %s;",
+                   columns,
                    trash ? "_trash" : "",
                    current_credentials.uuid,
                    sort_field ? sort_field : "id",
                    ascending ? "ASC" : "DESC");
+  g_free (columns);
 }
 
 /**
@@ -31976,14 +32311,14 @@ int
 init_lsc_credential_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = LSC_CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = LSC_CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "lsc_credential",
                             get,
-                            /* Columns. */
-                            LSC_CREDENTIAL_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -33093,35 +33428,55 @@ agent_uuid (agent_t agent)
  * @brief Agent iterator columns.
  */
 #define AGENT_ITERATOR_COLUMNS                                        \
-  GET_ITERATOR_COLUMNS (agents) ", installer, installer_64,"          \
-  " installer_filename, installer_signature_64,"                      \
-  " installer_trust, installer_trust_time, howto_install,"            \
-  " howto_use,"                                                       \
-  " (CASE"                                                            \
-  "  WHEN installer_trust = 1 THEN 'yes'"                             \
-  "  WHEN installer_trust = 2 THEN 'no'"                              \
-  "  WHEN installer_trust = 3 THEN 'unknown'"                         \
-  "  ELSE ''"                                                         \
-  "  END)"                                                            \
-  " || ' (' || iso_time (installer_trust_time) || ')'"                \
-  " AS trust"
+ {                                                                    \
+   GET_ITERATOR_COLUMNS (agents),                                     \
+   { "installer", NULL },                                             \
+   { "installer_64", NULL },                                          \
+   { "installer_filename", NULL },                                    \
+   { "installer_signature_64", NULL },                                \
+   { "installer_trust" , NULL },                                      \
+   { "installer_trust_time", NULL },                                  \
+   { "howto_install", NULL },                                         \
+   { "howto_use", NULL },                                             \
+   {                                                                  \
+     "(CASE"                                                          \
+     "  WHEN installer_trust = 1 THEN 'yes'"                          \
+     "  WHEN installer_trust = 2 THEN 'no'"                           \
+     "  WHEN installer_trust = 3 THEN 'unknown'"                      \
+     "  ELSE ''"                                                      \
+     "  END)"                                                         \
+     " || ' (' || iso_time (installer_trust_time) || ')'",            \
+     "trust"                                                          \
+   },                                                                 \
+   { NULL, NULL }                                                     \
+ }
 
 /**
  * @brief Agent iterator columns for trash case.
  */
 #define AGENT_ITERATOR_TRASH_COLUMNS                                  \
-  GET_ITERATOR_COLUMNS (agents_trash) ", installer, installer_64,"    \
-  " installer_filename, installer_signature_64,"                      \
-  " installer_trust, installer_trust_time, howto_install,"            \
-  " howto_use,"                                                       \
-  " (CASE"                                                            \
-  "  WHEN installer_trust = 1 THEN 'yes'"                             \
-  "  WHEN installer_trust = 2 THEN 'no'"                              \
-  "  WHEN installer_trust = 3 THEN 'unknown'"                         \
-  "  ELSE ''"                                                         \
-  "  END)"                                                            \
-  " || ' (' || iso_time (installer_trust_time) || ')'"                \
-  " AS trust"
+ {                                                                    \
+   GET_ITERATOR_COLUMNS (agents_trash),                               \
+   { "installer", NULL },                                             \
+   { "installer_64", NULL },                                          \
+   { "installer_filename", NULL },                                    \
+   { "installer_signature_64", NULL },                                \
+   { "installer_trust" , NULL },                                      \
+   { "installer_trust_time", NULL },                                  \
+   { "howto_install", NULL },                                         \
+   { "howto_use", NULL },                                             \
+   {                                                                  \
+     "(CASE"                                                          \
+     "  WHEN installer_trust = 1 THEN 'yes'"                          \
+     "  WHEN installer_trust = 2 THEN 'no'"                           \
+     "  WHEN installer_trust = 3 THEN 'unknown'"                      \
+     "  ELSE ''"                                                      \
+     "  END)"                                                         \
+     " || ' (' || iso_time (installer_trust_time) || ')'",            \
+     "trust"                                                          \
+   },                                                                 \
+   { NULL, NULL }                                                     \
+ }
 
 /**
  * @brief Get the resource from a GET iterator.
@@ -33210,14 +33565,14 @@ int
 init_agent_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = AGENT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = AGENT_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "agent",
                             get,
-                            /* Columns. */
-                            AGENT_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            AGENT_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -33357,9 +33712,12 @@ DEF_ACCESS (agent_iterator_howto_use, GET_ITERATOR_COLUMN_COUNT + 7);
 int
 agent_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
-  return count ("agent", get, AGENT_ITERATOR_COLUMNS,
-                AGENT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = AGENT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = AGENT_ITERATOR_TRASH_COLUMNS;
+
+  return count ("agent", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 
@@ -33770,47 +34128,66 @@ modify_note (note_t note, const char *active, const char* text,
  * @brief Note iterator columns.
  */
 #define NOTE_ITERATOR_COLUMNS                                              \
-  "notes.id, notes.uuid,"                                                  \
-  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS name, '',"            \
-  " iso_time (notes.creation_time),"                                       \
-  " iso_time (notes.modification_time), notes.creation_time AS created,"   \
-  " notes.modification_time AS modified,"                                  \
-  " (SELECT name FROM users WHERE users.id = notes.owner) AS _owner,"      \
-  /* Columns specific to notes. */                                         \
-  " notes.nvt AS oid, notes.text, notes.hosts, notes.port,"                \
-  " severity_to_level (notes.severity, 1) as threat,"                      \
-  " notes.task, notes.result, notes.end_time,"                             \
-  " (notes.end_time = 0) OR (notes.end_time >= m_now ()),"                 \
-  " (SELECT name FROM nvts WHERE oid = notes.nvt) AS nvt,"                 \
-  " notes.nvt AS nvt_id,"                                                  \
-  " (SELECT uuid FROM tasks WHERE id = notes.task) AS task_id,"            \
-  " (SELECT name FROM tasks WHERE id = notes.task) AS task_name,"          \
-  " notes.severity,"                                                       \
-  " (SELECT name FROM users WHERE users.id = notes.owner)"                 \
-  " AS _owner"
+ {                                                                         \
+   { "notes.id", NULL },                                                   \
+   { "notes.uuid", NULL },                                                 \
+   { " (SELECT name FROM nvts WHERE oid = notes.nvt)", "name" },           \
+   { "''", NULL },                                                         \
+   { "iso_time (notes.creation_time)", NULL },                             \
+   { "iso_time (notes.modification_time)", NULL },                         \
+   { "notes.creation_time", "created" },                                   \
+   { "notes.modification_time", "modified" },                              \
+   { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
+   /* Columns specific to notes. */                                        \
+   { "notes.nvt", "oid" },                                                 \
+   { "notes.text", NULL },                                                 \
+   { "notes.hosts", NULL },                                                \
+   { "notes.port", NULL },                                                 \
+   { "severity_to_level (notes.severity, 1)", "threat" },                  \
+   { "notes.task", NULL },                                                 \
+   { "notes.result", NULL },                                               \
+   { "notes.end_time", NULL },                                             \
+   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())", NULL },       \
+   { "(SELECT name FROM nvts WHERE oid = notes.nvt)", "nvt" },             \
+   { "notes.nvt", "nvt_id" },                                              \
+   { "(SELECT uuid FROM tasks WHERE id = notes.task)", "task_id" },        \
+   { "(SELECT name FROM tasks WHERE id = notes.task)", "task_name" },      \
+   { "notes.severity", NULL },                                             \
+   { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
+   { NULL, NULL }                                                          \
+ }
 
 /**
  * @brief Note iterator columns for trash case.
  */
-#define NOTE_ITERATOR_TRASH_COLUMNS                                        \
-  "notes_trash.id, notes_trash.uuid, '', '',"                              \
-  " iso_time (notes_trash.creation_time),"                                 \
-  " iso_time (notes_trash.modification_time),"                             \
-  " notes_trash.creation_time AS created,"                                 \
-  " notes_trash.modification_time AS modified,"                            \
-  " (SELECT name FROM users WHERE users.id = notes_trash.owner)"           \
-  " AS _owner,"                                                            \
-  /* Columns specific to notes_trash. */                                   \
-  " notes_trash.nvt AS oid, notes_trash.text, notes_trash.hosts,"          \
-  " notes_trash.port,"                                                     \
-  " severity_to_level (notes_trash.severity, 1) as threat,"                \
-  " notes_trash.task, notes_trash.result, notes_trash.end_time,"           \
-  " (notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ()),"     \
-  " (SELECT name FROM nvts WHERE oid = notes_trash.nvt) AS nvt,"           \
-  " notes_trash.nvt AS nvt_id,"                                            \
-  " (SELECT uuid FROM tasks WHERE id = notes_trash.task) AS task_id,"      \
-  " (SELECT name FROM tasks WHERE id = notes_trash.task) AS task_name,"    \
-  " notes_trash.severity"
+#define NOTE_ITERATOR_TRASH_COLUMNS                                              \
+ {                                                                               \
+   { "notes_trash.id", NULL },                                                   \
+   { "notes_trash.uuid", NULL },                                                 \
+   { "''", NULL },                                                               \
+   { "''", NULL },                                                               \
+   { "iso_time (notes_trash.creation_time)", NULL },                             \
+   { "iso_time (notes_trash.modification_time)", NULL },                         \
+   { "notes_trash.creation_time", "created" },                                   \
+   { "notes_trash.modification_time", "modified" },                              \
+   { "(SELECT name FROM users WHERE users.id = notes_trash.owner)", "_owner" },  \
+   /* Columns specific to notes_trash. */                                        \
+   { "notes_trash.nvt", "oid" },                                                 \
+   { "notes_trash.text", NULL },                                                 \
+   { "notes_trash.hosts", NULL },                                                \
+   { "notes_trash.port", NULL },                                                 \
+   { "severity_to_level (notes_trash.severity, 1)", "threat" },                  \
+   { "notes_trash.task", NULL },                                                 \
+   { "notes_trash.result", NULL },                                               \
+   { "notes_trash.end_time", NULL },                                             \
+   { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())", NULL }, \
+   { "(SELECT name FROM nvts WHERE oid = notes_trash.nvt)", "nvt" },             \
+   { "notes_trash.nvt", "nvt_id" },                                              \
+   { "(SELECT uuid FROM tasks WHERE id = notes_trash.task)", "task_id" },        \
+   { "(SELECT name FROM tasks WHERE id = notes_trash.task)", "task_name" },      \
+   { "notes_trash.severity", NULL },                                             \
+   { NULL, NULL }                                                                \
+ }
 
 /**
  * @brief Count number of notes.
@@ -33828,6 +34205,8 @@ int
 note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 {
   static const char *filter_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = NOTE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = NOTE_ITERATOR_TRASH_COLUMNS;
   gchar *result_clause, *filter, *task_id;
   int ret;
 
@@ -33928,8 +34307,8 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   ret = count ("note",
                get,
-               NOTE_ITERATOR_COLUMNS,
-               NOTE_ITERATOR_TRASH_COLUMNS,
+               columns,
+               trash_columns,
                filter_columns,
                task || nvt,
                NULL,
@@ -33960,6 +34339,8 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                     result_t result, task_t task)
 {
   static const char *filter_columns[] = NOTE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = NOTE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = NOTE_ITERATOR_TRASH_COLUMNS;
   gchar *result_clause, *filter, *task_id;
   int ret;
 
@@ -34069,10 +34450,8 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
   ret = init_get_iterator (iterator,
                            "note",
                            get,
-                           /* Columns. */
-                           NOTE_ITERATOR_COLUMNS,
-                           /* Columns for trashcan. */
-                           NOTE_ITERATOR_TRASH_COLUMNS,
+                           columns,
+                           trash_columns,
                            filter_columns,
                            task || nvt,
                            result_clause,
@@ -34739,52 +35118,93 @@ modify_override (override_t override, const char *active, const char* text,
 /**
  * @brief Override iterator columns.
  */
-#define OVERRIDE_ITERATOR_COLUMNS                                              \
-  "overrides.id, overrides.uuid,"                                              \
-  " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS name, '',"            \
-  " iso_time (overrides.creation_time),"                                       \
-  " iso_time (overrides.modification_time),"                                   \
-  " overrides.creation_time AS created,"                                       \
-  " overrides.modification_time AS modified,"                                  \
-  " (SELECT name FROM users WHERE users.id = overrides.owner) AS _owner,"      \
-  /* Columns specific to overrides. */                                         \
-  " overrides.nvt AS oid, overrides.text,"                                     \
-  " overrides.hosts, overrides.port,"                                          \
-  " severity_to_level (overrides.severity, 1) as threat,"                      \
-  " severity_to_level (overrides.new_severity, 0) as new_threat,"              \
-  " overrides.task, overrides.result, overrides.end_time,"                     \
-  " (overrides.end_time = 0) OR (overrides.end_time >= m_now ()) as active,"   \
-  " (SELECT name FROM nvts WHERE oid = overrides.nvt) AS nvt,"                 \
-  " overrides.nvt AS nvt_id,"                                                  \
-  " (SELECT uuid FROM tasks WHERE id = overrides.task) AS task_id,"            \
-  " (SELECT name FROM tasks WHERE id = overrides.task) AS task_name,"          \
-  " overrides.severity, overrides.new_severity,"                               \
-  " (SELECT name FROM users WHERE users.id = overrides.owner)"                 \
-  " AS _owner"
+#define OVERRIDE_ITERATOR_COLUMNS                                           \
+ {                                                                          \
+   { "overrides.id", NULL },                                                \
+   { "overrides.uuid", NULL },                                              \
+   { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "name" },         \
+   { "''", NULL },                                                          \
+   { "iso_time (overrides.creation_time)", NULL },                          \
+   { "iso_time (overrides.modification_time)", NULL },                      \
+   { "overrides.creation_time", "created" },                                \
+   { "overrides.modification_time", "modified" },                           \
+   {                                                                        \
+     "(SELECT name FROM users WHERE users.id = overrides.owner)",           \
+     "_owner"                                                               \
+   },                                                                       \
+   /* Columns specific to overrides. */                                     \
+   { "overrides.nvt", "oid" },                                              \
+   { "overrides.text", "text" },                                            \
+   { "overrides.hosts", "hosts" },                                          \
+   { "overrides.port", "port" },                                            \
+   { "severity_to_level (overrides.severity, 1)", "threat" },               \
+   { "severity_to_level (overrides.new_severity, 0)", "new_threat" },       \
+   { "overrides.task", NULL },                                              \
+   { "overrides.result", "result" },                                        \
+   { "overrides.end_time", NULL },                                          \
+   {                                                                        \
+     "(overrides.end_time = 0) OR (overrides.end_time >= m_now ())",        \
+     "active"                                                               \
+   },                                                                       \
+   { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "nvt" },          \
+   { "overrides.nvt", "nvt_id" },                                           \
+   { "(SELECT uuid FROM tasks WHERE id = overrides.task)", "task_id" },     \
+   { "(SELECT name FROM tasks WHERE id = overrides.task)", "task_name" },   \
+   { "overrides.severity", "severity" },                                    \
+   { "overrides.new_severity", "new_severity" },                            \
+   {                                                                        \
+     "(SELECT name FROM users WHERE users.id = overrides.owner)",           \
+     "_owner"                                                               \
+   },                                                                       \
+   { NULL, NULL }                                                           \
+ }
 
 /**
  * @brief Override iterator columns for trash case.
  */
-#define OVERRIDE_ITERATOR_TRASH_COLUMNS                                        \
-  "overrides_trash.id, overrides_trash.uuid, '', '',"                          \
-  " iso_time (overrides_trash.creation_time),"                                 \
-  " iso_time (overrides_trash.modification_time),"                             \
-  " overrides_trash.creation_time AS created,"                                 \
-  " overrides_trash.modification_time AS modified,"                            \
-  " (SELECT name FROM users WHERE users.id = overrides_trash.owner)"           \
-  " AS _owner,"                                                                \
-  /* Columns specific to overrides_trash. */                                   \
-  " overrides_trash.nvt AS oid, overrides_trash.text,"                         \
-  " overrides_trash.hosts, overrides_trash.port,"                              \
-  " severity_to_level (overrides_trash.severity, 0) as threat,"                \
-  " severity_to_level (overrides_trash.new_severity, 1) as new_threat,"        \
-  " overrides_trash.task, overrides_trash.result, overrides_trash.end_time,"   \
-  " (overrides_trash.end_time = 0) OR (overrides_trash.end_time >= m_now ())," \
-  " (SELECT name FROM nvts WHERE oid = overrides_trash.nvt) AS nvt,"           \
-  " overrides_trash.nvt AS nvt_id,"                                            \
-  " (SELECT uuid FROM tasks WHERE id = overrides_trash.task) AS task_id,"      \
-  " (SELECT name FROM tasks WHERE id = overrides_trash.task) AS task_name,"    \
-  " overrides_trash.severity, overrides_trash.new_severity"
+#define OVERRIDE_ITERATOR_TRASH_COLUMNS                                     \
+ {                                                                          \
+   { "overrides_trash.id", NULL },                                          \
+   { "overrides_trash.uuid", NULL },                                        \
+   { "''", "name" },                                                        \
+   { "''", NULL },                                                          \
+   { "iso_time (overrides_trash.creation_time)", NULL },                    \
+   { "iso_time (overrides_trash.modification_time)", NULL },                \
+   { "overrides_trash.creation_time", "created" },                          \
+   { "overrides_trash.modification_time", "modified" },                     \
+   {                                                                        \
+     "(SELECT name FROM users WHERE users.id = overrides_trash.owner)",     \
+     "_owner"                                                               \
+   },                                                                       \
+   /* Columns specific to overrides_trash. */                               \
+   { "overrides_trash.nvt", "oid" },                                        \
+   { "overrides_trash.text", "text" },                                      \
+   { "overrides_trash.hosts", "hosts" },                                    \
+   { "overrides_trash.port", "port" },                                      \
+   { "severity_to_level (overrides_trash.severity, 1)", "threat" },         \
+   { "severity_to_level (overrides_trash.new_severity, 0)", "new_threat" }, \
+   { "overrides_trash.task", NULL },                                        \
+   { "overrides_trash.result", "result" },                                  \
+   { "overrides_trash.end_time", NULL },                                    \
+   {                                                                        \
+     "(overrides_trash.end_time = 0)"                                       \
+     " OR (overrides_trash.end_time >= m_now ())",                          \
+     "active"                                                               \
+   },                                                                       \
+   { "(SELECT name FROM nvts WHERE oid = overrides_trash.nvt)", "nvt" },    \
+   { "overrides_trash.nvt", "nvt_id" },                                     \
+   {                                                                        \
+     "(SELECT uuid FROM tasks WHERE id = overrides_trash.task)",            \
+     "task_id"                                                              \
+   },                                                                       \
+   {                                                                        \
+     "(SELECT name FROM tasks WHERE id = overrides_trash.task)",            \
+     "task_name"                                                            \
+   },                                                                       \
+   { "overrides_trash.severity", NULL },                                    \
+   { "overrides_trash.new_severity", NULL },                                \
+   { NULL, NULL }                                                           \
+ }
 
 /**
  * @brief Count number of overrides.
@@ -34802,6 +35222,8 @@ int
 override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 {
   static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OVERRIDE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = OVERRIDE_ITERATOR_TRASH_COLUMNS;
   gchar *result_clause, *filter, *task_id;
   int ret;
 
@@ -34903,8 +35325,8 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
 
   ret = count ("override",
                get,
-               OVERRIDE_ITERATOR_COLUMNS,
-               OVERRIDE_ITERATOR_TRASH_COLUMNS,
+               columns,
+               trash_columns,
                filter_columns,
                task || nvt,
                NULL,
@@ -34935,6 +35357,8 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                         result_t result, task_t task)
 {
   static const char *filter_columns[] = OVERRIDE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OVERRIDE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = OVERRIDE_ITERATOR_TRASH_COLUMNS;
   gchar *result_clause, *filter, *task_id;
   int ret;
 
@@ -35044,10 +35468,8 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
   ret = init_get_iterator (iterator,
                            "override",
                            get,
-                           /* Columns. */
-                           OVERRIDE_ITERATOR_COLUMNS,
-                           /* Columns for trashcan. */
-                           OVERRIDE_ITERATOR_TRASH_COLUMNS,
+                           columns,
+                           trash_columns,
                            filter_columns,
                            task || nvt,
                            result_clause,
@@ -35631,13 +36053,25 @@ delete_scanner (const char *scanner_id, int ultimate)
  * @brief Scanner iterator columns.
  */
 #define SCANNER_ITERATOR_COLUMNS                                     \
-  GET_ITERATOR_COLUMNS (scanners) ", host, port, type"               \
+ {                                                                   \
+   GET_ITERATOR_COLUMNS (scanners),                                  \
+   { "host" , NULL },                                                \
+   { "port" , NULL },                                                \
+   { "type", NULL },                                                 \
+   { NULL, NULL }                                                    \
+ }
 
 /**
  * @brief Scanner iterator columns for trash case.
  */
 #define SCANNER_ITERATOR_TRASH_COLUMNS                               \
-  GET_ITERATOR_COLUMNS (scanners_trash) ", host, port, type"         \
+ {                                                                   \
+   GET_ITERATOR_COLUMNS (scanners_trash),                            \
+   { "host" , NULL },                                                \
+   { "port" , NULL },                                                \
+   { "type", NULL },                                                 \
+   { NULL, NULL }                                                    \
+ }
 
 /**
  * @brief Initialise an scanner iterator.
@@ -35651,10 +36085,11 @@ int
 init_scanner_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = SCANNER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SCANNER_ITERATOR_TRASH_COLUMNS;
 
-  return init_get_iterator (iterator, "scanner", get, SCANNER_ITERATOR_COLUMNS,
-                            SCANNER_ITERATOR_TRASH_COLUMNS, filter_columns, 0,
-                            NULL, TRUE);
+  return init_get_iterator (iterator, "scanner", get, columns, trash_columns,
+                            filter_columns, 0, NULL, TRUE);
 }
 
 /**
@@ -35844,8 +36279,11 @@ int
 scanner_count (const get_data_t *get)
 {
   static const char *extra_columns[] = SCANNER_ITERATOR_FILTER_COLUMNS;
-  return count ("scanner", get, SCANNER_ITERATOR_COLUMNS,
-                SCANNER_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static column_t columns[] = SCANNER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SCANNER_ITERATOR_TRASH_COLUMNS;
+
+  return count ("scanner", get, columns, trash_columns, extra_columns,
+                  0, 0, 0, TRUE);
 }
 
 /**
@@ -36282,17 +36720,33 @@ schedule_name (schedule_t schedule)
  * @brief Schedule iterator columns.
  */
 #define SCHEDULE_ITERATOR_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (schedules) ", first_time, period, period_months,"  \
-  " duration, timezone, initial_offset,"                                   \
-  " next_time (first_time, period, period_months) as next_run,"            \
-  " first_time as first_run"
+ {                                                                         \
+   GET_ITERATOR_COLUMNS (schedules),                                       \
+   { "first_time", NULL },                                                 \
+   { "period", NULL },                                                     \
+   { "period_months", NULL },                                              \
+   { "duration", NULL },                                                   \
+   { "timezone", NULL },                                                   \
+   { "initial_offset", NULL },                                             \
+   { "next_time (first_time, period, period_months)", "next_run" },        \
+   { "first_time", "first_run" },                                          \
+   { NULL, NULL }                                                          \
+ }
 
 /**
  * @brief Schedule iterator columns for trash case.
  */
-#define SCHEDULE_ITERATOR_TRASH_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS (schedules_trash) ", first_time, period, period_months," \
-  " duration, timezone, initial_offset"
+#define SCHEDULE_ITERATOR_TRASH_COLUMNS                                    \
+ {                                                                         \
+   GET_ITERATOR_COLUMNS (schedules_trash),                                 \
+   { "first_time", NULL },                                                 \
+   { "period", NULL },                                                     \
+   { "period_months", NULL },                                              \
+   { "duration", NULL },                                                   \
+   { "timezone", NULL },                                                   \
+   { "initial_offset", NULL },                                             \
+   { NULL, NULL }                                                          \
+ }
 
 /**
  * @brief Count the number of schedules.
@@ -36304,9 +36758,11 @@ schedule_name (schedule_t schedule)
 int
 schedule_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
-  return count ("schedule", get, SCHEDULE_ITERATOR_COLUMNS,
-                SCHEDULE_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = SCHEDULE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SCHEDULE_ITERATOR_TRASH_COLUMNS;
+  return count ("schedule", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -36322,14 +36778,14 @@ int
 init_schedule_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = SCHEDULE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = SCHEDULE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SCHEDULE_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "schedule",
                             get,
-                            /* Columns. */
-                            SCHEDULE_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            SCHEDULE_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -38964,28 +39420,59 @@ report_format_trust (report_format_t report_format)
 /**
  * @brief Report Format iterator columns.
  */
-#define REPORT_FORMAT_ITERATOR_COLUMNS                                        \
-  /* ANON doesn't have name column */                                         \
-  "id, uuid, name, '', iso_time (creation_time),"                             \
-  " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified,"                                           \
-  " (SELECT name FROM users WHERE users.id = report_formats.owner)"           \
-  " AS _owner,"                                                               \
-  " extension, content_type, summary, description, signature, trust,"         \
-  " trust_time, flags & 1 AS active"
+#define REPORT_FORMAT_ITERATOR_COLUMNS                                  \
+ {                                                                      \
+   { "id", NULL },                                                      \
+   { "uuid", NULL },                                                    \
+   { "name", NULL },                                                    \
+   { "''", NULL },                                                      \
+   { "iso_time (creation_time)", NULL },                                \
+   { "iso_time (modification_time)", NULL },                            \
+   { "creation_time", "created" },                                      \
+   { "modification_time", "modified" },                                 \
+   {                                                                    \
+     "(SELECT name FROM users WHERE users.id = report_formats.owner)",  \
+     "_owner"                                                           \
+   },                                                                   \
+   { "extension", NULL },                                               \
+   { "content_type", NULL },                                            \
+   { "summary", NULL },                                                 \
+   { "description", NULL },                                             \
+   { "signature", NULL },                                               \
+   { "trust", NULL },                                                   \
+   { "trust_time", NULL },                                              \
+   { "flags & 1", "active" },                                           \
+   { NULL, NULL }                                                       \
+ }
 
 /**
  * @brief Report Format iterator columns for trash case.
  */
-#define REPORT_FORMAT_ITERATOR_TRASH_COLUMNS                                  \
-  /* ANON doesn't have name column */                                         \
-  "id, uuid, name, '', iso_time (creation_time),"                             \
-  " iso_time (modification_time), creation_time AS created,"                  \
-  " modification_time AS modified,"                                           \
-  " (SELECT name FROM users WHERE users.id = report_formats_trash.owner)"     \
-  " AS _owner,"                                                               \
-  " extension, content_type, summary, description, signature, trust,"         \
-  " trust_time, flags & 1 AS active"
+#define REPORT_FORMAT_ITERATOR_TRASH_COLUMNS                            \
+ {                                                                      \
+   { "id", NULL },                                                      \
+   { "uuid", NULL },                                                    \
+   { "name", NULL },                                                    \
+   { "''", NULL },                                                      \
+   { "iso_time (creation_time)", NULL },                                \
+   { "iso_time (modification_time)", NULL },                            \
+   { "creation_time", "created" },                                      \
+   { "modification_time", "modified" },                                 \
+   {                                                                    \
+     "(SELECT name FROM users"                                          \
+     " WHERE users.id = report_formats_trash.owner)",                   \
+     "_owner"                                                           \
+   },                                                                   \
+   { "extension", NULL },                                               \
+   { "content_type", NULL },                                            \
+   { "summary", NULL },                                                 \
+   { "description", NULL },                                             \
+   { "signature", NULL },                                               \
+   { "trust", NULL },                                                   \
+   { "trust_time", NULL },                                              \
+   { "flags & 1", "active" },                                           \
+   { NULL, NULL }                                                       \
+ }
 
 /**
  * @brief Count the number of Report Formats.
@@ -38997,10 +39484,11 @@ report_format_trust (report_format_t report_format)
 int
 report_format_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
-  return count ("report_format", get, REPORT_FORMAT_ITERATOR_COLUMNS,
-                REPORT_FORMAT_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  static const char *filter_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = REPORT_FORMAT_ITERATOR_TRASH_COLUMNS;
+  return count ("report_format", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -39017,14 +39505,14 @@ int
 init_report_format_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = REPORT_FORMAT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = REPORT_FORMAT_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = REPORT_FORMAT_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "report_format",
                             get,
-                            /* Columns. */
-                            REPORT_FORMAT_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            REPORT_FORMAT_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -39751,14 +40239,28 @@ trash_slave_writable (slave_t slave)
 /**
  * @brief Slave iterator columns.
  */
-#define SLAVE_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS (slaves) ", host, port, login, password"
+#define SLAVE_ITERATOR_COLUMNS                                          \
+ {                                                                      \
+   GET_ITERATOR_COLUMNS (slaves),                                       \
+   { "host", NULL },                                                    \
+   { "port", NULL },                                                    \
+   { "login", NULL },                                                   \
+   { "password", NULL },                                                \
+   { NULL, NULL }                                                       \
+ }
 
 /**
  * @brief Slave iterator columns for trash case.
  */
-#define SLAVE_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (slaves_trash) ", host, port, login, password"
+#define SLAVE_ITERATOR_TRASH_COLUMNS                                    \
+ {                                                                      \
+   GET_ITERATOR_COLUMNS (slaves_trash),                                 \
+   { "host", NULL },                                                    \
+   { "port", NULL },                                                    \
+   { "login", NULL },                                                   \
+   { "password", NULL },                                                \
+   { NULL, NULL }                                                       \
+ }
 
 /**
  * @brief Count the number of slaves.
@@ -39770,9 +40272,12 @@ trash_slave_writable (slave_t slave)
 int
 slave_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
-  return count ("slave", get, SLAVE_ITERATOR_COLUMNS,
-                SLAVE_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = SLAVE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SLAVE_ITERATOR_TRASH_COLUMNS;
+
+  return count ("slave", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -39788,14 +40293,14 @@ int
 init_slave_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = SLAVE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = SLAVE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = SLAVE_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "slave",
                             get,
-                            /* Columns. */
-                            SLAVE_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            SLAVE_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -40492,13 +40997,19 @@ trash_group_in_use (group_t group)
  * @brief Group iterator columns.
  */
 #define GROUP_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS (groups)
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (groups),                                             \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Group iterator columns for trash case.
  */
 #define GROUP_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (groups_trash)
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (groups_trash),                                       \
+   { NULL, NULL }                                                             \
+ }
 
 /**
  * @brief Count number of groups.
@@ -40510,9 +41021,10 @@ trash_group_in_use (group_t group)
 int
 group_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  return count ("group", get, GROUP_ITERATOR_COLUMNS,
-                GROUP_ITERATOR_TRASH_COLUMNS, extra_columns,
+  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
+  return count ("group", get, columns, trash_columns, filter_columns,
                 0, 0, 0, TRUE);
 }
 
@@ -40529,14 +41041,14 @@ int
 init_group_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "group",
                             get,
-                            /* Columns. */
-                            GROUP_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            GROUP_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -41130,90 +41642,114 @@ trash_permission_writable (permission_t permission)
 /**
  * @brief Permission iterator columns.
  */
-#define PERMISSION_ITERATOR_COLUMNS                                         \
-  GET_ITERATOR_COLUMNS (permissions) ", resource_type AS type,"             \
-  " resource_uuid,"                                                         \
-  " (CASE"                                                                  \
-  "  WHEN resource_type = '' OR resource_type IS NULL"                      \
-  "  THEN ''"                                                               \
-  "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
-  "  END) AS _resource,"                                                    \
-  " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
-  " resource = -1,"                                                         \
-  " subject_type,"                                                          \
-  " (CASE"                                                                  \
-  "  WHEN subject_type = 'user'"                                            \
-  "  THEN (SELECT uuid FROM users WHERE users.id = subject)"                \
-  "  WHEN subject_type = 'group'"                                           \
-  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
-  "  THEN (SELECT uuid FROM groups_trash"                                   \
-  "        WHERE groups_trash.id = subject)"                                \
-  "  WHEN subject_type = 'group'"                                           \
-  "  THEN (SELECT uuid FROM groups WHERE groups.id = subject)"              \
-  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
-  "  THEN (SELECT uuid FROM roles_trash"                                    \
-  "        WHERE roles_trash.id = subject)"                                 \
-  "  ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"                \
-  "  END) AS subject_uuid,"                                                 \
-  " (CASE"                                                                  \
-  "  WHEN subject_type = 'user'"                                            \
-  "  THEN (SELECT name FROM users WHERE users.id = subject)"                \
-  "  WHEN subject_type = 'group'"                                           \
-  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
-  "  THEN (SELECT name FROM groups_trash"                                   \
-  "        WHERE groups_trash.id = subject)"                                \
-  "  WHEN subject_type = 'group'"                                           \
-  "  THEN (SELECT name FROM groups WHERE groups.id = subject)"              \
-  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
-  "  THEN (SELECT name FROM roles_trash"                                    \
-  "        WHERE roles_trash.id = subject)"                                 \
-  "  ELSE (SELECT name FROM roles WHERE roles.id = subject)"                \
-  "  END) AS _subject,"                                                     \
-  " subject_location = " G_STRINGIFY (LOCATION_TRASH)
+#define PERMISSION_ITERATOR_COLUMNS                                          \
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (permissions),                                       \
+   { "resource_type", "type" },                                              \
+   { "resource_uuid", NULL },                                                \
+   {                                                                         \
+     "(CASE"                                                                 \
+     " WHEN resource_type = '' OR resource_type IS NULL"                     \
+     " THEN ''"                                                              \
+     " ELSE resource_name (resource_type, resource_uuid, resource_location)" \
+     " END)",                                                                \
+     "_resource"                                                             \
+   },                                                                        \
+   { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
+   { "resource = -1", NULL },                                                \
+   { "subject_type", NULL },                                                 \
+   { "(CASE"                                                                 \
+     " WHEN subject_type = 'user'"                                           \
+     " THEN (SELECT uuid FROM users WHERE users.id = subject)"               \
+     " WHEN subject_type = 'group'"                                          \
+     "      AND subject_location = " G_STRINGIFY (LOCATION_TRASH)            \
+     " THEN (SELECT uuid FROM groups_trash"                                  \
+     "       WHERE groups_trash.id = subject)"                               \
+     " WHEN subject_type = 'group'"                                          \
+     " THEN (SELECT uuid FROM groups WHERE groups.id = subject)"             \
+     " WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                \
+     " THEN (SELECT uuid FROM roles_trash"                                   \
+     "       WHERE roles_trash.id = subject)"                                \
+     " ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"               \
+     " END)",                                                                \
+     "subject_uuid"                                                          \
+   },                                                                        \
+   {                                                                         \
+     "(CASE"                                                                 \
+     " WHEN subject_type = 'user'"                                           \
+     " THEN (SELECT name FROM users WHERE users.id = subject)"               \
+     " WHEN subject_type = 'group'"                                          \
+     "      AND subject_location = " G_STRINGIFY (LOCATION_TRASH)            \
+     " THEN (SELECT name FROM groups_trash"                                  \
+     "       WHERE groups_trash.id = subject)"                               \
+     " WHEN subject_type = 'group'"                                          \
+     " THEN (SELECT name FROM groups WHERE groups.id = subject)"             \
+     " WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                \
+     " THEN (SELECT name FROM roles_trash"                                   \
+     "       WHERE roles_trash.id = subject)"                                \
+     " ELSE (SELECT name FROM roles WHERE roles.id = subject)"               \
+     " END)",                                                                \
+     "_subject"                                                              \
+   },                                                                        \
+   { "subject_location = " G_STRINGIFY (LOCATION_TRASH), NULL },             \
+   { NULL, NULL }                                                            \
+ }
 
 /**
- * @brief Permission iterator columns.
+ * @brief Permission iterator columns for trash case.
  */
-#define PERMISSION_ITERATOR_TRASH_COLUMNS                                   \
-  GET_ITERATOR_COLUMNS (permissions_trash) ", resource_type AS type,"       \
-  " resource_uuid,"                                                         \
-  " (CASE"                                                                  \
-  "  WHEN resource_type = '' OR resource_type IS NULL"                      \
-  "  THEN ''"                                                               \
-  "  ELSE resource_name (resource_type, resource_uuid, resource_location)"  \
-  "  END) AS _resource,"                                                    \
-  " resource_location = " G_STRINGIFY (LOCATION_TRASH) ","                  \
-  " resource = -1,"                                                         \
-  " subject_type,"                                                          \
-  " (CASE"                                                                  \
-  "  WHEN subject_type = 'user'"                                            \
-  "  THEN (SELECT uuid FROM users WHERE users.id = subject)"                \
-  "  WHEN subject_type = 'group'"                                           \
-  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
-  "  THEN (SELECT uuid FROM groups_trash"                                   \
-  "        WHERE groups_trash.id = subject)"                                \
-  "  WHEN subject_type = 'group'"                                           \
-  "  THEN (SELECT uuid FROM groups WHERE groups.id = subject)"              \
-  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
-  "  THEN (SELECT uuid FROM roles_trash"                                    \
-  "        WHERE roles_trash.id = subject)"                                 \
-  "  ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"                \
-  "  END) AS subject_uuid,"                                                 \
-  " (CASE"                                                                  \
-  "  WHEN subject_type = 'user'"                                            \
-  "  THEN (SELECT name FROM users WHERE users.id = subject)"                \
-  "  WHEN subject_type = 'group'"                                           \
-  "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)             \
-  "  THEN (SELECT name FROM groups_trash"                                   \
-  "        WHERE groups_trash.id = subject)"                                \
-  "  WHEN subject_type = 'group'"                                           \
-  "  THEN (SELECT name FROM groups WHERE groups.id = subject)"              \
-  "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                 \
-  "  THEN (SELECT name FROM roles_trash"                                    \
-  "        WHERE roles_trash.id = subject)"                                 \
-  "  ELSE (SELECT name FROM roles WHERE roles.id = subject)"                \
-  "  END) AS _subject,"                                                     \
-  " subject_location = " G_STRINGIFY (LOCATION_TRASH)
+#define PERMISSION_ITERATOR_TRASH_COLUMNS                                    \
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (permissions_trash),                                 \
+   { "resource_type", "type" },                                              \
+   { "resource_uuid", NULL },                                                \
+   {                                                                         \
+     "(CASE"                                                                 \
+     " WHEN resource_type = '' OR resource_type IS NULL"                     \
+     " THEN ''"                                                              \
+     " ELSE resource_name (resource_type, resource_uuid, resource_location)" \
+     " END)",                                                                \
+     "_resource"                                                             \
+   },                                                                        \
+   { "resource_location = " G_STRINGIFY (LOCATION_TRASH), NULL },            \
+   { "resource = -1", NULL },                                                \
+   { "subject_type", NULL },                                                 \
+   { "(CASE"                                                                 \
+     " WHEN subject_type = 'user'"                                           \
+     " THEN (SELECT uuid FROM users WHERE users.id = subject)"               \
+     " WHEN subject_type = 'group'"                                          \
+     "      AND subject_location = " G_STRINGIFY (LOCATION_TRASH)            \
+     " THEN (SELECT uuid FROM groups_trash"                                  \
+     "       WHERE groups_trash.id = subject)"                               \
+     " WHEN subject_type = 'group'"                                          \
+     " THEN (SELECT uuid FROM groups WHERE groups.id = subject)"             \
+     " WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                \
+     " THEN (SELECT uuid FROM roles_trash"                                   \
+     "       WHERE roles_trash.id = subject)"                                \
+     " ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"               \
+     " END)",                                                                \
+     "subject_uuid"                                                          \
+   },                                                                        \
+   {                                                                         \
+     "(CASE"                                                                 \
+     " WHEN subject_type = 'user'"                                           \
+     " THEN (SELECT name FROM users WHERE users.id = subject)"               \
+     " WHEN subject_type = 'group'"                                          \
+     "      AND subject_location = " G_STRINGIFY (LOCATION_TRASH)            \
+     " THEN (SELECT name FROM groups_trash"                                  \
+     "       WHERE groups_trash.id = subject)"                               \
+     " WHEN subject_type = 'group'"                                          \
+     " THEN (SELECT name FROM groups WHERE groups.id = subject)"             \
+     " WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)                \
+     " THEN (SELECT name FROM roles_trash"                                   \
+     "       WHERE roles_trash.id = subject)"                                \
+     " ELSE (SELECT name FROM roles WHERE roles.id = subject)"               \
+     " END)",                                                                \
+     "_subject"                                                              \
+   },                                                                        \
+   { "subject_location = " G_STRINGIFY (LOCATION_TRASH), NULL },             \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Count number of permissions.
@@ -41225,10 +41761,12 @@ trash_permission_writable (permission_t permission)
 int
 permission_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
-  return count ("permission", get, PERMISSION_ITERATOR_COLUMNS,
-                PERMISSION_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0,
-                TRUE);
+  static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PERMISSION_ITERATOR_TRASH_COLUMNS;
+
+  return count ("permission", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -41244,14 +41782,14 @@ int
 init_permission_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PERMISSION_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "permission",
                             get,
-                            /* Columns. */
-                            PERMISSION_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            PERMISSION_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -42683,77 +43221,96 @@ delete_port_range (const char *port_range_id, int dummy)
 /**
  * @brief Filter columns for Port List iterator.
  */
-#define PORT_LIST_ITERATOR_FILTER_COLUMNS                                       \
+#define PORT_LIST_ITERATOR_FILTER_COLUMNS                           \
  { GET_ITERATOR_FILTER_COLUMNS,  "total", "tcp", "udp", NULL }
 
 /**
  * @brief Port List iterator columns.
  */
-#define PORT_LIST_ITERATOR_COLUMNS GET_ITERATOR_COLUMNS (port_lists)            \
-    /* COUNT ALL ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists.id)"                        \
-  "  AS total"                                                                  \
-    /* COUNT TCP ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists.id"                         \
-  "                    AND   type = 0 )"                                        \
-  "  AS tcp"                                                                    \
-    /* COUNT UDP ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists.id"                         \
-  "                    AND   type = 1)"                                         \
-  "  AS udp"
+#define PORT_LIST_ITERATOR_COLUMNS                                 \
+ {                                                                 \
+   GET_ITERATOR_COLUMNS (port_lists),                              \
+   {                                                               \
+     /* COUNT ALL ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists.id)",         \
+     "total"                                                       \
+   },                                                              \
+   {                                                               \
+     /* COUNT TCP ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists.id"           \
+     "                  AND   type = 0 )",                         \
+     "tcp"                                                         \
+   },                                                              \
+   {                                                               \
+     /* COUNT UDP ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists.id"           \
+     "                  AND   type = 1)",                          \
+     "udp"                                                         \
+   },                                                              \
+   { NULL, NULL }                                                  \
+ }
 
 /**
  * @brief Port List iterator columns for trash case.
  */
-#define PORT_LIST_ITERATOR_TRASH_COLUMNS                                        \
-  GET_ITERATOR_COLUMNS (port_lists_trash)                                       \
-    /* COUNT ALL ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists_trash.id)"                  \
-  "  AS total"                                                                  \
-    /* COUNT TCP ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists_trash.id"                   \
-  "                    AND   type = 0 )"                                        \
-  "  AS tcp"                                                                    \
-    /* COUNT UDP ports */                                                       \
-  ", (SELECT"                                                                   \
-  "   sum ((CASE"                                                               \
-  "         WHEN \"end\" IS NULL THEN start ELSE \"end\""                       \
-  "         END)"                                                               \
-  "        - start"                                                             \
-  "        + 1)"                                                                \
-  "   FROM port_ranges WHERE port_list = port_lists_trash.id"                   \
-  "                    AND   type = 1)"                                         \
-  "  AS udp"
+#define PORT_LIST_ITERATOR_TRASH_COLUMNS                           \
+ {                                                                 \
+   GET_ITERATOR_COLUMNS (port_lists_trash),                        \
+   {                                                               \
+     /* COUNT ALL ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists_trash.id)",   \
+     "total"                                                       \
+   },                                                              \
+   {                                                               \
+     /* COUNT TCP ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists_trash.id"     \
+     "                  AND   type = 0 )",                         \
+     "tcp"                                                         \
+   },                                                              \
+   {                                                               \
+     /* COUNT UDP ports */                                         \
+     "(SELECT"                                                     \
+     " sum ((CASE"                                                 \
+     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
+     "       END)"                                                 \
+     "      - start"                                               \
+     "      + 1)"                                                  \
+     " FROM port_ranges WHERE port_list = port_lists_trash.id"     \
+     "                  AND   type = 1)",                          \
+     "udp"                                                         \
+   },                                                              \
+   { NULL, NULL }                                                  \
+ }
 
 /**
  * @brief Count the number of Port Lists.
@@ -42765,9 +43322,12 @@ delete_port_range (const char *port_range_id, int dummy)
 int
 port_list_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
-  return count ("port_list", get, PORT_LIST_ITERATOR_COLUMNS,
-                PORT_LIST_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PORT_LIST_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PORT_LIST_ITERATOR_TRASH_COLUMNS;
+
+  return count ("port_list", get, columns, trash_columns, filter_columns,
+                  0, 0, 0, TRUE);
 }
 
 /**
@@ -42783,14 +43343,14 @@ int
 init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PORT_LIST_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PORT_LIST_ITERATOR_COLUMNS;
 
   return init_get_iterator (iterator,
                             "port_list",
                             get,
-                            /* Columns. */
-                            PORT_LIST_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            PORT_LIST_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -43644,13 +44204,19 @@ modify_role (const char *role_id, const char *name, const char *comment,
  * @brief Role iterator columns.
  */
 #define ROLE_ITERATOR_COLUMNS                                                \
-  GET_ITERATOR_COLUMNS (roles)
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (roles),                                             \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Role iterator columns for trash case.
  */
 #define ROLE_ITERATOR_TRASH_COLUMNS                                          \
-  GET_ITERATOR_COLUMNS (roles_trash)
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (roles_trash),                                       \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Count number of roles.
@@ -43663,8 +44229,10 @@ int
 role_count (const get_data_t *get)
 {
   static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  return count ("role", get, ROLE_ITERATOR_COLUMNS, ROLE_ITERATOR_TRASH_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
+  return count ("role", get, columns, trash_columns, extra_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -43679,16 +44247,16 @@ role_count (const get_data_t *get)
 int
 init_role_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  static const char *role_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "role",
                             get,
-                            /* Columns. */
-                            ROLE_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            ROLE_ITERATOR_TRASH_COLUMNS,
-                            role_columns,
+                            columns,
+                            trash_columns,
+                            filter_columns,
                             0,
                             NULL,
                             TRUE);
@@ -44152,13 +44720,23 @@ trash_filter_writable (filter_t filter)
  * @brief Filter iterator columns.
  */
 #define FILTER_ITERATOR_COLUMNS                               \
-  GET_ITERATOR_COLUMNS (filters) ", type, term"
+ {                                                            \
+   GET_ITERATOR_COLUMNS (filters),                            \
+   { "type" , NULL },                                         \
+   { "term", NULL },                                          \
+   { NULL, NULL }                                             \
+ }
 
 /**
  * @brief Filter iterator columns for trash case.
  */
 #define FILTER_ITERATOR_TRASH_COLUMNS                         \
-  GET_ITERATOR_COLUMNS (filters_trash) ", type, term"
+ {                                                            \
+   GET_ITERATOR_COLUMNS (filters_trash),                      \
+   { "type" , NULL },                                         \
+   { "term", NULL },                                          \
+   { NULL, NULL }                                             \
+ }
 
 /**
  * @brief Count number of filters.
@@ -44170,9 +44748,11 @@ trash_filter_writable (filter_t filter)
 int
 filter_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  return count ("filter", get, FILTER_ITERATOR_COLUMNS,
-                FILTER_ITERATOR_TRASH_COLUMNS, extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
+  return count ("filter", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
 }
 
 /**
@@ -44188,14 +44768,14 @@ int
 init_filter_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "filter",
                             get,
-                            /* Columns. */
-                            FILTER_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            FILTER_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -45844,10 +46424,23 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
 /* Settings. */
 
 /**
- * @brief Extra columns for setting iterator.
+ * @brief Filter columns for setting iterator.
  */
-#define SETTING_ITERATOR_EXTRA_COLS \
- { NULL }
+#define SETTING_ITERATOR_FILTER_COLUMNS \
+ { "name", "comment", "value", NULL }
+
+/**
+ * @brief Setting iterator columns.
+ */
+#define SETTING_ITERATOR_COLUMNS                              \
+ {                                                            \
+   { "id" , NULL },                                           \
+   { "uuid", NULL },                                          \
+   { "name", NULL },                                          \
+   { "comment", NULL },                                       \
+   { "value", NULL },                                         \
+   { NULL, NULL }                                             \
+ }
 
 /**
  * @brief Count number of settings.
@@ -45859,14 +46452,15 @@ manage_report_host_detail (report_t report, const char *host, const char *xml)
 int
 setting_count (const char *filter)
 {
-  static const char *extra_columns[] = SETTING_ITERATOR_EXTRA_COLS;
+  static const char *filter_columns[] = SETTING_ITERATOR_FILTER_COLUMNS;
+  static column_t select_columns[] = SETTING_ITERATOR_COLUMNS;
   gchar *clause;
   int ret;
 
   assert (current_credentials.uuid);
 
-  clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, filter_columns, select_columns,
+                          0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -45960,8 +46554,9 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                        const char *filter, int first, int max, int ascending,
                        const char *sort_field)
 {
-  static const char *extra_columns[] = SETTING_ITERATOR_EXTRA_COLS;
-  gchar *clause, *quoted_uuid;
+  static const char *filter_columns[] = SETTING_ITERATOR_FILTER_COLUMNS;
+  static column_t select_columns[] = SETTING_ITERATOR_COLUMNS;
+  gchar *clause, *columns, *quoted_uuid;
 
   assert (current_credentials.uuid);
 
@@ -45970,14 +46565,15 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
   if (max < 1)
     max = -1;
 
-  clause = filter_clause ("setting", filter, extra_columns, 0, NULL, NULL,
-                          NULL, NULL, NULL);
+  clause = filter_clause ("setting", filter, filter_columns, select_columns,
+                          0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
+  columns = columns_build_select (select_columns);
 
   if (quoted_uuid)
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, value"
+                   "SELECT %s"
                    " FROM settings"
                    " WHERE uuid = '%s'"
                    " AND ((owner IS NULL)"
@@ -45985,11 +46581,12 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "                   WHERE users.uuid = '%s')))"
                    /* Force the user's setting to come before the default. */
                    " ORDER BY owner DESC;",
+                   columns,
                    quoted_uuid,
                    current_credentials.uuid);
   else
     init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, value"
+                   "SELECT %s"
                    " FROM settings"
                    " WHERE"
                    " (owner = (SELECT id FROM users WHERE uuid = '%s')"
@@ -46001,6 +46598,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "%s%s"
                    " ORDER BY %s %s"
                    " LIMIT %s OFFSET %i;",
+                   columns,
                    current_credentials.uuid,
                    current_credentials.uuid,
                    clause ? " AND " : "",
@@ -46010,6 +46608,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    sql_select_limit (max),
                    first);
 
+  g_free (columns);
   g_free (clause);
 }
 
@@ -46391,13 +46990,28 @@ modify_setting (const gchar *uuid, const gchar *name,
  * @brief CVE iterator columns.
  */
 #define CVE_INFO_ITERATOR_COLUMNS                               \
-   "id, uuid, name, comment, iso_time (creation_time),"         \
-   " iso_time (modification_time), creation_time AS published," \
-   " modification_time AS modified, '',"                        \
-   " vector, complexity,"                                       \
-   " authentication, confidentiality_impact,"                   \
-   " integrity_impact, availability_impact, products,"          \
-   " cvss, description, cvss as severity"
+ {                                                              \
+   { "id", NULL },                                              \
+   { "uuid", NULL },                                            \
+   { "name", NULL },                                            \
+   { "comment", NULL },                                         \
+   { "iso_time (creation_time)", NULL },                        \
+   { "iso_time (modification_time)", NULL },                    \
+   { "creation_time", "published" },                            \
+   { "modification_time", "modified" },                         \
+   { "''", NULL },                                              \
+   { "vector", NULL },                                          \
+   { "complexity", NULL },                                      \
+   { "authentication", NULL },                                  \
+   { "confidentiality_impact", NULL },                          \
+   { "integrity_impact", NULL },                                \
+   { "availability_impact", NULL },                             \
+   { "products", NULL },                                        \
+   { "cvss", NULL },                                            \
+   { "description", NULL },                                     \
+   { "cvss", "severity" },                                      \
+   { NULL, NULL }                                               \
+ }
 
 /**
  * @brief Filter columns for CVE iterator.
@@ -46410,10 +47024,19 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief CPE iterator columns.
  */
-#define CPE_INFO_ITERATOR_COLUMNS                                    \
-  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, status,"  \
-  " deprecated_by_id, max_cvss, cve_refs AS cves, nvd_id,"           \
-  " max_cvss as severity"
+#define CPE_INFO_ITERATOR_COLUMNS                               \
+ {                                                              \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                            \
+   { "''", "_owner" },                                          \
+   { "title", NULL },                                           \
+   { "status", NULL },                                          \
+   { "deprecated_by_id", NULL },                                \
+   { "max_cvss", NULL },                                        \
+   { "cve_refs", "cves" },                                      \
+   { "nvd_id", NULL },                                          \
+   { "max_cvss", "severity" },                                  \
+   { NULL, NULL }                                               \
+ }
 
 /**
  * @brief Filter columns for OVALDEF iterator.
@@ -46426,10 +47049,22 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief OVALDEF iterator columns.
  */
-#define OVALDEF_INFO_ITERATOR_COLUMNS                                     \
-  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, version, deprecated," \
-  " def_class AS class, title, description, xml_file AS file, status,"    \
-  " max_cvss, cve_refs as cves, max_cvss as severity"
+#define OVALDEF_INFO_ITERATOR_COLUMNS                            \
+ {                                                               \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                             \
+   { "''", "_owner" },                                           \
+   { "version", NULL },                                          \
+   { "deprecated", NULL },                                       \
+   { "def_class", "class"},                                      \
+   { "title", NULL },                                            \
+   { "description", NULL },                                      \
+   { "xml_file", "file" },                                       \
+   { "status", NULL },                                           \
+   { "max_cvss", NULL },                                         \
+   { "cve_refs", "cves" },                                       \
+   { "max_cvss", "severity" },                                   \
+   { NULL, NULL }                                                \
+ }
 
 /**
  * @brief Filter columns for DFN_CERT_ADV iterator.
@@ -46441,9 +47076,17 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief DFN_CERT_ADV iterator columns.
  */
-#define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                             \
-  GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, title, summary,"   \
-  " cve_refs AS cves, max_cvss, max_cvss as severity"
+#define DFN_CERT_ADV_INFO_ITERATOR_COLUMNS                       \
+ {                                                               \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                             \
+   { "''", "_owner" },                                           \
+   { "title", NULL },                                            \
+   { "summary", NULL },                                          \
+   { "cve_refs", "cves" },                                       \
+   { "max_cvss", NULL },                                         \
+   { "max_cvss", "severity" },                                   \
+   { NULL, NULL }                                                \
+ }
 
 /**
  * @brief Filter columns for All SecInfo iterator.
@@ -46454,23 +47097,43 @@ modify_setting (const gchar *uuid, const gchar *name,
 /**
  * @brief All SecInfo iterator columns.
  */
+#define ALL_INFO_ITERATOR_COLUMNS                                       \
+ {                                                                      \
+   { "id", NULL },                                                      \
+   { "uuid", NULL },                                                    \
+   { "name", NULL },                                                    \
+   { "comment", NULL },                                                 \
+   { "iso_time (created)", NULL },                                      \
+   { "iso_time (modified)", NULL },                                     \
+   { "created", NULL },                                                 \
+   { "modified", NULL },                                                \
+   { "''", "_owner" },                                                  \
+   { "type", NULL },                                                    \
+   { "extra", NULL },                                                   \
+   { "severity", NULL },                                                \
+   { NULL, NULL }                                                       \
+ }
+
+/**
+ * @brief All SecInfo iterator column union.
+ */
 #define ALL_INFO_UNION_COLUMNS                                                 \
-  "(SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, 'cve' AS type," \
+  "(SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner, 'cve' AS type,"      \
   "        description as extra, cvss as severity"                             \
   " FROM cves"                                                                 \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'cpe' AS type, title as extra, max_cvss as severity"      \
   "           FROM cpes"                                                       \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'nvt' AS type, CASE summary WHEN 'NOSUMMARY' THEN tag"    \
   "                                  ELSE summary END AS extra,"               \
   "                  cvss_base as severity"                                    \
   "           FROM nvts"                                                       \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'dfn_cert_adv' AS type, title as extra,"                  \
   "                  max_cvss as severity"                                     \
   "           FROM dfn_cert_advs"                                              \
-  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner,"      \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'ovaldef' AS type, title as extra, max_cvss as severity"  \
   "           FROM ovaldefs)"                                                  \
   " AS allinfo"
@@ -46592,9 +47255,9 @@ DEF_ACCESS (cve_iterator_cvss, 2);
 int
 cpe_info_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("cpe", get, CPE_INFO_ITERATOR_COLUMNS, NULL, extra_columns,
-                0, 0, 0, FALSE);
+  static const char *filter_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
+  return count ("cpe", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -46611,6 +47274,7 @@ int
 init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 {
   static const char *filter_columns[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
@@ -46635,8 +47299,7 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
   ret = init_get_iterator (iterator,
                            "cpe",
                            get,
-                           /* Columns. */
-                           CPE_INFO_ITERATOR_COLUMNS,
+                           columns,
                            NULL,
                            filter_columns,
                            0,
@@ -46656,9 +47319,9 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 int
 cve_info_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("cve", get, CVE_INFO_ITERATOR_COLUMNS, NULL, extra_columns,
-                0, 0, 0, FALSE);
+  static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
+  return count ("cve", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -46675,6 +47338,7 @@ int
 init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
 {
   static const char *filter_columns[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
@@ -46699,8 +47363,7 @@ init_cve_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
   ret = init_get_iterator (iterator,
                            "cve",
                            get,
-                           /* Columns. */
-                           CVE_INFO_ITERATOR_COLUMNS,
+                           columns,
                            NULL,
                            filter_columns,
                            0,
@@ -46875,6 +47538,7 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
                             const char *name)
 {
   static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
@@ -46899,8 +47563,7 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
   ret = init_get_iterator (iterator,
                            "ovaldef",
                            get,
-                           /* Columns. */
-                           OVALDEF_INFO_ITERATOR_COLUMNS,
+                           columns,
                            NULL,
                            filter_columns,
                            0,
@@ -46920,9 +47583,9 @@ init_ovaldef_info_iterator (iterator_t* iterator, get_data_t *get,
 int
 ovaldef_info_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("ovaldef", get, OVALDEF_INFO_ITERATOR_COLUMNS, NULL,
-                extra_columns, 0, 0, 0, FALSE);
+  static const char *filter_columns[] = OVALDEF_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
+  return count ("ovaldef", get, columns, NULL, filter_columns, 0, 0, 0, FALSE);
 }
 
 /**
@@ -47043,6 +47706,7 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 {
   static const char *filter_columns[] =
       DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   gchar *clause = NULL;
   int ret;
 
@@ -47067,8 +47731,7 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
   ret = init_get_iterator (iterator,
                            "dfn_cert_adv",
                            get,
-                           /* Columns. */
-                           DFN_CERT_ADV_INFO_ITERATOR_COLUMNS,
+                           columns,
                            NULL,
                            filter_columns,
                            0,
@@ -47088,10 +47751,11 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 int
 dfn_cert_adv_info_count (const get_data_t *get)
 {
-  static const char *extra_columns[] =
+  static const char *filter_columns[] =
                       DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS;
-  return count ("dfn_cert_adv", get, DFN_CERT_ADV_INFO_ITERATOR_COLUMNS, NULL,
-                extra_columns, 0, 0, 0, FALSE);
+  static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  return count ("dfn_cert_adv", get, columns, NULL, filter_columns,
+                0, 0, 0, FALSE);
 }
 
 /**
@@ -47150,16 +47814,23 @@ void
 init_cve_dfn_cert_adv_iterator (iterator_t *iterator, const char *cve,
                                 int ascending, const char *sort_field)
 {
+  static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  gchar *columns;
+
   assert (cve);
+
+  columns = columns_build_select (select_columns);
   init_iterator (iterator,
-                 "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
+                 "SELECT %s"
                  " FROM dfn_cert_advs"
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
                  "              WHERE cve_name = '%s')"
                  " ORDER BY %s %s;",
+                 columns,
                  cve,
                  sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
+  g_free (columns);
 }
 
 /**
@@ -47174,18 +47845,25 @@ void
 init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid,
                                 int ascending, const char *sort_field)
 {
+  static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  gchar *columns;
+
   assert (oid);
+
+  columns = columns_build_select (select_columns);
   init_iterator (iterator,
-                 "SELECT " DFN_CERT_ADV_INFO_ITERATOR_COLUMNS
+                 "SELECT %s"
                  " FROM dfn_cert_advs"
                  " WHERE id IN (SELECT adv_id FROM dfn_cert_cves"
                  "              WHERE cve_name IN (SELECT cve_name"
                  "                                 FROM nvt_cves"
                  "                                 WHERE oid = '%s'))"
                  " ORDER BY %s %s;",
+                 columns,
                  oid,
                  sort_field ? sort_field : "name",
                  ascending ? "ASC" : "DESC");
+  g_free (columns);
 }
 
 /**
@@ -47234,6 +47912,7 @@ total_info_count (const get_data_t *get, int filtered)
   if (filtered)
     {
       static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
+      static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
       gchar *filter;
 
       if (get->filt_id && strcmp (get->filt_id, "0"))
@@ -47246,8 +47925,8 @@ total_info_count (const get_data_t *get, int filtered)
         filter = NULL;
 
       clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                              filter_columns, get->trash, NULL, NULL, NULL,
-                              NULL, NULL);
+                              filter_columns, select_columns, get->trash,
+                              NULL, NULL, NULL, NULL, NULL);
       if (clause)
         return sql_int ("SELECT count (id) FROM"
                         ALL_INFO_UNION_COLUMNS
@@ -47274,10 +47953,10 @@ int
 init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                         const char *name)
 {
-  int first, max;
-  gchar *clause, *filter, *order;
-
   static const char *filter_columns[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t select_columns[] = ALL_INFO_ITERATOR_COLUMNS;
+  int first, max;
+  gchar *columns, *clause, *filter, *order;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -47289,17 +47968,17 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
     filter = NULL;
 
   clause = filter_clause ("allinfo", filter ? filter : get->filter,
-                          filter_columns, get->trash,
+                          filter_columns, select_columns, get->trash,
                           &order, &first, &max, NULL, NULL);
+  columns = columns_build_select (select_columns);
 
   init_iterator (iterator,
-                 "SELECT id, uuid, name, comment, iso_time (created),"
-                 "       iso_time (modified), created, modified, '' AS _owner,"
-                 "       type, extra, severity"
+                 "SELECT %s"
                  " FROM" ALL_INFO_UNION_COLUMNS
                  " %s%s"
                  " %s"
                  " LIMIT %i OFFSET %i;",
+                 columns,
                  clause ? "WHERE " : "",
                  clause ? clause   : "",
                  order,
@@ -47308,6 +47987,7 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
 
   g_free (order);
   g_free (filter);
+  g_free (columns);
   g_free (clause);
   return 0;
 }
@@ -48554,29 +49234,47 @@ trash_user_writable (user_t user)
  * @brief User iterator columns.
  */
 #define USER_ITERATOR_COLUMNS                                              \
-  GET_ITERATOR_COLUMNS (users) ", method, hosts, hosts_allow,"             \
-  " coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"     \
-  "            JOIN roles ON role = roles.id"                              \
-  "            WHERE \"user\" = users.id"                                  \
-  "            GROUP BY roles.name"                                        \
-  "            ORDER BY name ASC),"                                        \
-  "           '')"                                                         \
-  " AS roles,"                                                             \
-  " coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users"   \
-  "            JOIN groups ON \"group\" = groups.id"                       \
-  "            WHERE \"user\" = users.id"                                  \
-  "            GROUP BY groups.name"                                       \
-  "            ORDER BY groups.name ASC),"                                 \
-  "           '')"                                                         \
-  " AS groups,"                                                            \
-  " ifaces, ifaces_allow"
+ {                                                                         \
+   GET_ITERATOR_COLUMNS (users),                                           \
+   { "method", NULL },                                                     \
+   { "hosts", NULL },                                                      \
+   { "hosts_allow", NULL },                                                \
+   {                                                                       \
+     "coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"   \
+     "            JOIN roles ON role = roles.id"                           \
+     "            WHERE \"user\" = users.id"                               \
+     "            GROUP BY roles.name"                                     \
+     "            ORDER BY name ASC),"                                     \
+     "           '')",                                                     \
+     "roles"                                                               \
+   },                                                                      \
+   {                                                                       \
+     "coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users" \
+     "            JOIN groups ON \"group\" = groups.id"                    \
+     "            WHERE \"user\" = users.id"                               \
+     "            GROUP BY groups.name"                                    \
+     "            ORDER BY groups.name ASC),"                              \
+     "           '')",                                                     \
+     "groups"                                                              \
+   },                                                                      \
+   { "ifaces", NULL },                                                     \
+   { "ifaces_allow", NULL },                                               \
+   { NULL, NULL }                                                          \
+ }
 
 /**
  * @brief User iterator columns for trash case.
  */
-#define USER_ITERATOR_TRASH_COLUMNS                                     \
-  GET_ITERATOR_COLUMNS (users_trash) ", method, hosts, hosts_allow,"    \
-  " ifaces, ifaces_allow"
+#define USER_ITERATOR_TRASH_COLUMNS                                        \
+ {                                                                         \
+   GET_ITERATOR_COLUMNS (users_trash),                                     \
+   { "method", NULL },                                                     \
+   { "hosts", NULL },                                                      \
+   { "hosts_allow", NULL },                                                \
+   { "ifaces", NULL },                                                     \
+   { "ifaces_allow", NULL },                                               \
+   { NULL, NULL }                                                          \
+ }
 
 /**
  * @brief Count number of users.
@@ -48588,9 +49286,10 @@ trash_user_writable (user_t user)
 int
 user_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = USER_ITERATOR_FILTER_COLUMNS;
-  return count ("user", get, USER_ITERATOR_COLUMNS, NULL, extra_columns,
-                0, 0, 0, TRUE);
+  static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = USER_ITERATOR_COLUMNS;
+  return count ("user", get, columns, NULL, filter_columns,
+                  0, 0, 0, TRUE);
 }
 
 /**
@@ -48605,16 +49304,16 @@ user_count (const get_data_t *get)
 int
 init_user_iterator (iterator_t* iterator, const get_data_t *get)
 {
-  static const char *user_columns[] = USER_ITERATOR_FILTER_COLUMNS;
+  static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = USER_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = USER_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "user",
                             get,
-                            /* Columns. */
-                            USER_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            USER_ITERATOR_TRASH_COLUMNS,
-                            user_columns,
+                            columns,
+                            trash_columns,
+                            filter_columns,
                             0,
                             NULL,
                             TRUE);
@@ -49186,21 +49885,41 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  * @brief Tag iterator columns.
  */
 #define TAG_ITERATOR_COLUMNS                                                  \
-  GET_ITERATOR_COLUMNS (tags) ", resource_type, resource, resource_uuid,"     \
-  " resource_location, active, value,"                                        \
-  " (resource = 0) AS orphan,"                                                \
-  " resource_name (resource_type, resource_uuid, resource_location)"          \
-  " AS resource_name"
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (tags),                                              \
+   { "resource_type", NULL },                                                \
+   { "resource", NULL },                                                     \
+   { "resource_uuid", NULL },                                                \
+   { "resource_location", NULL },                                            \
+   { "active", NULL },                                                       \
+   { "value", NULL },                                                        \
+   { "(resource = 0)", "orphan" },                                           \
+   {                                                                         \
+     "resource_name (resource_type, resource_uuid, resource_location)",      \
+     "resource_name"                                                         \
+   },                                                                        \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Tag iterator trash columns.
  */
-#define TAG_ITERATOR_TRASH_COLUMNS                                            \
-  GET_ITERATOR_COLUMNS (tags_trash) ", resource_type, resource,"              \
-  " resource_uuid, resource_location, active, value,"                         \
-  " (resource = 0) AS orphan,"                                                \
-  " resource_name (resource_type, resource_uuid, resource_location)"          \
-  " AS resource_name"
+#define TAG_ITERATOR_TRASH_COLUMNS                                           \
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (tags_trash),                                        \
+   { "resource_type", NULL },                                                \
+   { "resource", NULL },                                                     \
+   { "resource_uuid", NULL },                                                \
+   { "resource_location", NULL },                                            \
+   { "active", NULL },                                                       \
+   { "value", NULL },                                                        \
+   { "(resource = 0)", "orphan" },                                           \
+   {                                                                         \
+     "resource_name (resource_type, resource_uuid, resource_location)",      \
+     "resource_name"                                                         \
+   },                                                                        \
+   { NULL, NULL }                                                            \
+ }
 
 /**
  * @brief Filter columns for Tag name iterator.
@@ -49212,7 +49931,11 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
  * @brief Tag name iterator columns.
  */
 #define TAG_NAME_ITERATOR_COLUMNS                                \
-  "name"
+ {                                                               \
+   { "name" , NULL },                                            \
+   { "resource_type" , NULL },                                   \
+   { NULL, NULL }                                                \
+ }
 
 /**
  * @brief Initialise a tag iterator.
@@ -49227,14 +49950,14 @@ int
 init_tag_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TAG_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TAG_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "tag",
                             get,
-                            /* Columns. */
-                            TAG_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            TAG_ITERATOR_TRASH_COLUMNS,
+                            columns,
+                            trash_columns,
                             filter_columns,
                             0,
                             NULL,
@@ -49251,9 +49974,12 @@ init_tag_iterator (iterator_t* iterator, const get_data_t *get)
 int
 tag_count (const get_data_t *get)
 {
-  static const char *extra_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
-  return count ("tag", get, TAG_ITERATOR_COLUMNS, TAG_ITERATOR_TRASH_COLUMNS,
-                extra_columns, 0, 0, 0, TRUE);
+  static const char *filter_columns[] = TAG_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TAG_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TAG_ITERATOR_TRASH_COLUMNS;
+
+  return count ("tag", get, columns, trash_columns, filter_columns,
+                  0, 0, 0, TRUE);
 }
 
 /**
@@ -49352,14 +50078,13 @@ int
 init_tag_name_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TAG_NAME_ITERATOR_COLUMNS;
 
   return init_get_iterator (iterator,
                             "tag",
                             get,
-                            /* Columns. */
-                            TAG_NAME_ITERATOR_COLUMNS,
-                            /* Columns for trashcan. */
-                            TAG_NAME_ITERATOR_COLUMNS,
+                            columns,
+                            columns,
                             filter_columns,
                             1,
                             NULL,
@@ -49538,25 +50263,68 @@ trash_tag_writable (tag_t tag)
   return 0;
 }
 
-const char*
+char*
 type_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
   else if (strcasecmp (type, "CPE") == 0)
-    return CPE_INFO_ITERATOR_COLUMNS;
+    {
+      static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "CVE") == 0)
-    return CVE_INFO_ITERATOR_COLUMNS;
+    {
+      static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
-    return DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+    {
+      static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "NVT") == 0)
-    return NVT_ITERATOR_COLUMNS;
+    return g_strdup (nvt_iterator_columns ());
   else if (strcasecmp (type, "OVALDEF") == 0)
-    return OVALDEF_INFO_ITERATOR_COLUMNS;
+    {
+      static column_t columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "ALERT") == 0)
-    return ALERT_ITERATOR_COLUMNS;
+    {
+      static column_t columns[] = ALERT_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else
     return NULL;
+}
+
+// FIX
+column_t *
+type_select_columns (const char *type)
+{
+  static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
+  static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
+  static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
+  static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
+  static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
+
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "CPE") == 0)
+    return cpe_columns;
+  else if (strcasecmp (type, "CVE") == 0)
+    return cve_columns;
+  else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
+    return dfn_cert_adv_columns;
+  else if (strcasecmp (type, "NVT") == 0)
+    return nvt_columns;
+  else if (strcasecmp (type, "OVALDEF") == 0)
+    return ovaldef_columns;
+  else if (strcasecmp (type, "ALERT") == 0)
+    return alert_columns;
+  return NULL;
 }
 
 const char**
@@ -49599,13 +50367,16 @@ type_filter_columns (const char *type)
 
 }
 
-const char*
+char*
 type_trash_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
   else if (strcasecmp (type, "ALERT") == 0)
-    return ALERT_ITERATOR_TRASH_COLUMNS;
+    {
+      static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
+      return columns_build_select (columns);
+    }
   else
     return NULL;
 }

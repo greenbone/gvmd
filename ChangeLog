@@ -1,3 +1,96 @@
+2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use the column value directly in WHERE clauses generated for filter
+	terms, because Postgres does not allow the WHERE clause to use column
+	aliases.
+
+	For example, for the filter term "ips=20" use the SQL
+
+	    SELECT name, (SELECT count (*) FROM ...) AS ips, ...
+	    FROM targets
+	    WHERE (SELECT count (*) FROM ...) = 20;
+
+	instead of
+
+	    SELECT name, (SELECT count (*) FROM ...) AS ips, ...
+	    FROM targets
+	    WHERE ips = 20;
+
+	* src/manage_sql.c (column_t): New type.
+	(columns_select_column, columns_build_select): New functions.
+	(filter_clause): Add select_columns arg.  Lookup the actual column
+	expression in select_columns instead of using aliases, for the clause.
+	(GET_ITERATOR_COLUMNS_STRING): New define.
+	(GET_ITERATOR_COLUMNS_PREFIX, GET_ITERATOR_COLUMNS): Switch to structure.
+	(init_get_iterator, count): Add select_columns and trash_select_columns
+	args.  Pass to filter_clause, and use to build the SELECT column string
+	for the SQL.
+	(init_aggregate_iterator): Add select_columns and trash_select_columns
+	args.  Pass to filter_clause.
+	(ALERT_ITERATOR_COLUMNS, ALERT_ITERATOR_TRASH_COLUMNS)
+	(TASK_ITERATOR_COLUMNS, REPORT_ITERATOR_COLUMNS)
+	(TARGET_ITERATOR_COLUMNS, TARGET_ITERATOR_TRASH_COLUMNS)
+	(CONFIG_ITERATOR_COLUMNS, CONFIG_ITERATOR_TRASH_COLUMNS)
+	(NVT_ITERATOR_COLUMNS, NVT_ITERATOR_COLUMNS_NVTS)
+	(LSC_CREDENTIAL_ITERATOR_COLUMNS, LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS)
+	(AGENT_ITERATOR_COLUMNS, AGENT_ITERATOR_TRASH_COLUMNS)
+	(NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS)
+	(SCANNER_ITERATOR_COLUMNS, SCANNER_ITERATOR_TRASH_COLUMNS)
+	(SCHEDULE_ITERATOR_COLUMNS, SCHEDULE_ITERATOR_TRASH_COLUMNS)
+	(REPORT_FORMAT_ITERATOR_COLUMNS, REPORT_FORMAT_ITERATOR_TRASH_COLUMNS)
+	(SLAVE_ITERATOR_COLUMNS, SLAVE_ITERATOR_TRASH_COLUMNS)
+	(GROUP_ITERATOR_COLUMNS, GROUP_ITERATOR_TRASH_COLUMNS)
+	(PERMISSION_ITERATOR_COLUMNS, PERMISSION_ITERATOR_TRASH_COLUMNS)
+	(PORT_LIST_ITERATOR_COLUMNS, PORT_LIST_ITERATOR_TRASH_COLUMNS)
+	(ROLE_ITERATOR_COLUMNS, ROLE_ITERATOR_TRASH_COLUMNS)
+	(FILTER_ITERATOR_COLUMNS, FILTER_ITERATOR_TRASH_COLUMNS)
+	(CVE_INFO_ITERATOR_COLUMNS, CPE_INFO_ITERATOR_COLUMNS)
+	(OVALDEF_INFO_ITERATOR_COLUMNS, DFN_CERT_ADV_INFO_ITERATOR_COLUMNS)
+	(USER_ITERATOR_COLUMNS, USER_ITERATOR_TRASH_COLUMNS)
+	(TAG_ITERATOR_COLUMNS, TAG_ITERATOR_TRASH_COLUMNS)
+	(TAG_NAME_ITERATOR_COLUMNS): Switch to structure.
+	(alert_count, init_alert_iterator, init_task_iterator, resource_count)
+	(task_count, report_count, init_report_iterator, target_count)
+	(init_target_iterator, config_count, init_config_iterator)
+	(init_nvt_info_iterator, nvt_info_count, init_nvt_info)
+	(lsc_credential_count, init_lsc_credential_iterator)
+	(init_agent_iterator, agent_count, note_count, init_note_iterator)
+	(override_count, init_override_iterator, init_scanner_iterator)
+	(scanner_count, schedule_count, init_schedule_iterator)
+	(report_format_count, init_report_format_iterator, slave_count)
+	(init_slave_iterator, group_count, init_group_iterator)
+	(permission_count, init_permission_iterator, port_list_count)
+	(init_port_list_iterator, role_count, init_role_iterator, filter_count)
+	(init_filter_iterator, setting_count, init_setting_iterator)
+	(cpe_info_count, init_cpe_info_iterator, cve_info_count)
+	(init_cve_info_iterator, init_ovaldef_info_iterator, ovaldef_info_count)
+	(init_dfn_cert_adv_info_iterator, dfn_cert_adv_info_count)
+	(init_cve_dfn_cert_adv_iterator, init_nvt_dfn_cert_adv_iterator)
+	(total_info_count, init_all_info_iterator, user_count)
+	(init_user_iterator, init_tag_iterator, tag_count)
+	(init_tag_name_iterator): Pass column structures instead of strings.
+	(TASK_ITERATOR_TRASH_COLUMNS): Remove.  Same as TASK_ITERATOR_COLUMNS.
+	(init_user_task_iterator, init_user_target_iterator)
+	(init_user_config_iterator, update_all_config_caches)
+	(update_config_cache_init, init_user_lsc_credential_iterator)
+	(): Build SELECT string from column structure.
+	(nvt_iterator_columns, nvt_iterator_columns_nvts): New function.
+	(select_config_nvts): Use function fto get SELECT column string.
+	(SETTING_ITERATOR_EXTRA_COLS): Remove.  Now
+	SETTING_ITERATOR_FILTER_COLUMNS, to match other.
+	(SETTING_ITERATOR_FILTER_COLUMNS): New define.  Renamed.
+	(SETTING_ITERATOR_COLUMNS, ALL_INFO_ITERATOR_COLUMNS): New defines.
+	(ALL_INFO_UNIION_COLUMNS): Use GET_ITERATOR_COLUMNS_STRING.
+	(type_columns, type_trash_columns): Build SELECT column string from
+	column structure.  Adjust return accordingly.
+	(type_select_columns): New function.
+
+	* src/manage.h: Adjust headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Free type_columns and
+	type_trash_columns returns, because they are allocated now.
+
 2014-07-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): Use the value of alert method data

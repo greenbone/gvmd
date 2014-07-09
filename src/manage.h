@@ -3390,13 +3390,13 @@ xsl_transform (gchar *, gchar *, gchar **, gchar **);
 int
 valid_db_resource_type (const char*);
 
-const char*
+char*
 type_columns (const char *);
 
 const char**
 type_filter_columns (const char *);
 
-const char*
+char*
 type_trash_columns (const char *);
 
 gboolean

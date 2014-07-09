@@ -15754,8 +15754,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t aggregate;
           const char *type;
           get_data_t *get;
-          const char *columns, *trash_columns, **filter_columns;
-          const char *data_column, *group_column;
+          char *columns, *trash_columns;
+          const char **filter_columns, *data_column, *group_column;
           int ret;
           GString *xml;
 
@@ -15810,6 +15810,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          NULL /* extra_where */,
                                          1, /* no_pagination */
                                          0 /* owned */);
+
+          g_free (columns);
+          g_free (trash_columns);
 
           switch (ret)
             {
