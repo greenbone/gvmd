@@ -1,6 +1,10 @@
+2014-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Correct last entry.  Remove extra entry.
+
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (manage_create_sql_functions): Add hosts_contains.
+	* src/manage_pg.c (manage_create_sql_functions): Add hosts_contains.
 
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
@@ -1053,10 +1057,6 @@
 	(init_result_iterator): Remove conversion to lowercase in ORDER BY,
 	for now, because Postgres does not allow named SELECT columns in
 	expressions in ORDER BY.
-
-2014-06-05  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	* src/manage_acl.c (where_owned): Use "t ()" instead of 1 in SQL, to
 
 2014-06-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
