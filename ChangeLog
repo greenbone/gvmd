@@ -1,5 +1,11 @@
 2014-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Put the "lower" back into the
+	ORDER BY, now that the ORDER BY expression is the actual SELECT column
+	instead of the alias.
+
+2014-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Correct last entry.  Remove extra entry.
 
 2014-07-09  Matthew Mundell <matthew.mundell@greenbone.net>

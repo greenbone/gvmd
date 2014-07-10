@@ -2622,14 +2622,14 @@ filter_clause (const char* type, const char* filter,
                   column = columns_select_column (select_columns,
                                                   keyword->string);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY %s ASC",
+                  g_string_append_printf (order, " ORDER BY lower (%s) ASC",
                                           column);
                 }
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
                                         " ORDER BY nvt ASC,"
-                                        "          %ss%s.text ASC",
+                                        "          lower (%ss%s.text) ASC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
@@ -2696,14 +2696,14 @@ filter_clause (const char* type, const char* filter,
                   column = columns_select_column (select_columns,
                                                   keyword->string);
                   assert (column);
-                  g_string_append_printf (order, " ORDER BY %s DESC",
+                  g_string_append_printf (order, " ORDER BY lower (%s) DESC",
                                           column);
                 }
               else
                 /* Special case for notes text sorting. */
                 g_string_append_printf (order,
                                         " ORDER BY nvt DESC,"
-                                        " %ss%s.text DESC",
+                                        "          lower (%ss%s.text) DESC",
                                         type,
                                         trash ? "_trash" : "");
               first_order = 0;
