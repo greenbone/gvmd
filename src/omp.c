@@ -13080,19 +13080,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        description);
                 }
               else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
-                {
-                  xml_string_append (result,
-                                     "<dfn_cert_adv>"
-                                     "<title>%s</title>"
-                                     "<summary>%s</summary>"
-                                     "<max_cvss>%s</max_cvss>"
-                                     "<cve_refs>%s</cve_refs>",
-                                     dfn_cert_adv_info_iterator_title (&info),
-                                     dfn_cert_adv_info_iterator_summary (&info),
-                                     dfn_cert_adv_info_iterator_max_cvss(&info),
-                                     dfn_cert_adv_info_iterator_cve_refs (&info)
-                                    );
-                }
+                xml_string_append (result,
+                                   "<dfn_cert_adv>"
+                                   "<title>%s</title>"
+                                   "<summary>%s</summary>"
+                                   "<max_cvss>%s</max_cvss>"
+                                   "<cve_refs>%s</cve_refs>",
+                                   dfn_cert_adv_info_iterator_title (&info),
+                                   dfn_cert_adv_info_iterator_summary (&info),
+                                   dfn_cert_adv_info_iterator_max_cvss(&info),
+                                   dfn_cert_adv_info_iterator_cve_refs (&info));
               else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
                 {
                   if (send_nvt (&info, 1, -1, NULL, write_to_client,

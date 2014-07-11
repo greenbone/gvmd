@@ -14955,8 +14955,7 @@ report_add_result (report_t report, result_t result)
                   result,
                   current_credentials.uuid,
                   report,
-                  severity
-                  );
+                  severity);
 
   if (ov_severity_str == NULL
       || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
@@ -43238,7 +43237,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "      - start"                                               \
      "      + 1)"                                                  \
      " FROM port_ranges WHERE port_list = port_lists.id"           \
-     "                  AND   type = 0 )",                         \
+     "                  AND   type = 0)",                          \
      "tcp"                                                         \
    },                                                              \
    {                                                               \
@@ -43282,7 +43281,7 @@ delete_port_range (const char *port_range_id, int dummy)
      "      - start"                                               \
      "      + 1)"                                                  \
      " FROM port_ranges WHERE port_list = port_lists_trash.id"     \
-     "                  AND   type = 0 )",                         \
+     "                  AND   type = 0)",                          \
      "tcp"                                                         \
    },                                                              \
    {                                                               \

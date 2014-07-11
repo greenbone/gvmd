@@ -1,5 +1,14 @@
 2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Indent to avoid lone closing
+	paren.
+
+	* src/manage_sql.c (report_add_result): Move closing paren up.
+	(PORT_LIST_ITERATOR_COLUMNS, PORT_LIST_ITERATOR_TRASH_COLUMNS): Remove
+	stray space.
+
+2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_aggregate_iterator): Convert column for GROUP
 	BY to the SELECT column.
 
