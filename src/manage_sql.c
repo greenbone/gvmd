@@ -16494,7 +16494,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " FROM report_hosts WHERE id = %llu"
                        " AND report = %llu"
                        "%s%s%s"
-                       " ORDER BY host COLLATE collate_ip;",
+                       " ORDER BY inet (host);",
                        report_host,
                        report,
                        host ? " AND host = '" : "",
@@ -16508,7 +16508,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE report = %llu"
                        "%s%s%s"
-                       " ORDER BY host COLLATE collate_ip;",
+                       " ORDER BY inet (host);",
                        report,
                        host ? " AND host = '" : "",
                        host ? host : "",
@@ -16524,7 +16524,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE id = %llu"
                        "%s%s%s"
-                       " ORDER BY host COLLATE collate_ip;",
+                       " ORDER BY inet (host);",
                        report_host,
                        host ? " AND host = '" : "",
                        host ? host : "",
@@ -16537,7 +16537,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts"
                        "%s%s%s"
-                       " ORDER BY host COLLATE collate_ip;",
+                       " ORDER BY inet (host);",
                        host ? " WHERE host = '" : "",
                        host ? host : "",
                        host ? "'" : "");

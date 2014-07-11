@@ -115,6 +115,37 @@ sql_t (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Convert an IP address into a sortable form.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const char *ip;
+  unsigned int one, two, three, four;
+
+  assert (argc == 1);
+
+  ip = (const char *) sqlite3_value_text (argv[0]);
+  if (ip == NULL)
+    sqlite3_result_int (context, 0);
+  else
+    {
+      if (sscanf (ip, "%*3[0-9].%*3[0-9].%*3[0-9].%*3[0-9]") == 4
+          && sscanf (ip, "%u.%u.%u.%u", &one, &two, &three, &four) == 4)
+        sqlite3_result_int (context,
+                            one + (two << 8) + (three << 16) + (four << 24));
+      else
+        sqlite3_result_text (context, ip, -1, SQLITE_TRANSIENT);
+    }
+}
+
+/**
  * @brief Make a UUID.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -1348,6 +1379,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to t", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "inet",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_inet,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create inet", __FUNCTION__);
       return -1;
     }
 
