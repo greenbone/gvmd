@@ -4328,6 +4328,10 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   if (group_column && strcmp (group_column, ""))
     {
+      gchar *select_group_column;
+      select_group_column = columns_select_column (select_columns,
+                                                   group_column);
+      assert (select_group_column);
       if (stat_column && strcmp (stat_column, ""))
         outer_select = g_strdup_printf (" count(*),"
                                         " min(%s), max(%s), avg(%s), sum(%s),"
@@ -4336,14 +4340,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                         stat_column,
                                         stat_column,
                                         stat_column,
-                                        group_column);
+                                        select_group_column);
       else
         outer_select = g_strdup_printf (" count(*),"
                                         " NULL, NULL, NULL, NULL, %s ",
-                                        group_column);
+                                        select_group_column);
 
       outer_group_by = g_strdup_printf (" GROUP BY %s",
-                                        group_column);
+                                        select_group_column);
     }
   else
     {

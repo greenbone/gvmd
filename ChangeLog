@@ -1,3 +1,8 @@
+2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Convert column for GROUP
+	BY to the SELECT column.
+
 2014-07-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Put the "lower" back into the
