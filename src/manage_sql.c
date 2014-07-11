@@ -30299,7 +30299,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.type = "
                      G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                      " AND nvt_selectors.exclude = 0"
-                     " AND nvts.oid == nvt_selectors.family_or_nvt"
+                     " AND nvts.oid = nvt_selectors.family_or_nvt"
                      " ORDER BY %s %s;",
                      nvt_iterator_columns_nvts (),
                      family,
@@ -30323,7 +30323,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.type = "
                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    " AND nvt_selectors.exclude = 1"
-                   " AND nvts.oid == nvt_selectors.family_or_nvt"
+                   " AND nvts.oid = nvt_selectors.family_or_nvt"
                    " ORDER BY %s %s;",
                    nvt_iterator_columns (),
                    family,
@@ -30364,7 +30364,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      " AND nvt_selectors.type = "
                      G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                      " AND nvt_selectors.exclude = 1"
-                     " AND nvts.oid == nvt_selectors.family_or_nvt"
+                     " AND nvts.oid = nvt_selectors.family_or_nvt"
                      " ORDER BY %s %s;",
                      nvt_iterator_columns (),
                      family,
@@ -30385,7 +30385,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    " AND nvt_selectors.type = "
                    G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    " AND nvt_selectors.exclude = 0"
-                   " AND nvts.oid == nvt_selectors.family_or_nvt"
+                   " AND nvts.oid = nvt_selectors.family_or_nvt"
                    " ORDER BY %s %s;",
                    nvt_iterator_columns_nvts (),
                    family,

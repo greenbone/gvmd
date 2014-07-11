@@ -1,5 +1,10 @@
 2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (select_config_nvts): Use = instead of == in SQL, for
+	Postgres.
+
+2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Indent to avoid lone closing
 	paren.
 
