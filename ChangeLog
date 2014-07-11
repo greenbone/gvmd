@@ -1,5 +1,10 @@
 2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (sql_severity_matches_ov): Correct doc and error
+	message.  Add missing space.
+
+2014-07-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_host_iterator): Convert host into Internet
 	address type in ORDER BY, because using collation for custom sorting in
 	Postgres is not possible.

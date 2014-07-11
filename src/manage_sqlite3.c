@@ -1025,7 +1025,7 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Test if a severity score matches an override's severity.
  *
- * This is a callback for a scalar SQL function of one argument.
+ * This is a callback for a scalar SQL function of two arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1042,13 +1042,13 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL)
     {
       sqlite3_result_error (context,
-                            "First parmeter of severity_matches_ov is NULL",
+                            "First parameter of severity_matches_ov is NULL",
                             -1);
       return;
     }
 
   if (sqlite3_value_type (argv[1]) == SQLITE_NULL
-      || strcmp ((const char*)(sqlite3_value_text (argv[1])), "") == 0)
+      || strcmp ((const char*) (sqlite3_value_text (argv[1])), "") == 0)
     {
       sqlite3_result_int (context, 1);
       return;
