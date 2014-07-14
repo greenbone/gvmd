@@ -1,5 +1,10 @@
 2014-07-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Use default scanner when none
+	is provided in CREATE_TASK. Fixes issue in run wizard case.
+
+2014-07-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (make_nvt_from_nvti): Delete any NVT with the same
 	OID before inserting the new one.
 

@@ -20830,9 +20830,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
+          if (create_task_data->scanner_id == NULL)
+            create_task_data->scanner_id = g_strdup (SCANNER_UUID_DEFAULT);
           if (create_task_data->config_id == NULL
-              || create_task_data->target_id == NULL
-              || create_task_data->scanner_id == NULL)
+              || create_task_data->target_id == NULL)
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
