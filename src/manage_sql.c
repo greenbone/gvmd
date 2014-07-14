@@ -30068,7 +30068,7 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
                    " WHERE type = " G_STRINGIFY (NVT_SELECTOR_TYPE_NVT)
                    " AND exclude = 0"
                    " AND name = '%s'"
-                   " ORDER BY family %s;",
+                   " ORDER BY 1 %s;", /* 1 is family. */
                    quoted_selector,
                    quoted_selector,
                    ascending ? "ASC" : "DESC");
@@ -30078,7 +30078,7 @@ init_family_iterator (iterator_t* iterator, int all, const char* selector,
                    "SELECT distinct family FROM nvt_selectors"
                    " WHERE (type = 1 OR type = 2) AND name = '%s'"
                    " AND family != 'Credentials'"
-                   " ORDER BY family %s;",
+                   " ORDER BY 1 %s;", /* 1 is family. */
                    quoted_selector,
                    ascending ? "ASC" : "DESC");
   g_free (quoted_selector);
@@ -30331,7 +30331,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    family,
                    quoted_selector,
                    family,
-                   sort_field ? sort_field : "nvts.name",
+                   // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                   sort_field ? sort_field : "3", /* 3 is nvts.name. */
                    ascending ? "ASC" : "DESC");
         }
       else
@@ -30372,7 +30373,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      family,
                      quoted_selector,
                      family,
-                     sort_field ? sort_field : "nvts.name",
+                     // FIX PG "ERROR: missing FROM-clause" using nvts.name.
+                     sort_field ? sort_field : "3", /* 3 is nvts.name. */
                      ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
