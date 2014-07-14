@@ -1,3 +1,8 @@
+2014-07-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (make_nvt_from_nvti): Delete any NVT with the same
+	OID before inserting the new one.
+
 2014-07-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_family_iterator, select_config_nvts): Use

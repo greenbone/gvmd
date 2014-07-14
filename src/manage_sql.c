@@ -29092,26 +29092,16 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     }
   g_free (value);
 
+  sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
        " creation_time, modification_time, uuid)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', '%s', %i, %i, '%s');",
-       nvti_oid (nvti),
-       quoted_version,
-       quoted_name,
-       quoted_summary,
-       quoted_copyright,
-       quoted_cve,
-       quoted_bid,
-       quoted_xref,
-       quoted_tag,
-       nvti_category (nvti),
-       quoted_family,
-       quoted_cvss_base,
-       creation_time,
-       modification_time,
-       nvti_oid (nvti));
+       nvti_oid (nvti), quoted_version, quoted_name, quoted_summary,
+       quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
+       nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
+       modification_time, nvti_oid (nvti));
 
   if (remove)
     sql ("COMMIT;");
