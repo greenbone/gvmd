@@ -1,3 +1,21 @@
+2014-07-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add scanners columns for ca cert and client key pairs. Hence increase
+	database version to 130. Add database migration from version 129 to 130.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 130.
+
+	* src/manage_migrators.c (migrate_129_to_130): New function.
+	(database_migrators): Add migrate_129_to_130.
+
+	* src/manage_pg.c, src/manage_sqlite3.c (create_tables): Add ca_pub,
+	key_pub and key_priv columns to scanners and scanners_trash tables
+	creation.
+
+	* doc/db_postgres.sql (scanners, scanners_trash): Add new columns.
+
+	* doc/db.png: Update documentation.
+
 2014-07-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Use default scanner when none

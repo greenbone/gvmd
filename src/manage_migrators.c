@@ -9235,6 +9235,86 @@ migrate_128_to_129 ()
 }
 
 /**
+ * @brief Migrate the database from version 129 to version 130.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_129_to_130 ()
+{
+  char *ca_pub, *key_pub, *key_priv;
+  char *quoted_ca_pub, *quoted_key_pub, *quoted_key_priv;
+  GError *error = NULL;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 129. */
+
+  if (manage_db_version () != 129)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add columns for per-scanner certificates. */
+
+  sql ("ALTER TABLE scanners ADD COLUMN ca_pub;");
+  sql ("ALTER TABLE scanners ADD COLUMN key_pub;");
+  sql ("ALTER TABLE scanners ADD COLUMN key_priv;");
+  sql ("ALTER TABLE scanners_trash ADD COLUMN ca_pub;");
+  sql ("ALTER TABLE scanners_trash ADD COLUMN key_pub;");
+  sql ("ALTER TABLE scanners_trash ADD COLUMN key_priv;");
+
+  /* Fetch default certificates content. */
+  if (!g_file_get_contents (CACERT, &ca_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      return -1;
+    }
+  if (!g_file_get_contents (CLIENTCERT, &key_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      return -1;
+    }
+  if (!g_file_get_contents (CLIENTKEY, &key_priv, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      g_free (key_pub);
+      return -1;
+    }
+
+  /* Update current scanners to store default certificates in DB. */
+  quoted_ca_pub = sql_quote (ca_pub);
+  quoted_key_pub = sql_quote (key_pub);
+  quoted_key_priv = sql_quote (key_priv);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  sql ("UPDATE scanners SET ca_pub = '%s', key_pub = '%s', key_priv = '%s';",
+       quoted_ca_pub, quoted_key_pub, quoted_key_priv);
+  sql ("UPDATE scanners_trash SET ca_pub = '%s', key_pub = '%s',"
+       "       key_priv = '%s';",
+       quoted_ca_pub, quoted_key_pub, quoted_key_priv);
+  g_free (quoted_ca_pub);
+  g_free (quoted_key_pub);
+  g_free (quoted_key_priv);
+
+  /* Set the database version to 130. */
+  set_db_version (130);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9368,6 +9448,7 @@ static migrator_t database_migrators[]
     {127, migrate_126_to_127},
     {128, migrate_127_to_128},
     {129, migrate_128_to_129},
+    {130, migrate_129_to_130},
     /* End marker. */
     {-1, NULL}};
 

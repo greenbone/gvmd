@@ -338,6 +338,9 @@ CREATE TABLE scanners
   host text,
   port integer,
   type integer,
+  ca_pub text,
+  key_pub text,
+  key_priv text,
   creation_time date,
   modification_time date);
 
@@ -350,6 +353,9 @@ CREATE TABLE scanners_trash
   host text,
   port integer,
   type integer,
+  ca_pub text,
+  key_pub text,
+  key_priv text,
   creation_time date,
   modification_time date);
 

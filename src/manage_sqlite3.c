@@ -2080,10 +2080,12 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, role INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
-       "  host, port, type, creation_time, modification_time);");
+       "  host, port, type, ca_pub, key_pub, key_priv,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
-       "  host, port, type, creation_time, modification_time);");
+       "  host, port, type, ca_pub, key_pub, key_priv,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS schedules"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  first_time, period, period_months, duration, timezone,"

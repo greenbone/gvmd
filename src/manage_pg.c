@@ -981,6 +981,9 @@ create_tables ()
        "  host text,"
        "  port integer,"
        "  type integer,"
+       "  ca_pub text,"
+       "  key_pub text,"
+       "  key_priv text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -993,6 +996,9 @@ create_tables ()
        "  host text,"
        "  port integer,"
        "  type integer,"
+       "  ca_pub text,"
+       "  key_pub text,"
+       "  key_priv text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
