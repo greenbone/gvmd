@@ -479,6 +479,11 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;");
     }
 
+  sql ("CREATE OR REPLACE FUNCTION lower (integer)"
+       " RETURNS integer AS $$"
+       "  SELECT $1;"
+       "$$ LANGUAGE SQL;");
+
   /* Functions in pl/pgsql. */
 
   sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"

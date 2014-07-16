@@ -1,5 +1,11 @@
 2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add an integer version
+	of "lower", because the iterator ORDER BY expressions may use lower on
+	integer columns.
+
+2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_pg.c (struct sql_stmt, sql_stmt_init, sql_finalize)
 	(sql_reset): Remove store.  No longer used.
 
