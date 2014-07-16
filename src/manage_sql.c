@@ -29115,7 +29115,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     }
   g_free (value);
 
-  value = tag_value (nvti_tag (nvti), "modification_date");
+  value = tag_value (nvti_tag (nvti), "last_modification");
   switch (parse_time (value, &modification_time))
     {
       case -1:

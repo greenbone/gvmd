@@ -1,3 +1,8 @@
+2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (make_nvt_from_nvti): Correct modification time tag
+	name changed in parse_time patch on 2014-06-02.
+
 2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (check_db_scanners): Insert the default certificates
