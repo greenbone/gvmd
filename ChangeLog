@@ -1,3 +1,8 @@
+2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_pg.c (struct sql_stmt, sql_stmt_init, sql_finalize)
+	(sql_reset): Remove store.  No longer used.
+
 2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/scanner.c (openvas_scanner_write): Remove openvas_server_verify()

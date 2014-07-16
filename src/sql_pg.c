@@ -55,7 +55,6 @@ struct sql_stmt
   array_t *param_values;  ///< Parameter values.
   GArray *param_lengths;  ///< Parameter lengths (int's).
   GArray *param_formats;  ///< Parameter formats (int's).
-  array_t *store;         ///< Strings returned to client.
 };
 
 
@@ -142,7 +141,6 @@ sql_stmt_init (sql_stmt_t *stmt)
   stmt->param_values = make_array ();
   stmt->param_lengths = g_array_new (FALSE, TRUE, sizeof (int));
   stmt->param_formats = g_array_new (FALSE, TRUE, sizeof (int));
-  stmt->store = make_array ();
   stmt->current_row = -1;
 }
 
@@ -583,7 +581,6 @@ sql_finalize (sql_stmt_t *stmt)
   array_free (stmt->param_values);
   g_array_free (stmt->param_lengths, TRUE);
   g_array_free (stmt->param_formats, TRUE);
-  array_free (stmt->store);
   g_free (stmt);
 }
 
@@ -603,7 +600,6 @@ sql_reset (sql_stmt_t *stmt)
   array_free (stmt->param_values);
   g_array_free (stmt->param_lengths, TRUE);
   g_array_free (stmt->param_formats, TRUE);
-  array_free (stmt->store);
 
   sql = stmt->sql;
   sql_stmt_init (stmt);
