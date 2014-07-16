@@ -3402,6 +3402,4 @@ type_trash_columns (const char *);
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 
-void
-check_db_scanners ();
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

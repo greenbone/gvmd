@@ -10141,17 +10141,59 @@ check_db_targets ()
 
 /**
  * @brief Ensure the predefined scanner exists.
+ *
+ * @return 0 if success, -1 if error.
  */
-void
+static int
 check_db_scanners ()
 {
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
-    sql ("INSERT INTO scanners"
-         " (uuid, owner, name, host, port, type,"
-         "  creation_time, modification_time)"
-         " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-         " 'localhost', 9391, %d, m_now (), m_now ());", SCANNER_TYPE_OPENVAS);
+    {
+      char *ca_pub, *key_pub, *key_priv;
+      char *quoted_ca_pub, *quoted_key_pub, *quoted_key_priv;
+      GError *error = NULL;
+
+      if (!g_file_get_contents (CACERT, &ca_pub, NULL, &error))
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          return -1;
+        }
+      if (!g_file_get_contents (CLIENTCERT, &key_pub, NULL, &error))
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          g_free (ca_pub);
+          return -1;
+        }
+      if (!g_file_get_contents (CLIENTKEY, &key_priv, NULL, &error))
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          g_free (ca_pub);
+          g_free (key_pub);
+          return -1;
+        }
+      quoted_ca_pub = sql_quote (ca_pub);
+      quoted_key_pub = sql_quote (key_pub);
+      quoted_key_priv = sql_quote (key_priv);
+      g_free (ca_pub);
+      g_free (key_pub);
+      g_free (key_priv);
+
+      sql ("INSERT INTO scanners"
+           " (uuid, owner, name, host, port, type, ca_pub, key_pub, key_priv,"
+           "  creation_time, modification_time)"
+           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+           " 'localhost', 9391, %d, '%s', '%s', '%s', m_now (), m_now ());",
+           SCANNER_TYPE_OPENVAS, quoted_ca_pub, quoted_key_pub,
+           quoted_key_priv);
+      g_free (quoted_ca_pub);
+      g_free (quoted_key_pub);
+      g_free (quoted_key_priv);
+    }
+  return 0;
 }
 
 /**
@@ -11503,7 +11545,8 @@ check_db ()
   check_db_configs ();
   check_db_port_lists ();
   check_db_targets ();
-  check_db_scanners ();
+  if (check_db_scanners ())
+    return -1;
   check_db_tasks ();
   if (check_db_report_formats ())
     return -1;
@@ -35855,7 +35898,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
               scanner_t* new_scanner)
 {
   return copy_resource ("scanner", name, comment, scanner_id,
-                        "host, port, type", 1, new_scanner);
+                        "host, port, type, ca_pub, key_pub, key_priv", 1,
+                        new_scanner);
 }
 
 /**
@@ -35996,12 +36040,11 @@ delete_scanner (const char *scanner_id, int ultimate)
   if (ultimate == 0)
     {
       sql ("INSERT INTO scanners_trash"
-           " (uuid, owner, name, comment, host, port, type,"
-           "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, host, port, type,"
-           "        creation_time, modification_time"
-           " FROM scanners WHERE id = %llu;",
-           scanner);
+           " (uuid, owner, name, comment, host, port, type, ca_pub,"
+           "  key_pub, key_priv, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, host, port, type, ca_pub,"
+           "        key_pub, key_priv, creation_time, modification_time"
+           " FROM scanners WHERE id = %llu;", scanner);
 
       permissions_set_locations ("scanner", scanner,
                                  sql_last_insert_rowid (),
@@ -45923,10 +45966,10 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO scanners"
-           " (uuid, owner, name, comment, host, port, type,"
-           "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, host, port, type,"
-           "        creation_time, modification_time"
+           " (uuid, owner, name, comment, host, port, type, ca_pub"
+           "  key_pub, key_priv, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, host, port, type, ca_pub"
+           "        key_pub, key_priv, creation_time, modification_time"
            " FROM scanners_trash WHERE id = %llu;", resource);
 
       permissions_set_locations ("scanner", resource,

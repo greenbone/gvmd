@@ -1,3 +1,10 @@
+2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (check_db_scanners): Insert the default certificates
+	when creating the default scanner. Return value for success or error.
+	(check_db): Adjust for check_db_scanners() call change.
+	(copy_scanner, delete_scanner, manage_restore): Add scanners new columns.
+
 2014-07-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add scanners columns for ca cert and client key pairs. Hence increase
