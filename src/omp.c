@@ -19969,7 +19969,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        create_scanner_data->host,
                                        create_scanner_data->port,
                                        create_scanner_data->type,
-                                       &new_scanner))
+                                       &new_scanner, NULL, NULL, NULL))
             {
               case 0:
                 {

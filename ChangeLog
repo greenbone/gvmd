@@ -1,3 +1,26 @@
+2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add --scanner-ca-pub, --scanner-key-pub and --scanner-key-priv
+	command-line arguments.
+
+	* src/manage_sql.c (manage_create_scanner): Add ca_pub_path,
+	key_pub_path and key_priv_path function arguments. Read files content
+	and call create_scanner accordingly.
+	(create_scanner): Add ca_pub, key_pub and key_priv function arguments.
+	Insert values in DB accordingly.
+
+	* src/openvasmd.c (main): Add new cli options and adjust
+	manage_create_scanner() call.
+
+	* src/omp.c (omp_xml_handle_end_element): Adjust create_scanner call.
+
+	* src/ompd.c: Remove unused defines.
+
+	* src/manage.h: Update functions prototypes.
+
+	* doc/openvasmd.8, doc/openvasmd.8.xml, doc/openvasmd.html: Update
+	documentation.
+
 2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (make_nvt_from_nvti): Correct modification time tag

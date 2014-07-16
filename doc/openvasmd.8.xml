@@ -107,6 +107,21 @@
     </option>
 
     <option>
+      <p><opt>--scanner-ca-pub=<arg>CAPUB</arg></opt></p>
+      <optdesc><p>Scanner CA public key path for --create-scanner.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--scanner-key-pub=<arg>KEYPUB</arg></opt></p>
+      <optdesc><p>Scanner public key path for --create-scanner.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>--scanner-key-priv=<arg>KEYPRIV</arg></opt></p>
+      <optdesc><p>Scanner private key path for --create-scanner.</p></optdesc>
+    </option>
+
+    <option>
       <p><opt>--delete-scanner=<arg>UUID</arg></opt></p>
       <optdesc><p>Delete scanner with UUID and exit.</p></optdesc>
     </option>

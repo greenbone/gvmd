@@ -35668,12 +35668,15 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /**
  * @brief Create the given scanner.
  *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- * @param[in]  name        Name of scanner.
- * @param[in]  host        Host of scanner.
- * @param[in]  port        Port of scanner.
- * @param[in]  type        Type of scanner.
+ * @param[in]  log_config       Log configuration.
+ * @param[in]  database         Location of manage database.
+ * @param[in]  name             Name of scanner.
+ * @param[in]  host             Host of scanner.
+ * @param[in]  port             Port of scanner.
+ * @param[in]  type             Type of scanner.
+ * @param[in]  ca_pub_path      CA Public key path.
+ * @param[in]  key_pub_path     Public key path.
+ * @param[in]  key_priv_path    Private key path.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
  *         to be initialised from server.
@@ -35681,10 +35684,13 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 int
 manage_create_scanner (GSList *log_config, const gchar *database,
                        const char *name, const char *host, const char *port,
-                       const char *type)
+                       const char *type, const char *ca_pub_path,
+                       const char *key_pub_path, const char *key_priv_path)
 {
   const gchar *db;
   int ret;
+  char *ca_pub, *key_pub, *key_priv;
+  GError *error = NULL;
 
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
                                manage_user_exists, manage_user_uuid))
@@ -35698,9 +35704,34 @@ manage_create_scanner (GSList *log_config, const gchar *database,
     return ret;
 
   init_manage_process (0, db);
-
   current_credentials.uuid = "";
-  ret = create_scanner (name, NULL, host, port, type, NULL);
+
+  if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      return -1;
+    }
+  if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      return -1;
+    }
+  if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      g_free (key_pub);
+      return -1;
+    }
+  ret = create_scanner (name, NULL, host, port, type, NULL, ca_pub, key_pub,
+                        key_priv);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
   switch (ret)
     {
       case 0:
@@ -35822,15 +35853,20 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
+ * @param[in]   ca_cert     CA public key for scanner.
+ * @param[in]   key_pub     Public key for scanner.
+ * @param[in]   key_priv    Private key for scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
  *         99 permission denied.
  */
 int
 create_scanner (const char* name, const char *comment, const char *host,
-                const char *port, const char *type, scanner_t *new_scanner)
+                const char *port, const char *type, scanner_t *new_scanner,
+                const char *ca_pub, const char *key_pub, const char *key_priv)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_host;
+  char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+  char *quoted_key_pub, *quoted_key_priv;
   int iport, itype;
 
   assert (current_credentials.uuid);
@@ -35844,7 +35880,7 @@ create_scanner (const char* name, const char *comment, const char *host,
       return 99;
     }
 
-  if (!host || !port || !type)
+  if (!host || !port || !type || !ca_pub || !key_pub || !key_priv)
     return 2;
   iport = atoi (port);
   itype = atoi (type);
@@ -35863,13 +35899,17 @@ create_scanner (const char* name, const char *comment, const char *host,
   quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ?: "");
   quoted_host = sql_quote (host ?: "");
+  quoted_ca_pub = sql_quote (ca_pub ?: "");
+  quoted_key_pub = sql_quote (key_pub ?: "");
+  quoted_key_priv = sql_quote (key_priv ?: "");
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
+       "                      ca_pub, key_pub, key_priv,"
        "                      creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, m_now (), m_now ());",
+       "  '%s', '%s', %d, %d, '%s', '%s', '%s', m_now (), m_now ());",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
-       iport, itype);
+       iport, itype, quoted_ca_pub, quoted_key_pub, quoted_key_priv);
 
   if (new_scanner)
     *new_scanner = sql_last_insert_rowid ();
@@ -35878,6 +35918,9 @@ create_scanner (const char* name, const char *comment, const char *host,
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
+  g_free (quoted_ca_pub);
+  g_free (quoted_key_pub);
+  g_free (quoted_key_priv);
   return 0;
 }
 

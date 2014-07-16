@@ -1092,6 +1092,9 @@ main (int argc, char** argv)
   static gchar *scanner_host = NULL;
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
+  static gchar *scanner_ca_pub = NULL;
+  static gchar *scanner_key_pub = NULL;
+  static gchar *scanner_key_priv = NULL;
   static gchar *delete_scanner = NULL;
   static gchar *gnutls_priorities = "NORMAL";
   static gchar *dh_params = NULL;
@@ -1131,6 +1134,12 @@ main (int argc, char** argv)
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
           "Scanner type for --create-scanner. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.",
           "<scanner-type>" },
+        { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
+          "Scanner CA public key path for --create-scanner.", "<scanner-ca-pub>" },
+        { "scanner-key-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_pub,
+          "Scanner public key path for --create-scanner.", "<scanner-key-public>" },
+        { "scanner-key-priv", '\0', 0, G_OPTION_ARG_STRING, &scanner_key_priv,
+          "Scanner private key path for --create-scanner.", "<scanner-key-private>" },
         { "delete-scanner", '\0', 0, G_OPTION_ARG_STRING, &delete_scanner, "Delete scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
         { "get-scanners", '\0', 0, G_OPTION_ARG_NONE, &get_scanners, "List scanners and exit.", NULL },
         { "foreground", 'f', 0, G_OPTION_ARG_NONE, &foreground, "Run in foreground.", NULL },
@@ -1260,6 +1269,12 @@ main (int argc, char** argv)
         scanner_host = OPENVASSD_ADDRESS;
       if (!scanner_port)
         scanner_port = G_STRINGIFY (OPENVASSD_PORT);
+      if (!scanner_ca_pub)
+        scanner_ca_pub = CACERT;
+      if (!scanner_key_pub)
+        scanner_key_pub = CLIENTCERT;
+      if (!scanner_key_priv)
+        scanner_key_priv = CLIENTKEY;
 
       if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS Scanner"))
         type = SCANNER_TYPE_OPENVAS;
@@ -1273,7 +1288,9 @@ main (int argc, char** argv)
       /* Create the scanner and then exit. */
       stype = g_strdup_printf ("%u", type);
       ret = manage_create_scanner (log_config, database, create_scanner,
-                                   scanner_host, scanner_port, stype);
+                                   scanner_host, scanner_port, stype,
+                                   scanner_ca_pub, scanner_key_pub,
+                                   scanner_key_priv);
       g_free (stype);
       free_log_configuration (log_config);
       switch (ret)

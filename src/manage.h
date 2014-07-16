@@ -2037,7 +2037,8 @@ manage_system_report (const char *, const char *, const char *, char **);
 
 int
 manage_create_scanner (GSList *, const char *, const char *, const char *,
-                       const char *, const char *);
+                       const char *, const char *, const char *, const char *,
+                       const char *);
 
 int
 manage_delete_scanner (GSList *, const gchar *, const gchar *);
@@ -2050,7 +2051,8 @@ find_scanner (const char *, scanner_t *);
 
 int
 create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *);
+                const char *, scanner_t *, const char *, const char *,
+                const char *);
 
 int
 copy_scanner (const char*, const char*, const char *, scanner_t *);

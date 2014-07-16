@@ -67,27 +67,6 @@ int socket(int domain, int type, int protocol);
 /*@=exportheader@*/
 #endif
 
-/**
- * @brief Location of Certificate Authority certificate.
- */
-#ifndef CACERT
-#define CACERT     "/var/lib/openvas/CA/cacert.pem"
-#endif
-
-/**
- * @brief Location of client certificate.
- */
-#ifndef CLIENTCERT
-#define CLIENTCERT "/var/lib/openvas/CA/clientcert.pem"
-#endif
-
-/**
- * @brief Location of client certificate private key.
- */
-#ifndef CLIENTKEY
-#define CLIENTKEY  "/var/lib/openvas/private/CA/clientkey.pem"
-#endif
-
 #ifndef S_SPLINT_S
 #if FROM_BUFFER_SIZE > SSIZE_MAX
 #error FROM_BUFFER_SIZE too big for "read"
