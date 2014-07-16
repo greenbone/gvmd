@@ -114,23 +114,6 @@ sql_select_limit (int max)
 }
 
 /**
- * @brief Store a string on a statement.
- *
- * The string is freed when the statement is finalized or reset.
- *
- * @param[in]  stmt    Statement.
- * @param[in]  string  String to store.
- *
- * @return String.
- */
-static char *
-sql_stmt_store (sql_stmt_t *stmt, char *string)
-{
-  array_add (stmt->store, string);
-  return string;
-}
-
-/**
  * @brief Add param to statement.
  *
  * @param[in]  stmt          Statement.
@@ -359,7 +342,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                              (const char* const*) stmt->param_values->pdata,
                              (const int*) stmt->param_lengths->data,
                              (const int*) stmt->param_formats->data,
-                             1);                   /* Results as binary. */
+                             0);                   /* Results as text. */
       if (PQresultStatus (result) != PGRES_TUPLES_OK
           && PQresultStatus (result) != PGRES_COMMAND_OK)
         {
@@ -643,7 +626,8 @@ sql_column_double (sql_stmt_t *stmt, int position)
 {
   if (PQgetisnull (stmt->result, stmt->current_row, position))
     return 0.0;
-  return *((double*) PQgetvalue (stmt->result, stmt->current_row, position));
+
+  return atof (PQgetvalue (stmt->result, stmt->current_row, position));
 }
 
 /**
@@ -659,39 +643,10 @@ sql_column_double (sql_stmt_t *stmt, int position)
 const char *
 sql_column_text (sql_stmt_t *stmt, int position)
 {
-  char *cell;
-
   if (PQgetisnull (stmt->result, stmt->current_row, position))
     return NULL;
 
-  cell = PQgetvalue (stmt->result, stmt->current_row, position);
-
-  switch (PQftype (stmt->result, position))
-    {
-      case 21:  /* INT2OID */
-        return (const char*) sql_stmt_store
-                              (stmt,
-                               g_strdup_printf ("%" SCNu16,
-                                                ntohs (*((uint16_t *) cell))));
-
-      case 23:  /* INT4OID */
-        return (const char*) sql_stmt_store
-                              (stmt,
-                               g_strdup_printf ("%" SCNu32,
-                                               ntohl (*((uint32_t *) cell))));
-
-      case 20:  /* INT8OID */
-        return (const char*) sql_stmt_store
-                              (stmt,
-                               g_strdup_printf
-                                ("%" SCNu64,
-                                 /* be64 is network byte order. */
-                                 be64toh (*((uint64_t *) cell))));
-
-      default:
-        /* Assume text. */
-        return (const char*) cell;
-    }
+  return (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
 }
 
 /**
@@ -717,19 +672,10 @@ sql_column_int (sql_stmt_t *stmt, int position)
   switch (PQftype (stmt->result, position))
     {
       case 16:  /* BOOLOID */
-        return *cell ? 1 : 0;
-
-      case 21:  /* INT2OID */
-        return (int) ntohs (*((uint16_t *) cell));
+        return strcmp (cell, "f");
 
       default:
-        /* Hope for the best. */
-      case 23:  /* INT4OID */
-        return (int) ntohl (*((uint32_t *) cell));
-
-      case 20:  /* INT8OID */
-        /* be64 is network byte order. */
-        return (int) be64toh (*((uint64_t *) cell));
+        return atoi (cell);
     }
 }
 
@@ -756,18 +702,9 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
   switch (PQftype (stmt->result, position))
     {
       case 16:  /* BOOLOID */
-        return *cell ? 1 : 0;
-
-      case 21:  /* INT2OID */
-        return (long long int) ntohs (*((uint16_t *) cell));
-
-      case 23:  /* INT4OID */
-        return (long long int) ntohl (*((uint32_t *) cell));
+        return strcmp (cell, "f");
 
       default:
-        /* Hope for the best. */
-      case 20:  /* INT8OID */
-        /* be64 is network byte order. */
-        return (long long int) be64toh (*((uint64_t *) cell));
+        return atol (cell);
     }
 }

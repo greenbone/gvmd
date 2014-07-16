@@ -1,5 +1,16 @@
 2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get results as text instead of as binary in the Postgres SQL layer.
+	This prevents having to worry about byte ordering, especially for
+	doubles.
+
+	* src/sql_pg.c (sql_stmt_store): Remove.  No longer used.
+	(sql_exec_internal): Request text results.
+	(sql_column_double, sql_column_text, sql_column_int)
+	(sql_column_int64): Expect results as text.
+
+2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Switch first arg of
 	severity_in_level to double.  Add double-integer version of
 	severity_to_level.  Add order_message_type and order_port dummy, for
