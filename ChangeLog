@@ -1,3 +1,8 @@
+2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/scanner.c (openvas_scanner_write): Remove openvas_server_verify()
+	call. This is done in libraries.
+
 2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get results as text instead of as binary in the Postgres SQL layer.

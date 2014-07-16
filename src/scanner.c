@@ -150,13 +150,6 @@ openvas_scanner_write (int nvt_cache_mode)
                   scanner_init_state == SCANNER_INIT_CONNECT_INTR))
           {
             case 0:
-              switch (openvas_server_verify (openvas_scanner_session))
-                {
-                  case 0:
-                    break;
-                  default:
-                    return -1;
-                }
               set_scanner_init_state (SCANNER_INIT_CONNECTED);
               /* Fall through to SCANNER_INIT_CONNECTED case below, to write
                * version string. */
