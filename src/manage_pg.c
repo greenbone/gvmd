@@ -87,8 +87,6 @@ manage_create_sql_functions ()
     clean_hosts  (only used in migrator)
     common_cve
     current_offset (only used in migrator (maybe with SHOW TIMEZONE and hairy date stuff))
-    severity_matches_ov
-    severity_to_type
 
   duplicated below
     hosts_contains
@@ -100,6 +98,8 @@ manage_create_sql_functions ()
 
   duplicated with pl/pgsql below
     iso_time
+    severity_matches_ov
+    severity_to_type
     uniquify (given table type, will need exec)
 
   server side below
@@ -367,7 +367,8 @@ manage_create_sql_functions ()
            "         END;"
            "$$ LANGUAGE SQL;");
 
-      sql ("CREATE OR REPLACE FUNCTION severity_in_level (text, text)"
+      sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
+           "                                              text)"
            " RETURNS boolean AS $$"
            "  SELECT CASE (SELECT value FROM settings"
            "               WHERE name = 'Severity Class'"
@@ -380,39 +381,39 @@ manage_create_sql_functions ()
            "         WHEN 'classic'"
            "         THEN (CASE $2"
            "               WHEN 'high'"
-           "               THEN $1::double precision > 5"
-           "                    AND $1::double precision <= 10"
+           "               THEN $1 > 5"
+           "                    AND $1 <= 10"
            "               WHEN 'medium'"
-           "               THEN $1::double precision > 2"
-           "                    AND $1::double precision <= 5"
+           "               THEN $1 > 2"
+           "                    AND $1 <= 5"
            "               WHEN 'low'"
-           "               THEN $1::double precision > 0"
-           "                    AND $1::double precision <= 2"
+           "               THEN $1 > 0"
+           "                    AND $1 <= 2"
            "               WHEN 'none'"
-           "               THEN $1::double precision = 0"
+           "               THEN $1 = 0"
            "               ELSE 0::boolean"
            "               END)"
            "         WHEN 'pci-dss'"
            "         THEN (CASE $2"
            "               WHEN 'high'"
-           "               THEN $1::double precision >= 4.3"
+           "               THEN $1 >= 4.3"
            "               WHEN 'none'"
-           "               THEN $1::double precision = 0"
+           "               THEN $1 = 0"
            "               ELSE 0::boolean"
            "               END)"
            "         ELSE " /* NIST/BSI */
            "              (CASE $2"
            "               WHEN 'high'"
-           "               THEN $1::double precision >= 7"
-           "                    AND $1::double precision <= 10"
+           "               THEN $1 >= 7"
+           "                    AND $1 <= 10"
            "               WHEN 'medium'"
-           "               THEN $1::double precision >= 4"
-           "                    AND $1::double precision < 7"
+           "               THEN $1 >= 4"
+           "                    AND $1 < 7"
            "               WHEN 'low'"
-           "               THEN $1::double precision > 0"
-           "                    AND $1::double precision < 4"
+           "               THEN $1 > 0"
+           "                    AND $1 < 4"
            "               WHEN 'none'"
-           "               THEN $1::double precision = 0"
+           "               THEN $1 = 0"
            "               ELSE 0::boolean"
            "               END)"
            "         END;"
@@ -433,6 +434,38 @@ manage_create_sql_functions ()
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
+           "                      WHEN severity_in_level ($1::double precision,"
+           "                                              'high')"
+           "                      THEN 'High'"
+           "                      WHEN severity_in_level ($1::double precision,"
+           "                                              'medium')"
+           "                      THEN 'Medium'"
+           "                      WHEN severity_in_level ($1::double precision,"
+           "                                              'low')"
+           "                      THEN 'Low'"
+           "                      ELSE 'Log'"
+           "                      END)"
+           "         ELSE 'Internal Error'"
+           "         END;"
+           "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_to_level (double precision,"
+           "                                              integer)"
+           " RETURNS text AS $$"
+           "  SELECT CASE"
+           "         WHEN $1 = " G_STRINGIFY (SEVERITY_LOG)
+           "         THEN 'Log'"
+           "         WHEN $1 = " G_STRINGIFY (SEVERITY_FP)
+           "         THEN 'False Positive'"
+           "         WHEN $1 = " G_STRINGIFY (SEVERITY_DEBUG)
+           "         THEN 'Debug'"
+           "         WHEN $1 = " G_STRINGIFY (SEVERITY_ERROR)
+           "         THEN 'Error'"
+           // FIX again?
+           "         WHEN $1 = " G_STRINGIFY (SEVERITY_ERROR)
+           "         THEN (SELECT CASE"
+           "                      WHEN $2 = 1"
+           "                      THEN 'Alarm'"
            "                      WHEN severity_in_level ($1, 'high')"
            "                      THEN 'High'"
            "                      WHEN severity_in_level ($1, 'medium')"
@@ -447,6 +480,71 @@ manage_create_sql_functions ()
     }
 
   /* Functions in pl/pgsql. */
+
+  sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   IF $1 = 'Security Hole' THEN"
+       "     RETURN 1;"
+       "   ELSIF $1 = 'Security Warning' THEN"
+       "     RETURN 2;"
+       "   ELSIF $1 = 'Security Note' THEN"
+       "     RETURN 3;"
+       "   ELSIF $1 = 'Log Message' THEN"
+       "     RETURN 4;"
+       "   ELSIF $1 = 'Debug Message' THEN"
+       "     RETURN 5;"
+       "   ELSIF $1 = 'Error Message' THEN"
+       "     RETURN 6;"
+       "   ELSE"
+       "     RETURN 7;"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION order_port (text)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       // FIX
+       "   RETURN 0;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION severity_to_type (double precision)"
+       " RETURNS text AS $$"
+       " BEGIN"
+       "   IF $1 = " G_STRINGIFY (SEVERITY_LOG) " THEN"
+       "     RETURN 'Log Message';"
+       "   ELSIF $1 = " G_STRINGIFY (SEVERITY_FP) " THEN"
+       "     RETURN 'False Positive';"
+       "   ELSIF $1 = " G_STRINGIFY (SEVERITY_DEBUG) " THEN"
+       "     RETURN 'Debug Message';"
+       "   ELSIF $1 = " G_STRINGIFY (SEVERITY_ERROR) " THEN"
+       "     RETURN 'Error Message';"
+       "   ELSIF $1 > 0.0 AND $1 <= 10.0 THEN"
+       "     RETURN 'Alarm';"
+       "   ELSE"
+       "     RAISE EXCEPTION 'Invalid severity score given: %', $1;"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION severity_matches_ov (double precision,"
+       "                                                double precision)"
+       " RETURNS boolean AS $$"
+       " BEGIN"
+       "   IF $1 IS NULL THEN"
+       "     RAISE EXCEPTION 'First parameter of severity_matches_ov is NULL';"
+       "   END IF;"
+       "   RETURN CASE"
+       "          WHEN $2 IS NULL"   // FIX SQLite also has "OR $2 = ''".
+       "          THEN true"
+       "          WHEN $1 <= 0.0"
+       "          THEN $1 = $2"
+       "          ELSE $1 >= $2"
+       "          END;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION iso_time (seconds integer)"
        " RETURNS text AS $$"
@@ -1248,9 +1346,9 @@ create_tables ()
        "  modification_time integer,"
        "  text text,"
        "  hosts text,"
-       "  new_severity text,"
+       "  new_severity double precision,"
        "  port text,"
-       "  severity text,"
+       "  severity double precision,"
        "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
@@ -1264,9 +1362,9 @@ create_tables ()
        "  modification_time integer,"
        "  text text,"
        "  hosts text,"
-       "  new_severity text,"
+       "  new_severity double precision,"
        "  port text,"
-       "  severity text,"
+       "  severity double precision,"
        "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");

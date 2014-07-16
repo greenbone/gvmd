@@ -1,3 +1,11 @@
+2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Switch first arg of
+	severity_in_level to double.  Add double-integer version of
+	severity_to_level.  Add order_message_type and order_port dummy, for
+	sorting.  Add severity_to_type and severity_matches_ov.
+	(create_tables): Switch severity columns in overrides tables to double.
+
 2014-07-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add --scanner-ca-pub, --scanner-key-pub and --scanner-key-priv
