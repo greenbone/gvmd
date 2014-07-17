@@ -273,6 +273,9 @@ user_has_access_uuid (const char *type, const char *uuid,
 
   assert (current_credentials.uuid);
 
+  if (!strcmp (current_credentials.uuid,  ""))
+    return 1;
+
   ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;

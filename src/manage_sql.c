@@ -35813,6 +35813,62 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 }
 
 /**
+ * @brief Verify the given scanner.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  uuid        UUID of scanner.
+ *
+ * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
+ *         -1 error.  -2 database is wrong version, -3 database needs to be
+ *         initialised from server.
+ */
+int
+manage_verify_scanner (GSList *log_config, const gchar *database,
+                       const gchar *uuid)
+{
+  const gchar *db;
+  int ret;
+  char *version;
+
+  assert (uuid);
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  current_credentials.uuid = "";
+  switch ((ret = verify_scanner (uuid, &version)))
+    {
+      case 0:
+        printf ("Scanner version: %s.\n", version);
+        g_free (version);
+        break;
+      case 1:
+        printf ("Failed to find scanner.\n");
+        break;
+      case 2:
+        printf ("Failed to verify scanner.\n");
+        break;
+      default:
+        printf ("Internal Error.\n");
+        break;
+    }
+  current_credentials.uuid = NULL;
+
+  cleanup_manage_process (TRUE);
+  return ret;
+}
+
+/**
  * @brief Find a scanner given a UUID.
  *
  * @param[in]   uuid    UUID of scanner.
@@ -36369,7 +36425,10 @@ verify_scanner (const char *scanner_id, char **version)
   memset (&get, '\0', sizeof (get));
   get.id = g_strdup (scanner_id);
   if (init_scanner_iterator (&scanner, &get) || !next (&scanner))
-    return 1;
+    {
+      g_free (get.id);
+      return 1;
+    }
   g_free (get.id);
   if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OVALDI)
     {

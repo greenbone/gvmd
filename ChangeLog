@@ -1,3 +1,17 @@
+2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Add --verify-scanner option.
+
+	* src/manage_acl.c (user_has_access_uuid): Return true if the user's
+	uuid is empty.
+
+	* src/manage_sql.c (manage_verify_scanner): New function.
+	(verify_scanner): Fix memory leak on error.
+
+	* src/manage.h: Add function prototype.
+
+	* src/openvasmd.c (main): Add --verify-scanner option.
+
 2014-07-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add an integer version
