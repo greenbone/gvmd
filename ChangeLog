@@ -1,5 +1,10 @@
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_result): Change double to text in coalesce,
+	because cvss_base is text and Postgres wants them the same.
+
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_errors_iterator): Use comma instead of
 	JOIN, for Postgres and general consistency.
 

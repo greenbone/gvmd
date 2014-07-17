@@ -13767,7 +13767,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 
       if (strcasecmp (type, "Alarm") == 0)
         {
-          severity = sql_string ("SELECT coalesce(cvss_base, 0.0)"
+          severity = sql_string ("SELECT coalesce(cvss_base, '0.0')"
                                  " FROM nvts WHERE uuid = '%s';",
                                  nvt);
 
