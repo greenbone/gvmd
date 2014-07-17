@@ -16806,7 +16806,7 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    "SELECT results.host, results.port, results.nvt,"
                    " results.description, nvts.name, nvts.cvss_base,"
                    " results.nvt_version, results.severity"
-                   " FROM results JOIN nvts"
+                   " FROM results, nvts"
                    " WHERE results.type = 'Error Message'"
                    "  AND results.nvt = nvts.oid"
                    "  AND results.report = %llu"

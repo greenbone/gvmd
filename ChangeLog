@@ -1,5 +1,10 @@
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_errors_iterator): Use comma instead of
+	JOIN, for Postgres and general consistency.
+
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove alias usage in results SQL, for Postgres.
 
 	* src/manage_sql.c (where_levels_auto): Add args for new severity and
