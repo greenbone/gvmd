@@ -143,9 +143,9 @@ openvas_scanner_write (int nvt_cache_mode)
   switch (scanner_init_state)
     {
       case SCANNER_INIT_TOP:
-        switch (openvas_server_connect
-                 (openvas_scanner_socket, &openvas_scanner_address,
-                  &openvas_scanner_session, 0))
+        switch (openvas_server_connect (openvas_scanner_socket,
+                                        &openvas_scanner_address,
+                                        &openvas_scanner_session))
           {
             case 0:
               set_scanner_init_state (SCANNER_INIT_CONNECTED);
