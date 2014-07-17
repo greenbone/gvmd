@@ -18089,7 +18089,7 @@ report_severity_data (report_t report, int override,
                 }
 
               result = (result_t) iterator_int64 (&results, 0);
-              if (sql_bind_int64 (full_stmt, 2, result))
+              if (sql_bind_int64 (full_stmt, 2, &result))
                 {
                   g_warning ("%s: sql_bind_int64 failed\n", __FUNCTION__);
                   abort ();
@@ -18110,7 +18110,7 @@ report_severity_data (report_t report, int override,
                 }
 
               severity = iterator_double (&results, 7);
-              if (sql_bind_double (full_stmt, 5, severity))
+              if (sql_bind_double (full_stmt, 5, &severity))
                 {
                   g_warning ("%s: sql_bind_double failed\n", __FUNCTION__);
                   abort ();

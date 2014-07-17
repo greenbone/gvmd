@@ -1,5 +1,17 @@
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Adjust SQL bind functions slightly, for Postgres.
+
+	* src/manage_sql.c (report_severity_data): Send address instead of value
+	to int64 and double bind functions.
+
+	* src/sql_pg.c, src/sql_sqlite3.c (sql_bind_int64, sql_bind_double): Make
+	value arg a pointer, for Postgres binding.
+
+	* src/sql.h: Update headers accordingly.
+
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (sql_order_message_type, sql_order_port): New
 	functions.
 	(manage_create_sql_functions): Create sorting functions

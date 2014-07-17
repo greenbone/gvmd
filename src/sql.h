@@ -183,13 +183,13 @@ int
 sql_bind_blob (sql_stmt_t *, int, const void *, int);
 
 int
-sql_bind_int64 (sql_stmt_t *, int, long long int);
+sql_bind_int64 (sql_stmt_t *, int, long long int *);
 
 int
 sql_bind_text (sql_stmt_t *, int, const gchar *, gsize);
 
 int
-sql_bind_double (sql_stmt_t *, int, double);
+sql_bind_double (sql_stmt_t *, int, double *);
 
 int
 sql_exec (sql_stmt_t *);

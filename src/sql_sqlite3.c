@@ -445,12 +445,12 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
+sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 {
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_int64 (stmt->stmt, position, value);
+      ret = sqlite3_bind_int64 (stmt->stmt, position, *value);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_int64 failed: %s\n",
@@ -471,12 +471,12 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_double (sql_stmt_t *stmt, int position, double value)
+sql_bind_double (sql_stmt_t *stmt, int position, double *value)
 {
   while (1)
     {
       int ret;
-      ret = sqlite3_bind_double (stmt->stmt, position, value);
+      ret = sqlite3_bind_double (stmt->stmt, position, *value);
       if (ret == SQLITE_BUSY) continue;
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_double failed: %s\n",

@@ -522,10 +522,12 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
  * @return 0 success, -1 error.
  */
 int
-sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
+sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 {
-  abort (); // FIX needs to send in address of value
-  bind_param (stmt, position, 0 /* value */, sizeof (long long int), 1);
+  int actual;
+  /* Caller is really binding an int4, because IDs in Postgres are int4s. */
+  actual = *value;
+  bind_param (stmt, position, &actual, sizeof (actual), 1);
   return 0;
 }
 
@@ -539,10 +541,9 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int value)
  * @return 0 success, -1 error.
  */
 int
-sql_bind_double (sql_stmt_t *stmt, int position, double value)
+sql_bind_double (sql_stmt_t *stmt, int position, double *value)
 {
-  abort (); // FIX needs to send in address of value
-  bind_param (stmt, position, 0 /* value */, sizeof (double), 1);
+  bind_param (stmt, position, value, sizeof (*value), 1);
   return 0;
 }
 
