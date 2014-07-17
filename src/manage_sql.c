@@ -15336,11 +15336,14 @@ where_levels (const char* levels)
  *                     to include in report (for example, "hmlgd" for
  *                     High, Medium, Low, loG and Debug).  All levels if
  *                     NULL.
+ * @param[in]  new_severity_sql  SQL for new severity.
+ * @param[in]  auto_type_sql     SQL for auto type.
  *
  * @return WHERE clause for levels if one is required, else NULL.
  */
 static GString *
-where_levels_auto (const char* levels)
+where_levels_auto (const char *levels, const char *new_severity_sql,
+                   const char *auto_type_sql)
 {
   int count;
   GString *levels_sql;
@@ -15348,7 +15351,13 @@ where_levels_auto (const char* levels)
   /* Generate SQL for constraints on message type, according to levels. */
 
   if (levels == NULL || strlen (levels) == 0)
-    return g_string_new (" AND new_severity != " G_STRINGIFY (SEVERITY_ERROR));
+    {
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
+                              new_severity_sql);
+      return levels_sql;
+    }
 
   levels_sql = NULL;
   count = 0;
@@ -15358,17 +15367,28 @@ where_levels_auto (const char* levels)
     {
       count = 1;
       // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'high')");
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              " AND (((%s IS NULL) AND (severity_in_level (%s, 'high')",
+                              auto_type_sql,
+                              new_severity_sql);
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'medium')");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'medium')",
+                                  auto_type_sql,
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (new_severity, 'medium')");
+        g_string_append_printf (levels_sql,
+                                " OR severity_in_level (%s, 'medium')",
+                                new_severity_sql);
       count++;
     }
 
@@ -15376,10 +15396,17 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL) AND (severity_in_level (new_severity, 'low')");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (((%s IS NULL) AND (severity_in_level (%s, 'low')",
+                                  auto_type_sql,
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (new_severity, 'low')");
+        g_string_append_printf (levels_sql,
+                                " OR severity_in_level (%s, 'low')",
+                                new_severity_sql);
       count++;
     }
 
@@ -15387,15 +15414,22 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((new_severity"
-                                   "             = " G_STRINGIFY
-                                                      (SEVERITY_LOG) ")");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (((%s IS NULL)"
+                                  "       AND ((%s"
+                                  "             = " G_STRINGIFY
+                                                     (SEVERITY_LOG) ")",
+                                  auto_type_sql,
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_LOG) ")");
+        g_string_append_printf (levels_sql,
+                                " OR (%s"
+                                "     = " G_STRINGIFY
+                                           (SEVERITY_LOG) ")",
+                                new_severity_sql);
       count++;
     }
 
@@ -15403,15 +15437,22 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND ((new_severity"
-                                   "             = " G_STRINGIFY
-                                                      (SEVERITY_DEBUG) ")");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (((%s IS NULL)"
+                                  "       AND ((%s"
+                                  "             = " G_STRINGIFY
+                                                     (SEVERITY_DEBUG) ")",
+                                  auto_type_sql,
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_DEBUG) ")");
+        g_string_append_printf (levels_sql,
+                                " OR (%s"
+                                "     = " G_STRINGIFY
+                                           (SEVERITY_DEBUG) ")",
+                                new_severity_sql);
       count++;
     }
 
@@ -15419,17 +15460,26 @@ where_levels_auto (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (((auto_type IS NULL)"
-                                   "       AND new_severity"
-                                   "           = " G_STRINGIFY
-                                                    (SEVERITY_FP) ")"
-                                   "      OR auto_type = 1)");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (((%s IS NULL)"
+                                  "       AND %s"
+                                  "           = " G_STRINGIFY
+                                                   (SEVERITY_FP) ")"
+                                  "      OR %s = 1)",
+                                  auto_type_sql,
+                                  auto_type_sql,
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR new_severity"
-                                      "    = " G_STRINGIFY
-                                                (SEVERITY_FP) "))"
-                                      " OR auto_type = 1)");
+        g_string_append_printf (levels_sql,
+                                " OR %s"
+                                "    = " G_STRINGIFY
+                                          (SEVERITY_FP) "))"
+                                " OR %s = 1)",
+                                auto_type_sql,
+                                new_severity_sql);
       count++;
     }
   else if (count)
@@ -15439,8 +15489,10 @@ where_levels_auto (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = g_string_new (" AND new_severity != "
-                                 G_STRINGIFY (SEVERITY_ERROR));
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
+                              new_severity_sql);
     }
 
   return levels_sql;
@@ -15669,6 +15721,12 @@ where_search_phrase (const char* search_phrase, int exact)
   " 'Privilege escalation'"
 
 /**
+ * @brief SQL for retrieving CVSS base.
+ */
+#define CVSS_BASE_SQL                                            \
+  "(SELECT cvss_base FROM nvts WHERE nvts.oid = results.nvt)"
+
+/**
  * @brief Initialise a result iterator.
  *
  * The results are ordered by host, then port and type (severity) according
@@ -15710,10 +15768,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
   assert ((report && result) == 0);
 
+  /* TODO: The generated SQL is now out of hand. */
+
   if (dynamic_severity)
     severity_sql = g_strdup("CASE WHEN results.severity"
                             "          > " G_STRINGIFY (SEVERITY_LOG)
-                            " THEN (SELECT CAST (cvss_base AS REAL)"
+                            " THEN (SELECT CAST (" CVSS_BASE_SQL " AS REAL)"
                             "       FROM nvts"
                             "       WHERE nvts.oid = results.nvt)"
                             " ELSE results.severity END");
@@ -15730,7 +15790,6 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels == NULL) levels = "hmlgdf";
       if (strcmp (sort_field, "location") == 0) sort_field = "port";
 
-      levels_sql = where_levels_auto (levels);
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
 
@@ -15853,65 +15912,98 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
         order_sql = g_strdup_printf (" ORDER BY"
                                      " port COLLATE collate_location %s,"
                                      " host COLLATE collate_ip,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN CAST (new_severity AS REAL)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
                                      "  END)"
                                      " DESC,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN new_type ELSE auto_type END)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN severity_to_type (%s)"
+                                     "  ELSE %s"
+                                     "  END)"
                                      " COLLATE collate_message_type DESC,"
                                      " nvt,"
                                      " description",
-                                     ascending ? "ASC" : "DESC");
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
       else if (strcmp (sort_field, "host") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
                                      " host COLLATE collate_ip %s,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN CAST (new_severity AS REAL)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
                                      "  END)"
                                      " DESC,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN new_type ELSE auto_type END)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN severity_to_type (%s)"
+                                     "  ELSE %s"
+                                     "  END)"
                                      " COLLATE collate_message_type DESC,"
                                      " nvt,"
                                      " description",
-                                     ascending ? "ASC" : "DESC");
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
       else if (strcmp (sort_field, "vulnerability") == 0)
         order_sql = g_strdup_printf (" ORDER BY"
                                      " vulnerability %s,"
                                      " port COLLATE collate_location,"
                                      " host COLLATE collate_ip,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN CAST (new_severity AS REAL)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
                                      "  END)"
                                      " DESC,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN new_type ELSE auto_type END)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN severity_to_type (%s)"
+                                     "  ELSE %s"
+                                     "  END)"
                                      " COLLATE collate_message_type DESC,"
                                      " nvt,"
                                      " description",
-                                     ascending ? "ASC" : "DESC");
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
       else
         order_sql = g_strdup_printf (" ORDER BY "
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN CAST (new_severity AS REAL)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
                                      "  ELSE " G_STRINGIFY (SEVERITY_FP)
                                      "  END)"
                                      " %s,"
-                                     " (CASE WHEN auto_type IS NULL"
-                                     "  THEN new_type ELSE auto_type END)"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN severity_to_type (%s)"
+                                     "  ELSE %s"
+                                     "  END)"
                                      " COLLATE collate_message_type ASC,"
                                      " port COLLATE collate_location,"
                                      " host COLLATE collate_ip,"
-                                     " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                     "        THEN cvss_base ELSE 0.0 END)"
-                                     "       AS REAL)) DESC,"
+                                     " (CASE"
+                                     "  WHEN CAST (" CVSS_BASE_SQL " AS REAL)"
+                                     "       >= 0.0"
+                                     "  THEN CAST (" CVSS_BASE_SQL " AS REAL)"
+                                     "  ELSE 0.0"
+                                     "  END) DESC,"
                                      " nvt,"
                                      " description",
-                                     ascending ? "ASC" : "DESC");
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
+
+      levels_sql = where_levels_auto (levels, new_severity_sql, auto_type_sql);
 
       sql = g_strdup_printf ("SELECT results.id, host, port,"
                              " nvt, severity_to_type (%s) AS type,"
@@ -15920,9 +16012,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " results.description,"
                              " results.task,"
                              " results.report,"
-                             " (SELECT cvss_base FROM nvts"
-                             "  WHERE nvts.oid = results.nvt)"
-                             "  AS cvss_base,"
+                             " " CVSS_BASE_SQL " AS cvss_base,"
                              " nvt_version,"
                              " %s AS severity,"
                              " %s AS new_severity,"
@@ -17540,7 +17630,7 @@ column_auto_type (report_t report, int autofp)
     {
       case 1:
         auto_type_sql = g_strdup_printf
-          (", (CASE WHEN"
+          ("  (CASE WHEN"
            "   (((SELECT family FROM nvts WHERE oid = results.nvt)"
            "     IN (" LSC_FAMILY_LIST "))"
            "    OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
@@ -17561,14 +17651,13 @@ column_auto_type (report_t report, int autofp)
            "                                   AND value = 'EXIT_NOTVULN')"
            "                     AND family IN (" LSC_FAMILY_LIST ")))))"
            "   THEN NULL"
-           "   ELSE 1 END)"
-           "   AS auto_type",
+           "   ELSE 1 END)",
            report);
          break;
 
       case 2:
         auto_type_sql = g_strdup_printf
-          (", (CASE WHEN"
+          ("  (CASE WHEN"
            "   ((SELECT family FROM nvts WHERE oid = results.nvt)"
            "    IN (" LSC_FAMILY_LIST ")"
            "    OR results.nvt == '0'" /* Open ports previously had 0 NVT. */
@@ -17594,13 +17683,12 @@ column_auto_type (report_t report, int autofp)
             * Either can be a list of CVEs. */
            "          AND common_cve (nvts.cve, outer_nvts.cve)))))"
            "   THEN NULL"
-           "   ELSE 1 END)"
-           "   AS auto_type",
+           "   ELSE 1 END)",
            report);
          break;
 
        default:
-         auto_type_sql = g_strdup (", NULL AS auto_type");
+         auto_type_sql = g_strdup (" NULL");
          break;
      }
   return auto_type_sql;
@@ -17632,7 +17720,7 @@ report_scan_result_count (report_t report, const char* levels,
                           int* count)
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *new_severity_sql = NULL, *auto_type_sql = NULL;
+  gchar *new_severity_sql = NULL;
 
   phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
   cvss_sql = where_cvss_base (min_cvss_base);
@@ -17653,12 +17741,11 @@ report_scan_result_count (report_t report, const char* levels,
 
   if (override)
     {
-      gchar *severity_sql, *ov;
+      gchar *severity_sql, *ov, *auto_type_sql;
 
       assert (current_credentials.uuid);
 
-      levels_sql = where_levels_auto (levels);
-
+      auto_type_sql = NULL;
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
                                 "          > " G_STRINGIFY (SEVERITY_LOG)
@@ -17697,29 +17784,28 @@ report_scan_result_count (report_t report, const char* levels,
              current_credentials.uuid,
              severity_sql);
 
-      new_severity_sql = g_strdup_printf (", coalesce ((%s), %s)"
-                                          " AS new_severity",
+      new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                           ov,
                                           severity_sql);
 
+      auto_type_sql = column_auto_type (report, autofp);
+      levels_sql = where_levels_auto (levels, new_severity_sql, auto_type_sql);
+
+      g_free (auto_type_sql);
       g_free (severity_sql);
       g_free (ov);
     }
   else
     levels_sql = where_levels_type (levels);
 
-  auto_type_sql = column_auto_type (report, autofp);
-
-  *count = sql_int ("SELECT count(results.id)%s%s"
+  *count = sql_int ("SELECT count(results.id)"
                     " FROM results"
                     " WHERE results.report = %llu"
                     " AND (CAST (%s AS REAL)"
                     "       >= " G_STRINGIFY (SEVERITY_FP) ")"
                     "%s%s%s;",
-                    new_severity_sql ? new_severity_sql : "",
-                    auto_type_sql ? auto_type_sql : "",
                     report,
-                    new_severity_sql ? "new_severity" : "severity",
+                    new_severity_sql ? new_severity_sql : "severity",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
                     cvss_sql ? cvss_sql->str : "");
@@ -17728,7 +17814,6 @@ report_scan_result_count (report_t report, const char* levels,
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
   g_free (new_severity_sql);
-  g_free (auto_type_sql);
 
   return 0;
 }

@@ -1,5 +1,21 @@
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove alias usage in results SQL, for Postgres.
+
+	* src/manage_sql.c (where_levels_auto): Add args for new severity and
+	auto type SQL.  Use the SQL instead of the aliases.
+	(CVSS_BASE_SQL): New define.  For init_result_iterator.
+	(init_result_iterator): Use the CVSS base SQL directly, instead of the
+	alias "cvss_base".  Similary use the new severity and auto type SQL
+	directly in the ORDER clause.  And pass the new severity and auto type
+	SQL into where_levels_auto so that the WHERE levels clause uses the SQL
+	directly instead of using the aliases.
+	(column_auto_type): Remove commas from SQL.
+	(report_scan_result_count): As above, pass SQL into where_levels_auto
+	and use SQL directly instead of using aliases.
+
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Make severity a double in the notes
 	tables, to match overrides.
 
