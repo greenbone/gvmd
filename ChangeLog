@@ -1,3 +1,11 @@
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator): Do the DISTINCT case with an
+	enclosing SELECT DISTINCT, because if a SELECT is DISTINCT then Postgres
+	requires the ORDER BY clause to be in the SELECT columns.  Adding an
+	enclosing SELECT is simpler than adding the ORDER BY clause to the
+	SELECT columns.
+
 2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (SCANNER_ITERATOR_COLUMNS): Add ca_pub, key_pub and

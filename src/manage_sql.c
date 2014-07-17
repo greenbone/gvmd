@@ -4207,13 +4207,13 @@ init_get_iterator (iterator_t* iterator, const char *type,
   else
     {
       init_iterator (iterator,
-                   "SELECT%s %s"
+                   "%sSELECT %s"
                    " FROM %ss"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i;",
-                   distinct ? " DISTINCT" : "",
+                   " LIMIT %s OFFSET %i%s;",
+                   distinct ? "SELECT DISTINCT * FROM (" : "",
                    columns,
                    type,
                    owned_clause,
@@ -4223,7 +4223,8 @@ init_get_iterator (iterator_t* iterator, const char *type,
                    extra_where ? extra_where : "",
                    order,
                    sql_select_limit (max),
-                   first);
+                   first,
+                   distinct ? ") AS subquery_for_distinct" : "");
     }
 
   g_free (columns);
