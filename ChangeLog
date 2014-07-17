@@ -1,3 +1,9 @@
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (resource_name): Expect the end_time to be an
+	integer instead of text.
+	(set_task_end_time): Convert the given string to an integer.
+
 2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/scanner.c (openvas_scanner_write): Adjust openvas_server_connect()

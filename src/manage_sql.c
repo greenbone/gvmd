@@ -4005,9 +4005,9 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " || ' - '"
                         " || (SELECT"
                         "       CASE (SELECT end_time FROM tasks"
-                        "         WHERE id = task)"
+                        "             WHERE id = task)"
                         "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT end_time"
+                        "       ELSE (SELECT iso_time (end_time)"
                         "             FROM tasks WHERE id = task)"
                         "    END)"
                         " FROM reports"
@@ -4020,9 +4020,9 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         " || ' - '"
                         " || (SELECT"
                         "       CASE (SELECT end_time FROM tasks"
-                        "         WHERE id = task)"
+                        "             WHERE id = task)"
                         "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT end_time"
+                        "       ELSE (SELECT iso_time (end_time)"
                         "             FROM tasks WHERE id = task)"
                         "    END)"
                         " FROM results"
@@ -17196,9 +17196,8 @@ set_task_end_time (task_t task, char* time)
 {
   if (time)
     {
-      sql ("UPDATE tasks SET end_time = '%.*s' WHERE id = %llu;",
-           strlen (time),
-           time,
+      sql ("UPDATE tasks SET end_time = %i WHERE id = %llu;",
+           parse_iso_time (time),
            task);
       free (time);
     }
