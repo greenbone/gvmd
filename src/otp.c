@@ -848,7 +848,6 @@ process_otp_scanner_input (void (*progress) ())
       case SCANNER_INIT_GOT_PLUGINS:
         /* Nothing to parse. */
         return 0;
-      case SCANNER_INIT_CONNECT_INTR:
       case SCANNER_INIT_CONNECTED:
         /* Input from scanner before version string sent. */
         return -1;

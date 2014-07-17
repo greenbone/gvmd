@@ -142,21 +142,24 @@ openvas_scanner_write (int nvt_cache_mode)
     return -1;
   switch (scanner_init_state)
     {
-      case SCANNER_INIT_CONNECT_INTR:
       case SCANNER_INIT_TOP:
         switch (openvas_server_connect
                  (openvas_scanner_socket, &openvas_scanner_address,
-                  &openvas_scanner_session,
-                  scanner_init_state == SCANNER_INIT_CONNECT_INTR))
+                  &openvas_scanner_session, 0))
           {
             case 0:
               set_scanner_init_state (SCANNER_INIT_CONNECTED);
+              /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+               * error" removes the data between `select' and `read'. */
+              if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
+                {
+                  g_warning ("%s: failed to set scanner socket flag: %s\n",
+                             __FUNCTION__, strerror (errno));
+                  return -1;
+                }
               /* Fall through to SCANNER_INIT_CONNECTED case below, to write
                * version string. */
               break;
-            case -2:
-              set_scanner_init_state (SCANNER_INIT_CONNECT_INTR);
-              return -3;
             default:
               return -1;
           }
@@ -391,15 +394,6 @@ openvas_scanner_connect ()
       return -1;
     }
 
-  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-   * error" removes the data between `select' and `read'. */
-  if (fcntl (openvas_scanner_socket, F_SETFL, O_NONBLOCK) == -1)
-    {
-      g_warning ("%s: failed to set scanner socket flag: %s\n", __FUNCTION__,
-                 strerror (errno));
-      openvas_scanner_close ();
-      return -1;
-    }
   init_otp_data ();
 
   return 0;
@@ -521,15 +515,14 @@ openvas_scanner_init (int cache_mode)
 
   if (openvas_scanner_socket == -1)
     return -1;
-  while ((ret = openvas_scanner_write (cache_mode)) == -3
-         && scanner_init_state == SCANNER_INIT_CONNECT_INTR)
-    if (openvas_scanner_wait ())
-      return -2;
+  ret = openvas_scanner_write (cache_mode);
   if (ret != -3)
     {
       openvas_scanner_free ();
       return -1;
     }
+  if (openvas_scanner_wait ())
+    return -2;
 
   return 0;
 }

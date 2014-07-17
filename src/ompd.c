@@ -49,7 +49,6 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -473,7 +472,6 @@ serve_omp (gnutls_session_t* client_session,
                 || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE
                 || scanner_init_state == SCANNER_INIT_DONE_CACHE_MODE_UPDATE)
                && to_server_buffer_space () > 0)
-              || scanner_init_state == SCANNER_INIT_CONNECT_INTR
               || scanner_init_state == SCANNER_INIT_CONNECTED
               || scanner_init_state == SCANNER_INIT_GOT_FEED_VERSION
               || scanner_init_state == SCANNER_INIT_GOT_PLUGINS))

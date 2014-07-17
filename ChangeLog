@@ -1,3 +1,20 @@
+2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/otp.h (scanner_init_state_t): Remove SCANNER_INIT_CONNECT_INTR state.
+
+	* src/otp.c (process_otp_scanner_input): Remove
+	SCANNER_INIT_CONNECT_INTR case.
+
+	* src/scanner.c (openvas_scanner_write): Remove handling of removed init
+	case. Adjust openvas_server_connect() call and return value handling
+	accordingly. Set socket to be nonblocking only after successful connect.
+	(openvas_scanner_connect): Don't set socket to nonblocking.
+	(openvas_scanner_init): Don't loop over openvas_scanner_write() anymore.
+	Code style update.
+
+	* src/ompd.c: Remove useless include.
+	(serve_omp): Don't handle removed scanner init state.
+
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_severity, report_add_result)

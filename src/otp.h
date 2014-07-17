@@ -41,7 +41,6 @@ process_otp_scanner_input (void (*) ());
  */
 typedef enum
 {
-  SCANNER_INIT_CONNECT_INTR,    /* `connect' to scanner was interrupted. */
   SCANNER_INIT_CONNECTED,
   SCANNER_INIT_DONE,
   SCANNER_INIT_DONE_CACHE_MODE,        /* Done, when in NVT cache rebuild. */
