@@ -13465,7 +13465,8 @@ task_severity (task_t task, int overrides, int offset)
              " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.severity ASC,"
-             " overrides.creation_time DESC",
+             " overrides.creation_time DESC"
+             " LIMIT 1",
              current_credentials.uuid,
              severity_sql);
 
@@ -14993,7 +14994,8 @@ report_add_result (report_t report, result_t result)
                   " AND severity_matches_ov (%1.1f, overrides.severity)"
                   " ORDER BY overrides.result DESC, overrides.task DESC,"
                   " overrides.port DESC, overrides.severity ASC,"
-                  " overrides.creation_time DESC;",
+                  " overrides.creation_time DESC"
+                  " LIMIT 1",
                   severity,
                   result,
                   current_credentials.uuid,
@@ -15763,7 +15765,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC",
+                 " overrides.creation_time DESC"
+                 " LIMIT 1",
                  current_credentials.uuid,
                  severity_sql);
 
@@ -15990,7 +15993,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC",
+                 " overrides.creation_time DESC"
+                 " LIMIT 1",
                  current_credentials.uuid,
                  severity_sql);
 
@@ -16969,7 +16973,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " AND severity_matches_ov (%s, overrides.severity)"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC",
+                 " overrides.creation_time DESC"
+                 " LIMIT 1",
                  current_credentials.uuid,
                  severity_sql);
 
@@ -17688,7 +17693,8 @@ report_scan_result_count (report_t report, const char* levels,
              " AND severity_matches_ov (%s, overrides.severity)"
              " ORDER BY overrides.result DESC, overrides.task DESC,"
              " overrides.port DESC, overrides.severity ASC,"
-             " overrides.creation_time DESC",
+             " overrides.creation_time DESC"
+             " LIMIT 1",
              current_credentials.uuid,
              severity_sql);
 
@@ -20135,7 +20141,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " AND (severity_matches_ov (%s, overrides.severity))"
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC",
+                 " overrides.creation_time DESC"
+                 " LIMIT 1",
                  current_credentials.uuid,
                  severity_sql);
 

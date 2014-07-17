@@ -1,5 +1,12 @@
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_severity, report_add_result)
+	(init_result_iterator, init_asset_iterator, report_scan_result_count)
+	(filtered_host_count): Limit override selection to one row, as Postgres
+	complains if a subselect in an expression returns multiple rows.
+
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Adjust SQL bind functions slightly, for Postgres.
 
 	* src/manage_sql.c (report_severity_data): Send address instead of value
