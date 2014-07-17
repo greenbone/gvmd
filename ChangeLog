@@ -1,3 +1,8 @@
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (filter_clause, report_scan_result_count): Cast to
+	REAL instead of NUMBER, because Postgres does not support NUMBER.
+
 2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/otp.h (scanner_init_state_t): Remove SCANNER_INIT_CONNECT_INTR state.

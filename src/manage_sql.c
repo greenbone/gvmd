@@ -2799,7 +2799,7 @@ filter_clause (const char* type, const char* filter,
                                         (value_given
                                           ? (value_numeric
                                               ? "AND CAST"
-                                                " (tags.value AS NUMBER) = "
+                                                " (tags.value AS REAL) = "
                                               : "AND CAST"
                                                 " (tags.value AS TEXT) = '")
                                           : ""),
@@ -2825,7 +2825,7 @@ filter_clause (const char* type, const char* filter,
                                         (value_given
                                           ? (value_numeric
                                               ? "AND CAST"
-                                                " (tags.value AS NUMBER) = "
+                                                " (tags.value AS REAL) = "
                                               : "AND CAST"
                                                 " (tags.value AS TEXT) = '")
                                           : ""),
@@ -17714,7 +17714,7 @@ report_scan_result_count (report_t report, const char* levels,
   *count = sql_int ("SELECT count(results.id)%s%s"
                     " FROM results"
                     " WHERE results.report = %llu"
-                    " AND (CAST (%s AS NUMBER)"
+                    " AND (CAST (%s AS REAL)"
                     "       >= " G_STRINGIFY (SEVERITY_FP) ")"
                     "%s%s%s;",
                     new_severity_sql ? new_severity_sql : "",
