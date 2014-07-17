@@ -146,6 +146,59 @@ sql_inet (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Convert a message type into an integer for sorting.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_order_message_type (sqlite3_context *context, int argc,
+                        sqlite3_value** argv)
+{
+  const char *type;
+
+  assert (argc == 1);
+
+  type = (const char *) sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    sqlite3_result_int (context, 8);
+  else if (strcmp (type, "Security Hole") == 0)
+    sqlite3_result_int (context, 1);
+  else if (strcmp (type, "Security Warning") == 0)
+    sqlite3_result_int (context, 2);
+  else if (strcmp (type, "Security Note") == 0)
+    sqlite3_result_int (context, 3);
+  else if (strcmp (type, "Log Message") == 0)
+    sqlite3_result_int (context, 4);
+  else if (strcmp (type, "Debug Message") == 0)
+    sqlite3_result_int (context, 5);
+  else if (strcmp (type, "Error Message") == 0)
+    sqlite3_result_int (context, 6);
+  else
+    sqlite3_result_int (context, 7);
+}
+
+/**
+ * @brief Convert a port into an integer for sorting.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_order_port (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  assert (argc == 1);
+  // FIX
+  sqlite3_result_int (context, 0);
+}
+
+/**
  * @brief Make a UUID.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -1393,6 +1446,34 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create inet", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "order_message_type",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_order_message_type,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create order_message_type", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "order_port",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_order_port,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create order_port", __FUNCTION__);
       return -1;
     }
 

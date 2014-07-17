@@ -1,3 +1,10 @@
+2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sqlite3.c (sql_order_message_type, sql_order_port): New
+	functions.
+	(manage_create_sql_functions): Create sorting functions
+	order_message_type and order_port, to match Postgres.
+
 2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Add --verify-scanner option.
