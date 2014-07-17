@@ -1322,7 +1322,7 @@ create_tables ()
        "  text text,"
        "  hosts text,"
        "  port text,"
-       "  severity text,"
+       "  severity double precision,"
        "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
@@ -1337,7 +1337,7 @@ create_tables ()
        "  text text,"
        "  hosts text,"
        "  port text,"
-       "  severity text,"
+       "  severity double precision,"
        "  task integer," // REFERENCES tasks (id) ON DELETE RESTRICT,"
        "  result integer," // REFERENCES results (id) ON DELETE RESTRICT,"
        "  end_time integer);");
