@@ -1,3 +1,10 @@
+2014-07-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (SCANNER_ITERATOR_COLUMNS): Add ca_pub, key_pub and
+	key_priv columns.
+	(scanner_iterator_ca_pub, scanner_iterator_key_pub)
+	(scanner_iterator_key_priv): New functions.
+
 2014-07-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_result_iterator): Order by port, host and

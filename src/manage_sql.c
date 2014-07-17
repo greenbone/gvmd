@@ -36272,6 +36272,9 @@ delete_scanner (const char *scanner_id, int ultimate)
    { "host" , NULL },                                                \
    { "port" , NULL },                                                \
    { "type", NULL },                                                 \
+   { "ca_pub", NULL },                                               \
+   { "key_pub", NULL },                                              \
+   { "key_priv", NULL },                                             \
    { NULL, NULL }                                                    \
  }
 
@@ -36347,6 +36350,36 @@ scanner_iterator_type (iterator_t* iterator)
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
   return ret;
 }
+
+/**
+ * @brief Get the CA Public key from a scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return CA Public key, or NULL if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_ca_pub, GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the Scanner Public key from a scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Scanner Public key, or NULL if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Get the Scanner private key from a scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Scanner private key, or NULL if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_key_priv, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
  * @brief Check whether an scanner is in use.
