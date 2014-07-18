@@ -36187,21 +36187,21 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  if (ca_pub)
+  if (ca_pub && *ca_pub)
     {
       char *quoted_ca_pub = sql_quote (ca_pub);
       sql ("UPDATE scanners SET ca_pub = '%s' WHERE id = %llu;", quoted_ca_pub,
            scanner);
       g_free (quoted_ca_pub);
     }
-  if (key_pub)
+  if (key_pub && *key_pub)
     {
       char *quoted_key_pub = sql_quote (key_pub);
       sql ("UPDATE scanners SET key_pub = '%s' WHERE id = %llu;",
            quoted_key_pub, scanner);
       g_free (quoted_key_pub);
     }
-  if (key_priv)
+  if (key_priv && *key_priv)
     {
       char *quoted_key_priv = sql_quote (key_priv);
       sql ("UPDATE scanners SET key_priv = '%s' WHERE id = %llu;",

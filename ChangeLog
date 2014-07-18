@@ -1,5 +1,10 @@
 2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (modify_scanner): Do not set certs fields if provided
+	values are empty.
+
+2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Send scanner CA public key and
 	public key in GET_SCANNERS case. Adjust modify_scanner() call.
 	(modify_scanner_data_t): Add new elements for scanners certs.
