@@ -1479,6 +1479,9 @@ typedef struct
   char *host;               ///< Host of new scanner.
   char *port;               ///< Port of new scanner.
   char *type;               ///< Type of new scanner.
+  char *ca_pub;             ///< CA Public key of new scanner.
+  char *key_pub;            ///< Public key of new scanner.
+  char *key_priv;           ///< Private key of new scanner.
 } create_scanner_data_t;
 
 /**
@@ -1495,6 +1498,9 @@ create_scanner_data_reset (create_scanner_data_t *data)
   free (data->host);
   free (data->port);
   free (data->type);
+  free (data->ca_pub);
+  free (data->key_pub);
+  free (data->key_priv);
 
   memset (data, 0, sizeof (create_scanner_data_t));
 }
@@ -5142,6 +5148,9 @@ typedef enum
   CLIENT_CREATE_SCANNER_HOST,
   CLIENT_CREATE_SCANNER_PORT,
   CLIENT_CREATE_SCANNER_TYPE,
+  CLIENT_CREATE_SCANNER_CA_PUB,
+  CLIENT_CREATE_SCANNER_KEY_PUB,
+  CLIENT_CREATE_SCANNER_KEY_PRIV,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -7680,6 +7689,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_SCANNER_PORT);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_SCANNER_TYPE);
+        else if (strcasecmp ("CA_PUB", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_CA_PUB);
+        else if (strcasecmp ("KEY_PUB", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_KEY_PUB);
+        else if (strcasecmp ("KEY_PRIV", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_KEY_PRIV);
         ELSE_ERROR ("create_scanner");
 
       case CLIENT_CREATE_SCHEDULE:
@@ -19964,12 +19979,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_scanner",
                                 "CREATE_SCANNER requires a TYPE entity"));
+          else if (create_scanner_data->ca_pub == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a CA_PUB entity"));
+          else if (create_scanner_data->key_pub == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a KEY_PUB entity"));
+          else if (create_scanner_data->key_priv == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_scanner",
+                                "CREATE_SCANNER requires a KEY_PRIV entity"));
           else switch (create_scanner (create_scanner_data->name,
                                        create_scanner_data->comment,
                                        create_scanner_data->host,
                                        create_scanner_data->port,
                                        create_scanner_data->type,
-                                       &new_scanner, NULL, NULL, NULL))
+                                       &new_scanner,
+                                       create_scanner_data->ca_pub,
+                                       create_scanner_data->key_pub,
+                                       create_scanner_data->key_priv))
             {
               case 0:
                 {
@@ -20020,6 +20050,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SCANNER, HOST);
       CLOSE (CLIENT_CREATE_SCANNER, PORT);
       CLOSE (CLIENT_CREATE_SCANNER, TYPE);
+      CLOSE (CLIENT_CREATE_SCANNER, CA_PUB);
+      CLOSE (CLIENT_CREATE_SCANNER, KEY_PUB);
+      CLOSE (CLIENT_CREATE_SCANNER, KEY_PRIV);
 
       case CLIENT_CREATE_SCHEDULE:
         {
@@ -26155,6 +26188,15 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_SCANNER_TYPE,
               &create_scanner_data->type);
+
+      APPEND (CLIENT_CREATE_SCANNER_CA_PUB,
+              &create_scanner_data->ca_pub);
+
+      APPEND (CLIENT_CREATE_SCANNER_KEY_PUB,
+              &create_scanner_data->key_pub);
+
+      APPEND (CLIENT_CREATE_SCANNER_KEY_PRIV,
+              &create_scanner_data->key_priv);
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);

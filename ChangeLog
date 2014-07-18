@@ -1,5 +1,15 @@
 2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (create_scanner_data_t): Add ca_pub, key_pub and key_priv
+	elements.
+	(create_scanner_data_reset): Free new elements memory accordingly.
+	(client_state_t): Add new states for CREATE_SCANNER.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new states and values accordingly. Adjust
+	create_scanner() call.
+
+2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Use Scanner certs from DB.
 
 	* src/manage_sql.c (manage_scanner_set, verify_scanner): Call
