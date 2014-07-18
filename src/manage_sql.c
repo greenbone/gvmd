@@ -2449,10 +2449,14 @@ columns_build_select (column_t *select_columns)
       columns = select_columns;
       select = g_string_new ("");
       g_string_append (select, (*columns).select);
+      if ((*columns).filter)
+        g_string_append_printf (select, " AS %s", (*columns).filter);
       columns++;
       while ((*columns).select)
        {
          g_string_append_printf (select, ", %s", (*columns).select);
+         if ((*columns).filter)
+           g_string_append_printf (select, " AS %s", (*columns).filter);
          columns++;
        }
       return g_string_free (select, FALSE);
