@@ -34258,7 +34258,7 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes.id", NULL },                                                   \
    { "notes.uuid", NULL },                                                 \
    { " (SELECT name FROM nvts WHERE oid = notes.nvt)", "name" },           \
-   { "''", NULL },                                                         \
+   { "CAST ('' AS TEXT)", NULL },                                          \
    { "iso_time (notes.creation_time)", NULL },                             \
    { "iso_time (notes.modification_time)", NULL },                         \
    { "notes.creation_time", "created" },                                   \
@@ -34290,8 +34290,8 @@ modify_note (note_t note, const char *active, const char* text,
  {                                                                               \
    { "notes_trash.id", NULL },                                                   \
    { "notes_trash.uuid", NULL },                                                 \
-   { "''", NULL },                                                               \
-   { "''", NULL },                                                               \
+   { "CAST ('' AS TEXT)", NULL },                                                \
+   { "CAST ('' AS TEXT)", NULL },                                                \
    { "iso_time (notes_trash.creation_time)", NULL },                             \
    { "iso_time (notes_trash.modification_time)", NULL },                         \
    { "notes_trash.creation_time", "created" },                                   \
@@ -35249,7 +35249,7 @@ modify_override (override_t override, const char *active, const char* text,
    { "overrides.id", NULL },                                                \
    { "overrides.uuid", NULL },                                              \
    { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "name" },         \
-   { "''", NULL },                                                          \
+   { "CAST ('' AS TEXT)", NULL },                                           \
    { "iso_time (overrides.creation_time)", NULL },                          \
    { "iso_time (overrides.modification_time)", NULL },                      \
    { "overrides.creation_time", "created" },                                \
@@ -35292,8 +35292,8 @@ modify_override (override_t override, const char *active, const char* text,
  {                                                                          \
    { "overrides_trash.id", NULL },                                          \
    { "overrides_trash.uuid", NULL },                                        \
-   { "''", "name" },                                                        \
-   { "''", NULL },                                                          \
+   { "CAST ('' AS TEXT)", NULL },                                           \
+   { "CAST ('' AS TEXT)", NULL },                                           \
    { "iso_time (overrides_trash.creation_time)", NULL },                    \
    { "iso_time (overrides_trash.modification_time)", NULL },                \
    { "overrides_trash.creation_time", "created" },                          \

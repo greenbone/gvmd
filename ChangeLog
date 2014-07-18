@@ -1,3 +1,11 @@
+2014-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Cast
+	string literals because Postgres requires this when the SELECT is
+	enclosed in a SELECT DISTINCT, which can happen since yesterday's
+	init_get_iterator commit.
+
 2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (create_scanner_data_t): Add ca_pub, key_pub and key_priv
