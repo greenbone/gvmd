@@ -3429,6 +3429,9 @@ typedef struct
   char *port;               ///< Port of scanner.
   char *type;               ///< Type of scanner.
   char *scanner_id;         ///< scanner UUID.
+  char *ca_pub;             ///< CA Public key of scanner.
+  char *key_pub;            ///< Public key of scanner.
+  char *key_priv;           ///< Private key of scanner.
 } modify_scanner_data_t;
 
 /**
@@ -3445,6 +3448,9 @@ modify_scanner_data_reset (modify_scanner_data_t *data)
   g_free (data->port);
   g_free (data->type);
   g_free (data->scanner_id);
+  free (data->ca_pub);
+  free (data->key_pub);
+  free (data->key_priv);
 
   memset (data, 0, sizeof (modify_scanner_data_t));
 }
@@ -5385,6 +5391,9 @@ typedef enum
   CLIENT_MODIFY_SCANNER_HOST,
   CLIENT_MODIFY_SCANNER_PORT,
   CLIENT_MODIFY_SCANNER_TYPE,
+  CLIENT_MODIFY_SCANNER_CA_PUB,
+  CLIENT_MODIFY_SCANNER_KEY_PUB,
+  CLIENT_MODIFY_SCANNER_KEY_PRIV,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_DURATION,
@@ -8092,6 +8101,21 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             openvas_append_string (&modify_scanner_data->type, "");
             set_client_state (CLIENT_MODIFY_SCANNER_TYPE);
+          }
+        else if (strcasecmp ("CA_PUB", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->ca_pub, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_CA_PUB);
+          }
+        else if (strcasecmp ("KEY_PUB", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->key_pub, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_KEY_PUB);
+          }
+        else if (strcasecmp ("KEY_PRIV", element_name) == 0)
+          {
+            openvas_append_string (&modify_scanner_data->key_priv, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_KEY_PRIV);
           }
         ELSE_ERROR ("modify_scanner");
 
@@ -15349,10 +15373,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
               SENDF_TO_CLIENT_OR_FAIL
-               ("<host>%s</host><port>%d</port><type>%d</type></scanner>",
+               ("<host>%s</host><port>%d</port><type>%d</type>"
+                "<ca_pub>%s</ca_pub><key_pub>%s</key_pub></scanner>",
                 scanner_iterator_host (&scanners),
                 scanner_iterator_port (&scanners),
-                scanner_iterator_type (&scanners));
+                scanner_iterator_type (&scanners),
+                scanner_iterator_ca_pub (&scanners),
+                scanner_iterator_key_pub (&scanners));
               count++;
             }
           cleanup_iterator (&scanners);
@@ -23110,7 +23137,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           switch (modify_scanner
                    (modify_scanner_data->scanner_id, modify_scanner_data->name,
                     modify_scanner_data->comment, modify_scanner_data->host,
-                    modify_scanner_data->port, modify_scanner_data->type))
+                    modify_scanner_data->port, modify_scanner_data->type,
+                    modify_scanner_data->ca_pub, modify_scanner_data->key_pub,
+                    modify_scanner_data->key_priv))
             {
               case 0:
                 SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
@@ -23175,6 +23204,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_SCANNER, HOST);
       CLOSE (CLIENT_MODIFY_SCANNER, COMMENT);
       CLOSE (CLIENT_MODIFY_SCANNER, NAME);
+      CLOSE (CLIENT_MODIFY_SCANNER, CA_PUB);
+      CLOSE (CLIENT_MODIFY_SCANNER, KEY_PUB);
+      CLOSE (CLIENT_MODIFY_SCANNER, KEY_PRIV);
 
       case CLIENT_MODIFY_SCHEDULE:
         {
@@ -26518,6 +26550,15 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_SCANNER_TYPE,
               &modify_scanner_data->type);
+
+      APPEND (CLIENT_MODIFY_SCANNER_CA_PUB,
+              &modify_scanner_data->ca_pub);
+
+      APPEND (CLIENT_MODIFY_SCANNER_KEY_PUB,
+              &modify_scanner_data->key_pub);
+
+      APPEND (CLIENT_MODIFY_SCANNER_KEY_PRIV,
+              &modify_scanner_data->key_priv);
 
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,

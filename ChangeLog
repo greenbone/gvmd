@@ -1,3 +1,18 @@
+2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Send scanner CA public key and
+	public key in GET_SCANNERS case. Adjust modify_scanner() call.
+	(modify_scanner_data_t): Add new elements for scanners certs.
+	(modify_scanner_data_reset): Free data in new elements.
+	(client_state_t): Add new states for MODIFY_SCANNER.
+	(omp_xml_handle_start_element, omp_xml_handle_text): Handle new
+	MODIFY_SCANNER states.
+
+	* src/manage.h: Add and modify functions prototypes.
+
+	* src/manage_sql.c (modify_scanner): Enable modifying ca_pub, key_pub
+	and key_priv fields when provided.
+
 2014-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)

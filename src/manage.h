@@ -2062,7 +2062,8 @@ copy_scanner (const char*, const char*, const char *, scanner_t *);
 
 int
 modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *);
+                const char *, const char *, const char *, const char *,
+                const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2117,6 +2118,12 @@ scanner_iterator_port (iterator_t*);
 
 int
 scanner_iterator_type (iterator_t*);
+
+const char*
+scanner_iterator_ca_pub (iterator_t *);
+
+const char*
+scanner_iterator_key_pub (iterator_t *);
 
 char *
 scanner_name (scanner_t);

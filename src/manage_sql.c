@@ -36113,6 +36113,12 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   scanner_id  UUID of scanner.
  * @param[in]   name        Name of scanner.
  * @param[in]   comment     Comment on scanner.
+ * @param[in]   host        Host of scanner.
+ * @param[in]   port        Port of scanner.
+ * @param[in]   type        Type of scanner.
+ * @param[in]   ca_cert     CA public key of scanner or NULL.
+ * @param[in]   key_pub     Public key of scanner or NULL.
+ * @param[in]   key_priv    Private key of scanner or NULL.
  *
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
  *         3 scanner_id required, 4 invalid value, 99 permission denied, -1
@@ -36120,7 +36126,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  */
 int
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
-                const char *host, const char *port, const char *type)
+                const char *host, const char *port, const char *type,
+                const char *ca_pub, const char *key_pub, const char *key_priv)
 {
   gchar *quoted_name, *quoted_comment, *quoted_host;
   scanner_t scanner = 0;
@@ -36176,10 +36183,31 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   sql ("UPDATE scanners SET name = '%s', comment = '%s', host = '%s',"
        " port = %d, type = %d, modification_time = m_now () WHERE id = %llu;",
        quoted_name, quoted_comment, quoted_host, iport, itype, scanner);
-
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
+
+  if (ca_pub)
+    {
+      char *quoted_ca_pub = sql_quote (ca_pub);
+      sql ("UPDATE scanners SET ca_pub = '%s' WHERE id = %llu;", quoted_ca_pub,
+           scanner);
+      g_free (quoted_ca_pub);
+    }
+  if (key_pub)
+    {
+      char *quoted_key_pub = sql_quote (key_pub);
+      sql ("UPDATE scanners SET key_pub = '%s' WHERE id = %llu;",
+           quoted_key_pub, scanner);
+      g_free (quoted_key_pub);
+    }
+  if (key_priv)
+    {
+      char *quoted_key_priv = sql_quote (key_priv);
+      sql ("UPDATE scanners SET key_priv = '%s' WHERE id = %llu;",
+           quoted_key_priv, scanner);
+      g_free (quoted_key_priv);
+    }
   sql ("COMMIT;");
   return 0;
 }
