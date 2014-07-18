@@ -73,4 +73,7 @@ openvas_scanner_init (int);
 int
 openvas_scanner_set_address (const char *, int);
 
+void
+openvas_scanner_set_certs (const char *, const char *, const char *);
+
 #endif /* not OPENVAS_MANAGER_SCANNER_H */

@@ -2094,6 +2094,15 @@ scanner_port (scanner_t);
 int
 scanner_type (scanner_t);
 
+char *
+scanner_ca_pub (scanner_t);
+
+char *
+scanner_key_pub (scanner_t);
+
+char *
+scanner_key_priv (scanner_t);
+
 int
 scanner_count (const get_data_t *);
 

@@ -12063,7 +12063,7 @@ int
 manage_scanner_set (const char *uuid)
 {
   scanner_t scanner = 0;
-  char *host;
+  char *host, *ca_pub, *key_pub, *key_priv;
   int port, type;
 
   if (uuid == NULL)
@@ -12093,8 +12093,14 @@ manage_scanner_set (const char *uuid)
       g_free (host);
       return -1;
     }
-
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  openvas_scanner_set_certs (ca_pub, key_pub, key_priv);
   g_free (host);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
   return 0;
 }
 
@@ -36521,6 +36527,45 @@ scanner_type (scanner_t scanner)
 }
 
 /**
+ * @brief Return the CA public key of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated CA public key.
+ */
+char *
+scanner_ca_pub (scanner_t scanner)
+{
+  return sql_string ("SELECT ca_pub FROM scanners WHERE id = %llu;", scanner);
+}
+
+/**
+ * @brief Return the public key of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated public key.
+ */
+char *
+scanner_key_pub (scanner_t scanner)
+{
+  return sql_string ("SELECT key_pub FROM scanners WHERE id = %llu;", scanner);
+}
+
+/**
+ * @brief Return the private key of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Newly allocated private key.
+ */
+char *
+scanner_key_priv (scanner_t scanner)
+{
+  return sql_string ("SELECT key_priv FROM scanners WHERE id = %llu;", scanner);
+}
+
+/**
  * @brief Count number of scanners.
  *
  * @param[in]  get  GET params.
@@ -36582,6 +36627,9 @@ verify_scanner (const char *scanner_id, char **version)
     {
       int ret = openvas_scanner_set_address (scanner_iterator_host (&scanner),
                                              scanner_iterator_port (&scanner));
+      openvas_scanner_set_certs (scanner_iterator_ca_pub (&scanner),
+                                 scanner_iterator_key_pub (&scanner),
+                                 scanner_iterator_key_priv (&scanner));
       cleanup_iterator (&scanner);
       if (ret == -1)
         return 2;

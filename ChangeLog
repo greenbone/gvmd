@@ -1,3 +1,24 @@
+2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Use Scanner certs from DB.
+
+	* src/manage_sql.c (manage_scanner_set, verify_scanner): Call
+	openvas_scanner_set_certs() accordingly.
+	(scanner_ca_pub, scanner_key_pub, scanner_key_priv): New functions.
+
+	* src/manage.c (scanner_connect): Set scanner certs values from DB.
+	(stop_task_internal): Remove handling of tasks with no scanner.
+
+	* src/manage.h: Add functions prototypes.
+
+	* src/scanner.c (openvas_scanner_connect): Connect with
+	openvas_server_new_mem() and adjust to use certificates global variables
+	accordingly.
+	(openvas_scanner_free): Free certificates memory and reset variables.
+	(openvas_scanner_set_certs): New function.
+
+	* src/scanner.h: Add new function prototype.
+
 2014-07-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (columns_build_select): Include column aliases.

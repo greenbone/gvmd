@@ -2927,14 +2927,23 @@ static int
 scanner_connect (scanner_t scanner)
 {
   int ret, port;
-  char *host;
+  char *host, *ca_pub, *key_pub, *key_priv;
 
   assert (scanner);
   host = scanner_host (scanner);
   port = scanner_port (scanner);
   ret = openvas_scanner_set_address (host, port);
   g_free (host);
-  return ret;
+  if (ret)
+    return ret;
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  openvas_scanner_set_certs (ca_pub, key_pub, key_priv);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  return 0;
 }
 
 /**
@@ -3588,13 +3597,10 @@ stop_task_internal (task_t task)
     {
       if (current_scanner_task == task)
         {
-          /* If task has no scanner, use default one. */
           scanner_t scanner = task_scanner (task);
 
           assert (scanner);
           if (scanner_connect (scanner))
-            return -5;
-          else if (!scanner && manage_scanner_set_default ())
             return -5;
           if (!openvas_scanner_connected ()
               && (openvas_scanner_connect () || openvas_scanner_init (0)))

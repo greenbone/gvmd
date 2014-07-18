@@ -44,6 +44,9 @@ gnutls_session_t openvas_scanner_session = NULL;
 gnutls_certificate_credentials_t openvas_scanner_credentials = NULL;
 int openvas_scanner_socket = -1;
 struct sockaddr_in openvas_scanner_address;
+char *openvas_scanner_ca_pub = NULL;
+char *openvas_scanner_key_pub = NULL;
+char *openvas_scanner_key_priv = NULL;
 
 /**
  * @brief Buffer of input from the scanner.
@@ -379,9 +382,10 @@ openvas_scanner_connect ()
     }
 
   /* Make the scanner socket. */
-  if (openvas_server_new (GNUTLS_CLIENT, CACERT, CLIENTCERT, CLIENTKEY,
-                          &openvas_scanner_session,
-                          &openvas_scanner_credentials))
+  if (openvas_server_new_mem
+       (GNUTLS_CLIENT, openvas_scanner_ca_pub, openvas_scanner_key_pub,
+        openvas_scanner_key_priv, &openvas_scanner_session,
+        &openvas_scanner_credentials))
     {
       close (openvas_scanner_socket);
       openvas_scanner_socket = -1;
@@ -409,9 +413,17 @@ openvas_scanner_free ()
   openvas_scanner_socket = -1;
   if (openvas_scanner_session)
     gnutls_deinit (openvas_scanner_session);
+  openvas_scanner_session = NULL;
   if (openvas_scanner_credentials)
     gnutls_certificate_free_credentials (openvas_scanner_credentials);
+  openvas_scanner_credentials = NULL;
   memset (&openvas_scanner_address, '\0', sizeof (openvas_scanner_address));
+  g_free (openvas_scanner_ca_pub);
+  g_free (openvas_scanner_key_pub);
+  g_free (openvas_scanner_key_priv);
+  openvas_scanner_ca_pub = NULL;
+  openvas_scanner_key_pub = NULL;
+  openvas_scanner_key_priv = NULL;
 }
 
 /**
@@ -548,4 +560,23 @@ openvas_scanner_set_address (const char *addr, int port)
     return -1;
 
   return 0;
+}
+
+/**
+ * @brief Set the scanner's CA public key, and public/private key pair.
+ *
+ * @param[in]  ca_pub       CA Public key.
+ * @param[in]  key_pub      Scanner public key.
+ * @param[in]  key_priv     Scanner private key.
+ */
+void
+openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
+                           const char *key_priv)
+{
+  if (ca_pub)
+    openvas_scanner_ca_pub = g_strdup (ca_pub);
+  if (key_pub)
+    openvas_scanner_key_pub = g_strdup (key_pub);
+  if (key_priv)
+    openvas_scanner_key_priv = g_strdup (key_priv);
 }
