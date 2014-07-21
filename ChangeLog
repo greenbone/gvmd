@@ -1,5 +1,16 @@
 2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Increase limit of max number of hosts specified in user Host Access
+	Control to 16,777,216.
+
+	* src/manage.h (MANAGE_USER_MAX_HOSTS): New define.
+
+	* src/manage_sql.c (manage_set_max_hosts): New function.
+	(create_user, modify_user): Use the new maximum number of specified
+	hosts.
+
+2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.h: Add new function header.
 
 	* src/manage_sql.c (modify_task_check_slave_scanner): New function.

@@ -25527,6 +25527,17 @@ manage_max_hosts ()
 }
 
 /**
+ * @brief Set the maximum allowed number of hosts per target.
+ *
+ * @param[in]   new_max   New max_hosts value.
+ */
+void
+manage_set_max_hosts (int new_max)
+{
+  max_hosts = new_max;
+}
+
+/**
  * @brief Find a target given a UUID.
  *
  * @param[in]   uuid    UUID of target.
@@ -48840,11 +48851,15 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   /* Check hosts. */
 
+  max = manage_max_hosts ();
+  manage_set_max_hosts (MANAGE_USER_MAX_HOSTS);
   if (hosts && (manage_count_hosts (hosts, NULL) < 0))
     {
+      manage_set_max_hosts (max);
       sql ("ROLLBACK;");
       return 3;
     }
+  manage_set_max_hosts (max);
 
   /* Get the password hashes. */
 
@@ -49369,11 +49384,15 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
 
   /* Check hosts. */
 
+  max = manage_max_hosts ();
+  manage_set_max_hosts (MANAGE_USER_MAX_HOSTS);
   if (hosts && (manage_count_hosts (hosts, NULL) < 0))
     {
+      manage_set_max_hosts (max);
       sql ("ROLLBACK;");
       return 6;
     }
+  manage_set_max_hosts (max);
 
   /* Get the password hashes. */
 
