@@ -16244,6 +16244,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>alterable</e>
           <e>config</e>
           <e>target</e>
+          <e>scanner</e>
           <e>alert</e>
           <e>observers</e>
           <e>schedule</e>
@@ -16439,6 +16440,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>trash</name>
             <summary>Whether the target is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>scanner</name>
+          <summary>The scanner used to scan the target</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the scanner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>Type of the scanner</summary>
+            <pattern><t>integer</t></pattern>
           </ele>
         </ele>
         <ele>
@@ -17004,6 +17027,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
               <name>dik</name>
             </target>
+            <scanner id="34891919-37ff-5c69-1a2a-089e9018308a">
+              <name>foo scanner</name>
+              <type>2</type>
+            </scanner>
             <slave id="">
               <name></name>
             </slave>

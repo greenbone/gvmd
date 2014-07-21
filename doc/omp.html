@@ -26396,6 +26396,21 @@ get_targets_response_target_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>scanner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The scanner used to scan the target.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>alert</b>&gt;
               <div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
 <ul style="list-style: none">
@@ -26869,6 +26884,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_alterable
        &amp; get_tasks_response_task_config
        &amp; get_tasks_response_task_target
+       &amp; get_tasks_response_task_scanner
        &amp; get_tasks_response_task_alert
        &amp; get_tasks_response_task_observers
        &amp; get_tasks_response_task_schedule
@@ -27059,6 +27075,25 @@ get_tasks_response_task_target_trash
  = element trash
      {
        boolean
+     }
+
+get_tasks_response_task_scanner
+ = element scanner
+     {
+       attribute id { uuid }
+       &amp; get_tasks_response_task_scanner_name
+     }
+
+get_tasks_response_task_scanner_name
+ = element name
+     {
+       name
+     }
+
+get_tasks_response_task_scanner_type
+ = element type
+     {
+       integer
      }
 
 get_tasks_response_task_alert
@@ -27622,6 +27657,10 @@ get_tasks_response_task_count_page
      &lt;target id="1f28d970-17ef-4c69-ba8a-13827059f2b9"&gt;
        &lt;name&gt;dik&lt;/name&gt;
      &lt;/target&gt;
+     &lt;scanner id="34891919-37ff-5c69-1a2a-089e9018308a"&gt;
+       &lt;name&gt;foo scanner&lt;/name&gt;
+       &lt;type&gt;2&lt;/type&gt;
+     &lt;/scanner&gt;
      &lt;slave id=""&gt;
        &lt;name/&gt;
      &lt;/slave&gt;

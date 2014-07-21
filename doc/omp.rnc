@@ -14268,6 +14268,7 @@ get_tasks_response_task
        & get_tasks_response_task_alterable
        & get_tasks_response_task_config
        & get_tasks_response_task_target
+       & get_tasks_response_task_scanner
        & get_tasks_response_task_alert
        & get_tasks_response_task_observers
        & get_tasks_response_task_schedule
@@ -14485,6 +14486,28 @@ get_tasks_response_task_target_trash
  = element trash
      {
        boolean
+     }
+
+# The scanner used to scan the target.
+get_tasks_response_task_scanner
+ = element scanner
+     {
+       attribute id { uuid }
+       & get_tasks_response_task_scanner_name
+     }
+
+# The name of the scanner.
+get_tasks_response_task_scanner_name
+ = element name
+     {
+       name
+     }
+
+# Type of the scanner.
+get_tasks_response_task_scanner_type
+ = element type
+     {
+       integer
      }
 
 # An alert that applies to the task.
