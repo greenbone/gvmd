@@ -27739,6 +27739,46 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
 }
 
 /**
+ * @brief Check scanner and slave values match for a task.
+ *
+ * @param[in]  task         Task.
+ * @param[in]  slave_id     ID of slave. "0" to use task's config.
+ * @param[in]  scanner_id   ID of scanner.
+ *
+ * @return 1 if slave and scanner values match, 0 otherwise.
+ */
+int
+modify_task_check_slave_scanner (task_t task, const char *slave_id,
+                                 const char *scanner_id)
+{
+  slave_t slave;
+  scanner_t scanner;
+
+  if (scanner_id == NULL)
+    scanner_id = "0";
+  if (slave_id == NULL)
+    slave_id = "0";
+
+  /* Setting a non-default Scanner, and setting or keeping a Slave. */
+  slave = task_slave (task);
+  if (strcmp (scanner_id, "0")
+      && strcmp (scanner_id, SCANNER_UUID_DEFAULT)
+      && (strcmp (slave_id, "0") || slave))
+    return 0;
+
+  /* Setting a slave, and a non-default Scanner. */
+  if (strcmp (slave_id, "0") && strcmp (scanner_id, SCANNER_UUID_DEFAULT))
+    return 0;
+  scanner = task_scanner (task);
+  /* Setting a slave, and keeping the non-default Scanner. */
+  if (strcmp (slave_id, "0") && !strcmp (scanner_id, "0")
+      && strcmp (scanner_uuid (scanner), SCANNER_UUID_DEFAULT))
+    return 0;
+
+  return 1;
+}
+
+/**
  * @brief Check scanner and config values match for a task.
  *
  * @param[in]  task         Task.
@@ -27755,8 +27795,10 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
   scanner_t scanner = 0;
   int ctype, stype;
 
-  if (config_id == NULL && scanner_id == NULL)
-    return 1;
+  if (config_id == NULL)
+    config_id = "0";
+  if (scanner_id == NULL)
+    scanner_id = "0";
 
   if (!strcmp (config_id, "0") && !strcmp (scanner_id, "0"))
     return 1;

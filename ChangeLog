@@ -1,3 +1,14 @@
+2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.h: Add new function header.
+
+	* src/manage_sql.c (modify_task_check_slave_scanner): New function.
+	(modify_task_check_config_scanner): Handle one null parameter case.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_TASK and MODIFY_TASK
+	cases, improve the handling of erroneous scanner and slave values
+	combinations.
+
 2014-07-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_scanner): Do not set certs fields if provided

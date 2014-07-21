@@ -20864,6 +20864,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
+          if (create_task_data->scanner_id == NULL)
+            create_task_data->scanner_id = g_strdup (SCANNER_UUID_DEFAULT);
+          if (strcmp (create_task_data->scanner_id, SCANNER_UUID_DEFAULT)
+              && create_task_data->slave_id)
+            {
+              request_delete_task (&create_task_data->task);
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Slave used with non-default Scanner."));
+              create_task_data_reset (create_task_data);
+              set_client_state (CLIENT_AUTHENTIC);
+              break;
+            }
+
           /* Check permissions. */
 
           if (user_may ("create_task") == 0)
@@ -20890,8 +20904,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->scanner_id == NULL)
-            create_task_data->scanner_id = g_strdup (SCANNER_UUID_DEFAULT);
           if (create_task_data->config_id == NULL
               || create_task_data->target_id == NULL)
             {
@@ -20905,8 +20917,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               set_client_state (CLIENT_AUTHENTIC);
               break;
             }
-
-          assert (create_task_data->config_id && create_task_data->target_id);
 
           /* Set any alert. */
 
@@ -23866,6 +23876,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                (XML_ERROR_SYNTAX ("modify_task",
                                   "For container tasks only name, comment and"
                                   " observers can be modified"));
+            else if (!modify_task_check_slave_scanner
+                       (task, modify_task_data->slave_id,
+                        modify_task_data->scanner_id))
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("modify_task",
+                                  "Slave used with non-default Scanner."));
             else if (!modify_task_check_config_scanner
                        (task, modify_task_data->config_id,
                         modify_task_data->scanner_id))
