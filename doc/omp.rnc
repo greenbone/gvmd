@@ -25,6 +25,7 @@ command
     | create_report
     | create_report_format
     | create_role
+    | create_scanner
     | create_schedule
     | create_slave
     | create_tag
@@ -45,6 +46,7 @@ command
     | delete_port_range
     | delete_report_format
     | delete_role
+    | delete_scanner
     | delete_schedule
     | delete_slave
     | delete_tag
@@ -76,6 +78,7 @@ command
     | get_report_formats
     | get_results
     | get_roles
+    | get_scanners
     | get_schedules
     | get_settings
     | get_slaves
@@ -101,6 +104,7 @@ command
     | modify_report
     | modify_report_format
     | modify_role
+    | modify_scanner
     | modify_schedule
     | modify_setting
     | modify_slave
@@ -140,6 +144,7 @@ response
     | create_report_response
     | create_report_format_response
     | create_role_response
+    | create_scanner_response
     | create_schedule_response
     | create_slave_response
     | create_tag_response
@@ -160,6 +165,7 @@ response
     | delete_port_range_response
     | delete_report_format_response
     | delete_role_response
+    | delete_scanner_response
     | delete_schedule_response
     | delete_slave_response
     | delete_tag_response
@@ -191,6 +197,7 @@ response
     | get_report_formats_response
     | get_results_response
     | get_roles_response
+    | get_scanners_response
     | get_schedules_response
     | get_settings_response
     | get_slaves_response
@@ -216,6 +223,7 @@ response
     | modify_report_response
     | modify_report_format_response
     | modify_role_response
+    | modify_scanner_response
     | modify_schedule_response
     | modify_setting_response
     | modify_slave_response
@@ -2013,6 +2021,7 @@ commands
            | create_port_range
            | create_report_format
            | create_role
+           | create_scanner
            | create_schedule
            | create_slave
            | create_tag
@@ -2033,6 +2042,7 @@ commands
            | delete_role
            | delete_port_list
            | delete_port_range
+           | delete_scanner
            | delete_schedule
            | delete_slave
            | delete_tag
@@ -2063,6 +2073,7 @@ commands
            | get_report_formats
            | get_results
            | get_roles
+           | get_scanners
            | get_schedules
            | get_settings
            | get_slaves
@@ -2088,6 +2099,7 @@ commands
            | modify_report
            | modify_report_format
            | modify_role
+           | modify_scanner
            | modify_schedule
            | modify_setting
            | modify_slave
@@ -2961,6 +2973,87 @@ create_role_users
        text
      }
 
+## Command create_scanner
+##
+## Create a scanner.
+
+create_scanner
+ = element create_scanner
+     {
+       create_scanner_name
+       & create_scanner_comment?
+       & create_scanner_copy?
+       & create_scanner_host
+       & create_scanner_port
+       & create_scanner_type
+       & create_scanner_ca_pub
+       & create_scanner_key_pub
+       & create_scanner_key_priv
+     }
+
+# A name for the scanner.
+create_scanner_name
+ = element name
+     {
+       name
+     }
+
+# A comment on the scanner.
+create_scanner_comment
+ = element comment
+     {
+       text
+     }
+
+# The UUID of an existing scanner.
+create_scanner_copy
+ = element copy
+     {
+       uuid
+     }
+
+# The host of the scanner.
+create_scanner_host
+ = element host
+     {
+       text
+     }
+
+# The port of the scanner.
+create_scanner_port
+ = element port
+     {
+       text
+     }
+
+# The type of the scanner.
+create_scanner_type
+ = element type
+     {
+       text
+     }
+
+# Public key of CA to verify scanner certificate..
+create_scanner_ca_pub
+ = element ca_pub
+     {
+       text
+     }
+
+# Public key to authenticate with to the Scanner..
+create_scanner_key_pub
+ = element key_pub
+     {
+       text
+     }
+
+# Private key to authenticate with to the Scanner.
+create_scanner_key_priv
+ = element key_priv
+     {
+       text
+     }
+
 ## Command create_schedule
 ##
 ## Create a schedule.
@@ -3673,6 +3766,18 @@ delete_role
        attribute ultimate { boolean }
      }
 
+## Command delete_scanner
+##
+## Delete a scanner.
+
+delete_scanner
+ = element delete_scanner
+     {
+       attribute scanner_id { uuid }
+       & # Whether to remove entirely, or to the trashcan.
+       attribute ultimate { boolean }
+     }
+
 ## Command delete_schedule
 ##
 ## Delete a schedule.
@@ -4220,6 +4325,23 @@ get_roles
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
        & # Whether to get the trashcan roles instead.
+       attribute trash { boolean }?
+     }
+
+## Command get_scanners
+##
+## Get all scanners.
+
+get_scanners
+ = element get_scanners
+     {
+       # ID of single scanner to get.
+       attribute scanner_id { uuid }?
+       & # Filter term to use to filter query.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query.
+       attribute filt_id { uuid }?
+       & # Whether to get the trashcan scanners instead.
        attribute trash { boolean }?
      }
 
@@ -5159,6 +5281,81 @@ modify_role_users
        text
      }
 
+## Command modify_scanner
+##
+## Modify an existing scanner.
+
+modify_scanner
+ = element modify_scanner
+     {
+       # ID of scanner to modify.
+       attribute scanner_id { uuid }
+       & modify_scanner_comment?
+       & modify_scanner_name?
+       & modify_scanner_host
+       & modify_scanner_port
+       & modify_scanner_type
+       & modify_scanner_ca_pub?
+       & modify_scanner_key_pub?
+       & modify_scanner_key_priv?
+     }
+
+# Comment on scanner.
+modify_scanner_comment
+ = element comment
+     {
+       text
+     }
+
+# Name of scanner.
+modify_scanner_name
+ = element name
+     {
+       name
+     }
+
+# Host of the scanner.
+modify_scanner_host
+ = element host
+     {
+       text
+     }
+
+# Port of the scanner.
+modify_scanner_port
+ = element port
+     {
+       text
+     }
+
+# Type of the scanner. '1' for OSPD Ovaldi, '2' for OpenVAS (classic) Scanner.
+modify_scanner_type
+ = element type
+     {
+       text
+     }
+
+# Public key of CA to verify scanner's certificate.
+modify_scanner_ca_pub
+ = element ca_pub
+     {
+       text
+     }
+
+# Public key of credentials to authenticate with to scanner.
+modify_scanner_key_pub
+ = element key_pub
+     {
+       text
+     }
+
+# Private key of credentials to authenticate with to scanner.
+modify_scanner_key_priv
+ = element key_priv
+     {
+       text
+     }
+
 ## Command modify_schedule
 ##
 ## Modify an existing schedule.
@@ -5891,6 +6088,7 @@ commands_response
            | create_port_list_response
            | create_port_range_response
            | create_role_response
+           | create_scanner_response
            | create_schedule_response
            | create_slave_response
            | create_tag_response
@@ -5911,6 +6109,7 @@ commands_response
            | delete_report_response
            | delete_report_format_response
            | delete_role_response
+           | delete_scanner_response
            | delete_schedule_response
            | delete_slave_response
            | delete_tag_response
@@ -5942,6 +6141,7 @@ commands_response
            | get_results_response
            | get_roles_response
            | get_slaves_response
+           | get_scanners_response
            | get_schedules_response
            | get_settings_response
            | get_system_reports_response
@@ -5966,6 +6166,7 @@ commands_response
            | modify_report_response
            | modify_report_format_response
            | modify_role_response
+           | modify_scanner_response
            | modify_schedule_response
            | modify_setting_response
            | modify_slave_response
@@ -6119,6 +6320,16 @@ create_report_format_response
 create_role_response
  = element create_role_response
      {
+     }
+
+## Response to create_scanner
+
+create_scanner_response
+ = element create_scanner_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
      }
 
 ## Response to create_schedule
@@ -6302,6 +6513,15 @@ delete_report_format_response
 
 delete_role_response
  = element delete_role_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+     }
+
+## Response to delete_scanner
+
+delete_scanner_response
+ = element delete_scanner_response
      {
        attribute status { status }
        & attribute status_text { text }
@@ -12249,6 +12469,299 @@ get_roles_response_role_count_page
        integer
      }
 
+## Response to get_scanners
+
+get_scanners_response
+ = element get_scanners_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
+       & get_scanners_response_scanner*
+       & get_scanners_response_filters
+       & get_scanners_response_sort
+       & get_scanners_response_scanners
+       & get_scanners_response_scanner_count
+     }
+
+get_scanners_response_scanner
+ = element scanner
+     {
+       attribute id { uuid }
+       & get_scanners_response_scanner_owner
+       & get_scanners_response_scanner_name
+       & get_scanners_response_scanner_comment
+       & get_scanners_response_scanner_creation_time
+       & get_scanners_response_scanner_modification_time
+       & get_scanners_response_scanner_writable
+       & get_scanners_response_scanner_in_use
+       & get_scanners_response_scanner_permissions
+       & get_scanners_response_scanner_user_tags
+       & get_scanners_response_scanner_host
+       & get_scanners_response_scanner_port
+       & get_scanners_response_scanner_type
+       & get_scanners_response_scanner_ca_pub
+       & get_scanners_response_scanner_key_pub
+     }
+
+# Owner of the scanner.
+get_scanners_response_scanner_owner
+ = element owner
+     {
+       get_scanners_response_scanner_owner_name
+     }
+
+# The name of the owner.
+get_scanners_response_scanner_owner_name
+ = element name
+     {
+       name
+     }
+
+# The name of the scanner.
+get_scanners_response_scanner_name
+ = element name
+     {
+       name
+     }
+
+# The comment on the scanner.
+get_scanners_response_scanner_comment
+ = element comment
+     {
+       text
+     }
+
+get_scanners_response_scanner_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_scanners_response_scanner_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+# Whether the scanner is writable.
+get_scanners_response_scanner_writable
+ = element writable
+     {
+       boolean
+     }
+
+# Whether any tasks are using the scanner.
+get_scanners_response_scanner_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Permissions that the current user has on the scanner.
+get_scanners_response_scanner_permissions
+ = element permissions
+     {
+       get_scanners_response_scanner_permissions_permission*
+     }
+
+get_scanners_response_scanner_permissions_permission
+ = element permission
+     {
+       get_scanners_response_scanner_permissions_permission_name
+     }
+
+# The name of the permission.
+get_scanners_response_scanner_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Info on tags attached to the chedule.
+get_scanners_response_scanner_user_tags
+ = element user_tags
+     {
+       get_scanners_response_scanner_user_tags_count
+       & get_scanners_response_scanner_user_tags_tag*
+     }
+
+# Number of attached tags.
+get_scanners_response_scanner_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+get_scanners_response_scanner_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & get_scanners_response_scanner_user_tags_tag_name
+       & get_scanners_response_scanner_user_tags_tag_value
+       & get_scanners_response_scanner_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+get_scanners_response_scanner_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+get_scanners_response_scanner_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+get_scanners_response_scanner_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# Host of the scanner.
+get_scanners_response_scanner_host
+ = element host
+     {
+       text
+     }
+
+# Port of the scanner.
+get_scanners_response_scanner_port
+ = element port
+     {
+       text
+     }
+
+# Type of the scanner.
+get_scanners_response_scanner_type
+ = element type
+     {
+       text
+     }
+
+# CA Public key to verify the scanner's certificate.
+get_scanners_response_scanner_ca_pub
+ = element ca_pub
+     {
+       text
+     }
+
+# Public key of credentials to authenticate with.
+get_scanners_response_scanner_key_pub
+ = element key_pub
+     {
+       text
+     }
+
+get_scanners_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_scanners_response_filters_term
+       & get_scanners_response_filters_keywords
+     }
+
+# Filter term.
+get_scanners_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_scanners_response_filters_keywords
+ = element keywords
+     {
+       get_scanners_response_filters_keywords_keyword*
+     }
+
+get_scanners_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_scanners_response_filters_keywords_keyword_column
+       & get_scanners_response_filters_keywords_keyword_relation
+       & get_scanners_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_scanners_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_scanners_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_scanners_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_scanners_response_sort
+ = element sort
+     {
+       text
+       & get_scanners_response_sort_field
+     }
+
+get_scanners_response_sort_field
+ = element field
+     {
+       get_scanners_response_sort_field_order
+     }
+
+get_scanners_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_scanners_response_scanners
+ = element scanners
+     {
+       # First scanner.
+       attribute start { integer }
+       & # Maximum number of scanners.
+       attribute max { integer }
+     }
+
+get_scanners_response_scanner_count
+ = element scanner_count
+     {
+       get_scanners_response_scanner_count_filtered
+       & get_scanners_response_scanner_count_page
+     }
+
+# Number of scanners after filtering.
+get_scanners_response_scanner_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of scanners on current page.
+get_scanners_response_scanner_count_page
+ = element page
+     {
+       integer
+     }
+
 ## Response to get_schedules
 
 get_schedules_response
@@ -15090,6 +15603,15 @@ modify_report_format_response
 modify_role_response
  = element modify_role_response
      {
+     }
+
+## Response to modify_scanner
+
+modify_scanner_response
+ = element modify_scanner_response
+     {
+       attribute status { status }
+       & attribute status_text { text }
      }
 
 ## Response to modify_schedule

@@ -1,5 +1,11 @@
 2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml, doc/omp.rnc, doc/omp.html: Add
+	documentation for create_scanner, modify_scanner, get_scanners and
+	delete_scanner OMP commands.
+
+2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Increase limit of max number of hosts specified in user Host Access
 	Control to 16,777,216.
 
