@@ -8500,6 +8500,14 @@ create_target_port_list
           </li></ul>
 </li>
 <li>
+              &lt;<b>scanner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The scanner to use for scanning the target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>alert</b>&gt;
               *<div style="margin-left: 15px; display: inline;">An alert that applies to the task.</div>
 <ul style="list-style: none"><li>
@@ -8575,6 +8583,7 @@ create_target_port_list
        &amp; create_task_alterable?
        &amp; create_task_config
        &amp; create_task_target
+       &amp; create_task_scanner
        &amp; create_task_alert*
        &amp; create_task_schedule?
        &amp; create_task_slave?
@@ -8614,6 +8623,12 @@ create_task_config
 
 create_task_target
  = element target
+     {
+       attribute id { uuid }
+     }
+
+create_task_scanner
+ = element scanner
      {
        attribute id { uuid }
      }
@@ -8683,6 +8698,7 @@ create_task_preferences_preference_value
    &lt;comment&gt;Hourly scan of the webserver&lt;/comment&gt;
    &lt;config id="daba56c8-73ec-11df-a475-002264764cea"/&gt;
    &lt;target id="b493b7a8-7489-11df-a3ec-002264764cea"/&gt;
+   &lt;scanner id="15348381-3180-213f-4eec-123591912388"/&gt;
  &lt;/create_task&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;create_task_response status="201"
@@ -31797,6 +31813,14 @@ modify_tag_active
           </li></ul>
 </li>
 <li>
+              &lt;<b>scanner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task scanner.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>slave</b>&gt;
               <div style="margin-left: 15px; display: inline;">Task slave.</div>
 <ul style="list-style: none"><li>
@@ -31847,6 +31871,7 @@ modify_tag_active
            | modify_task_observers
            | modify_task_preferences
            | modify_task_schedule
+           | modify_task_scanner
            | modify_task_slave
            | modify_task_file )
      }
@@ -31902,6 +31927,12 @@ modify_task_preferences_preference_value
 
 modify_task_schedule
  = element schedule
+     {
+       attribute id { uuid }
+     }
+
+modify_task_scanner
+ = element scanner
      {
        attribute id { uuid }
      }

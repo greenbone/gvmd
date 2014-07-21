@@ -3447,6 +3447,7 @@ create_task
        & create_task_alterable?
        & create_task_config
        & create_task_target
+       & create_task_scanner
        & create_task_alert*
        & create_task_schedule?
        & create_task_slave?
@@ -3492,6 +3493,13 @@ create_task_config
 # The hosts scanned by the task.
 create_task_target
  = element target
+     {
+       attribute id { uuid }
+     }
+
+# The scanner to use for scanning the target.
+create_task_scanner
+ = element scanner
      {
        attribute id { uuid }
      }
@@ -5725,6 +5733,7 @@ modify_task
            | modify_task_observers
            | modify_task_preferences
            | modify_task_schedule
+           | modify_task_scanner
            | modify_task_slave
            | modify_task_file )
      }
@@ -5786,6 +5795,13 @@ modify_task_preferences_preference_value
 # Task schedule.
 modify_task_schedule
  = element schedule
+     {
+       attribute id { uuid }
+     }
+
+# Task scanner.
+modify_task_scanner
+ = element scanner
      {
        attribute id { uuid }
      }

@@ -4253,6 +4253,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>alterable</e></o>
       <e>config</e>
       <e>target</e>
+      <e>scanner</e>
       <any><e>alert</e></any>
       <o><e>schedule</e></o>
       <o><e>slave</e></o>
@@ -4297,6 +4298,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>target</name>
       <summary>The hosts scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>scanner</name>
+      <summary>The scanner to use for scanning the target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -4392,6 +4404,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <comment>Hourly scan of the webserver</comment>
           <config id="daba56c8-73ec-11df-a475-002264764cea"/>
           <target id="b493b7a8-7489-11df-a3ec-002264764cea"/>
+          <scanner id="15348381-3180-213f-4eec-123591912388"/>
         </create_task>
       </request>
       <response>
@@ -19896,6 +19909,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>observers</e>
         <e>preferences</e>
         <e>schedule</e>
+        <e>scanner</e>
         <e>slave</e>
         <e>file</e>
       </or>
@@ -19953,6 +19967,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>schedule</name>
       <summary>Task schedule</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>scanner</name>
+      <summary>Task scanner</summary>
       <pattern>
         <attrib>
           <name>id</name>

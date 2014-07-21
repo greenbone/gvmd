@@ -1,5 +1,10 @@
 2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml, doc/omp.rnc, doc/omp.html: Update
+	documentation for create_task and modify_task OMP commands.
+
+2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml, doc/omp.rnc, doc/omp.html: Add
 	documentation for create_scanner, modify_scanner, get_scanners and
 	delete_scanner OMP commands.
