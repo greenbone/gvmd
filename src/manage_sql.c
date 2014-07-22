@@ -10779,7 +10779,7 @@ make_config_osp_ovaldi ()
 {
   config_t config;
 
-  sql ("INSERT into configs (uuid, name, owner, nvt_selector, comment,"
+  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
        " family_count, nvt_count, nvts_growing, families_growing,"
        " type, creation_time, modification_time)"
        " VALUES ('%s', 'OSP Ovaldi', NULL, NULL, 'OSP Ovaldi specific config.',"
@@ -10787,14 +10787,8 @@ make_config_osp_ovaldi ()
 
   /* Setup preferences for the config. */
   config = sql_last_insert_rowid ();
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'username', '');", config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'password', '');", config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
+  sql ("INSERT INTO config_preferences (config, type, name, value)"
        " VALUES (%i, 'SERVER_PREFS', 'definitions_file', '');", config);
-  sql ("INSERT into config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'port', '22');", config);
 }
 
 /**
@@ -10934,6 +10928,8 @@ check_db_configs ()
   if (sql_int ("SELECT count(*) FROM configs WHERE uuid = '%s';",
                CONFIG_UUID_OSP_OVALDI) == 0)
     make_config_osp_ovaldi ();
+  sql ("DELETE FROM config_preferences"
+       " WHERE name = 'username' OR name = 'password' OR name = 'port';");
 }
 
 /**

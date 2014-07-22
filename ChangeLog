@@ -1,3 +1,12 @@
+2014-07-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_osp_task): Use LSC Credentials attached to the
+	target as OSP scan options and adjust function accordingly.
+	(parse_osp_report): Adjust make_result() function call.
+
+	* src/manage_sql.c (make_config_osp_ovaldi, check_db_configs): Remove
+	unused osp ovaldi config preferences and delete left-overs.
+
 2014-07-21  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml, doc/omp.rnc, doc/omp.html: Update

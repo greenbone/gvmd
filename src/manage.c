@@ -2778,7 +2778,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       name = entity_attribute (r_entity, "name");
       assert (name);
       desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
-      result = make_result (task, target, "", "", mtype, desc);
+      result = make_result (task, target, "", NULL, mtype, desc);
       g_free (desc);
       report_add_result (report, result);
       results = next_entities (results);
@@ -2883,8 +2883,9 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
 int
 run_osp_task (task_t task, char **report_id)
 {
-  char *host, *targets;
+  char host[2048], *host_str, *target_str;
   int port, ret;
+  target_t target;
   GHashTable *options;
   osp_connection_t *connection;
   scanner_t scanner;
@@ -2892,19 +2893,66 @@ run_osp_task (task_t task, char **report_id)
 
   scanner = task_scanner (task);
   assert (scanner);
-  host = scanner_host (scanner);
+  host_str = scanner_host (scanner);
+  strncpy (host, host_str, sizeof (host));
+  host[2047] = '\0';
+  g_free (host_str);
   port = scanner_port (scanner);
   connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
   if (!connection)
-    {
-      g_free (host);
-      return -5;
-    }
-  targets = target_hosts (task_target (task));
+    return -5;
   options = task_scanner_options (task);
-  *report_id = osp_start_scan (connection, targets, options);
+  target = task_target (task);
+  if (options)
+    {
+      char *ssh_port;
+      const char *user, *pass;
+      iterator_t iter;
+      lsc_credential_t cred;
+
+      cred = target_ssh_lsc_credential (target);
+      if (!cred)
+        {
+          g_warning ("%s: No LSC credentials provided.", __FUNCTION__);
+          osp_connection_close (connection);
+          g_hash_table_destroy (options);
+          return -1;
+        }
+      ssh_port = target_ssh_port (target);
+      g_hash_table_insert (options, g_strdup ("port"), ssh_port);
+
+      init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
+      if (!next (&iter))
+        {
+          g_warning ("%s: LSC Credential not found.", __FUNCTION__);
+          osp_connection_close (connection);
+          g_hash_table_destroy (options);
+          cleanup_iterator (&iter);
+          return -1;
+        }
+      if (lsc_credential_iterator_private_key (&iter))
+        {
+          g_warning ("%s: LSC Credential not a user/pass pair.", __FUNCTION__);
+          osp_connection_close (connection);
+          g_hash_table_destroy (options);
+          cleanup_iterator (&iter);
+          return -1;
+        }
+      user = lsc_credential_iterator_login (&iter);
+      pass = lsc_credential_iterator_password (&iter);
+      g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
+      g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
+      cleanup_iterator (&iter);
+    }
+  else
+    {
+      osp_connection_close (connection);
+      return -1;
+    }
+  target_str = target_hosts (target);
+  *report_id = osp_start_scan (connection, target_str, options);
   osp_connection_close (connection);
-  g_free (targets);
+  g_free (target_str);
   g_hash_table_destroy (options);
   if (*report_id == NULL)
     return -1;
@@ -2914,7 +2962,6 @@ run_osp_task (task_t task, char **report_id)
 
   /* Fork OSP scan handler. */
   ret = fork_osp_scan_handler (task, report, host, port);
-  g_free (host);
   if (ret)
     {
       g_warning ("Couldn't fork OSP scan handler.\n");
