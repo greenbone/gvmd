@@ -1208,6 +1208,11 @@ rc_preference (const char*, const char*);
  */
 #define MANAGE_MAX_HOSTS 4095
 
+/**
+ * @brief Default maximum number of hosts a user host access may specify.
+ */
+#define MANAGE_USER_MAX_HOSTS 16777216
+
 int
 manage_max_hosts ();
 
