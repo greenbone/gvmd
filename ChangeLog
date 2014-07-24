@@ -1,3 +1,12 @@
+2014-07-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (ALERT_ITERATOR_TRASH_COLUMNS)
+	(TARGET_ITERATOR_TRASH_COLUMNS): Fix tables names.
+	(PORT_LIST_ITERATOR_TRASH_COLUMNS): Fix table columns names.
+	(init_port_list_iterator): Fix trash_columns variable value.
+	(init_port_range_iterator): Fix counting to correctly handle port lists
+	in trashcan case.
+
 2014-07-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_osp_task): Use LSC Credentials attached to the

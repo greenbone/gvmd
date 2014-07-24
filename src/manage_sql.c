@@ -6437,7 +6437,7 @@ alert_method (alert_t alert)
  */
 #define ALERT_ITERATOR_TRASH_COLUMNS                                          \
  {                                                                            \
-   GET_ITERATOR_COLUMNS (alerts),                                             \
+   GET_ITERATOR_COLUMNS (alerts_trash),                                       \
    { "event", NULL },                                                         \
    { "condition", NULL},                                                      \
    { "method", NULL },                                                        \
@@ -26673,7 +26673,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
  */
 #define TARGET_ITERATOR_TRASH_COLUMNS                               \
  {                                                                  \
-   GET_ITERATOR_COLUMNS (targets),                                  \
+   GET_ITERATOR_COLUMNS (targets_trash),                            \
    { "hosts", NULL },                                               \
    { "lsc_credential", NULL },                                      \
    { "ssh_port", NULL },                                            \
@@ -43664,7 +43664,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "       END)"                                                 \
      "      - start"                                               \
      "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists_trash.id)",   \
+     " FROM port_ranges_trash"                                     \
+     " WHERE port_list = port_lists_trash.id)",                    \
      "total"                                                       \
    },                                                              \
    {                                                               \
@@ -43675,8 +43676,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "       END)"                                                 \
      "      - start"                                               \
      "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists_trash.id"     \
-     "                  AND   type = 0)",                          \
+     " FROM port_ranges_trash"                                     \
+     " WHERE port_list = port_lists_trash.id AND type = 0)",       \
      "tcp"                                                         \
    },                                                              \
    {                                                               \
@@ -43687,8 +43688,8 @@ delete_port_range (const char *port_range_id, int dummy)
      "       END)"                                                 \
      "      - start"                                               \
      "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists_trash.id"     \
-     "                  AND   type = 1)",                          \
+     " FROM port_ranges_trash"                                     \
+     " WHERE port_list = port_lists_trash.id AND type = 1)",       \
      "udp"                                                         \
    },                                                              \
    { NULL, NULL }                                                  \
@@ -43726,7 +43727,7 @@ init_port_list_iterator (iterator_t* iterator, const get_data_t *get)
 {
   static const char *filter_columns[] = PORT_LIST_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = PORT_LIST_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = PORT_LIST_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PORT_LIST_ITERATOR_TRASH_COLUMNS;
 
   return init_get_iterator (iterator,
                             "port_list",
@@ -43911,15 +43912,17 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    " FROM port_ranges%s"
                    " WHERE port_list = %llu"
                    " AND"
-                   " (((SELECT owner FROM port_lists WHERE id = port_list)"
+                   " (((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "   IS NULL)"
-                   "  OR ((SELECT owner FROM port_lists WHERE id = port_list)"
+                   "  OR ((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
                    "  OR (CAST (%i AS boolean)"
                    "      AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    port_list,
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
                    current_credentials.uuid,
                    trash ? 0 : 1,
                    current_credentials.uuid,
@@ -43936,13 +43939,15 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    "SELECT uuid, comment, start, end, type, exclude"
                    " FROM port_ranges%s"
                    " WHERE"
-                   " (((SELECT owner FROM port_lists WHERE id = port_list)"
+                   " (((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "   IS NULL)"
-                   "  OR ((SELECT owner FROM port_lists WHERE id = port_list)"
+                   "  OR ((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
                    "  OR (CAST (%i AS boolean)"
                    "      AND (" USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
+                   trash ? "_trash" : "",
+                   trash ? "_trash" : "",
                    trash ? "_trash" : "",
                    current_credentials.uuid,
                    trash ? 0 : 1,
