@@ -71,6 +71,9 @@ int
 openvas_scanner_init (int);
 
 int
+openvas_scanner_is_loading ();
+
+int
 openvas_scanner_set_address (const char *, int);
 
 void

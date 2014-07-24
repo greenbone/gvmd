@@ -580,3 +580,22 @@ openvas_scanner_set_certs (const char *ca_pub, const char *key_pub,
   if (key_priv)
     openvas_scanner_key_priv = g_strdup (key_priv);
 }
+
+/**
+ * @brief Checks whether the connected to OpenVAS Scanner is still loading
+ *        plugins. To be called right after openvas_scanner_init().
+ *
+ * @return 1 if loading, 0 if not loading or error.
+ */
+int
+openvas_scanner_is_loading ()
+{
+  /* Add little delay in case we read before scanner write, as the socket is
+   * non-blocking. */
+  usleep (500000);
+  openvas_scanner_read ();
+
+  if (process_otp_scanner_input (NULL) == 3)
+    return 1;
+  return 0;
+}

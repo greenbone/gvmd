@@ -1,5 +1,14 @@
 2014-07-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (run_task): Check if scanner is loading right after the
+	connecting to it.
+
+	* src/scanner.c (openvas_scanner_is_loading): New function.
+
+	* src/scanner.h: Add new function prototype.
+
+2014-07-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (ALERT_ITERATOR_TRASH_COLUMNS)
 	(TARGET_ITERATOR_TRASH_COLUMNS): Fix tables names.
 	(PORT_LIST_ITERATOR_TRASH_COLUMNS): Fix table columns names.

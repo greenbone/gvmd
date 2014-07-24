@@ -3010,9 +3010,9 @@ scanner_connect (scanner_t scanner)
  * @return Before forking: 1 task is active already, 3 failed to find task,
  *         4 resuming task not supported, -1 error, -2 task is missing a target,
  *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
- *         down, -6 already a task running in this process, -9 fork failed.
- *         After forking: 0 success (parent), 2 success (child), -10 error
- *         (child).
+ *         down or still loading, -6 already a task running in this process, -9
+ *         fork failed.  After forking: 0 success (parent), 2 success (child),
+ *         -10 error (child).
  */
 static int
 run_task (const char *task_id, char **report_id, int from,
@@ -3055,6 +3055,12 @@ run_task (const char *task_id, char **report_id, int from,
   if (!openvas_scanner_connected ()
       && (openvas_scanner_connect () || openvas_scanner_init (0)))
     return -5;
+
+  if (openvas_scanner_is_loading ())
+    {
+      openvas_scanner_close ();
+      return -5;
+    }
 
   if (set_task_requested (task, &run_status))
     return 1;
