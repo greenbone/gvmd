@@ -1,3 +1,15 @@
+2014-07-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow ALLINFO to be used in the GET_AGGREGATES command.
+
+	* src/manage.h (type_table): New function prototype.
+
+	* src/manage_sql.c (init_aggregate_iterator): Get expression for SQL
+	FROM clause with new type_table function.
+	(type_columns, type_select_columns, type_filter_columns): Add case for
+	ALLINFO.
+	(type_table): New function.
+
 2014-07-23  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_task): Check if scanner is loading right after the

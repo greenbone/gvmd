@@ -4276,7 +4276,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 {
   column_t *select_columns;
   int first, max;
-  gchar *clause, *order, *filter, *owned_clause;
+  gchar *from_table, *clause, *order, *filter, *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -4369,18 +4369,19 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       outer_group_by = g_strdup ("");
     }
 
+  from_table = type_table (type, get->trash);
+
   if (resource && get->trash)
     init_iterator (iterator,
                    "SELECT %s FROM ("
                    " SELECT %s"
-                   " FROM %ss%s"
+                   " FROM %s"
                    " WHERE ROWID = %llu"
                    " AND %s"
                    " %s)%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
+                   from_table,
                    resource,
                    owned_clause,
                    order,
@@ -4389,15 +4390,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "SELECT %s FROM ("
                    " SELECT %s"
-                   " FROM %ss%s"
+                   " FROM %s"
                    " WHERE"
                    " %s"
                    " %s"
                    " %s)%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
+                   from_table,
                    owned_clause,
                    extra_where ? extra_where : "",
                    order,
@@ -4406,13 +4406,13 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     init_iterator (iterator,
                    "SELECT %s FROM ("
                    " SELECT %s"
-                   " FROM %ss"
+                   " FROM %s"
                    " WHERE ROWID = %llu"
                    " AND %s"
                    " %s)%s;",
                    outer_select,
                    columns,
-                   type,
+                   from_table,
                    resource,
                    owned_clause,
                    order,
@@ -4422,14 +4422,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       init_iterator (iterator,
                    "SELECT %s FROM ("
                    " SELECT%s %s"
-                   " FROM %ss%s"
+                   " FROM %s%s"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s)%s;",
                    outer_select,
                    distinct ? " DISTINCT" : "",
                    columns,
-                   type,
+                   from_table,
                    extra_tables ? extra_tables : "",
                    owned_clause,
                    clause ? " AND (" : "",
@@ -4444,7 +4444,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
       init_iterator (iterator,
                    "SELECT %s FROM ("
                    " SELECT%s %s"
-                   " FROM %ss%s"
+                   " FROM %s%s"
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s"
@@ -4452,7 +4452,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    outer_select,
                    distinct ? " DISTINCT" : "",
                    columns,
-                   type,
+                   from_table,
                    extra_tables ? extra_tables : "",
                    owned_clause,
                    clause ? " AND (" : "",
@@ -50663,6 +50663,11 @@ type_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "ALLINFO") == 0)
+    {
+      static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "CPE") == 0)
     {
       static column_t columns[] = CPE_INFO_ITERATOR_COLUMNS;
@@ -50698,6 +50703,7 @@ type_columns (const char *type)
 column_t *
 type_select_columns (const char *type)
 {
+  static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
   static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
@@ -50707,6 +50713,8 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "ALLINFO") == 0)
+    return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
     return cpe_columns;
   else if (strcasecmp (type, "CVE") == 0)
@@ -50727,6 +50735,11 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "ALLINFO") == 0)
+    {
+      static const char *ret[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   else if (strcasecmp (type, "CPE") == 0)
     {
       static const char *ret[] = CPE_INFO_ITERATOR_FILTER_COLUMNS;
@@ -50771,6 +50784,27 @@ type_trash_columns (const char *type)
     {
       static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
       return columns_build_select (columns);
+    }
+  else
+    return NULL;
+}
+
+char*
+type_table (const char *type, int trash)
+{
+  if (type == NULL)
+    return NULL;
+  else if (strcasecmp (type, "ALLINFO") == 0)
+    {
+      return g_strdup (ALL_INFO_UNION_COLUMNS);
+    }
+  else if (trash && type_trash_in_table (type) == 0)
+    {
+      return g_strdup_printf ("%ss_trash", type);
+    }
+  else if (trash == 0 || type_trash_in_table (type) == 0)
+    {
+      return g_strdup_printf ("%ss", type);
     }
   else
     return NULL;

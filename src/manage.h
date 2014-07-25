@@ -3428,6 +3428,9 @@ type_filter_columns (const char *);
 char*
 type_trash_columns (const char *);
 
+gchar*
+type_table (const char *, int);
+
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 
