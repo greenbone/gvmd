@@ -66,6 +66,7 @@
 #include <unistd.h>
 
 #include <openvas/base/openvas_string.h>
+#include <openvas/base/openvas_file.h>
 #include <openvas/base/osp.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
@@ -2708,9 +2709,18 @@ task_scanner_options (task_t task)
     {
       char *name, *value;
       name = g_strdup (preference_iterator_name (&prefs));
-      if (g_str_has_suffix (name, "_file"))
-        value = g_base64_encode ((guchar *) preference_iterator_value (&prefs),
-                                 strlen (preference_iterator_value (&prefs)));
+      if (!strcmp (name, "definitions_file"))
+        {
+          char *fname;
+
+          if (!preference_iterator_value (&prefs))
+            continue;
+          fname = g_strdup_printf ("%s/%s", OPENVAS_STATE_DIR "/scap-data/defs",
+                                   preference_iterator_value (&prefs));
+          value = openvas_file_as_base64 (fname);
+          if (!value)
+            continue;
+        }
       else
         value = g_strdup (preference_iterator_value (&prefs));
       g_hash_table_insert (table, name, value);

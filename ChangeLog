@@ -1,5 +1,10 @@
 2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (task_scanner_options): Fetch the definitions file from
+	disk, as only the name is stored in DB now.
+
+2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (get_ovaldi_files): New function.
 	(omp_xml_handle_end_element): In GET_SCAN_CONFIGS case, send list of xml
 	files under scap-data/defs folder as default value for definitions_file
