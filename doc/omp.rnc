@@ -9889,7 +9889,6 @@ get_nvts_response_nvt
      {
        attribute id { uuid }
        & get_nvts_response_nvt_name
-       & get_nvts_response_nvt_checksum
        & get_nvts_response_nvt_creation_time
        & get_nvts_response_nvt_modification_time
        & get_nvts_response_nvt_permissions
@@ -10103,19 +10102,6 @@ get_nvts_response_nvt_preference_count
 
 get_nvts_response_nvt_timeout
  = element timeout
-     {
-       text
-     }
-
-get_nvts_response_nvt_checksum
- = element checksum
-     {
-       text
-       & get_nvts_response_nvt_checksum_algorithm
-     }
-
-get_nvts_response_nvt_checksum_algorithm
- = element algorithm
      {
        text
      }

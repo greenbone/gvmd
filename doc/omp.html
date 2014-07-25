@@ -16971,7 +16971,7 @@ get_notes_response_note_result_description
       </p>
 <p>
         If the details flag is present the manager will send full details
-        of the NVT, otherwise it will send just the NVT name and checksum.
+        of the NVT, otherwise it will send just the NVT name.
       </p>
 <p>
         With the preferences flag the manager includes in the listing, the
@@ -17055,13 +17055,6 @@ get_notes_response_note_result_description
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
 <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>checksum</b>&gt;
-              <ul style="list-style: none"><li>
-              &lt;<b>algorithm</b>&gt;
-              <ul style="list-style: none"></ul>
-</li></ul>
 </li>
 <li>
               &lt;<b>creation_time</b>&gt;
@@ -17275,7 +17268,6 @@ get_nvts_response_nvt
      {
        attribute id { uuid }
        &amp; get_nvts_response_nvt_name
-       &amp; get_nvts_response_nvt_checksum
        &amp; get_nvts_response_nvt_creation_time
        &amp; get_nvts_response_nvt_modification_time
        &amp; get_nvts_response_nvt_permissions
@@ -17478,19 +17470,6 @@ get_nvts_response_nvt_timeout
        text
      }
 
-get_nvts_response_nvt_checksum
- = element checksum
-     {
-       text
-       &amp; get_nvts_response_nvt_checksum_algorithm
-     }
-
-get_nvts_response_nvt_checksum_algorithm
- = element algorithm
-     {
-       text
-     }
-
 get_nvts_response_nvt_preferences
  = element preferences
      {
@@ -17576,10 +17555,6 @@ get_nvts_response_nvt_preferences_preference_default
      &lt;tags&gt;NOTAG&lt;/tags&gt;
      &lt;preference_count&gt;-1&lt;/preference_count&gt;
      &lt;timeout/&gt;
-     &lt;checksum&gt;
-       2397586ea5cd3a69f953836f7be9ef7b
-       &lt;algorithm&gt;md5&lt;/algorithm&gt;
-     &lt;/checksum&gt;
      &lt;preferences&gt;
        &lt;timeout/&gt;
        &lt;preference&gt;
@@ -17620,10 +17595,6 @@ get_nvts_response_nvt_preferences_preference_default
      &lt;user_tags&gt;
        &lt;count&gt;0&lt;/count&gt;
      &lt;/user_tags&gt;
-     &lt;checksum&gt;
-       2397586ea5cd3a69f953836f7be9ef7b
-       &lt;algorithm&gt;md5&lt;/algorithm&gt;
-     &lt;/checksum&gt;
    &lt;/nvt&gt;
  &lt;/get_nvts_response&gt;
 </pre></div>

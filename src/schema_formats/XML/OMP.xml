@@ -10072,7 +10072,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
       <p>
         If the details flag is present the manager will send full details
-        of the NVT, otherwise it will send just the NVT name and checksum.
+        of the NVT, otherwise it will send just the NVT name.
       </p>
       <p>
         With the preferences flag the manager includes in the listing, the
@@ -10156,7 +10156,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
-          <e>checksum</e>
           <e>creation_time</e>
           <e>modification_time</e>
           <e>permissions</e>
@@ -10347,17 +10346,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>text</pattern>
         </ele>
         <ele>
-          <name>checksum</name>
-          <pattern>
-            <e>algorithm</e>
-            text
-          </pattern>
-          <ele>
-            <name>algorithm</name>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
           <name>preferences</name>
           <pattern>
             <e>timeout</e>
@@ -10431,10 +10419,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <tags>NOTAG</tags>
             <preference_count>-1</preference_count>
             <timeout></timeout>
-            <checksum>
-              <algorithm>md5</algorithm>
-              2397586ea5cd3a69f953836f7be9ef7b
-            </checksum>
 
             <preferences>
               <timeout></timeout>
@@ -10476,10 +10460,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <user_tags>
               <count>0</count>
             </user_tags>
-            <checksum>
-              <algorithm>md5</algorithm>
-              2397586ea5cd3a69f953836f7be9ef7b
-            </checksum>
           </nvt>
         </get_nvts_response>
       </response>

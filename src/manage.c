@@ -5661,12 +5661,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<xrefs>%s</xrefs>"
                              "<tags>%s</tags>"
                              "<preference_count>%i</preference_count>"
-                             "<timeout>%s</timeout>"
-                             "<checksum>"
-                             "<algorithm>md5</algorithm>"
-                             /** @todo Implement checksum. */
-                             "2397586ea5cd3a69f953836f7be9ef7b"
-                             "</checksum>%s",
+                             "<timeout>%s</timeout>%s",
                              oid,
                              name_text,
                              get_iterator_creation_time (nvts)
@@ -5703,23 +5698,12 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
 
     }
   else
-    msg = g_strdup_printf ("<nvt"
-                           " oid=\"%s\">"
-                           "<name>%s</name>"
-                           "<user_tags>"
-                           "<count>%i</count>"
-                           "</user_tags>"
-                           "<checksum>"
-                           "<algorithm>md5</algorithm>"
-                            /** @todo Implement checksum. */
-                           "2397586ea5cd3a69f953836f7be9ef7b"
-                           "</checksum>",
-                           oid,
-                           name_text,
-                           resource_tag_count ("nvt",
-                                                get_iterator_resource
-                                                  (nvts),
-                                                1));
+    msg = g_strdup_printf
+           ("<nvt oid=\"%s\"><name>%s</name>"
+            "<user_tags><count>%i</count></user_tags>%s",
+            oid, name_text,
+            resource_tag_count ("nvt", get_iterator_resource (nvts), 1),
+            close_tag ? "</nvt>" : "");
   g_free (name_text);
   return msg;
 }

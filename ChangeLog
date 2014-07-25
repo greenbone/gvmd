@@ -1,5 +1,13 @@
 2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (get_nvti_xml): Remove hardcoded and unused nvt checksum
+	and algorithm values.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	documentation.
+
+2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (make_result): Handle null nvt case when inserting
 	the result in DB.
 
