@@ -13911,6 +13911,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to get the trashcan scanners instead</summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include extra details like tasks using this scanner</summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -13952,6 +13957,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>type</e>
           <e>ca_pub</e>
           <e>key_pub</e>
+          <o><e>tasks</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -14084,6 +14090,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>Public key of credentials to authenticate with</summary>
           <pattern>text</pattern>
         </ele>
+        <ele>
+          <name>tasks</name>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
       </ele>
       <ele>
         <name>filters</name>
@@ -14201,7 +14229,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <example>
       <summary>Get full details of a single scanner</summary>
       <request>
-        <get_scanners scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/>
+        <get_scanners details='1' scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/>
       </request>
       <response>
         <get_scanners_response status="200" status_text="OK">
@@ -14220,6 +14248,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <type>2</type>
             <ca_pub>...</ca_pub>
             <key_pub>...</key_pub>
+            <tasks>
+              <task id="813864a9-d3fd-44b3-8717-972bfb01dfc0">
+                <name>Debian desktops</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
           </scanner>
           <truncate>...</truncate>
         </get_scanners_response>

@@ -4351,6 +4351,8 @@ get_scanners
        attribute filt_id { uuid }?
        & # Whether to get the trashcan scanners instead.
        attribute trash { boolean }?
+       & # Whether to include extra details like tasks using this scanner.
+       attribute details { boolean }?
      }
 
 ## Command get_schedules
@@ -12517,6 +12519,7 @@ get_scanners_response_scanner
        & get_scanners_response_scanner_type
        & get_scanners_response_scanner_ca_pub
        & get_scanners_response_scanner_key_pub
+       & get_scanners_response_scanner_tasks?
      }
 
 # Owner of the scanner.
@@ -12673,6 +12676,26 @@ get_scanners_response_scanner_key_pub
  = element key_pub
      {
        text
+     }
+
+get_scanners_response_scanner_tasks
+ = element tasks
+     {
+       get_scanners_response_scanner_tasks_task*
+     }
+
+get_scanners_response_scanner_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_scanners_response_scanner_tasks_task_name
+     }
+
+# The name of the task.
+get_scanners_response_scanner_tasks_task_name
+ = element name
+     {
+       name
      }
 
 get_scanners_response_filters

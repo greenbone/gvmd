@@ -2133,6 +2133,15 @@ scanner_iterator_ca_pub (iterator_t *);
 const char*
 scanner_iterator_key_pub (iterator_t *);
 
+void
+init_scanner_task_iterator (iterator_t*, scanner_t);
+
+const char*
+scanner_task_iterator_uuid (iterator_t *);
+
+const char*
+scanner_task_iterator_name (iterator_t *);
+
 char *
 scanner_name (scanner_t);
 

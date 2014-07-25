@@ -15374,13 +15374,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
               SENDF_TO_CLIENT_OR_FAIL
                ("<host>%s</host><port>%d</port><type>%d</type>"
-                "<ca_pub>%s</ca_pub><key_pub>%s</key_pub></scanner>",
+                "<ca_pub>%s</ca_pub><key_pub>%s</key_pub>",
                 scanner_iterator_host (&scanners),
                 scanner_iterator_port (&scanners),
                 scanner_iterator_type (&scanners),
                 scanner_iterator_ca_pub (&scanners),
                 scanner_iterator_key_pub (&scanners));
               count++;
+              if (get_scanners_data->get.details)
+                {
+                  iterator_t tasks;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+                  init_scanner_task_iterator (&tasks, get_iterator_resource
+                                                       (&scanners));
+                  while (next (&tasks))
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<task id=\"%s\"><name>%s</name></task>",
+                      scanner_task_iterator_uuid (&tasks),
+                      scanner_task_iterator_name (&tasks));
+                  cleanup_iterator (&tasks);
+                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+                }
+              SEND_TO_CLIENT_OR_FAIL ("</scanner>");
             }
           cleanup_iterator (&scanners);
           filtered = get_scanners_data->get.id

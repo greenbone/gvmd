@@ -22696,6 +22696,11 @@ get_roles_response_role_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan scanners instead.
           </li>
+<li>
+          @<b>details</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to include extra details like tasks using this scanner.
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -22826,6 +22831,23 @@ get_roles_response_role_count_page
               <div style="margin-left: 15px; display: inline;">Public key of credentials to authenticate with.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>tasks</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>task</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -22919,6 +22941,7 @@ get_roles_response_role_count_page
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
+       &amp; attribute details { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_scanners_response
@@ -22951,6 +22974,7 @@ get_scanners_response_scanner
        &amp; get_scanners_response_scanner_type
        &amp; get_scanners_response_scanner_ca_pub
        &amp; get_scanners_response_scanner_key_pub
+       &amp; get_scanners_response_scanner_tasks?
      }
 
 get_scanners_response_scanner_owner
@@ -23089,6 +23113,25 @@ get_scanners_response_scanner_key_pub
        text
      }
 
+get_scanners_response_scanner_tasks
+ = element tasks
+     {
+       get_scanners_response_scanner_tasks_task*
+     }
+
+get_scanners_response_scanner_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; get_scanners_response_scanner_tasks_task_name
+     }
+
+get_scanners_response_scanner_tasks_task_name
+ = element name
+     {
+       name
+     }
+
 get_scanners_response_filters
  = element filters
      {
@@ -23185,7 +23228,8 @@ get_scanners_response_scanner_count_page
 </div>
 <h4>7.70.3 Example: Get full details of a single scanner</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_scanners scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_scanners details="1"
+               scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_scanners_response status="200"
                         status_text="OK"&gt;
@@ -23204,6 +23248,12 @@ get_scanners_response_scanner_count_page
      &lt;type&gt;2&lt;/type&gt;
      &lt;ca_pub&gt;...&lt;/ca_pub&gt;
      &lt;key_pub&gt;...&lt;/key_pub&gt;
+     &lt;tasks&gt;
+       &lt;task id="813864a9-d3fd-44b3-8717-972bfb01dfc0"&gt;
+         &lt;name&gt;Debian desktops&lt;/name&gt;
+       &lt;/task&gt;
+       ...
+     &lt;/tasks&gt;
    &lt;/scanner&gt;
    &lt;truncate&gt;...&lt;/truncate&gt;
  &lt;/get_scanners_response&gt;

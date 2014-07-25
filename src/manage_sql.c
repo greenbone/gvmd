@@ -36470,6 +36470,44 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 4);
 DEF_ACCESS (scanner_iterator_key_priv, GET_ITERATOR_COLUMN_COUNT + 5);
 
 /**
+ * @brief Initialise a scanner task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  scanner   Scanner.
+ */
+void
+init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
+{
+  assert (current_credentials.uuid);
+
+  init_iterator (iterator,
+                 "SELECT id, uuid, name FROM tasks"
+                 " WHERE scanner = %llu AND hidden = 0"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
+                 " ORDER BY name ASC;",
+                 scanner, current_credentials.uuid);
+}
+
+/**
+ * @brief Get the UUID from a scanner task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_task_iterator_uuid, 1);
+
+/**
+ * @brief Get the name from a scanner task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_task_iterator_name, 2);
+
+/**
  * @brief Check whether an scanner is in use.
  *
  * @param[in]  scanner  Scanner.

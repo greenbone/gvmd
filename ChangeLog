@@ -1,3 +1,16 @@
+2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_scanner_task_iterator)
+	(scanner_task_iterator_uuid, scanner_task_iterator_name): New functions.
+
+	* src/omp.c (omp_xml_handle_end_element): Include tasks using the
+	scanner object in GET_SCANNERS when the details attribute is set.
+
+	* src/manage.h: Add new functions prototypes.
+
+	* src/schema_formats/XML/OMP.xml, doc/omp.html, doc/omp.rnc: Update
+	documentation.
+
 2014-07-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow ALLINFO to be used in the GET_AGGREGATES command.
