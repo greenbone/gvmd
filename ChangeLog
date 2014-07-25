@@ -1,5 +1,13 @@
 2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (get_ovaldi_files): New function.
+	(omp_xml_handle_end_element): In GET_SCAN_CONFIGS case, send list of xml
+	files under scap-data/defs folder as default value for definitions_file
+	config preference. Change type from osp_file to ovaldi_file. Adjust
+	related code accordingly.
+
+2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (init_scanner_task_iterator)
 	(scanner_task_iterator_uuid, scanner_task_iterator_name): New functions.
 

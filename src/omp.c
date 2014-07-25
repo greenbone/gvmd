@@ -11298,6 +11298,41 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
     }
 
 /**
+ * @brief Get list of ovaldi definitions files from scap-data/defs directory.
+ *
+ * @return String of |-concatenated file names. Free with g_free().
+ */
+char *
+get_ovaldi_files ()
+{
+  GDir *dir;
+  const char *fname;
+  char *result = NULL;
+  GError *err = NULL;
+
+  dir = g_dir_open (OPENVAS_STATE_DIR "/scap-data/defs", 0, &err);
+  if (dir == NULL)
+    {
+      g_warning ("%s", err->message);
+      g_error_free (err);
+      return NULL;
+    }
+  while ((fname = g_dir_read_name (dir)))
+    {
+      if (g_file_test (fname, G_FILE_TEST_IS_DIR))
+        continue;
+      if (g_str_has_suffix (fname, ".xml"))
+        {
+          char *tmp = g_strconcat (fname, result ? "|" : "", result, NULL);
+          g_free (result);
+          result = tmp;
+        }
+    }
+  g_dir_close (dir);
+  return result;
+}
+
+/**
  * @brief Handle the end of an OMP XML element.
  *
  * React to the end of an XML element according to the current value
@@ -12431,26 +12466,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_preference_iterator (&prefs, config, "SERVER_PREFS");
                   while (next (&prefs))
                     {
-                      const char *name, *value, *def, *type = "";
+                      const char *name, *value, *type;
+                      char *def = NULL;
 
                       name = preference_iterator_name (&prefs);
-                      value = def = preference_iterator_value (&prefs);
+                      value = preference_iterator_value (&prefs);
                       /* Work-around to differentiate OSP preferences types as
-                       * config_preferences table doesn't have a type column and
-                       * *normal* configs rely on nvt_preferences naming scheme.
+                       * *normal* OpenVAS configs rely on nvt_preferences naming
+                       * scheme to differentiate NVT's and preference type.
                        */
-                      if (g_str_has_suffix (name, "_file"))
+                      if (!strcmp (name, "definitions_file"))
                         {
-                          type = "osp_file";
-                          def = "";
+                          def = get_ovaldi_files ();
+                          type = "ovaldi_file";
                         }
                       SENDF_TO_CLIENT_OR_FAIL
-                       ("<preference>"
-                        "<nvt oid=\"\"><name></name></nvt>"
+                       ("<preference><nvt oid=\"\"><name/></nvt>"
                         "<name>%s</name><type>%s</type>"
-                        "<value>%s</value>"
-                        "<default>%s</default></preference>",
-                        name, type, value, def);
+                        "<value>%s</value><default>%s</default></preference>",
+                        name, type, value, def ?: "");
+                      g_free (def);
                     }
                   cleanup_iterator (&prefs);
 
