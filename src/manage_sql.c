@@ -13827,7 +13827,8 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
        " VALUES"
        " (%llu, '%s', '%s', '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %i);",
-       task, host, port, nvt, nvt_revision, severity, type, quoted_descr, qod);
+       task, host, port, nvt ?: "", nvt_revision, severity, type,
+       quoted_descr, qod);
 
   g_free (quoted_descr);
   g_free (nvt_revision);

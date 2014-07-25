@@ -1,5 +1,10 @@
 2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (make_result): Handle null nvt case when inserting
+	the result in DB.
+
+2014-07-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (task_scanner_options): Fetch the definitions file from
 	disk, as only the name is stored in DB now.
 
