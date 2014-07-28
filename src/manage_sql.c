@@ -32807,14 +32807,20 @@ find_agent_with_permission (const char* uuid, agent_t* agent,
  * @param[in]   installer_filename  Installer filename.
  * @param[out]  signature           Freshly allocated installer signature.
  * @param[out]  signature_size      Size of installer signature.
+ * @param[out]  uuid                Address for basename of linked signature
+ *                                  when the signature was found in the private
+ *                                  directory, if desired, else NULL.
  *
  * @return 0 success, -1 error.
  */
 static int
 find_signature (const gchar *location, const gchar *installer_filename,
-                gchar **signature, gsize *signature_size)
+                gchar **signature, gsize *signature_size, gchar **uuid)
 {
   gchar *installer_basename = g_path_get_basename (installer_filename);
+
+  if (uuid)
+    *uuid = NULL;
 
   if (strlen (installer_basename))
     {
@@ -32827,8 +32833,6 @@ find_signature (const gchar *location, const gchar *installer_filename,
                                              location,
                                              signature_basename,
                                              NULL);
-      g_free (signature_basename);
-
       tracef ("signature_filename: %s\n", signature_filename);
 
       g_file_get_contents (signature_filename, signature, signature_size,
@@ -32836,9 +32840,49 @@ find_signature (const gchar *location, const gchar *installer_filename,
       g_free (signature_filename);
       if (error)
         {
+          if (uuid && (error->code == G_FILE_ERROR_NOENT))
+            {
+              char *real;
+              gchar **split;
+
+              g_error_free (error);
+              error = NULL;
+              signature_filename = g_build_filename (OPENVAS_NVT_DIR,
+                                                     "private",
+                                                     location,
+                                                     signature_basename,
+                                                     NULL);
+              tracef ("signature_filename (private): %s\n", signature_filename);
+              g_free (signature_basename);
+              g_file_get_contents (signature_filename, signature, signature_size,
+                                   &error);
+              if (error)
+                {
+                  g_free (signature_filename);
+                  g_error_free (error);
+                  return -1;
+                }
+
+              real = realpath (signature_filename, NULL);
+              g_free (signature_filename);
+              tracef ("real pathname: %s\n", real);
+              if (real == NULL)
+                return -1;
+              split = g_strsplit (basename (real), ".", 2);
+              if (*split)
+                *uuid = g_strdup (*split);
+              else
+                *uuid = g_strdup (basename (real));
+              tracef ("*uuid: %s\n", *uuid);
+              g_strfreev (split);
+              free (real);
+              return 0;
+            }
+          g_free (signature_basename);
           g_error_free (error);
           return -1;
         }
+      g_free (signature_basename);
       return 0;
     }
 
@@ -33081,7 +33125,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       g_free (installer_signature);
 
       if (find_signature ("agents", installer_filename, &installer_signature,
-                          &installer_signature_size)
+                          &installer_signature_size, NULL)
           == 0)
         {
           if (verify_signature (installer, installer_size, installer_signature,
@@ -33493,7 +33537,8 @@ verify_agent (const char *agent_id)
       find_signature ("agents",
                       agent_iterator_installer_filename (&agents),
                       &agent_signature,
-                      &agent_signature_size);
+                      &agent_signature_size,
+                      NULL);
 
       if ((signature_64 && strlen (signature_64))
           || agent_signature)
@@ -38006,7 +38051,7 @@ create_report_format (const char *uuid, const char *name,
 {
   gchar *quoted_name, *quoted_summary, *quoted_description, *quoted_extension;
   gchar *quoted_content_type, *quoted_signature, *file_name, *dir;
-  gchar *candidate_name;
+  gchar *candidate_name, *new_uuid, *uuid_actual;
   report_format_t report_format_rowid;
   int index, num;
   gchar *format_signature = NULL;
@@ -38024,7 +38069,7 @@ create_report_format (const char *uuid, const char *name,
 
   if (signature
       || (find_signature ("report_formats", uuid, &format_signature,
-                          &format_signature_size)
+                          &format_signature_size, &uuid_actual)
           == 0))
     {
       char *locale;
@@ -38034,7 +38079,7 @@ create_report_format (const char *uuid, const char *name,
 
       g_string_append_printf (format,
                               "%s%s%s%i",
-                              uuid,
+                              uuid_actual ? uuid_actual : uuid,
                               extension,
                               content_type,
                               global & 1);
@@ -38120,11 +38165,88 @@ create_report_format (const char *uuid, const char *name,
     }
 
   if (sql_int ("SELECT COUNT(*) FROM report_formats WHERE uuid = '%s';",
-               uuid))
+               uuid)
+      || sql_int ("SELECT COUNT(*) FROM report_formats_trash"
+                  " WHERE original_uuid = '%s';",
+                  uuid))
     {
-      sql ("ROLLBACK;");
-      return 1;
+      gchar *base, *new, *old;
+      char *real_old;
+
+      /* Make a new UUID, because a report format exists with the given UUID. */
+
+      new_uuid = openvas_uuid_make ();
+      if (new_uuid == NULL)
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
+
+      /* Setup a private/report_formats/ link to the signature of the existing
+       * report format in the feed.  This allows the signature to be shared. */
+
+      base = g_strdup_printf ("%s.asc", uuid);
+      old = g_build_filename (OPENVAS_NVT_DIR, "report_formats", base, NULL);
+      real_old = realpath (old, NULL);
+      if (real_old)
+        {
+          /* Signature exists in regular directory. */
+
+          g_free (old);
+          old = g_strdup (real_old);
+          free (real_old);
+        }
+      else
+        {
+          struct stat state;
+
+          /* Signature may be in private directory. */
+
+          g_free (old);
+          old = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
+                                  base, NULL);
+          if (lstat (old, &state))
+            {
+              /* No.  Signature may not exist in the feed yet. */
+              g_free (old);
+              old = g_build_filename (OPENVAS_NVT_DIR, "report_formats", base,
+                                      NULL);
+              tracef ("using standard old: %s\n", old);
+            }
+          else
+            {
+              int count;
+
+              /* Yes.  Use the path it links to. */
+
+              real_old = g_malloc (state.st_size + 1);
+              count = readlink (old, real_old, state.st_size + 1);
+              if (count < 0 || count > state.st_size)
+                {
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+
+              real_old[state.st_size] = '\0';
+              g_free (old);
+              old = real_old;
+              tracef ("using linked old: %s\n", old);
+            }
+        }
+      g_free (base);
+
+      base = g_strdup_printf ("%s.asc", new_uuid);
+      new = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
+                              base, NULL);
+      g_free (base);
+      if (symlink (old, new))
+        {
+          sql ("ROLLBACK;");
+          return -1;
+        }
     }
+  else
+    new_uuid = NULL;
 
   candidate_name = g_strdup (name);
   quoted_name = sql_quote (candidate_name);
@@ -38147,7 +38269,7 @@ create_report_format (const char *uuid, const char *name,
     dir = g_build_filename (OPENVAS_DATA_DIR,
                             "openvasmd",
                             "global_report_formats",
-                            uuid,
+                            new_uuid ? new_uuid : uuid,
                             NULL);
   else
     {
@@ -38156,7 +38278,7 @@ create_report_format (const char *uuid, const char *name,
                               "openvasmd",
                               "report_formats",
                               current_credentials.uuid,
-                              uuid,
+                              new_uuid ? new_uuid : uuid,
                               NULL);
     }
 
@@ -38165,6 +38287,7 @@ create_report_format (const char *uuid, const char *name,
       g_warning ("%s: failed to remove dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
+      g_free (new_uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -38174,6 +38297,7 @@ create_report_format (const char *uuid, const char *name,
       g_warning ("%s: failed to create dir %s", __FUNCTION__, dir);
       g_free (dir);
       g_free (quoted_name);
+      g_free (new_uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -38198,6 +38322,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (dir);
           g_free (report_dir);
           g_free (quoted_name);
+          g_free (new_uuid);
           sql ("ROLLBACK;");
           return -1;
         }
@@ -38213,6 +38338,7 @@ create_report_format (const char *uuid, const char *name,
                  strerror (errno));
       g_free (dir);
       g_free (quoted_name);
+      g_free (new_uuid);
       sql ("ROLLBACK;");
       return -1;
     }
@@ -38229,6 +38355,7 @@ create_report_format (const char *uuid, const char *name,
           openvas_file_remove_recurse (dir);
           g_free (dir);
           g_free (quoted_name);
+          g_free (new_uuid);
           sql ("ROLLBACK;");
           return 2;
         }
@@ -38255,6 +38382,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
+          g_free (new_uuid);
           sql ("ROLLBACK;");
           return -1;
         }
@@ -38268,6 +38396,7 @@ create_report_format (const char *uuid, const char *name,
           g_free (full_file_name);
           g_free (dir);
           g_free (quoted_name);
+          g_free (new_uuid);
           sql ("ROLLBACK;");
           return -1;
         }
@@ -38291,7 +38420,7 @@ create_report_format (const char *uuid, const char *name,
          "  modification_time)"
          " VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', %i, %i, 0,"
          "         m_now (), m_now ());",
-         uuid,
+         new_uuid ? new_uuid : uuid,
          quoted_name,
          quoted_summary ? quoted_summary : "",
          quoted_description ? quoted_description : "",
@@ -38308,7 +38437,7 @@ create_report_format (const char *uuid, const char *name,
          " VALUES ('%s', '%s',"
          " (SELECT id FROM users WHERE users.uuid = '%s'),"
          " '%s', '%s', '%s', '%s', '%s', %i, %i, 0, m_now (), m_now ());",
-         uuid,
+         new_uuid ? new_uuid : uuid,
          quoted_name,
          current_credentials.uuid,
          quoted_summary ? quoted_summary : "",
@@ -38319,6 +38448,7 @@ create_report_format (const char *uuid, const char *name,
          format_trust,
          time (NULL));
 
+  g_free (new_uuid);
   g_free (quoted_summary);
   g_free (quoted_description);
   g_free (quoted_extension);
@@ -38820,7 +38950,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   if (report_format == 0)
     {
-      gchar *report_format_string;
+      gchar *report_format_string, *base;
 
       /* Look in the trashcan. */
 
@@ -38854,6 +38984,10 @@ delete_report_format (const char *report_format_id, int ultimate)
       permissions_set_orphans ("report_format", report_format, LOCATION_TRASH);
       tags_set_orphans ("report_format", report_format, LOCATION_TRASH);
 
+      base = sql_string ("SELECT original_uuid || '.asc'"
+                         " FROM report_formats_trash"
+                         " WHERE id = %llu;",
+                         report_format);
       sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
            report_format);
       sql ("DELETE FROM report_format_param_options_trash"
@@ -38864,7 +38998,9 @@ delete_report_format (const char *report_format_id, int ultimate)
       sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
            report_format);
 
-      /* Remove the dir last, in case any SQL rolls back. */
+      /* Remove the dirs last, in case any SQL rolls back. */
+
+      /* Trash files. */
       report_format_string = g_strdup_printf ("%llu", report_format);
       dir = g_build_filename (OPENVAS_DATA_DIR,
                               "openvasmd",
@@ -38875,11 +39011,18 @@ delete_report_format (const char *report_format_id, int ultimate)
       if (g_file_test (dir, G_FILE_TEST_EXISTS) && openvas_file_remove_recurse (dir))
         {
           g_free (dir);
+          g_free (base);
           sql ("ROLLBACK;");
           return -1;
         }
       g_free (dir);
 
+      /* Signature links in the feed. */
+      dir = g_build_filename (OPENVAS_NVT_DIR, "private", "report_formats",
+                              base, NULL);
+      g_free (base);
+      unlink (dir);
+      g_free (dir);
       sql ("COMMIT;");
 
       return 0;
@@ -39084,6 +39227,7 @@ verify_report_format_internal (report_format_t report_format)
   int format_trust = TRUST_UNKNOWN;
   iterator_t formats;
   get_data_t get;
+  gchar *uuid;
 
   memset(&get, '\0', sizeof (get));
   get.id = report_format_uuid (report_format);
@@ -39097,7 +39241,7 @@ verify_report_format_internal (report_format_t report_format)
       signature = report_format_iterator_signature (&formats);
 
       find_signature ("report_formats", get_iterator_uuid (&formats),
-                      &format_signature, &format_signature_size);
+                      &format_signature, &format_signature_size, &uuid);
 
       if ((signature && strlen (signature))
           || format_signature)
@@ -39111,11 +39255,11 @@ verify_report_format_internal (report_format_t report_format)
 
           report_format = get_iterator_resource (&formats);
           g_string_append_printf
-           (format, "%s%s%s%i", get_iterator_uuid (&formats),
+           (format, "%s%s%s%i", uuid ? uuid : get_iterator_uuid (&formats),
             report_format_iterator_extension (&formats),
             report_format_iterator_content_type (&formats),
             report_format_global (report_format) & 1);
-
+          g_free (uuid);
 
           init_report_format_file_iterator (&files, report_format);
           while (next_file (&files))
