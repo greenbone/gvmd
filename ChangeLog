@@ -1,3 +1,8 @@
+2014-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (group_users, role_users): Do the group_concat in an
+	outer SELECT, so that it aggregates the selected rows.
+
 2014-07-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (task_scanner_options): Adjust the base path of ovaldi

@@ -41491,10 +41491,12 @@ group_uuid (group_t group)
 gchar *
 group_users (group_t group)
 {
-  return sql_string ("SELECT group_concat (name, ', ') FROM users, group_users"
-                     " WHERE group_users.\"group\" = %llu"
-                     " AND group_users.user = users.id"
-                     " GROUP BY users.name;",
+  return sql_string ("SELECT group_concat (name, ', ')"
+                     " FROM (SELECT users.name FROM users, group_users"
+                     "       WHERE group_users.\"group\" = %llu"
+                     "       AND group_users.user = users.id"
+                     "       GROUP BY users.name)"
+                     "      AS sub;",
                      group);
 }
 
@@ -44618,10 +44620,12 @@ role_uuid (role_t role)
 gchar *
 role_users (role_t role)
 {
-  return sql_string ("SELECT group_concat (name, ', ') FROM users, role_users"
-                     " WHERE role_users.role = %llu"
-                     " AND role_users.user = users.id"
-                     " GROUP BY users.name;",
+  return sql_string ("SELECT group_concat (name, ', ')"
+                     " FROM (SELECT users.name FROM users, role_users"
+                     "       WHERE role_users.role = %llu"
+                     "       AND role_users.user = users.id"
+                     "       GROUP BY users.name)"
+                     "      AS sub;",
                      role);
 }
 
