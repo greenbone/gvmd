@@ -1,3 +1,12 @@
+2014-07-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (task_scanner_options): Adjust the base path of ovaldi
+	definitions file.
+
+	* src/omp.c (get_ovaldi_files): Get the list from the scap.db xml_files
+	values of ovaldefs table instead of iterating over the directory files
+	in filesystem.
+
 2014-07-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	When importing a report format, give the report format a new UUID if its

@@ -11298,37 +11298,30 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
     }
 
 /**
- * @brief Get list of ovaldi definitions files from scap-data/defs directory.
+ * @brief Get list of ovaldi definitions files using the values in ovaldefs
+ *        table in scap.db
  *
  * @return String of |-concatenated file names. Free with g_free().
  */
 char *
 get_ovaldi_files ()
 {
-  GDir *dir;
-  const char *fname;
+  iterator_t iterator;
   char *result = NULL;
-  GError *err = NULL;
 
-  dir = g_dir_open (OPENVAS_STATE_DIR "/scap-data/defs", 0, &err);
-  if (dir == NULL)
+  init_iterator (&iterator, "SELECT DISTINCT xml_file FROM ovaldefs;");
+  while (next (&iterator))
     {
-      g_warning ("%s", err->message);
-      g_error_free (err);
-      return NULL;
-    }
-  while ((fname = g_dir_read_name (dir)))
-    {
-      if (g_file_test (fname, G_FILE_TEST_IS_DIR))
+      char *tmp;
+      const char *fname = iterator_string (&iterator, 0);
+
+      if (!fname)
         continue;
-      if (g_str_has_suffix (fname, ".xml"))
-        {
-          char *tmp = g_strconcat (fname, result ? "|" : "", result, NULL);
-          g_free (result);
-          result = tmp;
-        }
+      tmp = g_strconcat (fname, result ? "|" : "", result, NULL);
+      g_free (result);
+      result = tmp;
     }
-  g_dir_close (dir);
+  cleanup_iterator (&iterator);
   return result;
 }
 

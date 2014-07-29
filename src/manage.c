@@ -2715,7 +2715,7 @@ task_scanner_options (task_t task)
 
           if (!preference_iterator_value (&prefs))
             continue;
-          fname = g_strdup_printf ("%s/%s", OPENVAS_STATE_DIR "/scap-data/defs",
+          fname = g_strdup_printf ("%s/%s", OPENVAS_STATE_DIR "/scap-data/",
                                    preference_iterator_value (&prefs));
           value = openvas_file_as_base64 (fname);
           if (!value)
