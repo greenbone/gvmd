@@ -1,3 +1,8 @@
+2014-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Use column aliases again
+	in outer SELECT columns and GROUP BY clause.
+
 2014-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* ChangeLog: Add entry for r19597 that was overwritten by r19598.
