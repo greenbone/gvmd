@@ -1,3 +1,17 @@
+2014-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make GET_REPORTS work with shared report formats.
+
+	* src/manage_sql.c (manage_report, manage_send_report): In the script
+	path, use the UUID of the report format's owner, because the report
+	format might not be owned by the current user.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS search
+	in all report formats, so that the user can specify report formats that
+	are owned by someone else.
+
+	* src/manage.h: Add header accordingly.
+
 2014-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_aggregate_iterator): Use column aliases again

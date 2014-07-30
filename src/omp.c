@@ -14303,7 +14303,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           get_reports_data->format_id
            = g_strdup ("a994b278-1f62-11e1-96ac-406186ea4fc5");
 
-        if (find_report_format (get_reports_data->format_id, &report_format))
+        if (find_report_format_with_permission (get_reports_data->format_id,
+                                                &report_format,
+                                                "get_report_formats"))
           {
             get_reports_data_reset (get_reports_data);
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));

@@ -2253,6 +2253,10 @@ gboolean
 find_report_format (const char*, report_format_t*);
 
 gboolean
+find_report_format_with_permission (const char*, report_format_t*,
+                                    const char *);
+
+gboolean
 lookup_report_format (const char*, report_format_t*);
 
 /**

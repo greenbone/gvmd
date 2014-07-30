@@ -23540,13 +23540,18 @@ manage_report (report_t report, report_format_t report_format,
                                      NULL);
     else
       {
-        assert (current_credentials.uuid);
+        gchar *owner;
+        owner = sql_string ("SELECT uuid FROM users"
+                            " WHERE id = (SELECT owner FROM"
+                            "             report_formats WHERE id = %llu);",
+                            report_format);
         script_dir = g_build_filename (OPENVAS_STATE_DIR,
                                        "openvasmd",
                                        "report_formats",
-                                       current_credentials.uuid,
+                                       owner,
                                        uuid_format,
                                        NULL);
+        g_free (owner);
       }
 
     cleanup_iterator (&formats);
@@ -24041,13 +24046,18 @@ manage_send_report (report_t report, report_t delta_report,
                                      NULL);
     else
       {
-        assert (current_credentials.uuid);
+        gchar *owner;
+        owner = sql_string ("SELECT uuid FROM users"
+                            " WHERE id = (SELECT owner FROM"
+                            "             report_formats WHERE id = %llu);",
+                            report_format);
         script_dir = g_build_filename (OPENVAS_STATE_DIR,
                                        "openvasmd",
                                        "report_formats",
-                                       current_credentials.uuid,
+                                       owner,
                                        uuid_format,
                                        NULL);
+        g_free (owner);
       }
 
     cleanup_iterator (&formats);
