@@ -47292,7 +47292,7 @@ int
 modify_setting (const gchar *uuid, const gchar *name,
                 const gchar *value_64, gchar **r_errdesc)
 {
-  char *filter_name;
+  char *setting_name;
 
   assert (current_credentials.uuid);
 
@@ -47441,62 +47441,111 @@ modify_setting (const gchar *uuid, const gchar *name,
       return 0;
     }
 
-  /* Resources filters. */
+  /* Resources filters and chart preferences. */
 
-  filter_name = NULL;
+  setting_name = NULL;
   if (uuid)
     {
+      /* Filters */
       if (strcmp (uuid, "4a1334c1-cb93-4a79-8634-103b0a50bdcd") == 0)
-        filter_name = g_strdup ("Agents Filter");
+        setting_name = g_strdup ("Agents Filter");
       else if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
-        filter_name = g_strdup ("Alerts Filter");
+        setting_name = g_strdup ("Alerts Filter");
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
-        filter_name = g_strdup ("Configs Filter");
+        setting_name = g_strdup ("Configs Filter");
       else if (strcmp (uuid, "186a5ac8-fe5a-4fb1-aa22-44031fb339f3") == 0)
-        filter_name = g_strdup ("Credentials Filter");
+        setting_name = g_strdup ("Credentials Filter");
       else if (strcmp (uuid, "f9691163-976c-47e7-ad9a-38f2d5c81649") == 0)
-        filter_name = g_strdup ("Filters Filter");
+        setting_name = g_strdup ("Filters Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
-        filter_name = g_strdup ("Notes Filter");
+        setting_name = g_strdup ("Notes Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
-        filter_name = g_strdup ("Overrides Filter");
+        setting_name = g_strdup ("Overrides Filter");
       else if (strcmp (uuid, "ffb16b28-538c-11e3-b8f9-406186ea4fc5") == 0)
-        filter_name = g_strdup ("Permissions Filter");
+        setting_name = g_strdup ("Permissions Filter");
       else if (strcmp (uuid, "7d52d575-baeb-4d98-bb68-e1730dbc6236") == 0)
-        filter_name = g_strdup ("Port Lists Filter");
+        setting_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
-        filter_name = g_strdup ("Reports Filter");
+        setting_name = g_strdup ("Reports Filter");
       else if (strcmp (uuid, "249c7a55-065c-47fb-b453-78e11a665565") == 0)
-        filter_name = g_strdup ("Report Formats Filter");
+        setting_name = g_strdup ("Report Formats Filter");
       else if (strcmp (uuid, "739ab810-163d-11e3-9af6-406186ea4fc5") == 0)
-        filter_name = g_strdup ("Results Filter");
+        setting_name = g_strdup ("Results Filter");
       else if (strcmp (uuid, "f38e673a-bcd1-11e2-a19a-406186ea4fc5") == 0)
-        filter_name = g_strdup ("Roles Filter");
+        setting_name = g_strdup ("Roles Filter");
       else if (strcmp (uuid, "a83e321b-d994-4ae8-beec-bfb5fe3e7336") == 0)
-        filter_name = g_strdup ("Schedules Filter");
+        setting_name = g_strdup ("Schedules Filter");
       else if (strcmp (uuid, "2681c32a-8dfd-40c9-a9c6-8d4e2c7799eb") == 0)
-        filter_name = g_strdup ("Slaves Filter");
+        setting_name = g_strdup ("Slaves Filter");
       else if (strcmp (uuid, "108eea3b-fc61-483c-9da9-046762f137a8") == 0)
-        filter_name = g_strdup ("Tags Filter");
+        setting_name = g_strdup ("Tags Filter");
       else if (strcmp (uuid, "236e2e41-9771-4e7a-8124-c432045985e0") == 0)
-        filter_name = g_strdup ("Targets Filter");
+        setting_name = g_strdup ("Targets Filter");
       else if (strcmp (uuid, "1c981851-8244-466c-92c4-865ffe05e721") == 0)
-        filter_name = g_strdup ("Tasks Filter");
+        setting_name = g_strdup ("Tasks Filter");
       else if (strcmp (uuid, "3414a107-ae46-4dea-872d-5c4479a48e8f") == 0)
-        filter_name = g_strdup ("CPE Filter");
+        setting_name = g_strdup ("CPE Filter");
       else if (strcmp (uuid, "def63b5a-41ef-43f4-b9ef-03ef1665db5d") == 0)
-        filter_name = g_strdup ("CVE Filter");
+        setting_name = g_strdup ("CVE Filter");
       else if (strcmp (uuid, "bef08b33-075c-4f8c-84f5-51f6137e40a3") == 0)
-        filter_name = g_strdup ("NVT Filter");
+        setting_name = g_strdup ("NVT Filter");
       else if (strcmp (uuid, "adb6ffc8-e50e-4aab-9c31-13c741eb8a16") == 0)
-        filter_name = g_strdup ("OVAL Filter");
+        setting_name = g_strdup ("OVAL Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
-        filter_name = g_strdup ("DFN-CERT Filter");
+        setting_name = g_strdup ("DFN-CERT Filter");
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
-        filter_name = g_strdup ("All SecInfo Filter");
+        setting_name = g_strdup ("All SecInfo Filter");
+
+      /* SecInfo charts */
+      if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
+        setting_name = g_strdup ("Chart Selection SecInfo Dashboard 1");
+      if (strcmp (uuid, "517d0efe-426e-49a9-baa7-eda2832c93e8") == 0)
+        setting_name = g_strdup ("Chart Filter SecInfo Dashboard 1");
+      if (strcmp (uuid, "42d48049-3153-43bf-b30d-72ca5ab1eb49") == 0)
+        setting_name = g_strdup ("Chart Selection SecInfo Dashboard 2");
+      if (strcmp (uuid, "3c693fb2-4f87-4b1f-a09e-cb9aa66440f4") == 0)
+        setting_name = g_strdup ("Chart Filter SecInfo Dashboard 2");
+      if (strcmp (uuid, "76f34fe0-254a-4481-97aa-c6f1da2f842b") == 0)
+        setting_name = g_strdup ("Chart Selection SecInfo Dashboard 3");
+      if (strcmp (uuid, "bffa72a5-8110-49f9-aa5e-f431ce834826") == 0)
+        setting_name = g_strdup ("Chart Filter SecInfo Dashboard 3");
+      if (strcmp (uuid, "71106ed7-b677-414e-bf67-2e7716441db3") == 0)
+        setting_name = g_strdup ("Chart Selection SecInfo Dashboard 4");
+      if (strcmp (uuid, "268079c6-f353-414f-9b7c-43f5419edf2d") == 0)
+        setting_name = g_strdup ("Chart Filter SecInfo Dashboard 4");
+
+      if (strcmp (uuid, "f68d9369-1945-477b-968f-121c6029971b") == 0)
+        setting_name = g_strdup ("Chart Selection NVTs Left");
+      if (strcmp (uuid, "af89a84a-d3ec-43a8-97a8-aa688bf093bc") == 0)
+        setting_name = g_strdup ("Chart Selection NVTs Right");
+
+      if (strcmp (uuid, "815ddd2e-8654-46c7-a05b-d73224102240") == 0)
+        setting_name = g_strdup ("Chart Selection CVEs Left");
+      if (strcmp (uuid, "418a5746-d68a-4a2d-864a-0da993b32220") == 0)
+        setting_name = g_strdup ("Chart Selection CVEs Right");
+
+      if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
+        setting_name = g_strdup ("Chart Selection CPEs Left");
+      if (strcmp (uuid, "629fdb73-35fa-4247-9018-338c202f7c03") == 0)
+        setting_name = g_strdup ("Chart Selection CPEs Right");
+
+      if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
+        setting_name = g_strdup ("Chart Selection OVAL Definitions Left");
+      if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
+        setting_name = g_strdup ("Chart Selection OVAL Definitions Right");
+
+      if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
+        setting_name = g_strdup ("Chart Selection DFN-CERT Advisories Left");
+      if (strcmp (uuid, "72014b52-4389-435d-9438-8c13601ecbd2") == 0)
+        setting_name = g_strdup ("Chart Selection DFN-CERT Advisories Right");
+
+      if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
+        setting_name = g_strdup ("Chart Selection All SecInfo Left");
+      if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
+        setting_name = g_strdup ("Chart Selection All SecInfo Right");
     }
 
-  if (filter_name)
+  if (setting_name)
     {
       gchar *quoted_value, *value;
       gsize value_size;
@@ -47535,7 +47584,7 @@ modify_setting (const gchar *uuid, const gchar *name,
              "  '%s');",
              uuid,
              current_credentials.uuid,
-             filter_name,
+             setting_name,
              uuid,
              quoted_value);
 

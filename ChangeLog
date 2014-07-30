@@ -1,3 +1,8 @@
+2014-07-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (modify_setting): Add chart preferences and
+	dashboard filters. Rename filter_name to setting_name.
+
 2014-07-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (group_users, role_users): Do the group_concat in an
