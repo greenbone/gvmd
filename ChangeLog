@@ -1,3 +1,22 @@
+2014-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r19969.
+
+	When importing a report format, give the report format a new UUID if its
+	UUID clashes with another report format.  Also create a link to the feed
+	signature of the existing report format to keep the trust working.
+
+	* src/manage_sql.c (find_signature): Add uuid arg.  If given then also
+	look for the signature as a link in the private directory.  If the link
+	exists return UUID at destination in uuid arg.  Update callers.
+	(create_report_format): When verifying use the linked signature if it is
+	present.  When a report format or trash report format with the given
+	UUID exists already, create the format with a new UUID and link to the
+	signature of the existing UUID in the feed.
+	(delete_report_format): Remove signature links when ultimately deleting.
+	(verify_report_format_internal): Use the linked signature if it is
+	present.
+
 2014-07-22  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport r19937.
