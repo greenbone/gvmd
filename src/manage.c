@@ -2796,6 +2796,23 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   free_entity (entity);
 }
 
+static void
+delete_osp_scan (const char *report_id, const char *host, int port,
+                 const char *ca_pub, const char *key_pub,
+                 const char *key_priv)
+{
+  osp_connection_t *connection;
+
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  if (!connection)
+    {
+      g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
+      return;
+    }
+  osp_delete_scan (connection, report_id);
+  osp_connection_close (connection);
+}
+
 /**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
@@ -2843,7 +2860,8 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
         {
           g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
           set_task_run_status (task, TASK_STATUS_STOPPED);
-          exit (1);
+          rc = 1;
+          break;
         }
 
       report_xml = NULL;
@@ -2864,6 +2882,8 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
           g_free (report_xml);
           set_task_run_status (task, TASK_STATUS_DONE);
           set_report_scan_run_status (report, TASK_STATUS_DONE);
+          delete_osp_scan (report_id, host, port, CACERT, CLIENTCERT,
+                           CLIENTKEY);
           rc = 0;
           break;
         }
