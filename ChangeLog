@@ -1,5 +1,10 @@
 2014-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_user): For ldap_connect users, generate the
+	password if it is empty.
+
+2014-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (setup_full_config_prefs): Add unscanned_closed_udp.
 
 2014-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
