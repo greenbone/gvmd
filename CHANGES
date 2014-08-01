@@ -1,3 +1,34 @@
+openvas-manager 5.0.3 (2014-08-01)
+
+This is the third maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release make the report format "Verinice ISM" a predefined report format
+and fixes a number of issues related to user management and other aspects. For
+details refer to the list below.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell and Timo Pollmeier.
+
+Main changes since 5.0.2:
+* The report format plugin "Verinice ISM" is now predefined.
+* Fixed a bug which caused the relation between a group and users to be lost
+  when the group was placed in the trashcan.
+* Improved validation of the user host access field when creating or modifying
+  users.
+* The limit of max number of hosts specified in user Host Access Control has
+  been increased to 16,777,216.
+* Predefined roles are now immutable to prevent accidental changes.
+* The time zone format is now more consistent.
+* The handling of UTF-8 encoded text in notes and overrides has been improved.
+* The use of SQLite in the synchronization scripts for SCAP and CERT data has
+  been made more stable and consistent.
+* Allow multiple imports of the same report format plugin.
+* The password is now optional when creating LDAP users.
+
+
 openvas-manager 5.0.2 (2014-06-16)
 
 This is the second maintenance release of the openvas-manager 5.0 module for
