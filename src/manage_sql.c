@@ -49294,7 +49294,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
-  gchar *clean;
+  gchar *clean, *generated;
   int index, max;
   user_t user;
 
@@ -49321,6 +49321,12 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
       return -1;
     }
 
+  if (allowed_methods
+      && strcmp (g_ptr_array_index (allowed_methods, 0), "ldap_connect") == 0)
+    password = generated = openvas_uuid_make ();
+  else
+    generated = NULL;
+
   if ((errstr = openvas_validate_password (password, name)))
     {
       g_warning ("new password for '%s' rejected: %s", name, errstr);
@@ -49328,6 +49334,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
         *r_errdesc = errstr;
       else
         g_free (errstr);
+      g_free (generated);
       return -1;
     }
 
@@ -49336,6 +49343,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
   if (user_may ("create_user") == 0)
     {
       sql ("ROLLBACK;");
+      g_free (generated);
       return 99;
     }
 
@@ -49347,6 +49355,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
+      g_free (generated);
       return -2;
     }
 
@@ -49358,6 +49367,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
     {
       manage_set_max_hosts (max);
       sql ("ROLLBACK;");
+      g_free (generated);
       return 3;
     }
   manage_set_max_hosts (max);
@@ -49389,6 +49399,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
        ifaces_allow,
        quoted_method);
   user = sqlite3_last_insert_rowid (task_db);
+  g_free (generated);
   g_free (hash);
   g_free (quoted_hosts);
   g_free (quoted_ifaces);

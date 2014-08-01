@@ -1,3 +1,10 @@
+2014-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20004.
+
+	* src/manage_sql.c (create_user): For ldap_connect users, generate the
+	password if it is empty.
+
 2014-07-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19969.
