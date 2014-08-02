@@ -2151,7 +2151,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           {
             GString *buffer = g_string_new ("");
             buffer_config_preference_xml (buffer, &prefs, config, 0);
-            if (openvas_server_send (session, buffer->str))
+            if (openvas_server_sendf (session, "%s", buffer->str))
               {
                 cleanup_iterator (&prefs);
                 goto fail_target;
@@ -2160,9 +2160,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           }
         cleanup_iterator (&prefs);
 
-        if (openvas_server_send (session,
-                                 "</preferences>"
-                                 "<nvt_selectors>"))
+        if (openvas_server_sendf (session,
+                                  "</preferences>"
+                                  "<nvt_selectors>"))
           {
             cleanup_iterator (&prefs);
             goto fail_target;
@@ -2193,11 +2193,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           }
         cleanup_iterator (&selectors);
 
-        if (openvas_server_send (session,
-                                 "</nvt_selectors>"
-                                 "</config>"
-                                 "</get_configs_response>"
-                                 "</create_config>")
+        if (openvas_server_sendf (session,
+                                  "</nvt_selectors>"
+                                  "</config>"
+                                  "</get_configs_response>"
+                                  "</create_config>")
             || (omp_read_create_response (session, &slave_config_uuid) != 201))
           goto fail_target;
       }

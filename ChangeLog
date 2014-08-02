@@ -1,3 +1,8 @@
+2014-08-01  Henri Doreau <henri.doreau@gmail.com>
+
+	* src/manage.c (slave_setup): Use openvas_server_sendf instead of
+	openvas_server_send, which is to be removed eventually.
+
 2014-07-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_user): For ldap_connect users, generate the
