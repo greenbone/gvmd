@@ -2835,6 +2835,8 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
       case 0:
         break;
       case -1:
+        set_task_run_status (task, TASK_STATUS_STOPPED);
+        set_report_scan_run_status (report, TASK_STATUS_STOPPED);
         return -1;
       default:
         return 0;
@@ -2980,12 +2982,20 @@ run_osp_task (task_t task, char **report_id)
       return -1;
     }
   target_str = target_hosts (target);
+  /* Setting to REQUESTED as the connection to the OSP scanner was already
+   * successful and the transfer of a big definitions file may keep the task
+   * status as new for too long.
+   */
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
   *report_id = osp_start_scan (connection, target_str, options);
   osp_connection_close (connection);
   g_free (target_str);
   g_hash_table_destroy (options);
   if (*report_id == NULL)
-    return -1;
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      return -1;
+    }
 
   report = make_report (task, *report_id, TASK_STATUS_RUNNING);
   set_task_run_status (task, TASK_STATUS_RUNNING);

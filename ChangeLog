@@ -1,3 +1,9 @@
+2014-07-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_osp_task): Set task run status after connecting and
+	on errors accordingly.
+	(fork_osp_scan_handler): Set task and report run status on fork failure.
+
 2014-08-01  Henri Doreau <henri.doreau@gmail.com>
 
 	* src/manage.c (slave_setup): Use openvas_server_sendf instead of
