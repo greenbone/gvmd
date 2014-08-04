@@ -25870,6 +25870,8 @@ extern buffer_size_t from_client_end;
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of manage database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_email_attachment_size  Max size of email attachments.
+ * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  progress        Function to update progress, or NULL.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database
@@ -25878,7 +25880,8 @@ extern buffer_size_t from_client_end;
  */
 int
 init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
-          int max_ips_per_target, void (*progress) ())
+          int max_ips_per_target, int max_email_attachment_size,
+          int max_email_include_size, void (*progress) ())
 {
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -25886,6 +25889,7 @@ init_omp (GSList *log_config, int nvt_cache_mode, const gchar *database,
                      log_config);
   command_data_init (&command_data);
   return init_manage (log_config, nvt_cache_mode, database, max_ips_per_target,
+                      max_email_attachment_size, max_email_include_size,
                       progress);
 }
 

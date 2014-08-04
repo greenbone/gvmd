@@ -46,7 +46,7 @@
       Thus OpenVAS Manager acts as a layer between the
       OpenVAS Scanner and its own clients (for example omp(8),
       gsad(8) or gsd(8)) which connect via the OMP protocol
-      to the OpenVAS Manager. 
+      to the OpenVAS Manager.
     </p>
 
     <p>
@@ -68,7 +68,41 @@
       </optdesc>
     </option>
 
-        <option>
+     <option>
+      <p><opt>--max-email-attachment-size=<arg>SIZE</arg></opt></p>
+      <optdesc>
+        <p>
+          Maximum number of bytes permitted in alert email attachments.
+        </p>
+        <p>
+          0 to use the default, negative to allow any size.
+        </p>
+      </optdesc>
+    </option>
+
+    <option>
+      <p><opt>--max-email-include-size=<arg>SIZE</arg></opt></p>
+      <optdesc>
+        <p>
+          Maximum number of bytes permitted in reports inlined in alert email
+          attachments.
+        </p>
+        <p>
+          0 to use the default, negative to allow any size.
+        </p>
+      </optdesc>
+    </option>
+
+    <option>
+      <p><opt>--max-ips-per-target=<arg>SIZE</arg></opt></p>
+      <optdesc>
+        <p>
+          Maximum number of IPs per target.
+        </p>
+      </optdesc>
+    </option>
+
+    <option>
       <p><opt>-u, --update</opt></p>
       <optdesc>
         <p>Updates the database with information from a running

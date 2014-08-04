@@ -12,44 +12,49 @@ The OpenVAS Manager is a OTP client and adds various management functionalities 
 A related service is OpenVAS Administrator, openvasad(8) which among other tasks also manages user accounts for OpenVAS. 
 .SH OPTIONS
 .TP
-.BR -a ", " --listen= \fIADDRESS\fR
+\fB-a, --listen=\fIADDRESS\fB\f1
 Listen on ADDRESS.
 .TP
-.BR -l ", " --slisten=\fIADDRESS\fR
-Connect to server (openvassd) at address \fIADDRESS\fR.
+\fB-l, --slisten=\fIADDRESS\fB\f1
+Connect to server (openvassd) at address ADDRESS.
 .TP
-.BR -u ", " --update
+\fB--max-email-attachment-size=\fISIZE\fB\f1
+Maximum number of bytes permitted in alert email attachments. 
+
+0 to use the default, negative to allow any size. 
+.TP
+\fB--max-email-include-size=\fISIZE\fB\f1
+Maximum number of bytes permitted in reports inlined in alert email attachments. 
+
+0 to use the default, negative to allow any size. 
+.TP
+\fB--max-ips-per-target=\fISIZE\fB\f1
+Maximum number of IPs per target. 
+.TP
+\fB-u, --update\f1
 Updates the database with information from a running scanner (openvassd) and exits.
 .TP
-.BR -p ", " --port=\fINUMBER\fR
+\fB-p, --port=\fINUMBER\fB\f1
 Listen on port number \fINUMBER\f1.
 .TP
-.BR --rebuild
+\fB--rebuild\f1
 Rebuild the database with information from a running scanner (openvassd) and exits.
 .TP
-.BR -s ", " --sport=\fINUMBER\fR
+\fB-s, --sport=\fINUMBER\fB\f1
 Connect to server (openvassd) on port number \fINUMBER\f1.
 .TP
-.TP
-.BR --gnutls-priorities=\fISTRING\fR
-Sets the GnuTLS priorities string to \fISTRING\f1.
-.TP
-.BR --dh-params=\fISTRING\fR
-Path to file containing Diffie-Hellman parameters which are needed for Perfect
-Forward Secrecy. This file could be generated using openssl or certtool.
-.TP
-.BR --version
+\fB--version\f1
 Print version.
 .TP
-.BR -v ", " --verbose
+\fB-v, --verbose\f1
 Print progress messages.
 .TP
-.BR -? ", " --help
+\fB-?, --help\f1
 Show help.
 .SH SIGNALS
 SIGHUP causes openvasmd to rebuild the database with information from the Scanner (openvassd).
 .SH EXAMPLES
-openvasmd \-\-port 1241 \-\-sport 7772
+openvasmd --port 1241 --sport 7772
 
 Serve OMP clients on port 1241 and connect to a OTP server on 7772.
 .SH SEE ALSO
