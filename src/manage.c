@@ -2729,13 +2729,22 @@ task_scanner_options (task_t task)
   return table;
 }
 
+static char *
+get_definitions_file (task_t task)
+{
+  assert (task);
+  return sql_string ("SELECT value FROM config_preferences"
+                     " WHERE name = 'definitions_file' AND config = %llu;",
+                     task_config (task));
+}
+
 static void
 parse_osp_report (task_t task, report_t report, const char *report_xml)
 {
   entity_t entity, child;
   entities_t results;
   const char *str, *target;
-  char *quoted_target;
+  char *quoted_target, *defs_file;
   time_t start_time, end_time;
 
   assert (task);
@@ -2772,6 +2781,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   child = entity_child (entity, "results");
   assert (child);
   results = child->entities;
+  defs_file = get_definitions_file (task);
   while (results)
     {
       result_t result;
@@ -2789,11 +2799,13 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       assert (name);
       if (g_str_has_prefix (name, "oval:"))
         {
-          char *ovaldef = ovaldef_description (name);
-          desc = g_strdup_printf ("%s ==> %s\n\n%s", name,
-                                  entity_text (r_entity),
-                                  ovaldef ?: "No definition found.");
-          g_free (ovaldef);
+          char *ovaldef_id, *ovaldef_desc;
+
+          ovaldef_desc = ovaldef_description (name);
+          ovaldef_id = ovaldef_uuid (name, defs_file);
+          desc = g_strdup_printf ("%s ==> %s\n\n%s", ovaldef_id,
+                                  entity_text (r_entity), ovaldef_desc);
+          g_free (ovaldef_id);
         }
       else
         desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
@@ -2802,6 +2814,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       report_add_result (report, result);
       results = next_entities (results);
     }
+  g_free (defs_file);
   free_entity (entity);
 }
 

@@ -1,3 +1,13 @@
+2014-08-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (ovaldef_uuid): New function.
+
+	* src/manage.h: Add function prototype.
+
+	* src/manage.c (parse_osp_report): Use the oval definition's id instead
+	of its name as it may not be unique.
+	(get_definitions_file): New function.
+
 2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add options --max-email-attachment-size and --max-email-include-size.

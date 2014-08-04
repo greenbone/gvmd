@@ -3062,7 +3062,10 @@ const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
 
 char *
-ovaldef_description (const char*);
+ovaldef_description (const char *);
+
+char *
+ovaldef_uuid (const char *, const char *);
 
 /* CERT data */
 int

@@ -48552,7 +48552,7 @@ get_ovaldef_short_filename (char* item_id)
  *         Freed by g_free.
  */
 char *
-ovaldef_description (const char* name)
+ovaldef_description (const char *name)
 {
   char *quoted_name, *ret;
 
@@ -48562,6 +48562,30 @@ ovaldef_description (const char* name)
                     " WHERE name = '%s';",
                     quoted_name);
   g_free (quoted_name);
+  return ret;
+}
+
+/**
+ * @brief Get the uuid for an OVALDEF from a name and file name.
+ *
+ * @param[in]  name     Oval definition name.
+ * @param[in]  fname    Oval definition file name.
+ *
+ * @return The OVAL definition uuid from the SCAP directory. Freed by g_free.
+ */
+char*
+ovaldef_uuid (const char *name, const char *fname)
+{
+  char *quoted_name, *quoted_fname, *ret;
+
+  assert (name);
+  assert (fname);
+  quoted_name = sql_quote (name);
+  quoted_fname = sql_quote (fname);
+  ret = sql_string ("SELECT uuid FROM ovaldefs WHERE name = '%s'"
+                    " AND xml_file = '%s';", name, fname);
+  g_free (quoted_name);
+  g_free (quoted_fname);
   return ret;
 }
 
