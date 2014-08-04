@@ -3061,6 +3061,9 @@ ovaldef_info_iterator_max_cvss (iterator_t*);
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
 
+char *
+ovaldef_description (const char*);
+
 /* CERT data */
 int
 manage_cert_loaded ();

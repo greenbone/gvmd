@@ -48512,6 +48512,28 @@ get_ovaldef_short_filename (char* item_id)
                      item_id);
 }
 
+/**
+ * @brief Get the description for an OVALDEF using a name.
+ *
+ * @param[in]  name     Oval definition name.
+ *
+ * @return The description of the OVAL definition from the SCAP directory.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_description (const char* name)
+{
+  char *quoted_name, *ret;
+
+  assert (name);
+  quoted_name = sql_quote (name);
+  ret = sql_string ("SELECT description FROM ovaldefs"
+                    " WHERE name = '%s';",
+                    quoted_name);
+  g_free (quoted_name);
+  return ret;
+}
+
 /* All SecInfo Data */
 
 /**

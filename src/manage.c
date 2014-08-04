@@ -2780,14 +2780,23 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
-      /* XXX: Alarm messages are tied associated NVT at the moment. */
+      /* XXX: Alarm messages are require an associated NVT at the moment. */
       if (!strcmp (type, "Alarm"))
         mtype = "Log Message";
       else
         mtype = threat_message_type (type);
       name = entity_attribute (r_entity, "name");
       assert (name);
-      desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
+      if (g_str_has_prefix (name, "oval:"))
+        {
+          char *ovaldef = ovaldef_description (name);
+          desc = g_strdup_printf ("%s ==> %s\n\n%s", name,
+                                  entity_text (r_entity),
+                                  ovaldef ?: "No definition found.");
+          g_free (ovaldef);
+        }
+      else
+        desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
       result = make_result (task, target, "", NULL, mtype, desc);
       g_free (desc);
       report_add_result (report, result);
