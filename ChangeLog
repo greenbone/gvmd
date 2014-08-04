@@ -1,3 +1,26 @@
+2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add options --max-email-attachment-size and --max-email-include-size.
+
+	* src/manage_sql.c (REPORT_NOTICE_FORMAT, REPORT_ATTACH_FORMAT): Remove
+	extra specifiers now that the message is in one argument.
+	(MAX_CONTENT_LENGTH, MAX_ATTACH_LENGTH): Update doc.
+	(max_content_length, max_attach_length): New variables.
+	(escalate_2): Use variables instead of definitions for the max values.
+	(init_manage_internal, init_manage): Add args for email maximums.
+
+	* src/omp.c (init_omp): Add args for email maximums.
+
+	* src/ompd.c (init_ompd): Add args for email maximums.
+
+	* src/ompd.h, src/omp.h: Update headers accordingly.
+
+	* src/openvasmd.c (main): Add options.  Pass to init_ompd.
+
+	* doc/openvasmd.8.xml: Add max options.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Update from source.
+
 2014-08-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (ovaldef_description): New function.

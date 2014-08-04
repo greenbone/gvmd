@@ -60,6 +60,19 @@ Set the GnuTLS priority string to PRIORITY.
 \fB--dh-params=\fIFILE\fB\f1
 Path to file containing Diffie-Hellman parameters which are needed for DHE-RSA. This file could be generated using openssl or certtool.
 .TP
+\fB--max-email-attachment-size=\fISIZE\fB\f1
+Maximum number of bytes permitted in alert email attachments. 
+
+0 to use the default, negative to allow any size. 
+.TP
+\fB--max-email-include-size=\fISIZE\fB\f1
+Maximum number of bytes permitted in reports inlined in alert email attachments. 
+
+0 to use the default, negative to allow any size. 
+.TP
+\fB--max-ips-per-target=\fISIZE\fB\f1
+Maximum number of IPs per target. 
+.TP
 \fB-u, --update\f1
 Updates the database with information from a running scanner (openvassd) and exits.
 .TP

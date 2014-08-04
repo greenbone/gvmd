@@ -771,6 +771,8 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
                      update_nvt_cache ? -1 : -2,
                      database,
                      manage_max_hosts (),
+                     0, /* Max email attachment size. */
+                     0, /* Max email include size. */
                      progress))
     {
       case 0:
@@ -1085,6 +1087,8 @@ main (int argc, char** argv)
   static gboolean print_version = FALSE;
   static gboolean progress = FALSE;
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
+  static int max_email_attachment_size = 0;
+  static int max_email_include_size = 0;
   static gchar *create_user = NULL;
   static gchar *delete_user = NULL;
   static gchar *user = NULL;
@@ -1149,6 +1153,8 @@ main (int argc, char** argv)
         { "listen", 'a', 0, G_OPTION_ARG_STRING, &manager_address_string, "Listen on <address>.", "<address>" },
         { "listen2", '\0', 0, G_OPTION_ARG_STRING, &manager_address_string_2, "Listen also on <address>.", "<address>" },
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT, &max_ips_per_target, "Maximum number of IPs per target.", "<number>"},
+        { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT, &max_email_attachment_size, "Maximum size of alert email attachments, in bytes.", "<number>"},
+        { "max-email-include-size", '\0', 0, G_OPTION_ARG_INT, &max_email_include_size, "Maximum size of inlined content in alert emails, in bytes.", "<number>"},
         { "migrate", 'm', 0, G_OPTION_ARG_NONE, &migrate_database, "Migrate the database and exit.", NULL },
         { "create-credentials-encryption-key", '\0', 0, G_OPTION_ARG_NONE,
           &create_cred_enc_key, "Create a key to encrypt credentials.", NULL },
@@ -1768,7 +1774,8 @@ main (int argc, char** argv)
 
   /* Initialise OMP daemon. */
 
-  switch (init_ompd (log_config, 0, database, max_ips_per_target, NULL))
+  switch (init_ompd (log_config, 0, database, max_ips_per_target,
+                     max_email_attachment_size, max_email_include_size, NULL))
     {
       case 0:
         break;

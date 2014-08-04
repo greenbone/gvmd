@@ -7759,7 +7759,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
  "This email escalation is configured to apply report format '%s'.\n"         \
  "Full details and other report formats are available on the scan engine.\n"  \
  "\n"                                                                         \
- "%s%s%s"                                                                     \
+ "%s"                                                                         \
  "\n"                                                                         \
  "%.*s"                                                                       \
  "%s"                                                                         \
@@ -7771,9 +7771,16 @@ send_to_verinice (const char *url, const char *username, const char *password,
  "should not have received it.\n"
 
 /**
- * @brief Maximum number of bytes of the report included in email escalations.
+ * @brief Default max number of bytes of reports included in email alerts.
  */
 #define MAX_CONTENT_LENGTH 20000
+
+/**
+ * @brief Maximum number of bytes of reports included in email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_content_length = MAX_CONTENT_LENGTH;
 
 /**
  * @brief Format string for attached report alert email.
@@ -7787,7 +7794,7 @@ send_to_verinice (const char *url, const char *username, const char *password,
  "This email escalation is configured to attach report format '%s'.\n"        \
  "Full details and other report formats are available on the scan engine.\n"  \
  "\n"                                                                         \
- "%s%s%s"                                                                     \
+ "%s"                                                                         \
  "\n"                                                                         \
  "\n"                                                                         \
  "Note:\n"                                                                    \
@@ -7796,9 +7803,16 @@ send_to_verinice (const char *url, const char *username, const char *password,
  "should not have received it.\n"
 
 /**
- * @brief Maximum number of bytes of the report included in email escalations.
+ * @brief Default max number of bytes of reports attached to email alerts.
  */
 #define MAX_ATTACH_LENGTH 1048576
+
+/**
+ * @brief Maximum number of bytes of reports attached to email alerts.
+ *
+ * A value less or equal to 0 allows any size.
+ */
+static int max_attach_length = MAX_ATTACH_LENGTH;
 
 /**
  * @brief Format string for simple notice alert email.
@@ -7899,6 +7913,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               if (notice && strcmp (notice, "0") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content;
+                  gchar *note, *note_2;
                   char *format_uuid, *format_name;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -7981,42 +7996,42 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
+                  if (content_length > max_content_length)
+                    {
+                      note = g_strdup_printf ("Note: This report exceeds the"
+                                              " maximum length of %i characters"
+                                              " and thus\n"
+                                              "was truncated.\n",
+                                              max_content_length);
+                      note_2 = g_strdup_printf ("\n... (report truncated after"
+                                                " %i characters)\n",
+                                                max_content_length);
+                    }
+                  else
+                    note = note_2 = NULL;
+
                   body = g_strdup_printf (REPORT_NOTICE_FORMAT,
                                           name,
                                           event_desc,
                                           event_desc,
                                           condition_desc,
                                           format_name,
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? "Note: This report exceeds the"
-                                              " maximum length of "
-                                            : ""),
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? G_STRINGIFY (MAX_CONTENT_LENGTH)
-                                            : ""),
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? " characters and thus\n"
-                                              "was truncated.\n"
-                                            : ""),
-                                          /* Cast for 64 bit.  Safe because
-                                           * MAX_CONTENT_LENGTH is small. */
+                                          note ? note : "",
+                                          /* Cast for 64 bit. */
                                           (int) MIN (content_length,
-                                                     MAX_CONTENT_LENGTH),
+                                                     max_content_length),
                                           report_content,
-                                          ((content_length > MAX_CONTENT_LENGTH)
-                                            ? "\n... (report truncated after"
-                                              " "
-                                              G_STRINGIFY (MAX_CONTENT_LENGTH)
-                                              " characters)\n"
-                                            : ""));
+                                          note_2 ? note_2 : "");
                   free (format_name);
+                  g_free (note);
+                  g_free (note_2);
                   g_free (report_content);
                   g_free (event_desc);
                   g_free (condition_desc);
                 }
               else if (notice && strcmp (notice, "2") == 0)
                 {
-                  gchar *event_desc, *condition_desc, *report_content;
+                  gchar *event_desc, *condition_desc, *report_content, *note;
                   char *format_uuid, *format_name;
                   report_format_t report_format = 0;
                   gsize content_length;
@@ -8098,9 +8113,18 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   subject = g_strdup_printf ("[OpenVAS-Manager] Task '%s': %s",
                                              name ? name : "Internal Error",
                                              event_desc);
-                  if (content_length <= MAX_ATTACH_LENGTH)
-                    base64 = g_base64_encode ((guchar*) report_content,
-                                              content_length);
+                  if (max_attach_length <= 0
+                      || content_length <= max_attach_length)
+                    {
+                      base64 = g_base64_encode ((guchar*) report_content,
+                                                content_length);
+                      note = NULL;
+                    }
+                  else
+                    note = g_strdup_printf ("Note: The report exceeds the"
+                                            " maximum attachment length of"
+                                            " %i bytes.\n",
+                                            max_attach_length);
                   g_free (report_content);
                   body = g_strdup_printf (REPORT_ATTACH_FORMAT,
                                           name,
@@ -8108,17 +8132,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           event_desc,
                                           condition_desc,
                                           format_name,
-                                          (base64
-                                            ? ""
-                                            : "Note: The report exceeds the"
-                                              " maximum attachment length of "),
-                                          (base64
-                                            ? ""
-                                            : G_STRINGIFY (MAX_ATTACH_LENGTH)),
-                                          (base64
-                                            ? ""
-                                            : " bytes.\n"));
+                                          note ? note : "");
                   free (format_name);
+                  g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
                 }
@@ -11674,6 +11690,8 @@ cleanup_tables ()
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_email_attachment_size  Max size of email attachments.
+ * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  * @param[in]  stop_tasks          Stop any active tasks.
  *
@@ -11685,6 +11703,8 @@ init_manage_internal (GSList *log_config,
                       int nvt_cache_mode,
                       const gchar *database,
                       int max_ips_per_target,
+                      int max_email_attachment_size,
+                      int max_email_include_size,
                       void (*update_progress) (),
                       int stop_tasks)
 {
@@ -11732,6 +11752,10 @@ init_manage_internal (GSList *log_config,
     return -4;
 
   max_hosts = max_ips_per_target;
+  if (max_email_attachment_size)
+    max_attach_length = max_email_attachment_size;
+  if (max_email_include_size)
+    max_content_length = max_email_include_size;
   progress = update_progress;
 
   g_log_set_handler (G_LOG_DOMAIN,
@@ -11790,6 +11814,8 @@ init_manage_internal (GSList *log_config,
  * @param[in]  nvt_cache_mode  True when running in NVT caching mode.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_email_attachment_size  Max size of email attachments.
+ * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  update_progress     Function to update progress, or NULL. *
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
@@ -11797,12 +11823,15 @@ init_manage_internal (GSList *log_config,
  */
 int
 init_manage (GSList *log_config, int nvt_cache_mode, const gchar *database,
-             int max_ips_per_target, void (*update_progress) ())
+             int max_ips_per_target, int max_email_attachment_size,
+             int max_email_include_size, void (*update_progress) ())
 {
   return init_manage_internal (log_config,
                                nvt_cache_mode,
                                database,
                                max_ips_per_target,
+                               max_email_attachment_size,
+                               max_email_include_size,
                                update_progress,
                                1);  /* Stop active tasks. */
 }
@@ -11831,6 +11860,8 @@ init_manage_helper (GSList *log_config, const gchar *database,
                                0,   /* Run daemon in NVT cache mode. */
                                database,
                                max_ips_per_target,
+                               0,   /* Default max_email_attachment_size. */
+                               0,   /* Default max_email_include_size. */
                                update_progress,
                                0);  /* Stop active tasks. */
 }
