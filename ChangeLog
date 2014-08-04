@@ -1,4 +1,11 @@
-2014-07-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_role): Correct return doc.
+
+	* src/omp.c (omp_xml_handle_end_element): Correct CREATE_ROLE error
+	message.
+
+2014-08-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_osp_task): Set task run status after connecting and
 	on errors accordingly.

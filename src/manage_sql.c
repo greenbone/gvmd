@@ -44357,9 +44357,8 @@ copy_role (const char *name, const char *comment, const char *role_id,
  * @param[in]   users            Users role applies to.
  * @param[in]   role             Role return.
  *
- * @return 0 success, 1 role exists already, 2 failed to find user, 3 failed
- *         to find resource, 4 user name validation failed, 99 permission
- *         denied, -1 error.
+ * @return 0 success, 1 role exists already, 2 failed to find user, 4 user
+ *         name validation failed, 99 permission denied, -1 error.
  */
 int
 create_role (const char *role_name, const char *comment, const char *users,
