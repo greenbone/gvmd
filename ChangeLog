@@ -1,3 +1,13 @@
+2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r16635.
+
+	* src/manage_sql.c (omp_xml_handle_end_element): Apply
+	default filters only when filt_id value is set to -2.
+	This fixes bugs where a command is called from pages other than main
+	page (Filters in settings page, Filters in filter box etc,.) while
+	having a default filter that limits its results.
+
 2014-06-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r19745.

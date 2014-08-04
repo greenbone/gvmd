@@ -9181,8 +9181,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_notes_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Notes");
 
@@ -9553,8 +9552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_overrides_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Overrides");
 
@@ -9643,8 +9641,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_PORT_LISTS", element_name) == 0);
 
           get = &get_port_lists_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Port Lists");
 
@@ -10380,8 +10377,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             " status_text=\"" STATUS_OK_TEXT "\">");
 
         get = &get_reports_data->get;
-        if ((!get->filter && !get->filt_id)
-            || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+        if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
           {
             char *user_filter = setting_filter ("Reports");
 
@@ -10595,8 +10591,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_report_formats_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Report Formats");
 
@@ -10970,8 +10965,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_schedules_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Schedules");
 
@@ -17803,8 +17797,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_agents_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Agents");
 
@@ -17946,8 +17939,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_CONFIGS", element_name) == 0);
 
           get = &get_configs_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Configs");
 
@@ -18210,8 +18202,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_ALERTS", element_name) == 0);
 
           get = &get_alerts_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Alerts");
 
@@ -18400,8 +18391,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           assert (strcasecmp ("GET_FILTERS", element_name) == 0);
 
           get = &get_filters_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Filters");
 
@@ -18633,8 +18623,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           get = &get_info_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter;
               gchar *name;
@@ -18968,8 +18957,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 " be 'key', 'rpm', 'deb' or 'exe'."));
 
           get = &get_lsc_credentials_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Credentials");
 
@@ -19191,8 +19179,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               get_data_t * get;
 
               get = &get_slaves_data->get;
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Slaves");
 
@@ -19421,8 +19408,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               /* If no filter applied by the user , set the default one from
                * settings. */
-              if ((!get->filter && !get->filt_id)
-                  || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+              if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
                 {
                   char *user_filter = setting_filter ("Targets");
 
@@ -19618,8 +19604,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
           get = &get_tasks_data->get;
-          if ((!get->filter && !get->filt_id)
-              || (get->filt_id && strcmp (get->filt_id, "-2") == 0))
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
             {
               char *user_filter = setting_filter ("Tasks");
 
