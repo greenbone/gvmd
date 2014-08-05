@@ -1,5 +1,12 @@
 2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator, column_auto_type): Use =
+	instead of == in SQL.  Use EXISTS in SQL to make sure the OR argument is
+	boolean.  Both for Postgres.
+	(report_counts_autofp_match): Use = instead of ==, for Postgres.
+
+2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_session_init): Clear current_credentials in
 	case the user is authenticating again in the session.
 
