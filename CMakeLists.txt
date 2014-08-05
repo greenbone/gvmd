@@ -120,7 +120,7 @@ set (OPENVASMD_DATABASE_VERSION 130)
 
 set (OPENVASMD_SCAP_DATABASE_VERSION 14)
 
-set (OPENVASMD_CERT_DATABASE_VERSION 4)
+set (OPENVASMD_CERT_DATABASE_VERSION 5)
 
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
@@ -432,7 +432,10 @@ install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES tools/cert_db_init.sql tools/dfn_cert_update.xsl
+install (FILES tools/cert_db_init.sql
+         tools/cert_bund_update.xsl
+         tools/cert_bund_getbyname.xsl
+         tools/dfn_cert_update.xsl
          tools/dfn_cert_getbyname.xsl
          DESTINATION ${OPENVAS_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)

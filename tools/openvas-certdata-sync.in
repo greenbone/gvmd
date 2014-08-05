@@ -303,13 +303,49 @@ db_migrate_4 () {
   echo "[i] Migration done."
 }
 
+db_migrate_5 () {
+  echo "[i] Migrating database to version 5."
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE $CERT_DB "CREATE TABLE cert_bund_advs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        uuid UNIQUE,
+                        name UNIQUE,
+                        comment TEXT,
+                        creation_time DATE,
+                        modification_time DATE,
+                        title TEXT,
+                        summary TEXT,
+                        cve_refs INTEGER,
+                        max_cvss FLOAT
+                      );
+                      CREATE UNIQUE INDEX cert_bund_advs_idx ON cert_bund_advs (name);
+                      CREATE TABLE cert_bund_cves (
+                        adv_id INTEGER,
+                        cve_name VARCHAR(20)
+                      );
+                      CREATE INDEX cert_bund_cves_adv_idx ON cert_bund_cves (adv_id);
+                      CREATE INDEX cert_bund_cves_cve_idx ON cert_bund_cves (cve_name);
+                                            UPDATE meta SET value = '5' WHERE name = 'database_version';
+                      CREATE TRIGGER cert_bund_adv_delete AFTER DELETE ON cert_bund_advs
+                      BEGIN
+                        DELETE FROM cert_bund_cves where adv_id = old.id;
+                      END;"
+    test_sql_exit "Could not migrate CERT database"
+  done
+  echo "[i] Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
     2) reinit;;
-    3) db_migrate_4;;
+    3) db_migrate_4
+       db_migrate_5;;
+    4) db_migrate_5;;
   esac
 }
 
@@ -324,6 +360,33 @@ update_cvss () {
       SCAP_DB_LASTUPDATE=`$SQLITE $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
       test_sql_exit "Could not get last_update timestamp from SCAP database"
     done
+
+    if [ 0 -ne "$updated_cb" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
+    then
+      echo "[i] Updating Max CVSS for CERT-Bund"
+      reset_sql_tries
+      until [ "$try_sql" -eq 0 ]
+      do
+        $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
+                          PRAGMA recursive_triggers = OFF;
+                          UPDATE cert_bund_advs
+                            SET max_cvss =
+                                (
+                                  SELECT coalesce(max(cvss), '')
+                                  FROM scap_db.cves
+                                  WHERE name IN
+                                    (
+                                      SELECT cve_name
+                                      FROM cert_bund_cves
+                                      WHERE adv_id=cert_bund_advs.id
+                                    )
+                                    AND cvss != ''
+                                );"
+        test_sql_exit "Could not update CVSS scores for CERT-Bund Advisories"
+      done
+    else
+      echo "[i] No CERT-Bund advisories updated and CERT DB newer than SCAP DB. Skipping CVSS recalculation."
+    fi
 
     if [ 0 -ne "$updated_dfn" ] || [ $SCAP_DB_LASTUPDATE -gt $DB_LASTUPDATE ]
     then
@@ -355,6 +418,11 @@ update_cvss () {
 }
 
 update_sec_db () {
+  if [ -z "$updated_cb" ]
+  then
+    updated_cb=0
+  fi
+
   if [ -z "$updated_dfn" ]
   then
     updated_dfn=0
@@ -376,9 +444,21 @@ update_sec_db () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
+      CB_REFDATE=`$SQLITE $CERT_DB "SELECT max(modification_time) from cert_bund_advs;"`
+      test_sql_exit "Could not get CERT-Bund reference date from database"
+    done
+
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
       DFN_REFDATE=`$SQLITE $CERT_DB "SELECT max(modification_time) from dfn_cert_advs;"`
       test_sql_exit "Could not get DFN-CERT reference date from database"
     done
+  fi
+
+  if [ -z "$CB_REFDATE" ]
+  then
+    CB_REFDATE=0
   fi
 
   if [ -z "$DFN_REFDATE" ]
@@ -406,10 +486,47 @@ update_sec_db () {
       test_sql_exit "Could not reinitialize CERT database"
     done
 
+    CB_REFDATE=0
     DFN_REFDATE=0
     DB_LASTUPDATE=0
   fi
 
+  # Update CERT-Bund
+  xmlcount=$(ls $CERT_DIR/CB-K*.xml 2> /dev/null | wc -l)
+  if [ $xmlcount -ne 0 ]
+  then
+    for certfile in `ls $CERT_DIR/CB-K*.xml`
+    do
+      filedate=`stat -c "%Y" $certfile | cut -d " " -f 1 | tr -d "-"`
+      filedate=$(( $filedate - ( $filedate % 60 ) ))
+      if [ $filedate -gt $DB_LASTUPDATE ]
+      then
+        echo "[i] Updating $certfile"
+
+        reset_sql_tries
+        until [ "$try_sql" -eq 0 ]
+        do
+          exec 4>&1
+            exit_codes=$(
+              (
+                set_interrupt_trap
+                (xsltproc --stringparam refdate "$CB_REFDATE" $CERT_RES_DIR/cert_bund_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
+                ($SQLITE $CERT_DB || echo "sqlite3:$?" >&3)
+              ) 3>&1 >&4
+            )
+          exec 4>&-
+          test_exit_codes "Update of CERT-Bund Advisories failed at file '$certfile'"
+        done
+        updated_cb=1
+      else
+        echo "[i] Skipping $certfile, file is older than last revision"
+      fi
+    done
+  else
+    echo "[w] No CERT-Bund advisories found in $CERT_DIR"
+  fi
+
+  # Update DFN-CERT
   xmlcount=$(ls $CERT_DIR/dfn-cert-*.xml 2> /dev/null | wc -l)
   if [ $xmlcount -ne 0 ]
   then

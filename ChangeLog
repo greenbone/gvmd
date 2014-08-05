@@ -1,3 +1,66 @@
+2014-08-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new SecInfo subtype CERT-Bund Advisory (CERT_BUND_ADV).
+
+	* CMakeLists.txt: Increase OPENVASMD_CERT_DATABASE_VERSION to 5.
+	Install new CERT-Bund XSL stylesheet files.
+
+	* src/manage_acl.c (user_owns_uuid): Add case for cert_bund_adv.
+
+	* src/manage_sql.c (resource_name, trash_id_exists): Add cases for
+	cert_bund_adv.
+	(modify_setting): Add CERT-Bund filters and chart preferences.
+	(CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS)
+	(CERT_BUND_ADV_INFO_ITERATOR_COLUMNS): New column #defines.
+	(ALL_INFO_UNION_COLUMNS): Add cert_bund_adv.
+	(init_cert_bund_adv_info_iterator, cert_bund_adv_info_count)
+	(cert_bund_adv_info_iterator_title)
+	(cert_bund_adv_info_iterator_summary)
+	(cert_bund_adv_info_iterator_cve_refs)
+	(cert_bund_adv_info_iterator_max_cvss, init_cve_cert_bund_adv_iterator)
+	(init_nvt_cert_bund_adv_iterator): New cert_bund_adv iterator functions.
+	(create_tag, modify_tag, type_columns, type_select_columns)
+	(type_filter_columns): Add cases for cert_bund_adv.
+
+	* src/manage.c (CERT_BUND_ADV_GETBYNAME_XSL)
+	(CERT_BUND_ADV_FILENAME_FMT): New #define constants.
+	(valid_db_resource_type): Add case for cert_bund_adv.
+	(get_cert_bund_adv_filename): New static function.
+	(get_nvti_xml): Add CERT-Bund to CERT references of NVT.
+	(manage_read_info): Add case for cert_bund_adv.
+
+	* src/manage.h (init_cert_bund_adv_info_iterator)
+	(cert_bund_adv_info_count, cert_bund_adv_info_iterator_title)
+	(cert_bund_adv_info_iterator_summary)
+	(cert_bund_adv_info_iterator_cve_refs)
+	(cert_bund_adv_info_iterator_max_cvss, init_cve_cert_bund_adv_iterator)
+	(init_nvt_cert_bund_adv_iterator): New function prototypes.
+
+	* src/omp.c (buffer_results_xml): Add CERT-Bund to CERT references of
+	NVT.
+	(omp_xml_handle_end_element): In CLIENT_GET_INFO case, add info subtype
+	cert_bund_adv. Add CERT-Bund to CERT references of CVE details.
+
+	* src/schema_formats/XML/OMP.xml (get_info): Add CERT_BUND_ADV as info
+	type in request and response.
+	
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+	* tools/cert_db_init.sql: Increase database_version to 5.
+	(cert_bund_advs, cert_bund_cves): New tables.
+	(cert_bund_advs_idx, cert_bund_cves_adv_idx, cert_bund_cves_cve_idx):
+	New indexes.
+	(cert_bund_adv_delete): New deletion trigger.
+
+	* tools/greenbone-certdata-sync: Increase script version number.
+	(db_migrate_5): New function.
+	(check_db_version): Migrate to database version 5.
+	(update_cvss, update_cert_db): Add Update of CERT-Bund data.
+
+	* tools/openvas-certdata-sync.in (db_migrate_5): New function.
+	(check_db_version): Migrate to database version 5.
+	(update_cvss, update_sec_db): Add Update of CERT-Bund data.
+
 2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (parse_iso_time): When there is a timezone in the

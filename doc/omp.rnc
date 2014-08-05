@@ -4038,7 +4038,7 @@ get_groups
 get_info
  = element get_info
      {
-       # Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO.
+       # Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO.
        attribute type { text }
        & # Name or identifier of the requested information.
        attribute name { text }?
@@ -8552,6 +8552,7 @@ get_info_response_info
        & get_info_response_info_permissions
        & get_info_response_info_user_tags
        & get_info_response_info_update_time
+       & get_info_response_info_cert_bund_adv?
        & get_info_response_info_cpe?
        & get_info_response_info_cve?
        & get_info_response_info_dfn_cert_adv?
@@ -8672,6 +8673,52 @@ get_info_response_info_user_tags_tag_value
 # Comment for the tag.
 get_info_response_info_user_tags_tag_comment
  = element comment
+     {
+       text
+     }
+
+# An CERT-Bund advisory info element.
+get_info_response_info_cert_bund_adv
+ = element cert_bund_adv
+     {
+       get_info_response_info_cert_bund_adv_title
+       & get_info_response_info_cert_bund_adv_summary
+       & get_info_response_info_cert_bund_adv_max_cvss
+       & get_info_response_info_cert_bund_adv_cve_refs
+       & get_info_response_info_cert_bund_adv_raw_data?
+     }
+
+# Title of the advisory.
+get_info_response_info_cert_bund_adv_title
+ = element title
+     {
+       text
+     }
+
+# Summary text of the advisory.
+get_info_response_info_cert_bund_adv_summary
+ = element summary
+     {
+       text
+     }
+
+# Highest CVSS score of CVEs referenced by the advisory.
+get_info_response_info_cert_bund_adv_max_cvss
+ = element max_cvss
+     {
+       text
+     }
+
+# Number of CVEs referenced by this advisory.
+get_info_response_info_cert_bund_adv_cve_refs
+ = element cve_refs
+     {
+       integer
+     }
+
+# Source representation of the information. Only when details were requested.
+get_info_response_info_cert_bund_adv_raw_data
+ = element raw_data
      {
        text
      }

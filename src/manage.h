@@ -3071,6 +3071,32 @@ ovaldef_uuid (const char *, const char *);
 int
 manage_cert_loaded ();
 
+/* CERT-Bund */
+
+int
+init_cert_bund_adv_info_iterator (iterator_t*, get_data_t*, const char*);
+
+int
+cert_bund_adv_info_count (const get_data_t *get);
+
+const char*
+cert_bund_adv_info_iterator_title (iterator_t*);
+
+const char*
+cert_bund_adv_info_iterator_summary (iterator_t*);
+
+const char*
+cert_bund_adv_info_iterator_cve_refs (iterator_t*);
+
+const char*
+cert_bund_adv_info_iterator_max_cvss (iterator_t*);
+
+void
+init_cve_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
+
+void
+init_nvt_cert_bund_adv_iterator (iterator_t*, const char*, int, const char*);
+
 /* DFN-CERT */
 
 int

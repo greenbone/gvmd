@@ -4114,6 +4114,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
            && (strcmp (type, "cpe"))
            && (strcmp (type, "cve"))
            && (strcmp (type, "ovaldef"))
+           && (strcmp (type, "cert_bund_adv"))
            && (strcmp (type, "dfn_cert_adv"))
            && (strcmp (type, "report"))
            && (strcmp (type, "result"))
@@ -12374,6 +12375,7 @@ trash_id_exists (const char *type, const char * id)
       || (strcmp (type, "cpe") == 0)
       || (strcmp (type, "cve") == 0)
       || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0)
       || (strcmp (type, "report") == 0)
       || (strcmp (type, "result") == 0)
@@ -47597,6 +47599,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("NVT Filter");
       else if (strcmp (uuid, "adb6ffc8-e50e-4aab-9c31-13c741eb8a16") == 0)
         setting_name = g_strdup ("OVAL Filter");
+      else if (strcmp (uuid, "e4cf514a-17e2-4ab9-9c90-336f15e24750") == 0)
+        setting_name = g_strdup ("CERT-Bund Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
         setting_name = g_strdup ("DFN-CERT Filter");
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
@@ -47639,6 +47643,11 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Chart Selection OVAL Definitions Left");
       if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
         setting_name = g_strdup ("Chart Selection OVAL Definitions Right");
+
+      if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
+        setting_name = g_strdup ("Chart Selection CERT-Bund Advisories Left");
+      if (strcmp (uuid, "469d50da-880a-4bfc-88ed-22e53764c683") == 0)
+        setting_name = g_strdup ("Chart Selection CERT-Bund Advisories Right");
 
       if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
         setting_name = g_strdup ("Chart Selection DFN-CERT Advisories Left");
@@ -47796,6 +47805,28 @@ modify_setting (const gchar *uuid, const gchar *name,
  }
 
 /**
+ * @brief Filter columns for CERT_BUND_ADV iterator.
+ */
+#define CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
+ { GET_ITERATOR_FILTER_COLUMNS, "title", "summary",         \
+   "cves", "max_cvss", "severity", NULL }
+
+/**
+ * @brief CERT_BUND_ADV iterator columns.
+ */
+#define CERT_BUND_ADV_INFO_ITERATOR_COLUMNS                       \
+ {                                                               \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                             \
+   { "''", "_owner" },                                           \
+   { "title", NULL },                                            \
+   { "summary", NULL },                                          \
+   { "cve_refs", "cves" },                                       \
+   { "max_cvss", NULL },                                         \
+   { "max_cvss", "severity" },                                   \
+   { NULL, NULL }                                                \
+ }
+
+/**
  * @brief Filter columns for DFN_CERT_ADV iterator.
  */
 #define DFN_CERT_ADV_INFO_ITERATOR_FILTER_COLUMNS           \
@@ -47858,6 +47889,10 @@ modify_setting (const gchar *uuid, const gchar *name,
   "                                  ELSE summary END AS extra,"               \
   "                  cvss_base as severity"                                    \
   "           FROM nvts"                                                       \
+  " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
+  "                  'cert_bund_adv' AS type, title as extra,"                 \
+  "                  max_cvss as severity"                                     \
+  "           FROM cert_bund_advs"                                             \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'dfn_cert_adv' AS type, title as extra,"                  \
   "                  max_cvss as severity"                                     \
@@ -48417,6 +48452,187 @@ DEF_ACCESS (ovaldef_info_iterator_max_cvss, GET_ITERATOR_COLUMN_COUNT + 7);
 DEF_ACCESS (ovaldef_info_iterator_cve_refs, GET_ITERATOR_COLUMN_COUNT + 8);
 
 /* CERT data */
+
+/* CERT-Bund data */
+/**
+ * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
+                                  const char *name)
+{
+  static const char *filter_columns[] =
+      CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  ret = init_get_iterator (iterator,
+                           "cert_bund_adv",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Count number of cert_bund_adv.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of CERT-Bund advisories in filtered set.
+ */
+int
+cert_bund_adv_info_count (const get_data_t *get)
+{
+  static const char *filter_columns[] =
+                      CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  return count ("cert_bund_adv", get, columns, NULL, filter_columns,
+                0, 0, 0, FALSE);
+}
+
+/**
+ * @brief Get the title from an CERT_BUND_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The title of the CERT-Bund advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cert_bund_adv_info_iterator_title,
+            GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the summary from an CERT_BUND_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The summary of the CERT-Bund advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cert_bund_adv_info_iterator_summary,
+            GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the number of cves from an CERT_BUND_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The number of CVEs referenced in the CERT-Bund advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cert_bund_adv_info_iterator_cve_refs,
+            GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the maximum CVSS from an CERT_BUND_ADV iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The maximum CVSS of the CVEs referenced in the CERT-Bund advisory,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (cert_bund_adv_info_iterator_max_cvss,
+            GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Initialise CVE iterator, for CVEs referenced by a CERT-Bund advisory.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  cve         Name of the CVE.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "id".
+ */
+void
+init_cve_cert_bund_adv_iterator (iterator_t *iterator, const char *cve,
+                                int ascending, const char *sort_field)
+{
+  static column_t select_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+  gchar *columns;
+
+  assert (cve);
+
+  columns = columns_build_select (select_columns);
+  init_iterator (iterator,
+                 "SELECT %s"
+                 " FROM cert_bund_advs"
+                 " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
+                 "              WHERE cve_name = '%s')"
+                 " ORDER BY %s %s;",
+                 columns,
+                 cve,
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
+  g_free (columns);
+}
+
+/**
+ * @brief Initialise an CERT-Bund iterator, for advisories relevant to a NVT.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  oid         OID of the NVT.
+ * @param[in]  ascending   Whether to sort ascending or descending.
+ * @param[in]  sort_field  Field to sort on, or NULL for "id".
+ */
+void
+init_nvt_cert_bund_adv_iterator (iterator_t *iterator, const char *oid,
+                                int ascending, const char *sort_field)
+{
+  static column_t select_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
+  gchar *columns;
+
+  assert (oid);
+
+  columns = columns_build_select (select_columns);
+  init_iterator (iterator,
+                 "SELECT %s"
+                 " FROM cert_bund_advs"
+                 " WHERE id IN (SELECT adv_id FROM cert_bund_cves"
+                 "              WHERE cve_name IN (SELECT cve_name"
+                 "                                 FROM nvt_cves"
+                 "                                 WHERE oid = '%s'))"
+                 " ORDER BY %s %s;",
+                 columns,
+                 oid,
+                 sort_field ? sort_field : "name",
+                 ascending ? "ASC" : "DESC");
+  g_free (columns);
+}
 
 /* DFN-CERT data */
 /**
@@ -50323,6 +50539,7 @@ create_tag (const char * name, const char * comment, const char * value,
   if ((strcmp (lc_resource_type, "cpe") == 0)
       || (strcmp (lc_resource_type, "cve") == 0)
       || (strcmp (lc_resource_type, "ovaldef") == 0)
+      || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
       || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
     resource_permission = g_strdup ("get_info");
   else
@@ -50341,6 +50558,7 @@ create_tag (const char * name, const char * comment, const char * value,
            && (strcmp (lc_resource_type, "cve"))
            && (strcmp (lc_resource_type, "cpe"))
            && (strcmp (lc_resource_type, "ovaldef"))
+           && (strcmp (lc_resource_type, "cert_bund_adv"))
            && (strcmp (lc_resource_type, "dfn_cert_adv"))
            && (strcmp (lc_resource_type, "report"))
            && (strcmp (lc_resource_type, "result"))
@@ -50576,6 +50794,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       if ((strcmp (lc_resource_type, "cpe") == 0)
           || (strcmp (lc_resource_type, "cve") == 0)
           || (strcmp (lc_resource_type, "ovaldef") == 0)
+          || (strcmp (lc_resource_type, "cert_bund_adv") == 0)
           || (strcmp (lc_resource_type, "dfn_cert_adv") == 0))
         resource_permission = g_strdup ("get_info");
       else
@@ -50594,6 +50813,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
               && (strcmp (lc_resource_type, "cve"))
               && (strcmp (lc_resource_type, "cpe"))
               && (strcmp (lc_resource_type, "ovaldef"))
+              && (strcmp (lc_resource_type, "cert_bund_adv"))
               && (strcmp (lc_resource_type, "dfn_cert_adv"))
               && (strcmp (lc_resource_type, "report"))
               && (strcmp (lc_resource_type, "result"))
@@ -51077,6 +51297,11 @@ type_columns (const char *type)
       static column_t columns[] = CVE_INFO_ITERATOR_COLUMNS;
       return columns_build_select (columns);
     }
+  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+    {
+      static column_t columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
+      return columns_build_select (columns);
+    }
   else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     {
       static column_t columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
@@ -51105,6 +51330,7 @@ type_select_columns (const char *type)
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
+  static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   static column_t nvt_columns[] = NVT_ITERATOR_COLUMNS;
   static column_t ovaldef_columns[] = OVALDEF_INFO_ITERATOR_COLUMNS;
@@ -51118,6 +51344,8 @@ type_select_columns (const char *type)
     return cpe_columns;
   else if (strcasecmp (type, "CVE") == 0)
     return cve_columns;
+  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+    return cert_bund_adv_columns;
   else if (strcasecmp (type, "DFN_CERT_ADV") == 0)
     return dfn_cert_adv_columns;
   else if (strcasecmp (type, "NVT") == 0)
@@ -51147,6 +51375,11 @@ type_filter_columns (const char *type)
   else if (strcasecmp (type, "CVE") == 0)
     {
       static const char *ret[] = CVE_INFO_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  else if (strcasecmp (type, "CERT_BUND_ADV") == 0)
+    {
+      static const char *ret[] = CERT_BUND_ADV_INFO_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
   else if (strcasecmp (type, "DFN_CERT_ADV") == 0)

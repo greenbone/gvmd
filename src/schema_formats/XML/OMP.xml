@@ -8216,7 +8216,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>
       <attrib>
         <name>type</name>
-        <summary>Type must be either CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO</summary>
+        <summary>Type must be either CERT_BUND_ADV, CPE, CVE, DFN_CERT_ADV, OVALDEF, NVT or ALLINFO</summary>
         <type>text</type>
         <required>1</required>
       </attrib>
@@ -8280,6 +8280,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>update_time</e>
+          <o><e>cert_bund_adv</e></o>
           <o><e>cpe</e></o>
           <o><e>cve</e></o>
           <o><e>dfn_cert_adv</e></o>
@@ -8386,6 +8387,50 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>Comment for the tag</summary>
               <pattern>text</pattern>
             </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>cert_bund_adv</name>
+          <pattern>
+            <e>title</e>
+            <e>summary</e>
+            <e>max_cvss</e>
+            <e>cve_refs</e>
+            <o><e>raw_data</e></o>
+          </pattern>
+          <summary>An CERT-Bund advisory info element</summary>
+          <ele>
+            <name>title</name>
+            <summary>Title of the advisory</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>summary</name>
+            <summary>Summary text of the advisory</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>max_cvss</name>
+            <summary>Highest CVSS score of CVEs referenced by the advisory</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>cve_refs</name>
+            <summary>Number of CVEs referenced by this advisory</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>raw_data</name>
+            <summary>Source representation of the information. Only when details were requested</summary>
+            <pattern>
+              text
+            </pattern>
           </ele>
         </ele>
         <ele>

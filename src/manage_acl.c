@@ -234,6 +234,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
       || (strcmp (type, "cve") == 0)
       || (strcmp (type, "cpe") == 0)
       || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 

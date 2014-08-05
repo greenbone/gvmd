@@ -100,6 +100,11 @@
 #define OVALDEF_GETBYNAME_XSL SCAP_RES_DIR "/ovaldef_getbyname.xsl"
 
 /**
+ * @brief CERT_BUND_ADV selection stylesheet location.
+ */
+#define CERT_BUND_ADV_GETBYNAME_XSL CERT_RES_DIR "/cert_bund_getbyname.xsl"
+
+/**
  * @brief DFN_CERT_ADV selection stylesheet location.
  */
 #define DFN_CERT_ADV_GETBYNAME_XSL CERT_RES_DIR "/dfn_cert_getbyname.xsl"
@@ -115,6 +120,13 @@
  * %d should be the year expressed as YYYY.
  */
 #define CVE_FILENAME_FMT SCAP_DATA_DIR "/nvdcve-2.0-%d.xml"
+
+/**
+ * @brief CERT-Bund data files location format string.
+ *
+ * %d should be the year without the century (expressed as YY),
+ */
+#define CERT_BUND_ADV_FILENAME_FMT CERT_DATA_DIR "/CB-K%02d.xml"
 
 /**
  * @brief DFN-CERT data files location format string.
@@ -5378,6 +5390,7 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "cpe") == 0)
          || (strcasecmp (type, "cve") == 0)
          || (strcasecmp (type, "lsc_credential") == 0)
+         || (strcasecmp (type, "cert_bund_adv") == 0)
          || (strcasecmp (type, "dfn_cert_adv") == 0)
          || (strcasecmp (type, "filter") == 0)
          || (strcasecmp (type, "group") == 0)
@@ -5458,6 +5471,26 @@ get_ovaldef_filename (char *item_id)
   free (short_filename);
 
   return result;
+}
+
+/**
+ * @brief Compute the filename where a given CERT-Bund Advisory can be found.
+ *
+ * @param[in] item_id   CERT-Bund identifier without version ("CB-K??/????").
+ *
+ * @return A dynamically allocated string (to be g_free'd) containing the
+ *         path to the desired file or NULL on error.
+ */
+static char *
+get_cert_bund_adv_filename (char *item_id)
+{
+  int year;
+
+  if (sscanf (item_id, "CB-K%d-%*s", &year) == 1)
+    {
+      return g_strdup_printf (CERT_BUND_ADV_FILENAME_FMT, year);
+    }
+  return NULL;
 }
 
 /**
@@ -5643,6 +5676,15 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       cert_refs_str = g_string_new ("");
       if (manage_cert_loaded())
         {
+          init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+          while (next (&cert_refs_iterator))
+            {
+              g_string_append_printf (cert_refs_str,
+                                      "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+                                      get_iterator_name (&cert_refs_iterator));
+          }
+          cleanup_iterator (&cert_refs_iterator);
+
           init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
           while (next (&cert_refs_iterator))
             {
@@ -5872,6 +5914,19 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
           g_free (fname);
           if (ovaldef)
             *result = ovaldef;
+        }
+    }
+  else if (g_ascii_strcasecmp ("CERT_BUND_ADV", type) == 0)
+    {
+      fname = get_cert_bund_adv_filename (uid);
+      if (fname)
+        {
+          gchar *adv;
+          adv = xsl_transform (CERT_BUND_ADV_GETBYNAME_XSL, fname,
+                               pnames, pvalues);
+          g_free (fname);
+          if (adv)
+            *result = adv;
         }
     }
   else if (g_ascii_strcasecmp ("DFN_CERT_ADV", type) == 0)

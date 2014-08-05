@@ -34,8 +34,29 @@ DROP TABLE IF EXISTS dfn_cert_cves;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "4");
+INSERT INTO meta (name, value) VALUES ("database_version", "5");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
+
+CREATE TABLE cert_bund_advs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uuid UNIQUE,
+  name UNIQUE,
+  comment TEXT,
+  creation_time DATE,
+  modification_time DATE,
+  title TEXT,
+  summary TEXT,
+  cve_refs INTEGER,
+  max_cvss FLOAT
+);
+CREATE UNIQUE INDEX cert_bund_advs_idx ON cert_bund_advs (name);
+
+CREATE TABLE cert_bund_cves (
+  adv_id INTEGER,
+  cve_name VARCHAR(20)
+);
+CREATE INDEX cert_bund_cves_adv_idx ON cert_bund_cves (adv_id);
+CREATE INDEX cert_bund_cves_cve_idx ON cert_bund_cves (cve_name);
 
 CREATE TABLE dfn_cert_advs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,6 +80,11 @@ CREATE INDEX dfn_cert_cves_adv_idx ON dfn_cert_cves (adv_id);
 CREATE INDEX dfn_cert_cves_cve_idx ON dfn_cert_cves (cve_name);
 
 /* deletion triggers */
+CREATE TRIGGER cert_bund_adv_delete AFTER DELETE ON cert_bund_advs
+BEGIN
+  DELETE FROM cert_bund_cves where adv_id = old.id;
+END;
+
 CREATE TRIGGER dfn_cert_adv_delete AFTER DELETE ON dfn_cert_advs
 BEGIN
   DELETE FROM dfn_cert_cves where adv_id = old.id;

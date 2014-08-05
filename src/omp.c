@@ -10959,6 +10959,15 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 
   if (manage_cert_loaded ())
     {
+      init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+      while (next (&cert_refs_iterator))
+        {
+          g_string_append_printf (buffer,
+                                  "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+                                  get_iterator_name(&cert_refs_iterator));
+        }
+      cleanup_iterator (&cert_refs_iterator);
+
       init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
       while (next (&cert_refs_iterator))
         {
@@ -12872,6 +12881,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               info_count = ovaldef_info_count;
               get_info_data->get.subtype = g_strdup ("ovaldef");
             }
+          else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+            {
+              init_info_iterator = init_cert_bund_adv_info_iterator;
+              info_count = cert_bund_adv_info_count;
+              get_info_data->get.subtype = g_strdup ("cert_bund_adv");
+            }
           else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
             {
               init_info_iterator = init_dfn_cert_adv_info_iterator;
@@ -12909,6 +12924,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 name = g_strdup ("CVE");
               else if (strcmp (get_info_data->type, "ovaldef") == 0)
                 name = g_strdup ("OVAL");
+              else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
+                name = g_strdup ("CERT-Bund");
               else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
                 name = g_strdup ("DFN-CERT");
               else if (strcmp (get_info_data->type, "nvt") == 0)
@@ -13093,6 +13110,24 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       g_string_append (result, "<cert>");
                       if (manage_cert_loaded())
                         {
+                          init_cve_cert_bund_adv_iterator (&cert_advs,
+                                                          get_iterator_name
+                                                            (&info),
+                                                          1, NULL);
+                          while (next (&cert_advs))
+                            {
+                              xml_string_append
+                                (result,
+                                 "<cert_ref type=\"CERT-Bund\">"
+                                 "<name>%s</name>"
+                                 "<title>%s</title>"
+                                 "</cert_ref>",
+                                 get_iterator_name (&cert_advs),
+                                 cert_bund_adv_info_iterator_title
+                                  (&cert_advs));
+                          };
+                          cleanup_iterator (&cert_advs);
+
                           init_cve_dfn_cert_adv_iterator (&cert_advs,
                                                           get_iterator_name
                                                             (&info),
@@ -13146,6 +13181,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                        "<description>%s</description>",
                                        description);
                 }
+              else if (g_strcmp0 ("cert_bund_adv", get_info_data->type) == 0)
+                xml_string_append (result,
+                                   "<cert_bund_adv>"
+                                   "<title>%s</title>"
+                                   "<summary>%s</summary>"
+                                   "<max_cvss>%s</max_cvss>"
+                                   "<cve_refs>%s</cve_refs>",
+                                   cert_bund_adv_info_iterator_title (&info),
+                                   cert_bund_adv_info_iterator_summary (&info),
+                                   cert_bund_adv_info_iterator_max_cvss(&info),
+                                   cert_bund_adv_info_iterator_cve_refs (&info));
               else if (g_strcmp0 ("dfn_cert_adv", get_info_data->type) == 0)
                 xml_string_append (result,
                                    "<dfn_cert_adv>"
