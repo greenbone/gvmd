@@ -1,3 +1,8 @@
+2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_session_init): Clear current_credentials in
+	case the user is authenticating again in the session.
+
 2014-08-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/cert_bund_getbyname.xsl, tools/cert_bund_update.xsl: New
@@ -48,7 +53,7 @@
 
 	* src/schema_formats/XML/OMP.xml (get_info): Add CERT_BUND_ADV as info
 	type in request and response.
-	
+
 	* doc/omp.rnc, doc/omp.html: Update from source.
 
 	* tools/cert_db_init.sql: Increase database_version to 5.

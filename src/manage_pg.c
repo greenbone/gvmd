@@ -41,6 +41,7 @@ manage_session_init (const char *uuid)
   sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL);");
+  sql ("DELETE FROM current_credentials;");
   sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
 }
 
