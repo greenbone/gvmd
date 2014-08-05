@@ -1,3 +1,13 @@
+2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20045.
+
+	* src/manage_sql.c (parse_iso_time): When there is a timezone in the
+	time string, then convert the time under that timezone, otherwise it is
+	assumed to be in the current timezone.  In particular this ensures that
+	the task "Scan started" time is correct in slave scans when the master
+	and slave users have different timezones.
+
 2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20030.

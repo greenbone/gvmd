@@ -810,12 +810,84 @@ parse_iso_time (const char *text_time)
     }
   else
     {
+      gchar *tz, *new_tz;
+      int offset_hour, offset_minute;
+      char sign;
+
+      /* Get the timezone offset from the string. */
+
+      if (sscanf ((char*) text_time,
+                  "%*u-%*u-%*uT%*u:%*u:%*u%[-+]%d:%d",
+                  &sign, &offset_hour, &offset_minute)
+          != 3)
+        {
+          /* Perhaps %z is an acronym like "CEST".  Assume it's local time. */
+          epoch_time = mktime (&tm);
+          if (epoch_time == -1)
+            {
+              g_warning ("%s: Failed to make time", __FUNCTION__);
+              return 0;
+            }
+          return epoch_time;
+        }
+
+      /* Store current TZ. */
+
+      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      /* Switch to the timezone in the time string. */
+
+      new_tz = g_strdup_printf ("UTC%c%d:%d",
+                                sign == '-' ? '+' : '-',
+                                offset_hour,
+                                offset_minute);
+      if (setenv ("TZ", new_tz, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to %s", __FUNCTION__, new_tz);
+          g_free (new_tz);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+      g_free (new_tz);
+
+      /* Parse time again under the new timezone. */
+
+      if (strptime ((char*) text_time, "%FT%T%z", &tm) == NULL)
+        {
+          assert (0);
+          g_warning ("%s: Failed to parse time", __FUNCTION__);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
+          g_free (tz);
+          return 0;
+        }
+
       epoch_time = mktime (&tm);
       if (epoch_time == -1)
         {
           g_warning ("%s: Failed to make time", __FUNCTION__);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
+          g_free (tz);
           return 0;
         }
+
+      /* Revert to stored TZ. */
+      if (tz)
+        {
+          if (setenv ("TZ", tz, 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_free (tz);
+              return 0;
+            }
+        }
+      else
+        unsetenv ("TZ");
+
+      g_free (tz);
     }
 
   return epoch_time;
