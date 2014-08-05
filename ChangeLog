@@ -1,5 +1,10 @@
 2014-08-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/cert_bund_getbyname.xsl, tools/cert_bund_update.xsl: New
+	XSL stylesheets.
+
+2014-08-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add new SecInfo subtype CERT-Bund Advisory (CERT_BUND_ADV).
 
 	* CMakeLists.txt: Increase OPENVASMD_CERT_DATABASE_VERSION to 5.
