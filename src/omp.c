@@ -11318,7 +11318,11 @@ get_ovaldi_files ()
   iterator_t iterator;
   char *result = NULL;
 
-  init_iterator (&iterator, "SELECT DISTINCT xml_file FROM ovaldefs;");
+  init_iterator (&iterator,
+                 sql_is_sqlite3 ()
+                  ? "SELECT DISTINCT xml_file FROM ovaldefs;"
+                  // FIX Until we have SCAP in Postgres.
+                  : "SELECT * FROM meta WHERE 1 = 0;");
   while (next (&iterator))
     {
       char *tmp;

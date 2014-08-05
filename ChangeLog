@@ -1,5 +1,9 @@
 2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (get_ovaldi_files): Disable SQL, for Postgres.
+
+2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator, column_auto_type): Use =
 	instead of == in SQL.  Use EXISTS in SQL to make sure the OR argument is
 	boolean.  Both for Postgres.
