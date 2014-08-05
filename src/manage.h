@@ -3065,6 +3065,12 @@ char *
 ovaldef_description (const char *);
 
 char *
+ovaldef_severity (const char *);
+
+char *
+ovaldef_version (const char *);
+
+char *
 ovaldef_uuid (const char *, const char *);
 
 /* CERT data */

@@ -2802,26 +2802,32 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
-      /* XXX: Alarm messages are require an associated NVT at the moment. */
-      if (!strcmp (type, "Alarm"))
-        mtype = "Log Message";
-      else
-        mtype = threat_message_type (type);
+      mtype = threat_message_type (type);
       name = entity_attribute (r_entity, "name");
       assert (name);
       if (g_str_has_prefix (name, "oval:"))
         {
           char *ovaldef_id, *ovaldef_desc;
 
-          ovaldef_desc = ovaldef_description (name);
           ovaldef_id = ovaldef_uuid (name, defs_file);
+          if (ovaldef_id)
+            ovaldef_desc = ovaldef_description (ovaldef_id);
+          else
+            ovaldef_desc = g_strdup ("");
           desc = g_strdup_printf ("%s ==> %s\n\n%s", ovaldef_id,
                                   entity_text (r_entity), ovaldef_desc);
+          result = make_result (task, target, "", ovaldef_id, mtype, desc);
           g_free (ovaldef_id);
+          g_free (ovaldef_desc);
         }
       else
-        desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
-      result = make_result (task, target, "", NULL, mtype, desc);
+        {
+          /* XXX: Alarm messages require an associated NVT at the moment. */
+          if (!strcmp (type, "Alarm"))
+            mtype = "Log Message";
+          desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
+          result = make_result (task, target, "", NULL, mtype, desc);
+        }
       g_free (desc);
       report_add_result (report, result);
       results = next_entities (results);

@@ -1,3 +1,17 @@
+2014-08-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Insert the oval definition as the
+	result nvt when available to be able to correctly set the severity for
+	the result. Adjust ovaldef_description() call.
+
+	* src/manage.h: Add new functions prototypes.
+
+	* src/manage_sql.c (ovaldef_severity, ovaldef_version): New functions.
+	(make_result): In oval definition case, insert the result severity and
+	version correctly. Cleanup function code.
+	(ovaldef_description): Take ovaldef ID as function argument instead of
+	the definition's name.
+
 2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (get_ovaldi_files): Disable SQL, for Postgres.

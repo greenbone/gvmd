@@ -13847,11 +13847,18 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 {
   result_t result;
   gchar *nvt_revision, *severity;
-  gchar *quoted_descr = sql_quote (description);
+  gchar *quoted_descr;
   int qod;
   nvt_t nvt_id = 0;
 
-  if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
+  if (nvt && g_str_has_prefix (nvt, "oval:"))
+    {
+      /* oval definition from ospd-ovaldi. */
+      qod = 0;
+      nvt_revision = ovaldef_version (nvt);
+      severity = ovaldef_severity (nvt);
+    }
+  else if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
       g_warning ("NVT '%s' not found. Result not created.\n", nvt);
       return 0;
@@ -13859,9 +13866,6 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   else if (nvt && strcmp (nvt, ""))
     {
       nvti_t *nvti;
-
-      nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
-                                 nvt);
 
       nvti = nvtis_lookup (nvti_cache, nvt);
       if (nvti)
@@ -13896,15 +13900,14 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
         severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
         {
-          g_free (quoted_descr);
-          g_free (nvt_revision);
           g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
           return 0;
         }
+      nvt_revision = sql_string ("SELECT version FROM nvts WHERE uuid = '%s';",
+                                 nvt);
     }
   else
     {
-      nvt_revision = g_strdup ("");
       qod = -1;
       if (strcasecmp (type, "Log Message") == 0)
         severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
@@ -13914,8 +13917,6 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
         severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
         {
-          g_free (quoted_descr);
-          g_free (nvt_revision);
           if (strcasecmp (type, "Alarm") == 0)
             g_warning ("%s: Message type requires an NVT: '%s'",
                        __FUNCTION__, type);
@@ -13923,8 +13924,10 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
             g_warning ("%s: Invalid message type: '%s'", __FUNCTION__, type);
           return 0;
         }
+      nvt_revision = g_strdup ("");
     }
 
+  quoted_descr = sql_quote (description);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod)"
@@ -48827,24 +48830,23 @@ get_ovaldef_short_filename (char* item_id)
 }
 
 /**
- * @brief Get the description for an OVALDEF using a name.
+ * @brief Get the description for an OVALDEF using an ID.
  *
- * @param[in]  name     Oval definition name.
+ * @param[in]  uuid     Oval definition ID.
  *
  * @return The description of the OVAL definition from the SCAP directory.
  *         Freed by g_free.
  */
 char *
-ovaldef_description (const char *name)
+ovaldef_description (const char *id)
 {
-  char *quoted_name, *ret;
+  char *quoted_id, *ret;
 
-  assert (name);
-  quoted_name = sql_quote (name);
-  ret = sql_string ("SELECT description FROM ovaldefs"
-                    " WHERE name = '%s';",
-                    quoted_name);
-  g_free (quoted_name);
+  assert (id);
+  quoted_id = sql_quote (id);
+  ret = sql_string ("SELECT description FROM ovaldefs WHERE uuid = '%s';",
+                    quoted_id);
+  g_free (quoted_id);
   return ret;
 }
 
@@ -48869,6 +48871,48 @@ ovaldef_uuid (const char *name, const char *fname)
                     " AND xml_file = '%s';", name, fname);
   g_free (quoted_name);
   g_free (quoted_fname);
+  return ret;
+}
+
+/**
+ * @brief Get the severity of an OVALDEF using an ID.
+ *
+ * @param[in]  uuid     Oval definition ID.
+ *
+ * @return The severity of the OVAL definition from the SCAP directory.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_severity (const char *id)
+{
+  char *quoted_id, *ret;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  ret = sql_string ("SELECT max_cvss FROM ovaldefs WHERE uuid = '%s';",
+                    quoted_id);
+  g_free (quoted_id);
+  return ret;
+}
+
+/**
+ * @brief Get the version of an OVALDEF using an ID.
+ *
+ * @param[in]  uuid     Oval definition ID.
+ *
+ * @return The version of the OVAL definition from the SCAP directory.
+ *         Freed by g_free.
+ */
+char *
+ovaldef_version (const char *id)
+{
+  char *quoted_id, *ret;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  ret = sql_string ("SELECT version FROM ovaldefs WHERE uuid = '%s';",
+                    quoted_id);
+  g_free (quoted_id);
   return ret;
 }
 
