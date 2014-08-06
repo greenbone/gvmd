@@ -17199,111 +17199,113 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           gchar *quoted_search_phrase;
 
           quoted_search_phrase = sql_quote (search_phrase);
-          init_iterator (iterator,
-                         "SELECT"
-                         " distinct_host,"
-                         " (SELECT report FROM report_hosts"
-                         "  WHERE report_hosts.host = distinct_host"
-                         "  AND end_time IS NOT NULL"
-                         "  AND (SELECT owner FROM reports"
-                         "       WHERE id = report)"
-                         "      = (SELECT id FROM users"
-                         "         WHERE users.uuid = '%s')"
-                         "  AND (SELECT reports.scan_run_status = %u"
-                         "       FROM reports"
-                         "       WHERE reports.id = report)"
-                         "  AND (SELECT hidden FROM tasks"
-                         "       WHERE tasks.id"
-                         "             = (SELECT task FROM reports"
-                         "                WHERE reports.id = report))"
-                         "      = 0"
-                         "  AND (SELECT value FROM task_preferences"
-                         "       WHERE task_preferences.task"
-                         "             = (SELECT task FROM reports"
-                         "                WHERE reports.id = report)"
-                         "       AND task_preferences.name = 'in_assets')"
-                         "      = 'yes'"
-                         "  ORDER BY id DESC)"
-                         "  AS last_report"
-                         " FROM (SELECT DISTINCT host AS distinct_host"
-                         "       FROM report_hosts"
-                         "       ORDER BY host COLLATE collate_ip)"
-                         "      AS distinct_host_subquery"
-                         /* Search IP. */
-                         " WHERE (distinct_host LIKE '%%%s%%%'"
-                         /* Search hostname. */
-                         "        OR EXISTS"
-                         "        (SELECT * FROM report_host_details"
-                         "         WHERE report_host"
-                         "               = (SELECT id FROM report_hosts"
-                         "                  WHERE report = last_report"
-                         "                  AND host = distinct_host)"
-                         "         AND (name = 'hostname'"
-                         "              OR name = 'best_os_txt'"
-                         "              OR name = 'best_os_cpe' OR name = 'App'"
-                         "              OR name = 'ports')"
-                         "         AND source_type = 'nvt'"
-                         "         AND value LIKE '%%%s%%'))"
-                         /* Filter levels. */
-                         " AND EXISTS (SELECT results.id, %s AS new_severity"
-                         "             FROM results"
-                         "             WHERE results.report = last_report"
-                         "             AND results.host = distinct_host"
-                         "             %s)"
-                         " LIMIT %i OFFSET %i;",
-                         current_credentials.uuid,
-                         TASK_STATUS_DONE,
-                         quoted_search_phrase,
-                         quoted_search_phrase,
-                         new_severity_sql,
-                         levels_sql ? levels_sql->str : "",
-                         max_results,
-                         first_result);
+          init_iterator
+           (iterator,
+            "SELECT"
+            " distinct_host,"
+            " (SELECT report FROM report_hosts"
+            "  WHERE report_hosts.host = distinct_host"
+            "  AND end_time IS NOT NULL"
+            "  AND (SELECT owner FROM reports"
+            "       WHERE id = report)"
+            "      = (SELECT id FROM users"
+            "         WHERE users.uuid = '%s')"
+            "  AND (SELECT reports.scan_run_status = %u"
+            "       FROM reports"
+            "       WHERE reports.id = report)"
+            "  AND (SELECT hidden FROM tasks"
+            "       WHERE tasks.id"
+            "             = (SELECT task FROM reports"
+            "                WHERE reports.id = report))"
+            "      = 0"
+            "  AND (SELECT value FROM task_preferences"
+            "       WHERE task_preferences.task"
+            "             = (SELECT task FROM reports"
+            "                WHERE reports.id = report)"
+            "       AND task_preferences.name = 'in_assets')"
+            "      = 'yes'"
+            "  ORDER BY id DESC)"
+            "  AS last_report"
+            " FROM (SELECT DISTINCT host AS distinct_host"
+            "       FROM report_hosts"
+            "       ORDER BY host COLLATE collate_ip)"
+            "      AS distinct_host_subquery"
+            /* Search IP. */
+            " WHERE (distinct_host LIKE '%%%s%%%'"
+            /* Search hostname. */
+            "        OR EXISTS"
+            "        (SELECT * FROM report_host_details"
+            "         WHERE report_host"
+            "               = (SELECT id FROM report_hosts"
+            "                  WHERE report = last_report"
+            "                  AND host = distinct_host)"
+            "         AND (name = 'hostname'"
+            "              OR name = 'best_os_txt'"
+            "              OR name = 'best_os_cpe' OR name = 'App'"
+            "              OR name = 'ports')"
+            "         AND source_type = 'nvt'"
+            "         AND value LIKE '%%%s%%'))"
+            /* Filter levels. */
+            " AND EXISTS (SELECT results.id, %s AS new_severity"
+            "             FROM results"
+            "             WHERE results.report = last_report"
+            "             AND results.host = distinct_host"
+            "             %s)"
+            " LIMIT %i OFFSET %i;",
+            current_credentials.uuid,
+            TASK_STATUS_DONE,
+            quoted_search_phrase,
+            quoted_search_phrase,
+            new_severity_sql,
+            levels_sql ? levels_sql->str : "",
+            max_results,
+            first_result);
           g_free (quoted_search_phrase);
         }
       else
-        init_iterator (iterator,
-                       "SELECT"
-                       " distinct_host,"
-                       " (SELECT report FROM report_hosts"
-                       "  WHERE report_hosts.host = distinct_host"
-                       "  AND end_time IS NOT NULL"
-                       "  AND (SELECT owner FROM reports"
-                       "       WHERE id = report)"
-                       "      = (SELECT id FROM users"
-                       "         WHERE users.uuid = '%s')"
-                       "  AND (SELECT reports.scan_run_status = %u"
-                       "       FROM reports"
-                       "       WHERE reports.id = report)"
-                       "  AND (SELECT hidden FROM tasks"
-                       "       WHERE tasks.id"
-                       "             = (SELECT task FROM reports"
-                       "                WHERE reports.id = report))"
-                       "      = 0"
-                       "  AND (SELECT value FROM task_preferences"
-                       "       WHERE task_preferences.task"
-                       "             = (SELECT task FROM reports"
-                       "                WHERE reports.id = report)"
-                       "       AND task_preferences.name = 'in_assets')"
-                       "      = 'yes'"
-                       "  ORDER BY id DESC)"
-                       "  AS last_report"
-                       " FROM (SELECT DISTINCT host AS distinct_host"
-                       "       FROM report_hosts"
-                       "       ORDER BY host COLLATE collate_ip)"
-                       "      AS distinct_host_subquery"
-                       " WHERE EXISTS (SELECT results.id, %s AS new_severity"
-                       "               FROM results"
-                       "               WHERE results.report = last_report"
-                       "               AND results.host = distinct_host"
-                       "               %s)"
-                       " LIMIT %i OFFSET %i;",
-                       current_credentials.uuid,
-                       TASK_STATUS_DONE,
-                       new_severity_sql,
-                       levels_sql ? levels_sql->str : "",
-                       max_results,
-                       first_result);
+        init_iterator
+         (iterator,
+          "SELECT"
+          " distinct_host,"
+          " (SELECT report FROM report_hosts"
+          "  WHERE report_hosts.host = distinct_host"
+          "  AND end_time IS NOT NULL"
+          "  AND (SELECT owner FROM reports"
+          "       WHERE id = report)"
+          "      = (SELECT id FROM users"
+          "         WHERE users.uuid = '%s')"
+          "  AND (SELECT reports.scan_run_status = %u"
+          "       FROM reports"
+          "       WHERE reports.id = report)"
+          "  AND (SELECT hidden FROM tasks"
+          "       WHERE tasks.id"
+          "             = (SELECT task FROM reports"
+          "                WHERE reports.id = report))"
+          "      = 0"
+          "  AND (SELECT value FROM task_preferences"
+          "       WHERE task_preferences.task"
+          "             = (SELECT task FROM reports"
+          "                WHERE reports.id = report)"
+          "       AND task_preferences.name = 'in_assets')"
+          "      = 'yes'"
+          "  ORDER BY id DESC)"
+          "  AS last_report"
+          " FROM (SELECT DISTINCT host AS distinct_host"
+          "       FROM report_hosts"
+          "       ORDER BY host COLLATE collate_ip)"
+          "      AS distinct_host_subquery"
+          " WHERE EXISTS (SELECT results.id, %s AS new_severity"
+          "               FROM results"
+          "               WHERE results.report = last_report"
+          "               AND results.host = distinct_host"
+          "               %s)"
+          " LIMIT %i OFFSET %i;",
+          current_credentials.uuid,
+          TASK_STATUS_DONE,
+          new_severity_sql,
+          levels_sql ? levels_sql->str : "",
+          max_results,
+          first_result);
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
@@ -20358,102 +20360,104 @@ filtered_host_count (const char *levels, const char *search_phrase,
           gchar *quoted_search_phrase;
 
           quoted_search_phrase = sql_quote (search_phrase);
-          ret = sql_int ("SELECT"
-                         " count (*),"
-                         " distinct_host,"
-                         " (SELECT report FROM report_hosts"
-                         "  WHERE report_hosts.host = distinct_host"
-                         "  AND end_time IS NOT NULL"
-                         "  AND (SELECT owner FROM reports"
-                         "       WHERE id = report)"
-                         "      = (SELECT id FROM users"
-                         "         WHERE users.uuid = '%s')"
-                         "  AND (SELECT reports.scan_run_status = %u"
-                         "       FROM reports"
-                         "       WHERE reports.id = report)"
-                         "  AND (SELECT hidden FROM tasks"
-                         "       WHERE tasks.id"
-                         "             = (SELECT task FROM reports"
-                         "                WHERE reports.id = report))"
-                         "      = 0"
-                         "  AND (SELECT value FROM task_preferences"
-                         "       WHERE task_preferences.task"
-                         "             = (SELECT task FROM reports"
-                         "                WHERE reports.id = report)"
-                         "       AND task_preferences.name = 'in_assets')"
-                         "      = 'yes'"
-                         "  ORDER BY id DESC)"
-                         "  AS last_report"
-                         " FROM (SELECT DISTINCT host AS distinct_host"
-                         "       FROM report_hosts)"
-                         "      AS distinct_host_subquery"
-                         /* Search IP. */
-                         " WHERE (distinct_host LIKE '%%%s%%%'"
-                         /* Search hostname. */
-                         "        OR EXISTS"
-                         "        (SELECT * FROM report_host_details"
-                         "         WHERE report_host"
-                         "               = (SELECT id FROM report_hosts"
-                         "                  WHERE report = last_report"
-                         "                  AND host = distinct_host)"
-                         "         AND (name = 'hostname'"
-                         "              OR name = 'best_os_txt'"
-                         "              OR name = 'best_os_cpe' OR name = 'App'"
-                         "              OR name = 'ports')"
-                         "         AND source_type = 'nvt'"
-                         "         AND value LIKE '%%%s%%'))"
-                         " AND EXISTS (SELECT results.id, %s AS new_severity"
-                         "             FROM results"
-                         "             WHERE results.report = last_report"
-                         "             AND results.host = distinct_host"
-                         "             %s);",
-                         current_credentials.uuid,
-                         TASK_STATUS_DONE,
-                         quoted_search_phrase,
-                         quoted_search_phrase,
-                         new_severity_sql,
-                         levels_sql ? levels_sql->str : "");
+          ret = sql_int
+                 ("SELECT"
+                  " count (*),"
+                  " distinct_host,"
+                  " (SELECT report FROM report_hosts"
+                  "  WHERE report_hosts.host = distinct_host"
+                  "  AND end_time IS NOT NULL"
+                  "  AND (SELECT owner FROM reports"
+                  "       WHERE id = report)"
+                  "      = (SELECT id FROM users"
+                  "         WHERE users.uuid = '%s')"
+                  "  AND (SELECT reports.scan_run_status = %u"
+                  "       FROM reports"
+                  "       WHERE reports.id = report)"
+                  "  AND (SELECT hidden FROM tasks"
+                  "       WHERE tasks.id"
+                  "             = (SELECT task FROM reports"
+                  "                WHERE reports.id = report))"
+                  "      = 0"
+                  "  AND (SELECT value FROM task_preferences"
+                  "       WHERE task_preferences.task"
+                  "             = (SELECT task FROM reports"
+                  "                WHERE reports.id = report)"
+                  "       AND task_preferences.name = 'in_assets')"
+                  "      = 'yes'"
+                  "  ORDER BY id DESC)"
+                  "  AS last_report"
+                  " FROM (SELECT DISTINCT host AS distinct_host"
+                  "       FROM report_hosts)"
+                  "      AS distinct_host_subquery"
+                  /* Search IP. */
+                  " WHERE (distinct_host LIKE '%%%s%%%'"
+                  /* Search hostname. */
+                  "        OR EXISTS"
+                  "        (SELECT * FROM report_host_details"
+                  "         WHERE report_host"
+                  "               = (SELECT id FROM report_hosts"
+                  "                  WHERE report = last_report"
+                  "                  AND host = distinct_host)"
+                  "         AND (name = 'hostname'"
+                  "              OR name = 'best_os_txt'"
+                  "              OR name = 'best_os_cpe' OR name = 'App'"
+                  "              OR name = 'ports')"
+                  "         AND source_type = 'nvt'"
+                  "         AND value LIKE '%%%s%%'))"
+                  " AND EXISTS (SELECT results.id, %s AS new_severity"
+                  "             FROM results"
+                  "             WHERE results.report = last_report"
+                  "             AND results.host = distinct_host"
+                  "             %s);",
+                  current_credentials.uuid,
+                  TASK_STATUS_DONE,
+                  quoted_search_phrase,
+                  quoted_search_phrase,
+                  new_severity_sql,
+                  levels_sql ? levels_sql->str : "");
           g_free (quoted_search_phrase);
         }
       else
-        ret = sql_int ("SELECT"
-                       " count (*),"
-                       " distinct_host,"
-                       " (SELECT report FROM report_hosts"
-                       "  WHERE report_hosts.host = distinct_host"
-                       "  AND end_time IS NOT NULL"
-                       "  AND (SELECT owner FROM reports"
-                       "       WHERE id = report)"
-                       "      = (SELECT id FROM users"
-                       "         WHERE users.uuid = '%s')"
-                       "  AND (SELECT reports.scan_run_status = %u"
-                       "       FROM reports"
-                       "       WHERE reports.id = report)"
-                       "  AND (SELECT hidden FROM tasks"
-                       "       WHERE tasks.id"
-                       "             = (SELECT task FROM reports"
-                       "                WHERE reports.id = report))"
-                       "      = 0"
-                       "  AND (SELECT value FROM task_preferences"
-                       "       WHERE task_preferences.task"
-                       "             = (SELECT task FROM reports"
-                       "                WHERE reports.id = report)"
-                       "       AND task_preferences.name = 'in_assets')"
-                       "      = 'yes'"
-                       "  ORDER BY id DESC)"
-                       "  AS last_report"
-                       " FROM (SELECT DISTINCT host AS distinct_host"
-                       "       FROM report_hosts)"
-                       "      AS distinct_host_subquery"
-                       " WHERE EXISTS (SELECT results.id, %s AS new_severity"
-                       "               FROM results"
-                       "               WHERE results.report = last_report"
-                       "               AND results.host = distinct_host"
-                       "               %s);",
-                       current_credentials.uuid,
-                       TASK_STATUS_DONE,
-                       new_severity_sql,
-                       levels_sql ? levels_sql->str : "");
+        ret = sql_int
+               ("SELECT"
+                " count (*),"
+                " distinct_host,"
+                " (SELECT report FROM report_hosts"
+                "  WHERE report_hosts.host = distinct_host"
+                "  AND end_time IS NOT NULL"
+                "  AND (SELECT owner FROM reports"
+                "       WHERE id = report)"
+                "      = (SELECT id FROM users"
+                "         WHERE users.uuid = '%s')"
+                "  AND (SELECT reports.scan_run_status = %u"
+                "       FROM reports"
+                "       WHERE reports.id = report)"
+                "  AND (SELECT hidden FROM tasks"
+                "       WHERE tasks.id"
+                "             = (SELECT task FROM reports"
+                "                WHERE reports.id = report))"
+                "      = 0"
+                "  AND (SELECT value FROM task_preferences"
+                "       WHERE task_preferences.task"
+                "             = (SELECT task FROM reports"
+                "                WHERE reports.id = report)"
+                "       AND task_preferences.name = 'in_assets')"
+                "      = 'yes'"
+                "  ORDER BY id DESC)"
+                "  AS last_report"
+                " FROM (SELECT DISTINCT host AS distinct_host"
+                "       FROM report_hosts)"
+                "      AS distinct_host_subquery"
+                " WHERE EXISTS (SELECT results.id, %s AS new_severity"
+                "               FROM results"
+                "               WHERE results.report = last_report"
+                "               AND results.host = distinct_host"
+                "               %s);",
+                current_credentials.uuid,
+                TASK_STATUS_DONE,
+                new_severity_sql,
+                levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
