@@ -1,3 +1,10 @@
+2014-08-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (results_xml_append_cert, results_xml_append_nvt): New
+	functions.
+	(buffer_results_xml): Refactor code to use new functions and add nvt
+	name in oval definitions result case.
+
 2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get the GSA Assets page loading with Postgres.

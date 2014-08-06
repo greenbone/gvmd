@@ -10798,6 +10798,77 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
                                                           dvalue);            \
                                 } while (0)
 
+static void
+results_xml_append_cert (GString *buffer, const char *oid)
+{
+  iterator_t cert_refs_iterator;
+
+  buffer_xml_append_printf (buffer, "<cert>");
+  if (manage_cert_loaded ())
+    {
+      init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+      while (next (&cert_refs_iterator))
+        {
+          g_string_append_printf
+           (buffer, "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
+            get_iterator_name (&cert_refs_iterator));
+        }
+      cleanup_iterator (&cert_refs_iterator);
+
+      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
+      while (next (&cert_refs_iterator))
+        {
+          g_string_append_printf
+           (buffer, "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
+            get_iterator_name (&cert_refs_iterator));
+        }
+      cleanup_iterator (&cert_refs_iterator);
+    }
+  else
+    g_string_append_printf (buffer,
+                            "<warning>database not available</warning>");
+  buffer_xml_append_printf (buffer, "</cert>");
+}
+
+static void
+results_xml_append_nvt (iterator_t *results, GString *buffer)
+{
+  const char *oid = result_iterator_nvt_oid (results);
+
+  assert (results);
+  assert (buffer);
+  if (g_str_has_prefix (oid, "oval:"))
+    {
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\"><name>%s</name><family/>"
+                                "<cvss_base/><cve/><bid/><tags/><xref/>",
+                                oid, oid);
+    }
+  else
+    {
+      const char *cvss_base = result_iterator_nvt_cvss_base (results);
+
+      if (!cvss_base && !strcmp (oid, "0"))
+        cvss_base = "0.0";
+
+      buffer_xml_append_printf
+       (buffer,
+        "<nvt oid=\"%s\"><name>%s</name><family>%s</family>"
+        "<cvss_base>%s</cvss_base><cve>%s</cve><bid>%s</bid>"
+        "<xref>%s</xref><tags>%s</tags>",
+        oid, result_iterator_nvt_name (results) ?: "",
+        result_iterator_nvt_family (results) ?: "",
+        cvss_base ?: "",
+        result_iterator_nvt_cve (results) ?: "",
+        result_iterator_nvt_bid (results) ?: "",
+        result_iterator_nvt_xref (results) ?: "",
+        result_iterator_nvt_tag (results) ?: "");
+    }
+
+  results_xml_append_cert (buffer, oid);
+  buffer_xml_append_printf (buffer, "</nvt>");
+}
+
 /** @todo Exported for manage_sql.c. */
 /**
  * @brief Buffer XML for some results.
@@ -10830,15 +10901,6 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
 {
   const char *descr = result_iterator_descr (results);
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
-  const char *name = result_iterator_nvt_name (results);
-  const char *oid = result_iterator_nvt_oid (results);
-  const char *family = result_iterator_nvt_family (results);
-  const char *cvss_base = result_iterator_nvt_cvss_base (results);
-  const char *cve = result_iterator_nvt_cve (results);
-  const char *bid = result_iterator_nvt_bid (results);
-  const char *tags = result_iterator_nvt_tag (results);
-  iterator_t cert_refs_iterator;
-  const char *xref = result_iterator_nvt_xref (results);
   result_t result = result_iterator_result (results);
   char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
@@ -10932,68 +10994,17 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   g_free (detect_oid);
   g_free (detect_name);
 
-  if (!cvss_base && (strcmp (oid, "0") == 0))
-    cvss_base = "0.0";
+  buffer_xml_append_printf
+   (buffer, "<host>%s</host><port>%s</port>",
+    result_iterator_host (results), result_iterator_port (results));
+  results_xml_append_nvt (results, buffer);
 
   buffer_xml_append_printf
    (buffer,
-    "<host>%s</host>"
-    "<port>%s</port>"
-    "<nvt oid=\"%s\">"
-    "<name>%s</name>"
-    "<family>%s</family>"
-    "<cvss_base>%s</cvss_base>"
-    "<cve>%s</cve>"
-    "<bid>%s</bid>"
-    "<tags>%s</tags>"
-    "<cert>",
-    result_iterator_host (results),
-    result_iterator_port (results),
-    result_iterator_nvt_oid (results),
-    name ? name : "",
-    family ? family : "",
-    cvss_base ? cvss_base : "",
-    cve ? cve : "",
-    bid ? bid : "",
-    tags ? tags : "");
-
-  if (manage_cert_loaded ())
-    {
-      init_nvt_cert_bund_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-      while (next (&cert_refs_iterator))
-        {
-          g_string_append_printf (buffer,
-                                  "<cert_ref type=\"CERT-Bund\" id=\"%s\"/>",
-                                  get_iterator_name(&cert_refs_iterator));
-        }
-      cleanup_iterator (&cert_refs_iterator);
-
-      init_nvt_dfn_cert_adv_iterator (&cert_refs_iterator, oid, 0, 0);
-      while (next (&cert_refs_iterator))
-        {
-          g_string_append_printf (buffer,
-                                  "<cert_ref type=\"DFN-CERT\" id=\"%s\"/>",
-                                  get_iterator_name(&cert_refs_iterator));
-        }
-      cleanup_iterator (&cert_refs_iterator);
-    }
-  else
-    {
-      g_string_append_printf (buffer, "<warning>"
-                                      "database not available"
-                                      "</warning>");
-    }
-
-  buffer_xml_append_printf
-   (buffer,
-    "</cert>"
-    "<xref>%s</xref>"
-    "</nvt>"
     "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
     "<severity>%s</severity>"
     "<description>%s</description>",
-    xref ? xref : "",
     result_iterator_scan_nvt_version (results),
     result_iterator_level (results),
     result_iterator_severity (results),
