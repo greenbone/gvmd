@@ -1,5 +1,11 @@
 2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_asset_iterator, host_nthlast_report_host)
+	(filtered_host_count): Remove report_hosts end_time '' checks, because
+	end_time is now an integer.  Add aliases for subqueries.  For Postgres.
+
+2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add common_cve.
 
 	* src/manage_sqlite3.c (sql_common_cve): Correct doc.

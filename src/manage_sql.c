@@ -17205,7 +17205,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                          " (SELECT report FROM report_hosts"
                          "  WHERE report_hosts.host = distinct_host"
                          "  AND end_time IS NOT NULL"
-                         "  AND end_time != ''"
                          "  AND (SELECT owner FROM reports"
                          "       WHERE id = report)"
                          "      = (SELECT id FROM users"
@@ -17229,6 +17228,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                          " FROM (SELECT DISTINCT host AS distinct_host"
                          "       FROM report_hosts"
                          "       ORDER BY host COLLATE collate_ip)"
+                         "      AS distinct_host_subquery"
                          /* Search IP. */
                          " WHERE (distinct_host LIKE '%%%s%%%'"
                          /* Search hostname. */
@@ -17268,7 +17268,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " (SELECT report FROM report_hosts"
                        "  WHERE report_hosts.host = distinct_host"
                        "  AND end_time IS NOT NULL"
-                       "  AND end_time != ''"
                        "  AND (SELECT owner FROM reports"
                        "       WHERE id = report)"
                        "      = (SELECT id FROM users"
@@ -17292,6 +17291,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                        " FROM (SELECT DISTINCT host AS distinct_host"
                        "       FROM report_hosts"
                        "       ORDER BY host COLLATE collate_ip)"
+                       "      AS distinct_host_subquery"
                        " WHERE EXISTS (SELECT results.id, %s AS new_severity"
                        "               FROM results"
                        "               WHERE results.report = last_report"
@@ -17332,8 +17332,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "      AND task_preferences.task = tasks.id"
                      "      AND task_preferences.name = 'in_assets')"
                      "     = 'yes'"
-                     " AND (report_hosts.end_time IS NOT NULL"
-                     "      AND report_hosts.end_time != '')"
+                     " AND report_hosts.end_time IS NOT NULL"
                      " GROUP BY host"
                      " HAVING host LIKE '%%%s%%'"
                      " OR EXISTS"
@@ -17371,8 +17370,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "      AND task_preferences.task = tasks.id"
                    "      AND task_preferences.name = 'in_assets')"
                    "     = 'yes'"
-                   " AND (report_hosts.end_time IS NOT NULL"
-                   "      AND report_hosts.end_time != '')"
+                   " AND report_hosts.end_time IS NOT NULL"
                    " ORDER BY host COLLATE collate_ip"
                    " LIMIT %i OFFSET %i;",
                    current_credentials.uuid,
@@ -20207,8 +20205,7 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "      AND task_preferences.task = tasks.id"
                      "      AND task_preferences.name = 'in_assets')"
                      "     = 'yes'"
-                     " AND (report_hosts.end_time IS NOT NULL"
-                     "      AND report_hosts.end_time != '')"
+                     " AND report_hosts.end_time IS NOT NULL"
                      " ORDER BY id DESC LIMIT 1 OFFSET %i;",
                      quoted_host,
                      current_credentials.uuid,
@@ -20367,7 +20364,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          " (SELECT report FROM report_hosts"
                          "  WHERE report_hosts.host = distinct_host"
                          "  AND end_time IS NOT NULL"
-                         "  AND end_time != ''"
                          "  AND (SELECT owner FROM reports"
                          "       WHERE id = report)"
                          "      = (SELECT id FROM users"
@@ -20390,6 +20386,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                          "  AS last_report"
                          " FROM (SELECT DISTINCT host AS distinct_host"
                          "       FROM report_hosts)"
+                         "      AS distinct_host_subquery"
                          /* Search IP. */
                          " WHERE (distinct_host LIKE '%%%s%%%'"
                          /* Search hostname. */
@@ -20425,7 +20422,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        " (SELECT report FROM report_hosts"
                        "  WHERE report_hosts.host = distinct_host"
                        "  AND end_time IS NOT NULL"
-                       "  AND end_time != ''"
                        "  AND (SELECT owner FROM reports"
                        "       WHERE id = report)"
                        "      = (SELECT id FROM users"
@@ -20448,6 +20444,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                        "  AS last_report"
                        " FROM (SELECT DISTINCT host AS distinct_host"
                        "       FROM report_hosts)"
+                       "      AS distinct_host_subquery"
                        " WHERE EXISTS (SELECT results.id, %s AS new_severity"
                        "               FROM results"
                        "               WHERE results.report = last_report"
@@ -20481,8 +20478,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "       WHERE reports.task = tasks.id"
                       "       AND reports.id = report_hosts.report)"
                       "      = 0"
-                      "  AND (report_hosts.end_time IS NOT NULL"
-                      "       AND report_hosts.end_time != '')"
+                      "  AND report_hosts.end_time IS NOT NULL"
                       "  GROUP BY host"
                       "  HAVING host LIKE '%%%s%%'"
                       "  OR EXISTS"
@@ -20511,8 +20507,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "       WHERE reports.task = tasks.id"
                   "       AND reports.id = report_hosts.report)"
                   "      = 0"
-                  "  AND (report_hosts.end_time IS NOT NULL"
-                  "       AND report_hosts.end_time != ''));",
+                  "  AND report_hosts.end_time IS NOT NULL);",
                   current_credentials.uuid);
 }
 
