@@ -1,3 +1,9 @@
+2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add common_cve.
+
+	* src/manage_sqlite3.c (sql_common_cve): Correct doc.
+
 2014-08-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Insert the oval definition as the

@@ -86,10 +86,10 @@ manage_create_sql_functions ()
 
   can duplicate
     clean_hosts  (only used in migrator)
-    common_cve
     current_offset (only used in migrator (maybe with SHOW TIMEZONE and hairy date stuff))
 
   duplicated below
+    common_cve
     hosts_contains
     resource_name
     run_status_name
@@ -123,6 +123,14 @@ manage_create_sql_functions ()
       g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
       return -1;
     }
+
+  sql ("CREATE OR REPLACE FUNCTION common_cve (text, text)"
+       " RETURNS boolean AS $$"
+       /* Check if two CVE lists contain a common CVE. */
+       "  SELECT EXISTS (SELECT trim (unnest (string_to_array ($1, ',')))"
+       "                 INTERSECT"
+       "                 SELECT trim (unnest (string_to_array ($2, ','))));"
+       "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION hosts_contains (text, text)"
        " RETURNS boolean AS $$"

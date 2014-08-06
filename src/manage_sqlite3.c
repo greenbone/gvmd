@@ -626,7 +626,7 @@ sql_rename_column (const char *old_table, const char *new_table,
 }
 
 /**
- * @brief Check if a host list contains a host
+ * @brief Check if two CVE lists contain a common CVE.
  *
  * This is a callback for a scalar SQL function of two arguments.
  *
