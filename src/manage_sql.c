@@ -66,7 +66,6 @@
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh_login.h>
 #include <openvas/misc/openvas_uuid.h>
-#include <openvas/misc/resource_request.h>
 #include <openvas/base/pwpolicy.h>
 #include <openvas/omp/xml.h>
 
@@ -26036,10 +26035,11 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
     {
       int max;
       gchar *clean;
-      GSList* hosts_list = resource_request_resource (target_locator,
-                                                      RESOURCE_TYPE_TARGET,
-                                                      username ? username : "",
-                                                      password ? password : "");
+      GSList* hosts_list = NULL; /* @todo target locators are in the process
+                                    to be removed. This is set to NULL as a replacement
+                                    for the former call for a resource_quest.
+                                    The entire handling of target locators can
+                                    be removed from OpenVAS Manager */
 
       if (hosts_list == NULL)
         {
@@ -26603,10 +26603,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
           /* Import targets from target locator. */
 
-          hosts_list = resource_request_resource (target_locator,
-                                                  RESOURCE_TYPE_TARGET,
-                                                  username ? username : "",
-                                                  password ? password : "");
+          hosts_list = NULL; /* @todo target locators are in the process
+                                to be removed. This is set to NULL as a replacement
+                                for the former call for a resource_quest.
+                                The entire handling of target locators can
+                                be removed from OpenVAS Manager */
 
           if (hosts_list == NULL)
             {

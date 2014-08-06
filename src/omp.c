@@ -118,7 +118,6 @@
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh_login.h>
-#include <openvas/misc/resource_request.h>
 #include <openvas/omp/xml.h>
 
 #ifdef S_SPLINT_S
@@ -16306,7 +16305,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
-          sources = resource_request_sources (RESOURCE_TYPE_TARGET);
+          sources = NULL; /* @todo target locators are in the process
+                             to be removed. This is set to NULL as a replacement
+                             for the former call for a resource_quest.
+                             The entire handling of target locators can
+                             be removed from OpenVAS Manager */
+
           source = sources;
 
           SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response"

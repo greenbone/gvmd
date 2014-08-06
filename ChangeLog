@@ -1,3 +1,17 @@
+2014-08-06  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage_sql.c (create_target, modify_target): Replace calls
+	of request_resource functions by simply NULL in order de-couple
+	this deprecated feature from openvas-libraries.
+	The todo remains to entirely remove the target locators from
+	OpenVAS Manager. 
+
+	* src/omp.c (omp_xml_handle_end_element): Replace call
+	of request_resource function by simply NULL in order de-couple
+	this deprecated feature from openvas-libraries.
+	The todo remains to entirely remove the target locators from
+	OpenVAS Manager. 
+
 2014-08-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Use transaction when inserting osp
