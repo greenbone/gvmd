@@ -1,5 +1,17 @@
 2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Get the GSA Assets page loading with Postgres.
+
+	* src/manage_sql.c (prognosis_order_by): Order host with function instead
+	of collation.
+	(where_levels): Add new_severity_sql argument.  Use instead of alias.
+	(init_asset_iterator, filtered_host_count): Pass new_severity SQL into
+	where_levels.  Move last_report SQL out of the SELECT columns and refer
+	to it directly in the WHERE clauses.  Order hosts with function instead
+	of collation.
+
+2014-08-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_asset_iterator, filtered_host_count): Reduce
 	SQL indent to make space for next change.
 

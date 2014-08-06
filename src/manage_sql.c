@@ -14303,7 +14303,7 @@ prognosis_order_by (const char* sort_field, int ascending)
   else if (strcmp (sort_field, "host") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " host COLLATE collate_ip %s,"
+                            " inet (host) %s,"
                             " severity DESC",
                             ascending ? "ASC" : "DESC");
   else if (strcmp (sort_field, "vulnerability") == 0)
@@ -15334,11 +15334,12 @@ next_report (iterator_t* iterator, report_t* report)
  *                     to include in report (for example, "hmlgd" for
  *                     High, Medium, Low, loG and Debug).  All levels if
  *                     NULL.
+ * @param[in]  new_severity_sql  SQL for new severity.
  *
  * @return WHERE clause for levels if one is required, else NULL.
  */
 static GString *
-where_levels (const char* levels)
+where_levels (const char* levels, const char *new_severity_sql)
 {
   int count;
   GString *levels_sql;
@@ -15346,7 +15347,13 @@ where_levels (const char* levels)
   /* Generate SQL for constraints on message type, according to levels. */
 
   if (levels == NULL || strlen (levels) == 0)
-    return g_string_new (" AND new_severity != " G_STRINGIFY (SEVERITY_ERROR));
+    {
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              " AND %s != " G_STRINGIFY (SEVERITY_ERROR),
+                              new_severity_sql);
+      return levels_sql;
+    }
 
   levels_sql = NULL;
   count = 0;
@@ -15356,17 +15363,26 @@ where_levels (const char* levels)
     {
       count = 1;
       // FIX handles dynamic "severity" in caller?
-      levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'high')");
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              " AND (severity_in_level (%s, 'high')",
+                              new_severity_sql);
     }
 
   /* Medium. */
   if (strchr (levels, 'm'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'medium')");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (severity_in_level (%s, 'medium')",
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (new_severity, 'medium')");
+        g_string_append_printf (levels_sql,
+                                " OR severity_in_level (%s, 'medium')",
+                                new_severity_sql);
       count++;
     }
 
@@ -15374,10 +15390,16 @@ where_levels (const char* levels)
   if (strchr (levels, 'l'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND (severity_in_level (new_severity, 'low')");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND (severity_in_level (%s, 'low')",
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR severity_in_level (new_severity, 'low')");
+        g_string_append_printf (levels_sql,
+                                " OR severity_in_level (%s, 'low')",
+                                new_severity_sql);
       count++;
     }
 
@@ -15385,14 +15407,18 @@ where_levels (const char* levels)
   if (strchr (levels, 'g'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_LOG) ")");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND ((%s"
+                                  "       = " G_STRINGIFY (SEVERITY_LOG) ")",
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_LOG) ")");
+        g_string_append_printf (levels_sql,
+                                " OR (%s"
+                                "     = " G_STRINGIFY (SEVERITY_LOG) ")",
+                                new_severity_sql);
       count++;
     }
 
@@ -15400,14 +15426,19 @@ where_levels (const char* levels)
   if (strchr (levels, 'd'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_DEBUG) ")");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND ((%s"
+                                  "       = " G_STRINGIFY
+                                               (SEVERITY_DEBUG) ")",
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_DEBUG) ")");
+        g_string_append_printf (levels_sql,
+                                " OR (%s"
+                                "     = " G_STRINGIFY (SEVERITY_DEBUG) ")",
+                                new_severity_sql);
       count++;
     }
 
@@ -15415,14 +15446,19 @@ where_levels (const char* levels)
   if (strchr (levels, 'f'))
     {
       if (count == 0)
-        levels_sql = g_string_new (" AND ((new_severity"
-                                   "       = " G_STRINGIFY
-                                                (SEVERITY_FP) ")");
+        {
+          levels_sql = g_string_new ("");
+          g_string_append_printf (levels_sql,
+                                  " AND ((%s"
+                                  "       = " G_STRINGIFY
+                                               (SEVERITY_FP) ")",
+                                  new_severity_sql);
+        }
       else
-        levels_sql = g_string_append (levels_sql,
-                                      " OR (new_severity"
-                                      "     = " G_STRINGIFY
-                                                 (SEVERITY_FP) ")");
+        g_string_append_printf (levels_sql,
+                                " OR (%s"
+                                "     = " G_STRINGIFY (SEVERITY_FP) ")",
+                                new_severity_sql);
       count++;
     }
   else if (count)
@@ -15432,8 +15468,10 @@ where_levels (const char* levels)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
-      levels_sql = g_string_new (" AND new_severity != "
-                                 G_STRINGIFY (SEVERITY_ERROR));
+      levels_sql = g_string_new ("");
+      g_string_append_printf (levels_sql,
+                              "AND %s != " G_STRINGIFY (SEVERITY_ERROR),
+                              new_severity_sql);
     }
 
   return levels_sql;
@@ -17132,7 +17170,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
   if (levels && strlen (levels))
     {
       GString *levels_sql;
-      gchar *severity_sql, *new_severity_sql;
+      gchar *severity_sql, *new_severity_sql, *last_report_sql;
 
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
@@ -17192,7 +17230,33 @@ init_asset_iterator (iterator_t* iterator, int first_result,
         new_severity_sql = g_strdup_printf ("%s",
                                             severity_sql);
 
-      levels_sql = where_levels (levels);
+      levels_sql = where_levels (levels, new_severity_sql);
+
+      last_report_sql
+       = g_strdup_printf (" (SELECT report FROM report_hosts"
+                          "  WHERE report_hosts.host = distinct_host"
+                          "  AND end_time IS NOT NULL"
+                          "  AND (SELECT owner FROM reports"
+                          "       WHERE id = report)"
+                          "      = (SELECT id FROM users"
+                          "         WHERE users.uuid = '%s')"
+                          "  AND (SELECT reports.scan_run_status = %u"
+                          "       FROM reports"
+                          "       WHERE reports.id = report)"
+                          "  AND (SELECT hidden FROM tasks"
+                          "       WHERE tasks.id"
+                          "             = (SELECT task FROM reports"
+                          "                WHERE reports.id = report))"
+                          "      = 0"
+                          "  AND (SELECT value FROM task_preferences"
+                          "       WHERE task_preferences.task"
+                          "             = (SELECT task FROM reports"
+                          "                WHERE reports.id = report)"
+                          "       AND task_preferences.name = 'in_assets')"
+                          "      = 'yes'"
+                          "  ORDER BY id DESC LIMIT 1)",
+                          current_credentials.uuid,
+                          TASK_STATUS_DONE);
 
       if (search_phrase && strlen (search_phrase))
         {
@@ -17202,33 +17266,10 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           init_iterator
            (iterator,
             "SELECT"
-            " distinct_host,"
-            " (SELECT report FROM report_hosts"
-            "  WHERE report_hosts.host = distinct_host"
-            "  AND end_time IS NOT NULL"
-            "  AND (SELECT owner FROM reports"
-            "       WHERE id = report)"
-            "      = (SELECT id FROM users"
-            "         WHERE users.uuid = '%s')"
-            "  AND (SELECT reports.scan_run_status = %u"
-            "       FROM reports"
-            "       WHERE reports.id = report)"
-            "  AND (SELECT hidden FROM tasks"
-            "       WHERE tasks.id"
-            "             = (SELECT task FROM reports"
-            "                WHERE reports.id = report))"
-            "      = 0"
-            "  AND (SELECT value FROM task_preferences"
-            "       WHERE task_preferences.task"
-            "             = (SELECT task FROM reports"
-            "                WHERE reports.id = report)"
-            "       AND task_preferences.name = 'in_assets')"
-            "      = 'yes'"
-            "  ORDER BY id DESC)"
-            "  AS last_report"
-            " FROM (SELECT DISTINCT host AS distinct_host"
+            " distinct_host"
+            " FROM (SELECT DISTINCT host AS distinct_host, inet (host)"
             "       FROM report_hosts"
-            "       ORDER BY host COLLATE collate_ip)"
+            "       ORDER BY inet (host))"
             "      AS distinct_host_subquery"
             /* Search IP. */
             " WHERE (distinct_host LIKE '%%%s%%%'"
@@ -17237,7 +17278,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             "        (SELECT * FROM report_host_details"
             "         WHERE report_host"
             "               = (SELECT id FROM report_hosts"
-            "                  WHERE report = last_report"
+            "                  WHERE report = %s"
             "                  AND host = distinct_host)"
             "         AND (name = 'hostname'"
             "              OR name = 'best_os_txt'"
@@ -17248,15 +17289,15 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             /* Filter levels. */
             " AND EXISTS (SELECT results.id, %s AS new_severity"
             "             FROM results"
-            "             WHERE results.report = last_report"
+            "             WHERE results.report = %s"
             "             AND results.host = distinct_host"
             "             %s)"
             " LIMIT %i OFFSET %i;",
-            current_credentials.uuid,
-            TASK_STATUS_DONE,
             quoted_search_phrase,
+            last_report_sql,
             quoted_search_phrase,
             new_severity_sql,
+            last_report_sql,
             levels_sql ? levels_sql->str : "",
             max_results,
             first_result);
@@ -17266,43 +17307,19 @@ init_asset_iterator (iterator_t* iterator, int first_result,
         init_iterator
          (iterator,
           "SELECT"
-          " distinct_host,"
-          " (SELECT report FROM report_hosts"
-          "  WHERE report_hosts.host = distinct_host"
-          "  AND end_time IS NOT NULL"
-          "  AND (SELECT owner FROM reports"
-          "       WHERE id = report)"
-          "      = (SELECT id FROM users"
-          "         WHERE users.uuid = '%s')"
-          "  AND (SELECT reports.scan_run_status = %u"
-          "       FROM reports"
-          "       WHERE reports.id = report)"
-          "  AND (SELECT hidden FROM tasks"
-          "       WHERE tasks.id"
-          "             = (SELECT task FROM reports"
-          "                WHERE reports.id = report))"
-          "      = 0"
-          "  AND (SELECT value FROM task_preferences"
-          "       WHERE task_preferences.task"
-          "             = (SELECT task FROM reports"
-          "                WHERE reports.id = report)"
-          "       AND task_preferences.name = 'in_assets')"
-          "      = 'yes'"
-          "  ORDER BY id DESC)"
-          "  AS last_report"
-          " FROM (SELECT DISTINCT host AS distinct_host"
+          " distinct_host"
+          " FROM (SELECT DISTINCT host AS distinct_host, inet (host)"
           "       FROM report_hosts"
-          "       ORDER BY host COLLATE collate_ip)"
+          "       ORDER BY inet (host))"
           "      AS distinct_host_subquery"
           " WHERE EXISTS (SELECT results.id, %s AS new_severity"
           "               FROM results"
-          "               WHERE results.report = last_report"
+          "               WHERE results.report = %s"
           "               AND results.host = distinct_host"
           "               %s)"
           " LIMIT %i OFFSET %i;",
-          current_credentials.uuid,
-          TASK_STATUS_DONE,
           new_severity_sql,
+          last_report_sql,
           levels_sql ? levels_sql->str : "",
           max_results,
           first_result);
@@ -17310,6 +17327,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
       g_free (new_severity_sql);
+      g_free (last_report_sql);
     }
   else if (search_phrase && strlen (search_phrase))
     {
@@ -17345,7 +17363,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "       OR name = 'ports')"
                      "  AND source_type = 'nvt'"
                      "  AND value LIKE '%%%s%%')"
-                     " ORDER BY host COLLATE collate_ip"
+                     " ORDER BY inet (host)"
                      " LIMIT %i OFFSET %i;",
                      current_credentials.uuid,
                      quoted_search_phrase,
@@ -17373,7 +17391,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "      AND task_preferences.name = 'in_assets')"
                    "     = 'yes'"
                    " AND report_hosts.end_time IS NOT NULL"
-                   " ORDER BY host COLLATE collate_ip"
+                   " ORDER BY inet (host)"
                    " LIMIT %i OFFSET %i;",
                    current_credentials.uuid,
                    max_results,
@@ -20294,7 +20312,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
     {
       int ret;
       GString *levels_sql;
-      gchar *severity_sql, *new_severity_sql;
+      gchar *severity_sql, *new_severity_sql, *last_report_sql;
 
       if (setting_dynamic_severity_int ())
         severity_sql = g_strdup("CASE WHEN results.severity"
@@ -20353,7 +20371,33 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
       g_free (severity_sql);
 
-      levels_sql = where_levels (levels);
+      levels_sql = where_levels (levels, new_severity_sql);
+
+      last_report_sql
+       = g_strdup_printf (" (SELECT report FROM report_hosts"
+                          "  WHERE report_hosts.host = distinct_host"
+                          "  AND end_time IS NOT NULL"
+                          "  AND (SELECT owner FROM reports"
+                          "       WHERE id = report)"
+                          "      = (SELECT id FROM users"
+                          "         WHERE users.uuid = '%s')"
+                          "  AND (SELECT reports.scan_run_status = %u"
+                          "       FROM reports"
+                          "       WHERE reports.id = report)"
+                          "  AND (SELECT hidden FROM tasks"
+                          "       WHERE tasks.id"
+                          "             = (SELECT task FROM reports"
+                          "                WHERE reports.id = report))"
+                          "      = 0"
+                          "  AND (SELECT value FROM task_preferences"
+                          "       WHERE task_preferences.task"
+                          "             = (SELECT task FROM reports"
+                          "                WHERE reports.id = report)"
+                          "       AND task_preferences.name = 'in_assets')"
+                          "      = 'yes'"
+                          "  ORDER BY id DESC LIMIT 1)",
+                          current_credentials.uuid,
+                          TASK_STATUS_DONE);
 
       if (search_phrase && strlen (search_phrase))
         {
@@ -20362,31 +20406,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
           quoted_search_phrase = sql_quote (search_phrase);
           ret = sql_int
                  ("SELECT"
-                  " count (*),"
-                  " distinct_host,"
-                  " (SELECT report FROM report_hosts"
-                  "  WHERE report_hosts.host = distinct_host"
-                  "  AND end_time IS NOT NULL"
-                  "  AND (SELECT owner FROM reports"
-                  "       WHERE id = report)"
-                  "      = (SELECT id FROM users"
-                  "         WHERE users.uuid = '%s')"
-                  "  AND (SELECT reports.scan_run_status = %u"
-                  "       FROM reports"
-                  "       WHERE reports.id = report)"
-                  "  AND (SELECT hidden FROM tasks"
-                  "       WHERE tasks.id"
-                  "             = (SELECT task FROM reports"
-                  "                WHERE reports.id = report))"
-                  "      = 0"
-                  "  AND (SELECT value FROM task_preferences"
-                  "       WHERE task_preferences.task"
-                  "             = (SELECT task FROM reports"
-                  "                WHERE reports.id = report)"
-                  "       AND task_preferences.name = 'in_assets')"
-                  "      = 'yes'"
-                  "  ORDER BY id DESC)"
-                  "  AS last_report"
+                  " count (*)"
                   " FROM (SELECT DISTINCT host AS distinct_host"
                   "       FROM report_hosts)"
                   "      AS distinct_host_subquery"
@@ -20397,7 +20417,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "        (SELECT * FROM report_host_details"
                   "         WHERE report_host"
                   "               = (SELECT id FROM report_hosts"
-                  "                  WHERE report = last_report"
+                  "                  WHERE report = %s"
                   "                  AND host = distinct_host)"
                   "         AND (name = 'hostname'"
                   "              OR name = 'best_os_txt'"
@@ -20407,13 +20427,13 @@ filtered_host_count (const char *levels, const char *search_phrase,
                   "         AND value LIKE '%%%s%%'))"
                   " AND EXISTS (SELECT results.id, %s AS new_severity"
                   "             FROM results"
-                  "             WHERE results.report = last_report"
+                  "             WHERE results.report = %s"
                   "             AND results.host = distinct_host"
                   "             %s);",
-                  current_credentials.uuid,
-                  TASK_STATUS_DONE,
                   quoted_search_phrase,
+                  last_report_sql,
                   quoted_search_phrase,
+                  last_report_sql,
                   new_severity_sql,
                   levels_sql ? levels_sql->str : "");
           g_free (quoted_search_phrase);
@@ -20421,47 +20441,23 @@ filtered_host_count (const char *levels, const char *search_phrase,
       else
         ret = sql_int
                ("SELECT"
-                " count (*),"
-                " distinct_host,"
-                " (SELECT report FROM report_hosts"
-                "  WHERE report_hosts.host = distinct_host"
-                "  AND end_time IS NOT NULL"
-                "  AND (SELECT owner FROM reports"
-                "       WHERE id = report)"
-                "      = (SELECT id FROM users"
-                "         WHERE users.uuid = '%s')"
-                "  AND (SELECT reports.scan_run_status = %u"
-                "       FROM reports"
-                "       WHERE reports.id = report)"
-                "  AND (SELECT hidden FROM tasks"
-                "       WHERE tasks.id"
-                "             = (SELECT task FROM reports"
-                "                WHERE reports.id = report))"
-                "      = 0"
-                "  AND (SELECT value FROM task_preferences"
-                "       WHERE task_preferences.task"
-                "             = (SELECT task FROM reports"
-                "                WHERE reports.id = report)"
-                "       AND task_preferences.name = 'in_assets')"
-                "      = 'yes'"
-                "  ORDER BY id DESC)"
-                "  AS last_report"
+                " count (*)"
                 " FROM (SELECT DISTINCT host AS distinct_host"
                 "       FROM report_hosts)"
                 "      AS distinct_host_subquery"
                 " WHERE EXISTS (SELECT results.id, %s AS new_severity"
                 "               FROM results"
-                "               WHERE results.report = last_report"
+                "               WHERE results.report = %s"
                 "               AND results.host = distinct_host"
                 "               %s);",
-                current_credentials.uuid,
-                TASK_STATUS_DONE,
                 new_severity_sql,
+                last_report_sql,
                 levels_sql ? levels_sql->str : "");
 
       if (levels_sql)
         g_string_free (levels_sql, TRUE);
       g_free (new_severity_sql);
+      g_free (last_report_sql);
 
       return ret;
     }
@@ -20493,7 +20489,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "        OR name = 'ports')"
                       "   AND source_type = 'nvt'"
                       "   AND value LIKE '%%%s%%')"
-                      "  ORDER BY host COLLATE collate_ip);",
+                      "  ORDER BY inet (host);",
                       current_credentials.uuid,
                       quoted_search_phrase,
                       quoted_search_phrase);
