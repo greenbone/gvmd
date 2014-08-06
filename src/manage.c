@@ -2769,6 +2769,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       return;
     }
 
+  sql_begin_immediate ();
   /* Set the report's start and end times. */
   str = entity_attribute (entity, "start_time");
   assert (str);
@@ -2832,6 +2833,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       report_add_result (report, result);
       results = next_entities (results);
     }
+  sql ("COMMIT; ");
   g_free (defs_file);
   free_entity (entity);
 }

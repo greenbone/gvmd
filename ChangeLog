@@ -1,5 +1,13 @@
 2014-08-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (parse_osp_report): Use transaction when inserting osp
+	report results to improve performance.
+
+	* src/manage_sql.c (make_result): Set severity to 0.0 when not found in
+	ovaldi definition case too.
+
+2014-08-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (results_xml_append_cert, results_xml_append_nvt): New
 	functions.
 	(buffer_results_xml): Refactor code to use new functions and add nvt

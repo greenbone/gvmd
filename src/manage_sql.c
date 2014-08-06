@@ -13886,11 +13886,6 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
                                  " FROM nvts WHERE uuid = '%s';",
                                  nvt);
 
-          if (strcmp (severity, "") == 0)
-            {
-              g_free (severity);
-              severity = g_strdup ("0.0");
-            };
         }
       else if (strcasecmp (type, "Log Message") == 0)
         severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
@@ -13927,6 +13922,11 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       nvt_revision = g_strdup ("");
     }
 
+  if (!strcmp (severity, ""))
+    {
+      g_free (severity);
+      severity = g_strdup ("0.0");
+    }
   quoted_descr = sql_quote (description);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
