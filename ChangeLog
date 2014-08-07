@@ -1,3 +1,11 @@
+2014-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add report_active and
+	report_progress_active.  Implement report_progress.
+
+	* src/manage_sql.c (REPORT_ITERATOR_COLUMNS): Change the progress
+	padding so that it also works in Postgres.
+
 2014-08-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (fork_osp_scan_handler): Add error message when stopping

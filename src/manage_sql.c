@@ -15176,7 +15176,10 @@ report_add_result (report_t report, result_t result)
      "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
      "  THEN 'Container'"                                                    \
      "  ELSE run_status_name (scan_run_status)"                              \
-     "       || substr ('000' || report_progress (id), -3, 3)"               \
+     "       || (SELECT CAST (temp / 100 AS text)"                           \
+     "                  || CAST (temp / 10 AS text)"                         \
+     "                  || CAST (temp % 10 as text)"                         \
+     "           FROM (SELECT report_progress (id) AS temp) AS temp_sub)"    \
      "  END)",                                                               \
      "status_text"                                                           \
    },                                                                        \

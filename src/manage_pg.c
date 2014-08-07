@@ -73,8 +73,6 @@ manage_create_sql_functions ()
 {
 #if 0
   empty below, hard to implement
-    report_progress  calls manage_count_hosts which calls libs host funcs
-                     also does iterated progress calc
     report_severity  result counting with caching
     report_severity_count  result counting with caching
     task_trend
@@ -99,6 +97,7 @@ manage_create_sql_functions ()
 
   duplicated with pl/pgsql below
     iso_time
+    report_progress
     severity_matches_ov
     severity_to_type
     uniquify (given table type, will need exec)
@@ -150,11 +149,50 @@ manage_create_sql_functions ()
        "  WHERE split_part (unnest, '=', 1) = $2;"
        "$$ LANGUAGE SQL;");
 
-  sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
-       " RETURNS integer AS $$"
-       /* TODO Calculate the progress of a report. */
-       "  SELECT 0;"
-       "$$ LANGUAGE SQL;");
+  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+               "               WHERE table_catalog = 'tasks'"
+               "               AND table_schema = 'public'"
+               "               AND table_name = 'meta')"
+               " ::integer;"))
+    {
+      sql ("CREATE OR REPLACE FUNCTION report_active (integer)"
+           " RETURNS boolean AS $$"
+           /* Check whether a report is active. */
+           "  SELECT CASE"
+           "         WHEN (SELECT scan_run_status FROM reports"
+           "               WHERE reports.id = $1)"
+           "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
+           "                                         %i, %i, %i, %i]))"
+           "         THEN true"
+           "         ELSE false"
+           "         END;"
+           "$$ LANGUAGE SQL;",
+           TASK_STATUS_REQUESTED,
+           TASK_STATUS_RUNNING,
+           TASK_STATUS_DELETE_REQUESTED,
+           TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
+           TASK_STATUS_STOP_REQUESTED,
+           TASK_STATUS_STOP_REQUESTED_GIVEUP,
+           TASK_STATUS_STOPPED,
+           TASK_STATUS_PAUSE_REQUESTED,
+           TASK_STATUS_PAUSED,
+           TASK_STATUS_RESUME_REQUESTED);
+
+      sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
+           " RETURNS integer AS $$"
+           /* TODO Calculate the progress of a report. */
+           "  SELECT CASE"
+           "         WHEN $1 = 0"
+           "         THEN -1"
+           "         WHEN (SELECT slave_task_uuid FROM reports WHERE id = $1)"
+           "              != ''"
+           "         THEN (SELECT slave_progress FROM reports WHERE id = $1)"
+           "         WHEN report_active ($1)"
+           "         THEN report_progress_active ($1)"
+           "         ELSE -1"
+           "         END;"
+           "$$ LANGUAGE SQL;");
+    }
 
   sql ("CREATE OR REPLACE FUNCTION report_severity (integer, integer)"
        " RETURNS double precision AS $$"
@@ -494,6 +532,73 @@ manage_create_sql_functions ()
        "$$ LANGUAGE SQL;");
 
   /* Functions in pl/pgsql. */
+
+  sql ("CREATE OR REPLACE FUNCTION report_progress_active (integer)"
+       " RETURNS integer AS $$"
+       /* Calculate the progress of an active report. */
+       " DECLARE"
+       "   report_task integer;"
+       "   task_target integer;"
+       "   target_hosts text;"
+       "   target_exclude_hosts text;"
+       "   progress integer;"
+       "   total integer;"
+       "   maximum_hosts integer;"
+       "   total_progress integer;"
+       "   report_host record;"
+       " BEGIN"
+       "   total := 0;"
+       "   report_task := (SELECT task FROM reports WHERE id = $1);"
+       "   task_target := (SELECT target FROM tasks WHERE id = report_task);"
+       "   IF task_target IS NULL THEN"
+       "     target_hosts := NULL;"
+       "     target_exclude_hosts := NULL;"
+       "   ELSIF (SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
+       "          FROM tasks WHERE id = report_task)"
+       "   THEN"
+       "     target_hosts := (SELECT hosts FROM targets_trash"
+       "                      WHERE id = task_target);"
+       "     target_exclude_hosts := (SELECT exclude_hosts FROM targets_trash"
+       "                              WHERE id = task_target);"
+       "   ELSE"
+       "     target_hosts := (SELECT hosts FROM targets"
+       "                      WHERE id = task_target);"
+       "     target_exclude_hosts := (SELECT exclude_hosts FROM targets"
+       "                              WHERE id = task_target);"
+       "   END IF;"
+       "   IF target_hosts IS NULL THEN"
+       "     RETURN 0;"
+       "   END IF;"
+       "   maximum_hosts := max_hosts (target_hosts, target_exclude_hosts);"
+       "   IF maximum_hosts = 0 THEN"
+       "     RETURN 0;"
+       "   END IF;"
+       "   FOR report_host IN SELECT current_port, max_port"
+       "                      FROM report_hosts WHERE report = $1"
+       "   LOOP"
+       "     IF report_host.max_port IS NOT NULL"
+       "        AND report_host.max_port != 0"
+       "     THEN"
+       "       progress := (report_host.current_port * 100)"
+       "                   / report_host.max_port;"
+       "     ELSIF report_host.current_port IS NULL"
+       "           OR report_host.current_port = 0"
+       "     THEN"
+       "       progress := 0;"
+       "     ELSE"
+       "       progress := 100;"
+       "     END IF;"
+       "     total := total + progress;"
+       "   END LOOP;"
+       "   total_progress := total / maximum_hosts;"
+       "   IF total_progress = 0 THEN"
+       "     RETURN 1;"
+       "   ELSIF total_progress = 100 THEN"
+       "     RETURN 99;"
+       "   END IF;"
+       "   RETURN total_progress;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
 
   sql ("CREATE OR REPLACE FUNCTION order_message_type (text)"
        " RETURNS integer AS $$"
