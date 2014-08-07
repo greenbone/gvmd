@@ -1,5 +1,10 @@
 2014-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Change some numeric columns to
+	integers.
+
+2014-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add report_active and
 	report_progress_active.  Implement report_progress.
 

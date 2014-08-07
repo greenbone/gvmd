@@ -1276,7 +1276,7 @@ create_tables ()
        "  nbefile text,"
        "  comment text,"
        "  scan_run_status integer,"
-       "  slave_progress text,"
+       "  slave_progress integer,"
        "  slave_task_uuid text,"
        "  slave_uuid text,"
        "  slave_name text,"
@@ -1378,9 +1378,9 @@ create_tables ()
        "  host text,"
        "  start_time integer,"
        "  end_time integer,"
-       "  attack_state INTEGER,"
-       "  current_port text,"
-       "  max_port text);");
+       "  attack_state integer,"
+       "  current_port integer,"
+       "  max_port integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_host_details"
        " (id SERIAL PRIMARY KEY,"
