@@ -2870,7 +2870,7 @@ static int
 fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
 {
   char *report_xml, *report_id, title[128];
-  int rc, retry_limit = 30;
+  int rc, retry_limit = 120;
 
   switch (fork ())
     {
@@ -2936,6 +2936,12 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
       retry_limit--;
       if (retry_limit < 0)
         {
+          result_t result;
+
+          result = make_result (task, "", "", NULL,
+                                threat_message_type ("Error"),
+                                "OSP Scan time-out.");
+          report_add_result (report, result);
           set_task_run_status (task, TASK_STATUS_STOPPED);
           set_report_scan_run_status (report, TASK_STATUS_STOPPED);
           rc = 1;
