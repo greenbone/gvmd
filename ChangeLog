@@ -1,3 +1,10 @@
+2014-08-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (fork_osp_scan_handler): Correctly assert osp_get_scan()
+	return value. Remove retry limit to continue until success or failure
+	and act similarly to the current OpenVAS scanner. Add log warning and
+	report error when scan is stopped by the OSP Scanner.
+
 2014-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Implement task_severity.

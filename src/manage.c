@@ -2870,7 +2870,7 @@ static int
 fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
 {
   char *report_xml, *report_id, title[128];
-  int rc, retry_limit = 120;
+  int rc;
 
   switch (fork ())
     {
@@ -2911,9 +2911,16 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
       report_xml = NULL;
       progress = osp_get_scan (connection, report_id, &report_xml);
       osp_connection_close (connection);
-      assert (progress <= 100);
-      if (progress < 0)
+      assert (progress <= 100 && progress >= -1);
+      if (progress == -1)
         {
+          result_t result;
+
+          g_warning ("Scan %s stopped by the scanner", report_id);
+          result = make_result (task, "", "", NULL,
+                                threat_message_type ("Error"),
+                                "Scan stopped by the scanner.");
+          report_add_result (report, result);
           set_task_run_status (task, TASK_STATUS_STOPPED);
           set_report_scan_run_status (report, TASK_STATUS_STOPPED);
           rc = 1;
@@ -2933,20 +2940,6 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
         }
       g_free (report_xml);
       sleep (10);
-      retry_limit--;
-      if (retry_limit < 0)
-        {
-          result_t result;
-
-          result = make_result (task, "", "", NULL,
-                                threat_message_type ("Error"),
-                                "OSP Scan time-out.");
-          report_add_result (report, result);
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
-          rc = 1;
-          break;
-        }
     }
   g_free (report_id);
   exit (rc);
