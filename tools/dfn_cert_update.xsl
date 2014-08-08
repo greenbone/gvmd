@@ -65,14 +65,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     "<xsl:value-of select="str:replace(atom:summary/text(), '&quot;', '&quot;&quot;')"/>",
     <xsl:value-of select="count(dfncert:cve)"/>
   );
+
+  <xsl:variable name="refnum" select="dfncert:refnum"/>
   <xsl:for-each select="dfncert:cve">
+  <xsl:for-each select="str:tokenize (str:replace (text (), 'CVE ', 'CVE-'), ' ')">
+  <xsl:if test="starts-with (text (), 'CVE-') and (string-length (text ()) &gt;= 13) and string (number(substring (text (), 4, 4))) != 'NaN'">
   INSERT OR REPLACE INTO dfn_cert_cves (
     adv_id,
     cve_name
   ) VALUES (
-    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="../dfncert:refnum"/>"),
+    (SELECT id FROM dfn_cert_advs WHERE name = "<xsl:value-of select="$refnum"/>"),
     "<xsl:value-of select="."/>"
   );
+  </xsl:if>
+  </xsl:for-each>
   </xsl:for-each>
   </xsl:when>
   <xsl:otherwise>

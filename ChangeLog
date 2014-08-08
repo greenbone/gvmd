@@ -1,3 +1,8 @@
+2014-08-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* tools/dfn_cert_update.xsl (atom:entry): Split CVE elements in case
+	they contain a list of CVEs, fix or filter out invalid CVE-IDs.
+
 2014-08-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Change some numeric columns to
