@@ -290,62 +290,15 @@ reinit () {
   done
 }
 
-db_migrate_4 () {
-  echo "[i] Migrating database to version 4."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE $CERT_DB "ALTER TABLE dfn_cert_advs ADD COLUMN max_cvss FLOAT;
-                      UPDATE meta SET value = '4' WHERE name = 'database_version';"
-    test_sql_exit "Could not migrate CERT database"
-  done
-  updated_dfn=1
-  echo "[i] Migration done."
-}
-
-db_migrate_5 () {
-  echo "[i] Migrating database to version 5."
-  reset_sql_tries
-  until [ "$try_sql" -eq 0 ]
-  do
-    $SQLITE $CERT_DB "CREATE TABLE cert_bund_advs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        uuid UNIQUE,
-                        name UNIQUE,
-                        comment TEXT,
-                        creation_time DATE,
-                        modification_time DATE,
-                        title TEXT,
-                        summary TEXT,
-                        cve_refs INTEGER,
-                        max_cvss FLOAT
-                      );
-                      CREATE UNIQUE INDEX cert_bund_advs_idx ON cert_bund_advs (name);
-                      CREATE TABLE cert_bund_cves (
-                        adv_id INTEGER,
-                        cve_name VARCHAR(20)
-                      );
-                      CREATE INDEX cert_bund_cves_adv_idx ON cert_bund_cves (adv_id);
-                      CREATE INDEX cert_bund_cves_cve_idx ON cert_bund_cves (cve_name);
-                                            UPDATE meta SET value = '5' WHERE name = 'database_version';
-                      CREATE TRIGGER cert_bund_adv_delete AFTER DELETE ON cert_bund_advs
-                      BEGIN
-                        DELETE FROM cert_bund_cves where adv_id = old.id;
-                      END;"
-    test_sql_exit "Could not migrate CERT database"
-  done
-  echo "[i] Migration done."
-}
-
 check_db_version () {
   DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
     2) reinit;;
-    3) db_migrate_4
-       db_migrate_5;;
-    4) db_migrate_5;;
+    3) reinit;;
+    4) reinit;;
+    5) reinit;;
   esac
 }
 

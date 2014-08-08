@@ -1,5 +1,22 @@
 2014-08-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Rebuild CERT database as version 6 to apply fix for problems with CVEs
+	in older DFN-CERT advisories.
+
+	* CMakeLists.txt (OPENVASMD_CERT_DATABASE_VERSION): Increase to 6.
+
+	* tools/cert_db_init.sql: Increase database_version to 6.
+
+	* tools/openvas-certdata-sync.in (db_migrate_4, db_migrate_5): Removed
+	as database is rebuilt for version 6.
+	(check_db_version): Rebuild to migrate to database version 6.
+
+	* tools/greenbone-certdata-sync (db_migrate_4, db_migrate_5): Removed
+	as database is rebuilt for version 6.
+	(check_db_version): Rebuild to migrate to database version 6.
+
+2014-08-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* tools/dfn_cert_update.xsl (atom:entry): Split CVE elements in case
 	they contain a list of CVEs, fix or filter out invalid CVE-IDs.
 
