@@ -2799,7 +2799,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
     {
       result_t result;
       const char *type, *mtype, *name;
-      char *desc;
+      char *desc = NULL, *nvt_id = NULL;
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
@@ -2808,18 +2808,11 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       assert (name);
       if (g_str_has_prefix (name, "oval:"))
         {
-          char *ovaldef_id, *ovaldef_desc;
-
-          ovaldef_id = ovaldef_uuid (name, defs_file);
-          if (ovaldef_id)
-            ovaldef_desc = ovaldef_description (ovaldef_id);
+          nvt_id = ovaldef_uuid (name, defs_file);
+          if (nvt_id)
+            desc = ovaldef_description (nvt_id);
           else
-            ovaldef_desc = g_strdup ("");
-          desc = g_strdup_printf ("%s ==> %s\n\n%s", ovaldef_id,
-                                  entity_text (r_entity), ovaldef_desc);
-          result = make_result (task, target, "", ovaldef_id, mtype, desc);
-          g_free (ovaldef_id);
-          g_free (ovaldef_desc);
+            g_warning ("Oval definition %s not found in DB.", name);
         }
       else
         {
@@ -2827,13 +2820,14 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           if (!strcmp (type, "Alarm"))
             mtype = "Log Message";
           desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
-          result = make_result (task, target, "", NULL, mtype, desc);
         }
-      g_free (desc);
+      result = make_result (task, target, "", nvt_id, mtype, desc);
       report_add_result (report, result);
+      g_free (nvt_id);
+      g_free (desc);
       results = next_entities (results);
     }
-  sql ("COMMIT; ");
+  sql ("COMMIT;");
   g_free (defs_file);
   free_entity (entity);
 }

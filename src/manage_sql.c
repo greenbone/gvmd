@@ -13926,7 +13926,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       g_free (severity);
       severity = g_strdup ("0.0");
     }
-  quoted_descr = sql_quote (description);
+  quoted_descr = sql_quote (description ?: "");
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod)"
