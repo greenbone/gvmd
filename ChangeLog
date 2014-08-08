@@ -1,3 +1,7 @@
+2014-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Implement task_severity.
+
 2014-08-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Rebuild CERT database as version 6 to apply fix for problems with CVEs
