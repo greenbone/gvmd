@@ -1,3 +1,8 @@
+2014-08-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Implement
+	task_threat_level.  Correct severity_to_level check.
+
 2014-08-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (fork_osp_scan_handler): Correctly assert osp_get_scan()

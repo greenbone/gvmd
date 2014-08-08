@@ -76,7 +76,6 @@ manage_create_sql_functions ()
     report_severity  result counting with caching
     report_severity_count  result counting with caching
     task_trend
-    task_threat_level
 
   can duplicate with pl/pgsql probably
     resource_exists (only used in migrator (given table type, will need exec))
@@ -93,6 +92,7 @@ manage_create_sql_functions ()
     severity_in_level
     severity_to_level
     task_severity
+    task_threat_level
     user_can_everything
 
   duplicated with pl/pgsql below
@@ -325,8 +325,8 @@ manage_create_sql_functions ()
 
   sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
        " RETURNS text AS $$"
-       /* TODO Calculate the threat level of a task. */
-       "  SELECT 'None'::text;"
+       /* Calculate the threat level of a task. */
+       "  SELECT severity_to_level (task_severity ($1, $2), 0);"
        "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
@@ -588,7 +588,8 @@ manage_create_sql_functions ()
            "         THEN 'Debug'"
            "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_ERROR)
            "         THEN 'Error'"
-           "         WHEN $1::double precision = " G_STRINGIFY (SEVERITY_ERROR)
+           "         WHEN $1::double precision > 0.0"
+           "              AND $1::double precision <= 10.0"
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
@@ -619,8 +620,7 @@ manage_create_sql_functions ()
            "         THEN 'Debug'"
            "         WHEN $1 = " G_STRINGIFY (SEVERITY_ERROR)
            "         THEN 'Error'"
-           // FIX again?
-           "         WHEN $1 = " G_STRINGIFY (SEVERITY_ERROR)
+           "         WHEN $1 > 0.0 AND $1 <= 10.0"
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
