@@ -194,19 +194,6 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;");
     }
 
-  sql ("CREATE OR REPLACE FUNCTION report_severity (integer, integer)"
-       " RETURNS double precision AS $$"
-       /* TODO Calculate the severity of a report. */
-       "  SELECT CAST (0.0 AS double precision);"
-       "$$ LANGUAGE SQL;");
-
-  sql ("CREATE OR REPLACE FUNCTION"
-       " report_severity_count (integer, integer, text)"
-       " RETURNS integer AS $$"
-       /* TODO Calculate the severity of a report. */
-       "  SELECT 0;"
-       "$$ LANGUAGE SQL;");
-
   sql ("CREATE OR REPLACE FUNCTION dynamic_severity ()"
        " RETURNS boolean AS $$"
        /* Get Dynamic Severity user setting. */
@@ -253,6 +240,71 @@ manage_create_sql_functions ()
  "             overrides.creation_time DESC"                \
  "    LIMIT 1),"                                            \
  "   " severity_sql ")"
+
+  sql ("CREATE OR REPLACE FUNCTION report_severity (integer, integer)"
+       " RETURNS double precision AS $$"
+       /* Calculate the severity of a report. */
+       "  WITH max_severity AS (SELECT max(severity) AS max"
+       "                        FROM report_counts"
+       // FIX should have user like report_counts_cache_exists?  c version too?
+       "                        WHERE report = $1"
+       "                        AND override = $2"
+       "                        AND (end_time = 0 or end_time >= m_now ()))"
+       "  SELECT CASE"
+       "         WHEN EXISTS (SELECT max FROM max_severity)"
+       "              AND (SELECT max FROM max_severity) IS NOT NULL"
+       "         THEN (SELECT max::double precision FROM max_severity)"
+       "         WHEN dynamic_severity () AND $2::boolean"
+       /*        Dynamic severity, overrides on. */
+       "         THEN (SELECT max"
+       "                       (" OVERRIDES_SQL
+                                   ("CASE"
+                                    " WHEN results.severity"
+                                    "      > " G_STRINGIFY (SEVERITY_LOG)
+                                    " THEN (SELECT CAST (cvss_base AS REAL)"
+                                    "       FROM nvts"
+                                    "       WHERE nvts.oid = results.nvt)"
+                                    " ELSE results.severity END") ")"
+       "               FROM results"
+       "               WHERE results.report = $1)"
+       "         WHEN dynamic_severity ()"
+       /*        Dynamic severity, overrides off. */
+       "         THEN (SELECT max (CASE"
+       "                           WHEN results.type IS NULL"
+       "                           THEN 0::real"
+       "                           ELSE (CASE"
+       "                                 WHEN results.severity"
+       "                                      > " G_STRINGIFY (SEVERITY_LOG)
+       "                                 THEN (SELECT CAST (cvss_base AS REAL)"
+       "                                       FROM nvts"
+       "                                       WHERE nvts.oid = results.nvt)"
+       "                                 ELSE results.severity"
+       "                                 END)"
+       "                           END)"
+       "               FROM results"
+       "               WHERE results.report = $1)"
+       "         WHEN $2::boolean"
+       /*        Overrides on. */
+       "         THEN (SELECT max (" OVERRIDES_SQL ("results.severity") ")"
+       "               FROM results"
+       "               WHERE results.report = $1)"
+       /*        Overrides off. */
+       "         ELSE (SELECT max (CASE"
+       "                           WHEN results.type IS NULL"
+       "                           THEN 0::real"
+       "                           ELSE results.severity"
+       "                           END)"
+       "               FROM results"
+       "               WHERE results.report = $1)"
+       "         END;"
+       "$$ LANGUAGE SQL;");
+
+  sql ("CREATE OR REPLACE FUNCTION"
+       " report_severity_count (integer, integer, text)"
+       " RETURNS integer AS $$"
+       /* TODO Calculate the severity of a report. */
+       "  SELECT 0;"
+       "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
        " RETURNS double precision AS $$"

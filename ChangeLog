@@ -1,3 +1,9 @@
+2014-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Implement
+	report_severity.  Move report_severity and report_severity_count below
+	OVERRIDES_SQL.
+
 2014-08-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Don't append oval definition evaulation
