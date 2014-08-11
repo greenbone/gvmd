@@ -1,5 +1,10 @@
 2014-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (cache_report_counts): Escape SQL keyword "user" for
+	Postgres.
+
+2014-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Implement
 	report_severity.  Move report_severity and report_severity_count below
 	OVERRIDES_SQL.

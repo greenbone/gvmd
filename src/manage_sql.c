@@ -18612,9 +18612,9 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   if (data->total == 0)
     {
       /* Create dummy entry for empty reports */
-      ret = sql_giveup ("INSERT INTO"
-                        " report_counts (report, user, override,"
-                        "                severity, count, end_time)"
+      ret = sql_giveup ("INSERT INTO report_counts"
+                        " (report, \"user\", override, severity, count,"
+                        "  end_time)"
                         " VALUES (%llu,"
                         "         (SELECT id FROM users"
                         "          WHERE users.uuid = '%s'),"
@@ -18648,9 +18648,9 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
         {
           if (data->counts[i] > 0)
             {
-              ret = sql_giveup ("INSERT INTO"
-                                " report_counts (report, user, override,"
-                                "                severity, count, end_time)"
+              ret = sql_giveup ("INSERT INTO report_counts"
+                                " (report, \"user\", override, severity, count,"
+                                "  end_time)"
                                 " VALUES (%llu,"
                                 "         (SELECT id FROM users"
                                 "          WHERE users.uuid = '%s'),"
