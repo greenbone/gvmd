@@ -73,8 +73,6 @@ manage_create_sql_functions ()
 {
 #if 0
   empty below, hard to implement
-    report_severity  result counting with caching
-    report_severity_count  result counting with caching
     task_trend
 
   can duplicate with pl/pgsql probably
@@ -87,6 +85,8 @@ manage_create_sql_functions ()
   duplicated below
     common_cve
     hosts_contains
+    report_severity         (pg does not cache when recalculating)
+    report_severity_count   (pg does not cache when recalculating)
     resource_name
     run_status_name
     severity_in_level
@@ -106,6 +106,38 @@ manage_create_sql_functions ()
     max_hosts
     next_time
 #endif
+
+  /* Functions in C. */
+
+  sql ("SET role dba;");
+
+  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
+       " RETURNS integer"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_max_hosts'"
+       " LANGUAGE C;",
+       OPENVAS_STATE_DIR);
+
+  sql ("CREATE OR REPLACE FUNCTION level_max_severity (text, text)"
+       " RETURNS double precision"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_level_max_severity'"
+       " LANGUAGE C;",
+       OPENVAS_STATE_DIR);
+
+  sql ("CREATE OR REPLACE FUNCTION level_min_severity (text, text)"
+       " RETURNS double precision"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_level_min_severity'"
+       " LANGUAGE C;",
+       OPENVAS_STATE_DIR);
+
+  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
+       " RETURNS integer"
+       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
+       " LANGUAGE C;",
+       OPENVAS_STATE_DIR);
+
+  sql ("RESET role;");
+
+  /* Functions in SQL. */
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
        "  SELECT true;"
@@ -241,7 +273,8 @@ manage_create_sql_functions ()
  "    LIMIT 1),"                                            \
  "   " severity_sql ")"
 
-  sql ("CREATE OR REPLACE FUNCTION report_severity (integer, integer)"
+  sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
+       "                                            overrides integer)"
        " RETURNS double precision AS $$"
        /* Calculate the severity of a report. */
        "  WITH max_severity AS (SELECT max(severity) AS max"
@@ -299,11 +332,95 @@ manage_create_sql_functions ()
        "         END;"
        "$$ LANGUAGE SQL;");
 
+  sql ("CREATE OR REPLACE FUNCTION severity_class ()"
+       " RETURNS text AS $$"
+       /* Get the user's severity class setting. */
+       "  SELECT value FROM settings"
+       "  WHERE name = 'Severity Class'"
+       "  AND ((owner IS NULL)"
+       "       OR (owner = (SELECT id FROM users"
+       "                    WHERE users.uuid = (SELECT uuid"
+       "                                        FROM current_credentials))))"
+       "  ORDER BY owner DESC LIMIT 1;"
+       "$$ LANGUAGE SQL;");
+
   sql ("CREATE OR REPLACE FUNCTION"
-       " report_severity_count (integer, integer, text)"
-       " RETURNS integer AS $$"
-       /* TODO Calculate the severity of a report. */
-       "  SELECT 0;"
+       " report_severity_count (report integer, overrides integer, level text)"
+       " RETURNS bigint AS $$"
+       /* Calculate the severity of a report. */
+       "  WITH severity_count AS (SELECT sum (count) AS total"
+       "                          FROM report_counts"
+       "                          WHERE report = $1"
+       "                          AND override = $2"
+       "                          AND (end_time = 0 or end_time >= m_now ())"
+       "                          AND (severity"
+       "                               BETWEEN level_min_severity"
+       "                                        ($3, severity_class ())"
+       "                                       AND level_max_severity"
+       "                                            ($3, severity_class ())))"
+       "  SELECT CASE"
+       "         WHEN EXISTS (SELECT total FROM severity_count)"
+       "              AND (SELECT total FROM severity_count) IS NOT NULL"
+       "         THEN (SELECT total FROM severity_count)"
+       "         WHEN dynamic_severity () AND $2::boolean"
+       /*        Dynamic severity, overrides on. */
+       "         THEN (SELECT count (*)"
+       "               FROM results"
+       "               WHERE results.report = $1"
+       "               AND (" OVERRIDES_SQL
+                               ("CASE"
+                                " WHEN results.severity"
+                                "      > " G_STRINGIFY (SEVERITY_LOG)
+                                " THEN (SELECT CAST (cvss_base AS REAL)"
+                                "       FROM nvts"
+                                "       WHERE nvts.oid = results.nvt)"
+                                " ELSE results.severity END")
+       "                    BETWEEN level_min_severity"
+       "                             ($3, severity_class ())"
+       "                            AND level_max_severity"
+       "                                 ($3, severity_class ())))"
+       "         WHEN dynamic_severity ()"
+       /*        Dynamic severity, overrides off. */
+       "         THEN (SELECT count (*)"
+       "               FROM results"
+       "               WHERE results.report = $1"
+       "               AND ((CASE"
+       "                     WHEN results.type IS NULL"
+       "                     THEN 0::real"
+       "                     ELSE (CASE"
+       "                           WHEN results.severity"
+       "                                > " G_STRINGIFY (SEVERITY_LOG)
+       "                           THEN (SELECT CAST (cvss_base AS REAL)"
+       "                                 FROM nvts"
+       "                                 WHERE nvts.oid = results.nvt)"
+       "                           ELSE results.severity"
+       "                           END)"
+       "                     END)"
+       "                    BETWEEN level_min_severity ($3, severity_class ())"
+       "                            AND level_max_severity"
+       "                                 ($3, severity_class ())))"
+       "         WHEN $2::boolean"
+       /*        Overrides on. */
+       "         THEN (SELECT count (*)"
+       "               FROM results"
+       "               WHERE results.report = $1"
+       "               AND (" OVERRIDES_SQL ("results.severity")
+       "                    BETWEEN level_min_severity ($3, severity_class ())"
+       "                            AND level_max_severity"
+       "                                 ($3, severity_class ())))"
+       /*        Overrides off. */
+       "         ELSE (SELECT count (*)"
+       "               FROM results"
+       "               WHERE results.report = $1"
+       "               AND ((CASE"
+       "                     WHEN results.type IS NULL"
+       "                     THEN 0::real"
+       "                     ELSE results.severity"
+       "                     END)"
+       "                    BETWEEN level_min_severity ($3, severity_class ())"
+       "                            AND level_max_severity"
+       "                                 ($3, severity_class ())))"
+       "         END;"
        "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
@@ -885,24 +1002,6 @@ manage_create_sql_functions ()
        "   RETURN candidate;"
        " END;"
        "$$ LANGUAGE plpgsql;");
-
-  /* Server side functions. */
-
-  sql ("SET role dba;");
-
-  sql ("CREATE OR REPLACE FUNCTION max_hosts (text, text)"
-       " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_max_hosts'"
-       " LANGUAGE C;",
-       OPENVAS_STATE_DIR);
-
-  sql ("CREATE OR REPLACE FUNCTION next_time (integer, integer, integer)"
-       " RETURNS integer"
-       " AS '%s/openvasmd/pg/libmanage-pg-server', 'sql_next_time'"
-       " LANGUAGE C;",
-       OPENVAS_STATE_DIR);
-
-  sql ("RESET role;");
 
   return 0;
 }

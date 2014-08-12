@@ -767,31 +767,8 @@ config_task_iterator_uuid (iterator_t*);
 
 /* General severity related facilities. */
 
-// Log message severity constant
-#define SEVERITY_LOG 0.0
-// False positive severity constant
-#define SEVERITY_FP -1.0
-// Debug message severity constant
-#define SEVERITY_DEBUG -2.0
-// Error message severity constant
-#define SEVERITY_ERROR -3.0
-// Constant for missing or invalid severity
-#define SEVERITY_MISSING -99.0
-// Constant for undefined severity (for ranges)
-#define SEVERITY_UNDEFINED -98.0
-// Maximum possible severity
-#define SEVERITY_MAX 10.0
-// Number of subdivisions for 1 severity point (10 => step size 0.1)
-#define SEVERITY_SUBDIVISIONS 10
-
 int
 severity_in_level (double, const char *);
-
-double
-level_min_severity (const char*, const gchar*);
-
-double
-level_max_severity (const char*, const gchar*);
 
 int
 severity_matches_ov (double, double);

@@ -1,3 +1,22 @@
+2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Implement Postgres function report_severity_count.
+
+	* src/manage_utils.c (level_min_severity, level_max_severity): New
+	functions.  From manage.c.
+
+	* src/manage.c (level_min_severity, level_max_severity): Remove.  Now in
+	manage_utils.c.
+
+	* src/manage_utils.h, src/manage.h: Add and remove headers accordingly.
+
+	* src/manage_pg.c (manage_create_sql_functions): Move C section up.  Add
+	names to report_severity args.  Add severity_class.  Implement
+	report_severity_count.
+
+	* src/manage_pg_server.c (sql_level_min_severity)
+	(sql_level_max_severity): New functions.
+
 2014-08-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (ovaldef_cves): New function.
