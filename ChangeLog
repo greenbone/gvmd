@@ -1,3 +1,12 @@
+2014-08-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Don't append oval definition
+	description as result description.
+
+	* src/omp.c (results_xml_append_nvt): In oval definition case,
+	adequately add the title and the description of the ovaldef to the nvt
+	tag.
+
 2014-08-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (cache_report_counts): Escape SQL keyword "user" for

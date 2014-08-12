@@ -10838,10 +10838,25 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
   assert (buffer);
   if (g_str_has_prefix (oid, "oval:"))
     {
-      buffer_xml_append_printf (buffer,
-                                "<nvt oid=\"%s\"><name>%s</name><family/>"
-                                "<cvss_base/><cve/><bid/><tags/><xref/>",
-                                oid, oid);
+      int ret;
+      get_data_t get;
+      iterator_t iterator;
+
+      memset (&get, '\0', sizeof (get));
+      get.id = g_strdup (oid);
+      ret = init_ovaldef_info_iterator (&iterator, &get, NULL);
+      assert (!ret);
+      if (!next (&iterator))
+        abort ();
+      buffer_xml_append_printf
+       (buffer,
+        "<nvt oid=\"%s\"><name>%s</name><family/><cvss_base/>"
+        "<cve/><bid/><tags>summary=%s</tags><xref/>",
+        oid,
+        ovaldef_info_iterator_title (&iterator),
+        ovaldef_info_iterator_description (&iterator));
+      g_free (get.id);
+      cleanup_iterator (&iterator);
     }
   else
     {

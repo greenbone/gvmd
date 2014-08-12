@@ -2807,13 +2807,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       name = entity_attribute (r_entity, "name");
       assert (name);
       if (g_str_has_prefix (name, "oval:"))
-        {
-          nvt_id = ovaldef_uuid (name, defs_file);
-          if (nvt_id)
-            desc = ovaldef_description (nvt_id);
-          else
-            g_warning ("Oval definition %s not found in DB.", name);
-        }
+        nvt_id = ovaldef_uuid (name, defs_file);
       else
         {
           /* XXX: Alarm messages require an associated NVT at the moment. */
