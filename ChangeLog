@@ -1,5 +1,10 @@
 2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add task_last_report and
+	task_second_last_report.  Implement task_trend.
+
+2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (report_severity_count): Correct arg count doc.
 
 2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>

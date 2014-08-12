@@ -72,9 +72,6 @@ int
 manage_create_sql_functions ()
 {
 #if 0
-  empty below, hard to implement
-    task_trend
-
   can duplicate with pl/pgsql probably
     resource_exists (only used in migrator (given table type, will need exec))
 
@@ -92,6 +89,7 @@ manage_create_sql_functions ()
     severity_in_level
     severity_to_level
     task_severity
+    task_trend              (pg does not cache when recalculating)
     task_threat_level
     user_can_everything
 
@@ -423,6 +421,22 @@ manage_create_sql_functions ()
        "         END;"
        "$$ LANGUAGE SQL;");
 
+  sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
+       " RETURNS integer AS $$"
+       /* Get the report from the most recently completed invocation of task. */
+       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+       "  ORDER BY date DESC LIMIT 1;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DONE);
+
+  sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
+       " RETURNS integer AS $$"
+       /* Get report from second most recently completed invocation of task. */
+       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+       "  ORDER BY date DESC LIMIT 1 OFFSET 1;"
+       "$$ LANGUAGE SQL;",
+       TASK_STATUS_DONE);
+
   sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
        " RETURNS double precision AS $$"
        /* Calculate the severity of a task. */
@@ -496,12 +510,6 @@ manage_create_sql_functions ()
        " RETURNS text AS $$"
        /* Calculate the threat level of a task. */
        "  SELECT severity_to_level (task_severity ($1, $2), 0);"
-       "$$ LANGUAGE SQL;");
-
-  sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
-       " RETURNS text AS $$"
-       /* TODO Calculate the trend of a task. */
-       "  SELECT 'same'::text;"
        "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION run_status_name (integer)"
@@ -812,6 +820,111 @@ manage_create_sql_functions ()
        "$$ LANGUAGE SQL;");
 
   /* Functions in pl/pgsql. */
+
+  sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
+       " RETURNS text AS $$"
+       /* Calculate the trend of a task. */
+       " DECLARE"
+       "   last_report integer;"
+       "   second_last_report integer;"
+       "   severity_a double precision;"
+       "   severity_b double precision;"
+       "   high_a bigint;"
+       "   high_b bigint;"
+       "   medium_a bigint;"
+       "   medium_b bigint;"
+       "   low_a bigint;"
+       "   low_b bigint;"
+       "   threat_a integer;"
+       "   threat_b integer;"
+       " BEGIN"
+       "   CASE"
+       /*  Ensure there are enough reports. */
+       "   WHEN (SELECT count(*) <= 1 FROM reports"
+       "         WHERE task = $1"
+       "         AND scan_run_status = %u)"
+       "   THEN RETURN ''::text;"
+       /*  Get trend only for authenticated users. */
+       "   WHEN NOT EXISTS (SELECT uuid FROM current_credentials)"
+       "        OR (SELECT uuid = '' FROM current_credentials)"
+       "   THEN RETURN ''::text;"
+       /*  Skip running and container tasks. */
+       "   WHEN (SELECT run_status = %u OR target = 0"
+       "         FROM tasks WHERE id = $1)"
+       "   THEN RETURN ''::text;"
+       "   ELSE"
+       "   END CASE;"
+       /*  Check if the severity score changed. */
+       "   last_report := task_last_report ($1);"
+       "   second_last_report := task_second_last_report ($1);"
+       "   severity_a := report_severity (last_report, $2);"
+       "   severity_b := report_severity (second_last_report, $2);"
+       "   IF severity_a > severity_b THEN"
+       "     RETURN 'up'::text;"
+       "   ELSIF severity_b > severity_a THEN"
+       "     RETURN 'down'::text;"
+       "   END IF;"
+       /*  Calculate trend. */
+       "   high_a := report_severity_count (last_report, $2, 'high');"
+       "   high_b := report_severity_count (second_last_report, $2, 'high');"
+       "   medium_a := report_severity_count (last_report, $2, 'medium');"
+       "   medium_b := report_severity_count (second_last_report, $2, 'medium');"
+       "   low_a := report_severity_count (last_report, $2, 'low');"
+       "   low_b := report_severity_count (second_last_report, $2, 'low');"
+       "   IF high_a > 0 THEN"
+       "     threat_a := 4;"
+       "   ELSIF medium_a > 0 THEN"
+       "     threat_a := 3;"
+       "   ELSIF low_a > 0 THEN"
+       "     threat_a := 2;"
+       "   ELSE"
+       "     threat_a := 1;"
+       "   END IF;"
+       "   IF high_b > 0 THEN"
+       "     threat_b := 4;"
+       "   ELSIF medium_b > 0 THEN"
+       "     threat_b := 3;"
+       "   ELSIF low_b > 0 THEN"
+       "     threat_b := 2;"
+       "   ELSE"
+       "     threat_b := 1;"
+       "   END IF;"
+       /*  Check if the threat level changed. */
+       "   IF threat_a > threat_b THEN"
+       "     RETURN 'up'::text;"
+       "   ELSIF threat_b > threat_a THEN"
+       "     RETURN 'down'::text;"
+       "   END IF;"
+       /*  Check if the threat count changed. */
+       "   IF high_a > 0 THEN"
+       "     IF high_a > high_b THEN"
+       "       RETURN 'more'::text;"
+       "     ELSIF high_a < high_b THEN"
+       "       RETURN 'less'::text;"
+       "     END IF;"
+       "     RETURN 'same'::text;"
+       "   END IF;"
+       "   IF medium_a > 0 THEN"
+       "     IF medium_a > medium_b THEN"
+       "       RETURN 'more'::text;"
+       "     ELSIF medium_a < medium_b THEN"
+       "       RETURN 'less'::text;"
+       "     END IF;"
+       "     RETURN 'same'::text;"
+       "   END IF;"
+       "   IF low_a > 0 THEN"
+       "     IF low_a > low_b THEN"
+       "       RETURN 'more'::text;"
+       "     ELSIF low_a < low_b THEN"
+       "       RETURN 'less'::text;"
+       "     END IF;"
+       "     RETURN 'same'::text;"
+       "   END IF;"
+       "   RETURN 'same'::text;"
+       " END;"
+       "$$ LANGUAGE plpgsql;",
+       TASK_STATUS_DONE,
+       TASK_STATUS_RUNNING);
 
   sql ("CREATE OR REPLACE FUNCTION report_progress_active (integer)"
        " RETURNS integer AS $$"
