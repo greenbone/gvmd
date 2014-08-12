@@ -1,5 +1,9 @@
 2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (report_severity_count): Correct arg count doc.
+
+2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Implement Postgres function report_severity_count.
 
 	* src/manage_utils.c (level_min_severity, level_max_severity): New

@@ -987,7 +987,7 @@ report_severity_count (report_t report, int overrides,
 /**
  * @brief Get the number of results of a given severity level in a report.
  *
- * This is a callback for a scalar SQL function of four arguments.
+ * This is a callback for a scalar SQL function of three arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
