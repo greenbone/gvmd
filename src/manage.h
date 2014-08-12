@@ -3073,6 +3073,9 @@ ovaldef_version (const char *);
 char *
 ovaldef_uuid (const char *, const char *);
 
+char *
+ovaldef_cves (const char *);
+
 /* CERT data */
 int
 manage_cert_loaded ();

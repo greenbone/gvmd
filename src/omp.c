@@ -10839,6 +10839,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
   if (g_str_has_prefix (oid, "oval:"))
     {
       int ret;
+      char *cves;
       get_data_t get;
       iterator_t iterator;
 
@@ -10848,13 +10849,16 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
       assert (!ret);
       if (!next (&iterator))
         abort ();
+      cves = ovaldef_cves (oid);
       buffer_xml_append_printf
        (buffer,
         "<nvt oid=\"%s\"><name>%s</name><family/><cvss_base/>"
-        "<cve/><bid/><tags>summary=%s</tags><xref/>",
+        "<cve>%s</cve><bid/><tags>summary=%s</tags><xref/>",
         oid,
         ovaldef_info_iterator_title (&iterator),
+        cves,
         ovaldef_info_iterator_description (&iterator));
+      g_free (cves);
       g_free (get.id);
       cleanup_iterator (&iterator);
     }

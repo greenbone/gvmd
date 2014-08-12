@@ -48915,6 +48915,38 @@ ovaldef_version (const char *id)
   return ret;
 }
 
+/**
+ * @brief Get the CVE names of an OVALDEF as ", " separated str.
+ *
+ * @param[in]  uuid     Oval definition ID.
+ *
+ * @return String of CVEs affecting of the OVAL definition. Freed by g_free.
+ */
+char *
+ovaldef_cves (const char *id)
+{
+  char *quoted_id, *ret = NULL;
+  iterator_t iterator;
+
+  assert (id);
+  quoted_id = sql_quote (id);
+  init_iterator (&iterator,
+                 "SELECT DISTINCT cves.name FROM cves, ovaldefs,"
+                 " affected_ovaldefs WHERE ovaldefs.uuid = '%s'"
+                 " AND cves.id = affected_ovaldefs.cve"
+                 " AND ovaldefs.id = affected_ovaldefs.ovaldef;", quoted_id);
+  g_free (quoted_id);
+  while (next (&iterator))
+    {
+      char *tmp = ret;
+      ret = g_strdup_printf ("%s%s%s", ret ?: "", ret ? ", " : "",
+                             iterator_string (&iterator, 0));
+      g_free (tmp);
+    }
+  cleanup_iterator (&iterator);
+  return ret;
+}
+
 /* All SecInfo Data */
 
 /**
