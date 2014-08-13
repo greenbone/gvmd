@@ -3832,32 +3832,11 @@ modify_user_data_reset (modify_user_data_t * data)
 }
 
 /**
- * @brief Command data for the pause_task command.
- */
-typedef struct
-{
-  char *task_id;   ///< ID of task to pause.
-} pause_task_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-pause_task_data_reset (pause_task_data_t *data)
-{
-  free (data->task_id);
-
-  memset (data, 0, sizeof (pause_task_data_t));
-}
-
-/**
  * @brief Command data for the restore command.
  */
 typedef struct
 {
-  char *id;   ///< ID of resource to pause.
+  char *id;   ///< ID of resource to restore.
 } restore_data_t;
 
 /**
@@ -3892,27 +3871,6 @@ resume_or_start_task_data_reset (resume_or_start_task_data_t *data)
   free (data->task_id);
 
   memset (data, 0, sizeof (resume_or_start_task_data_t));
-}
-
-/**
- * @brief Command data for the resume_paused_task command.
- */
-typedef struct
-{
-  char *task_id;   ///< ID of paused task to resume.
-} resume_paused_task_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-resume_paused_task_data_reset (resume_paused_task_data_t *data)
-{
-  free (data->task_id);
-
-  memset (data, 0, sizeof (resume_paused_task_data_t));
 }
 
 /**
@@ -4203,10 +4161,8 @@ typedef union
   modify_target_data_t modify_target;                 ///< modify_target
   modify_task_data_t modify_task;                     ///< modify_task
   modify_user_data_t modify_user;                     ///< modify_user
-  pause_task_data_t pause_task;                       ///< pause_task
   restore_data_t restore;                             ///< restore
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
-  resume_paused_task_data_t resume_paused_task;       ///< resume_paused_task
   resume_stopped_task_data_t resume_stopped_task;     ///< resume_stopped_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
@@ -4798,12 +4754,6 @@ modify_task_data_t *modify_task_data
 modify_user_data_t *modify_user_data = &(command_data.modify_user);
 
 /**
- * @brief Parser callback data for PAUSE_TASK.
- */
-pause_task_data_t *pause_task_data
- = (pause_task_data_t*) &(command_data.pause_task);
-
-/**
  * @brief Parser callback data for RESTORE.
  */
 restore_data_t *restore_data
@@ -4814,12 +4764,6 @@ restore_data_t *restore_data
  */
 resume_or_start_task_data_t *resume_or_start_task_data
  = (resume_or_start_task_data_t*) &(command_data.resume_or_start_task);
-
-/**
- * @brief Parser callback data for RESUME_PAUSED_TASK.
- */
-resume_paused_task_data_t *resume_paused_task_data
- = (resume_paused_task_data_t*) &(command_data.resume_paused_task);
 
 /**
  * @brief Parser callback data for RESUME_STOPPED_TASK.
@@ -5467,10 +5411,8 @@ typedef enum
   CLIENT_MODIFY_USER_ROLE,
   CLIENT_MODIFY_USER_SOURCES,
   CLIENT_MODIFY_USER_SOURCES_SOURCE,
-  CLIENT_PAUSE_TASK,
   CLIENT_RESTORE,
   CLIENT_RESUME_OR_START_TASK,
-  CLIENT_RESUME_PAUSED_TASK,
   CLIENT_RESUME_STOPPED_TASK,
   CLIENT_RUN_WIZARD,
   CLIENT_RUN_WIZARD_MODE,
@@ -7571,12 +7513,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_user_data->user_id);
             set_client_state (CLIENT_MODIFY_USER);
           }
-        else if (strcasecmp ("PAUSE_TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "task_id",
-                              &pause_task_data->task_id);
-            set_client_state (CLIENT_PAUSE_TASK);
-          }
         else if (strcasecmp ("RESTORE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7589,16 +7525,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &resume_or_start_task_data->task_id);
             set_client_state (CLIENT_RESUME_OR_START_TASK);
           }
-        else if (strcasecmp ("RESUME_PAUSED_TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "task_id",
-                              &resume_paused_task_data->task_id);
-            set_client_state (CLIENT_RESUME_PAUSED_TASK);
-          }
         else if (strcasecmp ("RESUME_STOPPED_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
-                              &resume_paused_task_data->task_id);
+                              &resume_stopped_task_data->task_id);
             set_client_state (CLIENT_RESUME_STOPPED_TASK);
           }
         else if (strcasecmp ("RUN_WIZARD", element_name) == 0)
@@ -11653,7 +11583,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_user",
-                                    "User has an active or paused task"));
+                                    "User has an active task"));
                 break;
               case 5:
                 SEND_TO_CLIENT_OR_FAIL
@@ -24634,70 +24564,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_PAUSE_TASK:
-        if (pause_task_data->task_id)
-          {
-            switch (pause_task (pause_task_data->task_id))
-              {
-                case 0:   /* Paused. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("pause_task"));
-                  log_event ("task", "Task", pause_task_data->task_id,
-                             "paused");
-                  break;
-                case 1:   /* Pause requested. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("pause_task"));
-                  log_event ("task", "Task", pause_task_data->task_id,
-                             "requested to pause");
-                  break;
-                case 2:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("pause_task", "Pausing not supported"));
-                  log_event_fail ("task", "Task", pause_task_data->task_id,
-                                  "paused");
-                  break;
-                case 3:   /* Find failed. */
-                  if (send_find_error_to_client ("pause_task",
-                                                 "task",
-                                                 pause_task_data->task_id,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("pause_task",
-                                      "Permission denied"));
-                  log_event_fail ("task", "Task", pause_task_data->task_id,
-                                  "paused");
-                  break;
-                case -1:
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("pause_task"));
-                  break;
-                case -5:
-                  SEND_XML_SERVICE_DOWN ("pause_task");
-                  log_event_fail ("task", "Task", pause_task_data->task_id,
-                                  "paused");
-                  break;
-                default:  /* Programming error. */
-                  assert (0);
-                case -3:
-                  /* to_scanner is full. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_omp_client_input must return -2. */
-                  abort ();
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("pause_task",
-                              "PAUSE_TASK requires a task_id attribute"));
-        pause_task_data_reset (pause_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
       case CLIENT_RESTORE:
         if (restore_data->id)
           {
@@ -24906,73 +24772,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                               "RESUME_TASK requires a task_id attribute"));
           SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
         resume_or_start_task_data_reset (resume_or_start_task_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_RESUME_PAUSED_TASK:
-        if (resume_paused_task_data->task_id)
-          {
-            switch (resume_paused_task (resume_paused_task_data->task_id))
-              {
-                case 0:   /* Resumed. */
-                  SEND_TO_CLIENT_OR_FAIL (XML_OK ("resume_paused_task"));
-                  log_event ("task", "Task", resume_paused_task_data->task_id,
-                             "resumed");
-                  break;
-                case 1:   /* Resume requested. */
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_OK_REQUESTED ("resume_paused_task"));
-                  log_event ("task", "Task", resume_paused_task_data->task_id,
-                             "requested to resume");
-                  break;
-                case 3:   /* Find failed. */
-                  if (send_find_error_to_client
-                       ("resume_paused_task",
-                        "task",
-                        resume_paused_task_data->task_id,
-                        write_to_client,
-                        write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  break;
-                case 4:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("resume_paused_task",
-                                      "Resuming not supported"));
-                  log_event_fail ("task", "Task",
-                                  resume_paused_task_data->task_id, "resumed");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("resume_paused_task",
-                                      "Permission denied"));
-                  log_event_fail ("task", "Task",
-                                  resume_paused_task_data->task_id,
-                                  "resumed");
-                  break;
-                case -5:
-                  SEND_XML_SERVICE_DOWN ("resume_paused_task");
-                  log_event_fail ("task", "Task",
-                                  resume_paused_task_data->task_id,
-                                  "started");
-                  break;
-                default:  /* Programming error. */
-                  assert (0);
-                case -1:
-                  /* to_scanner is full. */
-                  /** @todo Consider reverting parsing for retry. */
-                  /** @todo process_omp_client_input must return -2. */
-                  abort ();
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("resume_paused_task",
-                              "RESUME_PAUSED_TASK requires a task_id"
-                              " attribute"));
-        resume_paused_task_data_reset (resume_paused_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

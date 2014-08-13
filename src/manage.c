@@ -850,16 +850,7 @@ run_status_name (task_status_t status)
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
 
-      case TASK_STATUS_PAUSE_REQUESTED:
-      case TASK_STATUS_PAUSE_WAITING:
-        return "Pause Requested";
-
-      case TASK_STATUS_PAUSED:           return "Paused";
       case TASK_STATUS_REQUESTED:        return "Requested";
-
-      case TASK_STATUS_RESUME_REQUESTED:
-      case TASK_STATUS_RESUME_WAITING:
-        return "Resume Requested";
 
       case TASK_STATUS_RUNNING:          return "Running";
 
@@ -894,20 +885,7 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_DONE:             return "Done";
       case TASK_STATUS_NEW:              return "New";
 
-      case TASK_STATUS_PAUSE_REQUESTED:
-        return "Pause Requested";
-
-      case TASK_STATUS_PAUSE_WAITING:
-        return "Pause Waiting";
-
-      case TASK_STATUS_PAUSED:           return "Paused";
       case TASK_STATUS_REQUESTED:        return "Requested";
-
-      case TASK_STATUS_RESUME_REQUESTED:
-        return "Resume Requested";
-
-      case TASK_STATUS_RESUME_WAITING:
-        return "Resume Waiting";
 
       case TASK_STATUS_RUNNING:          return "Running";
 
@@ -2167,38 +2145,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       run_status = task_run_status (task);
       switch (run_status)
         {
-          case TASK_STATUS_PAUSE_REQUESTED:
-            switch (omp_pause_task (session, slave_task_uuid))
-              {
-                case 0:
-                  break;
-                case 404:
-                  /* Resource Missing. */
-                  tracef ("   %s: task missing on slave\n", __FUNCTION__);
-                  set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
-                  goto giveup;
-                default:
-                  goto fail_stop_task;
-              }
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_PAUSE_WAITING);
-            break;
-          case TASK_STATUS_RESUME_REQUESTED:
-            switch (omp_resume_paused_task (session, slave_task_uuid))
-              {
-                case 0:
-                  break;
-                case 404:
-                  /* Resource Missing. */
-                  tracef ("   %s: task missing on slave\n", __FUNCTION__);
-                  set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
-                  goto giveup;
-                default:
-                  goto fail_stop_task;
-              }
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_RESUME_WAITING);
-            break;
           case TASK_STATUS_DELETE_REQUESTED:
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_STOP_REQUESTED:
@@ -2233,16 +2179,10 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
             goto giveup;
             break;
-          case TASK_STATUS_PAUSED:
-            /* Keep doing the status checks even though the task is paused, in
-             * case someone resumes the task on the slave. */
-            break;
           case TASK_STATUS_STOPPED:
             assert (0);
             goto fail_stop_task;
             break;
-          case TASK_STATUS_PAUSE_WAITING:
-          case TASK_STATUS_RESUME_WAITING:
           case TASK_STATUS_DELETE_WAITING:
           case TASK_STATUS_DELETE_ULTIMATE_WAITING:
           case TASK_STATUS_DONE:
@@ -2284,10 +2224,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           int ret2;
           omp_get_report_opts_t opts;
 
-          if ((run_status == TASK_STATUS_REQUESTED)
-              || (run_status == TASK_STATUS_RESUME_WAITING)
-              /* In case someone resumes the task on the slave. */
-              || (run_status == TASK_STATUS_PAUSED))
+          if (run_status == TASK_STATUS_REQUESTED)
             set_task_run_status (task, TASK_STATUS_RUNNING);
 
           if (update_slave_progress (get_tasks))
@@ -2343,10 +2280,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if (strcmp (status, "Running") == 0)
             free_entity (get_report);
         }
-      else if (strcmp (status, "Paused") == 0)
-        set_task_run_status (task, TASK_STATUS_PAUSED);
-      else if (strcmp (status, "Pause Requested") == 0)
-        set_task_run_status (task, TASK_STATUS_PAUSE_WAITING);
       else if (strcmp (status, "Stopped") == 0)
         {
           set_task_run_status (task, TASK_STATUS_STOPPED);
@@ -2354,8 +2287,6 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         }
       else if (strcmp (status, "Stop Requested") == 0)
         set_task_run_status (task, TASK_STATUS_STOP_WAITING);
-      else if (strcmp (status, "Resume Requested") == 0)
-        set_task_run_status (task, TASK_STATUS_RESUME_WAITING);
       else if ((strcmp (status, "Internal Error") == 0)
                || (strcmp (status, "Delete Requested") == 0))
         {
@@ -3607,12 +3538,7 @@ stop_task_internal (task_t task)
   task_status_t run_status;
 
   run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_PAUSE_REQUESTED
-      || run_status == TASK_STATUS_PAUSE_WAITING
-      || run_status == TASK_STATUS_PAUSED
-      || run_status == TASK_STATUS_RESUME_REQUESTED
-      || run_status == TASK_STATUS_RESUME_WAITING
-      || run_status == TASK_STATUS_REQUESTED
+  if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING)
     {
       if (current_scanner_task == task)
@@ -3678,112 +3604,6 @@ stop_task (const char *task_id)
     return 2;
 
   return stop_task_internal (task);
-}
-
-/**
- * @brief Initiate pausing of a task.
- *
- * Use \ref send_to_server to queue the task pause sequence in the
- * scanner output buffer.
- *
- * @param[in]  task_id  Task UUID.
- *
- * @return 0 on success, 1 if pause requested, 2 Pausing not supported,
- *         3 failed to find task, 99 permission denied, -1 internal error, -3 if
- *         out of space in scanner output buffer, -5 scanner down.
- */
-int
-pause_task (const char *task_id)
-{
-  task_t task;
-  task_status_t run_status;
-  scanner_t scanner;
-
-  if (user_may ("pause_task") == 0)
-    return 99;
-
-  task = 0;
-  if (find_task_with_permission (task_id, &task, "pause_task"))
-    return -1;
-  if (task == 0)
-    return 3;
-
-  scanner = task_scanner (task);
-  assert (scanner);
-  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
-    return 2;
-
-  /* If task has no scanner, use default one. */
-  if (scanner && scanner_connect (scanner))
-    return -5;
-
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
-    return -5;
-
-  run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_REQUESTED
-      || run_status == TASK_STATUS_RUNNING)
-    {
-      if (current_scanner_task == task
-          && send_to_server ("CLIENT <|> PAUSE_WHOLE_TEST <|> CLIENT\n"))
-        return -3;
-      set_task_run_status (task, TASK_STATUS_PAUSE_REQUESTED);
-      return 1;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Initiate resuming of a task.
- *
- * Use \ref send_to_server to queue the task resume sequence in the
- * scanner output buffer.
- *
- * @param[in]  task_id  Task UUID.
- *
- * @return 0 on success, 1 if resume requested, 3 failed to find task,
- *         99 permission denied, -1 if out of space in scanner output buffer,
- *         -5 scanner down.
- */
-int
-resume_paused_task (const char *task_id)
-{
-  task_t task;
-  scanner_t scanner;
-  task_status_t run_status;
-
-  if (user_may ("resume_paused_task") == 0)
-    return 99;
-
-  task = 0;
-  if (find_task_with_permission (task_id, &task, "resume_paused_task"))
-    return -1;
-  if (task == 0)
-    return 3;
-
-  /* If task has no scanner, use default one. */
-  scanner = task_scanner (task);
-  assert (scanner);
-  if (scanner_connect (scanner))
-    return -5;
-  if (!openvas_scanner_connected ()
-      && (openvas_scanner_connect () || openvas_scanner_init (0)))
-    return -5;
-
-  run_status = task_run_status (task);
-  if (run_status == TASK_STATUS_PAUSE_REQUESTED
-      || run_status == TASK_STATUS_PAUSED)
-    {
-      if (current_scanner_task == task
-          && send_to_server ("CLIENT <|> RESUME_WHOLE_TEST <|> CLIENT\n"))
-        return -1;
-      set_task_run_status (task, TASK_STATUS_RESUME_REQUESTED);
-      return 1;
-    }
-
-  return 0;
 }
 
 /**
@@ -3886,20 +3706,6 @@ manage_check_current_task ()
       run_status = task_run_status (current_scanner_task);
       switch (run_status)
         {
-          case TASK_STATUS_PAUSE_REQUESTED:
-            if (send_to_server ("CLIENT <|> PAUSE_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_PAUSE_WAITING);
-            return 1;
-            break;
-          case TASK_STATUS_RESUME_REQUESTED:
-            if (send_to_server ("CLIENT <|> RESUME_WHOLE_TEST <|> CLIENT\n"))
-              return -1;
-            set_task_run_status (current_scanner_task,
-                                 TASK_STATUS_RESUME_WAITING);
-            return 1;
-            break;
           case TASK_STATUS_STOP_REQUESTED_GIVEUP:
             /* This should only happen for slave tasks. */
             assert (0);
@@ -3929,10 +3735,7 @@ manage_check_current_task ()
           case TASK_STATUS_DONE:
           case TASK_STATUS_NEW:
           case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RESUME_WAITING:
           case TASK_STATUS_RUNNING:
-          case TASK_STATUS_PAUSE_WAITING:
-          case TASK_STATUS_PAUSED:
           case TASK_STATUS_STOP_WAITING:
           case TASK_STATUS_STOPPED:
           case TASK_STATUS_INTERNAL_ERROR:

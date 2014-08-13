@@ -1,5 +1,43 @@
 2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove task pausing feature.
+
+	* src/manage.h (task_status_t): Delete TASK_STATUS_PAUSE_REQUESTED,
+	TASK_STATUS_PAUSE_WAITING, TASK_STATUS_PAUSED,
+	TASK_STATUS_RESUME_REQUESTED, TASK_STATUS_RESUME_WAITING statuses.
+	Remove deleted functions prototypes.
+
+	* src/manage.c (run_status_name, run_status_name_internal, slave_setup)
+	(stop_task_internal, manage_check_current_task): Remove handling of
+	deleted statuses.
+	(pause_task, resume_paused_task): Delete functions.
+
+	* src/manage_pg.c (manage_create_sql_functions): Remove deleted task
+	statuses handling.
+
+	* src/manage_sql.c (omp_commands): Remove pause_task and
+	resume_paused_task commands.
+	(task_in_use, stop_active_tasks, set_task_requested,
+	(task_iterator_current_report, set_task_schedule)
+	(delete_report_internal, report_active, delete_user): Remove deleted
+	task statuses handling.
+
+	* src/omp.c (pause_task_data_t, resume_paused_task_data_t): Remove
+	typedefs.
+	(pause_task_daa_reset, resume_paused_task_data_reset): Delete functions.
+	(command_data_t): Remove pause_task and resume_paused_task commands.
+	(pause_task_data_t, resume_paused_task_data_t): Remove variables.
+	(client_state_t): Remove CLIENT_PAUSE_TASK and
+	CLIENT_RESUME_PAUSED_TASK states.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Remove task
+	pausing and resuming handling.
+
+	* src/otp.c (process_otp_scanner_input): Remove scan pausing and
+	resuming handling.
+
+
+2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (results_xml_append_nvt): Correctly set the nvt tag's
 	cvss_base in oval definitions case.
 

@@ -392,10 +392,8 @@ command_t omp_commands[]
     {"MODIFY_TARGET", "Modify an existing target."},
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_USER", "Modify a user."},
-    {"PAUSE_TASK", "Pause a running task."},
     {"RESTORE", "Restore a resource."},
     {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
-    {"RESUME_PAUSED_TASK", "Resume a paused task."},
     {"RESUME_STOPPED_TASK", "Resume a stopped task."},
     {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
@@ -9085,12 +9083,7 @@ task_in_use (task_t task)
          || status == TASK_STATUS_DELETE_WAITING
          || status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
          || status == TASK_STATUS_DELETE_ULTIMATE_WAITING
-         || status == TASK_STATUS_PAUSE_REQUESTED
-         || status == TASK_STATUS_PAUSE_WAITING
-         || status == TASK_STATUS_PAUSED
          || status == TASK_STATUS_REQUESTED
-         || status == TASK_STATUS_RESUME_REQUESTED
-         || status == TASK_STATUS_RESUME_WAITING
          || status == TASK_STATUS_RUNNING
          || status == TASK_STATUS_STOP_REQUESTED_GIVEUP
          || status == TASK_STATUS_STOP_REQUESTED
@@ -11658,7 +11651,7 @@ stop_active_tasks ()
   iterator_t tasks;
   get_data_t get;
 
-  /* Set requested, paused and running tasks to stopped. */
+  /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
   memset (&get, '\0', sizeof (get));
@@ -11671,12 +11664,7 @@ stop_active_tasks ()
           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
           case TASK_STATUS_DELETE_ULTIMATE_WAITING:
           case TASK_STATUS_DELETE_WAITING:
-          case TASK_STATUS_PAUSE_REQUESTED:
-          case TASK_STATUS_PAUSE_WAITING:
-          case TASK_STATUS_PAUSED:
           case TASK_STATUS_REQUESTED:
-          case TASK_STATUS_RESUME_REQUESTED:
-          case TASK_STATUS_RESUME_WAITING:
           case TASK_STATUS_RUNNING:
           case TASK_STATUS_STOP_REQUESTED_GIVEUP:
           case TASK_STATUS_STOP_REQUESTED:
@@ -11707,23 +11695,13 @@ stop_active_tasks ()
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
        " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
-       " OR scan_run_status = %u"
        " OR scan_run_status = %u;",
        TASK_STATUS_STOPPED,
        TASK_STATUS_DELETE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
        TASK_STATUS_DELETE_ULTIMATE_WAITING,
        TASK_STATUS_DELETE_WAITING,
-       TASK_STATUS_PAUSE_REQUESTED,
-       TASK_STATUS_PAUSE_WAITING,
-       TASK_STATUS_PAUSED,
        TASK_STATUS_REQUESTED,
-       TASK_STATUS_RESUME_REQUESTED,
-       TASK_STATUS_RESUME_WAITING,
        TASK_STATUS_RUNNING,
        TASK_STATUS_STOP_REQUESTED,
        TASK_STATUS_STOP_REQUESTED_GIVEUP,
@@ -12911,11 +12889,6 @@ set_task_requested (task_t task, task_status_t *status)
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_REQUESTED
       || run_status == TASK_STATUS_RUNNING
-      || run_status == TASK_STATUS_PAUSE_REQUESTED
-      || run_status == TASK_STATUS_PAUSE_WAITING
-      || run_status == TASK_STATUS_PAUSED
-      || run_status == TASK_STATUS_RESUME_REQUESTED
-      || run_status == TASK_STATUS_RESUME_WAITING
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
       || run_status == TASK_STATUS_STOP_WAITING
@@ -12978,17 +12951,11 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_PAUSE_REQUESTED
-      || run_status == TASK_STATUS_PAUSED
-      || run_status == TASK_STATUS_RESUME_REQUESTED)
+      || run_status == TASK_STATUS_STOPPED)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
-                                     " OR scan_run_status = %u"
-                                     " OR scan_run_status = %u"
-                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -13002,10 +12969,7 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED_GIVEUP,
-                                     TASK_STATUS_STOPPED,
-                                     TASK_STATUS_PAUSE_REQUESTED,
-                                     TASK_STATUS_PAUSED,
-                                     TASK_STATUS_RESUME_REQUESTED);
+                                     TASK_STATUS_STOPPED);
     }
   return (report_t) 0;
 }
@@ -13352,8 +13316,6 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
 /**
  * @brief Set the schedule of a task.
  *
- * Stop the task if it is paused.
- *
  * @param[in]  task      Task.
  * @param[in]  schedule  Schedule.
  *
@@ -13362,35 +13324,11 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
 int
 set_task_schedule (task_t task, schedule_t schedule)
 {
-  task_status_t run_status;
-
-  run_status = task_run_status (task);
-  if (schedule != task_schedule (task)
-      && (run_status == TASK_STATUS_PAUSE_REQUESTED
-          || run_status == TASK_STATUS_PAUSE_WAITING
-          || run_status == TASK_STATUS_PAUSED))
-    switch (stop_task_internal (task))
-      {
-        case 0:    /* Stopped. */
-        case 1:    /* Stop requested. */
-          break;
-        default:   /* Programming error. */
-          assert (0);
-        case -1:   /* Error. */
-          return -1;
-          break;
-        case -5:   /* Scanner down. */
-          return -5;
-          break;
-      }
-
   sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
        " (SELECT schedules.first_time FROM schedules WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
-       schedule,
-       schedule,
-       task);
+       schedule, schedule, task);
 
   return 0;
 }
@@ -18882,16 +18820,9 @@ delete_report_internal (report_t report)
   if (sql_int ("SELECT count(*) FROM reports WHERE id = %llu"
                " AND (scan_run_status = %u OR scan_run_status = %u"
                " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u"
-               " OR scan_run_status = %u OR scan_run_status = %u);",
+               " OR scan_run_status = %u);",
                report,
                TASK_STATUS_RUNNING,
-               TASK_STATUS_PAUSE_REQUESTED,
-               TASK_STATUS_PAUSE_WAITING,
-               TASK_STATUS_PAUSED,
-               TASK_STATUS_RESUME_REQUESTED,
-               TASK_STATUS_RESUME_WAITING,
                TASK_STATUS_REQUESTED,
                TASK_STATUS_DELETE_REQUESTED,
                TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
@@ -21740,10 +21671,7 @@ report_active (report_t report)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED
-      || run_status == TASK_STATUS_PAUSE_REQUESTED
-      || run_status == TASK_STATUS_PAUSED
-      || run_status == TASK_STATUS_RESUME_REQUESTED)
+      || run_status == TASK_STATUS_STOPPED)
     return 1;
   return 0;
 }
@@ -49778,7 +49706,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   if (user == 0)
     return 2;
 
-  /* Set requested, paused and running tasks to stopped. */
+  /* Set requested and running tasks to stopped. */
 
   memset (&get, '\0', sizeof (get));
   current_uuid = current_credentials.uuid;
@@ -49793,12 +49721,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
         case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
         case TASK_STATUS_DELETE_ULTIMATE_WAITING:
         case TASK_STATUS_DELETE_WAITING:
-        case TASK_STATUS_PAUSE_REQUESTED:
-        case TASK_STATUS_PAUSE_WAITING:
-        case TASK_STATUS_PAUSED:
         case TASK_STATUS_REQUESTED:
-        case TASK_STATUS_RESUME_REQUESTED:
-        case TASK_STATUS_RESUME_WAITING:
         case TASK_STATUS_RUNNING:
         case TASK_STATUS_STOP_REQUESTED_GIVEUP:
         case TASK_STATUS_STOP_REQUESTED:

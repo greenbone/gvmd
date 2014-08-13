@@ -1410,22 +1410,10 @@ process_otp_scanner_input (void (*progress) ())
                     {
                       if (strcmp (field, "portscan"))
                         {
-                          if (current_scanner_task)
-                            {
-                              if (strcmp (field, "pause") == 0)
-                                set_task_run_status (current_scanner_task,
-                                                     TASK_STATUS_PAUSED);
-                              else if (strcmp (field, "resume") == 0)
-                                set_task_run_status (current_scanner_task,
-                                                     TASK_STATUS_RUNNING);
-                            }
-                          else
-                            {
-                              char* state = g_strdup (field);
-                              set_scan_attack_state (current_report,
-                                                     current_host,
-                                                     state);
-                            }
+                          char* state = g_strdup (field);
+                          set_scan_attack_state (current_report,
+                                                 current_host,
+                                                 state);
                           set_scanner_state (SCANNER_STATUS_PROGRESS);
                         }
                       else
@@ -1602,11 +1590,6 @@ process_otp_scanner_input (void (*progress) ())
                         {
                           case TASK_STATUS_INTERNAL_ERROR:
                             break;
-                          case TASK_STATUS_PAUSE_REQUESTED:
-                          case TASK_STATUS_PAUSE_WAITING:
-                          case TASK_STATUS_PAUSED:
-                          case TASK_STATUS_RESUME_REQUESTED:
-                          case TASK_STATUS_RESUME_WAITING:
                           case TASK_STATUS_STOP_REQUESTED:
                           case TASK_STATUS_STOP_WAITING:
                             set_task_run_status (current_scanner_task,

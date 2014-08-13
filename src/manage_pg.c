@@ -192,7 +192,7 @@ manage_create_sql_functions ()
            "         WHEN (SELECT scan_run_status FROM reports"
            "               WHERE reports.id = $1)"
            "               IN (SELECT unnest (ARRAY [%i, %i, %i, %i, %i, %i,"
-           "                                         %i, %i, %i, %i]))"
+           "                                         %i]))"
            "         THEN true"
            "         ELSE false"
            "         END;"
@@ -203,10 +203,7 @@ manage_create_sql_functions ()
            TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
            TASK_STATUS_STOP_REQUESTED,
            TASK_STATUS_STOP_REQUESTED_GIVEUP,
-           TASK_STATUS_STOPPED,
-           TASK_STATUS_PAUSE_REQUESTED,
-           TASK_STATUS_PAUSED,
-           TASK_STATUS_RESUME_REQUESTED);
+           TASK_STATUS_STOPPED);
 
       sql ("CREATE OR REPLACE FUNCTION report_progress (integer)"
            " RETURNS integer AS $$"
@@ -525,14 +522,8 @@ manage_create_sql_functions ()
        "         THEN 'Done'"
        "         WHEN $1 = %i"
        "         THEN 'New'"
-       "         WHEN $1 = %i OR $1 = %i"
-       "         THEN 'Requested'"
-       "         WHEN $1 = %i"
-       "         THEN 'Paused'"
        "         WHEN $1 = %i"
        "         THEN 'Requested'"
-       "         WHEN $1 = %i OR $1 = %i"
-       "         THEN 'Resume Requested'"
        "         WHEN $1 = %i"
        "         THEN 'Running'"
        "         WHEN $1 = %i OR $1 = %i OR $1 = %i"
@@ -548,12 +539,7 @@ manage_create_sql_functions ()
        TASK_STATUS_DELETE_ULTIMATE_WAITING,
        TASK_STATUS_DONE,
        TASK_STATUS_NEW,
-       TASK_STATUS_PAUSE_REQUESTED,
-       TASK_STATUS_PAUSE_WAITING,
-       TASK_STATUS_PAUSED,
        TASK_STATUS_REQUESTED,
-       TASK_STATUS_RESUME_REQUESTED,
-       TASK_STATUS_RESUME_WAITING,
        TASK_STATUS_RUNNING,
        TASK_STATUS_STOP_REQUESTED_GIVEUP,
        TASK_STATUS_STOP_REQUESTED,

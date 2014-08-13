@@ -169,11 +169,6 @@ typedef enum
   TASK_STATUS_NEW  = 2,
   TASK_STATUS_REQUESTED = 3,
   TASK_STATUS_RUNNING   = 4,
-  TASK_STATUS_PAUSE_REQUESTED = 5,
-  TASK_STATUS_PAUSE_WAITING   = 6,
-  TASK_STATUS_PAUSED = 7,
-  TASK_STATUS_RESUME_REQUESTED = 8,
-  TASK_STATUS_RESUME_WAITING   = 9,
   TASK_STATUS_STOP_REQUESTED   = 10,
   TASK_STATUS_STOP_WAITING     = 11,
   TASK_STATUS_STOPPED = 12,
@@ -827,18 +822,11 @@ int
 stop_task (const char *);
 
 int
-pause_task (const char *);
-
-int
 resume_stopped_task (const char *, char **);
 
 int
 resume_or_start_task (const char *, char **);
 
-int
-resume_paused_task (const char *);
-
-
 /* Iteration. */
 
 void
