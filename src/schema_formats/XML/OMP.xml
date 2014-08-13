@@ -1946,7 +1946,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>get_slaves</c>
           <c>get_system_reports</c>
           <c>get_tags</c>
-          <c>get_target_locators</c>
           <c>get_targets</c>
           <c>get_tasks</c>
           <c>get_users</c>
@@ -2073,7 +2072,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>get_settings</r>
             <r>get_system_reports</r>
             <r>get_tags</r>
-            <r>get_target_locators</r>
             <r>get_targets</r>
             <r>get_tasks</r>
             <r>get_users</r>
@@ -4070,7 +4068,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>hosts</e>
       <e>ssh_lsc_credential</e>
       <e>smb_lsc_credential</e>
-      <e>target_locator</e>
       <e>alive_tests</e>
       <e>reverse_lookup_only</e>
       <e>reverse_lookup_unify</e>
@@ -4140,28 +4137,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
-    </ele>
-    <ele>
-      <name>target_locator</name>
-      <summary>Target locator (for example, for LDAP)</summary>
-      <pattern>
-        <o><e>username</e></o>
-        <o><e>password</e></o>
-      </pattern>
-      <ele>
-        <name>username</name>
-        <summary>The login for the target locator</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
-      <ele>
-        <name>password</name>
-        <summary>The password for the target locator</summary>
-        <pattern>
-          text
-        </pattern>
-      </ele>
     </ele>
     <ele>
       <name>alive_tests</name>
@@ -15648,58 +15623,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>get_target_locators</name>
-    <summary>Get configured target locators</summary>
-    <description>
-      <p>
-        The client uses the get_target_locators command to get target locators.
-      </p>
-    </description>
-    <pattern>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-        <any><e>target_locator</e></any>
-      </pattern>
-      <ele>
-        <name>target_locator</name>
-        <pattern>
-          <e>name</e>
-        </pattern>
-        <ele>
-          <name>name</name>
-          <summary>The name of the target locator</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
-      </ele>
-    </response>
-    <example>
-      <summary>Get target locators</summary>
-      <request>
-        <get_target_locators>
-        </get_target_locators>
-      </request>
-      <response>
-        <get_target_locators_response status="200" status_text="OK">
-          <target_locator>
-            <name>ldap</name>
-          </target_locator>
-          <truncated>...</truncated>
-        </get_target_locators_response>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>get_targets</name>
     <summary>Get all targets</summary>
     <description>
@@ -17914,7 +17837,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             GET_SLAVES             Get all slaves.
             GET_SYSTEM_REPORTS     Get all system reports.
             GET_TAGS               Get all tags.
-            GET_TARGET_LOCATORS    Get configured target locators.
             GET_TARGETS            Get all targets.
             GET_TASKS              Get all tasks.
             GET_USERS              Get all users.
@@ -19765,7 +19687,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>port_list</e></o>
-      <o><e>target_locator</e></o>
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
       <o><e>reverse_lookup_unify</e></o>
@@ -19817,21 +19738,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
-    </ele>
-    <ele>
-      <name>target_locator</name>
-      <pattern>
-        <e>username</e>
-        <e>password</e>
-      </pattern>
-      <ele>
-        <name>username</name>
-        <pattern>text</pattern>
-      </ele>
-      <ele>
-        <name>password</name>
-        <pattern>text</pattern>
-      </ele>
     </ele>
     <ele>
       <name>alive_tests</name>
@@ -20755,6 +20661,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </response>
     </example>
   </command>
+  <change>
+    <command>CREATE_TARGET, MODIFY_TARGET</command>
+    <summary>Element TARGET_LOCATOR removed</summary>
+    <description>
+      <p>
+        The element TARGET_LOCATOR was removed from CREATE_TARGET and
+        MODIFY_TARGET.  This was an older, unused feature.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>GET_TARGET_LOCATORS</command>
+    <summary>Command removed</summary>
+    <description>
+      <p>
+        The command GET_TARGET_LOCATORS was removed.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
   <change>
     <command>GET_TASKS</command>
     <summary>Attribute "rcfile" and associate RCFILE removed</summary>

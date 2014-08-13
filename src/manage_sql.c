@@ -364,7 +364,6 @@ command_t omp_commands[]
     {"GET_SLAVES", "Get all slaves."},
     {"GET_SYSTEM_REPORTS", "Get all system reports."},
     {"GET_TAGS", "Get all tags."},
-    {"GET_TARGET_LOCATORS", "Get configured target locators."},
     {"GET_TARGETS", "Get all targets."},
     {"GET_TASKS", "Get all tasks."},
     {"GET_USERS", "Get all users."},
@@ -25872,9 +25871,6 @@ alive_test_from_string (const char* alive_tests)
 /**
  * @brief Create a target.
  *
- * The \param hosts and \param target_locator parameters are mutually
- * exclusive, if target_locator is not NULL, always try to import from source.
- *
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
  * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
@@ -25884,10 +25880,6 @@ alive_test_from_string (const char* alive_tests)
  * @param[in]   ssh_lsc_credential  SSH LSC credential.
  * @param[in]   ssh_port        Port for SSH LSC login.
  * @param[in]   smb_lsc_credential  SMB LSC credential.
- * @param[in]   target_locator  Name of target_locator to import target(s)
- *                              from.
- * @param[in]   username        Username to authenticate with against source.
- * @param[in]   password        Password for user \p username.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -25897,23 +25889,21 @@ alive_test_from_string (const char* alive_tests)
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 error in alive tests,
- *         99 permission denied, -1 if import from target locator failed or
- *         response was empty.
+ *         99 permission denied, -1 error.
  */
 int
 create_target (const char* name, const char* hosts, const char* exclude_hosts,
                const char* comment, const char* port_list_id,
                const char* port_range, lsc_credential_t ssh_lsc_credential,
                const char* ssh_port, lsc_credential_t smb_lsc_credential,
-               const char* target_locator, const char* username,
-               const char* password, const char *reverse_lookup_only,
+               const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests,
                int make_name_unique, target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
-  gchar *port_list_comment, *quoted_ssh_port;
+  gchar *port_list_comment, *quoted_ssh_port, *clean;
   port_list_t port_list;
-  int ret, alive_test;
+  int ret, alive_test, max;
 
   assert (current_credentials.uuid);
 
@@ -25961,76 +25951,25 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
   quoted_name = sql_quote (name);
   quoted_exclude_hosts = exclude_hosts ? sql_quote (exclude_hosts)
                                        : g_strdup ("");
-  /* Import targets from target locator. */
-  if (target_locator != NULL)
+
+  max = manage_count_hosts (hosts, quoted_exclude_hosts);
+  if (max <= 0)
     {
-      int max;
-      gchar *clean;
-      GSList* hosts_list = NULL; /* @todo target locators are in the process
-                                    to be removed. This is set to NULL as a replacement
-                                    for the former call for a resource_quest.
-                                    The entire handling of target locators can
-                                    be removed from OpenVAS Manager */
-
-      if (hosts_list == NULL)
-        {
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return -1;
-        }
-
-      gchar* import_hosts = openvas_string_flatten_string_list (hosts_list,
-                                                                ", ");
-
-      openvas_string_list_free (hosts_list);
-      max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
-      if (max <= 0)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      clean = clean_hosts (import_hosts, &max);
-      if (max > max_hosts)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (import_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-      g_free (import_hosts);
-      quoted_hosts = sql_quote (clean);
-      g_free (clean);
+      g_free (quoted_exclude_hosts);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 2;
     }
-  else
+  clean = clean_hosts (hosts, &max);
+  if (max > max_hosts)
     {
-      int max;
-      gchar *clean;
-
-      /* User provided hosts. */
-
-      max = manage_count_hosts (hosts, quoted_exclude_hosts);
-      if (max <= 0)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 2;
-        }
-      clean = clean_hosts (hosts, &max);
-      if (max > max_hosts)
-        {
-          g_free (quoted_exclude_hosts);
-          g_free (quoted_name);
-          sql ("ROLLBACK;");
-          return 3;
-        }
-      quoted_hosts = sql_quote (clean);
-      g_free (clean);
+      g_free (quoted_exclude_hosts);
+      g_free (quoted_name);
+      sql ("ROLLBACK;");
+      return 3;
     }
+  quoted_hosts = sql_quote (clean);
+  g_free (clean);
 
   if (port_list_id)
     {
@@ -26271,9 +26210,6 @@ delete_target (const char *target_id, int ultimate)
 /**
  * @brief Modify a target.
  *
- * The \param hosts and \param target_locator parameters are mutually
- * exclusive, if target_locator is not NULL, always try to import from source.
- *
  * @param[in]   target_id       UUID of target.
  * @param[in]   name            Name of target.
  * @param[in]   hosts           Host list of target.
@@ -26283,10 +26219,6 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   ssh_lsc_credential_id  SSH LSC credential.
  * @param[in]   ssh_port        Port for SSH LSC login.
  * @param[in]   smb_lsc_credential_id  SMB LSC credential.
- * @param[in]   target_locator  Name of target_locator to import target(s)
- *                              from.
- * @param[in]   username        Username to authenticate with against source.
- * @param[in]   password        Password for user \p username.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
  * @param[in]   alive_tests     Alive tests.
@@ -26295,19 +26227,17 @@ delete_target (const char *target_id, int ultimate)
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
  *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
  *         find SMB cred, 9 failed to find target, 10 error in alive tests,
- *         11 zero length name, 12 exclude hosts requires hosts or target
- *         locator, 13 hosts or target locator requires exclude hosts,
+ *         11 zero length name, 12 exclude hosts requires hosts
+ *         13 hosts requires exclude hosts,
  *         14 hosts must be at least one character, 15 target is in use,
- *         99 permission denied, -1 if import from target locator failed or
- *         response was empty FIX or internal error.
+ *         99 permission denied, -1 error.
  */
 int
 modify_target (const char *target_id, const char *name, const char *hosts,
                const char *exclude_hosts, const char *comment,
                const char *port_list_id, const char *ssh_lsc_credential_id,
                const char *ssh_port, const char *smb_lsc_credential_id,
-               const char *target_locator, const char *username,
-               const char *password, const char *reverse_lookup_only,
+               const char *reverse_lookup_only,
                const char *reverse_lookup_unify, const char *alive_tests)
 {
   target_t target;
@@ -26324,7 +26254,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 99;
     }
 
-  if ((hosts || target_locator) && (exclude_hosts == NULL))
+  if (hosts && (exclude_hosts == NULL))
     {
       sql ("ROLLBACK;");
       return 13;
@@ -26516,7 +26446,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (exclude_hosts)
     {
-      gchar *quoted_exclude_hosts, *quoted_hosts;
+      gchar *quoted_exclude_hosts, *quoted_hosts, *clean;
+      int max;
 
       if (target_in_use (target))
         {
@@ -26525,88 +26456,37 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
 
       quoted_exclude_hosts = sql_quote (exclude_hosts);
-      if (target_locator != NULL)
+
+      if (hosts == NULL)
         {
-          int max;
-          gchar *clean;
-          GSList *hosts_list;
-          gchar *import_hosts;
-
-          /* Import targets from target locator. */
-
-          hosts_list = NULL; /* @todo target locators are in the process
-                                to be removed. This is set to NULL as a replacement
-                                for the former call for a resource_quest.
-                                The entire handling of target locators can
-                                be removed from OpenVAS Manager */
-
-          if (hosts_list == NULL)
-            {
-              sql ("ROLLBACK;");
-              return -1;
-            }
-
-          import_hosts = openvas_string_flatten_string_list (hosts_list, ", ");
-
-          openvas_string_list_free (hosts_list);
-          max = manage_count_hosts (import_hosts, quoted_exclude_hosts);
-          if (max <= 0)
-            {
-              g_free (quoted_exclude_hosts);
-              g_free (import_hosts);
-              sql ("ROLLBACK;");
-              return 2;
-            }
-          clean = clean_hosts (import_hosts, &max);
-          if (max > max_hosts)
-            {
-              g_free (quoted_exclude_hosts);
-              g_free (import_hosts);
-              sql ("ROLLBACK;");
-              return 3;
-            }
-          g_free (import_hosts);
-          quoted_hosts = sql_quote (clean);
-          g_free (clean);
+          g_free (quoted_exclude_hosts);
+          sql ("ROLLBACK;");
+          return 12;
         }
-      else
+
+      if (strlen (hosts) == 0)
         {
-          int max;
-          gchar *clean;
-
-          /* User provided hosts. */
-
-          if (hosts == NULL)
-            {
-              g_free (quoted_exclude_hosts);
-              sql ("ROLLBACK;");
-              return 12;
-            }
-
-          if (strlen (hosts) == 0)
-            {
-              g_free (quoted_exclude_hosts);
-              sql ("ROLLBACK;");
-              return 14;
-            }
-
-          max = manage_count_hosts (hosts, quoted_exclude_hosts);
-          if (max <= 0)
-            {
-              g_free (quoted_exclude_hosts);
-              sql ("ROLLBACK;");
-              return 2;
-            }
-          clean = clean_hosts (hosts, &max);
-          if (max > max_hosts)
-            {
-              g_free (quoted_exclude_hosts);
-              sql ("ROLLBACK;");
-              return 3;
-            }
-          quoted_hosts = sql_quote (clean);
-          g_free (clean);
+          g_free (quoted_exclude_hosts);
+          sql ("ROLLBACK;");
+          return 14;
         }
+
+      max = manage_count_hosts (hosts, quoted_exclude_hosts);
+      if (max <= 0)
+        {
+          g_free (quoted_exclude_hosts);
+          sql ("ROLLBACK;");
+          return 2;
+        }
+      clean = clean_hosts (hosts, &max);
+      if (max > max_hosts)
+        {
+          g_free (quoted_exclude_hosts);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+      quoted_hosts = sql_quote (clean);
+      g_free (clean);
 
       sql ("UPDATE targets SET"
            " hosts = '%s',"

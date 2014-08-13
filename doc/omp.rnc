@@ -84,7 +84,6 @@ command
     | get_slaves
     | get_system_reports
     | get_tags
-    | get_target_locators
     | get_targets
     | get_tasks
     | get_users
@@ -201,7 +200,6 @@ response
     | get_slaves_response
     | get_system_reports_response
     | get_tags_response
-    | get_target_locators_response
     | get_targets_response
     | get_tasks_response
     | get_users_response
@@ -2075,7 +2073,6 @@ commands
            | get_slaves
            | get_system_reports
            | get_tags
-           | get_target_locators
            | get_targets
            | get_tasks
            | get_users
@@ -3305,7 +3302,6 @@ create_target
        & create_target_hosts
        & create_target_ssh_lsc_credential
        & create_target_smb_lsc_credential
-       & create_target_target_locator
        & create_target_alive_tests
        & create_target_reverse_lookup_only
        & create_target_reverse_lookup_unify
@@ -3369,28 +3365,6 @@ create_target_smb_lsc_credential
  = element smb_lsc_credential
      {
        attribute id { uuid }
-     }
-
-# Target locator (for example, for LDAP).
-create_target_target_locator
- = element target_locator
-     {
-       create_target_target_locator_username?
-       & create_target_target_locator_password?
-     }
-
-# The login for the target locator.
-create_target_target_locator_username
- = element username
-     {
-       text
-     }
-
-# The password for the target locator.
-create_target_target_locator_password
- = element password
-     {
-       text
      }
 
 # Which alive tests to use.
@@ -4440,16 +4414,6 @@ get_tags
        attribute trash { boolean }?
        & # Whether to get only distinct tag names.
        attribute names_only { boolean }?
-     }
-
-## Command get_target_locators
-##
-## Get configured target locators.
-
-get_target_locators
- = element get_target_locators
-     {
-       ""
      }
 
 ## Command get_targets
@@ -5567,7 +5531,6 @@ modify_target
        & modify_target_ssh_lsc_credential?
        & modify_target_smb_lsc_credential?
        & modify_target_port_list?
-       & modify_target_target_locator?
        & modify_target_alive_tests?
        & modify_target_reverse_lookup_only?
        & modify_target_reverse_lookup_unify?
@@ -5613,25 +5576,6 @@ modify_target_port_list
  = element port_list
      {
        attribute id { uuid }
-     }
-
-modify_target_target_locator
- = element target_locator
-     {
-       modify_target_target_locator_username
-       & modify_target_target_locator_password
-     }
-
-modify_target_target_locator_username
- = element username
-     {
-       text
-     }
-
-modify_target_target_locator_password
- = element password
-     {
-       text
      }
 
 # Which alive tests to use.
@@ -6138,7 +6082,6 @@ commands_response
            | get_settings_response
            | get_system_reports_response
            | get_tags_response
-           | get_target_locators_response
            | get_targets_response
            | get_tasks_response
            | get_users_response
@@ -13829,29 +13772,6 @@ get_tags_response_tag_count_page
  = element page
      {
        integer
-     }
-
-## Response to get_target_locators
-
-get_target_locators_response
- = element get_target_locators_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-       & get_target_locators_response_target_locator*
-     }
-
-get_target_locators_response_target_locator
- = element target_locator
-     {
-       get_target_locators_response_target_locator_name
-     }
-
-# The name of the target locator.
-get_target_locators_response_target_locator_name
- = element name
-     {
-       name
      }
 
 ## Response to get_targets

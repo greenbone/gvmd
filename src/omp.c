@@ -1601,9 +1601,6 @@ typedef struct
   char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
   char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new target.
-  char *target_locator;          ///< Target locator (source name).
-  char *target_locator_password; ///< Target locator credentials: password.
-  char *target_locator_username; ///< Target locator credentials: username.
 } create_target_data_t;
 
 /**
@@ -1628,9 +1625,6 @@ create_target_data_reset (create_target_data_t *data)
   free (data->smb_lsc_credential_id);
   free (data->make_name_unique);
   free (data->name);
-  free (data->target_locator);
-  free (data->target_locator_password);
-  free (data->target_locator_username);
 
   memset (data, 0, sizeof (create_target_data_t));
 }
@@ -3608,9 +3602,6 @@ typedef struct
   char *ssh_port;                ///< Port for SSH LSC.
   char *smb_lsc_credential_id;   ///< SMB LSC credential for target.
   char *target_id;               ///< Target UUID.
-  char *target_locator;          ///< Target locator (source name).
-  char *target_locator_password; ///< Target locator credentials: password.
-  char *target_locator_username; ///< Target locator credentials: username.
 } modify_target_data_t;
 
 /**
@@ -3633,9 +3624,6 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->ssh_port);
   free (data->smb_lsc_credential_id);
   free (data->target_id);
-  free (data->target_locator);
-  free (data->target_locator_password);
-  free (data->target_locator_username);
 
   memset (data, 0, sizeof (modify_target_data_t));
 }
@@ -5146,9 +5134,6 @@ typedef enum
   CLIENT_CREATE_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
-  CLIENT_CREATE_TARGET_TARGET_LOCATOR,
-  CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
-  CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_CREATE_TASK,
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_ALTERABLE,
@@ -5231,7 +5216,6 @@ typedef enum
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TAGS,
   CLIENT_GET_TARGETS,
-  CLIENT_GET_TARGET_LOCATORS,
   CLIENT_GET_TASKS,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
@@ -5380,9 +5364,6 @@ typedef enum
   CLIENT_MODIFY_TARGET_SMB_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
-  CLIENT_MODIFY_TARGET_TARGET_LOCATOR,
-  CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD,
-  CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME,
   CLIENT_MODIFY_TASK,
   CLIENT_MODIFY_TASK_ALERT,
   CLIENT_MODIFY_TASK_ALTERABLE,
@@ -6428,7 +6409,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
             openvas_append_string (&create_target_data->comment, "");
-            openvas_append_string (&create_target_data->hosts, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
@@ -7292,10 +7272,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_tags_data->names_only = 0;
 
             set_client_state (CLIENT_GET_TAGS);
-          }
-        else if (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0)
-          {
-            set_client_state (CLIENT_GET_TARGET_LOCATORS);
           }
         else if (strcasecmp ("GET_SYSTEM_REPORTS", element_name) == 0)
           {
@@ -8219,20 +8195,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_target_data->name, "");
             set_client_state (CLIENT_MODIFY_TARGET_NAME);
           }
-        else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR);
         ELSE_ERROR ("modify_target");
 
       case CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT);
-        ELSE_ERROR ("modify_target");
-
-      case CLIENT_MODIFY_TARGET_TARGET_LOCATOR:
-        if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD);
-        else if (strcasecmp ("USERNAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME);
         ELSE_ERROR ("modify_target");
 
       case CLIENT_MODIFY_TASK:
@@ -9396,8 +9363,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&create_target_data->name, "");
             set_client_state (CLIENT_CREATE_TARGET_NAME);
           }
-        else if (strcasecmp ("TARGET_LOCATOR", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR);
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TARGET_NAME:
@@ -9408,13 +9373,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT);
-        ELSE_ERROR ("create_target");
-
-      case CLIENT_CREATE_TARGET_TARGET_LOCATOR:
-        if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD);
-        else if (strcasecmp ("USERNAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME);
         ELSE_ERROR ("create_target");
 
       case CLIENT_CREATE_TASK:
@@ -16240,52 +16198,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
 
-      case CLIENT_GET_TARGET_LOCATORS:
-        {
-          GSList *sources, *source;
-
-          assert (strcasecmp ("GET_TARGET_LOCATORS", element_name) == 0);
-
-          if (user_may ("get_target_locators") == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("get_target_locators",
-                                  "Permission denied"));
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          sources = NULL; /* @todo target locators are in the process
-                             to be removed. This is set to NULL as a replacement
-                             for the former call for a resource_quest.
-                             The entire handling of target locators can
-                             be removed from OpenVAS Manager */
-
-          source = sources;
-
-          SEND_TO_CLIENT_OR_FAIL ("<get_target_locators_response"
-                                  " status=\"" STATUS_OK "\""
-                                  " status_text=\"" STATUS_OK_TEXT "\">");
-
-          while (source)
-            {
-              SENDF_TO_CLIENT_OR_FAIL ("<target_locator>"
-                                       "<name>%s</name>"
-                                       "</target_locator>",
-                                       (char*) source->data);
-              source = g_slist_next (source);
-            }
-
-          SEND_TO_CLIENT_OR_FAIL ("</get_target_locators_response>");
-
-          /* Clean up. */
-          openvas_string_list_free (sources);
-
-          set_client_state (CLIENT_AUTHENTIC);
-
-          break;
-        }
-
       case CLIENT_GET_TARGETS:
         {
           assert (strcasecmp ("GET_TARGETS", element_name) == 0);
@@ -20603,8 +20515,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
-          assert (create_target_data->target_locator
-                  || create_target_data->hosts != NULL);
 
           if (create_target_data->copy)
             switch (copy_target (create_target_data->name,
@@ -20662,20 +20572,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "CREATE_TARGET name must be at"
                                 " least one character long"));
-          else if (strlen (create_target_data->hosts) == 0
-                   && create_target_data->target_locator == NULL)
+          else if (create_target_data->hosts == NULL)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                " CREATE_TARGET requires a host"));
+          else if (strlen (create_target_data->hosts) == 0)
             /** @todo Legitimate to pass an empty hosts element? */
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("create_target",
-                                "CREATE_TARGET hosts must both be at least one"
-                                " character long, or TARGET_LOCATOR must"
-                                " be set"));
-          else if (strlen (create_target_data->hosts) != 0
-                   && create_target_data->target_locator != NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_target",
-                                " CREATE_TARGET requires either a"
-                                " TARGET_LOCATOR or a host"));
+                                "CREATE_TARGET hosts must be at least one"
+                                " character long"));
           else if (create_target_data->ssh_lsc_credential_id
                    && find_lsc_credential
                        (create_target_data->ssh_lsc_credential_id,
@@ -20725,9 +20631,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ssh_lsc_credential,
                          create_target_data->ssh_port,
                          smb_lsc_credential,
-                         create_target_data->target_locator,
-                         create_target_data->target_locator_username,
-                         create_target_data->target_locator_password,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
@@ -20793,9 +20696,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
               case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_target",
-                                    "Import from target_locator failed"));
+                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
               default:
@@ -20825,9 +20726,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
       CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SMB_LSC_CREDENTIAL);
-      CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, PASSWORD);
-      CLOSE (CLIENT_CREATE_TARGET, TARGET_LOCATOR);
-      CLOSE (CLIENT_CREATE_TARGET_TARGET_LOCATOR, USERNAME);
 
       CLOSE (CLIENT_CREATE_TARGET_NAME, MAKE_UNIQUE);
 
@@ -23654,7 +23552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           modify_tag_data_reset (modify_tag_data);
-          set_client_state(CLIENT_AUTHENTIC);
+          set_client_state (CLIENT_AUTHENTIC);
           break;
         }
 
@@ -23685,9 +23583,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          modify_target_data->ssh_lsc_credential_id,
                          modify_target_data->ssh_port,
                          modify_target_data->smb_lsc_credential_id,
-                         modify_target_data->target_locator,
-                         modify_target_data->target_locator_username,
-                         modify_target_data->target_locator_password,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests))
@@ -23814,7 +23709,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
                                     "MODIFY_TARGET EXCLUDE_HOSTS requires"
-                                    " a HOSTS or a TARGET_LOCATOR"));
+                                    " a HOSTS"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
                                 "modified");
@@ -23822,8 +23717,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               case 13:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
-                                    "MODIFY_TARGET with a HOSTS or a"
-                                    " TARGET_LOCATOR requires an"
+                                    "MODIFY_TARGET with a HOSTS requires an"
                                     " EXCLUDE_HOSTS"));
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id,
@@ -23884,9 +23778,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SMB_LSC_CREDENTIAL);
-      CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, PASSWORD);
-      CLOSE (CLIENT_MODIFY_TARGET, TARGET_LOCATOR);
-      CLOSE (CLIENT_MODIFY_TARGET_TARGET_LOCATOR, USERNAME);
 
       CLOSE (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL, PORT);
 
@@ -26287,15 +26178,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_PORT_RANGE,
               &create_target_data->port_range);
 
-      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR,
-              &create_target_data->target_locator);
-
-      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR_PASSWORD,
-              &create_target_data->target_locator_password);
-
-      APPEND (CLIENT_CREATE_TARGET_TARGET_LOCATOR_USERNAME,
-              &create_target_data->target_locator_username);
-
       APPEND (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &create_target_data->ssh_port);
 
@@ -26599,15 +26481,6 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_NAME,
               &modify_target_data->name);
-
-      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR,
-              &modify_target_data->target_locator);
-
-      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_PASSWORD,
-              &modify_target_data->target_locator_password);
-
-      APPEND (CLIENT_MODIFY_TARGET_TARGET_LOCATOR_USERNAME,
-              &modify_target_data->target_locator_username);
 
       APPEND (CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
               &modify_target_data->ssh_port);

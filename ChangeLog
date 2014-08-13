@@ -1,3 +1,22 @@
+2014-08-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Remove target locators feature.
+
+	* src/manage_sql.c (omp_commands): Remove GET_TARGET_LOCATORS.
+	(create_target, modify_target): Remove target locator args.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(modify_target_data_t, modify_target_data_reset, client_state_t): Remove
+	target locator elements.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Remove target locators.
+
+	* src/schema_formats/XML/OMP.xml: Remove target locators from OMP.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
