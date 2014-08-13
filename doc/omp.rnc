@@ -112,10 +112,8 @@ command
     | modify_tag
     | modify_task
     | modify_user
-    | pause_task
     | restore
     | resume_or_start_task
-    | resume_paused_task
     | resume_stopped_task
     | run_wizard
     | start_task
@@ -231,10 +229,8 @@ response
     | modify_tag_response
     | modify_task_response
     | modify_user_response
-    | pause_task_response
     | restore_response
     | resume_or_start_task_response
-    | resume_paused_task_response
     | resume_stopped_task_response
     | run_wizard_response
     | start_task_response
@@ -281,7 +277,7 @@ sort_order = text
 # The success or failure status of a command.
 status = xsd:token { pattern = "200|201|202|400|401|403|404|409|500|503" }
 # A task run status.
-task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+task_status = xsd:token { pattern = "Delete Requested|Done|New|Requested|Running|Stop Requested|Stopped|Internal Error" }
 # The trend of results for a task.
 task_trend = xsd:token { pattern = "up|down|more|less|same" }
 # A threat level.
@@ -2107,10 +2103,8 @@ commands
            | modify_target
            | modify_task
            | modify_user
-           | pause_task
            | restore
            | resume_or_start_task
-           | resume_paused_task
            | resume_stopped_task
            | run_wizard
            | start_task
@@ -5873,16 +5867,6 @@ modify_user_sources
      {
      }
 
-## Command pause_task
-##
-## Pause a running task.
-
-pause_task
- = element pause_task
-     {
-       attribute task_id { uuid }
-     }
-
 ## Command restore
 ##
 ## Restore a resource.
@@ -5899,16 +5883,6 @@ restore
 
 resume_or_start_task
  = element resume_or_start_task
-     {
-       attribute task_id { uuid }
-     }
-
-## Command resume_paused_task
-##
-## Resume a paused task.
-
-resume_paused_task
- = element resume_paused_task
      {
        attribute task_id { uuid }
      }
@@ -6192,10 +6166,8 @@ commands_response
            | modify_target_response
            | modify_task_response
            | modify_user_response
-           | pause_task_response
            | restore_response
            | resume_or_start_task_response
-           | resume_paused_task_response
            | resume_stopped_task_response
            | run_wizard_response
            | start_task_response
@@ -15772,15 +15744,6 @@ modify_user_response
        & attribute status_text { text }
      }
 
-## Response to pause_task
-
-pause_task_response
- = element pause_task_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
 ## Response to restore
 
 restore_response
@@ -15794,15 +15757,6 @@ restore_response
 
 resume_or_start_task_response
  = element resume_or_start_task_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to resume_paused_task
-
-resume_paused_task_response
- = element resume_paused_task_response
      {
        attribute status { status }
        & attribute status_text { text }

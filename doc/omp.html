@@ -579,20 +579,12 @@
 <td id="index"><div style="margin-left: 15px;">Modify a user.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#command_pause_task">pause_task</a></td>
-<td id="index"><div style="margin-left: 15px;">Pause a running task.</div></td>
-</tr>
-<tr id="index">
 <td id="index"><a href="#command_restore">restore</a></td>
 <td id="index"><div style="margin-left: 15px;">Restore a resource.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_resume_or_start_task">resume_or_start_task</a></td>
 <td id="index"><div style="margin-left: 15px;">Resume task if stopped, else start task.</div></td>
-</tr>
-<tr id="index">
-<td id="index"><a href="#command_resume_paused_task">resume_paused_task</a></td>
-<td id="index"><div style="margin-left: 15px;">Resume a paused task.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#command_resume_stopped_task">resume_stopped_task</a></td>
@@ -744,10 +736,8 @@ command
     | modify_tag
     | modify_task
     | modify_user
-    | pause_task
     | restore
     | resume_or_start_task
-    | resume_paused_task
     | resume_stopped_task
     | run_wizard
     | start_task
@@ -863,10 +853,8 @@ response
     | modify_tag_response
     | modify_task_response
     | modify_user_response
-    | pause_task_response
     | restore_response
     | resume_or_start_task_response
-    | resume_paused_task_response
     | resume_stopped_task_response
     | run_wizard_response
     | start_task_response
@@ -1062,8 +1050,8 @@ can Config Default" }
 </h3></div>
 <p>In short: A task run status.</p>
 <h4>5.17.1 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requ↵
-ested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>task_status = xsd:token { pattern = "Delete Requested|Done|New|Requested|Running|Stop Requ↵
+ested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
@@ -4521,11 +4509,6 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>pause_task&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_pause_task">pause_task</a> command.
-          </div>
-</li>
-<li>
           &lt;<b>restore&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_restore">restore</a> command.
           </div>
@@ -4533,11 +4516,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>resume_or_start_task&gt;</b><div style="margin-left: 15px; display: inline;">
 <a href="#command_resume_or_start_task">resume_or_start_task</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>resume_paused_task&gt;</b><div style="margin-left: 15px; display: inline;">
-<a href="#command_resume_paused_task">resume_paused_task</a> command.
           </div>
 </li>
 <li>
@@ -5096,11 +5074,6 @@ authenticate_response_timezone
           </div>
 </li>
 <li>
-          &lt;<b>pause_task_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_pause_task">pause_task</a> command.
-          </div>
-</li>
-<li>
           &lt;<b>restore_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_restore">restore</a> command.
           </div>
@@ -5108,11 +5081,6 @@ authenticate_response_timezone
 <li>
           &lt;<b>resume_or_start_task_response&gt;</b><div style="margin-left: 15px; display: inline;">
             Response to <a href="#command_resume_or_start_task">resume_or_start_task</a> command.
-          </div>
-</li>
-<li>
-          &lt;<b>resume_paused_task_response&gt;</b><div style="margin-left: 15px; display: inline;">
-            Response to <a href="#command_resume_paused_task">resume_paused_task</a> command.
           </div>
 </li>
 <li>
@@ -5266,10 +5234,8 @@ authenticate_response_timezone
            | modify_target
            | modify_task
            | modify_user
-           | pause_task
            | restore
            | resume_or_start_task
-           | resume_paused_task
            | resume_stopped_task
            | run_wizard
            | start_task
@@ -5385,10 +5351,8 @@ authenticate_response_timezone
            | modify_target_response
            | modify_task_response
            | modify_user_response
-           | pause_task_response
            | restore_response
            | resume_or_start_task_response
-           | resume_paused_task_response
            | resume_stopped_task_response
            | run_wizard_response
            | start_task_response
@@ -28937,10 +28901,8 @@ help_response_schema_protocol_command
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
             MODIFY_USER            Modify a user.
-            PAUSE_TASK             Pause a running task.
             RESTORE                Restore a resource.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
-            RESUME_PAUSED_TASK     Resume a paused task.
             RESUME_STOPPED_TASK    Resume a stopped task.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
@@ -32227,68 +32189,14 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_pause_task">7.104
-        Command <tt>pause_task</tt>
-</h3></div>
-<p>In short: Pause a running task.</p>
-<p>
-        The client uses the pause_task command to manually pause a running task.
-      </p>
-<h4>7.104.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.104.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>pause_task
- = element pause_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>pause_task_response
- = element pause_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.104.3 Example: Pause a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;pause_task_response status="200"
-                      status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_restore">7.105
+<div><h3 id="command_restore">7.104
         Command <tt>restore</tt>
 </h3></div>
 <p>In short: Restore a resource.</p>
 <p>
         The client uses the restore a resource from the trashcan.
       </p>
-<h4>7.105.1 Structure</h4>
+<h4>7.104.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -32309,7 +32217,7 @@ modify_user_sources
 </ul>
 </li>
 </ul>
-<h4>7.105.2 RNC</h4>
+<h4>7.104.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>restore
  = element restore
@@ -32325,7 +32233,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.105.3 Example: Restore a target</h4>
+<h4>7.104.3 Example: Restore a target</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;restore id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -32335,7 +32243,7 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_resume_or_start_task">7.106
+<div><h3 id="command_resume_or_start_task">7.105
         Command <tt>resume_or_start_task</tt>
 </h3></div>
 <p>In short: Resume task if stopped, else start task.</p>
@@ -32343,6 +32251,61 @@ modify_user_sources
         The client uses the resume_or_start_task command to manually start
         an existing task, ensuring that the task will resume from its
         previous position if the task is in the Stopped state.
+      </p>
+<h4>7.105.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.105.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
+ = element resume_or_start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
+ = element resume_or_start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.105.3 Example: Resume a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
+                                status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_resume_stopped_task">7.106
+        Command <tt>resume_stopped_task</tt>
+</h3></div>
+<p>In short: Resume a stopped task.</p>
+<p>
+        The client uses the resume_stopped_task command to manually resume a
+        stopped task.
       </p>
 <h4>7.106.1 Structure</h4>
 <ul style="list-style: none">
@@ -32367,116 +32330,6 @@ modify_user_sources
 </ul>
 <h4>7.106.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_or_start_task
- = element resume_or_start_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_or_start_task_response
- = element resume_or_start_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.106.3 Example: Resume a running task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_or_start_task_response status="200"
-                                status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_paused_task">7.107
-        Command <tt>resume_paused_task</tt>
-</h3></div>
-<p>In short: Resume a paused task.</p>
-<p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
-      </p>
-<h4>7.107.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.107.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>resume_paused_task
- = element resume_paused_task
-     {
-       attribute task_id { uuid }
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>resume_paused_task_response
- = element resume_paused_task_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.107.3 Example: Resume a paused task</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_paused_task_response status="200"
-                              status_text="OK"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_resume_stopped_task">7.108
-        Command <tt>resume_stopped_task</tt>
-</h3></div>
-<p>In short: Resume a stopped task.</p>
-<p>
-        The client uses the resume_stopped_task command to manually resume a
-        stopped task.
-      </p>
-<h4>7.108.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.108.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>resume_stopped_task
  = element resume_stopped_task
      {
@@ -32491,7 +32344,7 @@ modify_user_sources
      }
 </pre></div>
 </div>
-<h4>7.108.3 Example: Resume a stopped task</h4>
+<h4>7.106.3 Example: Resume a stopped task</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -32501,14 +32354,14 @@ modify_user_sources
 </div>
 </div>
 <div>
-<div><h3 id="command_run_wizard">7.109
+<div><h3 id="command_run_wizard">7.107
         Command <tt>run_wizard</tt>
 </h3></div>
 <p>In short: Run a wizard.</p>
 <p>
         The client uses the run_wizard command to run a wizard.
       </p>
-<h4>7.109.1 Structure</h4>
+<h4>7.107.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none">
@@ -32566,7 +32419,7 @@ modify_user_sources
 </ul>
 </li>
 </ul>
-<h4>7.109.2 RNC</h4>
+<h4>7.107.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>run_wizard
  = element run_wizard
@@ -32629,7 +32482,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.109.3 Example: Run the Quick Start wizard to scan localhost</h4>
+<h4>7.107.3 Example: Run the Quick Start wizard to scan localhost</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;run_wizard&gt;
    &lt;name&gt;quick_first_scan&lt;/name&gt;
@@ -32654,7 +32507,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_start_task">7.110
+<div><h3 id="command_start_task">7.108
         Command <tt>start_task</tt>
 </h3></div>
 <p>In short: Manually start an existing task.</p>
@@ -32662,13 +32515,120 @@ run_wizard_response_response
         The client uses the start_task command to manually start an
         existing task.
       </p>
-<h4>7.110.1 Structure</h4>
+<h4>7.108.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
           @<b>task_id</b>
           (<a href="#type_uuid">uuid</a>)
           </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.108.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>start_task
+ = element start_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
+ = element start_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.108.3 Example: Start a task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
+                      status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_stop_task">7.109
+        Command <tt>stop_task</tt>
+</h3></div>
+<p>In short: Stop a running task.</p>
+<p>
+        The client uses the stop_task command to manually stop a
+        running task.
+      </p>
+<h4>7.109.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><li>
+          @<b>task_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
+</ul>
+<h4>7.109.2 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
+<i>Command</i><div style="margin-left: 5%"><pre>stop_task
+ = element stop_task
+     {
+       attribute task_id { uuid }
+     }
+</pre></div>
+<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
+ = element stop_task_response
+     {
+       attribute status { status }
+       &amp; attribute status_text { text }
+     }
+</pre></div>
+</div>
+<h4>7.109.3 Example: Stop a running task</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200"
+                     status_text="OK"/&gt;
+</pre></div>
+</div>
+</div>
+<div>
+<div><h3 id="command_sync_cert">7.110
+        Command <tt>sync_cert</tt>
+</h3></div>
+<p>In short: Synchronize with a CERT feed.</p>
+<p>
+        The client uses the "sync_cert" command to request a
+        synchronization with the CERT feed service the Manager uses.
+      </p>
+<h4>7.110.1 Structure</h4>
+<ul style="list-style: none">
+<li>
+<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -32685,45 +32645,42 @@ run_wizard_response_response
 </ul>
 <h4>7.110.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>start_task
- = element start_task
+<i>Command</i><div style="margin-left: 5%"><pre>sync_cert
+ = element sync_cert
      {
-       attribute task_id { uuid }
+       ""
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>start_task_response
- = element start_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>sync_cert_response
+ = element sync_cert_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.110.3 Example: Start a task</h4>
+<h4>7.110.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
-                      status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert_response status="202"
+                     status_text="OK, request submitted"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_stop_task">7.111
-        Command <tt>stop_task</tt>
+<div><h3 id="command_sync_feed">7.111
+        Command <tt>sync_feed</tt>
 </h3></div>
-<p>In short: Stop a running task.</p>
+<p>In short: Synchronize with an NVT feed.</p>
 <p>
-        The client uses the stop_task command to manually stop a
-        running task.
+        The client uses the "sync_feed" command to request a
+        synchronization with the NVT feed service the Manager uses.
       </p>
 <h4>7.111.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
-          @<b>task_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -32740,37 +32697,37 @@ run_wizard_response_response
 </ul>
 <h4>7.111.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>stop_task
- = element stop_task
+<i>Command</i><div style="margin-left: 5%"><pre>sync_feed
+ = element sync_feed
      {
-       attribute task_id { uuid }
+       ""
      }
 </pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>stop_task_response
- = element stop_task_response
+<i>Response</i><div style="margin-left: 5%"><pre>sync_feed_response
+ = element sync_feed_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
-<h4>7.111.3 Example: Stop a running task</h4>
+<h4>7.111.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed/&gt;
 </pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;stop_task_response status="200"
-                     status_text="OK"/&gt;
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed_response status="202"
+                     status_text="OK, request submitted"/&gt;
 </pre></div>
 </div>
 </div>
 <div>
-<div><h3 id="command_sync_cert">7.112
-        Command <tt>sync_cert</tt>
+<div><h3 id="command_sync_scap">7.112
+        Command <tt>sync_scap</tt>
 </h3></div>
-<p>In short: Synchronize with a CERT feed.</p>
+<p>In short: Synchronize with a SCAP feed.</p>
 <p>
-        The client uses the "sync_cert" command to request a
-        synchronization with the CERT feed service the Manager uses.
+        The client uses the "sync_scap" command to request a
+        synchronization with the SCAP feed service the Manager uses.
       </p>
 <h4>7.112.1 Structure</h4>
 <ul style="list-style: none">
@@ -32792,110 +32749,6 @@ run_wizard_response_response
 </ul>
 <h4>7.112.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>sync_cert
- = element sync_cert
-     {
-       ""
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>sync_cert_response
- = element sync_cert_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.112.3 Example: Sync the feed</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_cert_response status="202"
-                     status_text="OK, request submitted"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_sync_feed">7.113
-        Command <tt>sync_feed</tt>
-</h3></div>
-<p>In short: Synchronize with an NVT feed.</p>
-<p>
-        The client uses the "sync_feed" command to request a
-        synchronization with the NVT feed service the Manager uses.
-      </p>
-<h4>7.113.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.113.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
-<i>Command</i><div style="margin-left: 5%"><pre>sync_feed
- = element sync_feed
-     {
-       ""
-     }
-</pre></div>
-<i>Response</i><div style="margin-left: 5%"><pre>sync_feed_response
- = element sync_feed_response
-     {
-       attribute status { status }
-       &amp; attribute status_text { text }
-     }
-</pre></div>
-</div>
-<h4>7.113.3 Example: Sync the feed</h4>
-<div style="margin-left: 5%; margin-right: 5%;">
-<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed/&gt;
-</pre></div>
-<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_feed_response status="202"
-                     status_text="OK, request submitted"/&gt;
-</pre></div>
-</div>
-</div>
-<div>
-<div><h3 id="command_sync_scap">7.114
-        Command <tt>sync_scap</tt>
-</h3></div>
-<p>In short: Synchronize with a SCAP feed.</p>
-<p>
-        The client uses the "sync_scap" command to request a
-        synchronization with the SCAP feed service the Manager uses.
-      </p>
-<h4>7.114.1 Structure</h4>
-<ul style="list-style: none">
-<li>
-<i>Command</i><ul style="list-style: none"><i>Empty single element.</i></ul>
-</li>
-<li style="margin-top: 15px;">
-<i>Response</i><ul style="list-style: none">
-<li>
-          @<b>status</b>
-          (<a href="#type_status">status</a>)
-          </li>
-<li>
-          @<b>status_text</b>
-          (text)
-          </li>
-</ul>
-</li>
-</ul>
-<h4>7.114.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>sync_scap
  = element sync_scap
      {
@@ -32910,7 +32763,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.114.3 Example: Sync the feed</h4>
+<h4>7.112.3 Example: Sync the feed</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;sync_scap/&gt;
 </pre></div>
@@ -32920,7 +32773,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_test_alert">7.115
+<div><h3 id="command_test_alert">7.113
         Command <tt>test_alert</tt>
 </h3></div>
 <p>In short: Run an alert.</p>
@@ -32928,7 +32781,7 @@ run_wizard_response_response
         The client uses the test_alert command to invoke a test run of
         an alert.
       </p>
-<h4>7.115.1 Structure</h4>
+<h4>7.113.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -32949,7 +32802,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.115.2 RNC</h4>
+<h4>7.113.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>test_alert
  = element test_alert
@@ -32965,7 +32818,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.115.3 Example: Test an alert</h4>
+<h4>7.113.3 Example: Test an alert</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;test_alert alert_id="97390ade-e075-11df-9973-002264764cea"/&gt;
 </pre></div>
@@ -32975,7 +32828,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_agent">7.116
+<div><h3 id="command_verify_agent">7.114
         Command <tt>verify_agent</tt>
 </h3></div>
 <p>In short: Verify an agent.</p>
@@ -32989,7 +32842,7 @@ run_wizard_response_response
         The Manager searches for the signature first in the feed, then
         in the agent itself.
       </p>
-<h4>7.116.1 Structure</h4>
+<h4>7.114.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -33010,7 +32863,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.116.2 RNC</h4>
+<h4>7.114.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_agent
  = element verify_agent
@@ -33026,7 +32879,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.116.3 Example: Verify an agent</h4>
+<h4>7.114.3 Example: Verify an agent</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_agent agent_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
@@ -33036,7 +32889,7 @@ run_wizard_response_response
 </div>
 </div>
 <div>
-<div><h3 id="command_verify_report_format">7.117
+<div><h3 id="command_verify_report_format">7.115
         Command <tt>verify_report_format</tt>
 </h3></div>
 <p>In short: Verify a report format.</p>
@@ -33050,7 +32903,7 @@ run_wizard_response_response
         to generate reports of this format.  The Manager searches for the
         signature first in the feed, then in the report format itself.
       </p>
-<h4>7.117.1 Structure</h4>
+<h4>7.115.1 Structure</h4>
 <ul style="list-style: none">
 <li>
 <i>Command</i><ul style="list-style: none"><li>
@@ -33071,7 +32924,7 @@ run_wizard_response_response
 </ul>
 </li>
 </ul>
-<h4>7.117.2 RNC</h4>
+<h4>7.115.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
 <i>Command</i><div style="margin-left: 5%"><pre>verify_report_format
  = element verify_report_format
@@ -33087,7 +32940,7 @@ run_wizard_response_response
      }
 </pre></div>
 </div>
-<h4>7.117.3 Example: Verify a report format</h4>
+<h4>7.115.3 Example: Verify a report format</h4>
 <div style="margin-left: 5%; margin-right: 5%;">
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;verify_report_format report_format_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>

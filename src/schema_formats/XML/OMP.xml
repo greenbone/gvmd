@@ -179,7 +179,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <name>task_status</name>
     <summary>A task run status</summary>
     <pattern>
-      xsd:token { pattern = "Delete Requested|Done|New|Pause Requested|Paused|Requested|Resume Requested|Running|Stop Requested|Stopped|Internal Error" }
+      xsd:token { pattern = "Delete Requested|Done|New|Requested|Running|Stop Requested|Stopped|Internal Error" }
     </pattern>
   </type>
   <type>
@@ -1974,10 +1974,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_target</c>
           <c>modify_task</c>
           <c>modify_user</c>
-          <c>pause_task</c>
           <c>restore</c>
           <c>resume_or_start_task</c>
-          <c>resume_paused_task</c>
           <c>resume_stopped_task</c>
           <c>run_wizard</c>
           <c>start_task</c>
@@ -2103,10 +2101,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_target</r>
             <r>modify_task</r>
             <r>modify_user</r>
-            <r>pause_task</r>
             <r>restore</r>
             <r>resume_or_start_task</r>
-            <r>resume_paused_task</r>
             <r>resume_stopped_task</r>
             <r>run_wizard</r>
             <r>start_task</r>
@@ -17946,10 +17942,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_TARGET          Modify an existing target.
             MODIFY_TASK            Update an existing task.
             MODIFY_USER            Modify a user.
-            PAUSE_TASK             Pause a running task.
             RESTORE                Restore a resource.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
-            RESUME_PAUSED_TASK     Resume a paused task.
             RESUME_STOPPED_TASK    Resume a stopped task.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
@@ -20219,46 +20213,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>pause_task</name>
-    <summary>Pause a running task</summary>
-    <description>
-      <p>
-        The client uses the pause_task command to manually pause a running task.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Pause a running task</summary>
-      <request>
-        <pause_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </pause_task>
-      </request>
-      <response>
-        <pause_task_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>restore</name>
     <summary>Restore a resource</summary>
     <description>
@@ -20337,47 +20291,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <resume_or_start_task_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
-    <name>resume_paused_task</name>
-    <summary>Resume a paused task</summary>
-    <description>
-      <p>
-        The client uses the resume_paused_task command to manually resume a
-        paused task.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Resume a paused task</summary>
-      <request>
-        <resume_paused_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </resume_paused_task>
-      </request>
-      <response>
-        <resume_paused_task_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>

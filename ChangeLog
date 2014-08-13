@@ -1,5 +1,10 @@
 2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* doc/omp.html, doc/omp.rnc, src/schema_formats/XML/OMP.xml: Update
+	documentation for scan pausing removal.
+
+2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	Remove task pausing feature.
 
 	* src/manage.h (task_status_t): Delete TASK_STATUS_PAUSE_REQUESTED,
@@ -34,7 +39,6 @@
 
 	* src/otp.c (process_otp_scanner_input): Remove scan pausing and
 	resuming handling.
-
 
 2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
