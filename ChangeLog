@@ -1,3 +1,8 @@
+2014-08-13  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (results_xml_append_nvt): Correctly set the nvt tag's
+	cvss_base in oval definitions case.
+
 2014-08-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add task_last_report and

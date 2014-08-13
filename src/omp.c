@@ -10852,10 +10852,11 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
       cves = ovaldef_cves (oid);
       buffer_xml_append_printf
        (buffer,
-        "<nvt oid=\"%s\"><name>%s</name><family/><cvss_base/>"
+        "<nvt oid=\"%s\"><name>%s</name><family/><cvss_base>%s</cvss_base>"
         "<cve>%s</cve><bid/><tags>summary=%s</tags><xref/>",
         oid,
         ovaldef_info_iterator_title (&iterator),
+        ovaldef_info_iterator_max_cvss (&iterator),
         cves,
         ovaldef_info_iterator_description (&iterator));
       g_free (cves);
