@@ -4815,10 +4815,7 @@ manage_db_version ()
   int number;
   char *version;
 
-  if (sql_int ("SELECT count (*) FROM main.sqlite_master"
-               " WHERE type = 'table'"
-               " AND name = 'meta';")
-      == 0)
+  if (manage_db_empty ())
     return -2;
 
   version = sql_string ("SELECT value FROM %s.meta"

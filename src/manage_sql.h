@@ -228,6 +228,8 @@ extern gchar *task_db_name;
 
 typedef long long int rowid_t;
 
+int manage_db_empty ();
+
 void manage_transaction_start ();
 
 void manage_transaction_stop (gboolean);

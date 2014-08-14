@@ -46,6 +46,25 @@ manage_session_init (const char *uuid)
 }
 
 
+/* Helpers. */
+
+/**
+ * @brief Check whether database is empty.
+ *
+ * @param[in]  1 if empty, else 0;
+ */
+int
+manage_db_empty ()
+{
+  return sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                  "               WHERE table_catalog = 'tasks'"
+                  "               AND table_schema = 'public'"
+                  "               AND table_name = 'meta')"
+                  "        ::integer;")
+         == 0;
+}
+
+
 /* SQL functions. */
 
 /**

@@ -1,3 +1,14 @@
+2014-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move manage_db_version check out to backend function so that it works in
+	Postgres.  This enables --migrate for Postgres.
+
+	* src/manage_sqlite3.c, src/manage_pg.c (manage_db_empty): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/manage_sql.c (manage_db_version): Use manage_db_empty.
+
 2014-08-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Use message type in osp report. Call

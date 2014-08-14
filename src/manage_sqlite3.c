@@ -95,6 +95,23 @@ manage_session_init (const char *uuid)
 }
 
 
+/* Helpers. */
+
+/**
+ * @brief Check whether database is empty.
+ *
+ * @param[in]  1 if empty, else 0;
+ */
+int
+manage_db_empty ()
+{
+  return sql_int ("SELECT count (*) FROM main.sqlite_master"
+                  " WHERE type = 'table'"
+                  " AND name = 'meta';")
+         == 0;
+}
+
+
 /* SQL functions. */
 
 /**
