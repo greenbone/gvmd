@@ -20662,6 +20662,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <change>
+    <command>PAUSE_TASK, RESUME_PAUSED_TASK</command>
+    <summary>Commands removed</summary>
+    <description>
+      <p>
+        The task pausing feature has been removed and thus, the PAUSE_TASK and
+        RESUME_PAUSED_TASK commands don't exist anymore.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
     <command>CREATE_TARGET, MODIFY_TARGET</command>
     <summary>Element TARGET_LOCATOR removed</summary>
     <description>
