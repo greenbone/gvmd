@@ -1,3 +1,16 @@
+2014-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Account for recent command removal in permissions.  Hence increase
+	database version to 131.  Add database migration from version 130 to
+	131.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 131.
+
+	* src/manage_migrators.c (migrate_130_to_131): New function.
+	(database_migrators): Add migrate_130_to_131.
+
+	* doc/db.png: Update for version change.
+
 2014-08-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove target locators feature.

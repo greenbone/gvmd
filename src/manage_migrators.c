@@ -9315,6 +9315,47 @@ migrate_129_to_130 ()
 }
 
 /**
+ * @brief Migrate the database from version 130 to version 131.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_130_to_131 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 130. */
+
+  if (manage_db_version () != 130)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Three commands were removed. */
+
+  sql ("DELETE FROM permissions"
+       " WHERE name = 'get_target_locators'"
+       " OR name = 'pause_task'"
+       " OR name = 'resume_paused_task';");
+
+  sql ("DELETE FROM permissions_trash"
+       " WHERE name = 'get_target_locators'"
+       " OR name = 'pause_task'"
+       " OR name = 'resume_paused_task';");
+
+  /* Set the database version to 131. */
+
+  set_db_version (131);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9449,6 +9490,7 @@ static migrator_t database_migrators[]
     {128, migrate_127_to_128},
     {129, migrate_128_to_129},
     {130, migrate_129_to_130},
+    {131, migrate_130_to_131},
     /* End marker. */
     {-1, NULL}};
 
