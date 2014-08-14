@@ -117,14 +117,14 @@ sql_select_limit (int max)
  *
  * @param[in]  stmt          Statement.
  * @param[in]  param_value   Value.
- * @param[in]  param_size    Size (used for binary format).
+ * @param[in]  param_size    Size.
  * @param[in]  param_format  0 text, 1 binary.
  */
 static void
 sql_stmt_param_add (sql_stmt_t *stmt, const char *param_value,
                     int param_size, int param_format)
 {
-  array_add (stmt->param_values, g_strdup (param_value));
+  array_add (stmt->param_values, g_strndup (param_value, param_size));
   g_array_append_val (stmt->param_lengths, param_size);
   g_array_append_val (stmt->param_formats, param_format);
 }
@@ -543,7 +543,9 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 int
 sql_bind_double (sql_stmt_t *stmt, int position, double *value)
 {
-  bind_param (stmt, position, value, sizeof (*value), 1);
+  gchar *string;
+  string = g_strdup_printf ("%f", *value);
+  bind_param (stmt, position, string, strlen (string), 0);
   return 0;
 }
 

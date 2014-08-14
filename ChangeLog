@@ -1,5 +1,13 @@
 2014-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Correct caching of Postgres counts when overrides are applied.
+
+	* src/sql_pg.c (sql_stmt_param_add): Duplicate according to param size,
+	because some params are binary.
+	(sql_bind_double): Send param as string, to avoid binary format issues.
+
+2014-08-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move manage_db_version check out to backend function so that it works in
 	Postgres.  This enables --migrate for Postgres.
 
