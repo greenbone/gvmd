@@ -1,5 +1,19 @@
 2014-08-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (parse_osp_report): Use message type in osp report. Call
+	make_osp_result() adequately.
+
+	* src/manage.h: Add new function prototype.
+
+	* src/manage_sql.c (ovaldef_cves): Fix function documentation.
+	(make_osp_result): New function.
+	(make_result): Remove oval definition case handling.
+
+	* src/omp.c (results_xml_append_nvt): Handle oval definition with no
+	CVEs case. Use nvt oid as name when no name is found.
+
+2014-08-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xsl, doc/omp.html: Documentation update for
 	pause_task and resume_paused_task OMP commands removal.
 

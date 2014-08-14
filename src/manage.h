@@ -885,6 +885,9 @@ result_t
 make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);
 
+result_t
+make_osp_result (task_t, const char*, const char*, const char*, const char*);
+
 /**
  * @brief A CREATE_REPORT result.
  */

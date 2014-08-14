@@ -2627,24 +2627,21 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *mtype, *name;
+      const char *type, *name;
       char *desc = NULL, *nvt_id = NULL;
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
-      mtype = threat_message_type (type);
       name = entity_attribute (r_entity, "name");
       assert (name);
       if (g_str_has_prefix (name, "oval:"))
         nvt_id = ovaldef_uuid (name, defs_file);
       else
         {
-          /* XXX: Alarm messages require an associated NVT at the moment. */
-          if (!strcmp (type, "Alarm"))
-            mtype = "Log Message";
-          desc = g_strdup_printf ("%s\n\n%s", name, entity_text (r_entity));
+          nvt_id = g_strdup (name);
+          desc = g_strdup (entity_text (r_entity));
         }
-      result = make_result (task, target, "", nvt_id, mtype, desc);
+      result = make_osp_result (task, target, nvt_id, type, desc);
       report_add_result (report, result);
       g_free (nvt_id);
       g_free (desc);

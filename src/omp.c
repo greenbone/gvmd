@@ -10745,7 +10745,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
         oid,
         ovaldef_info_iterator_title (&iterator),
         ovaldef_info_iterator_max_cvss (&iterator),
-        cves,
+        cves ?: "",
         ovaldef_info_iterator_description (&iterator));
       g_free (cves);
       g_free (get.id);
@@ -10763,7 +10763,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
         "<nvt oid=\"%s\"><name>%s</name><family>%s</family>"
         "<cvss_base>%s</cvss_base><cve>%s</cve><bid>%s</bid>"
         "<xref>%s</xref><tags>%s</tags>",
-        oid, result_iterator_nvt_name (results) ?: "",
+        oid, result_iterator_nvt_name (results) ?: oid,
         result_iterator_nvt_family (results) ?: "",
         cvss_base ?: "",
         result_iterator_nvt_cve (results) ?: "",

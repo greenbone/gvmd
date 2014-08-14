@@ -13766,6 +13766,52 @@ find_result_with_permission (const char* uuid, result_t* result,
 }
 
 /**
+ * @brief Make an OSP result.
+ *
+ * @param[in]  task         The task associated with the result.
+ * @param[in]  host         Target host of result.
+ * @param[in]  nvt          The uuid of oval definition that produced the
+ *                          result, a title for the result otherwise.
+ * @param[in]  type         Type of result.  "Alarm", etc.
+ * @param[in]  description  Description of the result.
+ *
+ * @return A result descriptor for the new result, 0 if error.
+ */
+result_t
+make_osp_result (task_t task, const char *host, const char *nvt,
+                 const char *type, const char *description)
+{
+  char *nvt_revision = NULL, *severity = NULL, *quoted_desc;
+
+  assert (task);
+  assert (type);
+
+  if (nvt && g_str_has_prefix (nvt, "oval:"))
+    {
+      nvt_revision = ovaldef_version (nvt);
+      severity = ovaldef_severity (nvt);
+    }
+  quoted_desc = sql_quote (description ?: "");
+  if (!severity || !strcmp (severity, ""))
+    {
+      g_free (severity);
+      severity = g_strdup ("0.0");
+    }
+  sql ("INSERT into results"
+       " (task, host, port, nvt, nvt_version, severity, type,"
+       "  description, uuid, qod)"
+       " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
+       "         '%s', make_uuid (), 0);",
+       task, host ?: "", nvt ?: "", nvt_revision ?: "", severity, type,
+       quoted_desc);
+  g_free (severity);
+  g_free (nvt_revision);
+  g_free (quoted_desc);
+
+  return sql_last_insert_rowid ();
+}
+
+/**
  * @brief Make a result.
  *
  * @param[in]  task         The task associated with the result.
@@ -13787,14 +13833,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   int qod;
   nvt_t nvt_id = 0;
 
-  if (nvt && g_str_has_prefix (nvt, "oval:"))
-    {
-      /* oval definition from ospd-ovaldi. */
-      qod = 0;
-      nvt_revision = ovaldef_version (nvt);
-      severity = ovaldef_severity (nvt);
-    }
-  else if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
+  if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
       g_warning ("NVT '%s' not found. Result not created.\n", nvt);
       return 0;
@@ -48728,7 +48767,8 @@ ovaldef_version (const char *id)
  *
  * @param[in]  uuid     Oval definition ID.
  *
- * @return String of CVEs affecting of the OVAL definition. Freed by g_free.
+ * @return String of CVEs affecting of the OVAL definition, NULL otherwise.
+ *         Freed by g_free.
  */
 char *
 ovaldef_cves (const char *id)
