@@ -1,5 +1,11 @@
 2014-08-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (trim_report, trim_partial_report): Don't start a
+	transaction as this is already done in called function. Fixes a
+	transaction within transaction error when resuming stopped tasks.
+
+2014-08-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_lsc_credential): Test the provided private
 	key and passphrase combination before creation.
 
