@@ -31654,6 +31654,7 @@ find_lsc_credential_with_permission (const char* uuid,
  * @param[out] lsc_credential  Created LSC credential.
  *
  * @return 0 success, 1 LSC credential exists already, 2 name contains space,
+ *         3 Failed to create public key from private key/password,
  *         99 permission denied, -1 error.
  */
 int
@@ -31692,8 +31693,10 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       lsc_crypt_ctx_t crypt_ctx;
       gchar *quoted_login, *quoted_phrase, *quoted_comment, *quoted_private;
 
-      /* Key pair credential. */
+      if (!openvas_ssh_public_from_private (key_private, given_password))
+        return 3;
 
+      /* Key pair credential. */
       if (!strcmp (key_private, ";;encrypted;;"))
         {
           g_free (quoted_name);

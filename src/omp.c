@@ -18300,6 +18300,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     " characters if autogenerating"
                                     " credential"));
                 break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_lsc_credential",
+                                    "Erroneous private key or associated"
+                                    " passphrase"));
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_lsc_credential",
