@@ -19465,13 +19465,9 @@ trim_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-
-  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM report_counts WHERE report = %llu;",
        current_report);
   report_cache_counts (current_report);
-  sql ("COMMIT;");
-
 }
 
 /**
@@ -19517,12 +19513,9 @@ trim_partial_report (report_t report)
        report);
 
   /* Clear and rebuild counts cache */
-
-  sql ("BEGIN IMMEDIATE;");
   sql ("DELETE FROM report_counts WHERE report = %llu;",
        report);
   report_cache_counts (report);
-  sql ("COMMIT;");
 }
 
 /**

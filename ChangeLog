@@ -1,3 +1,11 @@
+2014-08-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport 20129.
+
+	* src/manage_sql.c (trim_report, trim_partial_report): Don't start a
+	transaction as this is already done in called function. Fixes a
+	transaction within transaction error when resuming stopped tasks.
+
 2014-08-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20045.
