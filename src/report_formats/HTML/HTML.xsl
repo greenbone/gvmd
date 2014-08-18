@@ -257,7 +257,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <td>Scan started:</td>
       <td>
         <xsl:if test="string-length (text ())">
-          <b><xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()))"/></b>
+          <b>
+            <xsl:choose>
+              <xsl:when test="contains(text (), '+')">
+                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' +', substring-after (text (), '+'))"/>
+              </xsl:when>
+              <xsl:when test="count (str:split (text (), '-')) &gt; 2">
+                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' -', (str:split (text (), '-'))[4])"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' UTC')"/>
+              </xsl:otherwise>
+            </xsl:choose>
+          </b>
         </xsl:if>
       </td>
     </tr>
@@ -268,7 +280,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <td>Scan ended:</td>
       <td>
         <xsl:if test="string-length (text ())">
-          <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()))"/>
+          <xsl:choose>
+            <xsl:when test="contains(text (), '+')">
+              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' +', substring-after (text (), '+'))"/>
+            </xsl:when>
+            <xsl:when test="count (str:split (text (), '-')) &gt; 2">
+              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' -', (str:split (text (), '-'))[4])"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' UTC')"/>
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:if>
       </td>
     </tr>

@@ -1,3 +1,16 @@
+2014-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20134.
+
+	* src/report_formats/HTML/HTML.xsl (scan_start, scan_end): Add timezone
+	to date.
+
+	* src/report_formats/LaTeX/latex.xsl (scan_start, scan_end): Add case
+	for negative timezones.  Print sign for positive timezone.
+
+	* src/report_formats/TXT/TXT.xsl (scan_start, scan_end): Add case
+	for negative timezones.  Print sign for positive timezone.
+
 2014-08-15  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport 20129.
