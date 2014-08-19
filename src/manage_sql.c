@@ -31727,12 +31727,11 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, name, owner, login, password, comment,"
-           "  private_key, rpm, deb, exe, creation_time, modification_time)"
+           "  private_key, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
-           "  m_now (), m_now ());",
+           "  '%s', '%s', '%s', '%s', m_now (), m_now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -31787,12 +31786,11 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, name, owner, login, password, comment, "
-           "  private_key, rpm, deb, exe, creation_time, modification_time)"
+           "  private_key, creation_time, modification_time)"
            " VALUES"
            " (make_uuid (), '%s',"
            "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-           "  '%s', '%s', '%s', %s, NULL, NULL, NULL,"
-           "  m_now (), m_now ());",
+           "  '%s', '%s', '%s', %s, m_now (), m_now ());",
            quoted_name,
            current_credentials.uuid,
            quoted_login,
@@ -31880,13 +31878,11 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 
     sql_quiet ("INSERT INTO lsc_credentials"
                " (uuid, name, owner, login, password, comment,"
-               "  private_key, rpm, deb, exe,"
-               "  creation_time, modification_time)"
+               "  private_key, creation_time, modification_time)"
                " VALUES"
                " (make_uuid (), '%s',"
                "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-               "  '%s', '%s', '%s', '%s', NULL, NULL, NULL,"
-               "  m_now (), m_now ());",
+               "  '%s', '%s', '%s', '%s', m_now (), m_now ());",
                quoted_name,
                current_credentials.uuid,
                quoted_login,
@@ -31931,8 +31927,7 @@ copy_lsc_credential (const char* name, const char* comment,
                      lsc_credential_t* new_lsc_credential)
 {
   return copy_resource ("lsc_credential", name, comment, lsc_credential_id,
-                        "login, password, private_key, rpm, deb, exe",
-                        1, new_lsc_credential);
+                        "login, password, private_key", 1, new_lsc_credential);
 }
 
 /**
@@ -32124,9 +32119,9 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
     {
       sql ("INSERT INTO lsc_credentials_trash"
            " (uuid, owner, name, login, password, comment, "
-           "  private_key, rpm, deb, exe, creation_time, modification_time)"
+           "  private_key, creation_time, modification_time)"
            " SELECT uuid, owner, name, login, password, comment, "
-           "  private_key, rpm, deb, exe, creation_time, modification_time"
+           "  private_key, creation_time, modification_time"
            " FROM lsc_credentials WHERE id = %llu;",
            lsc_credential);
 
@@ -32181,9 +32176,6 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
    { "login", NULL },                                                         \
    { "password", NULL },                                                      \
    { "private_key", NULL },                                                   \
-   { "rpm", NULL },                                                           \
-   { "deb", NULL },                                                           \
-   { "exe", NULL },                                                           \
    { NULL, NULL }                                                             \
  }
 
@@ -32196,9 +32188,6 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
    { "login", NULL },                                                         \
    { "password", NULL },                                                      \
    { "private_key", NULL },                                                   \
-   { "rpm", NULL },                                                           \
-   { "deb", NULL },                                                           \
-   { "exe", NULL },                                                           \
    { NULL, NULL }                                                             \
  }
 
@@ -46045,9 +46034,9 @@ manage_restore (const char *id)
 
       sql ("INSERT INTO lsc_credentials"
            " (uuid, owner, name, login, password, comment, "
-           "  private_key, rpm, deb, exe, creation_time, modification_time)"
+           "  private_key, creation_time, modification_time)"
            " SELECT uuid, owner, name, login, password, comment, "
-           "  private_key, rpm, deb, exe, creation_time, modification_time"
+           "  private_key, creation_time, modification_time"
            " FROM lsc_credentials_trash WHERE id = %llu;",
            resource);
 

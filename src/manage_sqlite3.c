@@ -2031,12 +2031,12 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, `group` INTEGER, user INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT, rpm TEXT,"
-       "  deb TEXT, exe TEXT, creation_time, modification_time);");
+       "  password, comment, private_key TEXT,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT, rpm TEXT,"
-       "  deb TEXT, exe TEXT, creation_time, modification_time);");
+       "  password, comment, private_key TEXT,"
+       "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS meta"
        " (id INTEGER PRIMARY KEY, name UNIQUE, value);");
   sql ("CREATE TABLE IF NOT EXISTS notes"

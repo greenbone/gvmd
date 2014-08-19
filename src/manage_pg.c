@@ -1409,9 +1409,6 @@ create_tables ()
        "  password text,"
        "  comment text,"
        "  private_key text,"
-       "  rpm bytea,"
-       "  deb bytea,"
-       "  exe bytea,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -1424,9 +1421,6 @@ create_tables ()
        "  password text,"
        "  comment text,"
        "  private_key text,"
-       "  rpm bytea,"
-       "  deb bytea,"
-       "  exe bytea,"
        "  creation_time integer,"
        "  modification_time integer);");
 

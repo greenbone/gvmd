@@ -610,10 +610,6 @@ CREATE TABLE lsc_credentials
     -- contain arbitrary data; the private_key field however is a structured
     -- value (for example PEM or plain base64).
   private_key text,
-    -- Fixme.  (Tools to be installed on the target)
-  rpm bytea,
-  deb bytea,
-  exe bytea,
   creation_time date,
   modification_time date);
 
@@ -629,9 +625,6 @@ CREATE TABLE lsc_credentials_trash
   password text,
   comment text,
   private_key text,
-  rpm bytea,
-  deb bytea,
-  exe bytea,
   creation_time date,
   modification_time date);
 

@@ -1,5 +1,20 @@
 2014-08-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Don't create rpm, deb and exe columns.
+
+	* src/manage_sql.c (create_lsc_credential, copy_lsc_credential)
+	(delete_lsc_credential, LSC_CREDENTIAL_ITERATOR_COLUMNS)
+	(LSC_CREDENTIAL_ITERATOR_TRASH_COLUMNS, manage_restore): Adjust for
+	unused columns removal.
+
+	* doc/db_postgres.sql (lsc_credentials, lsc_credentials_trash): Remove
+	rpm, deb and exe columns.
+
+	* doc/db.png: Update.
+
+2014-08-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (lsc_credential_iterator_rpm)
 	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Change
 	functions return value from const char to char as it is allocated
