@@ -1712,13 +1712,13 @@ lsc_credential_iterator_login (iterator_t*);
 const char*
 lsc_credential_iterator_private_key (iterator_t*);
 
-const char*
+char*
 lsc_credential_iterator_rpm (iterator_t*);
 
-const char*
+char*
 lsc_credential_iterator_deb (iterator_t*);
 
-const char*
+char*
 lsc_credential_iterator_exe (iterator_t*);
 
 char*

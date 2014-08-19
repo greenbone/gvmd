@@ -13297,6 +13297,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               switch (format)
                 {
+                  char *package;
+
                   case 1: /* key */
                     {
                       char *pub;
@@ -13310,19 +13312,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       break;
                     }
                   case 2: /* rpm */
+                    package = lsc_credential_iterator_rpm (&credentials);
                     SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"rpm\">%s</package>",
-                      lsc_credential_iterator_rpm (&credentials) ?: "");
+                     ("<package format=\"rpm\">%s</package>", package ?: "");
+                    g_free (package);
                     break;
                   case 3: /* deb */
+                    package = lsc_credential_iterator_deb (&credentials);
                     SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"deb\">%s</package>",
-                      lsc_credential_iterator_deb (&credentials) ?: "");
+                     ("<package format=\"deb\">%s</package>", package ?: "");
+                    g_free (package);
                     break;
                   case 4: /* exe */
+                    package = lsc_credential_iterator_exe (&credentials);
                     SENDF_TO_CLIENT_OR_FAIL
-                     ("<package format=\"exe\">%s</package>",
-                      lsc_credential_iterator_exe (&credentials) ?: "");
+                     ("<package format=\"exe\">%s</package>", package ?: "");
+                    g_free (package);
                     break;
                 }
 

@@ -32528,10 +32528,9 @@ lsc_credential_iterator_private_key (iterator_t* iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Rpm, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ * @return Rpm, or NULL if iteration is complete. Free with g_free().
  */
-const char*
+char*
 lsc_credential_iterator_rpm (iterator_t *iterator)
 {
   const char *private_key, *login, *pass;
@@ -32564,10 +32563,9 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Deb, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ * @return Deb, or NULL if iteration is complete. Free with g_free().
  */
-const char*
+char*
 lsc_credential_iterator_deb (iterator_t *iterator)
 {
   const char *login, *private_key, *pass;
@@ -32607,10 +32605,9 @@ lsc_credential_iterator_deb (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Exe, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
+ * @return Exe, or NULL if iteration is complete. Free with g_free().
  */
-const char*
+char*
 lsc_credential_iterator_exe (iterator_t *iterator)
 {
   const char *login, *password;

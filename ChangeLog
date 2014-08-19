@@ -1,3 +1,15 @@
+2014-08-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (lsc_credential_iterator_rpm)
+	(lsc_credential_iterator_deb, lsc_credential_iterator_exe): Change
+	functions return value from const char to char as it is allocated
+	dynamically.
+
+	* src/manage.h: Adjust functions prototypes.
+
+	* src/omp.c (omp_xml_handle_end_element): Free return value from creds
+	packages iterators.
+
 2014-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (scan_start, scan_end): Add timezone
