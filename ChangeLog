@@ -1,3 +1,17 @@
+2014-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20140.
+
+	Add results from slave inside a transaction, to try reduce load on
+	SQLite3 locking mechanism.
+
+	* src/manage.c (update_from_slave): Remove.  Now in manage_sql.c.
+
+	* src/manage_sql.c (update_from_slave): New function.  From manage.c.
+	Add transaction around loop that adds results.
+
+	* src/manage_sql.h: Add header accordingly.
+
 2014-08-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20134.
