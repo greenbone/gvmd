@@ -41035,6 +41035,128 @@ DEF_ACCESS (slave_task_iterator_name, 2);
  */
 DEF_ACCESS (slave_task_iterator_uuid, 1);
 
+/**
+ * @brief Update the local task from the slave task.
+ *
+ * @param[in]   task         The local task.
+ * @param[in]   get_report   Slave GET_REPORT response.
+ * @param[out]  report       Report from get_report.
+ * @param[out]  next_result  Next result counter.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_from_slave (task_t task, entity_t get_report, entity_t *report,
+                   int *next_result)
+{
+  entity_t entity, host_start, start;
+  entities_t results, hosts, entities;
+
+  entity = entity_child (get_report, "report");
+  if (entity == NULL)
+    return -1;
+
+  *report = entity_child (entity, "report");
+  if (*report == NULL)
+    return -1;
+
+  /* Set the scan start time. */
+
+  entities = (*report)->entities;
+  while ((start = first_entity (entities)))
+    {
+      if (strcmp (entity_name (start), "scan_start") == 0)
+        {
+          set_task_start_time (current_scanner_task,
+                               g_strdup (entity_text (start)));
+          set_scan_start_time (current_report, entity_text (start));
+          break;
+        }
+      entities = next_entities (entities);
+    }
+
+  /* Get any new results and hosts from the slave. */
+
+  hosts = (*report)->entities;
+  while ((host_start = first_entity (hosts)))
+    {
+      if (strcmp (entity_name (host_start), "host_start") == 0)
+        {
+          entity_t host;
+
+          host = entity_child (host_start, "host");
+          if (host == NULL)
+            return -1;
+
+          set_scan_host_start_time (current_report,
+                                    entity_text (host),
+                                    entity_text (host_start));
+        }
+      hosts = next_entities (hosts);
+    }
+
+  entity = entity_child (*report, "results");
+  if (entity == NULL)
+    return -1;
+
+  assert (current_report);
+
+  sql_begin_immediate ();
+  results = entity->entities;
+  while ((entity = first_entity (results)))
+    {
+      if (strcmp (entity_name (entity), "result") == 0)
+        {
+          entity_t host, port, nvt, threat, description;
+          const char *oid;
+
+          host = entity_child (entity, "host");
+          if (host == NULL)
+            goto rollback_fail;
+
+          port = entity_child (entity, "port");
+          if (port == NULL)
+            goto rollback_fail;
+
+          nvt = entity_child (entity, "nvt");
+          if (nvt == NULL)
+            goto rollback_fail;
+          oid = entity_attribute (nvt, "oid");
+          if ((oid == NULL) || (strlen (oid) == 0))
+            goto rollback_fail;
+
+          threat = entity_child (entity, "threat");
+          if (threat == NULL)
+            goto rollback_fail;
+
+          description = entity_child (entity, "description");
+          if (description == NULL)
+            goto rollback_fail;
+
+          {
+            result_t result;
+
+            result = make_result (task,
+                                  entity_text (host),
+                                  entity_text (port),
+                                  oid,
+                                  threat_message_type (entity_text (threat)),
+                                  entity_text (description));
+            if (current_report) report_add_result (current_report, result);
+          }
+
+          (*next_result)++;
+        }
+      results = next_entities (results);
+    }
+  sql ("COMMIT;");
+  return 0;
+
+ rollback_fail:
+  sql ("ROLLBACK;");
+  return -1;
+}
+
 
 /* Groups. */
 
