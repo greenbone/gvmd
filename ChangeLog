@@ -1,5 +1,16 @@
 2014-08-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	Remove unused rpm, deb and exe lsc_credentials columns.  Hence increase
+	database version to 132.  Add database migration from version 131 to
+	132.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 132.
+
+	* src/manage_migrators.c (migrate_131_to_132): New function.
+	(database_migrators): Add migrate_131_to_132.
+
+2014-08-19  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
 	Don't create rpm, deb and exe columns.
 

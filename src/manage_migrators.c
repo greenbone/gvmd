@@ -9356,6 +9356,76 @@ migrate_130_to_131 ()
 }
 
 /**
+ * @brief Migrate the database from version 131 to version 132.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_131_to_132 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 131. */
+
+  if (manage_db_version () != 131)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* rpm, deb and exe columns were removed from lsc_credentials and
+   * lsc_credentials_trash table. */
+
+  /* Move the tables away. */
+
+  sql ("ALTER TABLE lsc_credentials RENAME TO lsc_credentials_131;");
+  sql ("ALTER TABLE lsc_credentials_trash RENAME TO lsc_credentials_trash_131;");
+
+  /* Create the tables in the new format. */
+
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, private_key TEXT,"
+       "  creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+       "  password, comment, private_key TEXT,"
+       "  creation_time, modification_time);");
+
+  /* Copy the data into the new table. */
+
+  sql ("INSERT into lsc_credentials"
+       " (id, uuid, owner, name, comment, login, password, private_key,"
+       "  creation_time, modification_time)"
+       " SELECT"
+       "  id, uuid, owner, name, comment, login, password, private_key,"
+       "  creation_time, modification_time"
+       " FROM lsc_credentials_131;");
+  sql ("INSERT into lsc_credentials_trash"
+       " (id, uuid, owner, name, comment, login, password, private_key,"
+       "  creation_time, modification_time)"
+       " SELECT"
+       "  id, uuid, owner, name, comment, login, password, private_key,"
+       "  creation_time, modification_time"
+       " FROM lsc_credentials_trash_131;");
+
+  /* Drop the old tables. */
+
+  sql ("DROP TABLE lsc_credentials_131;");
+  sql ("DROP TABLE lsc_credentials_trash_131;");
+
+  /* Set the database version to 132. */
+
+  set_db_version (132);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9491,6 +9561,7 @@ static migrator_t database_migrators[]
     {129, migrate_128_to_129},
     {130, migrate_129_to_130},
     {131, migrate_130_to_131},
+    {132, migrate_131_to_132},
     /* End marker. */
     {-1, NULL}};
 
