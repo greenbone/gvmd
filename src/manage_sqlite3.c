@@ -2157,7 +2157,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL,"
-       "  qod INTEGER)");
+       "  qod INTEGER, owner INTEGER, date INTEGER)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"

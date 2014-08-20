@@ -1,3 +1,53 @@
+2014-08-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add columns owner and date to results table. Hence increase database
+	version to 133. Add database migration from version 132 to 133.
+	Add the new fields to result xml and use powerfilter in GET_RESULTS.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 133.
+
+	* src/manage_migrators.c (migrate_132_to_133): New function.
+	(database_migrators): Add migrate_132_to_133.
+
+	* doc/db_postgres.sql: Add new columns owner and date to results table.
+
+	* src/manage_acl.c (where_owned): Add case for the type "result".
+
+	* src/manage_pg.c (create_tables): Add new columns to results table.
+
+	* src/manage_sql.c (resource_count): Add case for "result" type.
+	(RESULT_ITERATOR_FILTER_COLUMNS, RESULT_ITERATOR_COLUMNS): New column
+	definition macros.
+	(init_result_get_iterator, result_count): New functions.
+	(init_result_iterator): Add new columns to results table.
+	(result_iterator_host, result_iterator_port, result_iterator_nvt_oid)
+	(result_iterator_original_type, result_iterator_type)
+	(result_iterator_descr, result_iterator_task, result_iterator_report)
+	(result_iterator_scan_nvt_version, result_iterator_original_severity)
+	(result_iterator_severity, result_iterator_severity_double)
+	(result_iterator_original_level, result_iterator_level): Update column
+	indexes to accommodate newly added columns at positions used by generic
+	get iterator functions.
+
+	* src/manage_sqlite3.c (create_tables): Add new columns to results
+	table.
+
+	* src/manage.h (result_count, init_result_get_iterator): New function
+	prototypes.
+
+	* src/omp.c (get_results_data_t, get_results_data_reset): Add field
+	"get" for generic get data structure. Remove fields result_id and
+	details, which are part of get.
+	(omp_xml_handle_start_element): In GET_RESULTS case, parse generic get
+	attributes and remove separate handling of attributes result_id and
+	details.
+	(buffer_results_xml): Add new fields owner, name, comment,
+	creation_time and modification_time to XML.
+	(omp_xml_handle_end_element): In CLIENT_GET_RESULTS case, replace
+	result_id and details in get_results_data with equivalents in
+	get_results_data.get and use new init_result_get_iterator function
+	to get list of multiple results.
+
 2014-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): When the slave status is Done, update the

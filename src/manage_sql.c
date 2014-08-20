@@ -12298,7 +12298,7 @@ resource_count (const char *type, const get_data_t *get)
                 type_owned (type) ? filter_columns : NULL,
                 0, NULL,
                 strcmp (type, "task")
-                 ? (strcmp (type, "report")
+                 ? ((strcmp (type, "report") && strcmp (type, "result"))
                      ? NULL
                      : " AND (SELECT hidden FROM tasks"
                        "      WHERE tasks.id = task)"
@@ -13901,10 +13901,10 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
     }
   quoted_descr = sql_quote (description ?: "");
   sql ("INSERT into results"
-       " (task, host, port, nvt, nvt_version, severity, type,"
+       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod)"
        " VALUES"
-       " (%llu, '%s', '%s', '%s', '%s', '%s', '%s',"
+       " (0, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %i);",
        task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
        quoted_descr, qod);
@@ -15026,8 +15026,11 @@ report_add_result (report_t report, result_t result)
   sql ("INSERT into report_results (report, result)"
        " VALUES (%llu, %llu);",
        report, result);
-  sql ("UPDATE results SET report = %llu WHERE id = %llu;",
-       report, result);
+  sql ("UPDATE results SET report = %llu,"
+       "                   owner = (SELECT reports.owner"
+       "                            FROM reports WHERE id = %llu)"
+       " WHERE id = %llu;",
+       report, report, result);
 
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
@@ -15850,6 +15853,102 @@ where_search_phrase (const char* search_phrase, int exact)
   "(SELECT cvss_base FROM nvts WHERE nvts.oid = results.nvt)"
 
 /**
+ * @brief Filter columns for result iterator.
+ */
+#define RESULT_ITERATOR_FILTER_COLUMNS                                        \
+  { GET_ITERATOR_FILTER_COLUMNS, "host", "location", "nvt",                   \
+    "type", "new_type", "auto_type",                                          \
+    "description", "task", "report", "cvss_base", "nvt_version",              \
+    "severity", "new_severity", "vulnerability", "date", NULL }
+
+/**
+ * @brief Result iterator columns.
+ */
+#define RESULT_ITERATOR_COLUMNS                                               \
+  {                                                                           \
+    { "id", NULL },                                                           \
+    { "uuid", NULL },                                                         \
+    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)", "name" },              \
+    { "''", "comment" },                                                      \
+    { " iso_time ( date )", "creation_time" },                                \
+    { " iso_time ( date )", "modification_time" },                            \
+    { "date", "created" },                                                    \
+    { "date", "modified" },                                                   \
+    { "(SELECT name FROM users WHERE users.id = results.owner)",              \
+      "_owner" },                                                             \
+    { "host", NULL },                                                         \
+    { "port", "location" },                                                   \
+    { "nvt", NULL },                                                          \
+    { "severity_to_type (severity)", "type" },                                \
+    { "severity_to_type (severity)", "new_type" },                            \
+    { "0", "auto_type" },                                                     \
+    { "description", NULL },                                                  \
+    { "task", NULL },                                                         \
+    { "report", NULL },                                                       \
+    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)", "cvss_base" },    \
+    { "nvt_version", NULL },                                                  \
+    { "severity", NULL },                                                     \
+    { "severity", "new_severity" },                                           \
+    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+      "vulnerability" },                                                      \
+    { "date" , NULL },                                                        \
+    { NULL, NULL }                                                            \
+  }
+
+/**
+ * @brief Initialise an alert iterator, including observed alerts.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ *         -1 error.
+ */
+int
+init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
+                          int autofp, int override, int dynamic_severity)
+{
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "result",
+                            get,
+                            columns,
+                            columns,
+                            filter_columns,
+                            0,
+                            get->trash
+                              ? "AND ((SELECT (hidden = 2) FROM tasks"
+                                "      WHERE tasks.id = task))"
+                              : "AND ((SELECT (hidden = 0) FROM tasks"
+                                "      WHERE tasks.id = task))",
+                            TRUE);
+}
+
+/**
+ * @brief Count the number of alerts.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of alerts filtered set.
+ */
+int
+result_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+
+  return count ("result", get, columns, columns, filter_columns, 0, 0,
+                get->trash
+                  ? "AND ((SELECT (hidden = 2) FROM tasks"
+                    "      WHERE tasks.id = task))"
+                  : "AND ((SELECT (hidden = 0) FROM tasks"
+                    "      WHERE tasks.id = task))",
+                TRUE);
+}
+
+/**
  * @brief Initialise a result iterator.
  *
  * The results are ordered by host, then port and type (severity) according
@@ -16132,8 +16231,15 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       levels_sql = where_levels_auto (levels, new_severity_sql, auto_type_sql);
 
-      sql = g_strdup_printf ("SELECT results.id, host, port,"
-                             " nvt, severity_to_type (%s) AS type,"
+      sql = g_strdup_printf ("SELECT results.id, uuid, name, comment,"
+                             " iso_time (creation_time),"
+                             " iso_time (modification_time),"
+                             " creation_time AS created,"
+                             " modification_time AS modified,"
+                             " (SELECT name FROM users WHERE users.id"
+                             "  = results.owner) AS _owner,"
+                             " host, port, nvt,"
+                             " severity_to_type (%s) AS type,"
                              " severity_to_type (%s) AS new_type,"
                              " %s AS auto_type,"
                              " results.description,"
@@ -16294,7 +16400,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
              break;
          }
 
-      sql = g_strdup_printf ("SELECT id, host, port, nvt,"
+      sql = g_strdup_printf ("SELECT results.id, uuid, name, comment,"
+                             " iso_time (creation_time),"
+                             " iso_time (modification_time),"
+                             " creation_time AS created,"
+                             " modification_time AS modified,"
+                             " (SELECT name FROM users WHERE users.id"
+                             "  = results.owner) AS _owner,"
+                             " host, port, nvt,"
                              " severity_to_type (%s), severity_to_type (%s),"
                              " %s, description,"
                              " results.task,"
@@ -16316,7 +16429,14 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       g_free (new_severity_sql);
     }
   else
-    sql = g_strdup_printf ("SELECT results.id, host, port, nvt,"
+    sql = g_strdup_printf ("SELECT results.id, uuid, name, comment,"
+                           " iso_time (creation_time),"
+                           " iso_time (modification_time),"
+                           " creation_time AS created,"
+                           " modification_time AS modified,"
+                           " (SELECT name FROM users WHERE users.id"
+                           "  = results.owner) AS _owner,"
+                           " host, port, nvt,"
                            " severity_to_type (%s), severity_to_type (%s),"
                            " severity_to_type (%s), description,"
                            " results.task, results.report, NULL,"
@@ -16360,7 +16480,7 @@ result_iterator_result (iterator_t* iterator)
  * @return The host of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_host, 1);
+DEF_ACCESS (result_iterator_host, GET_ITERATOR_COLUMN_COUNT);
 
 /**
  * @brief Get the port from a result iterator.
@@ -16370,7 +16490,7 @@ DEF_ACCESS (result_iterator_host, 1);
  * @return The port of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_port, 2);
+DEF_ACCESS (result_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
 
 /**
  * @brief Get the NVT OID from a result iterator.
@@ -16380,7 +16500,7 @@ DEF_ACCESS (result_iterator_port, 2);
  * @return The NVT OID of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_nvt_oid, 3);
+DEF_ACCESS (result_iterator_nvt_oid, GET_ITERATOR_COLUMN_COUNT + 2);
 
 /**
  * @brief Get the NVT name from a result iterator.
@@ -16518,7 +16638,7 @@ result_iterator_nvt_tag (iterator_t *iterator)
  * @return The original type of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_original_type, 4);
+DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the original type from a result iterator.
@@ -16535,7 +16655,7 @@ result_iterator_type (iterator_t *iterator)
 {
   if (iterator->done) return NULL;
   /* auto_type */
-  if (iterator_int (iterator, 6))
+  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
     return "False Positive";
   /* new_type */
   return iterator_string (iterator, 5);
@@ -16549,7 +16669,7 @@ result_iterator_type (iterator_t *iterator)
  * @return The descr of the result.  Caller must only use before calling
  *         cleanup_iterator.
  */
-DEF_ACCESS (result_iterator_descr, 7);
+DEF_ACCESS (result_iterator_descr, GET_ITERATOR_COLUMN_COUNT + 6);
 
 /**
  * @brief Get the task from a result iterator.
@@ -16562,7 +16682,7 @@ task_t
 result_iterator_task (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, 8);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -16576,7 +16696,7 @@ report_t
 result_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, 9);
+  return (task_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
 }
 
 /**
@@ -16596,7 +16716,7 @@ result_iterator_scan_nvt_version (iterator_t *iterator)
     return NULL;
 
   /* nvt_version */
-  ret = iterator_string (iterator, 11);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   return ret ? ret : "";
 }
 
@@ -16619,7 +16739,7 @@ result_iterator_original_severity (iterator_t *iterator)
     return NULL;
 
   /* severity */
-  ret = iterator_string (iterator, 12);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
   return ret ? ret : "";
 }
 
@@ -16642,11 +16762,11 @@ result_iterator_severity (iterator_t *iterator)
     return NULL;
 
   /* auto_type */
-  if (iterator_int (iterator, 6))
+  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
     return G_STRINGIFY (SEVERITY_FP);
 
   /* new_severity */
-  ret = iterator_string (iterator, 13);
+  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
   return ret ? ret : "";
 }
 
@@ -16667,10 +16787,10 @@ result_iterator_severity_double (iterator_t *iterator)
     return 0.0;
 
   /* auto_type */
-  if (iterator_int (iterator, 6))
+  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
     return SEVERITY_FP;
 
-  return iterator_double (iterator, 13);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
 }
 
 /**
@@ -16692,11 +16812,11 @@ result_iterator_original_level (iterator_t *iterator)
   if (iterator->done)
     return NULL;
 
-  if (iterator_null (iterator, 12))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 11))
     return NULL;
 
   /* severity */
-  severity = iterator_double (iterator, 12);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
@@ -16722,14 +16842,14 @@ result_iterator_level (iterator_t *iterator)
     return NULL;
 
   /* auto_type */
-  if (iterator_int (iterator, 6))
+  if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
     return "False Positive";
 
   /* new_severity */
-  if (iterator_null (iterator, 13))
+  if (iterator_null (iterator, GET_ITERATOR_COLUMN_COUNT + 12))
     return NULL;
 
-  severity = iterator_double (iterator, 13);
+  severity = iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
 
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";

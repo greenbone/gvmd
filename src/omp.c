@@ -2740,15 +2740,14 @@ get_report_formats_data_reset (get_report_formats_data_t *data)
  */
 typedef struct
 {
+  get_data_t get;        ///< Get args.
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
   int autofp;            ///< Boolean.  Whether to apply auto FP filter.
-  char *result_id;       ///< ID of single result to get.
   char *task_id;         ///< Task associated with results.
   int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
   int overrides;         ///< Boolean.  Whether to include associated overrides.
   int overrides_details; ///< Boolean.  Whether to include details of above.
-  int details;           ///< Boolean.  Whether to include result details.
 } get_results_data_t;
 
 /**
@@ -2759,7 +2758,7 @@ typedef struct
 static void
 get_results_data_reset (get_results_data_t *data)
 {
-  free (data->result_id);
+  get_data_reset (&data->get);
   free (data->task_id);
 
   memset (data, 0, sizeof (get_results_data_t));
@@ -7130,9 +7129,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
-
-            append_attribute (attribute_names, attribute_values, "result_id",
-                              &get_results_data->result_id);
+            get_data_parse_attributes (&get_results_data->get,
+                                       "result",
+                                       attribute_names,
+                                       attribute_values);
 
             append_attribute (attribute_names, attribute_values, "task_id",
                               &get_results_data->task_id);
@@ -7172,12 +7172,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_results_data->autofp = strcmp (attribute, "0");
             else
               get_results_data->autofp = 0;
-
-            if (find_attribute (attribute_names, attribute_values,
-                                "details", &attribute))
-              get_results_data->details = strcmp (attribute, "0");
-            else
-              get_results_data->details = 0;
 
             set_client_state (CLIENT_GET_RESULTS);
           }
@@ -10807,6 +10801,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed)
 {
   const char *descr = result_iterator_descr (results);
+  const char *name, *owner_name, *comment, *creation_time, *modification_time; 
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
   result_t result = result_iterator_result (results);
   char *uuid;
@@ -10818,6 +10813,36 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   buffer_xml_append_printf (buffer, "<result id=\"%s\">", uuid);
 
   selected_task = task;
+
+  name = get_iterator_name (results);
+  if (name)
+    buffer_xml_append_printf (buffer,
+                              "<name>%s</name>",
+                              name);
+
+  owner_name = get_iterator_owner_name (results);
+  if (owner_name)
+    buffer_xml_append_printf (buffer,
+                              "<owner><name>%s</name></owner>",
+                              owner_name);
+
+  comment = get_iterator_comment (results);
+  if (comment)
+    buffer_xml_append_printf (buffer,
+                              "<comment>%s</comment>",
+                              comment);
+
+  creation_time = get_iterator_creation_time (results);
+  if (creation_time)
+    buffer_xml_append_printf (buffer,
+                              "<creation_time>%s</creation_time>",
+                              creation_time);
+
+  modification_time = get_iterator_modification_time (results);
+  if (modification_time)
+    buffer_xml_append_printf (buffer,
+                              "<modification_time>%s</modification_time>",
+                              modification_time);
 
   if (include_details)
     {
@@ -15127,7 +15152,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           if (get_results_data->notes
               && (get_results_data->task_id == NULL)
-              && (get_results_data->details == 0))
+              && (get_results_data->get.details == 0))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute or"
@@ -15136,22 +15161,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else if ((get_results_data->overrides
                     || get_results_data->apply_overrides)
                    && (get_results_data->task_id == NULL)
-                   && (get_results_data->details == 0))
+                   && (get_results_data->get.details == 0))
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_results",
                                 "GET_RESULTS must have a task_id attribute or"
                                 " details set to true if the apply_overides or "
                                 " overrides attributes are true"));
-          else if (get_results_data->result_id
-                   && find_result_with_permission (get_results_data->result_id,
+          else if (get_results_data->get.id
+                   && find_result_with_permission (get_results_data->get.id,
                                                    &result,
                                                    NULL))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_results"));
-          else if (get_results_data->result_id && result == 0)
+          else if (get_results_data->get.id && result == 0)
             {
               if (send_find_error_to_client ("get_results",
                                              "result",
-                                             get_results_data->result_id,
+                                             get_results_data->get.id,
                                              write_to_client,
                                              write_to_client_data))
                 {
@@ -15179,18 +15204,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t results;
+              int max;
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
                                       " status_text=\"" STATUS_OK_TEXT "\">"
                                       "<results>");
-              init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
-                                    NULL, get_results_data->autofp, NULL, 0,
-                                    NULL, get_results_data->apply_overrides);
+              INIT_GET (result, Result);
+
+              if (result)
+                init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
+                                      NULL, get_results_data->autofp, NULL, 0,
+                                      NULL, get_results_data->apply_overrides);
+              else
+                init_result_get_iterator (&results, &get_results_data->get,
+                                          get_results_data->autofp,
+                                          get_results_data->apply_overrides,
+                                          setting_dynamic_severity_int ());
 
               if (next (&results))
                 {
-                  if (get_results_data->result_id && (task == 0))
+                  if (get_results_data->get.id && (task == 0))
                     {
                       char *task_id;
                       task_uuid (result_iterator_task (&results), &task_id);
@@ -15216,8 +15250,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           get_results_data->overrides_details,
                                           1,
                                           /* show tag details if selected by ID */
-                                          get_results_data->result_id != NULL,
-                                          get_results_data->details,
+                                          get_results_data->get.id != NULL,
+                                          get_results_data->get.details,
                                           NULL,
                                           NULL,
                                           0);
@@ -15227,8 +15261,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   while (next (&results));
                 }
               cleanup_iterator (&results);
-              SEND_TO_CLIENT_OR_FAIL ("</results>"
-                                      "</get_results_response>");
+              SEND_TO_CLIENT_OR_FAIL ("</results>");
+
+              manage_filter_controls (get_results_data->get.filter,
+                                      &first, &max, NULL, NULL);
+
+              count = result_count (&get_results_data->get);
+
+              send_get_end ("result", &get_results_data->get,
+                            max, count,
+                            resource_count ("result", &get_results_data->get),
+                            write_to_client, write_to_client_data);
             }
 
           get_results_data_reset (get_results_data);

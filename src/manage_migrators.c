@@ -9426,6 +9426,51 @@ migrate_131_to_132 ()
 }
 
 /**
+ * @brief Migrate the database from version 132 to version 133.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_132_to_133 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 132. */
+
+  if (manage_db_version () != 132)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add two new columns to results table. */
+  if (sql_is_sqlite3 ())
+    sql ("ALTER TABLE results ADD COLUMN owner INTEGER;");
+  else
+    sql ("ALTER TABLE results ADD COLUMN owner integer"
+        " REFERENCES users (id) ON DELETE RESTRICT;");
+
+  sql ("ALTER TABLE results ADD COLUMN date integer;");
+
+  /* Set values for added columns */
+  sql ("UPDATE results"
+       " SET owner = (SELECT owner FROM reports"
+       "              WHERE reports.id = results.report),"
+       "     date = (SELECT date FROM reports"
+       "             WHERE reports.id = results.report);");
+
+  /* Set the database version to 133. */
+
+  set_db_version (133);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+/**
  * @brief Array of database version migrators.
  */
 static migrator_t database_migrators[]
@@ -9562,6 +9607,7 @@ static migrator_t database_migrators[]
     {130, migrate_129_to_130},
     {131, migrate_130_to_131},
     {132, migrate_131_to_132},
+    {133, migrate_132_to_133},
     /* End marker. */
     {-1, NULL}};
 

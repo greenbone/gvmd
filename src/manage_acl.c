@@ -572,6 +572,42 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 current_credentials.uuid,
                                 current_credentials.uuid,
                                 permission_or->str);
+          else if (strcmp (type, "result") == 0)
+            permission_clause
+             = g_strdup_printf ("%s"
+                                " OR EXISTS"
+                                " (SELECT id FROM permissions"
+                                "  WHERE resource = results%s.task"
+                                "  AND resource_type = 'task'"
+                                "  AND ((subject_type = 'user'"
+                                "        AND subject"
+                                "            = (SELECT id FROM users"
+                                "               WHERE users.uuid = '%s'))"
+                                "       OR (subject_type = 'group'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT \"group\""
+                                "                   FROM group_users"
+                                "                   WHERE \"user\""
+                                "                         = (SELECT id"
+                                "                            FROM users"
+                                "                            WHERE users.uuid"
+                                "                                  = '%s')))"
+                                "       OR (subject_type = 'role'"
+                                "           AND subject"
+                                "               IN (SELECT DISTINCT role"
+                                "                   FROM role_users"
+                                "                   WHERE \"user\""
+                                "                         = (SELECT id"
+                                "                            FROM users"
+                                "                            WHERE users.uuid"
+                                "                                  = '%s'))))"
+                                "  AND (%s))",
+                                clause,
+                                get->trash ? "_trash" : "",
+                                current_credentials.uuid,
+                                current_credentials.uuid,
+                                current_credentials.uuid,
+                                permission_or->str);
           else
             permission_clause = clause;
         }

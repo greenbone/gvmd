@@ -416,7 +416,9 @@ CREATE TABLE results
   report integer REFERENCES reports (id) ON DELETE RESTRICT,
   nvt_version text,
   severity real,
-  qod integer);
+  qod integer,
+  owner integer REFERENCES users (id) ON DELETE RESTRICT,
+  date date);
 
 CREATE TABLE reports
  (id SERIAL PRIMARY KEY,

@@ -1043,6 +1043,12 @@ init_report_errors_iterator (iterator_t*, report_t);
 const char*
 report_iterator_uuid (iterator_t*);
 
+int
+result_count (const get_data_t *);
+
+int
+init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int);
+
 void
 init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
                       const char *, const char *, int, const char *, int,
@@ -1113,6 +1119,9 @@ result_iterator_original_level (iterator_t*);
 
 const char*
 result_iterator_level (iterator_t*);
+
+const char*
+result_iterator_date (iterator_t*);
 
 
 void
