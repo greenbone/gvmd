@@ -2391,7 +2391,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               || (run_status == TASK_STATUS_PAUSED))
             set_task_run_status (task, TASK_STATUS_RUNNING);
 
-          if (update_slave_progress (get_tasks))
+          if ((strcmp (status, "Running") == 0)
+              && update_slave_progress (get_tasks))
             {
               free_entity (get_tasks);
               goto fail_stop_task;
@@ -2547,6 +2548,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
 
           free_entity (get_report);
+          if (update_slave_progress (get_tasks))
+            {
+              free_entity (get_tasks);
+              goto fail_stop_task;
+            }
+          free_entity (get_tasks);
           set_task_run_status (task, TASK_STATUS_DONE);
           break;
         }

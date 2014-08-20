@@ -1,3 +1,12 @@
+2014-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20145.
+
+	* src/manage.c (slave_setup): When the slave status is Done, update the
+	master progress just before setting the master status, instead of before
+	updating the results, otherwise the progress is -1 while the status is
+	still Running.
+
 2014-08-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20003.
