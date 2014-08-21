@@ -1,3 +1,19 @@
+2014-08-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Handle newly added elements in results when importing reports.
+
+	* src/manage_sql.c (create_report): Set owner and date for imported
+	results.
+
+	* src/omp.c (client_state_t): Add states for new elements in results:
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT,
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME,
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME,
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME,
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OWNER.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element): Add
+	read_over cases for the above new states.
+
 2014-08-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_result_iterator): Fix aliased columns like

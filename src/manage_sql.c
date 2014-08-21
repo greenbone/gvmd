@@ -14586,6 +14586,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   int index;
   create_report_result_t *result, *end, *start;
   report_t report;
+  user_t owner;
   task_t task;
   pid_t pid;
   host_detail_t *detail;
@@ -14675,6 +14676,14 @@ create_report (array_t *results, const char *task_id, const char *task_name,
 
   /* Add the results. */
 
+  if (sql_int64 (&owner,
+                 "SELECT owner FROM tasks WHERE tasks.id = %llu",
+                 task))
+    {
+      g_warning ("%s: failed to get owner of task\n", __FUNCTION__);
+      return -1;
+    }
+
   sql_begin_immediate ();
   index = 0;
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
@@ -14713,11 +14722,12 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       quoted_severity =  sql_quote (result->severity ? result->severity : "");
 
       sql ("INSERT INTO results"
-           " (uuid, task, host, port, nvt, type, description,"
+           " (uuid, owner, date, task, host, port, nvt, type, description,"
            "  nvt_version, severity, qod)"
            " VALUES"
-           " (make_uuid (), %llu, '%s', '%s', '%s', '%s', '%s',"
+           " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
            "  '%s', '%s', -1);",
+           owner,
            task,
            quoted_host,
            quoted_port,

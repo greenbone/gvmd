@@ -5043,9 +5043,13 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_REPORT_FORMAT,
   CLIENT_CREATE_REPORT_RR_RESULTS,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DETECTION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NOTES,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_BID,
@@ -5056,6 +5060,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_FAMILY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_NAME,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NVT_XREF,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OWNER,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_SEVERITY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES,
@@ -9021,9 +9026,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
         ELSE_ERROR ("create_report");
 
       case CLIENT_CREATE_REPORT_RR_RESULTS_RESULT:
-        if (strcasecmp ("DESCRIPTION", element_name) == 0)
-          set_client_state
-           (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_DESCRIPTION);
+        if (strcasecmp ("COMMENT", element_name) == 0)
+          {
+            set_client_state
+              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_COMMENT);
+            omp_parser->read_over = 1;
+          }
+        else if (strcasecmp ("CREATION_TIME", element_name) == 0)
+          {
+            set_client_state
+              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_CREATION_TIME);
+            omp_parser->read_over = 1;
+          }
         else if (strcasecmp ("DETECTION", element_name) == 0)
           {
             omp_parser->read_over = 1;
@@ -9031,6 +9045,18 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("HOST", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_HOST);
+        else if (strcasecmp ("MODIFICATION_TIME", element_name) == 0)
+          {
+            set_client_state
+              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_MODIFICATION_TIME);
+            omp_parser->read_over = 1;
+          }
+        else if (strcasecmp ("NAME", element_name) == 0)
+          {
+            set_client_state
+              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_NAME);
+            omp_parser->read_over = 1;
+          }
         else if (strcasecmp ("NOTES", element_name) == 0)
           {
             omp_parser->read_over = 1;
@@ -9052,6 +9078,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           {
             omp_parser->read_over = 1;
             set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES);
+          }
+        else if (strcasecmp ("OWNER", element_name) == 0)
+          {
+            set_client_state
+              (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OWNER);
+            omp_parser->read_over = 1;
           }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
@@ -19502,14 +19534,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS);
           break;
         }
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, COMMENT);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, CREATION_TIME);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DESCRIPTION);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, DETECTION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, HOST);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT,
+                       MODIFICATION_TIME);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NAME);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NOTES);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, NVT);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_SEVERITY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, ORIGINAL_THREAT);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OVERRIDES);
+      CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OWNER);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SCAN_NVT_VERSION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SEVERITY);
