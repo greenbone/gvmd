@@ -33,14 +33,65 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 
 7 Run Manager as usual.
 
-8 To run SQL on the the database.
+8 To run SQL on the database.
 
 	psql tasks
 
-Handy script to drop all tables
--------------------------------
+Handy script to drop all data
+-----------------------------
 
 #!/bin/sh
-psql tasks --pset pager=off -t -c "`psql tasks --pset pager=off -t -c \"select 'drop table '||schemaname||'.'||tablename||' CASCADE;' from pg_tables where schemaname = 'public' order by schemaname, tablename;\"`"
+
+export PGOPTIONS='--client-min-messages=warning'
+
+PSQL="psql -q tasks --pset pager=off -t -c"
+
+$PSQL "`psql tasks --pset pager=off -t -c \"select 'drop table '||schemaname||'.'||tablename||' CASCADE;' from pg_tables where schemaname = 'public' order by schemaname, tablename;\"`"
+
+$PSQL "DROP FUNCTION IF EXISTS public.common_cve(text, text);";
+$PSQL "DROP FUNCTION IF EXISTS public.dynamic_severity();";
+$PSQL " DROP FUNCTION IF EXISTS public.hosts_contains(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.iso_time(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.level_max_severity(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.level_min_severity(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.lower(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.m_now();";
+$PSQL " DROP FUNCTION IF EXISTS public.make_uuid();";
+$PSQL " DROP FUNCTION IF EXISTS public.max_hosts(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.next_time(integer, integer, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.now();";
+$PSQL " DROP FUNCTION IF EXISTS public.order_message_type(text);";
+$PSQL " DROP FUNCTION IF EXISTS public.order_port(text);";
+$PSQL " DROP FUNCTION IF EXISTS public.report_active(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.report_progress(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.report_progress_active(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.report_severity(integer, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.report_severity_count(integer, integer, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.resource_name(text, text, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.run_status_name(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_class();";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_in_level(double precision, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_in_level(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_matches(double precision, double precision);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_matches_ov(double precision, double precision);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_to_level(text, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_to_level(double precision, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.severity_to_type(double precision);";
+$PSQL " DROP FUNCTION IF EXISTS public.t();";
+$PSQL " DROP FUNCTION IF EXISTS public.tag(text, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.task_last_report(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.task_second_last_report(integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.task_severity(integer, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.task_threat_level(integer, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.task_trend(integer, integer);";
+$PSQL " DROP FUNCTION IF EXISTS public.uniquify(text, text, integer, text);";
+$PSQL " DROP FUNCTION IF EXISTS public.user_can_everything(text);";
+
+$PSQL " DROP AGGREGATE IF EXISTS public.group_concat (text, text);";
+$PSQL " DROP AGGREGATE IF EXISTS public.group_concat_pair (text, text, text);";
+
 echo -n "\\d+: "
-psql tasks -c "\d+"
+$PSQL "\d+"
+
+echo "\\df: "
+$PSQL "\df"
