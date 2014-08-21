@@ -238,20 +238,19 @@ manage_create_sql_functions ()
            "         ELSE -1"
            "         END;"
            "$$ LANGUAGE SQL;");
-    }
 
-  sql ("CREATE OR REPLACE FUNCTION dynamic_severity ()"
-       " RETURNS boolean AS $$"
-       /* Get Dynamic Severity user setting. */
-       "  SELECT CAST (value AS integer) = 1 FROM settings"
-       "  WHERE name = 'Dynamic Severity'"
-       "  AND ((owner IS NULL)"
-       "       OR (owner = (SELECT id FROM users"
-       "                    WHERE users.uuid"
-       "                          = (SELECT uuid"
-       "                             FROM current_credentials))))"
-       "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
-       "$$ LANGUAGE SQL;");
+      sql ("CREATE OR REPLACE FUNCTION dynamic_severity ()"
+           " RETURNS boolean AS $$"
+           /* Get Dynamic Severity user setting. */
+           "  SELECT CAST (value AS integer) = 1 FROM settings"
+           "  WHERE name = 'Dynamic Severity'"
+           "  AND ((owner IS NULL)"
+           "       OR (owner = (SELECT id FROM users"
+           "                    WHERE users.uuid"
+           "                          = (SELECT uuid"
+           "                             FROM current_credentials))))"
+           "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
+           "$$ LANGUAGE SQL;");
 
 #define OVERRIDES_SQL(severity_sql)                         \
  " coalesce"                                                \
@@ -287,246 +286,247 @@ manage_create_sql_functions ()
  "    LIMIT 1),"                                            \
  "   " severity_sql ")"
 
-  sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
-       "                                            overrides integer)"
-       " RETURNS double precision AS $$"
-       /* Calculate the severity of a report. */
-       "  WITH max_severity AS (SELECT max(severity) AS max"
-       "                        FROM report_counts"
-       // FIX should have user like report_counts_cache_exists?  c version too?
-       "                        WHERE report = $1"
-       "                        AND override = $2"
-       "                        AND (end_time = 0 or end_time >= m_now ()))"
-       "  SELECT CASE"
-       "         WHEN EXISTS (SELECT max FROM max_severity)"
-       "              AND (SELECT max FROM max_severity) IS NOT NULL"
-       "         THEN (SELECT max::double precision FROM max_severity)"
-       "         WHEN dynamic_severity () AND $2::boolean"
-       /*        Dynamic severity, overrides on. */
-       "         THEN (SELECT max"
-       "                       (" OVERRIDES_SQL
+      sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
+           "                                            overrides integer)"
+           " RETURNS double precision AS $$"
+           /* Calculate the severity of a report. */
+           "  WITH max_severity AS (SELECT max(severity) AS max"
+           "                        FROM report_counts"
+           // FIX should have user like report_counts_cache_exists?  c version too?
+           "                        WHERE report = $1"
+           "                        AND override = $2"
+           "                        AND (end_time = 0 or end_time >= m_now ()))"
+           "  SELECT CASE"
+           "         WHEN EXISTS (SELECT max FROM max_severity)"
+           "              AND (SELECT max FROM max_severity) IS NOT NULL"
+           "         THEN (SELECT max::double precision FROM max_severity)"
+           "         WHEN dynamic_severity () AND $2::boolean"
+           /*        Dynamic severity, overrides on. */
+           "         THEN (SELECT max"
+           "                       (" OVERRIDES_SQL
+                                       ("CASE"
+                                        " WHEN results.severity"
+                                        "      > " G_STRINGIFY (SEVERITY_LOG)
+                                        " THEN (SELECT CAST (cvss_base AS REAL)"
+                                        "       FROM nvts"
+                                        "       WHERE nvts.oid = results.nvt)"
+                                        " ELSE results.severity END") ")"
+           "               FROM results"
+           "               WHERE results.report = $1)"
+           "         WHEN dynamic_severity ()"
+           /*        Dynamic severity, overrides off. */
+           "         THEN (SELECT max (CASE"
+           "                           WHEN results.type IS NULL"
+           "                           THEN 0::real"
+           "                           ELSE (CASE"
+           "                                 WHEN results.severity"
+           "                                      > " G_STRINGIFY (SEVERITY_LOG)
+           "                                 THEN (SELECT CAST (cvss_base AS REAL)"
+           "                                       FROM nvts"
+           "                                       WHERE nvts.oid = results.nvt)"
+           "                                 ELSE results.severity"
+           "                                 END)"
+           "                           END)"
+           "               FROM results"
+           "               WHERE results.report = $1)"
+           "         WHEN $2::boolean"
+           /*        Overrides on. */
+           "         THEN (SELECT max (" OVERRIDES_SQL ("results.severity") ")"
+           "               FROM results"
+           "               WHERE results.report = $1)"
+           /*        Overrides off. */
+           "         ELSE (SELECT max (CASE"
+           "                           WHEN results.type IS NULL"
+           "                           THEN 0::real"
+           "                           ELSE results.severity"
+           "                           END)"
+           "               FROM results"
+           "               WHERE results.report = $1)"
+           "         END;"
+           "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION severity_class ()"
+           " RETURNS text AS $$"
+           /* Get the user's severity class setting. */
+           "  SELECT value FROM settings"
+           "  WHERE name = 'Severity Class'"
+           "  AND ((owner IS NULL)"
+           "       OR (owner = (SELECT id FROM users"
+           "                    WHERE users.uuid = (SELECT uuid"
+           "                                        FROM current_credentials))))"
+           "  ORDER BY owner DESC LIMIT 1;"
+           "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION"
+           " report_severity_count (report integer, overrides integer, level text)"
+           " RETURNS bigint AS $$"
+           /* Calculate the severity of a report. */
+           "  WITH severity_count AS (SELECT sum (count) AS total"
+           "                          FROM report_counts"
+           "                          WHERE report = $1"
+           "                          AND override = $2"
+           "                          AND (end_time = 0 or end_time >= m_now ())"
+           "                          AND (severity"
+           "                               BETWEEN level_min_severity"
+           "                                        ($3, severity_class ())"
+           "                                       AND level_max_severity"
+           "                                            ($3, severity_class ())))"
+           "  SELECT CASE"
+           "         WHEN EXISTS (SELECT total FROM severity_count)"
+           "              AND (SELECT total FROM severity_count) IS NOT NULL"
+           "         THEN (SELECT total FROM severity_count)"
+           "         WHEN dynamic_severity () AND $2::boolean"
+           /*        Dynamic severity, overrides on. */
+           "         THEN (SELECT count (*)"
+           "               FROM results"
+           "               WHERE results.report = $1"
+           "               AND (" OVERRIDES_SQL
                                    ("CASE"
                                     " WHEN results.severity"
                                     "      > " G_STRINGIFY (SEVERITY_LOG)
                                     " THEN (SELECT CAST (cvss_base AS REAL)"
                                     "       FROM nvts"
                                     "       WHERE nvts.oid = results.nvt)"
-                                    " ELSE results.severity END") ")"
-       "               FROM results"
-       "               WHERE results.report = $1)"
-       "         WHEN dynamic_severity ()"
-       /*        Dynamic severity, overrides off. */
-       "         THEN (SELECT max (CASE"
-       "                           WHEN results.type IS NULL"
-       "                           THEN 0::real"
-       "                           ELSE (CASE"
-       "                                 WHEN results.severity"
-       "                                      > " G_STRINGIFY (SEVERITY_LOG)
-       "                                 THEN (SELECT CAST (cvss_base AS REAL)"
-       "                                       FROM nvts"
-       "                                       WHERE nvts.oid = results.nvt)"
-       "                                 ELSE results.severity"
-       "                                 END)"
-       "                           END)"
-       "               FROM results"
-       "               WHERE results.report = $1)"
-       "         WHEN $2::boolean"
-       /*        Overrides on. */
-       "         THEN (SELECT max (" OVERRIDES_SQL ("results.severity") ")"
-       "               FROM results"
-       "               WHERE results.report = $1)"
-       /*        Overrides off. */
-       "         ELSE (SELECT max (CASE"
-       "                           WHEN results.type IS NULL"
-       "                           THEN 0::real"
-       "                           ELSE results.severity"
-       "                           END)"
-       "               FROM results"
-       "               WHERE results.report = $1)"
-       "         END;"
-       "$$ LANGUAGE SQL;");
+                                    " ELSE results.severity END")
+           "                    BETWEEN level_min_severity"
+           "                             ($3, severity_class ())"
+           "                            AND level_max_severity"
+           "                                 ($3, severity_class ())))"
+           "         WHEN dynamic_severity ()"
+           /*        Dynamic severity, overrides off. */
+           "         THEN (SELECT count (*)"
+           "               FROM results"
+           "               WHERE results.report = $1"
+           "               AND ((CASE"
+           "                     WHEN results.type IS NULL"
+           "                     THEN 0::real"
+           "                     ELSE (CASE"
+           "                           WHEN results.severity"
+           "                                > " G_STRINGIFY (SEVERITY_LOG)
+           "                           THEN (SELECT CAST (cvss_base AS REAL)"
+           "                                 FROM nvts"
+           "                                 WHERE nvts.oid = results.nvt)"
+           "                           ELSE results.severity"
+           "                           END)"
+           "                     END)"
+           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                            AND level_max_severity"
+           "                                 ($3, severity_class ())))"
+           "         WHEN $2::boolean"
+           /*        Overrides on. */
+           "         THEN (SELECT count (*)"
+           "               FROM results"
+           "               WHERE results.report = $1"
+           "               AND (" OVERRIDES_SQL ("results.severity")
+           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                            AND level_max_severity"
+           "                                 ($3, severity_class ())))"
+           /*        Overrides off. */
+           "         ELSE (SELECT count (*)"
+           "               FROM results"
+           "               WHERE results.report = $1"
+           "               AND ((CASE"
+           "                     WHEN results.type IS NULL"
+           "                     THEN 0::real"
+           "                     ELSE results.severity"
+           "                     END)"
+           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                            AND level_max_severity"
+           "                                 ($3, severity_class ())))"
+           "         END;"
+           "$$ LANGUAGE SQL;");
 
-  sql ("CREATE OR REPLACE FUNCTION severity_class ()"
-       " RETURNS text AS $$"
-       /* Get the user's severity class setting. */
-       "  SELECT value FROM settings"
-       "  WHERE name = 'Severity Class'"
-       "  AND ((owner IS NULL)"
-       "       OR (owner = (SELECT id FROM users"
-       "                    WHERE users.uuid = (SELECT uuid"
-       "                                        FROM current_credentials))))"
-       "  ORDER BY owner DESC LIMIT 1;"
-       "$$ LANGUAGE SQL;");
+      sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
+           " RETURNS integer AS $$"
+           /* Get the report from the most recently completed invocation of task. */
+           "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+           "  ORDER BY date DESC LIMIT 1;"
+           "$$ LANGUAGE SQL;",
+           TASK_STATUS_DONE);
 
-  sql ("CREATE OR REPLACE FUNCTION"
-       " report_severity_count (report integer, overrides integer, level text)"
-       " RETURNS bigint AS $$"
-       /* Calculate the severity of a report. */
-       "  WITH severity_count AS (SELECT sum (count) AS total"
-       "                          FROM report_counts"
-       "                          WHERE report = $1"
-       "                          AND override = $2"
-       "                          AND (end_time = 0 or end_time >= m_now ())"
-       "                          AND (severity"
-       "                               BETWEEN level_min_severity"
-       "                                        ($3, severity_class ())"
-       "                                       AND level_max_severity"
-       "                                            ($3, severity_class ())))"
-       "  SELECT CASE"
-       "         WHEN EXISTS (SELECT total FROM severity_count)"
-       "              AND (SELECT total FROM severity_count) IS NOT NULL"
-       "         THEN (SELECT total FROM severity_count)"
-       "         WHEN dynamic_severity () AND $2::boolean"
-       /*        Dynamic severity, overrides on. */
-       "         THEN (SELECT count (*)"
-       "               FROM results"
-       "               WHERE results.report = $1"
-       "               AND (" OVERRIDES_SQL
-                               ("CASE"
-                                " WHEN results.severity"
-                                "      > " G_STRINGIFY (SEVERITY_LOG)
-                                " THEN (SELECT CAST (cvss_base AS REAL)"
-                                "       FROM nvts"
-                                "       WHERE nvts.oid = results.nvt)"
-                                " ELSE results.severity END")
-       "                    BETWEEN level_min_severity"
-       "                             ($3, severity_class ())"
-       "                            AND level_max_severity"
-       "                                 ($3, severity_class ())))"
-       "         WHEN dynamic_severity ()"
-       /*        Dynamic severity, overrides off. */
-       "         THEN (SELECT count (*)"
-       "               FROM results"
-       "               WHERE results.report = $1"
-       "               AND ((CASE"
-       "                     WHEN results.type IS NULL"
-       "                     THEN 0::real"
-       "                     ELSE (CASE"
-       "                           WHEN results.severity"
-       "                                > " G_STRINGIFY (SEVERITY_LOG)
-       "                           THEN (SELECT CAST (cvss_base AS REAL)"
-       "                                 FROM nvts"
-       "                                 WHERE nvts.oid = results.nvt)"
-       "                           ELSE results.severity"
-       "                           END)"
-       "                     END)"
-       "                    BETWEEN level_min_severity ($3, severity_class ())"
-       "                            AND level_max_severity"
-       "                                 ($3, severity_class ())))"
-       "         WHEN $2::boolean"
-       /*        Overrides on. */
-       "         THEN (SELECT count (*)"
-       "               FROM results"
-       "               WHERE results.report = $1"
-       "               AND (" OVERRIDES_SQL ("results.severity")
-       "                    BETWEEN level_min_severity ($3, severity_class ())"
-       "                            AND level_max_severity"
-       "                                 ($3, severity_class ())))"
-       /*        Overrides off. */
-       "         ELSE (SELECT count (*)"
-       "               FROM results"
-       "               WHERE results.report = $1"
-       "               AND ((CASE"
-       "                     WHEN results.type IS NULL"
-       "                     THEN 0::real"
-       "                     ELSE results.severity"
-       "                     END)"
-       "                    BETWEEN level_min_severity ($3, severity_class ())"
-       "                            AND level_max_severity"
-       "                                 ($3, severity_class ())))"
-       "         END;"
-       "$$ LANGUAGE SQL;");
+      sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
+           " RETURNS integer AS $$"
+           /* Get report from second most recently completed invocation of task. */
+           "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
+           "  ORDER BY date DESC LIMIT 1 OFFSET 1;"
+           "$$ LANGUAGE SQL;",
+           TASK_STATUS_DONE);
 
-  sql ("CREATE OR REPLACE FUNCTION task_last_report (integer)"
-       " RETURNS integer AS $$"
-       /* Get the report from the most recently completed invocation of task. */
-       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
-       "  ORDER BY date DESC LIMIT 1;"
-       "$$ LANGUAGE SQL;",
-       TASK_STATUS_DONE);
+      sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
+           " RETURNS double precision AS $$"
+           /* Calculate the severity of a task. */
+           "  SELECT CASE"
+           "         WHEN (SELECT target IS NULL FROM tasks WHERE id = $1)"
+           "         THEN CAST (0.0 AS double precision)"
+           "         WHEN dynamic_severity () AND CAST ($2 AS boolean)"
+           /*        Dynamic severity, overrides on. */
+           "         THEN (SELECT"
+           "                round"
+           "                 (max (" OVERRIDES_SQL
+                                      ("CASE"
+                                       " WHEN results.severity"
+                                       "      > " G_STRINGIFY (SEVERITY_LOG)
+                                       " THEN (SELECT CAST (cvss_base AS REAL)"
+                                       "       FROM nvts"
+                                       "       WHERE nvts.oid = results.nvt)"
+                                       " ELSE results.severity END") ")::numeric,"
+           "                  2)"
+           "               FROM results"
+           "               WHERE results.report = (SELECT id FROM reports"
+           "                                       WHERE reports.task = $1"
+           "                                       AND reports.scan_run_status = %u"
+           "                                       ORDER BY reports.date DESC"
+           "                                                LIMIT 1 OFFSET 0))"
+           "         WHEN dynamic_severity ()"
+           /*        Dynamic severity, overrides off. */
+           "         THEN (SELECT round (max (CASE"
+           "                                  WHEN results.severity"
+           "                                       > " G_STRINGIFY (SEVERITY_LOG)
+           "                                  THEN (SELECT CAST (cvss_base AS REAL)"
+           "                                        FROM nvts"
+           "                                        WHERE nvts.oid = results.nvt)"
+           "                                  ELSE results.severity END)::numeric,"
+           "                             2)"
+           "               FROM results"
+           "               WHERE results.report = (SELECT id FROM reports"
+           "                                       WHERE reports.task = $1"
+           "                                       AND reports.scan_run_status = %u"
+           "                                       ORDER BY reports.date DESC"
+           "                                                LIMIT 1 OFFSET 0))"
+           "         WHEN CAST ($2 AS boolean)"
+           /*        Overrides on. */
+           "         THEN (SELECT round"
+           "                       (max (" OVERRIDES_SQL ("results.severity") ")"
+           "                              ::numeric,"
+           "                        2)"
+           "               FROM results"
+           "               WHERE results.report = (SELECT id FROM reports"
+           "                                       WHERE reports.task = $1"
+           "                                       AND reports.scan_run_status = %u"
+           "                                       ORDER BY reports.date DESC"
+           "                                       LIMIT 1 OFFSET 0))"
+           /*        Overrides off. */
+           // FIX need rounding in sqlite?
+           "         ELSE (SELECT round (max (results.severity)::numeric, 2)"
+           "               FROM results"
+           "               WHERE results.report = (SELECT id FROM reports"
+           "                                       WHERE reports.task = $1"
+           "                                       AND reports.scan_run_status = %u"
+           "                                       ORDER BY reports.date DESC"
+           "                                                LIMIT 1 OFFSET 0))"
+           "         END;"
+           "$$ LANGUAGE SQL;",
+           TASK_STATUS_DONE,
+           TASK_STATUS_DONE,
+           TASK_STATUS_DONE,
+           TASK_STATUS_DONE);
 
-  sql ("CREATE OR REPLACE FUNCTION task_second_last_report (integer)"
-       " RETURNS integer AS $$"
-       /* Get report from second most recently completed invocation of task. */
-       "  SELECT id FROM reports WHERE task = $1 AND scan_run_status = %u"
-       "  ORDER BY date DESC LIMIT 1 OFFSET 1;"
-       "$$ LANGUAGE SQL;",
-       TASK_STATUS_DONE);
-
-  sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
-       " RETURNS double precision AS $$"
-       /* Calculate the severity of a task. */
-       "  SELECT CASE"
-       "         WHEN (SELECT target IS NULL FROM tasks WHERE id = $1)"
-       "         THEN CAST (0.0 AS double precision)"
-       "         WHEN dynamic_severity () AND CAST ($2 AS boolean)"
-       /*        Dynamic severity, overrides on. */
-       "         THEN (SELECT"
-       "                round"
-       "                 (max (" OVERRIDES_SQL
-                                  ("CASE"
-                                   " WHEN results.severity"
-                                   "      > " G_STRINGIFY (SEVERITY_LOG)
-                                   " THEN (SELECT CAST (cvss_base AS REAL)"
-                                   "       FROM nvts"
-                                   "       WHERE nvts.oid = results.nvt)"
-                                   " ELSE results.severity END") ")::numeric,"
-       "                  2)"
-       "               FROM results"
-       "               WHERE results.report = (SELECT id FROM reports"
-       "                                       WHERE reports.task = $1"
-       "                                       AND reports.scan_run_status = %u"
-       "                                       ORDER BY reports.date DESC"
-       "                                                LIMIT 1 OFFSET 0))"
-       "         WHEN dynamic_severity ()"
-       /*        Dynamic severity, overrides off. */
-       "         THEN (SELECT round (max (CASE"
-       "                                  WHEN results.severity"
-       "                                       > " G_STRINGIFY (SEVERITY_LOG)
-       "                                  THEN (SELECT CAST (cvss_base AS REAL)"
-       "                                        FROM nvts"
-       "                                        WHERE nvts.oid = results.nvt)"
-       "                                  ELSE results.severity END)::numeric,"
-       "                             2)"
-       "               FROM results"
-       "               WHERE results.report = (SELECT id FROM reports"
-       "                                       WHERE reports.task = $1"
-       "                                       AND reports.scan_run_status = %u"
-       "                                       ORDER BY reports.date DESC"
-       "                                                LIMIT 1 OFFSET 0))"
-       "         WHEN CAST ($2 AS boolean)"
-       /*        Overrides on. */
-       "         THEN (SELECT round"
-       "                       (max (" OVERRIDES_SQL ("results.severity") ")"
-       "                              ::numeric,"
-       "                        2)"
-       "               FROM results"
-       "               WHERE results.report = (SELECT id FROM reports"
-       "                                       WHERE reports.task = $1"
-       "                                       AND reports.scan_run_status = %u"
-       "                                       ORDER BY reports.date DESC"
-       "                                       LIMIT 1 OFFSET 0))"
-       /*        Overrides off. */
-       // FIX need rounding in sqlite?
-       "         ELSE (SELECT round (max (results.severity)::numeric, 2)"
-       "               FROM results"
-       "               WHERE results.report = (SELECT id FROM reports"
-       "                                       WHERE reports.task = $1"
-       "                                       AND reports.scan_run_status = %u"
-       "                                       ORDER BY reports.date DESC"
-       "                                                LIMIT 1 OFFSET 0))"
-       "         END;"
-       "$$ LANGUAGE SQL;",
-       TASK_STATUS_DONE,
-       TASK_STATUS_DONE,
-       TASK_STATUS_DONE,
-       TASK_STATUS_DONE);
-
-  sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
-       " RETURNS text AS $$"
-       /* Calculate the threat level of a task. */
-       "  SELECT severity_to_level (task_severity ($1, $2), 0);"
-       "$$ LANGUAGE SQL;");
+      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
+           " RETURNS text AS $$"
+           /* Calculate the threat level of a task. */
+           "  SELECT severity_to_level (task_severity ($1, $2), 0);"
+           "$$ LANGUAGE SQL;");
+    }
 
   sql ("CREATE OR REPLACE FUNCTION run_status_name (integer)"
        " RETURNS text AS $$"
@@ -1754,7 +1754,7 @@ create_tables ()
        "  host text,"
        "  start_time integer,"
        "  end_time integer,"
-       "  attack_state integer,"
+       "  attack_state text,"
        "  current_port integer,"
        "  max_port integer);");
 

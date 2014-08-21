@@ -1,3 +1,9 @@
+2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Delay creation of more
+	functions that use tables.
+	(create_tables): Change attack_state in report_hosts to text.
+
 2014-08-21  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Handle newly added elements in results when importing reports.
