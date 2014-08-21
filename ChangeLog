@@ -1,5 +1,10 @@
 2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_result): Set owner to NULL instead of 0,
+	otherwise Postgres sees a constraint error.
+
+2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/postgres-HOWTO: Add functions and aggregates to drop script.
 
 2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>

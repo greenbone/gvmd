@@ -13904,7 +13904,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod)"
        " VALUES"
-       " (0, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
+       " (NULL, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
        "  '%s', make_uuid (), %i);",
        task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
        quoted_descr, qod);
