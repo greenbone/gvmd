@@ -520,12 +520,6 @@ manage_create_sql_functions ()
            TASK_STATUS_DONE,
            TASK_STATUS_DONE,
            TASK_STATUS_DONE);
-
-      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
-           " RETURNS text AS $$"
-           /* Calculate the threat level of a task. */
-           "  SELECT severity_to_level (task_severity ($1, $2), 0);"
-           "$$ LANGUAGE SQL;");
     }
 
   sql ("CREATE OR REPLACE FUNCTION run_status_name (integer)"
@@ -816,6 +810,12 @@ manage_create_sql_functions ()
            "                      END)"
            "         ELSE 'Internal Error'"
            "         END;"
+           "$$ LANGUAGE SQL;");
+
+      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
+           " RETURNS text AS $$"
+           /* Calculate the threat level of a task. */
+           "  SELECT severity_to_level (task_severity ($1, $2), 0);"
            "$$ LANGUAGE SQL;");
     }
 

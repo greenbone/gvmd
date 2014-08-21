@@ -1,5 +1,10 @@
 2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Create
+	task_threat_level after functions it uses.
+
+2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Delay creation of more
 	functions that use tables.
 	(create_tables): Change attack_state in report_hosts to text.
