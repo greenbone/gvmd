@@ -1,5 +1,10 @@
 2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_131_to_132): Add Postgres version of
+	CREATE statements.
+
+2014-08-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (make_result): Set owner to NULL instead of 0,
 	otherwise Postgres sees a constraint error.
 

@@ -9385,14 +9385,43 @@ migrate_131_to_132 ()
 
   /* Create the tables in the new format. */
 
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT,"
-       "  creation_time, modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
-       " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
-       "  password, comment, private_key TEXT,"
-       "  creation_time, modification_time);");
+  if (sql_is_sqlite3 ())
+    {
+      sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+           "  password, comment, private_key TEXT,"
+           "  creation_time, modification_time);");
+      sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+           " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, login,"
+           "  password, comment, private_key TEXT,"
+           "  creation_time, modification_time);");
+    }
+  else
+    {
+      sql ("CREATE TABLE IF NOT EXISTS lsc_credentials"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  name text NOT NULL,"
+           "  login text,"
+           "  password text,"
+           "  comment text,"
+           "  private_key text,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+
+      sql ("CREATE TABLE IF NOT EXISTS lsc_credentials_trash"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+           "  name text NOT NULL,"
+           "  login text,"
+           "  password text,"
+           "  comment text,"
+           "  private_key text,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+    }
 
   /* Copy the data into the new table. */
 
