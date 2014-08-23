@@ -1,3 +1,63 @@
+openvas-manager 6.0+beta1 (2014-08-23)
+
+This is the first beta version of the upcoming 6.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanners and various user clients.
+
+This release introduces first steps towards multi-scanner support, adds support
+for SecInfo type "CERT-Bund" and extends the results object. Apart from this
+the alternative support for PostgreSQL works to some extend but is not
+complete yet.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier, Michael Wiegand
+
+Main changes since 5.0 series:
+* Added first steps for Scanner Management. This includes the configration part
+  for scanners accompanied with a new set of OMP commands (create_scanner,
+  get_scanners, modify_scanner, delete_scanner and verity_scanner). Next,
+  it covers the extensions of tasks with the selected scanner type and the
+  extension of Scan Configurations to reflect different scanner types.
+* First steps towards alternative use of PostgreSQL as database backend instead
+  of SQLite3. The PostgreSQL support does not yet cover all of the OpenVAS Manager
+  functionalities.
+* Added new SecInfo subtype CERT-Bund Advisory (CERT_BUND_ADV).
+* Added new OMP command GET_AGGREGATES in order to deliver data tables for
+  use in diagrams.
+* Extended results table and OMP results objects.
+* Removed openvasrc file support from OMP.
+* For SSH credentials, the public part is now extracted from private key
+  when needed.
+* Removed preemptive Scanner connecting. Connect only on NVT cache update
+  or task starting, resuming and stopping. This improves response time.
+* Removed task pausing feature. This includes the removal of OMP commands
+  pause_task and resume_paused_task.
+* Removed target locators feature. This includes the removal of the
+  OMP command get_target_locators.
+* First steps towards a QoD (Quality of Detection) concept as an attribute
+  of the results.
+* Rebuild CERT database as version 6 to apply fix for problems with CVEs
+  in older DFN-CERT advisories.
+* Increased limit of max number of hosts specified in user Host Access
+  Control to 16,777,216.
+* Removed --slisten and --sport options.
+* Renamed --list-users to --get-users.
+* Added --get-scanners.
+* Added --create-scanner with --scanner-host, --scanner-port and
+  --scanner-type options.
+* Added --delete-scanner option.
+* Added --verify-scanner option.
+* Added --scanner-ca-pub, --scanner-key-pub and --scanner-key-priv
+  command-line arguments.
+* Added options --max-email-attachment-size and --max-email-include-size.
+* Various minor improvements.
+* Code cleanups.
+
+
 openvas-manager 5.0.0 (2014-04-23)
 
 This is the first release of the openvas-manager 5.0 module for the Open
