@@ -145,6 +145,17 @@ sql_stmt_init (sql_stmt_t *stmt)
 }
 
 /**
+ * @brief Get regular expression operator.
+ *
+ * @return Regexp operator.
+ */
+const char *
+sql_regexp_op ()
+{
+  return "~";
+}
+
+/**
  * @brief Check whether the database is open.
  *
  * @return 1 if open, else 0.

@@ -2972,34 +2972,38 @@ filter_clause (const char* type, const char* filter,
                                         "%s"
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
-                                        "   WHERE tags.name REGEXP '%s'"
+                                        "   WHERE tags.name %s '%s'"
                                         "   AND tags.active != 0"
                                         "   AND tags.resource_uuid"
                                         "         = allinfo.uuid"
                                         "   AND tags.resource_type"
                                         "         = allinfo.type"
                                         "   AND tags.value"
-                                        "       REGEXP '%s'))",
+                                        "       %s '%s'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
+                                        sql_regexp_op (),
                                         tag_name,
+                                        sql_regexp_op (),
                                         tag_value);
               else
                 g_string_append_printf (clause,
                                         "%s"
                                         "(EXISTS"
                                         "  (SELECT * FROM tags"
-                                        "   WHERE tags.name REGEXP '%s'"
+                                        "   WHERE tags.name %s '%s'"
                                         "   AND tags.active != 0"
                                         "   AND tags.resource_uuid = %ss.uuid"
                                         "   AND tags.resource_type = '%s'"
                                         "   AND tags.value"
-                                        "       REGEXP '%s'))",
+                                        "       %s '%s'))",
                                         get_join (first_keyword, last_was_and,
                                                   last_was_not),
+                                        sql_regexp_op (),
                                         tag_name,
                                         type,
                                         type,
+                                        sql_regexp_op (),
                                         tag_value);
             }
 
@@ -3240,10 +3244,11 @@ filter_clause (const char* type, const char* filter,
           column = columns_select_column (select_columns, keyword->column);
           assert (column);
           g_string_append_printf (clause,
-                                  "%s(CAST (%s AS TEXT) REGEXP '%s'",
+                                  "%s(CAST (%s AS TEXT) %s '%s'",
                                   get_join (first_keyword, last_was_and,
                                             last_was_not),
                                   column,
+                                  sql_regexp_op (),
                                   quoted_keyword);
         }
       else if (keyword->equal)
@@ -3365,7 +3370,7 @@ filter_clause (const char* type, const char* filter,
                                         (index ? " AND " : ""),
                                         select_column,
                                         select_column,
-                                        last_was_re ? "REGEXP" : "LIKE",
+                                        last_was_re ? sql_regexp_op () : "LIKE",
                                         last_was_re ? "" : "%%",
                                         quoted_keyword,
                                         last_was_re ? "" : "%%");
@@ -3386,7 +3391,7 @@ filter_clause (const char* type, const char* filter,
                                         " %s '%s%s%s'",
                                         (index ? " OR " : ""),
                                         select_column,
-                                        last_was_re ? "REGEXP" : "LIKE",
+                                        last_was_re ? sql_regexp_op () : "LIKE",
                                         last_was_re ? "" : "%%",
                                         quoted_keyword,
                                         last_was_re ? "" : "%%");

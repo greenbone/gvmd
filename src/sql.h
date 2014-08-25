@@ -65,6 +65,9 @@ sql_schema ();
 const char *
 sql_select_limit (int);
 
+const char *
+sql_regexp_op ();
+
 int
 sql_is_open ();
 

@@ -105,6 +105,17 @@ sql_select_limit (int max)
 }
 
 /**
+ * @brief Get regular expression operator.
+ *
+ * @return Regexp operator.
+ */
+const char *
+sql_regexp_op ()
+{
+  return "REGEXP";
+}
+
+/**
  * @brief Check whether the database is open.
  *
  * @return 1 if open, else 0.
