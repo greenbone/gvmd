@@ -13553,14 +13553,14 @@ task_severity (task_t task, int overrides, int offset)
 
   g_free (severity_sql);
 
-  severity = sql_string ("SELECT max (%s),"
-                         "       (SELECT id FROM reports"
-                         "        WHERE reports.task = %llu"
-                         "        AND reports.scan_run_status = %u"
-                         "        ORDER BY reports.date DESC LIMIT 1 OFFSET %d)"
-                         "       AS report_id"
+  severity = sql_string ("SELECT max (%s)"
                          " FROM results"
-                         " WHERE results.report = report_id;",
+                         " WHERE results.report"
+                         "       = (SELECT id FROM reports"
+                         "          WHERE reports.task = %llu"
+                         "          AND reports.scan_run_status = %u"
+                         "          ORDER BY reports.date DESC"
+                         "          LIMIT 1 OFFSET %d);",
                          new_severity_sql,
                          task,
                          TASK_STATUS_DONE,

@@ -1,5 +1,10 @@
 2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_severity): Put report selection in WHERE
+	clause instead of using alias, for Postgres.
+
+2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get regexp filtering working with Postgres.
 
 	* src/manage_sql.c (filter_clause): Get regexp operator from backend.
