@@ -2680,11 +2680,23 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "cvss_base") == 0
                        || strcmp (keyword->string, "max_cvss") == 0)
                 g_string_append_printf (order,
-                                        " ORDER BY CASE %s"
+                                        " ORDER BY CASE CAST (%s AS text)"
                                         " WHEN '' THEN NULL"
                                         " ELSE CAST (%s AS REAL) END ASC",
                                         keyword->string,
                                         keyword->string);
+              else if ((strcmp (keyword->string, "created") == 0)
+                       || (strcmp (keyword->string, "modified") == 0)
+                       || (strcmp (keyword->string, "published") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY %s ASC",
+                                          column);
+                }
               else if ((strcmp (type, "note")
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
@@ -2754,11 +2766,23 @@ filter_clause (const char* type, const char* filter,
                        || strcmp (keyword->string, "cvss_base") == 0
                        || strcmp (keyword->string, "max_cvss") == 0)
                 g_string_append_printf (order,
-                                        " ORDER BY CASE %s"
+                                        " ORDER BY CASE CAST (%s AS text)"
                                         " WHEN '' THEN NULL"
                                         " ELSE CAST (%s AS REAL) END DESC",
                                         keyword->string,
                                         keyword->string);
+              else if ((strcmp (keyword->string, "created") == 0)
+                       || (strcmp (keyword->string, "modified") == 0)
+                       || (strcmp (keyword->string, "published") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY %s DESC",
+                                          column);
+                }
               else if ((strcmp (type, "note")
                         && strcmp (type, "override"))
                        || (strcmp (keyword->string, "nvt")
