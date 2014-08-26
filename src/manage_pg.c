@@ -1022,8 +1022,13 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION order_port (text)"
        " RETURNS integer AS $$"
        " BEGIN"
-       // FIX
-       "   RETURN 0;"
+       "   IF $1 ~ '^[0-9]+' THEN"
+       "     RETURN CAST (substring ($1, '^[0-9]+') as integer);"
+       "   ELSIF $1 ~ '^[^0-9]* \\([0-9]+/' THEN"
+       "     RETURN CAST (substring ($1, '^[^0-9]* \\(([0-9]+)/') as integer);"
+       "   ELSE"
+       "     RETURN 0;"
+       "   END IF;"
        " END;"
        "$$ LANGUAGE plpgsql;");
 

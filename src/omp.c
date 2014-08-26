@@ -10833,7 +10833,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                     int changed)
 {
   const char *descr = result_iterator_descr (results);
-  const char *name, *owner_name, *comment, *creation_time, *modification_time; 
+  const char *name, *owner_name, *comment, *creation_time, *modification_time;
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
   result_t result = result_iterator_result (results);
   char *uuid;

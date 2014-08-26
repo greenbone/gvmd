@@ -5196,8 +5196,6 @@ manage_encrypt_all_credentials (GSList *log_config, const gchar *database,
 /**
  * @brief Collate two message type strings.
  *
- * Callback for SQLite "collate_message_type" collation.
- *
  * A lower threat is considered less than a higher threat, so Medium is
  * less than High.
  *
@@ -9105,8 +9103,7 @@ trash_task_writable (task_t task)
 /**
  * @brief Initialize the manage library for a process.
  *
- * Open the SQL database, attach secondary databases, and define functions and
- * collations.
+ * Open the SQL database, attach secondary databases, and define functions.
  *
  * @param[in]  update_nvt_cache  0 operate normally, -1 just update NVT cache,
  *                               -2 just rebuild NVT cache.

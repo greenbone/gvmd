@@ -1,3 +1,11 @@
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Implement order_port.
+
+	* src/manage_sql.c: Remove collation references in docs.
+
+	* src/omp.c (buffer_results_xml): Flush trailing whitespace.
+
 2014-08-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add autofp and overrides for lists of results from GET_RESULTS.
@@ -73,6 +81,10 @@
 
 	* src/manage_sqlite3.c (sql_order_role): New function.
 	(manage_create_sql_functions): Add order_role.
+
+2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (
 
 2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
