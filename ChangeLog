@@ -1,5 +1,10 @@
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c: Remove stray collation headers.
+	(sql_order_port): Implement.
+
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Implement order_port.
 
 	* src/manage_sql.c: Remove collation references in docs.

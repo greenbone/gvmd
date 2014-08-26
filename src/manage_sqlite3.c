@@ -63,18 +63,6 @@ int
 resource_exists (const char *, resource_t, int);
 
 int
-collate_threat (void *, int, const void *, int, const void *);
-
-int
-collate_ip (void *, int, const void *, int, const void *);
-
-int
-collate_location (void *, int, const void *, int, const void *);
-
-int
-collate_role (void *, int, const void *, int, const void *);
-
-int
 parse_time (const gchar *, int *);
 
 gchar *
@@ -214,9 +202,20 @@ sql_order_message_type (sqlite3_context *context, int argc,
 void
 sql_order_port (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
+  const char *port;
+  int port_num;
+
   assert (argc == 1);
-  // FIX
-  sqlite3_result_int (context, 0);
+
+  port = (const char *) sqlite3_value_text (argv[0]);
+
+  port_num = atoi (port);
+  if (port_num > 0)
+    sqlite3_result_int (context, port_num);
+  else if (sscanf (port, "%*s (%i/%*s)", &port_num) == 1)
+    sqlite3_result_int (context, port_num);
+  else
+    sqlite3_result_int (context, 0);
 }
 
 /**
