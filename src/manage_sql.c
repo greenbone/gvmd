@@ -79,9 +79,6 @@
 int
 manage_create_sql_functions ();
 
-int
-manage_create_sql_collations ();
-
 void
 create_tables ();
 
@@ -5272,96 +5269,6 @@ collate_message_type (void* data,
 }
 
 /**
- * @brief Collate two threat levels.
- *
- * A lower threat is considered less than a higher threat, so Medium is
- * less than High.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first string.
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second string.
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-int
-collate_threat (void* data,
-                int one_len, const void* arg_one,
-                int two_len, const void* arg_two)
-{
-  const char* one = (const char*) arg_one;
-  const char* two = (const char*) arg_two;
-
-  if (one_len == 0)
-    {
-      if (two_len == 0)
-        return 0;
-      return -1;
-    }
-  if (two_len == 0)
-    return 1;
-
-  if (strncmp (one, "High", one_len) == 0)
-    {
-      if (strncmp (two, "High", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "High", two_len) == 0) return -1;
-
-  if (strncmp (one, "Medium", one_len) == 0)
-    {
-      if (strncmp (two, "Medium", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Medium", two_len) == 0) return -1;
-
-  if (strncmp (one, "Low", one_len) == 0)
-    {
-      if (strncmp (two, "Low", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Low", two_len) == 0) return -1;
-
-  if (strncmp (one, "Log", one_len) == 0)
-    {
-      if (strncmp (two, "Log", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Log", two_len) == 0) return -1;
-
-  if (strncmp (one, "Debug", one_len) == 0)
-    {
-      if (strncmp (two, "Debug", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "Debug", two_len) == 0) return -1;
-
-  if (strncmp (one, "False Positive", one_len) == 0)
-    {
-      if (strncmp (two, "False Positive", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "False Positive", two_len) == 0) return -1;
-
-  if (strncmp (one, "None", one_len) == 0)
-    {
-      if (strncmp (two, "None", two_len) == 0)
-        return 0;
-      return 1;
-    }
-  if (strncmp (two, "None", two_len) == 0) return -1;
-
-  return strncmp (one, two, MIN (one_len, two_len));
-}
-
-/**
  * @brief Compare two number strings for collate_ip.
  *
  * @param[in]  one_arg  First string.
@@ -5498,44 +5405,6 @@ collate_location (void* data,
 
   ret = strncmp (one, two, MIN (one_len, two_len));
   return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
-}
-
-/**
- * @brief Collate two role names.
- *
- * Admin sorts first.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first role (a string).
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second role (a string).
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-int
-collate_role (void* data,
-              int one_len, const void* arg_one,
-              int two_len, const void* arg_two)
-{
-  int ret;
-  const char* one = (const char*) arg_one;
-  const char* two = (const char*) arg_two;
-
-  if ((one_len == 5) && (strncmp (one, "Admin", 5) == 0))
-    {
-      if ((two_len == 5) && (strncmp (two, "Admin", 5) == 0))
-        return 0;
-      return -1;
-    }
-
-  if ((two_len == 5) && (strncmp (two, "Admin", 5) == 0))
-    return 1;
-
-  ret = strncmp (one, two, MIN (one_len, two_len));
-  if (ret == 0)
-    return one_len < two_len ? -1 : 1;
-  return ret < 0 ? -1 : 1;
 }
 
 
@@ -9363,14 +9232,6 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       else
         sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
                    " AS cert;");
-    }
-
-  /* Define collations for SQL. */
-
-  if (manage_create_sql_collations ())
-    {
-      g_warning ("%s: failed to create collations", __FUNCTION__);
-      abort ();
     }
 
   /* Define functions for SQL. */

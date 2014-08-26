@@ -1,5 +1,16 @@
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove collations now that sorting is done via functions.
+
+	* src/manage_pg.c (manage_create_sql_collations): Remove.
+
+	* src/manage_sqlite3.c (manage_create_sql_collations): Remove.
+
+	* src/manage_sql.c (collate_threat, collate_role): Remove.
+	(init_manage_process): Remove collation setup.
+
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (result_cmp): Remove out of date SQL reference note.
 
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>

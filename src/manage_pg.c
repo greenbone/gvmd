@@ -1159,20 +1159,6 @@ manage_create_sql_functions ()
 }
 
 
-/* SQL collations. */
-
-/**
- * @brief Create collations.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_create_sql_collations ()
-{
-  return 0;
-}
-
-
 /* Creation. */
 
 /**

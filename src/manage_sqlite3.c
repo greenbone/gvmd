@@ -1980,75 +1980,6 @@ manage_create_sql_functions ()
 }
 
 
-/* SQL collations. */
-
-/**
- * @brief Create collations.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_create_sql_collations ()
-{
-  if (sqlite3_create_collation (task_db,
-                                "collate_message_type",
-                                SQLITE_UTF8,
-                                NULL,
-                                collate_message_type)
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create collate_message_type", __FUNCTION__);
-      return -1;
-    }
-
-  if (sqlite3_create_collation (task_db,
-                                "collate_threat",
-                                SQLITE_UTF8,
-                                NULL,
-                                collate_threat)
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create collate_threat", __FUNCTION__);
-      return -1;
-    }
-
-  if (sqlite3_create_collation (task_db,
-                                "collate_ip",
-                                SQLITE_UTF8,
-                                NULL,
-                                collate_ip)
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create collate_ip", __FUNCTION__);
-      return -1;
-    }
-
-  if (sqlite3_create_collation (task_db,
-                                "collate_location",
-                                SQLITE_UTF8,
-                                NULL,
-                                collate_location)
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create collate_location", __FUNCTION__);
-      return -1;
-    }
-
-  if (sqlite3_create_collation (task_db,
-                                "collate_role",
-                                SQLITE_UTF8,
-                                NULL,
-                                collate_role)
-      != SQLITE_OK)
-    {
-      g_warning ("%s: failed to create collate_role", __FUNCTION__);
-      return -1;
-    }
-
-  return 0;
-}
-
-
 /* Creation. */
 
 /**
