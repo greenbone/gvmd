@@ -15757,26 +15757,6 @@ where_search_phrase (const char* search_phrase, int exact)
 }
 
 /**
- * @brief SQL list of LSC families.
- */
-#define LSC_FAMILY_LIST                  \
-  "'AIX Local Security Checks',"         \
-  " 'CentOS Local Security Checks',"     \
-  " 'Debian Local Security Checks',"     \
-  " 'Fedora Local Security Checks',"     \
-  " 'FreeBSD Local Security Checks',"    \
-  " 'Gentoo Local Security Checks',"     \
-  " 'HP-UX Local Security Checks',"      \
-  " 'Mac OS X Local Security Checks',"   \
-  " 'Mandrake Local Security Checks',"   \
-  " 'Red Hat Local Security Checks',"    \
-  " 'Solaris Local Security Checks',"    \
-  " 'SuSE Local Security Checks',"       \
-  " 'Ubuntu Local Security Checks',"     \
-  " 'Windows : Microsoft Bulletins',"    \
-  " 'Privilege escalation'"
-
-/**
  * @brief SQL for retrieving CVSS base.
  */
 #define CVSS_BASE_SQL                                            \
@@ -15794,7 +15774,7 @@ where_search_phrase (const char* search_phrase, int exact)
 /**
  * @brief Result iterator columns.
  */
-#define RESULT_ITERATOR_COLUMNS                                               \
+#define RESULT_ITERATOR_COLUMNS(autofp, override, dynamic)                    \
   {                                                                           \
     { "id", NULL },                                                           \
     { "uuid", NULL },                                                         \
@@ -15810,28 +15790,73 @@ where_search_phrase (const char* search_phrase, int exact)
     { "port", "location" },                                                   \
     { "nvt", NULL },                                                          \
     { "severity_to_type (severity)", "type" },                                \
-    { "severity_to_type (severity)", "new_type" },                            \
-    { "0", "auto_type" },                                                     \
+    { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
+      "                  WHERE result_new_severities.result = results.id"     \
+      "                  AND result_new_severities.user"                      \
+      "                      = (SELECT users.id"                              \
+      "                         FROM current_credentials, users"              \
+      "                         WHERE current_credentials.uuid = users.uuid)" \
+      "                  AND override = " override                            \
+      "                  AND dynamic = " dynamic                              \
+      "                  LIMIT 1))", "new_type" },                            \
+    { "(SELECT autofp FROM results_autofp"                                    \
+      " WHERE (result = results.id) AND (autofp_selection = " autofp "))",    \
+      "auto_type" },                                                          \
     { "description", NULL },                                                  \
     { "task", NULL },                                                         \
     { "report", NULL },                                                       \
     { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)", "cvss_base" },    \
     { "nvt_version", NULL },                                                  \
     { "severity", NULL },                                                     \
-    { "severity", "new_severity" },                                           \
+    { "(SELECT new_severity FROM result_new_severities"                       \
+      " WHERE result_new_severities.result = results.id"                      \
+      " AND result_new_severities.user"                                       \
+      "     = (SELECT users.id"                                               \
+      "        FROM current_credentials, users"                               \
+      "        WHERE current_credentials.uuid = users.uuid)"                  \
+      " AND override = " override                                             \
+      " AND dynamic = " dynamic                                               \
+      " LIMIT 1)", "new_severity" },                                          \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "vulnerability" },                                                      \
     { "date" , NULL },                                                        \
     { NULL, NULL }                                                            \
   }
 
+#define RESULT_ITERATOR_COLUMN_COUNT 25
+
+#define RESULT_ITERATOR_COLUMNS_ARRAY                 \
+      {                                               \
+        {                                             \
+          {                                           \
+            RESULT_ITERATOR_COLUMNS ("0", "0", "0"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "0", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("2", "0", "2")   \
+          }, {                                        \
+            RESULT_ITERATOR_COLUMNS ("0", "1", "0"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "1", "0"),  \
+            RESULT_ITERATOR_COLUMNS ("2", "1", "0")   \
+          }                                           \
+        }, {                                          \
+          {                                           \
+            RESULT_ITERATOR_COLUMNS ("0", "0", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "0", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("2", "0", "1")   \
+          }, {                                        \
+            RESULT_ITERATOR_COLUMNS ("0", "1", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "1", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("2", "1", "1")   \
+          }                                           \
+        }                                             \
+      };                                              \
+
 /**
- * @brief Initialise an alert iterator, including observed alerts.
+ * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  get         GET data.
  *
- * @return 0 success, 1 failed to find alert, failed to find filter (filt_id),
+ * @return 0 success, 1 failed to find result, failed to find filter (filt_id),
  *         -1 error.
  */
 int
@@ -15839,13 +15864,14 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                           int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns[2][2][3][RESULT_ITERATOR_COLUMN_COUNT]
+                    = RESULT_ITERATOR_COLUMNS_ARRAY;
 
   return init_get_iterator (iterator,
                             "result",
                             get,
-                            columns,
-                            columns,
+                            columns [autofp][override][dynamic_severity],
+                            columns [autofp][override][dynamic_severity],
                             filter_columns,
                             0,
                             get->trash
@@ -15857,19 +15883,24 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
 }
 
 /**
- * @brief Count the number of alerts.
+ * @brief Count the number of results.
  *
  * @param[in]  get  GET params.
  *
- * @return Total number of alerts filtered set.
+ * @return Total number of results in filtered set.
  */
 int
-result_count (const get_data_t *get)
+result_count (const get_data_t *get,
+              int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = RESULT_ITERATOR_COLUMNS;
+  static column_t columns[2][2][3][RESULT_ITERATOR_COLUMN_COUNT]
+                    = RESULT_ITERATOR_COLUMNS_ARRAY
 
-  return count ("result", get, columns, columns, filter_columns, 0, 0,
+  return count ("result", get,
+                columns [autofp][override][dynamic_severity],
+                columns [autofp][override][dynamic_severity],
+                filter_columns, 0, 0,
                 get->trash
                   ? "AND ((SELECT (hidden = 2) FROM tasks"
                     "      WHERE tasks.id = task))"
@@ -15945,111 +15976,31 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
 
-      if (override)
-        {
-          gchar *ov;
-
-          assert (current_credentials.uuid);
-
-          ov = g_strdup_printf
-                ("SELECT overrides.new_severity"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT id FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= m_now ()))"
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports"
-                 "       WHERE report_results.report = reports.id)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.id"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = ''"
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = ''"
-                 "      OR overrides.port = results.port)"
-                 " AND severity_matches_ov (%s, overrides.severity)"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC"
-                 " LIMIT 1",
-                 current_credentials.uuid,
-                 severity_sql);
-
-          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                              ov,
-                                              severity_sql);
-          g_free (ov);
-        }
-      else
-        new_severity_sql = g_strdup (severity_sql);
+      new_severity_sql
+        = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
+                          " WHERE result_new_severities.result = results.id"
+                          " AND result_new_severities.user = results.owner"
+                          " AND override = %d"
+                          " AND dynamic = %d"
+                          " LIMIT 1)",
+                          override,
+                          dynamic_severity
+                         );
 
       switch (autofp)
         {
           case 1:
             auto_type_sql = g_strdup_printf
-              ("(CASE WHEN"
-               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-               "   OR EXISTS"
-               "   (SELECT id FROM nvts"
-               "    WHERE oid = results.nvt"
-               "    AND"
-               "    (cve = 'NOCVE'"
-               "     OR cve NOT IN (SELECT cve FROM nvts"
-               "                    WHERE oid IN (SELECT source_name"
-               "                                  FROM report_host_details"
-               "                                  WHERE report_host"
-               "                                  = (SELECT id"
-               "                                     FROM report_hosts"
-               "                                     WHERE report = %llu"
-               "                                     AND host = results.host)"
-               "                                  AND name = 'EXIT_CODE'"
-               "                                  AND value = 'EXIT_NOTVULN')"
-               "                    AND family IN (" LSC_FAMILY_LIST ")))))"
-               " THEN NULL"
-               " WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
-               " ELSE 1 END)",
-               report);
+              ("(SELECT autofp FROM results_autofp"
+               " WHERE result = results.id"
+               " AND autofp_selection = 1)");
             break;
 
           case 2:
             auto_type_sql = g_strdup_printf
-              ("(CASE WHEN"
-               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-               "   OR EXISTS"
-               "   (SELECT id FROM nvts AS outer_nvts"
-               "    WHERE oid = results.nvt"
-               "    AND"
-               "    (cve = 'NOCVE'"
-               "     OR NOT EXISTS"
-               "        (SELECT cve FROM nvts"
-               "         WHERE oid IN (SELECT source_name"
-               "                       FROM report_host_details"
-               "                       WHERE report_host"
-               "                       = (SELECT id"
-               "                          FROM report_hosts"
-               "                          WHERE report = %llu"
-               "                          AND host = results.host)"
-               "                       AND name = 'EXIT_CODE'"
-               "                       AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST ")"
-               /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
-                * NVT that has registered the "closed" host detail is nvts.cve.
-                * Either can be a list of CVEs. */
-               "         AND common_cve (nvts.cve, outer_nvts.cve)))))"
-               " THEN NULL"
-               " WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
-               " ELSE 1 END)",
-               report);
+              ("(SELECT autofp FROM results_autofp"
+               " WHERE result = results.id"
+               " AND autofp_selection = 2)");
              break;
 
            default:
@@ -16219,115 +16170,28 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
     {
       gchar *new_severity_sql, *auto_type_sql;
 
-      if (override)
-        {
-          gchar *ov;
-
-          assert (current_credentials.uuid);
-
-          ov = g_strdup_printf
-                ("SELECT overrides.new_severity"
-                 " FROM overrides"
-                 " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT id FROM users"
-                 "  WHERE users.uuid = '%s')))"
-                 " AND ((overrides.end_time = 0)"
-                 "      OR (overrides.end_time >= m_now ()))"
-                 " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports, report_results"
-                 "       WHERE report_results.result = results.id"
-                 "       AND report_results.report = reports.id)"
-                 "      OR overrides.task = 0)"
-                 " AND (overrides.result = results.id"
-                 "      OR overrides.result = 0)"
-                 " AND (overrides.hosts is NULL"
-                 "      OR overrides.hosts = ''"
-                 "      OR hosts_contains (overrides.hosts, results.host))"
-                 " AND (overrides.port is NULL"
-                 "      OR overrides.port = ''"
-                 "      OR overrides.port = results.port)"
-                 " AND severity_matches_ov (%s, overrides.severity)"
-                 " ORDER BY overrides.result DESC, overrides.task DESC,"
-                 " overrides.port DESC, overrides.severity ASC,"
-                 " overrides.creation_time DESC"
-                 " LIMIT 1",
-                 current_credentials.uuid,
-                 severity_sql);
-
-          new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
-                                              ov, severity_sql);
-
-          g_free (ov);
-        }
-      else
-        new_severity_sql = g_strdup (severity_sql);
+      new_severity_sql
+        = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
+                          " WHERE result_new_severities.result = results.id"
+                          " AND result_new_severities.user = results.owner"
+                          " AND override = %d"
+                          " AND dynamic = %d"
+                          " LIMIT 1)",
+                          override,
+                          dynamic_severity);
 
       switch (autofp)
         {
           case 1:
             auto_type_sql = g_strdup_printf
-              ("(CASE WHEN"
-               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-               "   OR EXISTS"
-               "   (SELECT id FROM nvts"
-               "    WHERE oid = results.nvt"
-               "    AND"
-               "    (cve = 'NOCVE'"
-               "     OR cve NOT IN"
-               "        (SELECT cve FROM nvts"
-               "         WHERE oid IN (SELECT source_name"
-               "                       FROM report_host_details"
-               "                       WHERE report_host"
-               "                       = (SELECT id"
-               "                          FROM report_hosts"
-               "                          WHERE report = (SELECT report"
-               "                                          FROM report_results"
-               "                                          WHERE result = %llu)"
-               "                          AND host = results.host)"
-               "                          AND name = 'EXIT_CODE'"
-               "                          AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST ")))))"
-               " THEN NULL"
-               " ELSE 1 END)",
-               result);
+              ("(SELECT autofp FROM results_autofp_1"
+               " WHERE result = results.id)");
             break;
 
           case 2:
             auto_type_sql = g_strdup_printf
-              ("(CASE WHEN"
-               "  (((SELECT family FROM nvts WHERE oid = results.nvt)"
-               "    IN (" LSC_FAMILY_LIST "))"
-               "   OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
-               "   OR EXISTS"
-               "   (SELECT id FROM nvts AS outer_nvts"
-               "    WHERE oid = results.nvt"
-               "    AND"
-               "    (cve = 'NOCVE'"
-               "     OR NOT EXISTS"
-               "        (SELECT cve FROM nvts"
-               "         WHERE oid IN (SELECT source_name"
-               "                       FROM report_host_details"
-               "                       WHERE report_host"
-               "                       = (SELECT id"
-               "                          FROM report_hosts"
-               "                          WHERE report = (SELECT report"
-               "                                          FROM report_results"
-               "                                          WHERE result = %llu)"
-               "                          AND host = results.host)"
-               "                       AND name = 'EXIT_CODE'"
-               "                       AND value = 'EXIT_NOTVULN')"
-               "         AND family IN (" LSC_FAMILY_LIST ")"
-               /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
-                * NVT that has registered the "closed" host detail is nvts.cve.
-                * Either can be a list of CVEs. */
-               "         AND common_cve (nvts.cve, outer_nvts.cve)))))"
-               " THEN NULL"
-               " ELSE 1 END)",
-               result);
+              ("(SELECT autofp FROM results_autofp_2"
+               " WHERE result = results.id)");
              break;
 
            default:

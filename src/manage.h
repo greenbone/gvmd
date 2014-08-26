@@ -847,6 +847,26 @@ user_can_everything (const char *);
 
 /* Results. */
 
+/**
+ * @brief SQL list of LSC families.
+ */
+#define LSC_FAMILY_LIST                  \
+  "'AIX Local Security Checks',"         \
+  " 'CentOS Local Security Checks',"     \
+  " 'Debian Local Security Checks',"     \
+  " 'Fedora Local Security Checks',"     \
+  " 'FreeBSD Local Security Checks',"    \
+  " 'Gentoo Local Security Checks',"     \
+  " 'HP-UX Local Security Checks',"      \
+  " 'Mac OS X Local Security Checks',"   \
+  " 'Mandrake Local Security Checks',"   \
+  " 'Red Hat Local Security Checks',"    \
+  " 'Solaris Local Security Checks',"    \
+  " 'SuSE Local Security Checks',"       \
+  " 'Ubuntu Local Security Checks',"     \
+  " 'Windows : Microsoft Bulletins',"    \
+  " 'Privilege escalation'"
+
 gboolean
 find_result_with_permission (const char*, result_t*, const char *);
 
@@ -1044,7 +1064,7 @@ const char*
 report_iterator_uuid (iterator_t*);
 
 int
-result_count (const get_data_t *);
+result_count (const get_data_t *, int, int, int);
 
 int
 init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int);

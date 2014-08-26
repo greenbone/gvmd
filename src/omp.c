@@ -15237,6 +15237,35 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               iterator_t results;
               int max;
+              int autofp, apply_overrides, dynamic_severity;
+
+              if (get_results_data->autofp)
+                autofp = get_results_data->autofp;
+              else if (filter_term_value (get_results_data->get.filter,
+                                          "autofp"))
+                autofp = atoi (filter_term_value (get_results_data->get.filter,
+                                                  "autofp"));
+              else
+                autofp = 0;
+
+              if (autofp < 0 || autofp > 2)
+                SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_results",
+                                    "autofp in GET_RESULTS must be either"
+                                    " 0, 1 or 2"));
+
+              if (get_results_data->apply_overrides)
+                apply_overrides = get_results_data->apply_overrides;
+              else if (filter_term_value (get_results_data->get.filter,
+                                          "apply_overrides"))
+                apply_overrides
+                  = atoi (filter_term_value (get_results_data->get.filter,
+                                             "apply_overrides"))
+                    ? 1 : 0;
+              else
+                apply_overrides = 1;
+
+              dynamic_severity = setting_dynamic_severity_int ();
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
@@ -15246,13 +15275,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               if (result)
                 init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
-                                      NULL, get_results_data->autofp, NULL, 0,
-                                      NULL, get_results_data->apply_overrides);
+                                      NULL, autofp, NULL, 0,
+                                      NULL, apply_overrides);
               else
                 init_result_get_iterator (&results, &get_results_data->get,
-                                          get_results_data->autofp,
-                                          get_results_data->apply_overrides,
-                                          setting_dynamic_severity_int ());
+                                          autofp,
+                                          apply_overrides,
+                                          dynamic_severity);
 
               if (next (&results))
                 {
@@ -15298,7 +15327,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               manage_filter_controls (get_results_data->get.filter,
                                       &first, &max, NULL, NULL);
 
-              count = result_count (&get_results_data->get);
+              count = result_count (&get_results_data->get,
+                                    autofp, apply_overrides,
+                                    dynamic_severity);
 
               send_get_end ("result", &get_results_data->get,
                             max, count,

@@ -91,7 +91,11 @@ tag_value (const gchar *tags, const gchar *tag);
 void
 manage_session_init (const char *uuid)
 {
-  return;
+  sql ("CREATE TEMPORARY TABLE IF NOT EXISTS current_credentials"
+       " (id INTEGER PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL);");
+  sql ("DELETE FROM current_credentials;");
+  sql ("INSERT INTO current_credentials (uuid) VALUES ('%s');", uuid);
 }
 
 
@@ -2272,6 +2276,132 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, comment,"
        "  password, timezone, hosts, hosts_allow, ifaces, ifaces_allow,"
        "  method, creation_time, modification_time);");
+
+  /* Result views */
+
+  sql ("CREATE VIEW IF NOT EXISTS result_overrides AS"
+       " SELECT users.id AS user,"
+       "        results.id as result,"
+       "        overrides.id AS override,"
+       "        overrides.severity AS ov_old_severity,"
+       "        overrides.new_severity AS ov_new_severity"
+       " FROM users, results, overrides"
+       " WHERE overrides.nvt = results.nvt"
+       "   AND (overrides.result = 0 OR overrides.result = results.id)"
+       "   AND (overrides.owner = 0 OR users.id = overrides.owner)"
+       " AND ((overrides.end_time = 0)"
+       "      OR (overrides.end_time >= m_now ()))"
+       " AND (overrides.task ="
+       "      (SELECT reports.task FROM reports"
+       "       WHERE results.report = reports.id)"
+       "      OR overrides.task = 0)"
+       " AND (overrides.result = results.id"
+       "      OR overrides.result = 0)"
+       " AND (overrides.hosts is NULL"
+       "      OR overrides.hosts = ''"
+       "      OR hosts_contains (overrides.hosts, results.host))"
+       " AND (overrides.port is NULL"
+       "      OR overrides.port = ''"
+       "      OR overrides.port = results.port)"
+       " ORDER BY overrides.result DESC, overrides.task DESC,"
+       " overrides.port DESC, overrides.severity ASC,"
+       " overrides.creation_time DESC");
+
+  sql ("CREATE VIEW IF NOT EXISTS result_new_severities AS"
+       "  SELECT results.id as result, users.id as user, dynamic, override,"
+       "    CASE WHEN dynamic THEN"
+       "      CASE WHEN override THEN"
+       "        coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                   WHERE result = results.id"
+       "                     AND result_overrides.user = users.id"
+       "                     AND severity_matches_ov"
+       "                           ((SELECT cvss_base FROM nvts"
+       "                             WHERE nvts.oid = results.nvt),"
+       "                             ov_old_severity)),"
+       "                  (SELECT cvss_base FROM nvts"
+       "                   WHERE nvts.oid = results.nvt))"
+       "      ELSE"
+       "        (SELECT cvss_base FROM nvts"
+       "          WHERE nvts.oid = results.nvt)"
+       "      END"
+       "    ELSE"
+       "      CASE WHEN override THEN"
+       "        coalesce ((SELECT ov_new_severity FROM result_overrides"
+       "                   WHERE result = results.id"
+       "                     AND result_overrides.user = users.id"
+       "                     AND severity_matches_ov"
+       "                           (results.severity,"
+       "                            ov_old_severity)),"
+       "                   results.severity)"
+       "      ELSE"
+       "        results.severity"
+       "      END"
+       "    END AS new_severity"
+       "  FROM results, users"
+       "  JOIN (SELECT 0 AS override UNION SELECT 1 AS override_opts)"
+       "  JOIN (SELECT 0 AS dynamic UNION SELECT 1 AS dynamic_opts);");
+
+  sql ("CREATE VIEW IF NOT EXISTS results_autofp AS"
+       " SELECT results.id as result, autofp_selection,"
+       "        (CASE autofp_selection"
+       "         WHEN 1 THEN"
+       "          (CASE WHEN"
+       "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
+       "              IN (" LSC_FAMILY_LIST "))"
+       "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
+       "            OR EXISTS"
+       "              (SELECT id FROM nvts"
+       "               WHERE oid = results.nvt"
+       "               AND"
+       "               (cve = 'NOCVE'"
+       "                 OR cve NOT IN (SELECT cve FROM nvts"
+       "                                WHERE oid IN (SELECT source_name"
+       "                                    FROM report_host_details"
+       "                                    WHERE report_host"
+       "                                    = (SELECT id"
+       "                                       FROM report_hosts"
+       "                                       WHERE report = %llu"
+       "                                       AND host = results.host)"
+       "                                    AND name = 'EXIT_CODE'"
+       "                                    AND value = 'EXIT_NOTVULN')"
+       "                                AND family IN (" LSC_FAMILY_LIST ")))))"
+       "           THEN NULL"
+       "           WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
+       "           ELSE 1 END)"
+       "         WHEN 2 THEN"
+       "          (CASE WHEN"
+       "            (((SELECT family FROM nvts WHERE oid = results.nvt)"
+       "              IN (" LSC_FAMILY_LIST "))"
+       "             OR results.nvt = '0'" /* Open ports previously had 0 NVT.*/
+       "             OR EXISTS"
+       "             (SELECT id FROM nvts AS outer_nvts"
+       "              WHERE oid = results.nvt"
+       "              AND"
+       "              (cve = 'NOCVE'"
+       "               OR NOT EXISTS"
+       "                  (SELECT cve FROM nvts"
+       "                   WHERE oid IN (SELECT source_name"
+       "                                 FROM report_host_details"
+       "                                 WHERE report_host"
+       "                                 = (SELECT id"
+       "                                    FROM report_hosts"
+       "                                    WHERE report = results.report"
+       "                                    AND host = results.host)"
+       "                                 AND name = 'EXIT_CODE'"
+       "                                 AND value = 'EXIT_NOTVULN')"
+       "                   AND family IN (" LSC_FAMILY_LIST ")"
+       /* The CVE of the result NVT is outer_nvts.cve.  The CVE of the
+        * NVT that has registered the "closed" host detail is nvts.cve.
+        * Either can be a list of CVEs. */
+       "                   AND common_cve (nvts.cve, outer_nvts.cve)))))"
+       "           THEN NULL"
+       "           WHEN severity = " G_STRINGIFY (SEVERITY_ERROR) " THEN NULL"
+       "           ELSE 1 END)"
+       "         ELSE 0 END) AS autofp"
+       " FROM results,"
+       "  (SELECT 0 AS autofp_selection"
+       "   UNION SELECT 1 AS autofp_selection"
+       "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
 }
 
 

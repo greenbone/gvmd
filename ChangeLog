@@ -1,3 +1,35 @@
+2014-08-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add autofp and overrides for lists of results from GET_RESULTS.
+	Create views for getting autofp and overrides applying to results to
+	reduce size of often duplicated SQL fragments.
+
+	* src/manage_pg.c (create_tables): Add views result_overrides,
+	result_new_severities and results_autofp.
+
+	* src/manage_sql.c (LSC_FAMILY_LIST): Remove. Moved to manage.h.
+	(RESULT_ITERATOR_COLUMNS): Add autofp, override and dynamic parameters.
+	(RESULT_ITERATOR_COLUMN_COUNT, RESULT_ITERATOR_COLUMNS_ARRAY): New
+	macros.
+	(init_result_get_iterator): Correct documentation. Take autofp,
+	override and dynamic_severity parameters into account when getting
+	iterator columns.
+	(result_count): Correct documentation. Add autofp, override and
+	dynamic_severity parameters.
+	(init_result_iterator): Simplify queries by using views for autofp
+	and overrides.
+
+	* src/manage_sqlite3.c (manage_session_init): Create temporary table
+	current_credentials as in PostgreSQL version.
+	(create_tables): Add views result_overrides, result_new_severities,
+	results_autofp.
+
+	* src/manage.h (LSC_FAMILY_LIST): New. Moved here from manage_sql.c.
+	(result_count): Add new parameters.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_RESULTS
+	apply autofp and apply_overrides and get values for them from filter.
+
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove collations now that sorting is done via functions.
