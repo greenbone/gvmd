@@ -5338,73 +5338,6 @@ collate_ip (void* data,
   return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
 }
 
-/**
- * @brief Collate two locations.
- *
- * For example, 22/tcp is less than 80/tcp.
- *
- * @param[in]  data     Dummy for callback.
- * @param[in]  one_len  Length of first location (a string).
- * @param[in]  arg_one  First string.
- * @param[in]  two_len  Length of second location (a string).
- * @param[in]  arg_two  Second string.
- *
- * @return -1, 0 or 1 if first is less than, equal to or greater than second.
- */
-int
-collate_location (void* data,
-                  int one_len, const void* arg_one,
-                  int two_len, const void* arg_two)
-{
-  int ret, one_num, two_num;
-  char *buff;
-  const char *one, *two;
-
-  one = (const char*) arg_one;
-  two = (const char*) arg_two;
-
-  one_num = atoi (one);
-  if (one_num > 0)
-    {
-      two_num = atoi (two);
-      if (two_num > 0)
-        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
-
-      buff = g_newa (char, strlen (two));
-      if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
-        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
-
-      return 1;
-    }
-
-  buff = g_newa (char, strlen (one));
-  if (sscanf (one, "%s (%i/%s)", buff, &one_num, buff) == 3)
-    {
-      two_num = atoi (two);
-      if (two_num > 0)
-        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
-
-      buff = g_newa (char, strlen (two));
-      if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
-        return one_num == two_num ? 0 : (one_num > two_num ? 1 : -1);
-
-      return 1;
-    }
-
-  two_num = atoi (two);
-  if (two_num > 0)
-    return -1;
-
-  buff = g_newa (char, strlen (two));
-  if (sscanf (two, "%s (%i/%s)", buff, &two_num, buff) == 3)
-    return -1;
-
-  /* One and two are either "general/xxx" or formatted weirdly. */
-
-  ret = strncmp (one, two, MIN (one_len, two_len));
-  return ret == 0 ? 0 : (ret < 0 ? -1 : 1);
-}
-
 
 /* Access control. */
 

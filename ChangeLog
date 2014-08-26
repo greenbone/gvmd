@@ -1,5 +1,9 @@
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (collate_location): Remove.  No longer used.
+
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c: Remove stray collation headers.
 	(sql_order_port): Implement.
 
