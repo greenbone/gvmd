@@ -241,6 +241,43 @@ sql_order_role (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Convert a threat into an integer for sorting.
+ *
+ * This is a callback for a scalar SQL function of one argument.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_order_threat (sqlite3_context *context, int argc, sqlite3_value** argv)
+{
+  const char *type;
+
+  assert (argc == 1);
+
+  type = (const char *) sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    sqlite3_result_int (context, 9);
+  else if (strcmp (type, "High") == 0)
+    sqlite3_result_int (context, 1);
+  else if (strcmp (type, "Medium") == 0)
+    sqlite3_result_int (context, 2);
+  else if (strcmp (type, "Low") == 0)
+    sqlite3_result_int (context, 3);
+  else if (strcmp (type, "Log") == 0)
+    sqlite3_result_int (context, 4);
+  else if (strcmp (type, "Debug") == 0)
+    sqlite3_result_int (context, 5);
+  else if (strcmp (type, "False Positive") == 0)
+    sqlite3_result_int (context, 6);
+  else if (strcmp (type, "None") == 0)
+    sqlite3_result_int (context, 7);
+  else
+    sqlite3_result_int (context, 8);
+}
+
+/**
  * @brief Make a UUID.
  *
  * This is a callback for a scalar SQL function of zero arguments.
@@ -1530,6 +1567,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create order_role", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "order_threat",
+                               1,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_order_threat,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create order_threat", __FUNCTION__);
       return -1;
     }
 

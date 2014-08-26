@@ -1,5 +1,17 @@
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Order by threat using function instead of collation, for Postgres.
+
+	* src/manage_sql.c (filter_clause): Order threat using function.  Also
+	use column instead of alias.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add order_threat.
+
+	* src/manage_sqlite3.c (sql_order_threat): New function.
+	(manage_create_sql_functions): Add order_threat.
+
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Order user roles Admin-first, like they were in the past.
 
 	* src/manage_sql.c (filter_clause): Remove special case for sorting by

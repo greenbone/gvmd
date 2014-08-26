@@ -2664,12 +2664,16 @@ filter_clause (const char* type, const char* filter,
                                         " ORDER BY status_text"
                                         " ASC");
               else if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY %s"
-                                        " COLLATE collate_threat"
-                                        " ASC",
-                                        keyword->string);
+                       && (strcmp (keyword->string, "threat") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_threat (%s) ASC",
+                                          column);
+                }
               else if (strcmp (keyword->string, "severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
@@ -2761,12 +2765,16 @@ filter_clause (const char* type, const char* filter,
                                         " ORDER BY status_text"
                                         " DESC");
               else if ((strcmp (type, "task") == 0)
-                  && (strcmp (keyword->string, "threat") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY %s"
-                                        " COLLATE collate_threat"
-                                        " DESC",
-                                        keyword->string);
+                       && (strcmp (keyword->string, "threat") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY order_threat (%s) DESC",
+                                          column);
+                }
               else if (strcmp (keyword->string, "severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
