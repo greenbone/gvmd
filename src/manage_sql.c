@@ -2652,13 +2652,8 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if (strcmp (keyword->string, "role") == 0)
-                g_string_append_printf (order,
-                                        " ORDER BY role"
-                                        " COLLATE collate_role"
-                                        " ASC");
-              else if ((strcmp (type, "slave") == 0)
-                       && (strcmp (keyword->string, "port") == 0))
+              if ((strcmp (type, "slave") == 0)
+                  && (strcmp (keyword->string, "port") == 0))
                 g_string_append_printf (order,
                                         " ORDER BY CAST (port AS INTEGER)"
                                         " ASC");
@@ -2685,6 +2680,22 @@ filter_clause (const char* type, const char* filter,
                                         " ELSE CAST (%s AS REAL) END ASC",
                                         keyword->string,
                                         keyword->string);
+              else if (strcmp (keyword->string, "roles") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY"
+                                          " CASE WHEN %s %s 'Admin.*'"
+                                          " THEN '0' || %s"
+                                          " ELSE '1' || %s END ASC",
+                                          column,
+                                          sql_regexp_op (),
+                                          column,
+                                          column);
+                }
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
                        || (strcmp (keyword->string, "published") == 0))
@@ -2738,13 +2749,8 @@ filter_clause (const char* type, const char* filter,
 
           if (first_order)
             {
-              if (strcmp (keyword->string, "role") == 0)
-                g_string_append_printf (order,
-                                        " ORDER BY role"
-                                        " COLLATE collate_role"
-                                        " DESC");
-              else if ((strcmp (type, "slave") == 0)
-                       && (strcmp (keyword->string, "port") == 0))
+              if ((strcmp (type, "slave") == 0)
+                  && (strcmp (keyword->string, "port") == 0))
                 g_string_append_printf (order,
                                         " ORDER BY CAST (port AS INTEGER)"
                                         " DESC");
@@ -2771,6 +2777,22 @@ filter_clause (const char* type, const char* filter,
                                         " ELSE CAST (%s AS REAL) END DESC",
                                         keyword->string,
                                         keyword->string);
+              else if (strcmp (keyword->string, "roles") == 0)
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY"
+                                          " CASE WHEN %s %s 'Admin.*'"
+                                          " THEN '0' || %s"
+                                          " ELSE '1' || %s END DESC",
+                                          column,
+                                          sql_regexp_op (),
+                                          column,
+                                          column);
+                }
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
                        || (strcmp (keyword->string, "published") == 0))
@@ -50449,20 +50471,23 @@ trash_user_writable (user_t user)
    { "hosts", NULL },                                                      \
    { "hosts_allow", NULL },                                                \
    {                                                                       \
-     "coalesce ((SELECT group_concat (roles.name, ', ') FROM role_users"   \
-     "            JOIN roles ON role = roles.id"                           \
-     "            WHERE \"user\" = users.id"                               \
-     "            GROUP BY roles.name"                                     \
-     "            ORDER BY name ASC),"                                     \
+     "coalesce ((SELECT group_concat (name, ', ')"                         \
+     "           FROM (SELECT DISTINCT name, order_role (name)"            \
+     "                 FROM roles, role_users"                             \
+     "                 WHERE role_users.role = roles.id"                   \
+     "                 AND \"user\" = users.id"                            \
+     "                 ORDER BY order_role (roles.name) ASC)"              \
+     "                 AS user_iterator_sub),"                             \
      "           '')",                                                     \
      "roles"                                                               \
    },                                                                      \
    {                                                                       \
-     "coalesce ((SELECT group_concat (groups.name, ', ') FROM group_users" \
-     "            JOIN groups ON \"group\" = groups.id"                    \
-     "            WHERE \"user\" = users.id"                               \
-     "            GROUP BY groups.name"                                    \
-     "            ORDER BY groups.name ASC),"                              \
+     "coalesce ((SELECT group_concat (name, ', ')"                         \
+     "           FROM (SELECT DISTINCT name FROM groups, group_users"      \
+     "                 WHERE group_users.\"group\" = groups.id"            \
+     "                 AND \"user\" = users.id"                            \
+     "                 ORDER BY groups.name ASC)"                          \
+     "                AS user_iterator_sub),"                              \
      "           '')",                                                     \
      "groups"                                                              \
    },                                                                      \
@@ -50628,10 +50653,10 @@ void
 init_user_role_iterator (iterator_t *iterator, user_t user)
 {
   init_iterator (iterator,
-                 "SELECT DISTINCT id, uuid, name FROM roles"
+                 "SELECT DISTINCT id, uuid, name, order_role (name) FROM roles"
                  " WHERE id IN (SELECT role FROM role_users"
                  "              WHERE \"user\" = %llu)"
-                 " ORDER by name;",
+                 " ORDER by order_role (name);",
                  user);
 }
 

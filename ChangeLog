@@ -1,3 +1,20 @@
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Order user roles Admin-first, like they were in the past.
+
+	* src/manage_sql.c (filter_clause): Remove special case for sorting by
+	"role", as this term is now "roles".  Add special case for "roles",
+	which sorts Admin first and the rest alphabetically.
+	(USER_ITERATOR_COLUMNS): Adjust the concat SQL statements to use a
+	subselect, because the single select was causing errors in some cases.
+	Also put Admin before the other roles in the list.
+	(init_user_role_iterator): Sort with order_role so Admin comes first.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add order_role.
+
+	* src/manage_sqlite3.c (sql_order_role): New function.
+	(manage_create_sql_functions): Add order_role.
+
 2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_severity): Put report selection in WHERE

@@ -1027,6 +1027,17 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION order_role (text)"
+       " RETURNS text AS $$"
+       " BEGIN"
+       "   IF $1 = 'Admin' THEN"
+       "     RETURN ' !';"
+       "   ELSE"
+       "     RETURN $1;"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   sql ("CREATE OR REPLACE FUNCTION severity_to_type (double precision)"
        " RETURNS text AS $$"
        " BEGIN"
