@@ -19597,51 +19597,6 @@ result_cmp (iterator_t *results, iterator_t *delta_results, int sort_order,
   nvt = result_iterator_nvt_oid (results);
   delta_nvt = result_iterator_nvt_oid (delta_results);
 
-  /*
-     The part of the SQL that determines the result iterator sorting.
-
-                                   ascending
-                                    ? ((strcmp (sort_field, "ROWID") == 0)
-                                        ? " ORDER BY results.id"
-                                        : ((strcmp (sort_field, "port") == 0)
-                                            ? " ORDER BY host COLLATE collate_ip,"
-                                              " port,"
-                                              " new_type"
-                                              " COLLATE collate_message_type DESC,"
-                                              " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                              "        THEN cvss_base ELSE 0.0 END)"
-                                              "  AS REAL)) DESC,"
-                                              " nvt,"
-                                              " description"
-                                            : " ORDER BY host COLLATE collate_ip,"
-                                              " new_type COLLATE collate_message_type,"
-                                              " port,"
-                                              " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                              "        THEN cvss_base ELSE 0.0 END)"
-                                              "  AS REAL)) DESC,"
-                                              " nvt,"
-                                              " description"))
-                                    : ((strcmp (sort_field, "port") == 0)
-                                        ? " ORDER BY host COLLATE collate_ip,"
-                                          " port DESC,"
-                                          " new_type"
-                                          " COLLATE collate_message_type DESC,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "  AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description"
-                                        : " ORDER BY host COLLATE collate_ip,"
-                                          " new_type"
-                                          " COLLATE collate_message_type DESC,"
-                                          " port,"
-                                          " (CAST ((CASE WHEN cvss_base >= 0.0"
-                                          "        THEN cvss_base ELSE 0.0 END)"
-                                          "  AS REAL)) DESC,"
-                                          " nvt,"
-                                          " description")),
-  */
-
   if (sort_order == 0)
     {
       /* Descending. */

@@ -1,5 +1,9 @@
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (result_cmp): Remove out of date SQL reference note.
+
+2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Order by threat using function instead of collation, for Postgres.
 
 	* src/manage_sql.c (filter_clause): Order threat using function.  Also
