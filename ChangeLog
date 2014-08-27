@@ -1,5 +1,22 @@
 2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Finish Postgres resource_name SQL function.
+
+	* src/manage.c (valid_db_resource_type): Remove.  Now in manage_utils.c.
+
+	* src/manage_utils.c (valid_db_resource_type): New function.  From
+	manage.c.
+
+	* src/manage_utils.h: Add header accordingly.
+
+	* src/manage_pg_server.c (sql_valid_db_resource_type): New function.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add
+	valid_db_resource_type.  Convert resource_name to plpgsql, so that it
+	can handle any resource, and add type check to it.
+
+2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (SQLITE_OR_NULL): New macro.
 	(database_migrators): When building with Postgres, disable migrators
 	that depend on SQL functions resource_exists, clean_hosts and

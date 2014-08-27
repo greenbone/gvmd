@@ -4953,50 +4953,6 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   return -1;
 }
 
-/* Resource types */
-
-/**
- * @brief Check whether a resource type table name is valid.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_db_resource_type (const char* type)
-{
-  if (type == NULL)
-    return 0;
-
-  return (strcasecmp (type, "agent") == 0)
-         || (strcasecmp (type, "alert") == 0)
-         || (strcasecmp (type, "config") == 0)
-         || (strcasecmp (type, "cpe") == 0)
-         || (strcasecmp (type, "cve") == 0)
-         || (strcasecmp (type, "lsc_credential") == 0)
-         || (strcasecmp (type, "cert_bund_adv") == 0)
-         || (strcasecmp (type, "dfn_cert_adv") == 0)
-         || (strcasecmp (type, "filter") == 0)
-         || (strcasecmp (type, "group") == 0)
-         || (strcasecmp (type, "note") == 0)
-         || (strcasecmp (type, "nvt") == 0)
-         || (strcasecmp (type, "ovaldef") == 0)
-         || (strcasecmp (type, "override") == 0)
-         || (strcasecmp (type, "port_list") == 0)
-         || (strcasecmp (type, "permission") == 0)
-         || (strcasecmp (type, "report") == 0)
-         || (strcasecmp (type, "report_format") == 0)
-         || (strcasecmp (type, "result") == 0)
-         || (strcasecmp (type, "role") == 0)
-         || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "slave") == 0)
-         || (strcasecmp (type, "tag") == 0)
-         || (strcasecmp (type, "target") == 0)
-         || (strcasecmp (type, "task") == 0)
-         || (strcasecmp (type, "user") == 0);
-}
-
-
 /**
  * @brief Return the path to the CPE dictionary.
  *

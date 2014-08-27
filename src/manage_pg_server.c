@@ -168,3 +168,31 @@ sql_level_max_severity (PG_FUNCTION_ARGS)
       PG_RETURN_FLOAT8 (severity);
     }
 }
+
+PG_FUNCTION_INFO_V1 (sql_valid_db_resource_type);
+
+/**
+ * @brief Return max severity of level.
+ *
+ * This is a callback for a SQL function of one argument.
+ */
+Datum
+sql_valid_db_resource_type (PG_FUNCTION_ARGS)
+{
+  if (PG_ARGISNULL (0))
+    PG_RETURN_BOOL (0);
+  else
+    {
+      text *type_arg;
+      char *type;
+      int ret;
+
+      type_arg = PG_GETARG_TEXT_P (0);
+      type = textndup (type_arg, VARSIZE (type_arg) - VARHDRSZ);
+
+      ret = valid_db_resource_type (type);
+
+      pfree (type);
+      PG_RETURN_BOOL (ret);
+    }
+}
