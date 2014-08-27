@@ -20860,9 +20860,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           target_t target = 0;
           scanner_t scanner = 0;
           slave_t slave = 0;
-          char *tsk_uuid, *name;
+          char *tsk_uuid = NULL, *name;
           guint index;
-          int fail;
 
           /* @todo Buffer the entire task creation and pass everything to a
            *       libmanage function, so that libmanage can do the locking
@@ -20951,37 +20950,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (strcmp (create_task_data->scanner_id, SCANNER_UUID_DEFAULT)
               && create_task_data->slave_id)
             {
-              request_delete_task (&create_task_data->task);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "Slave used with non-default Scanner."));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
 
           /* Check permissions. */
 
           if (user_may ("create_task") == 0)
             {
-              request_delete_task (&create_task_data->task);
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "Permission denied"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
+                                                        "Permission denied"));
+              goto create_task_fail;
             }
 
           /* Get the task ID. */
 
           if (task_uuid (create_task_data->task, &tsk_uuid))
             {
-              request_delete_task (&create_task_data->task);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
 
           /* Check for the right combination of target and config. */
@@ -20989,22 +20978,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (create_task_data->config_id == NULL
               || create_task_data->target_id == NULL)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a config"
                                   " a scanner, and a target"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
 
           /* Set any alert. */
 
           assert (create_task_data->alerts);
           index = create_task_data->alerts->len;
-          fail = 0;
           while (index--)
             {
               alert_t alert;
@@ -21016,30 +21000,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 continue;
               if (find_alert (alert_id, &alert))
                 {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  fail = 1;
-                  break;
+                  goto create_task_fail;
                 }
               if (alert == 0)
                 {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK alert must exist"));
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  fail = 1;
-                  break;
+                  goto create_task_fail;
                 }
               add_task_alert (create_task_data->task, alert);
             }
-          if (fail)
-            break;
 
           /* Set alterable state. */
 
@@ -21054,23 +21026,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               schedule_t schedule;
               if (find_schedule (create_task_data->schedule_id, &schedule))
                 {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
+                  goto create_task_fail;
                 }
               if (schedule == 0)
                 {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("create_task",
                                       "CREATE_TASK schedule must exist"));
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
+                  goto create_task_fail;
                 }
               /** @todo
                *
@@ -21110,18 +21074,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       (XML_ERROR_SYNTAX ("create_task",
                                          "User name error in observers"));
                     break;
+                    goto create_task_fail;
                   case -1:
                   default:
                     SEND_TO_CLIENT_OR_FAIL
                       (XML_INTERNAL_ERROR ("create_task"));
-                }
-              if (fail)
-                {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
+                    goto create_task_fail;
                 }
             }
 
@@ -21149,23 +21107,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         error_send_to_client (error);
                         return;
                       }
-                    fail = 1;
                     log_event_fail ("task", "Task", NULL, "created");
-                    break;
+                    goto create_task_fail;
                   case -1:
                   default:
-                    fail = 1;
                     SEND_TO_CLIENT_OR_FAIL
                       (XML_INTERNAL_ERROR ("create_task"));
                     log_event_fail ("task", "Task", NULL, "created");
-                }
-              if (fail)
-                {
-                  request_delete_task (&create_task_data->task);
-                  free (tsk_uuid);
-                  create_task_data_reset (create_task_data);
-                  set_client_state (CLIENT_AUTHENTIC);
-                  break;
+                    goto create_task_fail;
                 }
             }
 
@@ -21174,132 +21123,78 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           name = task_name (create_task_data->task);
           if (name == NULL)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "CREATE_TASK requires a name attribute"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
 
           if (find_config (create_task_data->config_id, &config))
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
           else if (config == 0)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "config",
                                              create_task_data->config_id,
                                              write_to_client,
                                              write_to_client_data))
-                {
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+                error_send_to_client (error);
+              goto create_task_fail;
             }
           else if (find_target (create_task_data->target_id, &target))
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
           else if (target == 0)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "target",
                                              create_task_data->target_id,
                                              write_to_client,
                                              write_to_client_data))
-                {
-                  /* Out of space. */
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+                error_send_to_client (error);
+              goto create_task_fail;
             }
           else if (find_scanner (create_task_data->scanner_id, &scanner))
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
           else if (create_task_data->scanner_id && scanner == 0)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               if (send_find_error_to_client ("create_task", "scanner",
                                              create_task_data->scanner_id,
                                              write_to_client,
                                              write_to_client_data))
-                {
-                  /* Out of space. */
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+                error_send_to_client (error);
+              goto create_task_fail;
             }
           else if (!create_task_check_config_scanner (config, scanner))
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
-              SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
-                                      "Scanner and config mismatched types."));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Scanner and config mismatched types."));
+              goto create_task_fail;
             }
           else if (create_task_data->slave_id
                    && find_slave (create_task_data->slave_id, &slave))
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+              goto create_task_fail;
             }
           else if (create_task_data->slave_id && slave == 0)
             {
-              request_delete_task (&create_task_data->task);
-              free (tsk_uuid);
               if (send_find_error_to_client ("create_task",
                                              "slave",
                                              create_task_data->slave_id,
                                              write_to_client,
                                              write_to_client_data))
-                {
-                  /* Out of space. */
-                  error_send_to_client (error);
-                  return;
-                }
-              create_task_data_reset (create_task_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
+                error_send_to_client (error);
+              goto create_task_fail;
             }
           else
             {
@@ -21320,7 +21215,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    tsk_uuid);
           make_task_complete (tsk_uuid);
           log_event ("task", "Task", tsk_uuid, "created");
-          free (tsk_uuid);
+          g_free (tsk_uuid);
+          create_task_data_reset (create_task_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+
+create_task_fail:
+          request_delete_task (&create_task_data->task);
+          g_free (tsk_uuid);
           create_task_data_reset (create_task_data);
           set_client_state (CLIENT_AUTHENTIC);
           break;

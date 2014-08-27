@@ -1,3 +1,8 @@
+2014-08-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Refactor code in CREATE_TASK
+	case.
+
 2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Finish Postgres resource_name SQL function.
