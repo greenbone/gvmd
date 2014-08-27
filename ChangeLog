@@ -1,3 +1,13 @@
+2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (SQLITE_OR_NULL): New macro.
+	(database_migrators): When building with Postgres, disable migrators
+	that depend on SQL functions resource_exists, clean_hosts and
+	current_offset.
+
+	* src/manage_pg.c (manage_create_sql_functions): Remove list now that all
+	are implemented.
+
 2014-08-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (collate_location): Remove.  No longer used.

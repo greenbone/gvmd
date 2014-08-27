@@ -90,40 +90,6 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
-#if 0
-  can duplicate with pl/pgsql probably
-    resource_exists (only used in migrator (given table type, will need exec))
-
-  can duplicate
-    clean_hosts  (only used in migrator)
-    current_offset (only used in migrator (maybe with SHOW TIMEZONE and hairy date stuff))
-
-  duplicated below
-    common_cve
-    hosts_contains
-    report_severity         (pg does not cache when recalculating)
-    report_severity_count   (pg does not cache when recalculating)
-    resource_name
-    run_status_name
-    severity_in_level
-    severity_to_level
-    task_severity
-    task_trend              (pg does not cache when recalculating)
-    task_threat_level
-    user_can_everything
-
-  duplicated with pl/pgsql below
-    iso_time
-    report_progress
-    severity_matches_ov
-    severity_to_type
-    uniquify (given table type, will need exec)
-
-  server side below
-    max_hosts
-    next_time
-#endif
-
   /* Functions in C. */
 
   sql ("SET role dba;");
