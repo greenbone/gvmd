@@ -1,3 +1,10 @@
+2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add a flag that
+	prevents the functions from being created more than once in a process.
+	Children of the main process will be forked with the flag set.  Also
+	move the uuid-ossp check up for clarity.
+
 2014-08-27  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Refactor code in CREATE_TASK

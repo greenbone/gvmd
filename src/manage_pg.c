@@ -90,6 +90,19 @@ sql_rename_column (const char *old_table, const char *new_table,
 int
 manage_create_sql_functions ()
 {
+  static int created = 0;
+
+  if (created)
+    return 0;
+
+  if (sql_int ("SELECT count (*) FROM pg_available_extensions"
+               " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
+      == 0)
+    {
+      g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
+      return -1;
+    }
+
   /* Functions in C. */
 
   sql ("SET role dba;");
@@ -135,14 +148,6 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION m_now () RETURNS integer AS $$"
        "  SELECT extract (epoch FROM now ())::integer;"
        "$$ LANGUAGE SQL;");
-
-  if (sql_int ("SELECT count (*) FROM pg_available_extensions"
-               " WHERE name = 'uuid-ossp' AND installed_version IS NOT NULL;")
-      == 0)
-    {
-      g_warning ("%s: PostgreSQL extension uuid-ossp required", __FUNCTION__);
-      return -1;
-    }
 
   sql ("CREATE OR REPLACE FUNCTION common_cve (text, text)"
        " RETURNS boolean AS $$"
@@ -802,6 +807,8 @@ manage_create_sql_functions ()
            "   END CASE;"
            " END;"
            "$$ LANGUAGE plpgsql;");
+
+      created = 1;
     }
 
   sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
