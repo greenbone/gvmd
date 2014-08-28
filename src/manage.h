@@ -1464,6 +1464,9 @@ int
 modify_task_check_config_scanner (task_t, const char *, const char *);
 
 int
+modify_task_check_config_target (task_t, const char *, const char *);
+
+int
 modify_task_check_slave_scanner (task_t, const char *, const char *);
 
 int

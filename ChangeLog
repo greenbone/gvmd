@@ -1,3 +1,13 @@
+2014-08-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_task_check_config_target): New function.
+
+	* src/manage.h: Add new function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): In CREATE_TASK and MODIFY_TASK
+	cases, return error when using a multi-host target with an OSP scan
+	config.
+
 2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_report_internal): Keep going if the task
