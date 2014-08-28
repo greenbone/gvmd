@@ -1,5 +1,10 @@
 2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_internal): Keep going if the task
+	slave is 0, which can happen if the slave is removed from the task.
+
+2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Remove stray entry.
 
 2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>

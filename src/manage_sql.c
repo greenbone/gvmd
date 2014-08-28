@@ -18741,15 +18741,14 @@ delete_report_internal (report_t report)
     {
       slave_t slave;
 
-      /** @todo Store slave on report, in case task's slave changes. */
-      slave = task_slave (task);
-      if (slave == 0)
-        {
-          free (slave_task_uuid);
-          return -1;
-        }
+      /* A stopped report leaves the task on the slave.  Try delete the task. */
 
-      delete_slave_task (slave, slave_task_uuid);
+      /** @todo Store slave on report, in case task is assigned new slave. */
+      /** @todo Even that may fail because the slave itself may change. */
+      slave = task_slave (task);
+      /* For now just forget about it if the slave is 0. */
+      if (slave)
+        delete_slave_task (slave, slave_task_uuid);
     }
 
   /* Remove the report data. */
