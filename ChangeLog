@@ -1,3 +1,7 @@
+2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* ChangeLog: Remove stray entry.
+
 2014-08-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add a flag that
@@ -129,10 +133,6 @@
 
 	* src/manage_sqlite3.c (sql_order_role): New function.
 	(manage_create_sql_functions): Add order_role.
-
-2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	* src/manage_pg.c (
 
 2014-08-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
