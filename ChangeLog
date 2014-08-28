@@ -1,3 +1,10 @@
+2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20200.
+
+	* src/manage_sql.c (delete_report_internal): Keep going if the task
+	slave is 0, which can happen if the slave is removed from the task.
+
 2014-08-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20145.
