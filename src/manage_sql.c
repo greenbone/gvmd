@@ -36574,7 +36574,9 @@ verify_scanner (const char *scanner_id, char **version)
 
       connection = osp_connection_new (scanner_iterator_host (&scanner),
                                        scanner_iterator_port (&scanner),
-                                       CACERT, CLIENTCERT, CLIENTKEY);
+                                       scanner_iterator_ca_pub (&scanner),
+                                       scanner_iterator_key_pub (&scanner),
+                                       scanner_iterator_key_priv (&scanner));
       cleanup_iterator (&scanner);
       if (!connection)
         return 2;

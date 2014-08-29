@@ -1,3 +1,13 @@
+2014-08-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (verify_scanner): Use certificates values from the
+	scanner object instead of the default paths.
+
+	* src/manage.c (run_osp_task): Adjust fork_osp_scan_handler() call. Use
+	the scanner's certificates values, instead of file paths.
+	(fork_osp_scan_handler): Remove host and port function arguments. Use
+	certificates values when connecting instead of cert files paths.
+
 2014-08-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (modify_task_check_config_target): New function.

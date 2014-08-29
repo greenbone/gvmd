@@ -2545,8 +2545,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 
 static void
 delete_osp_scan (const char *report_id, const char *host, int port,
-                 const char *ca_pub, const char *key_pub,
-                 const char *key_priv)
+                 const char *ca_pub, const char *key_pub, const char *key_priv)
 {
   osp_connection_t *connection;
 
@@ -2565,18 +2564,20 @@ delete_osp_scan (const char *report_id, const char *host, int port,
  *
  * @param[in]   task        The task.
  * @param[in]   report      The report.
- * @param[in]   host        The OSP scanner's host.
- * @param[in]   port        The OSP scanner's port.
  *
  * @return Parent returns with 0 if success, -1 if failure. Child process
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
+fork_osp_scan_handler (task_t task, report_t report)
 {
   char *report_xml, *report_id, title[128];
-  int rc;
+  char *host, *ca_pub, *key_pub, *key_priv;
+  int rc, port;
+  scanner_t scanner;
 
+  assert (task);
+  assert (report);
   switch (fork ())
     {
       case 0:
@@ -2598,13 +2599,18 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
   snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
   proctitle_set (title);
 
+  scanner = task_scanner (task);
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
   while (1)
     {
       int progress;
       osp_connection_t *connection;
 
-      connection = osp_connection_new (host, port, CACERT, CLIENTCERT,
-                                       CLIENTKEY);
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
       if (!connection)
         {
           g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
@@ -2638,14 +2644,18 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
           g_free (report_xml);
           set_task_run_status (task, TASK_STATUS_DONE);
           set_report_scan_run_status (report, TASK_STATUS_DONE);
-          delete_osp_scan (report_id, host, port, CACERT, CLIENTCERT,
-                           CLIENTKEY);
+          delete_osp_scan (report_id, host, port, ca_pub, key_pub, key_priv);
           rc = 0;
           break;
         }
       g_free (report_xml);
       sleep (10);
     }
+
+  g_free (host);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
   g_free (report_id);
   exit (rc);
 }
@@ -2661,7 +2671,7 @@ fork_osp_scan_handler (task_t task, report_t report, const char *host, int port)
 int
 run_osp_task (task_t task, char **report_id)
 {
-  char host[2048], *host_str, *target_str;
+  char *host, *target_str, *ca_pub, *key_pub, *key_priv;
   int port, ret;
   target_t target;
   GHashTable *options;
@@ -2671,12 +2681,13 @@ run_osp_task (task_t task, char **report_id)
 
   scanner = task_scanner (task);
   assert (scanner);
-  host_str = scanner_host (scanner);
-  strncpy (host, host_str, sizeof (host));
-  host[2047] = '\0';
-  g_free (host_str);
+  host = scanner_host (scanner);
   port = scanner_port (scanner);
-  connection = osp_connection_new (host, port, CACERT, CLIENTCERT, CLIENTKEY);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  g_free (host);
   if (!connection)
     return -5;
   options = task_scanner_options (task);
@@ -2747,7 +2758,7 @@ run_osp_task (task_t task, char **report_id)
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
   /* Fork OSP scan handler. */
-  ret = fork_osp_scan_handler (task, report, host, port);
+  ret = fork_osp_scan_handler (task, report);
   if (ret)
     {
       g_warning ("Couldn't fork OSP scan handler.\n");
