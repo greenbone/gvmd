@@ -1,3 +1,8 @@
+2014-09-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (results_xml_append_nvt), src/manage_sql.c (verify_scanner):
+	Fix compiler warnings when NDEBUG is set.
+
 2014-08-29  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (verify_scanner): Use certificates values from the

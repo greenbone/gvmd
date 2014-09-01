@@ -10760,7 +10760,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
       memset (&get, '\0', sizeof (get));
       get.id = g_strdup (oid);
       ret = init_ovaldef_info_iterator (&iterator, &get, NULL);
-      assert (!ret);
+      if (ret)
+        assert (0);
       if (!next (&iterator))
         abort ();
       cves = ovaldef_cves (oid);

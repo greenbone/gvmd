@@ -36605,6 +36605,7 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
   assert (0);
+  return -1;
 }
 
 /* Schedules. */
