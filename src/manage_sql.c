@@ -13799,17 +13799,13 @@ int
 result_detection_reference (result_t result, char **ref, char **product,
                             char **location, char **oid, char **name)
 {
-  char *report, *host;
+  char *report, *host = NULL;
 
   if ((ref == NULL) || (product == NULL) || (location == NULL) || (oid == NULL)
       || (name == NULL))
     return -1;
 
-  report = NULL;
-  host   = NULL;
-
   *ref = *product = *location = *oid = *name = NULL;
-
   report = sql_string ("SELECT report FROM report_results"
                        " WHERE result = %llu;",
                        result);

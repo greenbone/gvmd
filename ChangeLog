@@ -1,5 +1,10 @@
 2014-09-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (result_detection_reference): Remove useless
+	assignment.
+
+2014-09-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (print_report_prognostic_xml): Remove unused
 	variable.
 	(init_nvt_info_iterator): Apply filtering clause correctly, to fix
