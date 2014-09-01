@@ -1,5 +1,12 @@
 2014-09-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (print_report_prognostic_xml): Remove unused
+	variable.
+	(init_nvt_info_iterator): Apply filtering clause correctly, to fix
+	querying for a specific nvt by name or oid, using get_info command.
+
+2014-09-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (results_xml_append_nvt), src/manage_sql.c (verify_scanner):
 	Fix compiler warnings when NDEBUG is set.
 

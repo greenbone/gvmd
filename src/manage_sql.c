@@ -21140,7 +21140,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 {
   array_t *buffer, *apps;
   buffer_host_t *buffer_host;
-  int index, skip, result_total, total_host_count, filtered_result_count;
+  int index, skip, result_total, total_host_count;
   int holes, infos, logs, warnings;
   int f_holes, f_infos, f_logs, f_warnings;
   iterator_t hosts;
@@ -21156,7 +21156,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
   buffer = make_array ();
   apps = make_array ();
   holes = warnings = infos = logs = 0;
-  filtered_result_count = f_holes = f_warnings = f_infos = f_logs = 0;
+  f_holes = f_warnings = f_infos = f_logs = 0;
   skip = 0;
   total_host_count = 0;
   result_total = 0;
@@ -21205,9 +21205,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                       + (strchr (levels, 'l') ? f_infos : 0)
                       + (strchr (levels, 'g') ? f_logs : 0)
                       + (strchr (levels, 'm') ? f_warnings : 0);
-          if (filtered)
-            filtered_result_count += filtered;
-          else if (result_hosts_only)
+          if (!filtered)
             /* Skip this host. */
             report_host = 0;
         }
@@ -29228,7 +29226,7 @@ init_nvt_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            NULL,
                            filter_columns,
                            0,
-                           NULL,
+                           clause,
                            0);
 
   g_free (clause);
