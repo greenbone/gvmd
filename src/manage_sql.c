@@ -2672,15 +2672,21 @@ filter_clause (const char* type, const char* filter,
                                           column);
                 }
               else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "original_severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
                        || strcmp (keyword->string, "max_cvss") == 0)
-                g_string_append_printf (order,
-                                        " ORDER BY CASE CAST (%s AS text)"
-                                        " WHEN '' THEN NULL"
-                                        " ELSE CAST (%s AS REAL) END ASC",
-                                        keyword->string,
-                                        keyword->string);
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  g_string_append_printf (order,
+                                          " ORDER BY CASE CAST (%s AS text)"
+                                          " WHEN '' THEN NULL"
+                                          " ELSE CAST (%s AS REAL) END ASC",
+                                          column,
+                                          column);
+                }
               else if (strcmp (keyword->string, "roles") == 0)
                 {
                   gchar *column;
@@ -2773,15 +2779,21 @@ filter_clause (const char* type, const char* filter,
                                           column);
                 }
               else if (strcmp (keyword->string, "severity") == 0
+                       || strcmp (keyword->string, "original_severity") == 0
                        || strcmp (keyword->string, "cvss") == 0
                        || strcmp (keyword->string, "cvss_base") == 0
                        || strcmp (keyword->string, "max_cvss") == 0)
-                g_string_append_printf (order,
-                                        " ORDER BY CASE CAST (%s AS text)"
-                                        " WHEN '' THEN NULL"
-                                        " ELSE CAST (%s AS REAL) END DESC",
-                                        keyword->string,
-                                        keyword->string);
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  g_string_append_printf (order,
+                                          " ORDER BY CASE CAST (%s AS text)"
+                                          " WHEN '' THEN NULL"
+                                          " ELSE CAST (%s AS REAL) END DESC",
+                                          column,
+                                          column);
+                }
               else if (strcmp (keyword->string, "roles") == 0)
                 {
                   gchar *column;
@@ -15693,9 +15705,9 @@ where_search_phrase (const char* search_phrase, int exact)
  */
 #define RESULT_ITERATOR_FILTER_COLUMNS                                        \
   { GET_ITERATOR_FILTER_COLUMNS, "host", "location", "nvt",                   \
-    "type", "new_type", "auto_type",                                          \
+    "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
-    "severity", "new_severity", "vulnerability", "date", NULL }
+    "severity", "original_severity", "vulnerability", "date", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -15715,7 +15727,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "host", NULL },                                                         \
     { "port", "location" },                                                   \
     { "nvt", NULL },                                                          \
-    { "severity_to_type (severity)", "type" },                                \
+    { "severity_to_type (severity)", "original_type" },                       \
     { "severity_to_type ((SELECT new_severity FROM result_new_severities"     \
       "                  WHERE result_new_severities.result = results.id"     \
       "                  AND result_new_severities.user"                      \
@@ -15724,7 +15736,7 @@ where_search_phrase (const char* search_phrase, int exact)
       "                         WHERE current_credentials.uuid = users.uuid)" \
       "                  AND override = " override                            \
       "                  AND dynamic = " dynamic                              \
-      "                  LIMIT 1))", "new_type" },                            \
+      "                  LIMIT 1))", "type" },                                \
     { "(SELECT autofp FROM results_autofp"                                    \
       " WHERE (result = results.id) AND (autofp_selection = " autofp "))",    \
       "auto_type" },                                                          \
@@ -15733,7 +15745,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "report", NULL },                                                       \
     { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)", "cvss_base" },    \
     { "nvt_version", NULL },                                                  \
-    { "severity", NULL },                                                     \
+    { "severity", "original_severity" },                                      \
     { "(SELECT new_severity FROM result_new_severities"                       \
       " WHERE result_new_severities.result = results.id"                      \
       " AND result_new_severities.user"                                       \
@@ -15742,7 +15754,7 @@ where_search_phrase (const char* search_phrase, int exact)
       "        WHERE current_credentials.uuid = users.uuid)"                  \
       " AND override = " override                                             \
       " AND dynamic = " dynamic                                               \
-      " LIMIT 1)", "new_severity" },                                          \
+      " LIMIT 1)", "severity" },                                              \
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "vulnerability" },                                                      \
     { "date" , NULL },                                                        \
