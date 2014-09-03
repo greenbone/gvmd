@@ -870,6 +870,7 @@ typedef struct
 typedef struct
 {
   char *comment;                     ///< Comment.
+  char *scanner;                     ///< Scanner to create config from.
   char *copy;                        ///< Config to copy.
   import_config_data_t import;       ///< Config to import.
   char *name;                        ///< Name.
@@ -885,15 +886,16 @@ create_config_data_reset (create_config_data_t *data)
 {
   import_config_data_t *import = (import_config_data_t*) &data->import;
 
-  free (data->comment);
-  free (data->copy);
+  g_free (data->comment);
+  g_free (data->copy);
+  g_free (data->scanner);
 
-  free (import->comment);
-  free (import->name);
+  g_free (import->comment);
+  g_free (import->name);
   array_free (import->nvt_selectors);
-  free (import->nvt_selector_name);
-  free (import->nvt_selector_type);
-  free (import->nvt_selector_family_or_nvt);
+  g_free (import->nvt_selector_name);
+  g_free (import->nvt_selector_type);
+  g_free (import->nvt_selector_family_or_nvt);
 
   if (import->preferences)
     {
@@ -909,14 +911,14 @@ create_config_data_reset (create_config_data_t *data)
       array_free (import->preferences);
     }
 
-  free (import->preference_alt);
-  free (import->preference_name);
-  free (import->preference_nvt_name);
-  free (import->preference_nvt_oid);
-  free (import->preference_type);
-  free (import->preference_value);
+  g_free (import->preference_alt);
+  g_free (import->preference_name);
+  g_free (import->preference_nvt_name);
+  g_free (import->preference_nvt_oid);
+  g_free (import->preference_type);
+  g_free (import->preference_value);
 
-  free (data->name);
+  g_free (data->name);
 
   memset (data, 0, sizeof (create_config_data_t));
 }
@@ -4893,6 +4895,7 @@ typedef enum
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CONFIG_COMMENT,
   CLIENT_CREATE_CONFIG_COPY,
+  CLIENT_CREATE_CONFIG_SCANNER,
   CLIENT_CREATE_CONFIG_NAME,
   /* get_configs_response (GCR) is used for config export.  CLIENT_C_C is
    * for CLIENT_CREATE_CONFIG. */
@@ -8440,6 +8443,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_CONFIG:
         if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_COMMENT);
+        else if (strcasecmp ("SCANNER", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CONFIG_SCANNER);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CONFIG_COPY);
         else if (strcasecmp ("GET_CONFIGS_RESPONSE", element_name) == 0)
@@ -12445,7 +12450,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
-                  init_preference_iterator (&prefs, config, "SERVER_PREFS");
+                  init_preference_iterator (&prefs, config);
                   while (next (&prefs))
                     {
                       const char *name, *value, *type;
@@ -17582,8 +17587,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 {
                   case 0:
                     {
-                      gchar *uuid;
-                      config_uuid (new_config, &uuid);
+                      gchar *uuid = config_uuid (new_config);
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<create_config_response"
                         " status=\"" STATUS_OK_CREATED "\""
@@ -17639,6 +17643,54 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     break;
                 }
             }
+          else if (create_config_data->scanner)
+            {
+              char *uuid = NULL;
+
+              switch (create_config_from_scanner
+                       (create_config_data->scanner, create_config_data->name,
+                        create_config_data->comment, &uuid))
+                {
+                  case 0:
+                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID
+                                              ("create_config"), uuid);
+                    log_event ("config", "Scan config", uuid, "created");
+                    break;
+                  case 1:
+                    SENDF_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Failed to find scanner"));
+                    break;
+                  case 2:
+                    SENDF_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Scanner not of type OSP"));
+                    break;
+                  case 3:
+                    SENDF_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Config name exists already"));
+                    break;
+                  case 4:
+                    SENDF_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Failed to get params from scanner"));
+                    break;
+                  case 99:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("create_config",
+                                        "Permission denied"));
+                    log_event_fail ("config", "Scan config", NULL, "created");
+                    break;
+                  case -1:
+                  default:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_INTERNAL_ERROR ("create_config"));
+                    log_event_fail ("config", "Scan config", NULL, "created");
+                    break;
+                }
+              g_free (uuid);
+            }
           else if (strlen (create_config_data->name) == 0
                    && (create_config_data->copy == NULL
                        || strlen (create_config_data->copy) == 0))
@@ -17663,8 +17715,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             {
               case 0:
                 {
-                  char *uuid;
-                  config_uuid (new_config, &uuid);
+                  char *uuid = config_uuid (new_config);
                   SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_config"),
                                            uuid);
                   log_event ("config", "Scan config", uuid, "created");
@@ -17708,6 +17759,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_CONFIG, COMMENT);
       CLOSE (CLIENT_CREATE_CONFIG, COPY);
+      CLOSE (CLIENT_CREATE_CONFIG, SCANNER);
       CLOSE (CLIENT_CREATE_CONFIG, NAME);
 
       case CLIENT_C_C_GCR:
@@ -25715,6 +25767,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CONFIG_COMMENT,
               &create_config_data->comment);
+
+      APPEND (CLIENT_CREATE_CONFIG_SCANNER,
+              &create_config_data->scanner);
 
       APPEND (CLIENT_CREATE_CONFIG_COPY,
               &create_config_data->copy);

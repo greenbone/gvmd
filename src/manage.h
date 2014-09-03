@@ -1386,6 +1386,10 @@ create_config (const char*, const char*, const array_t*, const array_t*,
                config_t*, char**);
 
 int
+create_config_from_scanner (const char*, const char *, const char *,
+                            char **);
+
+int
 copy_config (const char*, const char*, const char *, config_t*);
 
 int
@@ -1397,8 +1401,8 @@ find_config_with_permission (const char*, config_t*, const char *);
 gboolean
 find_config (const char*, config_t*);
 
-int
-config_uuid (config_t, char **);
+char *
+config_uuid (config_t);
 
 int
 config_type (config_t);
@@ -1474,7 +1478,7 @@ manage_set_config_preference (config_t, const char*, const char*,
                               const char*);
 
 void
-init_preference_iterator (iterator_t *, config_t, const char *);
+init_preference_iterator (iterator_t *, config_t);
 
 const char*
 preference_iterator_name (iterator_t *);

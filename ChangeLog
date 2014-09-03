@@ -1,3 +1,28 @@
+2014-09-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Implement dynamically creating a scan config from an OSP Scanner.
+
+	* src/manage.c (task_scanner_options): Adjust init_preference_iterator()
+	call.
+
+	* src/manage.h: Add new function prototype. Adjust modified functions
+	prototypes.
+
+	* src/manage_sql.c (get_scanner_params, create_config_from_scanner): New
+	functions.
+	(config_uuid): Return uuid pointer for consistency with similar
+	functions.
+	(init_preference_iterator): Remove unused section specifier argument.
+	(manage_set_config_preference): Simplify SQL statements and remove
+	useless type check.
+
+	* src/omp.c (create_config_data_t): Add scanner element.
+	(create_config_data_reset): Free scanner value.
+	(client_state_t): Add CLIENT_CREATE_CONFIG_SCANNER state.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Handle new scanner element in create_config
+	command. Adjust modified functions calls.
+
 2014-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS_ARRAY): Make array

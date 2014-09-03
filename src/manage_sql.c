@@ -27444,19 +27444,145 @@ create_config (const char* proposed_name, const char* comment,
 }
 
 /**
+ * @brief Get list of OSP Scanner parameters.
+ *
+ * @param[in]   scanner    Scanner.
+ *
+ * @return List of scanner parameters, NULL if error.
+ */
+static GSList *
+get_scanner_params (scanner_t scanner)
+{
+  GSList *list;
+  char *host, *ca_pub, *key_pub, *key_priv;
+  int port;
+  osp_connection_t *connection;
+
+  assert (scanner);
+  host = scanner_host (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  port = scanner_port (scanner);
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  if (!connection)
+    return NULL;
+
+  list = osp_get_scanner_params (connection);
+  osp_connection_close (connection);
+  return list;
+}
+
+/**
+ * @brief Create a config from an OSP scanner.
+ *
+ * @param[in]   scanner_id  UUID of scanner to create config from.
+ *
+ * @return 0 success, 1 couldn't find scanner, 2 scanner not of OSP type,
+ *         3 config name exists already, 4 couldn't get params from scanner,
+ *         99 permission denied, -1 error.
+ */
+int
+create_config_from_scanner (const char *scanner_id, const char *name,
+                            const char *comment, char **uuid)
+{
+  scanner_t scanner;
+  config_t config;
+  GSList *params, *element;
+  char *quoted_name, *quoted_comment;
+
+  assert (current_credentials.uuid);
+  assert (scanner_id);
+  sql_begin_immediate ();
+
+  if (user_may ("create_config") == 0)
+    {
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  if (find_scanner_with_permission (scanner_id, &scanner, "create_config"))
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+  if (scanner == 0)
+    {
+      sql ("ROLLBACK;");
+      return 1;
+    }
+  if (scanner_type (scanner) != SCANNER_TYPE_OSP_OVALDI)
+    {
+      sql ("ROLLBACK;");
+      return 2;
+    }
+  if (resource_with_name_exists (name, "config", 0))
+    {
+      sql ("ROLLBACK;");
+      return 3;
+    }
+
+  params = get_scanner_params (scanner);
+  if (!params)
+    {
+      sql ("ROLLBACK;");
+      return 4;
+    }
+  quoted_name = sql_quote (name ?: "");
+  quoted_comment = sql_quote (comment ?: "");
+  /* Create new OSP Ovaldi config. */
+  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
+       " type, creation_time, modification_time)"
+       " VALUES (make_uuid (), '%s',"
+       " (SELECT id FROM users WHERE users.uuid = '%s'),"
+       " '', '%s', 1, m_now (), m_now ());",
+       quoted_name, quoted_comment, current_credentials.uuid);
+  g_free (quoted_name);
+  g_free (quoted_comment);
+  config = sql_last_insert_rowid ();
+  *uuid = config_uuid (config);
+
+  element = params;
+  while (element)
+    {
+      char *param_id;
+
+      osp_param_t *param = element->data;
+      param_id = sql_quote (osp_param_id (param));
+      /* XXX: Ignoring username, password and port parameters as these are taken
+       * from the task's LSC Credentials / Target. */
+      if (strcmp (param_id, "username") && strcmp (param_id, "password")
+          && strcmp (param_id, "port"))
+        {
+          char *param_type = sql_quote (osp_param_type_str (param));
+          sql ("INSERT INTO config_preferences (config, name, type, value)"
+               " VALUES (%llu, '%s', '%s', '')",
+               config , param_id, param_type);
+          g_free (param_type);
+        }
+      g_free (param_id);
+      osp_param_free (element->data);
+      element = element->next;
+    }
+  g_slist_free (params);
+  sql ("COMMIT;");
+  return 0;
+}
+
+/**
  * @brief Return the UUID of a config.
  *
  * @param[in]   config  Config.
  * @param[out]  id      Pointer to a newly allocated string.
  *
- * @return 0.
+ * @return Newly allocated config uuid pointer.
  */
-int
-config_uuid (config_t config, char ** id)
+char *
+config_uuid (config_t config)
 {
-  *id = sql_string ("SELECT uuid FROM configs WHERE id = %llu;",
-                    config);
-  return 0;
+  return sql_string ("SELECT uuid FROM configs WHERE id = %llu;", config);
 }
 
 /**
@@ -28195,24 +28321,12 @@ trash_config_writable (config_t config)
  * @param[in]  section   Preference section, NULL for general preferences.
  */
 void
-init_preference_iterator (iterator_t* iterator, config_t config,
-                          const char* section)
+init_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
-  if (section)
-    {
-      gchar *quoted_section = sql_nquote (section, strlen (section));
-      sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
-                             " WHERE config = %llu"
-                             " AND type = '%s';",
-                             config, quoted_section);
-      g_free (quoted_section);
-    }
-  else
-    sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
-                           " WHERE config = %llu"
-                           " AND type is NULL;",
-                           config);
+
+  sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
+                         " WHERE config = %llu;", config);
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -28472,20 +28586,9 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
 
-  sql ("DELETE FROM config_preferences"
-       " WHERE config = %llu"
-       " AND type %s"
-       " AND name = '%s'",
-       config,
-       nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
-       quoted_name);
-  sql ("INSERT INTO config_preferences"
-       " (config, type, name, value)"
-       " VALUES (%llu, %s, '%s', '%s');",
-       config,
-       nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'",
-       quoted_name,
-       quoted_value);
+  sql ("UPDATE config_preferences SET value = '%s'"
+       " WHERE config = %llu AND name = '%s'",
+       quoted_value, config, quoted_name);
   sql ("COMMIT;");
 
   g_free (quoted_name);
