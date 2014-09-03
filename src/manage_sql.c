@@ -15768,21 +15768,25 @@ where_search_phrase (const char* search_phrase, int exact)
         {                                             \
           {                                           \
             RESULT_ITERATOR_COLUMNS ("0", "0", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "0", "1"),  \
-            RESULT_ITERATOR_COLUMNS ("2", "0", "2")   \
+            RESULT_ITERATOR_COLUMNS ("0", "0", "1")   \
           }, {                                        \
             RESULT_ITERATOR_COLUMNS ("0", "1", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "1", "0"),  \
-            RESULT_ITERATOR_COLUMNS ("2", "1", "0")   \
+            RESULT_ITERATOR_COLUMNS ("0", "1", "1")   \
           }                                           \
         }, {                                          \
           {                                           \
-            RESULT_ITERATOR_COLUMNS ("0", "0", "1"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "0", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "0", "0"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "0", "1")   \
+          }, {                                        \
+            RESULT_ITERATOR_COLUMNS ("1", "1", "0"),  \
+            RESULT_ITERATOR_COLUMNS ("1", "1", "1")   \
+          }                                           \
+        }, {                                          \
+          {                                           \
+            RESULT_ITERATOR_COLUMNS ("2", "0", "0"),  \
             RESULT_ITERATOR_COLUMNS ("2", "0", "1")   \
           }, {                                        \
-            RESULT_ITERATOR_COLUMNS ("0", "1", "1"),  \
-            RESULT_ITERATOR_COLUMNS ("1", "1", "1"),  \
+            RESULT_ITERATOR_COLUMNS ("2", "1", "0"),  \
             RESULT_ITERATOR_COLUMNS ("2", "1", "1")   \
           }                                           \
         }                                             \
@@ -15802,7 +15806,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                           int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[2][2][3][RESULT_ITERATOR_COLUMN_COUNT]
+  static column_t columns[3][2][2][RESULT_ITERATOR_COLUMN_COUNT]
                     = RESULT_ITERATOR_COLUMNS_ARRAY;
 
   return init_get_iterator (iterator,
@@ -15832,7 +15836,7 @@ result_count (const get_data_t *get,
               int autofp, int override, int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[2][2][3][RESULT_ITERATOR_COLUMN_COUNT]
+  static column_t columns[3][2][2][RESULT_ITERATOR_COLUMN_COUNT]
                     = RESULT_ITERATOR_COLUMNS_ARRAY
 
   return count ("result", get,
@@ -16122,14 +16126,16 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
         {
           case 1:
             auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp_1"
-               " WHERE result = results.id)");
+              ("(SELECT autofp FROM results_autofp"
+               " WHERE result = results.id"
+               " AND autofp_selection = 1)");
             break;
 
           case 2:
             auto_type_sql = g_strdup_printf
-              ("(SELECT autofp FROM results_autofp_2"
-               " WHERE result = results.id)");
+              ("(SELECT autofp FROM results_autofp"
+               " WHERE result = results.id"
+               " AND autofp_selection = 2)");
              break;
 
            default:

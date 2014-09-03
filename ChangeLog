@@ -1,3 +1,10 @@
+2014-09-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS_ARRAY): Make array
+	dimensions and indexes match parameters of RESULT_ITERATOR_COLUMNS.
+	(init_result_get_iterator, result_count): Adjust array dimensions.
+	(init_result_iterator): Fix autofp subquery for selection by id.
+
 2014-09-03  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* doc/CMakeLists.txt: Use appropriate text for second paragraph of the
