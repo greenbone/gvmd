@@ -1,3 +1,9 @@
+2014-09-03  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Make license of CMakeLists.txt files consistent.
+
+	* doc/CMakeLists.txt: Change license from LGPLv2+ to GPLv2+.
+
 2014-09-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Use column definition instead of
