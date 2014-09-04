@@ -2744,6 +2744,7 @@ typedef struct
 {
   get_data_t get;        ///< Get args.
   int apply_overrides;   ///< Boolean.  Whether to apply overrides to results.
+  int apply_overrides_set; /// < Boolean. Whether apply_overrides was set.
   int autofp;            ///< Boolean.  Whether to apply auto FP filter.
   char *task_id;         ///< Task associated with results.
   int notes;             ///< Boolean.  Whether to include associated notes.
@@ -7171,9 +7172,15 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
 
             if (find_attribute (attribute_names, attribute_values,
                                 "apply_overrides", &attribute))
-              get_results_data->apply_overrides = strcmp (attribute, "0");
+              {
+                get_results_data->apply_overrides = strcmp (attribute, "0");
+                get_results_data->apply_overrides_set = 1;
+              }
             else
-              get_results_data->apply_overrides = 0;
+              {
+                get_results_data->apply_overrides = 0;
+                get_results_data->apply_overrides_set = 0;
+              }
 
             if (find_attribute (attribute_names, attribute_values,
                                 "autofp", &attribute))
@@ -15260,7 +15267,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "autofp in GET_RESULTS must be either"
                                     " 0, 1 or 2"));
 
-              if (get_results_data->apply_overrides)
+              if (get_results_data->apply_overrides_set)
                 apply_overrides = get_results_data->apply_overrides;
               else if (filter_term_value (get_results_data->get.filter,
                                           "apply_overrides"))
@@ -15279,15 +15286,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "<results>");
               INIT_GET (result, Result);
 
-              if (result)
-                init_result_iterator (&results, 0, result, 0, 1, 1, NULL,
-                                      NULL, autofp, NULL, 0,
-                                      NULL, apply_overrides);
-              else
-                init_result_get_iterator (&results, &get_results_data->get,
-                                          autofp,
-                                          apply_overrides,
-                                          dynamic_severity);
+
+              init_result_get_iterator (&results, &get_results_data->get,
+                                        autofp,
+                                        apply_overrides,
+                                        dynamic_severity);
 
               if (next (&results))
                 {

@@ -1,3 +1,14 @@
+2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow apply_overrides attribute of GET_RESULTS command to switch off
+	overrides.
+
+	* src/omp.c (get_results_data_t): Add apply_overrides_set.
+	(xml_handle_start_element): In GET_RESULTS case set apply_overrides_set
+	depending on whether the apply_overrides attribute was set.
+	(xml_handle_start_element): In GET_RESULTS case check
+	apply_overrides_set to decide whether to use apply_overrides attribute.
+
 2014-09-03  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Implement dynamically creating a scan config from an OSP Scanner.
