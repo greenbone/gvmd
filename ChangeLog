@@ -1,5 +1,12 @@
 2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (xml_handle_end_element): In GET_RESULTS case use
+	SEND_GET_END macro and calculate correct counts in cases where
+	the count on the page is different from the maximum or a single
+	result is selected by uuid.
+
+2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Update OMP documentation to reflect recent changes to GET_RESULTS.
 
 	* src/schema_formats/XML/OMP.xml: Add new elements that make

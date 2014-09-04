@@ -15307,6 +15307,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       free (task_id);
                     }
 
+                  count = 0;
                   do
                     {
                       GString *buffer = g_string_new ("");
@@ -15326,6 +15327,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                           0);
                       SEND_TO_CLIENT_OR_FAIL (buffer->str);
                       g_string_free (buffer, TRUE);
+                      count ++;
                     }
                   while (next (&results));
                 }
@@ -15334,14 +15336,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               manage_filter_controls (get_results_data->get.filter,
                                       &first, &max, NULL, NULL);
 
-              count = result_count (&get_results_data->get,
-                                    autofp, apply_overrides,
-                                    dynamic_severity);
+              filtered = get_results_data->get.id
+                          ? 1 : result_count (&get_results_data->get,
+                                              autofp, apply_overrides,
+                                              dynamic_severity);
 
-              send_get_end ("result", &get_results_data->get,
-                            max, count,
-                            resource_count ("result", &get_results_data->get),
-                            write_to_client, write_to_client_data);
+              SEND_GET_END("result", &get_results_data->get, count, filtered);
             }
 
           get_results_data_reset (get_results_data);
