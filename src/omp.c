@@ -15282,8 +15282,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
                                       " status=\"" STATUS_OK "\""
-                                      " status_text=\"" STATUS_OK_TEXT "\">"
-                                      "<results>");
+                                      " status_text=\"" STATUS_OK_TEXT "\">");
               INIT_GET (result, Result);
 
 
@@ -15331,7 +15330,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   while (next (&results));
                 }
               cleanup_iterator (&results);
-              SEND_TO_CLIENT_OR_FAIL ("</results>");
 
               manage_filter_controls (get_results_data->get.filter,
                                       &first, &max, NULL, NULL);

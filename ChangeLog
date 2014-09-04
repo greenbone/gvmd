@@ -1,5 +1,11 @@
 2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/omp.c (xml_handle_start_element): In GET_RESULTS case place
+	results directly inside the get_results_response element to make
+	it more consistent with other GET_... OMP commands.
+
+2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Allow apply_overrides attribute of GET_RESULTS command to switch off
 	overrides.
 
