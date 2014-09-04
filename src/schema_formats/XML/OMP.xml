@@ -549,6 +549,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <e>owner</e>
+      <e>comment</e>
+      <e>creation_time</e>
+      <e>modification_time</e>
       <o><e>user_tags</e></o>
       <o><e>report</e></o>
       <o><e>task</e></o>
@@ -566,6 +570,33 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
     </pattern>
+    <ele>
+      <name>owner</name>
+      <summary>Owner of the result</summary>
+      <pattern>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the owner</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>The comment on the result</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>creation_time</name>
+      <summary>Date and time the result was created</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>modification_time</name>
+      <summary>Date and time the result was last modified</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
     <ele>
       <name>user_tags</name>
       <summary>Info on tags attached to the result (not in delta results)</summary>
@@ -13160,6 +13191,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
       </attrib>
       <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
         <name>task_id</name>
         <summary>ID of task for note and override handling</summary>
         <type>uuid</type>
@@ -13207,253 +13248,394 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <any><e>result</e></any>
+        <e>filters</e>
+        <e>sort</e>
         <e>results</e>
+        <e>result_count</e>
       </pattern>
       <ele>
-        <name>results</name>
+        <name>result</name>
         <pattern>
-          <any><e>result</e></any>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>permissions</e>
+          <e>user_tags</e>
+          <o><e>report</e></o>
+          <o><e>task</e></o>
+          <e>host</e>
+          <e>port</e>
+          <e>nvt</e>
+          <e>scan_nvt_version</e>
+          <e>threat</e>
+          <e>severity</e>
+          <e>description</e>
+          <o><e>original_severity</e></o>
+          <o><e>notes</e></o>
+          <o><e>overrides</e></o>
         </pattern>
         <ele>
-          <name>result</name>
+          <name>owner</name>
+          <summary>Owner of the result</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the result</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the result was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the result was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the result
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the agent</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>report</name>
+          <summary>
+            Report the result belongs to (only when details were requested)
+          </summary>
           <pattern>
             <attrib>
               <name>id</name>
               <type>uuid</type>
+              <summary>UUID of the report the result belongs to</summary>
               <required>1</required>
             </attrib>
-            <e>permissions</e>
-            <e>user_tags</e>
-            <o><e>report</e></o>
-            <o><e>task</e></o>
-            <e>host</e>
-            <e>port</e>
-            <e>nvt</e>
-            <e>scan_nvt_version</e>
-            <e>threat</e>
-            <e>severity</e>
-            <e>description</e>
-            <o><e>original_severity</e></o>
-            <o><e>notes</e></o>
-            <o><e>overrides</e></o>
+          </pattern>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>
+            Task the result applies to (only when details were requested)
+          </summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>UUID of the task the result applies to</summary>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
           </pattern>
           <ele>
-            <name>permissions</name>
-            <summary>
-              Permissions that the current user has on the result
-            </summary>
-            <pattern>
-              <any><e>permission</e></any>
-            </pattern>
-            <ele>
-              <name>permission</name>
-              <pattern>
-                <e>name</e>
-              </pattern>
-              <ele>
-                <name>name</name>
-                <summary>The name of the permission</summary>
-                <pattern><t>name</t></pattern>
-              </ele>
-            </ele>
+            <name>name</name>
+            <pattern>text</pattern>
+            <summary>Name of the task the result applies to</summary>
+          </ele>
+        </ele>
+        <ele>
+          <name>host</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>nvt</name>
+          <summary>NVT to which result applies</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>cvss_base</e>
+            <e>risk_factor</e>
+            <e>cve</e>
+            <e>bid</e>
+            <e>tags</e>
+            <e>cert</e>
+            <e>xref</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the NVT</summary>
+            <pattern><t>name</t></pattern>
           </ele>
           <ele>
-            <name>user_tags</name>
-            <summary>Info on tags attached to the agent</summary>
+            <name>cvss_base</name>
+            <summary>CVSS base value associated with the NVT</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>risk_factor</name>
+            <summary>Risk factor associated with the NVT</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>cve</name>
+            <summary>CVE value associated with the NVT</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>bid</name>
+            <summary>BID associated with the NVT</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tags</name>
+            <summary>Tags associated with the NVT</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>cert</name>
+            <summary>List of CERT advisories referencing this NVT via CVEs</summary>
             <pattern>
-              <e>count</e>
-              <any><e>tag</e></any>
+              <any><e>cert_ref</e></any>
             </pattern>
             <ele>
-              <name>count</name>
-              <summary>Number of attached tags</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>tag</name>
-              <summary>
-                Short info on an individual tag
-                (only if details were requested)
-              </summary>
+              <name>cert_ref</name>
+              <summary>A CERT advisory reference</summary>
               <pattern>
                 <attrib>
                   <name>id</name>
-                  <type>uuid</type>
-                  <summary>UUID of the tag</summary>
-                  <required>1</required>
+                  <summary>ID of the advisory</summary>
+                  <type>text</type>
                 </attrib>
-                <e>name</e>
-                <e>value</e>
-                <e>comment</e>
+                <attrib>
+                  <name>type</name>
+                  <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+                  <type>text</type>
+                </attrib>
               </pattern>
-              <ele>
-                <name>name</name>
-                <summary>Name of the tag (usually namespace:predicate)</summary>
-                <pattern>text</pattern>
-              </ele>
-              <ele>
-                <name>value</name>
-                <summary>Value of the tag</summary>
-                <pattern>text</pattern>
-              </ele>
-              <ele>
-                <name>comment</name>
-                <summary>Comment for the tag</summary>
-                <pattern>text</pattern>
-              </ele>
             </ele>
           </ele>
           <ele>
-            <name>report</name>
-            <summary>
-              Report the result belongs to (only when details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the report the result belongs to</summary>
-                <required>1</required>
-              </attrib>
-            </pattern>
-          </ele>
-          <ele>
-            <name>task</name>
-            <summary>
-              Task the result applies to (only when details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the task the result applies to</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern>text</pattern>
-              <summary>Name of the task the result applies to</summary>
-            </ele>
-          </ele>
-          <ele>
-            <name>host</name>
+            <name>xref</name>
+            <summary>References associated with the NVT</summary>
             <pattern>text</pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>scan_nvt_version</name>
+          <summary>Version of the NVT used in the scan</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>threat</name>
+          <pattern><t>threat</t></pattern>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>Severity score of the result, with overrides if applicable</summary>
+          <pattern><t>severity</t></pattern>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>Description of the result</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>original_severity</name>
+          <summary>Severity score of the result without overrides</summary>
+          <pattern><t>severity</t></pattern>
+        </ele>
+        <ele>
+          <name>notes</name>
+          <type>result_notes</type>
+        </ele>
+        <ele>
+          <name>overrides</name>
+          <type>result_overrides</type>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
           <ele>
-            <name>port</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>nvt</name>
-            <summary>NVT to which result applies</summary>
+            <name>keyword</name>
             <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>cvss_base</e>
-              <e>risk_factor</e>
-              <e>cve</e>
-              <e>bid</e>
-              <e>tags</e>
-              <e>cert</e>
-              <e>xref</e>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
             </pattern>
             <ele>
-              <name>name</name>
-              <summary>The name of the NVT</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>cvss_base</name>
-              <summary>CVSS base value associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>risk_factor</name>
-              <summary>Risk factor associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>cve</name>
-              <summary>CVE value associated with the NVT</summary>
+              <name>column</name>
+              <summary>Column prefix</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
-              <name>bid</name>
-              <summary>BID associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>tags</name>
-              <summary>Tags associated with the NVT</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>cert</name>
-              <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+              <name>relation</name>
+              <summary>Relation operator</summary>
               <pattern>
-                <any><e>cert_ref</e></any>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
               </pattern>
-              <ele>
-                <name>cert_ref</name>
-                <summary>A CERT advisory reference</summary>
-                <pattern>
-                  <attrib>
-                    <name>id</name>
-                    <summary>ID of the advisory</summary>
-                    <type>text</type>
-                  </attrib>
-                  <attrib>
-                    <name>type</name>
-                    <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
-                    <type>text</type>
-                  </attrib>
-                </pattern>
-              </ele>
             </ele>
             <ele>
-              <name>xref</name>
-              <summary>References associated with the NVT</summary>
+              <name>value</name>
+              <summary>The filter text</summary>
               <pattern>text</pattern>
             </ele>
           </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
           <ele>
-            <name>scan_nvt_version</name>
-            <summary>Version of the NVT used in the scan</summary>
-            <pattern>text</pattern>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
           </ele>
-          <ele>
-            <name>threat</name>
-            <pattern><t>threat</t></pattern>
-          </ele>
-          <ele>
-            <name>severity</name>
-            <summary>Severity score of the result, with overrides if applicable</summary>
-            <pattern><t>severity</t></pattern>
-          </ele>
-          <ele>
-            <name>description</name>
-            <summary>Description of the result</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>original_severity</name>
-            <summary>Severity score of the result without overrides</summary>
-            <pattern><t>severity</t></pattern>
-          </ele>
-          <ele>
-            <name>notes</name>
-            <type>result_notes</type>
-          </ele>
-          <ele>
-            <name>overrides</name>
-            <type>result_overrides</type>
-          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>results</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First result</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of results</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>result_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of results after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of results on current page</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
     </response>
@@ -13464,28 +13646,55 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <get_results_response status="200" status_text="OK">
-          <results>
-            <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
-              <user_tags>
-                <count>0</count>
-              </user_tags>
-              <host>127.0.1.1</host>
-              <port>general/tcp</port>
-              <nvt oid="1.3.6.1.4.1.25623.1.0.74">
-                <name>Test NVT: fields with ISO-8859-1 chars</name>
-                <cvss_base>5.0</cvss_base>
-                <risk_factor>Medium</risk_factor>
-                <cve>CVE-2009-3095</cve>
-                <bid>36254</bid>
-                <tags>NOTAGS</tags>
-                <cert></cert>
-                <xref>NOXREF</xref>
-              </nvt>
-              <threat>Medium</threat>
-              <description>Test with umlaut.</description>
-            </result>
-            <truncated>...</truncated>
-          </results>
+          <result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <comment/>
+            <creation_time>2014-05-23T09:22:12Z</creation_time>
+            <modification_time>2014-05-23T09:22:12Z</modification_time>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <host>127.0.1.1</host>
+            <port>general/tcp</port>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.74">
+              <name>Test NVT: fields with ISO-8859-1 chars</name>
+              <cvss_base>5.0</cvss_base>
+              <risk_factor>Medium</risk_factor>
+              <cve>CVE-2009-3095</cve>
+              <bid>36254</bid>
+              <tags>NOTAGS</tags>
+              <cert></cert>
+              <xref>NOXREF</xref>
+            </nvt>
+            <threat>Medium</threat>
+            <description>Test with umlaut.</description>
+          </result>
+          <truncated>...</truncated>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <results max="-1" start="1"></results>
+          <result_count>
+            124
+            <filtered>124</filtered>
+            <page>124</page>
+          </result_count>
         </get_results_response>
       </response>
     </example>
@@ -13500,39 +13709,66 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </request>
       <response>
         <get_results_response status="200" status_text="OK">
-          <results>
-            <result id="cac9e7c8-c726-49fd-a710-5f99079ab93e">
-              <user_tags>
-                <count>0</count>
-              </user_tags>
-              <host>127.0.0.1</host>
-              <port>general/tcp</port>
-              <nvt oid="1.3.6.1.4.1.25623.1.0.75">
-                <name>Test NVT: long lines</name>
-                <cvss_base>9</cvss_base>
-                <risk_factor>High</risk_factor>
-                <cve>CVE-2009-3095</cve>
-                <bid>36254</bid>
-                <tags>NOTAGS</tags>
-                <cert></cert>
-                <xref>NOXREF</xref>
-              </nvt>
-              <threat>High</threat>
-              <description>Test with very long warning.</description>
-              <original_threat>Medium</original_threat>
-              <notes></notes>
-              <overrides>
-                <override id="b0832812-75f1-45eb-b676-99c6e6bf2b24">
-                  <nvt oid="1.3.6.1.4.1.25623.1.0.75">
-                    <name>Test NVT: long lines</name>
-                  </nvt>
-                  <text excerpt="0">Test override</text>
-                  <new_threat>High</new_threat>
-                  <orphan>0</orphan>
-                </override>
-              </overrides>
-            </result>
-          </results>
+          <result id="cac9e7c8-c726-49fd-a710-5f99079ab93e">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <comment/>
+            <creation_time>2014-05-23T09:22:12Z</creation_time>
+            <modification_time>2014-05-23T09:22:12Z</modification_time>
+            <user_tags>
+              <count>0</count>
+            </user_tags>
+            <host>127.0.0.1</host>
+            <port>general/tcp</port>
+            <nvt oid="1.3.6.1.4.1.25623.1.0.75">
+              <name>Test NVT: long lines</name>
+              <cvss_base>9</cvss_base>
+              <risk_factor>High</risk_factor>
+              <cve>CVE-2009-3095</cve>
+              <bid>36254</bid>
+              <tags>NOTAGS</tags>
+              <cert></cert>
+              <xref>NOXREF</xref>
+            </nvt>
+            <threat>High</threat>
+            <description>Test with very long warning.</description>
+            <original_threat>Medium</original_threat>
+            <notes></notes>
+            <overrides>
+              <override id="b0832812-75f1-45eb-b676-99c6e6bf2b24">
+                <nvt oid="1.3.6.1.4.1.25623.1.0.75">
+                  <name>Test NVT: long lines</name>
+                </nvt>
+                <text excerpt="0">Test override</text>
+                <new_threat>High</new_threat>
+                <orphan>0</orphan>
+              </override>
+            </overrides>
+          </result>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <truncated>...</truncated>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
+          </sort>
+          <results max="-1" start="1"></results>
+          <result_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </result_count>
         </get_results_response>
       </response>
     </example>
@@ -20679,6 +20915,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The element TARGET_LOCATOR was removed from CREATE_TARGET and
         MODIFY_TARGET.  This was an older, unused feature.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>GET_RESULTS</command>
+    <summary>"result" elements moved to response root element</summary>
+    <description>
+      <p>
+        The "result" elements returned by the GET_RESULTS command are no
+        longer nested inside a "results" element but directly inside the
+        "get_results_response". The "results" element is used to return the
+        "max" and "start" attributes like similar elements for other types.
       </p>
     </description>
     <version>6.0</version>

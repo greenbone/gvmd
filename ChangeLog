@@ -1,5 +1,17 @@
 2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Update OMP documentation to reflect recent changes to GET_RESULTS.
+
+	* src/schema_formats/XML/OMP.xml: Add new elements that make
+	get_results more consistent with other GET_... OMP commands.
+	Place results directly inside get_results_response element and change
+	the results element to contain the "max" and "start" attributes instead.
+	Update examples accordingly and add compatibility change note.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
+2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (xml_handle_start_element): In GET_RESULTS case place
 	results directly inside the get_results_response element to make
 	it more consistent with other GET_... OMP commands.

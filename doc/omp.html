@@ -1786,6 +1786,30 @@ result_overrides_override_orphan
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the result was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the result was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>user_tags</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Info on tags attached to the result (not in delta results).</div>
 <ul style="list-style: none">
@@ -2007,6 +2031,10 @@ result_overrides_override_orphan
  = element result
      {
        attribute id { uuid }
+       &amp; result_owner
+       &amp; result_comment
+       &amp; result_creation_time
+       &amp; result_modification_time
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
@@ -2023,6 +2051,36 @@ result_overrides_override_orphan
        &amp; result_detection
        &amp; result_notes?
        &amp; result_overrides?
+     }
+
+result_owner
+ = element owner
+     {
+       result_owner_name
+     }
+
+result_owner_name
+ = element name
+     {
+       name
+     }
+
+result_comment
+ = element comment
+     {
+       text
+     }
+
+result_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+result_modification_time
+ = element modification_time
+     {
+       iso_time
      }
 
 result_user_tags
@@ -2209,6 +2267,10 @@ result_delta_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_owner
+       &amp; result_comment
+       &amp; result_creation_time
+       &amp; result_modification_time
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
@@ -2279,6 +2341,10 @@ result_detection_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_owner
+       &amp; result_comment
+       &amp; result_creation_time
+       &amp; result_modification_time
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
@@ -3702,6 +3768,10 @@ report_report_results_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_owner
+       &amp; result_comment
+       &amp; result_creation_time
+       &amp; result_modification_time
        &amp; result_user_tags?
        &amp; result_report?
        &amp; result_task?
@@ -21528,6 +21598,16 @@ get_report_formats_response_report_format_count_page
           ID of single result to get.
           </li>
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query.
+          </li>
+<li>
           @<b>task_id</b>
           (<a href="#type_uuid">uuid</a>)
           ID of task for note and override handling.
@@ -21575,14 +21655,36 @@ get_report_formats_response_report_format_count_page
           (text)
           </li>
 <li>
-              &lt;<b>results</b>&gt;
-              <ul style="list-style: none"><li>
               &lt;<b>result</b>&gt;
               *<ul style="list-style: none">
 <li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           </li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The comment on the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the result was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the result was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
 <li>
               &lt;<b>permissions</b>&gt;
               <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the result.</div>
@@ -21765,7 +21867,85 @@ get_report_formats_response_report_format_count_page
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>results</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          First result.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          Maximum number of results.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>result_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of results on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -21776,6 +21956,8 @@ get_report_formats_response_report_format_count_page
  = element get_results
      {
        attribute result_id { uuid }?
+       &amp; attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
        &amp; attribute task_id { uuid }?
        &amp; attribute notes { boolean }?
        &amp; attribute note_details { boolean }?
@@ -21790,233 +21972,358 @@ get_report_formats_response_report_format_count_page
      {
        attribute status { status }
        &amp; attribute status_text { text }
+       &amp; get_results_response_result*
+       &amp; get_results_response_filters
+       &amp; get_results_response_sort
        &amp; get_results_response_results
+       &amp; get_results_response_result_count
      }
 
-get_results_response_results
- = element results
-     {
-       get_results_response_results_result*
-     }
-
-get_results_response_results_result
+get_results_response_result
  = element result
      {
        attribute id { uuid }
-       &amp; get_results_response_results_result_permissions
-       &amp; get_results_response_results_result_user_tags
-       &amp; get_results_response_results_result_report?
-       &amp; get_results_response_results_result_task?
-       &amp; get_results_response_results_result_host
-       &amp; get_results_response_results_result_port
-       &amp; get_results_response_results_result_nvt
-       &amp; get_results_response_results_result_scan_nvt_version
-       &amp; get_results_response_results_result_threat
-       &amp; get_results_response_results_result_severity
-       &amp; get_results_response_results_result_description
-       &amp; get_results_response_results_result_original_severity?
-       &amp; get_results_response_results_result_notes?
-       &amp; get_results_response_results_result_overrides?
+       &amp; get_results_response_result_owner
+       &amp; get_results_response_result_comment
+       &amp; get_results_response_result_creation_time
+       &amp; get_results_response_result_modification_time
+       &amp; get_results_response_result_permissions
+       &amp; get_results_response_result_user_tags
+       &amp; get_results_response_result_report?
+       &amp; get_results_response_result_task?
+       &amp; get_results_response_result_host
+       &amp; get_results_response_result_port
+       &amp; get_results_response_result_nvt
+       &amp; get_results_response_result_scan_nvt_version
+       &amp; get_results_response_result_threat
+       &amp; get_results_response_result_severity
+       &amp; get_results_response_result_description
+       &amp; get_results_response_result_original_severity?
+       &amp; get_results_response_result_notes?
+       &amp; get_results_response_result_overrides?
      }
 
-get_results_response_results_result_permissions
- = element permissions
+get_results_response_result_owner
+ = element owner
      {
-       get_results_response_results_result_permissions_permission*
+       get_results_response_result_owner_name
      }
 
-get_results_response_results_result_permissions_permission
- = element permission
-     {
-       get_results_response_results_result_permissions_permission_name
-     }
-
-get_results_response_results_result_permissions_permission_name
+get_results_response_result_owner_name
  = element name
      {
        name
      }
 
-get_results_response_results_result_user_tags
- = element user_tags
-     {
-       get_results_response_results_result_user_tags_count
-       &amp; get_results_response_results_result_user_tags_tag*
-     }
-
-get_results_response_results_result_user_tags_count
- = element count
-     {
-       integer
-     }
-
-get_results_response_results_result_user_tags_tag
- = element tag
-     {
-       attribute id { uuid }
-       &amp; get_results_response_results_result_user_tags_tag_name
-       &amp; get_results_response_results_result_user_tags_tag_value
-       &amp; get_results_response_results_result_user_tags_tag_comment
-     }
-
-get_results_response_results_result_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-get_results_response_results_result_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-get_results_response_results_result_user_tags_tag_comment
+get_results_response_result_comment
  = element comment
      {
        text
      }
 
-get_results_response_results_result_report
- = element report
+get_results_response_result_creation_time
+ = element creation_time
      {
-       attribute id { uuid }
+       iso_time
      }
 
-get_results_response_results_result_task
- = element task
+get_results_response_result_modification_time
+ = element modification_time
      {
-       attribute id { uuid }
-       &amp; get_results_response_results_result_task_name
+       iso_time
      }
 
-get_results_response_results_result_task_name
- = element name
+get_results_response_result_permissions
+ = element permissions
      {
-       text
+       get_results_response_result_permissions_permission*
      }
 
-get_results_response_results_result_host
- = element host
+get_results_response_result_permissions_permission
+ = element permission
      {
-       text
+       get_results_response_result_permissions_permission_name
      }
 
-get_results_response_results_result_port
- = element port
-     {
-       text
-     }
-
-get_results_response_results_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_results_response_results_result_nvt_name
-       &amp; get_results_response_results_result_nvt_cvss_base
-       &amp; get_results_response_results_result_nvt_risk_factor
-       &amp; get_results_response_results_result_nvt_cve
-       &amp; get_results_response_results_result_nvt_bid
-       &amp; get_results_response_results_result_nvt_tags
-       &amp; get_results_response_results_result_nvt_cert
-       &amp; get_results_response_results_result_nvt_xref
-     }
-
-get_results_response_results_result_nvt_name
+get_results_response_result_permissions_permission_name
  = element name
      {
        name
      }
 
-get_results_response_results_result_nvt_cvss_base
+get_results_response_result_user_tags
+ = element user_tags
+     {
+       get_results_response_result_user_tags_count
+       &amp; get_results_response_result_user_tags_tag*
+     }
+
+get_results_response_result_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+get_results_response_result_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; get_results_response_result_user_tags_tag_name
+       &amp; get_results_response_result_user_tags_tag_value
+       &amp; get_results_response_result_user_tags_tag_comment
+     }
+
+get_results_response_result_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+get_results_response_result_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+get_results_response_result_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+get_results_response_result_report
+ = element report
+     {
+       attribute id { uuid }
+     }
+
+get_results_response_result_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; get_results_response_result_task_name
+     }
+
+get_results_response_result_task_name
+ = element name
+     {
+       text
+     }
+
+get_results_response_result_host
+ = element host
+     {
+       text
+     }
+
+get_results_response_result_port
+ = element port
+     {
+       text
+     }
+
+get_results_response_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; get_results_response_result_nvt_name
+       &amp; get_results_response_result_nvt_cvss_base
+       &amp; get_results_response_result_nvt_risk_factor
+       &amp; get_results_response_result_nvt_cve
+       &amp; get_results_response_result_nvt_bid
+       &amp; get_results_response_result_nvt_tags
+       &amp; get_results_response_result_nvt_cert
+       &amp; get_results_response_result_nvt_xref
+     }
+
+get_results_response_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_results_response_result_nvt_cvss_base
  = element cvss_base
      {
        integer
      }
 
-get_results_response_results_result_nvt_risk_factor
+get_results_response_result_nvt_risk_factor
  = element risk_factor
      {
        integer
      }
 
-get_results_response_results_result_nvt_cve
+get_results_response_result_nvt_cve
  = element cve
      {
        text
      }
 
-get_results_response_results_result_nvt_bid
+get_results_response_result_nvt_bid
  = element bid
      {
        integer
      }
 
-get_results_response_results_result_nvt_tags
+get_results_response_result_nvt_tags
  = element tags
      {
        text
      }
 
-get_results_response_results_result_nvt_cert
+get_results_response_result_nvt_cert
  = element cert
      {
-       get_results_response_results_result_nvt_cert_cert_ref*
+       get_results_response_result_nvt_cert_cert_ref*
      }
 
-get_results_response_results_result_nvt_cert_cert_ref
+get_results_response_result_nvt_cert_cert_ref
  = element cert_ref
      {
        attribute id { text }?
        &amp; attribute type { text }?
      }
 
-get_results_response_results_result_nvt_xref
+get_results_response_result_nvt_xref
  = element xref
      {
        text
      }
 
-get_results_response_results_result_scan_nvt_version
+get_results_response_result_scan_nvt_version
  = element scan_nvt_version
      {
        text
      }
 
-get_results_response_results_result_threat
+get_results_response_result_threat
  = element threat
      {
        threat
      }
 
-get_results_response_results_result_severity
+get_results_response_result_severity
  = element severity
      {
        severity
      }
 
-get_results_response_results_result_description
+get_results_response_result_description
  = element description
      {
        text
      }
 
-get_results_response_results_result_original_severity
+get_results_response_result_original_severity
  = element original_severity
      {
        severity
      }
 
-get_results_response_results_result_notes
+get_results_response_result_notes
  = element notes    # type result_notes
      {
        result_notes_note*
      }
 
-get_results_response_results_result_overrides
+get_results_response_result_overrides
  = element overrides    # type result_overrides
      {
        result_overrides_override*
+     }
+
+get_results_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_results_response_filters_term
+       &amp; get_results_response_filters_keywords
+     }
+
+get_results_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_results_response_filters_keywords
+ = element keywords
+     {
+       get_results_response_filters_keywords_keyword*
+     }
+
+get_results_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_results_response_filters_keywords_keyword_column
+       &amp; get_results_response_filters_keywords_keyword_relation
+       &amp; get_results_response_filters_keywords_keyword_value
+     }
+
+get_results_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_results_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_results_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_results_response_sort
+ = element sort
+     {
+       text
+       &amp; get_results_response_sort_field
+     }
+
+get_results_response_sort_field
+ = element field
+     {
+       get_results_response_sort_field_order
+     }
+
+get_results_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_results_response_results
+ = element results
+     {
+       attribute start { integer }
+       &amp; attribute max { integer }
+     }
+
+get_results_response_result_count
+ = element result_count
+     {
+       get_results_response_result_count_filtered
+       &amp; get_results_response_result_count_page
+     }
+
+get_results_response_result_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_results_response_result_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -22026,28 +22333,56 @@ get_results_response_results_result_overrides
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results_response status="200"
                        status_text="OK"&gt;
-   &lt;results&gt;
-     &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
-       &lt;user_tags&gt;
-         &lt;count&gt;0&lt;/count&gt;
-       &lt;/user_tags&gt;
-       &lt;host&gt;127.0.1.1&lt;/host&gt;
-       &lt;port&gt;general/tcp&lt;/port&gt;
-       &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
-         &lt;name&gt;Test NVT: fields with ISO-8859-1 chars&lt;/name&gt;
-         &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
-         &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
-         &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
-         &lt;bid&gt;36254&lt;/bid&gt;
-         &lt;tags&gt;NOTAGS&lt;/tags&gt;
-         &lt;cert/&gt;
-         &lt;xref&gt;NOXREF&lt;/xref&gt;
-       &lt;/nvt&gt;
-       &lt;threat&gt;Medium&lt;/threat&gt;
-       &lt;description&gt;Test with umlaut.&lt;/description&gt;
-     &lt;/result&gt;
-     ...
-   &lt;/results&gt;
+   &lt;result id="634f7a2e-8ca1-43b7-b6d7-0d4841449508"&gt;
+     &lt;owner&gt;
+       &lt;name&gt;admin&lt;/name&gt;
+     &lt;/owner&gt;
+     &lt;comment/&gt;
+     &lt;creation_time&gt;2014-05-23T09:22:12Z&lt;/creation_time&gt;
+     &lt;modification_time&gt;2014-05-23T09:22:12Z&lt;/modification_time&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
+     &lt;host&gt;127.0.1.1&lt;/host&gt;
+     &lt;port&gt;general/tcp&lt;/port&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.74"&gt;
+       &lt;name&gt;Test NVT: fields with ISO-8859-1 chars&lt;/name&gt;
+       &lt;cvss_base&gt;5.0&lt;/cvss_base&gt;
+       &lt;risk_factor&gt;Medium&lt;/risk_factor&gt;
+       &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
+       &lt;bid&gt;36254&lt;/bid&gt;
+       &lt;tags&gt;NOTAGS&lt;/tags&gt;
+       &lt;cert/&gt;
+       &lt;xref&gt;NOXREF&lt;/xref&gt;
+     &lt;/nvt&gt;
+     &lt;threat&gt;Medium&lt;/threat&gt;
+     &lt;description&gt;Test with umlaut.&lt;/description&gt;
+   &lt;/result&gt;
+   ...
+   &lt;filters id=""&gt;
+     &lt;term&gt;first=1 rows=-1 sort=name&lt;/term&gt;
+     &lt;keywords&gt;
+       &lt;keyword&gt;
+         &lt;column&gt;first&lt;/column&gt;
+         &lt;relation&gt;=&lt;/relation&gt;
+         &lt;value&gt;1&lt;/value&gt;
+       &lt;/keyword&gt;
+       ...
+     &lt;/keywords&gt;
+   &lt;/filters&gt;
+   &lt;sort&gt;
+     &lt;field&gt;
+       name
+       &lt;order&gt;ascending&lt;/order&gt;
+     &lt;/field&gt;
+   &lt;/sort&gt;
+   &lt;results max="-1"
+            start="1"/&gt;
+   &lt;result_count&gt;
+     124
+     &lt;filtered&gt;124&lt;/filtered&gt;
+     &lt;page&gt;124&lt;/page&gt;
+   &lt;/result_count&gt;
  &lt;/get_results_response&gt;
 </pre></div>
 </div>
@@ -22060,39 +22395,67 @@ get_results_response_results_result_overrides
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_results_response status="200"
                        status_text="OK"&gt;
-   &lt;results&gt;
-     &lt;result id="cac9e7c8-c726-49fd-a710-5f99079ab93e"&gt;
-       &lt;user_tags&gt;
-         &lt;count&gt;0&lt;/count&gt;
-       &lt;/user_tags&gt;
-       &lt;host&gt;127.0.0.1&lt;/host&gt;
-       &lt;port&gt;general/tcp&lt;/port&gt;
-       &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
-         &lt;name&gt;Test NVT: long lines&lt;/name&gt;
-         &lt;cvss_base&gt;9&lt;/cvss_base&gt;
-         &lt;risk_factor&gt;High&lt;/risk_factor&gt;
-         &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
-         &lt;bid&gt;36254&lt;/bid&gt;
-         &lt;tags&gt;NOTAGS&lt;/tags&gt;
-         &lt;cert/&gt;
-         &lt;xref&gt;NOXREF&lt;/xref&gt;
-       &lt;/nvt&gt;
-       &lt;threat&gt;High&lt;/threat&gt;
-       &lt;description&gt;Test with very long warning.&lt;/description&gt;
-       &lt;original_threat&gt;Medium&lt;/original_threat&gt;
-       &lt;notes/&gt;
-       &lt;overrides&gt;
-         &lt;override id="b0832812-75f1-45eb-b676-99c6e6bf2b24"&gt;
-           &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
-             &lt;name&gt;Test NVT: long lines&lt;/name&gt;
-           &lt;/nvt&gt;
-           &lt;text excerpt="0"&gt;Test override&lt;/text&gt;
-           &lt;new_threat&gt;High&lt;/new_threat&gt;
-           &lt;orphan&gt;0&lt;/orphan&gt;
-         &lt;/override&gt;
-       &lt;/overrides&gt;
-     &lt;/result&gt;
-   &lt;/results&gt;
+   &lt;result id="cac9e7c8-c726-49fd-a710-5f99079ab93e"&gt;
+     &lt;owner&gt;
+       &lt;name&gt;admin&lt;/name&gt;
+     &lt;/owner&gt;
+     &lt;comment/&gt;
+     &lt;creation_time&gt;2014-05-23T09:22:12Z&lt;/creation_time&gt;
+     &lt;modification_time&gt;2014-05-23T09:22:12Z&lt;/modification_time&gt;
+     &lt;user_tags&gt;
+       &lt;count&gt;0&lt;/count&gt;
+     &lt;/user_tags&gt;
+     &lt;host&gt;127.0.0.1&lt;/host&gt;
+     &lt;port&gt;general/tcp&lt;/port&gt;
+     &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+       &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+       &lt;cvss_base&gt;9&lt;/cvss_base&gt;
+       &lt;risk_factor&gt;High&lt;/risk_factor&gt;
+       &lt;cve&gt;CVE-2009-3095&lt;/cve&gt;
+       &lt;bid&gt;36254&lt;/bid&gt;
+       &lt;tags&gt;NOTAGS&lt;/tags&gt;
+       &lt;cert/&gt;
+       &lt;xref&gt;NOXREF&lt;/xref&gt;
+     &lt;/nvt&gt;
+     &lt;threat&gt;High&lt;/threat&gt;
+     &lt;description&gt;Test with very long warning.&lt;/description&gt;
+     &lt;original_threat&gt;Medium&lt;/original_threat&gt;
+     &lt;notes/&gt;
+     &lt;overrides&gt;
+       &lt;override id="b0832812-75f1-45eb-b676-99c6e6bf2b24"&gt;
+         &lt;nvt oid="1.3.6.1.4.1.25623.1.0.75"&gt;
+           &lt;name&gt;Test NVT: long lines&lt;/name&gt;
+         &lt;/nvt&gt;
+         &lt;text excerpt="0"&gt;Test override&lt;/text&gt;
+         &lt;new_threat&gt;High&lt;/new_threat&gt;
+         &lt;orphan&gt;0&lt;/orphan&gt;
+       &lt;/override&gt;
+     &lt;/overrides&gt;
+   &lt;/result&gt;
+   &lt;filters id=""&gt;
+     &lt;term&gt;first=1 rows=-1 sort=name&lt;/term&gt;
+     &lt;keywords&gt;
+       &lt;keyword&gt;
+         &lt;column&gt;first&lt;/column&gt;
+         &lt;relation&gt;=&lt;/relation&gt;
+         &lt;value&gt;1&lt;/value&gt;
+       &lt;/keyword&gt;
+       ...
+     &lt;/keywords&gt;
+   &lt;/filters&gt;
+   &lt;sort&gt;
+     &lt;field&gt;
+       name
+       &lt;order&gt;ascending&lt;/order&gt;
+     &lt;/field&gt;
+   &lt;/sort&gt;
+   &lt;results max="-1"
+            start="1"/&gt;
+   &lt;result_count&gt;
+     1
+     &lt;filtered&gt;1&lt;/filtered&gt;
+     &lt;page&gt;1&lt;/page&gt;
+   &lt;/result_count&gt;
  &lt;/get_results_response&gt;
 </pre></div>
 </div>
@@ -32809,6 +33172,18 @@ run_wizard_response_response
 </div>
 <div>
 <div><h3>8.3
+          Change in <tt>GET_RESULTS</tt>
+</h3></div>
+<p>In short: "result" elements moved to response root element.</p>
+<p>
+        The "result" elements returned by the GET_RESULTS command are no
+        longer nested inside a "results" element but directly inside the
+        "get_results_response". The "results" element is used to return the
+        "max" and "start" attributes like similar elements for other types.
+      </p>
+</div>
+<div>
+<div><h3>8.4
           Change in <tt>GET_TARGET_LOCATORS</tt>
 </h3></div>
 <p>In short: Command removed.</p>
@@ -32817,7 +33192,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.4
+<div><h3>8.5
           Change in <tt>GET_TASKS</tt>
 </h3></div>
 <p>In short: Attribute "rcfile" and associate RCFILE removed.</p>
@@ -32829,7 +33204,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.5
+<div><h3>8.6
           Change in <tt>CREATE_CONFIG, CREATE_TASK, MODIFY_TASK</tt>
 </h3></div>
 <p>In short: RCFILE removed.</p>
@@ -32841,7 +33216,7 @@ run_wizard_response_response
       </p>
 </div>
 <div>
-<div><h3>8.6
+<div><h3>8.7
           Change in <tt>CREATE_LSC_CREDENTIAL</tt>
 </h3></div>
 <p>In short: KEY/PUBLIC removed.</p>
