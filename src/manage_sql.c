@@ -28325,7 +28325,7 @@ init_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
 
-  sql = g_strdup_printf ("SELECT name, value FROM config_preferences"
+  sql = g_strdup_printf ("SELECT name, value, type FROM config_preferences"
                          " WHERE config = %llu;", config);
   init_iterator (iterator, sql);
   g_free (sql);
@@ -28350,6 +28350,16 @@ DEF_ACCESS (preference_iterator_name, 0);
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (preference_iterator_value, 1);
+
+/**
+ * @brief Get the type from a preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The value of the preference iterator, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (preference_iterator_type, 2);
 
 /**
  * @brief Initialise an "OTP" preference iterator.

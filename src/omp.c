@@ -12460,26 +12460,31 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_preference_iterator (&prefs, config);
                   while (next (&prefs))
                     {
-                      const char *name, *value, *type;
-                      char *def = NULL;
+                      const char *name, *value;
+                      char *def = NULL, *type;
 
                       name = preference_iterator_name (&prefs);
                       value = preference_iterator_value (&prefs);
-                      /* Work-around to differentiate OSP preferences types as
-                       * *normal* OpenVAS configs rely on nvt_preferences naming
-                       * scheme to differentiate NVT's and preference type.
+                      /* XXX: Work-around to differentiate OSP preferences types
+                       * as *normal* OpenVAS configs rely on nvt_preferences
+                       * naming scheme to differentiate NVT's and preference
+                       * type.
                        */
                       if (!strcmp (name, "definitions_file"))
                         {
                           def = get_ovaldi_files ();
-                          type = "ovaldi_file";
+                          type = g_strdup ("osp_ovaldi_file");
                         }
+                      else
+                        type = g_strdup_printf
+                                ("osp_%s", preference_iterator_type (&prefs));
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preference><nvt oid=\"\"><name/></nvt>"
                         "<name>%s</name><type>%s</type>"
                         "<value>%s</value><default>%s</default></preference>",
                         name, type, value, def ?: "");
                       g_free (def);
+                      g_free (type);
                     }
                   cleanup_iterator (&prefs);
 

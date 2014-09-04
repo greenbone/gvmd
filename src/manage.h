@@ -1486,6 +1486,9 @@ preference_iterator_name (iterator_t *);
 const char*
 preference_iterator_value (iterator_t *);
 
+const char*
+preference_iterator_type (iterator_t *);
+
 int
 manage_set_config_comment (config_t, const char*);
 

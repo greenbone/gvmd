@@ -1,3 +1,13 @@
+2014-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql (preference_iterator_type): New function.
+	(init_preference_iterator): Add type column.
+
+	* src/manage.h: Add new function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_CONFIGS, set the
+	type and prepend osp_ in OSP config case.
+
 2014-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/migrate-to-postgres: New file.  Functional, but needs some work.
