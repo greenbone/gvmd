@@ -1,3 +1,7 @@
+2014-09-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/migrate-to-postgres: New file.  Functional, but needs some work.
+
 2014-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Fix check for target value in

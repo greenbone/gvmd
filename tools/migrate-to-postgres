@@ -1,0 +1,1130 @@
+#!/bin/sh
+#
+# migrate-to-postgres
+# This script migrates an OpenVAS installation from SQLite to Postgres.
+#
+# Authors:
+# Timo Pollmeier <timo.pollmeier@greenbone.net>
+# Matthew Mundell <matthew.mundell@greenbone.net>
+#
+# Copyright:
+# Copyright (C) 2014 Greenbone Networks GmbH
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2,
+# or, at your option, any later version as published by the Free
+# Software Foundation
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+VERSION=20140904
+
+# SETTINGS
+# ========
+
+# Path prefix for installation location
+PREFIX=/home/mattm/
+
+# SCRIPT_NAME is the name the script will use to identify itself and to mark
+# log messages.
+SCRIPT_NAME="migrate-to-postgres"
+
+# LOG_CMD defines the command to use for logging. To have logger log to stderr
+# as well as syslog, add "-s" here.
+LOG_CMD="logger -s -t $SCRIPT_NAME"
+
+SQLITE3="sqlite3 -noheader -bail"
+
+# Maximum number of retries if database is locked
+if [ -z "$MAX_SQL_RETRIES" ]; then
+  MAX_SQL_RETRIES="1" # 0 : try only once
+fi
+
+# Delay between retries
+if [ -z "$SQL_RETRY_DELAY" ]; then
+  SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
+fi
+
+[ -r $PREFIX/etc/openvas/migrate-to-postgres.conf ] && . $PREFIX/etc/openvas/migrate-to-postgres.conf
+
+SQLITE_DB_DIR="$PREFIX/var/lib/openvas/mgr"
+SQLITE_DB="$SQLITE_DB_DIR/tasks.db"
+
+SQLITE=`command -v sqlite3`
+
+log_debug () {
+  $LOG_CMD -p daemon.debug $1
+}
+
+log_info () {
+  $LOG_CMD -p daemon.info $1
+}
+
+log_notice () {
+  $LOG_CMD -p daemon.notice $1
+}
+
+log_warning () {
+  $LOG_CMD -p daemon.warning $1
+}
+
+log_err () {
+  $LOG_CMD -p daemon.err $1
+}
+
+reset_sql_tries () {
+  try_sql=1
+  sql_retries=0
+}
+
+test_sql_exit () {
+  exit_code=$?
+  try_sql=0
+  if [ 0 -ne "$exit_code" ]
+  then
+    log_err "$1: sql command exited with code $exit_code."
+    exit 1
+  fi
+}
+
+does_pg_db_exist () {
+#FIX $PSQL
+  PG_DB_EXISTS=`psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "SELECT EXISTS (SELECT * FROM information_schema.tables
+                              WHERE table_catalog = 'tasks'
+                              AND table_schema = 'public'
+                              AND table_name = 'meta')
+                              ::integer;"`
+  return $PG_DB_EXISTS
+}
+
+is_db_broken () {
+  log_notice "Checking SQLite3 database."
+  DB_BROKEN=0
+  if [ ! -e $SQLITE_DB ]
+  then
+    return
+  fi
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    DB_INTEGRITY=`$SQLITE3 $SQLITE_DB "PRAGMA integrity_check;"`
+    test_sql_exit "Could not check CERT database integrity"
+  done
+  if [ "$DB_INTEGRITY" != "ok" ]
+  then
+    DB_BROKEN=1
+    log_warning "Database integrity check failed."
+  fi
+}
+
+do_help () {
+  echo "$0: Migrate Manager database from SQLite3 to Postgres"
+  echo " --help		display this help"
+  echo " --selftest	perform self-test"
+  echo " --version	display version"
+  echo ""
+  exit 0
+}
+
+sql () {
+#FIX $PSQL
+  log_notice "SQL: $1"
+  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "$1"
+# FIX check exit
+}
+
+create_tables_133() {
+  log_notice "Creating tables (version 133)."
+
+  sql "CREATE TABLE IF NOT EXISTS current_credentials
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL);";
+
+  sql "CREATE TABLE IF NOT EXISTS meta
+        (id SERIAL PRIMARY KEY,
+         name text UNIQUE NOT NULL,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS users
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         password text,
+         timezone text,
+         hosts text,
+         hosts_allow integer,
+         ifaces text,
+         ifaces_allow integer,
+         method text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS agents
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         installer text,
+         installer_64 text,
+         installer_filename text,
+         installer_signature_64 text,
+         installer_trust integer,
+         installer_trust_time integer,
+         howto_install text,
+         howto_use text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS agents_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         installer text,
+         installer_64 text,
+         installer_filename text,
+         installer_signature_64 text,
+         installer_trust integer,
+         installer_trust_time integer,
+         howto_install text,
+         howto_use text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS alerts
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         event integer,
+         condition integer,
+         method integer,
+         filter integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS alerts_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         event integer,
+         condition integer,
+         method integer,
+         filter integer,
+         filter_location integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_condition_data
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_condition_data_trash
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_event_data
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_event_data_trash
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_method_data
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS alert_method_data_trash
+        (id SERIAL PRIMARY KEY,
+         alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+         name text,
+         data text);";
+
+  sql "CREATE TABLE IF NOT EXISTS filters
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         type text,
+         term text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS filters_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         type text,
+         term text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS groups
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS groups_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS group_users
+        (id SERIAL PRIMARY KEY,
+         \"group\" integer REFERENCES groups (id) ON DELETE RESTRICT,
+         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+
+  sql "CREATE TABLE IF NOT EXISTS group_users_trash
+        (id SERIAL PRIMARY KEY,
+         \"group\" integer REFERENCES groups_trash (id) ON DELETE RESTRICT,
+         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+
+  sql "CREATE TABLE IF NOT EXISTS roles
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS roles_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS role_users
+        (id SERIAL PRIMARY KEY,
+         role integer REFERENCES roles (id) ON DELETE RESTRICT,
+         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+
+  sql "CREATE TABLE IF NOT EXISTS role_users_trash
+        (id SERIAL PRIMARY KEY,
+         role integer REFERENCES roles (id) ON DELETE RESTRICT,
+         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+
+  sql "CREATE TABLE IF NOT EXISTS nvt_selectors
+        (id SERIAL PRIMARY KEY,
+         name text,
+         exclude integer,
+         type integer,
+         family_or_nvt text,
+         family text);";
+
+  sql "CREATE TABLE IF NOT EXISTS port_lists
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS port_lists_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS port_ranges
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+         type integer,
+         start integer,
+         \"end\" integer,
+         comment text,
+         exclude integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS port_ranges_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         port_list integer REFERENCES port_lists_trash (id) ON DELETE RESTRICT,
+         type integer,
+         start integer,
+         \"end\" integer,
+         comment text,
+         exclude integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS port_names
+        (id SERIAL PRIMARY KEY,
+         number integer,
+         protocol text,
+         name text,
+         UNIQUE (number, protocol));";
+
+  sql "CREATE TABLE IF NOT EXISTS lsc_credentials
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         login text,
+         password text,
+         comment text,
+         private_key text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS lsc_credentials_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         login text,
+         password text,
+         comment text,
+         private_key text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS targets
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         hosts text,
+         exclude_hosts text,
+         reverse_lookup_only integer,
+         reverse_lookup_unify integer,
+         comment text,
+         lsc_credential integer,
+         ssh_port text,
+         smb_lsc_credential integer,
+         port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+         alive_test integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS targets_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         hosts text,
+         exclude_hosts text,
+         reverse_lookup_only integer,
+         reverse_lookup_unify integer,
+         comment text,
+         lsc_credential integer,
+         ssh_port text,
+         smb_lsc_credential integer,
+         port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+         ssh_location integer,
+         smb_location integer,
+         port_list_location integer,
+         alive_test integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS configs
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         nvt_selector text,
+         comment text,
+         family_count integer,
+         nvt_count integer,
+         families_growing integer,
+         nvts_growing integer,
+         type integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS configs_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         nvt_selector text,
+         comment text,
+         family_count integer,
+         nvt_count integer,
+         families_growing integer,
+         nvts_growing integer,
+         type integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS config_preferences
+        (id SERIAL PRIMARY KEY,
+         config integer REFERENCES configs (id) ON DELETE RESTRICT,
+         type text,
+         name text,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS config_preferences_trash
+        (id SERIAL PRIMARY KEY,
+         config integer REFERENCES configs_trash (id) ON DELETE RESTRICT,
+         type text,
+         name text,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS schedules
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         first_time integer,
+         period integer,
+         period_months integer,
+         duration integer,
+         timezone text,
+         initial_offset integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS schedules_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         first_time integer,
+         period integer,
+         period_months integer,
+         duration integer,
+         timezone text,
+         initial_offset integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS slaves
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         host text,
+         port text,
+         login text,
+         password text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS slaves_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         host text,
+         port text,
+         login text,
+         password text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS scanners
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text,
+         comment text,
+         host text,
+         port integer,
+         type integer,
+         ca_pub text,
+         key_pub text,
+         key_priv text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS scanners_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text,
+         comment text,
+         host text,
+         port integer,
+         type integer,
+         ca_pub text,
+         key_pub text,
+         key_priv text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS tasks
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text,
+         hidden integer,
+         comment text,
+         run_status integer,
+         start_time integer,
+         end_time integer,
+         config integer REFERENCES configs (id) ON DELETE RESTRICT,
+         target integer REFERENCES targets (id) ON DELETE RESTRICT,
+         schedule integer,
+         schedule_next_time integer,
+         slave integer,
+         scanner integer,
+         config_location integer,
+         target_location integer,
+         schedule_location integer,
+         slave_location integer,
+         upload_result_count integer,
+         hosts_ordering text,
+         alterable integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS task_files
+        (id SERIAL PRIMARY KEY,
+         task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+         name text,
+         content text);";
+
+  sql "CREATE TABLE IF NOT EXISTS task_alerts
+        (id SERIAL PRIMARY KEY,
+         task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+         alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+         alert_location integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS task_preferences
+        (id SERIAL PRIMARY KEY,
+         task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+         name text,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS reports
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         hidden integer,
+         task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+         date integer,
+         start_time integer,
+         end_time integer,
+         nbefile text,
+         comment text,
+         scan_run_status integer,
+         slave_progress integer,
+         slave_task_uuid text,
+         slave_uuid text,
+         slave_name text,
+         slave_host text,
+         slave_port integer,
+         source_iface text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_counts
+        (id SERIAL PRIMARY KEY,
+         report integer REFERENCES reports (id) ON DELETE RESTRICT,
+         \"user\" integer REFERENCES users (id) ON DELETE RESTRICT,
+         severity decimal,
+         count integer,
+         override integer,
+         end_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS results
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+         host text,
+         port text,
+         nvt text,
+         type text,
+         description text,
+         report integer REFERENCES reports (id) ON DELETE RESTRICT,
+         nvt_version text,
+         severity real,
+         qod integer,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         date integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_formats
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         extension text,
+         content_type text,
+         summary text,
+         description text,
+         signature text,
+         trust integer,
+         trust_time integer,
+         flags integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_formats_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         extension text,
+         content_type text,
+         summary text,
+         description text,
+         signature text,
+         trust integer,
+         trust_time integer,
+         flags integer,
+         original_uuid text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_format_params
+        (id SERIAL PRIMARY KEY,
+         report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
+         name text,
+         type integer,
+         value text,
+         type_min bigint,
+         type_max bigint,
+         type_regex text,
+         fallback text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_format_params_trash
+        (id SERIAL PRIMARY KEY,
+         report_format integer REFERENCES report_formats_trash (id) ON DELETE RESTRICT,
+         name text,
+         type integer,
+         value text,
+         type_min bigint,
+         type_max bigint,
+         type_regex text,
+         fallback text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_format_param_options
+        (id SERIAL PRIMARY KEY,
+         report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_format_param_options_trash
+        (id SERIAL PRIMARY KEY,
+         report_format_param integer REFERENCES report_format_params_trash (id) ON DELETE RESTRICT,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_hosts
+        (id SERIAL PRIMARY KEY,
+         report integer REFERENCES reports (id) ON DELETE RESTRICT,
+         host text,
+         start_time integer,
+         end_time integer,
+         attack_state text,
+         current_port integer,
+         max_port integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_host_details
+        (id SERIAL PRIMARY KEY,
+         report_host integer REFERENCES report_hosts (id) ON DELETE RESTRICT,
+         source_type text,
+         source_name text,
+         source_description text,
+         name text,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS report_results
+        (id SERIAL PRIMARY KEY,
+         report integer REFERENCES reports (id) ON DELETE RESTRICT,
+         result integer REFERENCES results (id) ON DELETE RESTRICT);";
+
+  sql "CREATE TABLE IF NOT EXISTS nvt_preferences
+        (id SERIAL PRIMARY KEY,
+         name text UNIQUE NOT NULL,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS nvts
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         oid text UNIQUE NOT NULL,
+         version text,
+         name text,
+         comment text,
+         summary text,
+         copyright text,
+         cve text,
+         bid text,
+         xref text,
+         tag text,
+         category text,
+         family text,
+         cvss_base text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS nvt_cves
+        (id SERIAL PRIMARY KEY,
+         nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
+         oid text,
+         cve_name text);";
+
+  sql "CREATE TABLE IF NOT EXISTS notes
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         nvt text NOT NULL,
+         creation_time integer,
+         modification_time integer,
+         text text,
+         hosts text,
+         port text,
+         severity double precision,
+         task integer,
+         result integer,
+         end_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS notes_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         nvt text NOT NULL,
+         creation_time integer,
+         modification_time integer,
+         text text,
+         hosts text,
+         port text,
+         severity double precision,
+         task integer,
+         result integer,
+         end_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS overrides
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         nvt text NOT NULL,
+         creation_time integer,
+         modification_time integer,
+         text text,
+         hosts text,
+         new_severity double precision,
+         port text,
+         severity double precision,
+         task integer,
+         result integer,
+         end_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS overrides_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         nvt text NOT NULL,
+         creation_time integer,
+         modification_time integer,
+         text text,
+         hosts text,
+         new_severity double precision,
+         port text,
+         severity double precision,
+         task integer,
+         result integer,
+         end_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS permissions
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         resource_type text,
+         resource integer,
+         resource_uuid text,
+         resource_location integer,
+         subject_type text,
+         subject integer,
+         subject_location integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS permissions_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         resource_type text,
+         resource integer,
+         resource_uuid text,
+         resource_location integer,
+         subject_type text,
+         subject integer,
+         subject_location integer,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS settings
+        (id SERIAL PRIMARY KEY,
+         uuid text NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         value text);";
+
+  sql "CREATE TABLE IF NOT EXISTS tags
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         resource_type text,
+         resource integer,
+         resource_uuid text,
+         resource_location integer,
+         active integer,
+         value text,
+         creation_time integer,
+         modification_time integer);";
+
+  sql "CREATE TABLE IF NOT EXISTS tags_trash
+        (id SERIAL PRIMARY KEY,
+         uuid text UNIQUE NOT NULL,
+         owner integer REFERENCES users (id) ON DELETE RESTRICT,
+         name text NOT NULL,
+         comment text,
+         resource_type text,
+         resource integer,
+         resource_uuid text,
+         resource_location integer,
+         active integer,
+         value text,
+         creation_time integer,
+         modification_time integer);";
+}
+
+migrate_133 () {
+  log_notice "Migrating database (version 133)."
+
+  create_tables_133;
+
+  ## NB NB FIX remove fk references when there is a _location  eg task_alerts alert could be in trash
+
+  # Remove stray task_alerts.
+  $SQLITE3 $SQLITE_DB "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
+  test_sql_exit "Failed to clean up task_alerts"
+  $SQLITE3 $SQLITE_DB "DELETE FROM task_alerts WHERE alert_location = 1 AND alert NOT IN (SELECT id FROM alerts_trash);"
+  test_sql_exit "Failed to clean up task_alerts (trash alerts)"
+
+  # Remove stray report_format_params_trash.
+  $SQLITE3 $SQLITE_DB "DELETE FROM report_format_params_trash WHERE report_format NOT IN (SELECT id FROM report_formats_trash);"
+  test_sql_exit "Failed to clean up report_format_params_trash"
+
+  # Remove stray report_format_param_options_trash.
+  $SQLITE3 $SQLITE_DB "DELETE FROM report_format_param_options_trash WHERE report_format_param NOT IN (SELECT id FROM report_format_params_trash);"
+  test_sql_exit "Failed to clean up report_format_param_options_trash"
+
+  # Remove stray report_hosts.  Not sure where these came from.
+  $SQLITE3 $SQLITE_DB "DELETE FROM report_hosts WHERE report NOT IN (SELECT id FROM reports);"
+  test_sql_exit "Failed to clean up report_hosts"
+
+  # Make end_time in tasks consistent.
+  $SQLITE3 $SQLITE_DB "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT * FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
+  test_sql_exit "Failed to make end_time in tasks consistent"
+
+  # Make end_time in report_hosts consistent.
+
+  # 2011-11-03T12:41:34+02:00, 2011-11-08T19:57:06Z
+  $SQLITE3 $SQLITE_DB "UPDATE report_hosts SET end_time = strftime ('%s', end_time) WHERE end_time GLOB '*-*-*T*:*:*[+-]*:*' OR end_time GLOB '*-*-*T*:*:*Z';"
+  test_sql_exit "Failed to make end_time in tasks consistent"
+
+  # Fri Sep  3 05:12:34 2010
+  #
+  # Assume that this time matches the current timezone, may change the
+  # time, but it seems these are only from very old reports anyway.
+  # FIX drop after
+  $SQLITE3 $SQLITE_DB "CREATE TABLE IF NOT EXISTS months (number, name);"
+  test_sql_exit "Failed to make end_time in tasks consistent"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('01', 'Jan');"
+  # FIX test exits
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('02', 'Feb');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('03', 'Mar');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('04', 'Apr');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('05', 'May');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('06', 'Jun');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('07', 'Jul');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('08', 'Aug');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('09', 'Sep');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('10', 'Oct');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('11', 'Nov');"
+  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('12', 'Dec');"
+  $SQLITE3 $SQLITE_DB "UPDATE report_hosts SET end_time = strftime ('%s', substr (end_time, 21) || '-' || (select number from months where name = substr (end_time, 5, 3)) || '-' || replace (substr (end_time, 9, 2), ' ', '0') || 'T' || substr (end_time, 12, 9)) WHERE end_time GLOB '??? ??? ?? ??:??:?? ????';"
+  test_sql_exit "Failed to make end_time in report_hosts consistent"
+
+  log_notice "Dumping SQLite3 data:"
+  TEMP_DIR=`mktemp -d`
+  # FIX
+  log_notice "TEMP_DIR: $TEMP_DIR"
+
+  # These must be ordered to respect foreign keys.
+  #
+  # To get all tables use ".tables" or
+  #     SELECT tbl_name FROM sqlite_master WHERE type='table' and tbl_name not like 'sqlite_%'
+  #
+  # These table are left out: report_counts nvts nvt_cves
+  #
+  TABLES="users agents agents_trash configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
+
+  # FIX add binary special cases: agents installer (use installer_64?), config_preferences value
+
+  log_notice "TABLES: $TABLES"
+  for TABLE in $TABLES; do
+    # Get the Postgres columns because the import CSV must be in that order.
+	#
+	# This also works around extra columns that were hanging around in old
+    # database.
+	#
+    COLS=`sql "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
+	log_notice "COLS: $COLS"
+#FIX	test_sql_exit "Could not get columns for table $TABLE"
+    # FIX for debugging
+    $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" > /tmp/$TABLE.csv
+    # Pipe SQLite CSV output into Postgres COPY FROM.
+	# FIX specify columns in copy?
+    $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | sql "COPY $TABLE FROM STDIN DELIMITER ',' CSV";
+    test_sql_exit "Could not import $TABLE"
+  done
+
+  log_notice "Resetting Postgres sequences"
+  # Reset ID sequences, because the COPY specified the ID values explicitly.
+  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "SELECT 'SELECT SETVAL(' ||
+       quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
+       ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
+       quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
+FROM pg_class AS S,
+     pg_depend AS D,
+     pg_class AS T,
+     pg_attribute AS C,
+     pg_tables AS PGT
+WHERE S.relkind = 'S'
+    AND S.oid = D.objid
+    AND D.refobjid = T.oid
+    AND D.refobjid = C.attrelid
+    AND D.refobjsubid = C.attnum
+    AND T.relname = PGT.tablename
+ORDER BY S.relname;" > $TEMP_DIR/reset.sql;
+  test_sql_exit "Could not generate reset SQL"
+  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -f $TEMP_DIR/reset.sql;
+  test_sql_exit "Could not run reset SQL"
+
+  # FIX
+  #rm -rf $TEMP_DIR
+}
+
+migrate () {
+  DB_VERSION=`$SQLITE3 $SQLITE_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
+  case "$DB_VERSION" in
+    133) migrate_133;;
+    *)
+	     log_notice "Database version not supported."
+		 exit 1
+  esac
+}
+
+do_self_test () {
+  if [ -z "$SELFTEST_STDERR" ]
+  then
+    SELFTEST_STDERR=0
+  fi
+
+  if [ -z "$SQLITE" ]; then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "sqlite3 not found (required)." 1>&2
+    fi
+    log_err "sqlite3 not found (required)."
+    SELFTEST_FAIL=1
+  fi
+
+  if [ ! -f $SQLITE_DB ]
+  then
+    if [ 0 -ne $SELFTEST_STDERR ]
+    then
+      echo "SQLITE_DB ($SQLITE_DB) not found." 1>&2
+    fi
+    log_err "SQLITE_DB ($SQLITE_DB) not found."
+    SELFTEST_FAIL=1
+  fi
+}
+
+while test $# -gt 0; do
+ case "$1" in
+        --version)
+          echo $VERSION
+          exit 0
+           ;;
+        --help)
+          do_help
+          exit 0
+          ;;
+        --selftest)
+          SELFTEST_FAIL=0
+          SELFTEST_STDERR=1
+          do_self_test
+          exit $SELFTEST_FAIL
+          ;;
+      esac
+      shift
+done
+
+SELFTEST_FAIL=0
+do_self_test
+if [ $SELFTEST_FAIL -ne 0 ]
+then
+  exit 1
+fi
+
+is_db_broken
+if [ $DB_BROKEN -eq 1 ]
+then
+  log_notice "Corrupt database, skipping migration."
+  exit 1
+else
+  does_pg_db_exist
+  if [ $PG_DB_EXISTS -eq 1 ]
+  then
+    log_notice "Postgres database exists already, skipping migration."
+    exit 0
+  fi
+fi
+migrate
+log_notice "Done."
+
+exit 0
