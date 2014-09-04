@@ -1,3 +1,11 @@
+2014-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Fix check for target value in
+	OSP scan case. Remove useless else statements.
+
+	* src/manage_sql.c (create_config_from_scanner): Fix config owner value
+	inserted in DB.
+
 2014-09-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (xml_handle_end_element): In GET_RESULTS case use

@@ -27538,7 +27538,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
        " '', '%s', 1, m_now (), m_now ());",
-       quoted_name, quoted_comment, current_credentials.uuid);
+       quoted_name, current_credentials.uuid, quoted_comment);
   g_free (quoted_name);
   g_free (quoted_comment);
   config = sql_last_insert_rowid ();

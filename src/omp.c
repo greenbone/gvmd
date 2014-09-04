@@ -21188,7 +21188,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;
             }
-          else if (config == 0)
+          if (config == 0)
             {
               if (send_find_error_to_client ("create_task",
                                              "config",
@@ -21198,12 +21198,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          else if (find_target (create_task_data->target_id, &target))
+          if (find_target (create_task_data->target_id, &target))
             {
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;
             }
-          else if (target == 0)
+          if (target == 0)
             {
               if (send_find_error_to_client ("create_task",
                                              "target",
@@ -21213,7 +21213,45 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          else if (config_type (config) >= 1)
+          if (find_scanner (create_task_data->scanner_id, &scanner))
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
+            }
+          if (create_task_data->scanner_id && scanner == 0)
+            {
+              if (send_find_error_to_client ("create_task", "scanner",
+                                             create_task_data->scanner_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                error_send_to_client (error);
+              goto create_task_fail;
+            }
+          if (!create_task_check_config_scanner (config, scanner))
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Scanner and config mismatched types."));
+              goto create_task_fail;
+            }
+          if (create_task_data->slave_id
+              && find_slave (create_task_data->slave_id, &slave))
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
+            }
+          if (create_task_data->slave_id && slave == 0)
+            {
+              if (send_find_error_to_client ("create_task", "slave",
+                                             create_task_data->slave_id,
+                                             write_to_client,
+                                             write_to_client_data))
+                error_send_to_client (error);
+              goto create_task_fail;
+            }
+
+          /* Check target in OSP case. */
+          if (config_type (config) >= 1)
             {
               int count;
               char *hosts = target_hosts (target);
@@ -21228,54 +21266,15 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
             }
-          else if (find_scanner (create_task_data->scanner_id, &scanner))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          else if (create_task_data->scanner_id && scanner == 0)
-            {
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          else if (!create_task_check_config_scanner (config, scanner))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "Scanner and config mismatched types."));
-              goto create_task_fail;
-            }
-          else if (create_task_data->slave_id
-                   && find_slave (create_task_data->slave_id, &slave))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          else if (create_task_data->slave_id && slave == 0)
-            {
-              if (send_find_error_to_client ("create_task", "slave",
-                                             create_task_data->slave_id,
-                                             write_to_client,
-                                             write_to_client_data))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          else
-            {
-              set_task_config (create_task_data->task, config);
-              set_task_slave (create_task_data->task, slave);
-              set_task_target (create_task_data->task, target);
-              set_task_scanner (create_task_data->task, scanner);
-              set_task_hosts_ordering (create_task_data->task,
-                                       create_task_data->hosts_ordering);
-              if (create_task_data->preferences)
-                set_task_preferences (create_task_data->task,
-                                      create_task_data->preferences);
-            }
+          set_task_config (create_task_data->task, config);
+          set_task_slave (create_task_data->task, slave);
+          set_task_target (create_task_data->task, target);
+          set_task_scanner (create_task_data->task, scanner);
+          set_task_hosts_ordering (create_task_data->task,
+                                   create_task_data->hosts_ordering);
+          if (create_task_data->preferences)
+            set_task_preferences (create_task_data->task,
+                                  create_task_data->preferences);
 
           /* Send success response. */
 
