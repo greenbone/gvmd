@@ -1,3 +1,8 @@
+2014-09-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/migrate-to-postgres: Ensure the GPLv2+ license notice uses the
+	paragraph suggested by the Free Software Foundation.
+
 2014-09-04  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql (preference_iterator_type): New function.
