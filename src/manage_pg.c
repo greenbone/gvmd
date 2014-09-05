@@ -1465,7 +1465,7 @@ create_tables ()
        "  lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
        "  ssh_port text,"
        "  smb_lsc_credential integer," // REFERENCES lsc_credentials (id) ON DELETE RESTRICT,"
-       "  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
+       "  port_range integer," // REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  ssh_location integer,"
        "  smb_location integer,"
        "  port_list_location integer,"
@@ -1613,8 +1613,8 @@ create_tables ()
        "  run_status integer,"
        "  start_time integer,"
        "  end_time integer,"
-       "  config integer REFERENCES configs (id) ON DELETE RESTRICT,"
-       "  target integer REFERENCES targets (id) ON DELETE RESTRICT,"
+       "  config integer," // REFERENCES configs (id) ON DELETE RESTRICT,"
+       "  target integer," // REFERENCES targets (id) ON DELETE RESTRICT,"
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
        "  slave integer," // REFERENCES slaves (id) ON DELETE RESTRICT,"
@@ -1638,7 +1638,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS task_alerts"
        " (id SERIAL PRIMARY KEY,"
        "  task integer REFERENCES tasks (id) ON DELETE RESTRICT,"
-       "  alert integer REFERENCES alerts (id) ON DELETE RESTRICT,"
+       "  alert integer," // REFERENCES alerts (id) ON DELETE RESTRICT,"
        "  alert_location integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS task_preferences"

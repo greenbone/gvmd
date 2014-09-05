@@ -1,6 +1,15 @@
 2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_pg.c (manage_create_sql_functions): Move pl/pgsql function
+	* src/manage_pg.c (create_tables): Remove reference constraints where
+	the column could refer to the trashcan.
+
+	* tools/migrate-to-postgres (create_tables_133): Remove reference
+	constraints where the column could refer to the trashcan.
+	(migrate_133): Remove associated comment.
+
+2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Move pl/pgsql functions
 	up, because they are used by some of the SQL functions.
 	(create_tables): Remove description from tasks, to match SQLite.
 	Correct references in report_format_params_trash and
