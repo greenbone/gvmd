@@ -8721,7 +8721,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                      \
    { "task_threat_level (id, " overrides ")", "threat" },  \
    { "task_trend (id, " overrides ")", "trend" },          \
-   { "run_status_name (run_status)", "status" },           \
+   { "run_status_name (run_status)", "status_text" },      \
    {                                                       \
      "(SELECT uuid FROM reports WHERE task = tasks.id"     \
      /* TODO 1 == TASK_STATUS_DONE */                      \

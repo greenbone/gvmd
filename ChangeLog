@@ -1,3 +1,8 @@
+2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Fix run_status_name alias to
+	status_text.
+
 2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_migrators.c (migrate_80_to_81): Add note about leaving
