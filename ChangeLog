@@ -1,5 +1,14 @@
 2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (check_db_configs): Don't insert "OSP Ovaldi" default
+	config.
+	(config_in_use): Remove check for default osp ovaldi config.
+	(make_config_osp_ovaldi): Remove function.
+
+	* src/manage_sql.h (CONFIG_UUID_OSP_OVALDI): Remove definition.
+
+2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): Fix run_status_name alias to
 	status_text.
 

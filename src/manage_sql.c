@@ -10712,23 +10712,6 @@ check_db_nvts ()
     }
 }
 
-void
-make_config_osp_ovaldi ()
-{
-  config_t config;
-
-  sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
-       " family_count, nvt_count, nvts_growing, families_growing,"
-       " type, creation_time, modification_time)"
-       " VALUES ('%s', 'OSP Ovaldi', NULL, NULL, 'OSP Ovaldi specific config.',"
-       "         0, 0, 0, 0, 1, m_now (), m_now ());", CONFIG_UUID_OSP_OVALDI);
-
-  /* Setup preferences for the config. */
-  config = sql_last_insert_rowid ();
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " VALUES (%i, 'SERVER_PREFS', 'definitions_file', '');", config);
-}
-
 /**
  * @brief Ensure the predefined configs exist.
  */
@@ -10862,12 +10845,6 @@ check_db_configs ()
       == 0)
     make_config_system_discovery (CONFIG_UUID_SYSTEM_DISCOVERY,
                                   MANAGE_NVT_SELECTOR_UUID_SYSTEM_DISCOVERY);
-
-  if (sql_int ("SELECT count(*) FROM configs WHERE uuid = '%s';",
-               CONFIG_UUID_OSP_OVALDI) == 0)
-    make_config_osp_ovaldi ();
-  sql ("DELETE FROM config_preferences"
-       " WHERE name = 'username' OR name = 'password' OR name = 'port';");
 }
 
 /**
@@ -28257,7 +28234,6 @@ config_in_use (config_t config)
                "      OR uuid = '" CONFIG_UUID_EMPTY "'"
                "      OR uuid = '" CONFIG_UUID_DISCOVERY "'"
                "      OR uuid = '" CONFIG_UUID_HOST_DISCOVERY "'"
-               "      OR uuid = '" CONFIG_UUID_OSP_OVALDI "'"
                "      OR uuid = '" CONFIG_UUID_SYSTEM_DISCOVERY "');",
                config))
     return 1;
