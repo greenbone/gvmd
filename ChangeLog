@@ -1,3 +1,11 @@
+2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Move pl/pgsql function
+	up, because they are used by some of the SQL functions.
+	(create_tables): Remove description from tasks, to match SQLite.
+	Correct references in report_format_params_trash and
+	report_format_param_options_trash.
+
 2014-09-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/migrate-to-postgres: Ensure the GPLv2+ license notice uses the
