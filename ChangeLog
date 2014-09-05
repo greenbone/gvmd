@@ -1,5 +1,10 @@
 2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_migrators.c (migrate_80_to_81): Add note about leaving
+	column lying around.
+
+2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Remove reference constraints where
 	the column could refer to the trashcan.
 

@@ -6832,6 +6832,9 @@ migrate_80_to_81 ()
        "        users.id"
        " FROM users;");
 
+  /* This leaves an extra column in older databases, which is not ideal, for
+   * example when iterating over all columns.  Migrating to Postgres, however,
+   * removes the column. */
   sql ("UPDATE users SET role = NULL;");
 
   /* Set the database version to 81. */
