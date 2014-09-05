@@ -1,3 +1,13 @@
+2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/migrate-to-postgres (PSQL): New variable.
+	(sql): Move above does_pg_db_exist.
+	(does_pg_db_exist): Use PSQL.  Check exit.
+	(is_db_broken, create_tables_133, migrate): Use better log levels.
+	(migrate_133): Use better log levels.  Do months update business in one
+	go, so the months table is removed.  Remove debug output.  Use sql and
+	PSQL instead of using psql directly.  Enable directory removal.
+
 2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (check_db_configs): Don't insert "OSP Ovaldi" default

@@ -41,6 +41,7 @@ SCRIPT_NAME="migrate-to-postgres"
 LOG_CMD="logger -s -t $SCRIPT_NAME"
 
 SQLITE3="sqlite3 -noheader -bail"
+PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t"
 
 # Maximum number of retries if database is locked
 if [ -z "$MAX_SQL_RETRIES" ]; then
@@ -94,18 +95,28 @@ test_sql_exit () {
   fi
 }
 
+sql () {
+  log_debug "SQL: $1"
+  $PSQL -c "$1"
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    log_err "$1: psql exited with code $exit_code for sql: $1."
+    exit 1
+  fi
+}
+
 does_pg_db_exist () {
-#FIX $PSQL
-  PG_DB_EXISTS=`psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "SELECT EXISTS (SELECT * FROM information_schema.tables
-                              WHERE table_catalog = 'tasks'
-                              AND table_schema = 'public'
-                              AND table_name = 'meta')
-                              ::integer;"`
+  PG_DB_EXISTS=`sql "SELECT EXISTS (SELECT * FROM information_schema.tables
+                     WHERE table_catalog = 'tasks'
+                     AND table_schema = 'public'
+                     AND table_name = 'meta')
+                     ::integer;"`
   return $PG_DB_EXISTS
 }
 
 is_db_broken () {
-  log_notice "Checking SQLite3 database."
+  log_info "Checking SQLite3 database."
   DB_BROKEN=0
   if [ ! -e $SQLITE_DB ]
   then
@@ -133,15 +144,8 @@ do_help () {
   exit 0
 }
 
-sql () {
-#FIX $PSQL
-  log_notice "SQL: $1"
-  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "$1"
-# FIX check exit
-}
-
 create_tables_133() {
-  log_notice "Creating tables (version 133)."
+  log_info "Creating tables (version 133)."
 
   sql "CREATE TABLE IF NOT EXISTS current_credentials
         (id SERIAL PRIMARY KEY,
@@ -931,7 +935,7 @@ create_tables_133() {
 }
 
 migrate_133 () {
-  log_notice "Migrating database (version 133)."
+  log_info "Migrating database (version 133)."
 
   create_tables_133;
 
@@ -967,29 +971,27 @@ migrate_133 () {
   #
   # Assume that this time matches the current timezone, may change the
   # time, but it seems these are only from very old reports anyway.
-  # FIX drop after
-  $SQLITE3 $SQLITE_DB "CREATE TABLE IF NOT EXISTS months (number, name);"
-  test_sql_exit "Failed to make end_time in tasks consistent"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('01', 'Jan');"
-  # FIX test exits
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('02', 'Feb');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('03', 'Mar');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('04', 'Apr');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('05', 'May');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('06', 'Jun');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('07', 'Jul');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('08', 'Aug');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('09', 'Sep');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('10', 'Oct');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('11', 'Nov');"
-  $SQLITE3 $SQLITE_DB "INSERT INTO months (number, name) VALUES ('12', 'Dec');"
-  $SQLITE3 $SQLITE_DB "UPDATE report_hosts SET end_time = strftime ('%s', substr (end_time, 21) || '-' || (select number from months where name = substr (end_time, 5, 3)) || '-' || replace (substr (end_time, 9, 2), ' ', '0') || 'T' || substr (end_time, 12, 9)) WHERE end_time GLOB '??? ??? ?? ??:??:?? ????';"
+  echo "BEGIN EXCLUSIVE;
+        CREATE TEMPORARY TABLE months (number, name);
+        INSERT INTO months (number, name) VALUES ('01', 'Jan');
+        INSERT INTO months (number, name) VALUES ('02', 'Feb');
+        INSERT INTO months (number, name) VALUES ('03', 'Mar');
+        INSERT INTO months (number, name) VALUES ('04', 'Apr');
+        INSERT INTO months (number, name) VALUES ('05', 'May');
+        INSERT INTO months (number, name) VALUES ('06', 'Jun');
+        INSERT INTO months (number, name) VALUES ('07', 'Jul');
+        INSERT INTO months (number, name) VALUES ('08', 'Aug');
+        INSERT INTO months (number, name) VALUES ('09', 'Sep');
+        INSERT INTO months (number, name) VALUES ('10', 'Oct');
+        INSERT INTO months (number, name) VALUES ('11', 'Nov');
+        INSERT INTO months (number, name) VALUES ('12', 'Dec');
+        UPDATE report_hosts SET end_time = strftime ('%s', substr (end_time, 21) || '-' || (select number from months where name = substr (end_time, 5, 3)) || '-' || replace (substr (end_time, 9, 2), ' ', '0') || 'T' || substr (end_time, 12, 9)) WHERE end_time GLOB '??? ??? ?? ??:??:?? ????';
+        COMMIT;" | $SQLITE3 -batch $SQLITE_DB
   test_sql_exit "Failed to make end_time in report_hosts consistent"
 
-  log_notice "Dumping SQLite3 data:"
+  log_info "Dumping SQLite3 data:"
   TEMP_DIR=`mktemp -d`
-  # FIX
-  log_notice "TEMP_DIR: $TEMP_DIR"
+  log_debug "TEMP_DIR: $TEMP_DIR"
 
   # These must be ordered to respect foreign keys.
   #
@@ -1002,7 +1004,7 @@ migrate_133 () {
 
   # FIX add binary special cases: agents installer (use installer_64?), config_preferences value
 
-  log_notice "TABLES: $TABLES"
+  log_debug "TABLES: $TABLES"
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
 	#
@@ -1010,19 +1012,16 @@ migrate_133 () {
     # database.
 	#
     COLS=`sql "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
-	log_notice "COLS: $COLS"
-#FIX	test_sql_exit "Could not get columns for table $TABLE"
-    # FIX for debugging
-    $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" > /tmp/$TABLE.csv
+	log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
 	# FIX specify columns in copy?
     $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | sql "COPY $TABLE FROM STDIN DELIMITER ',' CSV";
-    test_sql_exit "Could not import $TABLE"
+    test_sql_exit "Could not generate CSV for $TABLE"
   done
 
-  log_notice "Resetting Postgres sequences"
+  log_info "Resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
-  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -c "SELECT 'SELECT SETVAL(' ||
+  sql "SELECT 'SELECT SETVAL(' ||
        quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
        ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
        quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
@@ -1031,7 +1030,7 @@ FROM pg_class AS S,
      pg_class AS T,
      pg_attribute AS C,
      pg_tables AS PGT
-WHERE S.relkind = 'S'
+    WHERE S.relkind = 'S'
     AND S.oid = D.objid
     AND D.refobjid = T.oid
     AND D.refobjid = C.attrelid
@@ -1039,11 +1038,10 @@ WHERE S.relkind = 'S'
     AND T.relname = PGT.tablename
 ORDER BY S.relname;" > $TEMP_DIR/reset.sql;
   test_sql_exit "Could not generate reset SQL"
-  psql -v ON_ERROR_STOP=1 -q --pset pager=off -d tasks -t -f $TEMP_DIR/reset.sql;
+  $PSQL -f $TEMP_DIR/reset.sql;
   test_sql_exit "Could not run reset SQL"
 
-  # FIX
-  #rm -rf $TEMP_DIR
+  rm -rf $TEMP_DIR
 }
 
 migrate () {
@@ -1123,6 +1121,6 @@ else
   fi
 fi
 migrate
-log_notice "Done."
+log_info "Done."
 
 exit 0
