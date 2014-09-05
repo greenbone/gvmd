@@ -9209,10 +9209,14 @@ migrate_128_to_129 ()
 
   /* Update the database. */
 
-  /* Ensure new table exists. */
+  /* Ensure new tables exists. */
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
        "  host, port, type, creation_time, modification_time);");
+  sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
+       " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, name, comment,"
+       "  host, port, type, creation_time, modification_time);");
+
 
   /* Insert the default OpenVAS Scanner, if not present. */
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",

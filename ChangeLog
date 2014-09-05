@@ -1,3 +1,8 @@
+2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_migrators.c (migrate_128_to_129): Create scanners_trash
+	table if it doesn't exist too.
+
 2014-09-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/migrate-to-postgres (PSQL): New variable.
