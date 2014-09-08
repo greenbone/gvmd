@@ -1,3 +1,14 @@
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Use bytea for agent installer, which
+	is binary.
+
+	* src/sql_pg.c (bind_param): Format return like rest.
+
+	* tools/migrate-to-postgres (create_tables_133): Use bytea for agent
+	installer.
+	(migrate_133): Remove agents from migration, for simplicity.
+
 2014-09-08  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (create_config_from_scanner): Insert the parameter's

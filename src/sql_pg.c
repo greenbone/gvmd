@@ -489,8 +489,7 @@ iterator_column_count (iterator_t* iterator)
  * @param[in]  param_size    Param size.
  * @param[in]  param_format  0 text, 1 binary.
  */
-static
-void
+static void
 bind_param (sql_stmt_t *stmt, int position, const void *param_value,
             int param_size, int param_format)
 {
