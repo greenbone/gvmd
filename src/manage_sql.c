@@ -27535,11 +27535,15 @@ create_config_from_scanner (const char *scanner_id, const char *name,
       if (strcmp (param_id, "username") && strcmp (param_id, "password")
           && strcmp (param_id, "port"))
         {
-          char *param_type = sql_quote (osp_param_type_str (param));
+          char *param_type, *param_def;
+
+          param_type = sql_quote (osp_param_type_str (param));
+          param_def = sql_quote (osp_param_default (param));
           sql ("INSERT INTO config_preferences (config, name, type, value)"
-               " VALUES (%llu, '%s', '%s', '')",
-               config , param_id, param_type);
+               " VALUES (%llu, '%s', '%s', '%s')",
+               config , param_id, param_type, param_def);
           g_free (param_type);
+          g_free (param_def);
         }
       g_free (param_id);
       osp_param_free (element->data);
