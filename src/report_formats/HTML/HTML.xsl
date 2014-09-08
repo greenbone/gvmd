@@ -966,6 +966,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <td>Scan 2 ended:</td>
             <td><xsl:value-of select="delta/report/scan_end"/></td>
           </tr>
+          <tr>
+            <td>Task:</td>
+            <td><xsl:value-of select="task/name"/></td>
+          </tr>
         </table>
       </xsl:when>
       <xsl:otherwise>
