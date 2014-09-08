@@ -1014,8 +1014,7 @@ migrate_133 () {
     COLS=`sql "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
 	log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
-	# FIX specify columns in copy?
-    $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | sql "COPY $TABLE FROM STDIN DELIMITER ',' CSV";
+    $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | sql "COPY $TABLE ($COLS) FROM STDIN DELIMITER ',' CSV";
     test_sql_exit "Could not generate CSV for $TABLE"
   done
 

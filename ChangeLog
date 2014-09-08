@@ -1,5 +1,9 @@
 2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/migrate-to-postgres (migrate_133): Specify columns in COPY.
+
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (real-report): Add task to delta
 	case.
 
