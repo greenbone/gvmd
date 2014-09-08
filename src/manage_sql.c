@@ -15684,7 +15684,8 @@ where_search_phrase (const char* search_phrase, int exact)
   { GET_ITERATOR_FILTER_COLUMNS, "host", "location", "nvt",                   \
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
-    "severity", "original_severity", "vulnerability", "date", NULL }
+    "severity", "original_severity", "vulnerability", "date", "report_id",    \
+    NULL }
 
 /**
  * @brief Result iterator columns.
@@ -15719,7 +15720,7 @@ where_search_phrase (const char* search_phrase, int exact)
       "auto_type" },                                                          \
     { "description", NULL },                                                  \
     { "task", NULL },                                                         \
-    { "report", NULL },                                                       \
+    { "report", "report_rowid" },                                             \
     { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)", "cvss_base" },    \
     { "nvt_version", NULL },                                                  \
     { "severity", "original_severity" },                                      \
@@ -15735,10 +15736,11 @@ where_search_phrase (const char* search_phrase, int exact)
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "vulnerability" },                                                      \
     { "date" , NULL },                                                        \
+    { "(SELECT uuid FROM reports WHERE id = report)", "report" },             \
     { NULL, NULL }                                                            \
   }
 
-#define RESULT_ITERATOR_COLUMN_COUNT 25
+#define RESULT_ITERATOR_COLUMN_COUNT 26
 
 #define RESULT_ITERATOR_COLUMNS_ARRAY                 \
       {                                               \

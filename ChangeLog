@@ -1,3 +1,10 @@
+2014-09-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_FILTER_COLUMNS)
+	(RESULT_ITERATOR_COLUMNS): Rename column "report" to "report_rowid".
+	Add column "report" / "report_id" with uuid of report.
+	(RESULT_ITERATOR_COLUMN_COUNT): Increase to 26.
+
 2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* doc/db.png: Set svn:mime-type property to application/octet-stream.
