@@ -591,7 +591,9 @@ the report describes the changes that occurred between the two scans.
 \renewcommand{\abstractname}{Summary}
 \begin{abstract}
 This document reports on the results of an automatic security scan.
-The scan started at </xsl:text>
+The task was ``</xsl:text>
+        <xsl:value-of select="/report/task/name"/>
+        <xsl:text>''.  The scan started at </xsl:text>
         <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
         <xsl:apply-templates select="scan_end"/>
@@ -712,27 +714,27 @@ advice given in each description, in order to rectify the issue.
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'h') = false">
-      <xsl:text>Issues with the threat level "High" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``High'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'm') = false">
-      <xsl:text>Issues with the threat level "Medium" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``Medium'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'l') = false">
-      <xsl:text>Issues with the threat level "Low" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``Low'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'g') = false">
-      <xsl:text>Issues with the threat level "Log" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``Log'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'd') = false">
-      <xsl:text>Issues with the threat level "Debug" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``Debug'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:if test="contains(openvas:report()/filters/text(), 'f') = false">
-      <xsl:text>Issues with the threat level "False Positive" are not shown.</xsl:text>
+      <xsl:text>Issues with the threat level ``False Positive'' are not shown.</xsl:text>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
     <xsl:call-template name="latex-newline"/>

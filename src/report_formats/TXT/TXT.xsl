@@ -903,6 +903,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:text>Scan started: </xsl:text><xsl:call-template name="scan_start"/><xsl:call-template name="newline"/>
         <xsl:text>Scan ended:   </xsl:text>
         <xsl:call-template name="scan_end"/><xsl:call-template name="newline"/>
+        <xsl:text>Task:         </xsl:text>
+        <xsl:value-of select="task/name"/>
+        <xsl:call-template name="newline"/>
         <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>

@@ -1,3 +1,13 @@
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20290.
+
+	* src/report_formats/HTML/HTML.xsl,
+	src/report_formats/TXT/TXT.xsl (real-report): Add task.
+
+	* src/report_formats/LaTeX/latex.xsl (abstract): Add task.
+	(results-overview): Use standard quote style.
+
 2014-08-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20200.
