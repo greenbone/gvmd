@@ -571,7 +571,9 @@ advice given in each description, in order to rectify the issue.
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
 This document compares the results of two security scans.
-The first scan started at </xsl:text>
+The task was ``</xsl:text>
+        <xsl:value-of select="/report/task/name"/>
+        <xsl:text>''.  The first scan started at </xsl:text>
         <xsl:apply-templates select="scan_start"/>
 <xsl:text> and ended at </xsl:text>
           <xsl:value-of select="scan_end"/>
