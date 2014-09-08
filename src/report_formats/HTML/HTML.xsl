@@ -972,6 +972,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <table>
           <xsl:apply-templates select="scan_start" />
           <xsl:apply-templates select="scan_end" />
+          <tr>
+            <td>Task:</td>
+            <td><xsl:value-of select="task/name"/></td>
+          </tr>
         </table>
       </xsl:otherwise>
     </xsl:choose>

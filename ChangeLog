@@ -1,3 +1,11 @@
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/HTML/HTML.xsl,
+	src/report_formats/TXT/TXT.xsl (real-report): Add task.
+
+	* src/report_formats/LaTeX/latex.xsl (abstract): Add task.
+	(results-overview): Use standard quote style.
+
 2014-09-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (RESULT_ITERATOR_FILTER_COLUMNS)
