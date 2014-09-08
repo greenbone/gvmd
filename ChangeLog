@@ -1,3 +1,9 @@
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* doc/db_postgres.sql (reports): Correct column type.
+
+	* doc/db.png: Update from source.
+
 2014-09-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_migrators.c (migrate_128_to_129): Create scanners_trash

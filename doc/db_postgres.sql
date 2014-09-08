@@ -432,7 +432,7 @@ CREATE TABLE reports
   nbefile text,
   comment text,
   scan_run_status integer,
-  slave_progress text,
+  slave_progress integer,
   slave_task_uuid text,
   slave_uuid text,
   slave_name text,
