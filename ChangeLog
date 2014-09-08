@@ -1,5 +1,9 @@
 2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/db.png: Set svn:mime-type property to application/octet-stream.
+
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/db_postgres.sql (reports): Correct column type.
 
 	* doc/db.png: Update from source.
