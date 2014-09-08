@@ -1,5 +1,12 @@
 2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20294.
+
+	* src/report_formats/HTML/HTML.xsl (real-report): Add task to delta
+	case.
+
+2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20291.
 
 	* src/report_formats/LaTeX/latex.xsl (abstract): Add task to delta case.
