@@ -1,5 +1,10 @@
 2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/migrate-to-postgres (sqlite): New function.
+	(is_db_broken, migrate_133, migrate): Call sqlite, for clarity.
+
+2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/migrate-to-postgres (sql): Remove.  Now called pg, for clarity.
 	(pg): New function.  Was sql.  Update callers.
 

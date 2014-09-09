@@ -95,6 +95,10 @@ test_sql_exit () {
   fi
 }
 
+sqlite () {
+  $SQLITE3 $SQLITE_DB "$1"
+}
+
 pg () {
   log_debug "SQL: $1"
   $PSQL -c "$1"
@@ -125,7 +129,7 @@ is_db_broken () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    DB_INTEGRITY=`$SQLITE3 $SQLITE_DB "PRAGMA integrity_check;"`
+    DB_INTEGRITY=`sqlite "PRAGMA integrity_check;"`
     test_sql_exit "Could not check CERT database integrity"
   done
   if [ "$DB_INTEGRITY" != "ok" ]
@@ -940,32 +944,32 @@ migrate_133 () {
   create_tables_133;
 
   # Remove stray task_alerts.
-  $SQLITE3 $SQLITE_DB "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
+  sqlite "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
   test_sql_exit "Failed to clean up task_alerts"
-  $SQLITE3 $SQLITE_DB "DELETE FROM task_alerts WHERE alert_location = 1 AND alert NOT IN (SELECT id FROM alerts_trash);"
+  sqlite "DELETE FROM task_alerts WHERE alert_location = 1 AND alert NOT IN (SELECT id FROM alerts_trash);"
   test_sql_exit "Failed to clean up task_alerts (trash alerts)"
 
   # Remove stray report_format_params_trash.
-  $SQLITE3 $SQLITE_DB "DELETE FROM report_format_params_trash WHERE report_format NOT IN (SELECT id FROM report_formats_trash);"
+  sqlite "DELETE FROM report_format_params_trash WHERE report_format NOT IN (SELECT id FROM report_formats_trash);"
   test_sql_exit "Failed to clean up report_format_params_trash"
 
   # Remove stray report_format_param_options_trash.
-  $SQLITE3 $SQLITE_DB "DELETE FROM report_format_param_options_trash WHERE report_format_param NOT IN (SELECT id FROM report_format_params_trash);"
+  sqlite "DELETE FROM report_format_param_options_trash WHERE report_format_param NOT IN (SELECT id FROM report_format_params_trash);"
   test_sql_exit "Failed to clean up report_format_param_options_trash"
 
   # Remove stray report_hosts.  Not sure where these came from.
-  $SQLITE3 $SQLITE_DB "DELETE FROM report_hosts WHERE report NOT IN (SELECT id FROM reports);"
+  sqlite "DELETE FROM report_hosts WHERE report NOT IN (SELECT id FROM reports);"
   test_sql_exit "Failed to clean up report_hosts"
 
   # Make end_time in tasks consistent.
-  $SQLITE3 $SQLITE_DB "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT * FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
+  sqlite "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT * FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
   test_sql_exit "Failed to make end_time in tasks consistent"
 
   # Make end_time in report_hosts consistent.
 
   # 2011-11-03T12:41:34+02:00, 2011-11-08T19:57:06Z
-  $SQLITE3 $SQLITE_DB "UPDATE report_hosts SET end_time = strftime ('%s', end_time) WHERE end_time GLOB '*-*-*T*:*:*[+-]*:*' OR end_time GLOB '*-*-*T*:*:*Z';"
-  test_sql_exit "Failed to make end_time in tasks consistent"
+  sqlite "UPDATE report_hosts SET end_time = strftime ('%s', end_time) WHERE end_time GLOB '*-*-*T*:*:*[+-]*:*' OR end_time GLOB '*-*-*T*:*:*Z';"
+  test_sql_exit "Failed to make end_time in report_hosts consistent"
 
   # Fri Sep  3 05:12:34 2010
   #
@@ -1047,7 +1051,7 @@ migrate_133 () {
 }
 
 migrate () {
-  DB_VERSION=`$SQLITE3 $SQLITE_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
+  DB_VERSION=`sqlite "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     133) migrate_133;;
     *)
