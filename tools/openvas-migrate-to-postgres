@@ -1006,8 +1006,6 @@ migrate_133 () {
   #
   TABLES="users configs config_preferences meta nvt_preferences nvt_selectors lsc_credentials lsc_credentials_trash port_lists port_ranges targets schedules slaves tasks reports report_hosts report_formats report_format_params report_format_param_options results report_results task_files configs_trash config_preferences_trash report_formats_trash report_format_params_trash report_format_param_options_trash schedules_trash slaves_trash targets_trash report_host_details task_preferences port_lists_trash port_ranges_trash alerts_trash alert_event_data_trash alert_method_data_trash alerts alert_condition_data alert_event_data alert_method_data task_alerts alert_condition_data_trash groups group_users filters filters_trash port_names settings roles role_users overrides overrides_trash notes notes_trash groups_trash roles_trash tags_trash group_users_trash role_users_trash scanners scanners_trash permissions_trash permissions tags"
 
-  # FIX add binary special cases: config_preferences value
-
   log_debug "TABLES: $TABLES"
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
