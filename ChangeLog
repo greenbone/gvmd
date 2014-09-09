@@ -1,3 +1,8 @@
+2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_config): Remove comment because it is added
+	automatically, otherwise Postgres complains.
+
 2014-09-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Use bytea for agent installer, which
