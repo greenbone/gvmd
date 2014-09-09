@@ -1018,6 +1018,9 @@ migrate_133 () {
     test_sql_exit "Could not generate CSV for $TABLE"
   done
 
+  # Force a --rebuild.
+  sql "DELETE FROM meta WHERE name = 'nvts_feed_version';"
+
   log_info "Resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
   sql "SELECT 'SELECT SETVAL(' ||

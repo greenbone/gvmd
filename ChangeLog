@@ -1,5 +1,10 @@
 2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/migrate-to-postgres (migrate_133): Force a rebuild after the
+	migration.
+
+2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_config): Remove comment because it is added
 	automatically, otherwise Postgres complains.
 
