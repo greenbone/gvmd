@@ -1,3 +1,30 @@
+openvas-manager 5.0.4 (2014-09-09)
+
+This is the fourth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7).  The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release includes a significant performance improvement for slave scans and
+improves the handling of timezone information. It also addresses an issue
+regarding the handling of slave status changes on the master and adds two
+command line options for controlling the size of mails send by alerts.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles and Matthew Mundell.
+
+Main changes since 5.0.3:
+* New --max-email-attachment-size and --max-email-include-size options for
+  alert emails.
+* Improved handling of timezone information in master-slave communication.
+* Timezone information is now shown in more places in the HTML, LaTeX, PDF and
+  TXT report formats.
+* Significant performance improvement when adding slave results.
+* Set "unscanned_closed_udp" explicitly to "yes" for config preferences.
+* Improve handling of slave status changes on the master.
+* The task name is now included in the HTML, LaTeX, PDF and TXT report formats.
+
+
 openvas-manager 5.0.3 (2014-08-01)
 
 This is the third maintenance release of the openvas-manager 5.0 module for
