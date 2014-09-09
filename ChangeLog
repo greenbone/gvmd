@@ -1,5 +1,10 @@
 2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/migrate-to-postgres (sql): Remove.  Now called pg, for clarity.
+	(pg): New function.  Was sql.  Update callers.
+
+2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/migrate-to-postgres (migrate_133): Force a rebuild after the
 	migration.
 
