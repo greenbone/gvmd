@@ -1,5 +1,11 @@
 2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/migrate-to-postgres: Remove.  Now openvas-migrate-to-postgres.
+
+	* tools/openvas-migrate-to-postgres: New file.  Was migrate-to-postgres.
+
+2014-09-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/migrate-to-postgres (sqlite): New function.
 	(is_db_broken, migrate_133, migrate): Call sqlite, for clarity.
 

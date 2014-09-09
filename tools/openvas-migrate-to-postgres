@@ -34,7 +34,7 @@ PREFIX=/home/mattm/
 
 # SCRIPT_NAME is the name the script will use to identify itself and to mark
 # log messages.
-SCRIPT_NAME="migrate-to-postgres"
+SCRIPT_NAME="openvas-migrate-to-postgres"
 
 # LOG_CMD defines the command to use for logging. To have logger log to stderr
 # as well as syslog, add "-s" here.
