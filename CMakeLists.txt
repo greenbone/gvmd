@@ -472,7 +472,7 @@ install (FILES ${CMAKE_SOURCE_DIR}/tools/openvas-lsc-rpm-creator.sh
                      GROUP_READ GROUP_EXECUTE
                      WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-migrate-to-postgres
+install (FILES tools/openvas-migrate-to-postgres
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

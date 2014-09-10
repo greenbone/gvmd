@@ -1,3 +1,7 @@
+2014-09-10  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Fix install source for openvas-migrate-to-postgres.
+
 2014-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SCHEDULES handle
