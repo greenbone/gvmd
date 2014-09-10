@@ -1,3 +1,10 @@
+2014-09-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r20333.
+
+	* src/manage_sql.c (check_db_settings, modify_setting): Add new setting
+	"Auto-Refresh".
+
 2014-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20341.

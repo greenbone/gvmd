@@ -10587,6 +10587,17 @@ init_manage_settings ()
          " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
          "  'Whether to use dynamic severity scores by default.',"
          "  '0');");
+
+  if (sql_int (0, 0,
+               "SELECT count(*) FROM settings"
+               " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('578a1c14-e2dc-45ef-a591-89d31391d007', NULL, 'Auto-Refresh',"
+         "  'The delay between automatic page refreshs in seconds.',"
+         "  '0');");
 }
 
 /**
@@ -47991,7 +48002,8 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0
                || strcmp (uuid, "20f3034c-e709-11e1-87e7-406186ea4fc5") == 0
                || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
-               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0))
+               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
+               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
