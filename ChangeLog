@@ -1,3 +1,10 @@
+2014-09-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Remove special cases for keyword
+	"status".
+	(TASK_ITERATOR_COLUMNS, REPORT_ITERATOR_COLUMNS): Rename column
+	"status_text" to "status".
+
 2014-09-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_set_config_preference): Handle osp

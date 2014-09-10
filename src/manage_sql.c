@@ -2654,12 +2654,6 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf (order,
                                         " ORDER BY CAST (port AS INTEGER)"
                                         " ASC");
-              else if (((strcmp (type, "task") == 0)
-                        || (strcmp (type, "report") == 0))
-                       && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY status_text"
-                                        " ASC");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
                 {
@@ -2760,12 +2754,6 @@ filter_clause (const char* type, const char* filter,
                   && (strcmp (keyword->string, "port") == 0))
                 g_string_append_printf (order,
                                         " ORDER BY CAST (port AS INTEGER)"
-                                        " DESC");
-              else if (((strcmp (type, "task") == 0)
-                        || (strcmp (type, "report") == 0))
-                       && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf (order,
-                                        " ORDER BY status_text"
                                         " DESC");
               else if ((strcmp (type, "task") == 0)
                        && (strcmp (keyword->string, "threat") == 0))
@@ -8721,7 +8709,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                      \
    { "task_threat_level (id, " overrides ")", "threat" },  \
    { "task_trend (id, " overrides ")", "trend" },          \
-   { "run_status_name (run_status)", "status_text" },      \
+   { "run_status_name (run_status)", "status" },           \
    {                                                       \
      "(SELECT uuid FROM reports WHERE task = tasks.id"     \
      /* TODO 1 == TASK_STATUS_DONE */                      \
@@ -15012,7 +15000,7 @@ report_add_result (report_t report, result_t result)
      "                  || CAST (temp % 10 as text)"                         \
      "           FROM (SELECT report_progress (id) AS temp) AS temp_sub)"    \
      "  END)",                                                               \
-     "status_text"                                                           \
+     "status"                                                                \
    },                                                                        \
    {                                                                         \
      " report_severity_count (id, " overrides ", 'False Positive')",         \
