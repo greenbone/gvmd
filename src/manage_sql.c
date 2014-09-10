@@ -28588,9 +28588,16 @@ manage_set_config_preference (config_t config, const char* nvt, const char* name
   quoted_value = sql_quote ((gchar*) value);
   g_free (value);
 
-  sql ("UPDATE config_preferences SET value = '%s'"
-       " WHERE config = %llu AND name = '%s'",
-       quoted_value, config, quoted_name);
+  sql ("DELETE FROM config_preferences"
+       " WHERE config = %llu AND type %s AND name = '%s'",
+       config,
+       nvt ? "= 'PLUGINS_PREFS'" : "= 'SERVER_PREFS'",
+       quoted_name);
+  sql ("INSERT INTO config_preferences"
+       " (config, type, name, value) VALUES (%llu, %s, '%s', '%s');",
+       config, nvt ? "'PLUGINS_PREFS'" : "'SERVER_PREFS'", quoted_name,
+       quoted_value);
+
   sql ("COMMIT;");
 
   g_free (quoted_name);
