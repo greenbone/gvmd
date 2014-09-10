@@ -15616,6 +15616,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                    - time_offset (timezone, next_time);
 
                   /* Duplicate static string because there's an iso_time_tz below. */
+                  abbrev = NULL;
                   iso = g_strdup (iso_time_tz (&first_time, timezone, &abbrev));
 
                   period = schedule_iterator_period (&schedules);
@@ -15710,7 +15711,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     schedule_iterator_timezone (&schedules)
                      ? schedule_iterator_timezone (&schedules)
                      : "UTC",
-                    abbrev);
+                    abbrev ? abbrev : "UTC");
 
                   g_free (iso);
                   if (get_schedules_data->tasks)
