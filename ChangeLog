@@ -1,3 +1,10 @@
+2014-09-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20341.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_SCHEDULES handle
+	the case where abbrev is not set by iso_time_tz.
+
 2014-09-09  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
