@@ -1,5 +1,10 @@
 2014-09-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (manage_set_config_preference): Handle osp
+	config preference case.
+
+2014-09-10  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (manage_set_config_preference): Revert part of 20250.
 	Neither use UPDATE as nvt_prefs entries may not be present nor INSERT OR
 	REPLACE as it is not supported by postgresql.
