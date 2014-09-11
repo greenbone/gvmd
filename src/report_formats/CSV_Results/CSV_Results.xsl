@@ -230,6 +230,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'solution'), $quote, $two-quotes)"/>
   </xsl:if>
   <xsl:text>","</xsl:text>
+  <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'affected'), $quote, $two-quotes)"/>
+  </xsl:if>
+  <xsl:text>","</xsl:text>
   <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
     <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'insight'), $quote, $two-quotes)"/>
   </xsl:if>
@@ -397,7 +401,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 <!-- MATCH REPORT -->
 <xsl:template match="/report">
-  <xsl:text>IP,Hostname,Port,Port Protocol,CVSS,Severity,NVT Name,Summary,Specific Result,NVT OID,CVEs,Task ID,Task Name,Timestamp,Result ID,Impact,Solution,Vulnerability Insight,Vulnerability Detection Method,Product Detection Result,BIDs,CERTs,Other References
+  <xsl:text>IP,Hostname,Port,Port Protocol,CVSS,Severity,NVT Name,Summary,Specific Result,NVT OID,CVEs,Task ID,Task Name,Timestamp,Result ID,Impact,Solution,Affected Software/OS,Vulnerability Insight,Vulnerability Detection Method,Product Detection Result,BIDs,CERTs,Other References
 </xsl:text>
   <xsl:apply-templates select="results"/>
 </xsl:template>

@@ -292,6 +292,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:text>\n\n</xsl:text>
   </xsl:if>
 
+  <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+    <xsl:text>Affected Software/OS:</xsl:text>
+    <xsl:text>\n</xsl:text>
+    <xsl:value-of select="str:replace (openvas:get-nvt-tag (nvt/tags, 'affected'), '&#10;', '\n')"/>
+    <xsl:text>\n\n</xsl:text>
+  </xsl:if>
+
   <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
     <xsl:text>Vulnerability Insight:</xsl:text>
     <xsl:text>\n</xsl:text>

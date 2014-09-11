@@ -601,6 +601,14 @@ CIS</value>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
+            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+              <xsl:text>Affected Software/OS:</xsl:text>
+              <xsl:call-template name="newline"/>
+              <xsl:value-of name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
+              <xsl:call-template name="newline"/>
+              <xsl:call-template name="newline"/>
+            </xsl:if>
+
             <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
               <xsl:text>Solution:</xsl:text>
               <xsl:call-template name="newline"/>

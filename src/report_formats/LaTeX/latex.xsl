@@ -1189,6 +1189,17 @@ advice given in each description, in order to rectify the issue.
           </xsl:call-template>
         </xsl:if>
 
+        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
+          <xsl:call-template name="latex-newline"/>
+          \hline
+          <xsl:call-template name="latex-newline"/>
+          <xsl:text>\textbf{Affected Software/OS}</xsl:text>
+          <xsl:call-template name="latex-newline"/>
+          <xsl:call-template name="text-to-escaped-row">
+            <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
+          </xsl:call-template>
+        </xsl:if>
+
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
           <xsl:call-template name="latex-newline"/>
           \hline
