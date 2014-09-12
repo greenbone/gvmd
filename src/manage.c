@@ -2700,38 +2700,35 @@ run_osp_task (task_t task, char **report_id)
       lsc_credential_t cred;
 
       cred = target_ssh_lsc_credential (target);
-      if (!cred)
+      if (cred)
         {
-          g_warning ("%s: No LSC credentials provided.", __FUNCTION__);
-          osp_connection_close (connection);
-          g_hash_table_destroy (options);
-          return -1;
-        }
-      ssh_port = target_ssh_port (target);
-      g_hash_table_insert (options, g_strdup ("port"), ssh_port);
+          ssh_port = target_ssh_port (target);
+          g_hash_table_insert (options, g_strdup ("port"), ssh_port);
 
-      init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
-      if (!next (&iter))
-        {
-          g_warning ("%s: LSC Credential not found.", __FUNCTION__);
-          osp_connection_close (connection);
-          g_hash_table_destroy (options);
+          init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
+          if (!next (&iter))
+            {
+              g_warning ("%s: LSC Credential not found.", __FUNCTION__);
+              osp_connection_close (connection);
+              g_hash_table_destroy (options);
+              cleanup_iterator (&iter);
+              return -1;
+            }
+          if (lsc_credential_iterator_private_key (&iter))
+            {
+              g_warning ("%s: LSC Credential not a user/pass pair.",
+                         __FUNCTION__);
+              osp_connection_close (connection);
+              g_hash_table_destroy (options);
+              cleanup_iterator (&iter);
+              return -1;
+            }
+          user = lsc_credential_iterator_login (&iter);
+          pass = lsc_credential_iterator_password (&iter);
+          g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
+          g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
           cleanup_iterator (&iter);
-          return -1;
         }
-      if (lsc_credential_iterator_private_key (&iter))
-        {
-          g_warning ("%s: LSC Credential not a user/pass pair.", __FUNCTION__);
-          osp_connection_close (connection);
-          g_hash_table_destroy (options);
-          cleanup_iterator (&iter);
-          return -1;
-        }
-      user = lsc_credential_iterator_login (&iter);
-      pass = lsc_credential_iterator_password (&iter);
-      g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
-      g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
-      cleanup_iterator (&iter);
     }
   else
     {

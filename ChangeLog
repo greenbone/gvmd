@@ -1,3 +1,8 @@
+2014-09-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_osp_task): Don't force lsc credentials presence as
+	not all osp scanners need them.
+
 2014-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (make_report_format_uuids_unique): When the duplicate
