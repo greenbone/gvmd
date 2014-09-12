@@ -1,3 +1,10 @@
+2014-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (make_report_format_uuids_unique): When the duplicate
+	report formats are in the same directory, then copy the old subdir to
+	the new subdir, so that they both have subdirs.  When a subdir is
+	missing just log an warning, instead of also failing.
+
 2014-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add new predefined role Guest.

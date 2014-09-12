@@ -10861,7 +10861,16 @@ make_report_format_uuids_unique ()
        " AS SELECT id, uuid, make_uuid () AS new_uuid, owner,"
        "           (SELECT uuid FROM users"
        "            WHERE users.id = outer_report_formats.owner)"
-       "           AS owner_uuid"
+       "           AS owner_uuid,"
+       "           (SELECT owner from report_formats"
+       "                              WHERE uuid = outer_report_formats.uuid"
+       "                              ORDER BY id ASC LIMIT 1)"
+       "           AS original_owner,"
+       "           (SELECT uuid FROM users"
+       "            WHERE users.id = (SELECT owner from report_formats"
+       "                              WHERE uuid = outer_report_formats.uuid"
+       "                              ORDER BY id ASC LIMIT 1))"
+       "           AS original_owner_uuid"
        "    FROM report_formats AS outer_report_formats"
        "    WHERE id > (SELECT id from report_formats"
        "                WHERE uuid = outer_report_formats.uuid"
@@ -10874,12 +10883,14 @@ make_report_format_uuids_unique ()
 
   /* Update UUIDs on disk. */
   init_iterator (&rows,
-                 "SELECT id, uuid, new_uuid, owner, owner_uuid"
+                 "SELECT id, uuid, new_uuid, owner, owner_uuid, original_owner,"
+                 "       original_owner_uuid"
                  " FROM duplicates;");
   while (next (&rows))
     {
       gchar *dir, *new_dir;
       const char *old_uuid, *new_uuid;
+      int copy;
 
       old_uuid = iterator_string (&rows, 1);
       new_uuid = iterator_string (&rows, 2);
@@ -10887,22 +10898,74 @@ make_report_format_uuids_unique ()
       if (iterator_int64 (&rows, 3) == 0)
         {
           /* Global report format. */
-          dir = g_build_filename (OPENVAS_DATA_DIR,
-                                  "openvasmd",
-                                  "global_report_formats",
-                                  old_uuid,
-                                  NULL);
-          new_dir = g_build_filename (OPENVAS_DATA_DIR,
+
+          if (iterator_int64 (&rows, 5) == 0)
+            {
+              /* Shared subdir in the global dir, so copy. */
+              copy = 1;
+              dir = g_build_filename (OPENVAS_DATA_DIR,
                                       "openvasmd",
                                       "global_report_formats",
+                                      old_uuid,
+                                      NULL);
+              new_dir = g_build_filename (OPENVAS_DATA_DIR,
+                                          "openvasmd",
+                                          "global_report_formats",
+                                          new_uuid,
+                                          NULL);
+            }
+          else
+            {
+              const char *owner_uuid;
+              /* Dedicated subdir in global dir, but must be renamed. */
+              copy = 0;
+              owner_uuid = iterator_string (&rows, 6);
+              dir = g_build_filename (OPENVAS_STATE_DIR,
+                                      "openvasmd",
+                                      "report_formats",
+                                      owner_uuid,
+                                      old_uuid,
+                                      NULL);
+              new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                          "openvasmd",
+                                          "report_formats",
+                                          owner_uuid,
+                                          new_uuid,
+                                          NULL);
+            }
+        }
+      else if (iterator_int64 (&rows, 5) == 0)
+        {
+          const char *owner_uuid;
+          /* Dedicated subdir in user dir, but must be renamed. */
+          copy = 0;
+          owner_uuid = iterator_string (&rows, 4);
+          dir = g_build_filename (OPENVAS_STATE_DIR,
+                                  "openvasmd",
+                                  "report_formats",
+                                  owner_uuid,
+                                  old_uuid,
+                                  NULL);
+          new_dir = g_build_filename (OPENVAS_STATE_DIR,
+                                      "openvasmd",
+                                      "report_formats",
+                                      owner_uuid,
                                       new_uuid,
                                       NULL);
         }
       else
         {
-          const char *owner_uuid;
+          const char *owner_uuid, *original_owner_uuid;
+
+          /* Two user-owned report formats, may be the same user. */
 
           owner_uuid = iterator_string (&rows, 4);
+          original_owner_uuid = iterator_string (&rows, 6);
+
+          /* Copy the subdir if both report formats owned by one user. */
+          copy = owner_uuid
+                 && original_owner_uuid
+                 && (strcmp (owner_uuid, original_owner_uuid) == 0);
 
           dir = g_build_filename (OPENVAS_STATE_DIR,
                                   "openvasmd",
@@ -10918,16 +10981,44 @@ make_report_format_uuids_unique ()
                                       NULL);
         }
 
-      if (rename (dir, new_dir))
+      if (copy)
         {
-          g_warning ("%s: rename %s to %s: %s",
-                     __FUNCTION__, dir, new_dir, strerror (errno));
-          g_free (dir);
-          g_free (new_dir);
-          sql ("ROLLBACK;");
-          return -1;
+          gchar *command;
+          int ret;
+
+          command = g_strdup_printf ("cp -a %s %s > /dev/null 2>&1",
+                                     dir,
+                                     new_dir);
+          tracef ("   command: %s\n", command);
+          ret = system (command);
+          g_free (command);
+
+          if (ret == -1 || WEXITSTATUS (ret))
+            {
+              /* Presume dir missing, just log a warning. */
+              g_warning ("%s: cp %s to %s failed",
+                         __FUNCTION__, dir, new_dir);
+            }
+          else
+            g_debug ("%s: copied %s to %s", __FUNCTION__, dir, new_dir);
         }
-      g_debug ("%s: moved %s to %s", __FUNCTION__, dir, new_dir);
+      else
+        {
+          if (rename (dir, new_dir))
+            {
+              g_warning ("%s: rename %s to %s: %s",
+                         __FUNCTION__, dir, new_dir, strerror (errno));
+              if (errno != ENOENT)
+                {
+                  g_free (dir);
+                  g_free (new_dir);
+                  sql ("ROLLBACK;");
+                  return -1;
+                }
+            }
+          else
+            g_debug ("%s: moved %s to %s", __FUNCTION__, dir, new_dir);
+        }
       g_free (dir);
       g_free (new_dir);
     }
