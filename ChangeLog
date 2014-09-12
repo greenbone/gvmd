@@ -1,3 +1,11 @@
+2014-09-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add new predefined role Guest.
+
+	* src/manage_sql.c (check_db_permissions): Add Guest role permissions.
+	(check_db_roles, permission_is_predefined, role_is_predefined)
+	(role_is_predefined_id): Add Guest role.
+
 2014-09-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add sections for NVT tag "affected" to report formats.
@@ -9,7 +17,7 @@
 
 	* src/report_formats/LaTeX/latex.xsl: Add section
 	"Affected Software/OS".
-	
+
 	* src/report_formats/NBE/NBE.xsl: Add section "Affected Software/OS".
 
 	* src/report_formats/TXT/TXT.xsl: Add section "Affected Software/OS".

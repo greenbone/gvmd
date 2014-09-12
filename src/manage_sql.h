@@ -165,6 +165,11 @@
 /**
  * @brief Predefined role UUID.
  */
+#define ROLE_UUID_GUEST "cc9cac5e-39a3-11e4-abae-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
 #define ROLE_UUID_INFO "5f8fd16c-c550-11e3-b6ab-406186ea4fc5"
 
 /**

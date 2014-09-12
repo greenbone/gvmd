@@ -11318,6 +11318,27 @@ check_db_permissions ()
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_GUEST "')"
+               " AND resource = 0;")
+      <= 1)
+    {
+      sql_begin_exclusive ();
+      /* Clean-up any remaining permissions. */
+      sql ("DELETE FROM permissions WHERE subject_type = 'role'"
+           " AND subject = (SELECT id FROM roles"
+           "                WHERE uuid = '" ROLE_UUID_GUEST "');");
+      add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
+      add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
+      add_role_permission (ROLE_UUID_GUEST, "HELP");
+      add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
+      add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
+      add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
+      sql ("COMMIT;");
+    }
+
+  if (sql_int ("SELECT count(*) FROM permissions"
+               " WHERE subject_type = 'role'"
+               " AND subject = (SELECT id FROM roles"
                "                WHERE uuid = '" ROLE_UUID_INFO "')"
                " AND resource = 0;")
       <= 1)
@@ -11411,6 +11432,15 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_ADMIN "', NULL, 'Admin',"
          "  'Administrator.  Full privileges.',"
+         " m_now (), m_now ());");
+
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_GUEST "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_GUEST "', NULL, 'Guest',"
+         "  'Guest.',"
          " m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_INFO "';")
@@ -42181,6 +42211,7 @@ permission_is_predefined (permission_t permission)
                     "          AND subject"
                     "              IN (SELECT id FROM roles"
                     "                  WHERE uuid = '" ROLE_UUID_ADMIN "'"
+                    "                  OR uuid = '" ROLE_UUID_GUEST "'"
                     "                  OR uuid = '" ROLE_UUID_INFO "'"
                     "                  OR uuid = '" ROLE_UUID_USER "'"
                     "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
@@ -44458,6 +44489,7 @@ role_is_predefined (role_t role)
   return sql_int ("SELECT COUNT (*) FROM roles"
                   " WHERE id = %llu"
                   " AND (uuid = '" ROLE_UUID_ADMIN "'"
+                  "      OR uuid = '" ROLE_UUID_GUEST "'"
                   "      OR uuid = '" ROLE_UUID_INFO "'"
                   "      OR uuid = '" ROLE_UUID_USER "'"
                   "      OR uuid = '" ROLE_UUID_OBSERVER "');",
@@ -44476,6 +44508,7 @@ int
 role_is_predefined_id (const char *uuid)
 {
   return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
+                  || (strcmp (uuid, ROLE_UUID_GUEST) == 0)
                   || (strcmp (uuid, ROLE_UUID_INFO) == 0)
                   || (strcmp (uuid, ROLE_UUID_USER) == 0)
                   || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
