@@ -1,3 +1,19 @@
+2014-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get report format dates working when timezone is UTC.
+
+	* src/report_formats/HTML/HTML.xsl (date): New template.
+	(scan_start, scan_end): Use date.
+	(note, override, real-report): Generate dates with date.
+
+	* src/report_formats/LaTeX/latex.xsl (scan_start, scan_end): Correct
+	count.
+
+	* src/report_formats/TXT/TXT.xsl (scan_start, scan_end): Correct count.
+	(note, override): Generate dates with scan_start.
+	(real-report): Apply scan_start now that it is a matched template.
+	Correct location of host start time, and format it like others.
+
 2014-09-12  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_osp_task): Don't force lsc credentials presence as
