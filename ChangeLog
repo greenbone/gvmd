@@ -1,5 +1,9 @@
 2014-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (check_db_permissions): Allow Guest to get filters.
+
+2014-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Get report format dates working when timezone is UTC.
 
 	* src/report_formats/HTML/HTML.xsl (date): New template.

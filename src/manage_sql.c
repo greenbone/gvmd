@@ -11421,6 +11421,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
       add_role_permission (ROLE_UUID_GUEST, "HELP");
+      add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
       add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
       add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
       add_role_permission (ROLE_UUID_GUEST, "GET_SETTINGS");
