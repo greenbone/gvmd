@@ -1,4 +1,10 @@
-2014-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (update_end_times): New function.  Body from slave_setup.
+	(slave_setup): Also set end times while the report its running, because
+	some hosts may finish long before the task is done.
+
+2014-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (check_db_permissions): Allow Guest to get filters.
 
