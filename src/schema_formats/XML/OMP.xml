@@ -3674,7 +3674,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>type</name>
       <summary>The type of the scanner</summary>
       <description>
-        <p>Type value of '1' for OSPD Ovaldi, '2' for OpenVAS (classic) Scanner.</p>
+        <p>Type value of '1' for OSP, '2' for OpenVAS (classic) Scanner.</p>
       </description>
       <pattern>text</pattern>
     </ele>
@@ -19583,7 +19583,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>type</name>
-      <summary>Type of the scanner. '1' for OSPD Ovaldi, '2' for OpenVAS (classic) Scanner</summary>
+      <summary>Type of the scanner. '1' for OSP, '2' for OpenVAS (classic) Scanner</summary>
       <pattern>text</pattern>
     </ele>
     <ele>

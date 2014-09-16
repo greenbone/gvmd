@@ -1,3 +1,16 @@
+2014-09-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.h (SCANNER_TYPE_OSP_OVALDI): Rename to SCANNER_TYPE_OSP.
+
+	* src/manage_sql.c (create_config_from_scanner)
+	(create_task_check_config_scanner, modify_task_check_config_scanner)
+	(verify_scanner): Use new enum member name.
+
+	* src/openvasmd.c (main): Simplify --scanner-type possible values to
+	OpenVAS and OSP.
+
+	* src/schema_formats/XML/OMP.xml: Update documentation.
+
 2014-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (update_end_times): New function.  Body from slave_setup.

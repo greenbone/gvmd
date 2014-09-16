@@ -27612,7 +27612,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
       sql ("ROLLBACK;");
       return 1;
     }
-  if (scanner_type (scanner) != SCANNER_TYPE_OSP_OVALDI)
+  if (scanner_type (scanner) != SCANNER_TYPE_OSP)
     {
       sql ("ROLLBACK;");
       return 2;
@@ -27631,7 +27631,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
     }
   quoted_name = sql_quote (name ?: "");
   quoted_comment = sql_quote (comment ?: "");
-  /* Create new OSP Ovaldi config. */
+  /* Create new OSP config. */
   sql ("INSERT INTO configs (uuid, name, owner, nvt_selector, comment,"
        " type, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
@@ -27748,7 +27748,7 @@ create_task_check_config_scanner (config_t config, scanner_t scanner)
 
   if (ctype == 0 && stype == SCANNER_TYPE_OPENVAS)
     return 1;
-  if (ctype == 1 && stype == SCANNER_TYPE_OSP_OVALDI)
+  if (ctype == 1 && stype == SCANNER_TYPE_OSP)
     return 1;
 
   return 0;
@@ -27828,8 +27828,8 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   ctype = config_type (config);
   stype = scanner_type (scanner);
-  /* OSPD Scanner with OSPD config. */
-  if (stype == SCANNER_TYPE_OSP_OVALDI && ctype == 1)
+  /* OSP Scanner with OSP config. */
+  if (stype == SCANNER_TYPE_OSP && ctype == 1)
     return 1;
 
   /* OpenVAS Scanner with OpenVAS config. */
@@ -27930,7 +27930,7 @@ copy_config (const char* name, const char* comment, const char *config_id,
   if (type > 0)
     {
       /* Don't create nvt_selector etc,. for non-standard configs
-       * (eg. OSP Ovaldi.) Only config preferences are copied.
+       * (eg. OSP config.) Only config preferences are copied.
        */
       sql ("COMMIT;");
       if (new_config) *new_config = new;
@@ -36810,7 +36810,7 @@ verify_scanner (const char *scanner_id, char **version)
       return 1;
     }
   g_free (get.id);
-  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP_OVALDI)
+  if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
     {
       osp_connection_t *connection;
 

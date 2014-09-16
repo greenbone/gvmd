@@ -1137,7 +1137,7 @@ main (int argc, char** argv)
           "Scanner port for --create-scanner, --rebuild and --update. Default is " G_STRINGIFY (OPENVASSD_PORT) ".",
           "<scanner-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING, &scanner_type,
-          "Scanner type for --create-scanner. Either 'OpenVAS Scanner' or 'OSP Ovaldi'.",
+          "Scanner type for --create-scanner. Either 'OpenVAS' or 'OSP'.",
           "<scanner-type>" },
         { "scanner-ca-pub", '\0', 0, G_OPTION_ARG_STRING, &scanner_ca_pub,
           "Scanner CA public key path for --create-scanner.", "<scanner-ca-pub>" },
@@ -1285,10 +1285,10 @@ main (int argc, char** argv)
       if (!scanner_key_priv)
         scanner_key_priv = CLIENTKEY;
 
-      if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS Scanner"))
+      if (!scanner_type || !strcasecmp (scanner_type, "OpenVAS"))
         type = SCANNER_TYPE_OPENVAS;
-      else if (!strcasecmp (scanner_type, "OSP Ovaldi"))
-        type = SCANNER_TYPE_OSP_OVALDI;
+      else if (!strcasecmp (scanner_type, "OSP"))
+        type = SCANNER_TYPE_OSP;
       else
         {
           g_warning ("Invalid scanner type value.\n");
