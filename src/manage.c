@@ -1930,6 +1930,84 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
 }
 
 /**
+ * @brief Update end times, and optionally add host details.
+ *
+ * @param[in]  report            Report.
+ * @param[in]  add_host_details  Whether to add host details.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_end_times (entity_t report, int add_host_details)
+{
+  entity_t end;
+  entities_t entities;
+
+  /* Set the scan end time. */
+
+  entities = report->entities;
+  while ((end = first_entity (entities)))
+    {
+      if (strcmp (entity_name (end), "scan_end") == 0)
+        {
+          set_task_end_time (current_scanner_task,
+                             g_strdup (entity_text (end)));
+          set_scan_end_time (current_report, entity_text (end));
+          break;
+        }
+      entities = next_entities (entities);
+    }
+
+  /* Add host details and set the host end times. */
+
+  entities = report->entities;
+  while ((end = first_entity (entities)))
+    {
+      if (strcmp (entity_name (end), "host_end") == 0)
+        {
+          entity_t host;
+
+          /* Set the end time this way first, in case the slave is
+           * very old. */
+
+          host = entity_child (end, "host");
+          if (host == NULL)
+            return -1;
+
+          set_scan_host_end_time (current_report,
+                                  entity_text (host),
+                                  entity_text (end));
+        }
+
+      if (strcmp (entity_name (end), "host") == 0)
+        {
+          entity_t ip, time;
+
+          ip = entity_child (end, "ip");
+          if (ip == NULL)
+            return -1;
+
+          time = entity_child (end, "end");
+          if (time == NULL)
+            return -1;
+
+          set_scan_host_end_time (current_report,
+                                  entity_text (ip),
+                                  entity_text (time));
+          if (add_host_details
+              && manage_report_host_details (current_report,
+                                             entity_text (ip),
+                                             end))
+            return -1;
+        }
+
+      entities = next_entities (entities);
+    }
+
+  return 0;
+}
+
+/**
  * @brief Setup a task on a slave.
  *
  * @param[in]   slave       Slave.
@@ -2443,7 +2521,11 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
 
           if (strcmp (status, "Running") == 0)
-            free_entity (get_report);
+            {
+              if (update_end_times (report, 0))
+                goto fail_stop_task;
+              free_entity (get_report);
+            }
         }
       else if (strcmp (status, "Paused") == 0)
         set_task_run_status (task, TASK_STATUS_PAUSED);
@@ -2467,89 +2549,16 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       if (strcmp (status, "Done") == 0)
         {
-          entity_t end;
-          entities_t entities;
-
-          /* Set the scan end time. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
+          if (update_end_times (report, 1))
             {
-              if (strcmp (entity_name (end), "scan_end") == 0)
-                {
-                  set_task_end_time (current_scanner_task,
-                                     g_strdup (entity_text (end)));
-                  set_scan_end_time (current_report, entity_text (end));
-                  break;
-                }
-              entities = next_entities (entities);
+              free_entity (get_tasks);
+              free_entity (get_report);
+              goto fail_stop_task;
             }
-
-          /* Add host details and set the host end times. */
-
-          entities = report->entities;
-          while ((end = first_entity (entities)))
-            {
-              if (strcmp (entity_name (end), "host_end") == 0)
-                {
-                  entity_t host;
-
-                  /* Set the end time this way first, in case the slave is
-                   * very old. */
-
-                  host = entity_child (end, "host");
-                  if (host == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  set_scan_host_end_time (current_report,
-                                          entity_text (host),
-                                          entity_text (end));
-                }
-
-              if (strcmp (entity_name (end), "host") == 0)
-                {
-                  entity_t ip, time;
-
-                  ip = entity_child (end, "ip");
-                  if (ip == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  time = entity_child (end, "end");
-                  if (time == NULL)
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-
-                  set_scan_host_end_time (current_report,
-                                          entity_text (ip),
-                                          entity_text (time));
-
-                  if (manage_report_host_details (current_report,
-                                                  entity_text (ip),
-                                                  end))
-                    {
-                      free_entity (get_tasks);
-                      free_entity (get_report);
-                      goto fail_stop_task;
-                    }
-                }
-
-              entities = next_entities (entities);
-            }
-
           free_entity (get_report);
           if (update_slave_progress (get_tasks))
             {
+              free_entity (get_report);
               free_entity (get_tasks);
               goto fail_stop_task;
             }

@@ -1,3 +1,11 @@
+2014-09-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20390.
+
+	* src/manage.c (update_end_times): New function.  Body from slave_setup.
+	(slave_setup): Also set end times while the report its running, because
+	some hosts may finish long before the task is done.
+
 2014-09-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20371.
