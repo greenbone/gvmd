@@ -1,5 +1,9 @@
 2014-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Enable static disabled by last commit.
+
+2014-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): When resuming a task, keep the slave task
 	uuid on the report, because slave_setup (via run_slave_task) needs this
 	uuid to resume the task on the slave.

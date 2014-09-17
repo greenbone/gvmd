@@ -2345,8 +2345,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  *
  * @return 0 success, -1 error.
  */
-//static int
-int
+static int
 run_slave_task (task_t task, target_t target, lsc_credential_t
                 target_ssh_credential, lsc_credential_t target_smb_credential,
                 report_t last_stopped_report)
