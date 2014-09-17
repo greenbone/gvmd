@@ -13751,7 +13751,10 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   if (!severity || !strcmp (severity, ""))
     {
       g_free (severity);
-      severity = g_strdup ("0.0");
+      if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
+        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+      else
+        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
     }
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
