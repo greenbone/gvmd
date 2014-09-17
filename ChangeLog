@@ -1,3 +1,9 @@
+2014-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (run_task): When resuming a task, keep the slave task
+	uuid on the report, because slave_setup (via run_slave_task) needs this
+	uuid to resume the task on the slave.
+
 2014-09-16  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.h (SCANNER_TYPE_OSP_OVALDI): Rename to SCANNER_TYPE_OSP.

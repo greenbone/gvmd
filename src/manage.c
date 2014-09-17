@@ -2345,7 +2345,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  *
  * @return 0 success, -1 error.
  */
-static int
+//static int
+int
 run_slave_task (task_t task, target_t target, lsc_credential_t
                 target_ssh_credential, lsc_credential_t target_smb_credential,
                 report_t last_stopped_report)
@@ -2906,9 +2907,6 @@ run_task (const char *task_id, char **report_id, int from,
           free (hosts);
           return -1;
         }
-
-      /* Clear slave record, in case slave changed. */
-      set_report_slave_task_uuid (last_stopped_report, "");
 
       current_report = last_stopped_report;
       if (report_id) *report_id = report_uuid (last_stopped_report);
