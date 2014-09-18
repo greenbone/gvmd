@@ -1,3 +1,7 @@
+2014-09-18  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* src/otp.h: Fix prototype of process_otp_scanner_input (add parameter)
+
 2014-09-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Backport r20400.

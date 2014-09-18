@@ -33,7 +33,7 @@ void
 init_otp_data ();
 
 int
-process_otp_scanner_input ();
+process_otp_scanner_input (void (*progress) ());
 
 /** @todo Exported for following functions. */
 /**
