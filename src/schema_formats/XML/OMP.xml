@@ -12368,6 +12368,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>
+          Whether to ignore info used to split the report into pages
+          like the filter terms "first" and "rows".
+        </summary>
+        <type>boolean</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>

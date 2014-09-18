@@ -21903,6 +21903,7 @@ severity_class_xml (const gchar *severity)
  * @param[in]  host_first_result   The host result to start from.  The results
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
+ * @param[in]  ignore_pagination   Whether to ignore pagination data.
  *
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
  */
@@ -21917,7 +21918,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int overrides_details, int first_result, int max_results,
                   const char *type, const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
-                  int host_first_result, int host_max_results)
+                  int host_first_result, int host_max_results,
+                  int ignore_pagination)
 {
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
@@ -22464,7 +22466,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   if (get->details && (delta == 0))
     {
-      if (print_report_port_xml (report, out, first_result, max_results,
+      if (print_report_port_xml (report, out,
+                                 ignore_pagination ? 0 : first_result,
+                                 ignore_pagination ? -1 : max_results,
                                  sort_order, sort_field, levels, autofp,
                                  search_phrase, search_phrase_exact,
                                  min_cvss_base, apply_overrides))
@@ -22510,8 +22514,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     }
   else if (get->details)
     init_result_iterator (&results, report, 0,
-                          first_result,
-                          max_results,
+                          ignore_pagination ? 0 : first_result,
+                          ignore_pagination ? -1 : max_results,
                           sort_order,
                           sort_field,
                           levels,
@@ -22527,8 +22531,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
              " start=\"%i\""
              " max=\"%i\">",
              /* Add 1 for 1 indexing. */
-             first_result + 1,
-             max_results);
+             ignore_pagination ? 1 : first_result + 1,
+             ignore_pagination ? -1 : max_results);
   if (get->details && result_hosts_only)
     result_hosts = make_array ();
   else
@@ -23485,7 +23489,7 @@ manage_report (report_t report, report_format_t report_format,
                           levels, NULL, apply_overrides, search_phrase, autofp,
                           notes, notes_details, overrides, overrides_details,
                           first_result, max_results, type,
-                          NULL, 0, NULL, NULL, 0, 0);
+                          NULL, 0, NULL, NULL, 0, 0, 0);
   g_free (get.filt_id);
   if (ret)
     {
@@ -23894,6 +23898,7 @@ manage_report (report_t report, report_format_t report_format,
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  ignore_pagination  Whether to ignore pagination.
  * @param[in]  base64             Whether to base64 encode the report.
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
@@ -23928,7 +23933,7 @@ manage_send_report (report_t report, report_t delta_report,
                     int apply_overrides, const char *search_phrase,
                     int autofp, int notes, int notes_details, int overrides,
                     int overrides_details, int first_result,
-                    int max_results, int base64,
+                    int max_results, int ignore_pagination, int base64,
                     gboolean (*send) (const char *,
                                       int (*) (const char *, void*),
                                       void*),
@@ -23998,7 +24003,8 @@ manage_send_report (report_t report, report_t delta_report,
                           search_phrase, autofp, notes, notes_details,
                           overrides, overrides_details, first_result,
                           max_results, type, host, pos, host_search_phrase,
-                          host_levels, host_first_result, host_max_results);
+                          host_levels, host_first_result, host_max_results,
+                          ignore_pagination);
   if (ret)
     {
       g_free (xml_file);

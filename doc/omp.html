@@ -20364,6 +20364,11 @@ get_preferences_response_preference_default
           (<a href="#type_boolean">boolean</a>)
           Whether to include the Closed CVEs host detail in the report.
           </li>
+<li>
+          @<b>ignore_pagination</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
+          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -20501,6 +20506,7 @@ get_preferences_response_preference_default
        &amp; attribute delta_states {  }?
        &amp; attribute autofp {  }?
        &amp; attribute show_closed_cves { boolean }?
+       &amp; attribute ignore_pagination { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response

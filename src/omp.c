@@ -2687,6 +2687,7 @@ typedef struct
   char *type;            ///< Type of report.
   char *host;            ///< Host for asset report.
   char *pos;             ///< Position of report from end.
+  int ignore_pagination; ///< Boolean.  Whether to ignore pagination filters.
 } get_reports_data_t;
 
 /**
@@ -7115,6 +7116,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               attribute_values,
                               "pos",
                               &get_reports_data->pos);
+
+            if (find_attribute (attribute_names, attribute_values,
+                                "ignore_pagination", &attribute))
+              get_reports_data->ignore_pagination = atoi (attribute);
+            else
+              get_reports_data->ignore_pagination = 0;
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -14528,6 +14535,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->overrides_details,
                                       get_reports_data->first_result,
                                       get_reports_data->max_results,
+                                      get_reports_data->ignore_pagination,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
@@ -14614,6 +14622,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->overrides_details,
                                       get_reports_data->first_result,
                                       get_reports_data->max_results,
+                                      get_reports_data->ignore_pagination,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
@@ -14836,6 +14845,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->overrides_details,
                                       get_reports_data->first_result,
                                       get_reports_data->max_results,
+                                      get_reports_data->ignore_pagination,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
