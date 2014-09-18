@@ -1,3 +1,11 @@
+2014-09-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_report_host_add): New function.
+
+	* src/manage.h: Add new function prototype.
+
+	* src/manage.c (parse_osp_report): Call new function.
+
 2014-09-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (print_report_xml, manage_send_report): Add new

@@ -3213,6 +3213,9 @@ manage_delete_user (GSList *, const gchar *, const gchar *);
 int
 manage_get_users (GSList *, const gchar *);
 
+void
+manage_report_host_add (report_t, const char *, time_t, time_t);
+
 int
 manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);
 

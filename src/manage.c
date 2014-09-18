@@ -2485,7 +2485,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   entity_t entity, child;
   entities_t results;
   const char *str, *target;
-  char *quoted_target, *defs_file;
+  char *defs_file;
   time_t start_time, end_time;
 
   assert (task);
@@ -2509,15 +2509,10 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   end_time = atoi (str);
   set_scan_end_time_epoch (report, end_time);
 
-  /* Insert target as host */
+  /* Add target as report host. */
   target = entity_attribute (entity, "target");
   assert (target);
-  quoted_target = sql_quote (target);
-  sql ("INSERT INTO report_hosts"
-       "  (report, host, start_time, end_time, current_port, max_port)"
-       " VALUES (%llu, '%s', %llu, %llu, 0, 0)", report, quoted_target,
-       start_time, end_time);
-  g_free (quoted_target);
+  manage_report_host_add (report, target, start_time, end_time);
 
   /* Insert results. */
   child = entity_child (entity, "results");

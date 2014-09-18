@@ -47207,6 +47207,29 @@ manage_empty_trashcan ()
 /* Assets. */
 
 /**
+ * @brief Add a report host.
+ *
+ * @param[in]  report   UUID of resource.
+ * @param[in]  host     Host.
+ * @param[in]  start    Start time.
+ * @param[in]  end      End time.
+ *
+ * @return 0 success, -1 failed to parse XML.
+ */
+void
+manage_report_host_add (report_t report, const char *host, time_t start,
+                        time_t end)
+{
+  char *quoted_host = sql_quote (host);
+
+  sql ("INSERT INTO report_hosts"
+       "  (report, host, start_time, end_time, current_port, max_port)"
+       " VALUES (%llu, '%s', %llu, %llu, 0, 0)", report, quoted_host,
+       start, end);
+  g_free (quoted_host);
+}
+
+/**
  * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.
