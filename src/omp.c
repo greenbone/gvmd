@@ -1601,6 +1601,7 @@ typedef struct
   char *ssh_lsc_credential_id;   ///< SSH LSC credential for new target.
   char *ssh_port;                ///< Port for SSH LSC.
   char *smb_lsc_credential_id;   ///< SMB LSC credential for new target.
+  char *esxi_lsc_credential_id;  ///< ESXi LSC credential for new target.
   char *make_name_unique;        ///< Boolean.  Whether to make name unique.
   char *name;                    ///< Name of new target.
 } create_target_data_t;
@@ -1625,6 +1626,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->ssh_lsc_credential_id);
   free (data->ssh_port);
   free (data->smb_lsc_credential_id);
+  free (data->esxi_lsc_credential_id);
   free (data->make_name_unique);
   free (data->name);
 
@@ -3603,6 +3605,7 @@ typedef struct
   char *ssh_lsc_credential_id;   ///< SSH LSC credential for target.
   char *ssh_port;                ///< Port for SSH LSC.
   char *smb_lsc_credential_id;   ///< SMB LSC credential for target.
+  char *esxi_lsc_credential_id;  ///< ESXi LSC credential for target.
   char *target_id;               ///< Target UUID.
 } modify_target_data_t;
 
@@ -5134,6 +5137,7 @@ typedef enum
   CLIENT_CREATE_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_CREATE_TARGET_COMMENT,
   CLIENT_CREATE_TARGET_COPY,
+  CLIENT_CREATE_TARGET_ESXI_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_NAME_MAKE_UNIQUE,
@@ -5363,6 +5367,7 @@ typedef enum
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
   CLIENT_MODIFY_TARGET_COMMENT,
+  CLIENT_MODIFY_TARGET_ESXI_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_HOSTS,
   CLIENT_MODIFY_TARGET_EXCLUDE_HOSTS,
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY,
@@ -8176,6 +8181,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             openvas_append_string (&modify_target_data->comment, "");
             set_client_state (CLIENT_MODIFY_TARGET_COMMENT);
           }
+        else if (strcasecmp ("ESXI_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->esxi_lsc_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_ESXI_LSC_CREDENTIAL);
+          }
         else if (strcasecmp ("HOSTS", element_name) == 0)
           {
             openvas_append_string (&modify_target_data->hosts, "");
@@ -9371,6 +9382,12 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TARGET_COMMENT);
         else if (strcasecmp ("COPY", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_COPY);
+        else if (strcasecmp ("ESXI_LSC_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->esxi_lsc_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_ESXI_LSC_CREDENTIAL);
+          }
         else if (strcasecmp ("HOSTS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_HOSTS);
         else if (strcasecmp ("PORT_LIST", element_name) == 0)
@@ -16379,10 +16396,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               while (1)
                 {
                   char *ssh_lsc_name, *ssh_lsc_uuid, *smb_lsc_name, *smb_lsc_uuid;
+                  char *esxi_lsc_name, *esxi_lsc_uuid;
                   const char *port_list_uuid, *port_list_name, *ssh_port;
                   const char *hosts, *exclude_hosts, *reverse_lookup_only;
                   const char *reverse_lookup_unify;
                   lsc_credential_t ssh_credential, smb_credential;
+                  lsc_credential_t esxi_credential;
                   int port_list_trash, max_hosts;
 
                   ret = get_next (&targets, &get_targets_data->get, &first,
@@ -16397,6 +16416,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
+                  esxi_credential = target_iterator_esxi_credential (&targets);
                   if (get_targets_data->get.trash
                       && target_iterator_ssh_trash (&targets))
                     {
@@ -16418,6 +16438,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     {
                       smb_lsc_name = lsc_credential_name (smb_credential);
                       smb_lsc_uuid = lsc_credential_uuid (smb_credential);
+                    }
+                  if (get_targets_data->get.trash
+                      && target_iterator_esxi_trash (&targets))
+                    {
+                      esxi_lsc_name
+                        = trash_lsc_credential_name (smb_credential);
+                      esxi_lsc_uuid
+                        = trash_lsc_credential_uuid (smb_credential);
+                    }
+                  else
+                    {
+                      esxi_lsc_name = lsc_credential_name (esxi_credential);
+                      esxi_lsc_uuid = lsc_credential_uuid (esxi_credential);
                     }
                   port_list_uuid = target_iterator_port_list_uuid (&targets);
                   port_list_name = target_iterator_port_list_name (&targets);
@@ -16451,6 +16484,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<name>%s</name>"
                                            "<trash>%i</trash>"
                                            "</smb_lsc_credential>"
+                                           "<esxi_lsc_credential id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>"
+                                           "</esxi_lsc_credential>"
                                            "<reverse_lookup_only>"
                                            "%s"
                                            "</reverse_lookup_only>"
@@ -16474,6 +16511,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            smb_lsc_name ? smb_lsc_name : "",
                                            (get_targets_data->get.trash
                                              && target_iterator_smb_trash
+                                                 (&targets)),
+                                           esxi_lsc_uuid ? esxi_lsc_uuid : "",
+                                           esxi_lsc_name ? esxi_lsc_name : "",
+                                           (get_targets_data->get.trash
+                                             && target_iterator_esxi_trash
                                                  (&targets)),
                                            reverse_lookup_only,
                                            reverse_lookup_unify,
@@ -20695,6 +20737,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET:
         {
           lsc_credential_t ssh_lsc_credential = 0, smb_lsc_credential = 0;
+          lsc_credential_t esxi_lsc_credential = 0;
           target_t new_target;
 
           assert (strcasecmp ("CREATE_TARGET", element_name) == 0);
@@ -20803,6 +20846,25 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (create_target_data->esxi_lsc_credential_id
+                   && find_lsc_credential
+                       (create_target_data->esxi_lsc_credential_id,
+                        &esxi_lsc_credential))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->esxi_lsc_credential_id
+                   && esxi_lsc_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target",
+                    "LSC credential",
+                    create_target_data->esxi_lsc_credential_id,
+                    write_to_client,
+                    write_to_client_data))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
@@ -20814,6 +20876,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                          ssh_lsc_credential,
                          create_target_data->ssh_port,
                          smb_lsc_credential,
+                         esxi_lsc_credential,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
@@ -20898,6 +20961,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           break;
         }
       CLOSE (CLIENT_CREATE_TARGET, COMMENT);
+      CLOSE (CLIENT_CREATE_TARGET, ESXI_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
@@ -23681,6 +23745,7 @@ create_task_fail:
                          modify_target_data->ssh_lsc_credential_id,
                          modify_target_data->ssh_port,
                          modify_target_data->smb_lsc_credential_id,
+                         modify_target_data->esxi_lsc_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests))
@@ -23838,6 +23903,21 @@ create_task_fail:
                                 modify_target_data->target_id,
                                 "modified");
                 break;
+              case 16:
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                if (send_find_error_to_client
+                     ("modify_target",
+                      "LSC credential",
+                      modify_target_data->esxi_lsc_credential_id,
+                      write_to_client,
+                      write_to_client_data))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -23866,6 +23946,7 @@ create_task_fail:
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+      CLOSE (CLIENT_MODIFY_TARGET, ESXI_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, EXCLUDE_HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);

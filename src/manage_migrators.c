@@ -9506,6 +9506,51 @@ migrate_132_to_133 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 133 to version 134.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_133_to_134 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 133. */
+
+  if (manage_db_version () != 133)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add a new columns for ESXi credentials to targets & targets_trash table. */
+  if (sql_is_sqlite3 ())
+    {
+      sql ("ALTER TABLE targets ADD COLUMN esxi_lsc_credential;");
+      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential;");
+      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_location INTEGER;");
+    }
+  else
+    {
+      sql ("ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer"
+           " REFERENCES lsc_credentials (id) ON DELETE RESTRICT;");
+      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer"
+           " REFERENCES lsc_credentials (id) ON DELETE RESTRICT;");
+      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_location integer;");
+    }
+
+  /* Set the database version to 134. */
+
+  set_db_version (134);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -9650,6 +9695,7 @@ static migrator_t database_migrators[]
     {131, migrate_130_to_131},
     {132, migrate_131_to_132},
     {133, migrate_132_to_133},
+    {134, migrate_133_to_134},
     /* End marker. */
     {-1, NULL}};
 

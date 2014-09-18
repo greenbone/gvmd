@@ -2244,14 +2244,15 @@ create_tables ()
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
        "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify, comment,"
        "  lsc_credential INTEGER, ssh_port, smb_lsc_credential INTEGER,"
-       "  port_range, alive_test, creation_time, modification_time);");
+       "  port_range, alive_test, creation_time, modification_time,"
+       "  esxi_lsc_credential);");
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name, hosts,"
        "  exclude_hosts, reverse_lookup_only, reverse_lookup_unify,"
        "  comment, lsc_credential INTEGER, ssh_port, smb_lsc_credential"
        "  INTEGER, port_range, ssh_location INTEGER, smb_location INTEGER,"
        "  port_list_location INTEGER, alive_test, creation_time,"
-       "  modification_time);");
+       "  modification_time, esxi_lsc_credential, esxi_location INTEGER);");
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id INTEGER PRIMARY KEY, task INTEGER, name, content);");
   sql ("CREATE TABLE IF NOT EXISTS task_alerts"

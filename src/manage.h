@@ -1230,7 +1230,8 @@ find_target (const char*, target_t*);
 int
 create_target (const char*, const char*, const char*, const char*, const char *,
                const char*, lsc_credential_t, const char*, lsc_credential_t,
-               const char *, const char *, const char *, int, target_t*);
+               lsc_credential_t, const char *, const char *, const char *, int,
+               target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1238,7 +1239,7 @@ copy_target (const char*, const char*, const char *, target_t*);
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*, const char *);
+               const char*, const char *, const char*);
 
 int
 delete_target (const char*, int);
@@ -1277,10 +1278,16 @@ int
 target_iterator_smb_credential (iterator_t*);
 
 int
+target_iterator_esxi_credential (iterator_t*);
+
+int
 target_iterator_ssh_trash (iterator_t*);
 
 int
 target_iterator_smb_trash (iterator_t*);
+
+int
+target_iterator_esxi_trash (iterator_t*);
 
 const char*
 target_iterator_port_list_uuid (iterator_t*);

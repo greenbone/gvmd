@@ -4099,6 +4099,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>hosts</e>
       <e>ssh_lsc_credential</e>
       <e>smb_lsc_credential</e>
+      <e>esxi_lsc_credential</e>
       <e>alive_tests</e>
       <e>reverse_lookup_only</e>
       <e>reverse_lookup_unify</e>
@@ -4161,6 +4162,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>smb_lsc_credential</name>
       <summary>SMB login credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>esxi_lsc_credential</name>
+      <summary>ESXi credential to use on target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -15930,6 +15942,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>max_hosts</e>
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
+          <e>esxi_lsc_credential</e>
           <e>permissions</e>
           <e>port_range</e>
           <e>port_list</e>
@@ -16108,6 +16121,31 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>name</name>
             <summary>The name of the SMB LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+        <name>esxi_lsc_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the ESXi LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
           <ele>
@@ -16324,6 +16362,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <smb_lsc_credential id="">
               <name></name>
             </smb_lsc_credential>
+            <esxi_lsc_credential id="">
+              <name></name>
+            </esxi_lsc_credential>
           </target>
           <truncated>...</truncated>
         </get_targets_response>
@@ -16355,6 +16396,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <smb_lsc_credential id="">
               <name></name>
             </smb_lsc_credential>
+            <esxi_lsc_credential id="">
+              <name></name>
+            </esxi_lsc_credential>
             <tasks>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
@@ -19922,6 +19966,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>hosts</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
+      <o><e>esxi_lsc_credential</e></o>
       <o><e>port_list</e></o>
       <o><e>alive_tests</e></o>
       <o><e>reverse_lookup_only</e></o>
@@ -19956,6 +20001,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>smb_lsc_credential</name>
       <summary>SMB credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>esxi_lsc_credential</name>
+      <summary>ESXi credential to use on target</summary>
       <pattern>
         <attrib>
           <name>id</name>

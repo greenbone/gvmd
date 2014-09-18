@@ -3353,6 +3353,7 @@ create_target
        & create_target_hosts
        & create_target_ssh_lsc_credential
        & create_target_smb_lsc_credential
+       & create_target_esxi_lsc_credential
        & create_target_alive_tests
        & create_target_reverse_lookup_only
        & create_target_reverse_lookup_unify
@@ -3414,6 +3415,13 @@ create_target_ssh_lsc_credential_port
 # SMB login credentials for target.
 create_target_smb_lsc_credential
  = element smb_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+# ESXi credential to use on target.
+create_target_esxi_lsc_credential
+ = element esxi_lsc_credential
      {
        attribute id { uuid }
      }
@@ -5351,7 +5359,7 @@ modify_scanner_port
        text
      }
 
-# Type of the scanner. '1' for OSPD Ovaldi, '2' for OpenVAS (classic) Scanner.
+# Type of the scanner. '1' for OSP, '2' for OpenVAS (classic) Scanner.
 modify_scanner_type
  = element type
      {
@@ -5585,6 +5593,7 @@ modify_target
        & modify_target_hosts?
        & modify_target_ssh_lsc_credential?
        & modify_target_smb_lsc_credential?
+       & modify_target_esxi_lsc_credential?
        & modify_target_port_list?
        & modify_target_alive_tests?
        & modify_target_reverse_lookup_only?
@@ -5622,6 +5631,13 @@ modify_target_ssh_lsc_credential
 # SMB credential to use on target.
 modify_target_smb_lsc_credential
  = element smb_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+# ESXi credential to use on target.
+modify_target_esxi_lsc_credential
+ = element esxi_lsc_credential
      {
        attribute id { uuid }
      }
@@ -14000,6 +14016,7 @@ get_targets_response_target
        & get_targets_response_target_max_hosts
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
+       & get_targets_response_target_esxi_lsc_credential
        & get_targets_response_target_permissions
        & get_targets_response_target_port_range
        & get_targets_response_target_port_list
@@ -14193,6 +14210,28 @@ get_targets_response_target_smb_lsc_credential_name
 
 # Whether the LSC credential is in the trashcan.
 get_targets_response_target_smb_lsc_credential_trash
+ = element trash
+     {
+       boolean
+     }
+
+get_targets_response_target_esxi_lsc_credential
+ = element esxi_lsc_credential
+     {
+       attribute id { uuid_or_empty }
+       & get_targets_response_target_esxi_lsc_credential_name
+       & get_targets_response_target_esxi_lsc_credential_trash
+     }
+
+# The name of the ESXi LSC credential.
+get_targets_response_target_esxi_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+# Whether the LSC credential is in the trashcan.
+get_targets_response_target_esxi_lsc_credential_trash
  = element trash
      {
        boolean

@@ -263,7 +263,8 @@ CREATE TABLE targets
   port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
   alive_test integer,
   creation_time date,
-  modification_time date);
+  modification_time date,
+  esxi_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT);
 
 CREATE TABLE targets_trash
  (id SERIAL PRIMARY KEY,
@@ -283,7 +284,9 @@ CREATE TABLE targets_trash
   smb_location integer,
   port_list_location integer,
   creation_time date,
-  modification_time date);
+  modification_time date,
+  esxi_lsc_credential integer REFERENCES lsc_credentials (id) ON DELETE RESTRICT),
+  esxi_location integer;
 
 CREATE TABLE configs
  (id SERIAL PRIMARY KEY,

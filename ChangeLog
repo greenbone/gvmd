@@ -1,3 +1,66 @@
+2014-09-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add ESXi credentials field to targets, which are sent to scanner upon
+	starting a task using the target. Hence increase database version
+	to 134. Add database migration from version 133 to 134.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 134.
+
+	* src/manage_migrators.c (migrate_133_to_134): New function.
+	(database_migrators): Add migrate_133_to_134.
+
+	* doc/db_postgres.sql: Add new column esxi_lsc_credential to table
+	targets. Add new columns esxi_lsc_credential and esxi_location to
+	table targets_trash.
+
+	* src/manage_pg.c (create_tables): Add new columns to targets and
+	targets_trash.
+
+	* src/manage_sql.c (create_target): Add new esxi_lsc_credential
+	parameter.
+	(delete_target): Set new columns esxi_lsc_credential and esxi_location.
+	(modify_target): Add new esxi_lsc_credential_id parameter and define
+	return code in case ESXi credentials are not found.
+	(TARGET_ITERATOR_FILTER_COLUMNS, TARGET_ITERATOR_COLUMNS): Add new
+	columns for ESXi credentials and the ESXi credentials location.
+	(TARGET_ITERATOR_TRASH_COLUMNS): Add columns reverse_lookup_only,
+	reverse_lookup_unify, alive_test for consistency. Add new
+	columns for ESXi credentials and the ESXi credentials location.
+	(target_iterator_esxi_credential, target_iterator_esxi_trash): New
+	iterator value getter functions.
+	(target_esxi_lsc_credential): New function.
+	(delete_lsc_credential): Set esxi_location for targets in trashcan.
+	(manage_restore): Set esxi_location for targets in trashcan when
+	restoring credentials and set esxi_lsc_credential for restored targets.
+
+	* src/manage_sql.h (target_esxi_lsc_credential): New function prototype.
+
+	* src/manage_sqlite3.c (create_tables): Add new columns to targets and
+	targets_trash.
+
+	* src/manage.c (run_task): Add plugin and preferences containing ESXi
+	credentials and rewrite creation of authentication plugins list to
+	generally make adding new items simpler.
+
+	* src/manage.h (create_target, modify_target): Add new parameters.
+	(target_iterator_esxi_credential): New function prototype.
+
+	* src/omp.c (create_target_data_t, create_target_data_reset)
+	(modify_target_data_t, modify_target_data_reset): Add new field
+	esxi_lsc_credential_id.
+	(client_state_t): Add CLIENT_CREATE_TARGET_ESXI_LSC_CREDENTIAL and
+	CLIENT_MODIFY_TARGET_ESXI_LSC_CREDENTIAL
+	(omp_xml_handle_start_element): In cases for CLIENT_MODIFY_TARGET
+	and CLIENT_CREATE_TARGET, handle new ESXI_LSC_CREDENTIAL element.
+	(omp_xml_handle_end_element): In cases for CLIENT_GET_TARGETS,
+	CLIENT_CREATE_TARGET and CLIENT_MODIFY_TARGET add/handle new
+	ESXI_LSC_CREDENTIAL element.
+
+	* src/schema_formats/XML/OMP.xml (create_target, get_targets)
+	(modify_target): Add new elements for ESXi credentials.
+
+	* doc/omp.rnc, doc/omp.html: Update from source.
+
 2014-09-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* INSTALL: Added prerequisite information for vernice report format.

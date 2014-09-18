@@ -2831,7 +2831,7 @@ run_task (const char *task_id, char **report_id, int from,
   GPtrArray *preference_files;
   task_status_t run_status;
   config_t config;
-  lsc_credential_t ssh_credential, smb_credential;
+  lsc_credential_t ssh_credential, smb_credential, esxi_credential;
   report_t last_stopped_report;
 
   task = 0;
@@ -2886,6 +2886,7 @@ run_task (const char *task_id, char **report_id, int from,
 
   ssh_credential = target_ssh_lsc_credential (target);
   smb_credential = target_smb_lsc_credential (target);
+  esxi_credential = target_esxi_lsc_credential (target);
 
   hosts = target_hosts (target);
   if (hosts == NULL)
@@ -3033,21 +3034,23 @@ run_task (const char *task_id, char **report_id, int from,
   plugins = nvt_selector_plugins (config);
   if (plugins)
     {
-      if (ssh_credential && smb_credential)
-        fail = sendf_to_server ("plugin_set <|>"
-                                " 1.3.6.1.4.1.25623.1.0.90022;"
-                                "1.3.6.1.4.1.25623.1.0.90023;%s\n",
-                                plugins);
-      else if (ssh_credential)
-        fail = sendf_to_server ("plugin_set <|>"
-                                " 1.3.6.1.4.1.25623.1.0.90022;%s\n",
-                                plugins);
-      else if (smb_credential)
-        fail = sendf_to_server ("plugin_set <|>"
-                                " 1.3.6.1.4.1.25623.1.0.90023;%s\n",
-                                plugins);
-      else
+      if (ssh_credential == 0 && smb_credential == 0 && esxi_credential == 0)
         fail = sendf_to_server ("plugin_set <|> %s\n", plugins);
+      else
+        {
+          GString *auth_plugins = g_string_new ("");
+          if (ssh_credential)
+            g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.90022;");
+          if (smb_credential)
+            g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.90023;");
+          if (esxi_credential)
+            g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.105058;");
+
+        fail = sendf_to_server ("plugin_set <|> %s%s\n",
+                                auth_plugins->str,
+                                plugins);
+        g_string_free (auth_plugins, TRUE);
+      }
     }
   else
     fail = send_to_server ("plugin_set <|> 0\n");
@@ -3265,6 +3268,38 @@ run_task (const char *task_id, char **report_id, int from,
           if (sendf_to_server ("SMB Authorization[entry]:SMB login: <|> %s\n",
                                user)
               || sendf_to_server ("SMB Authorization[password]:SMB password:"
+                                  " <|> %s\n",
+                                  password))
+            {
+              free (hosts);
+              cleanup_iterator (&credentials);
+              g_ptr_array_add (preference_files, NULL);
+              array_free (preference_files);
+              slist_free (files);
+              set_task_run_status (task, run_status);
+              set_report_scan_run_status (current_report, run_status);
+              current_report = (report_t) 0;
+              return -10;
+            }
+        }
+      cleanup_iterator (&credentials);
+    }
+
+  if (esxi_credential)
+    {
+      iterator_t credentials;
+
+      init_user_lsc_credential_iterator (&credentials, esxi_credential, 0, 1,
+                                         NULL);
+      if (next (&credentials))
+        {
+          const char *user = lsc_credential_iterator_login (&credentials);
+          const char *password = lsc_credential_iterator_password (&credentials);
+
+          if (sendf_to_server ("ESXi Authorization[entry]:ESXi login name:"
+                               " <|> %s\n",
+                               user)
+              || sendf_to_server ("ESXi Authorization[password]:ESXi login password:"
                                   " <|> %s\n",
                                   password))
             {

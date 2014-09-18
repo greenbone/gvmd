@@ -8265,6 +8265,14 @@ create_tag_active
           </li></ul>
 </li>
 <li>
+              &lt;<b>esxi_lsc_credential</b>&gt;
+              <div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>alive_tests</b>&gt;
               <div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
 <ul style="list-style: none"></ul>
@@ -8322,6 +8330,7 @@ create_tag_active
        &amp; create_target_hosts
        &amp; create_target_ssh_lsc_credential
        &amp; create_target_smb_lsc_credential
+       &amp; create_target_esxi_lsc_credential
        &amp; create_target_alive_tests
        &amp; create_target_reverse_lookup_only
        &amp; create_target_reverse_lookup_unify
@@ -8375,6 +8384,12 @@ create_target_ssh_lsc_credential_port
 
 create_target_smb_lsc_credential
  = element smb_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+create_target_esxi_lsc_credential
+ = element esxi_lsc_credential
      {
        attribute id { uuid }
      }
@@ -25875,6 +25890,25 @@ get_tags_response_tag_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>esxi_lsc_credential</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid_or_empty">uuid_or_empty</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the ESXi LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the LSC credential is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>permissions</b>&gt;
               <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the target.</div>
 <ul style="list-style: none"><li>
@@ -26068,6 +26102,7 @@ get_targets_response_target
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_ssh_lsc_credential
        &amp; get_targets_response_target_smb_lsc_credential
+       &amp; get_targets_response_target_esxi_lsc_credential
        &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_port_range
        &amp; get_targets_response_target_port_list
@@ -26237,6 +26272,26 @@ get_targets_response_target_smb_lsc_credential_name
      }
 
 get_targets_response_target_smb_lsc_credential_trash
+ = element trash
+     {
+       boolean
+     }
+
+get_targets_response_target_esxi_lsc_credential
+ = element esxi_lsc_credential
+     {
+       attribute id { uuid_or_empty }
+       &amp; get_targets_response_target_esxi_lsc_credential_name
+       &amp; get_targets_response_target_esxi_lsc_credential_trash
+     }
+
+get_targets_response_target_esxi_lsc_credential_name
+ = element name
+     {
+       name
+     }
+
+get_targets_response_target_esxi_lsc_credential_trash
  = element trash
      {
        boolean
@@ -26423,6 +26478,9 @@ get_targets_response_target_count_page
      &lt;smb_lsc_credential id=""&gt;
        &lt;name/&gt;
      &lt;/smb_lsc_credential&gt;
+     &lt;esxi_lsc_credential id=""&gt;
+       &lt;name/&gt;
+     &lt;/esxi_lsc_credential&gt;
    &lt;/target&gt;
    ...
  &lt;/get_targets_response&gt;
@@ -26453,6 +26511,9 @@ get_targets_response_target_count_page
      &lt;smb_lsc_credential id=""&gt;
        &lt;name/&gt;
      &lt;/smb_lsc_credential&gt;
+     &lt;esxi_lsc_credential id=""&gt;
+       &lt;name/&gt;
+     &lt;/esxi_lsc_credential&gt;
      &lt;tasks&gt;
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;dik mm&lt;/name&gt;
@@ -31180,7 +31241,7 @@ modify_role_users
 </li>
 <li>
               &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Type of the scanner. '1' for OSPD Ovaldi, '2' for OpenVAS (classic) Scanner.</div>
+              <div style="margin-left: 15px; display: inline;">Type of the scanner. '1' for OSP, '2' for OpenVAS (classic) Scanner.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -31773,6 +31834,14 @@ modify_slave_password
           </li></ul>
 </li>
 <li>
+              &lt;<b>esxi_lsc_credential</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
               &lt;<b>port_list</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Port List describing ports to scan.</div>
 <ul style="list-style: none"><li>
@@ -31821,6 +31890,7 @@ modify_slave_password
        &amp; modify_target_hosts?
        &amp; modify_target_ssh_lsc_credential?
        &amp; modify_target_smb_lsc_credential?
+       &amp; modify_target_esxi_lsc_credential?
        &amp; modify_target_port_list?
        &amp; modify_target_alive_tests?
        &amp; modify_target_reverse_lookup_only?
@@ -31853,6 +31923,12 @@ modify_target_ssh_lsc_credential
 
 modify_target_smb_lsc_credential
  = element smb_lsc_credential
+     {
+       attribute id { uuid }
+     }
+
+modify_target_esxi_lsc_credential
+ = element esxi_lsc_credential
      {
        attribute id { uuid }
      }

@@ -1450,7 +1450,9 @@ create_tables ()
        "  port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  esxi_lsc_credential integer REFERENCES lsc_credentials (id)"
+       "    ON DELETE RESTRICT);");
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -1471,7 +1473,10 @@ create_tables ()
        "  port_list_location integer,"
        "  alive_test integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  esxi_lsc_credential integer REFERENCES lsc_credentials (id)"
+       "    ON DELETE RESTRICT,"
+       "  esxi_location integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
