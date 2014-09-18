@@ -261,6 +261,9 @@ Prerequisites for generating PDF reports:
 Prerequisites for generating HTML reports:
 * xsltproc
 
+Prerequisites for generating verinice reports:
+* xsltproc, xmlstarlet, zip
+
 Prerequisites for generating credentials RPM / DEB packages:
 * rpm
 * fakeroot
