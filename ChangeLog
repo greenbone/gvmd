@@ -1,3 +1,9 @@
+2014-09-18  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Backport r20400.
+
+	* INSTALL: Added prerequisite information for vernice report format.
+
 2014-09-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20396.
