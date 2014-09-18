@@ -2322,9 +2322,6 @@ run_task (task_t task, char **report_id, int from)
           return -1;
         }
 
-      /* Clear slave record, in case slave changed. */
-      set_report_slave_task_uuid (last_stopped_report, "");
-
       current_report = last_stopped_report;
       if (report_id) *report_id = report_uuid (last_stopped_report);
 

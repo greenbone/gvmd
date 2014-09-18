@@ -1,3 +1,11 @@
+2014-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20396.
+
+	* src/manage.c (run_task): When resuming a task, keep the slave task
+	uuid on the report, because slave_setup (via run_slave_task) needs this
+	uuid to resume the task on the slave.
+
 2014-08-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r16635.
