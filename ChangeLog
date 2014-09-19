@@ -1,3 +1,10 @@
+2014-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20425.
+
+	* src/manage_sql.c (set_task_schedule): Actually calculate next time,
+	instead of setting it to first time.
+
 2014-09-18  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* src/otp.h: Fix prototype of process_otp_scanner_input (add parameter)
