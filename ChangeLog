@@ -1,3 +1,10 @@
+2014-09-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/wizards/get_tasks_deep.xml: Add new option "include_scanners".
+
+	* src/wizards/quick_auth_scan.xml: Add new optional parameter
+	"scanner_id" to select the scanner of the created task.
+
 2014-09-18  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_report_host_add): New function.

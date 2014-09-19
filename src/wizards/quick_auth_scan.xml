@@ -46,6 +46,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                  "Target for immediate scan of [hosts]"
   lsc_credential_name : The name to use for the LSC credential. Defaults to
                          "LSC Credential for immediate scan of [hosts]"
+  scanner_id : The UUID of the scanner to use, defaults to the built-in
+                OpenVAS-Scanner.
 
   To run this wizard, use the OMP command RUN_WIZARD.
   Please see the OMP documentation for details.
@@ -154,6 +156,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </xsl:when>
               <xsl:otherwise>
                 <config id="daba56c8-73ec-11df-a475-002264764cea"/>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+              <xsl:when test="/wizard/params/param[name='scanner_id']/value != ''">
+                <scanner id="{/wizard/params/param[name='scanner_id']/value}"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <scanner id="08b69003-5fc2-4037-a479-93b440211c73"/>
               </xsl:otherwise>
             </xsl:choose>
             <comment><xsl:value-of select="/wizard/params/param[name='comment']/value"/></comment>

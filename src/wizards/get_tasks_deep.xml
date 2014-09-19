@@ -106,6 +106,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <xsl:if test="/wizard/params/param[name='include_configs']/value">
               <get_configs/>
             </xsl:if>
+            <xsl:if test="/wizard/params/param[name='include_scanners']/value">
+              <get_scanners/>
+            </xsl:if>
             <xsl:for-each select="$response/commands_response">
               <commands>
                 <get_tasks task_id="{get_tasks_response/task/@id}" details="1"/>
