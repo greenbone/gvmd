@@ -1,3 +1,8 @@
+2014-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (set_task_schedule): Actually calculate next time,
+	instead of setting it to first time.
+
 2014-09-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/wizards/get_tasks_deep.xml: Add new option "include_scanners".

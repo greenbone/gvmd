@@ -13279,8 +13279,13 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
 int
 set_task_schedule (task_t task, schedule_t schedule)
 {
-  sql ("UPDATE tasks SET schedule = %llu, schedule_next_time = "
-       " (SELECT schedules.first_time FROM schedules WHERE id = %llu),"
+  sql ("UPDATE tasks"
+       " SET schedule = %llu,"
+       " schedule_next_time = (SELECT next_time (first_time,"
+       "                                         period,"
+       "                                         period_months)"
+       "                       FROM schedules"
+       "                       WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        schedule, schedule, task);
