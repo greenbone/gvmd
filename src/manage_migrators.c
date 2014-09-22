@@ -9535,10 +9535,10 @@ migrate_133_to_134 ()
     }
   else
     {
-      sql ("ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer"
-           " REFERENCES lsc_credentials (id) ON DELETE RESTRICT;");
-      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer"
-           " REFERENCES lsc_credentials (id) ON DELETE RESTRICT;");
+      sql ("ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;");
+           // REFERENCES lsc_credentials (id) ON DELETE RESTRICT
+      sql ("ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;");
+           // REFERENCES lsc_credentials (id) ON DELETE RESTRICT
       sql ("ALTER TABLE targets_trash ADD COLUMN esxi_location integer;");
     }
 

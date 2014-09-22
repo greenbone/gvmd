@@ -1,3 +1,8 @@
+2014-09-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_migrators.c (migrate_133_to_134): Remove REFERENCES,
+	because the credential is optional.
+
 2014-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_schedule): Actually calculate next time,
