@@ -6164,9 +6164,6 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
     }                                                           \
   else                                                          \
     {                                                           \
-      if ((strcmp (op, "create_task") == 0)                     \
-          && create_task_data->task)                            \
-        request_delete_task (&create_task_data->task);          \
       if (send_element_error_to_client (op, element_name,       \
                                         write_to_client,        \
                                         write_to_client_data))  \
@@ -6180,6 +6177,37 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
                    G_MARKUP_ERROR_UNKNOWN_ELEMENT,              \
                    "Error");                                    \
     }                                                           \
+  break
+
+/**
+ * @brief Insert else clause for omp_xml_handle_start_element in create_task.
+ *
+ */
+#define ELSE_ERROR_CREATE_TASK()                                     \
+  else if (omp_parser->importing)                                    \
+    {                                                                \
+      if (omp_parser->read_over == 0)                                \
+        {                                                            \
+          omp_parser->read_over = 1;                                 \
+          omp_parser->parent_state = client_state;                   \
+        }                                                            \
+    }                                                                \
+  else                                                               \
+    {                                                                \
+      request_delete_task (&create_task_data->task);                 \
+      if (send_element_error_to_client ("create_task", element_name, \
+                                        write_to_client,             \
+                                        write_to_client_data))       \
+        {                                                            \
+          error_send_to_client (error);                              \
+          return;                                                    \
+        }                                                            \
+      set_client_state (CLIENT_AUTHENTIC);                           \
+      g_set_error (error,                                            \
+                   G_MARKUP_ERROR,                                   \
+                   G_MARKUP_ERROR_UNKNOWN_ELEMENT,                   \
+                   "Error");                                         \
+    }                                                                \
   break
 
 /**
@@ -9493,7 +9521,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->target_id);
             set_client_state (CLIENT_CREATE_TASK_TARGET);
           }
-        ELSE_ERROR ("create_task");
+        ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_TASK_OBSERVERS:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -9504,7 +9532,7 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               array_add (create_task_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_CREATE_TASK_OBSERVERS_GROUP);
           }
-        ELSE_ERROR ("create_task");
+        ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -9515,14 +9543,14 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             create_task_data->preference->value = NULL;
             set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
           }
-        ELSE_ERROR ("create_task");
+        ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_ERROR ("create_task");
+        ELSE_ERROR_CREATE_TASK ();
 
       case CLIENT_CREATE_USER:
         if (strcasecmp ("COPY", element_name) == 0)

@@ -1,3 +1,9 @@
+2014-09-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (ELSE_ERROR): Remove static strings comparison.
+	(ELSE_ERROR_CREATE_TASK): New macro.
+	(omp_xml_handle_start_element): Use new macro accordingly.
+
 2014-09-24  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Bump required minimum version of openvas-libraries.
