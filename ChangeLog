@@ -1,3 +1,12 @@
+2014-09-24  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Bump required minimum version of openvas-libraries.
+
+	* CMakeLists.txt: Bump required openvas-libraries version to 8.0.0 or
+	later.
+
+	* INSTALL: Update version of openvas-libraries dependency.
+
 2014-09-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
