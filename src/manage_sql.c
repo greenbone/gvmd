@@ -47950,10 +47950,10 @@ modify_setting (const gchar *uuid, const gchar *name,
  * @brief Filter columns for CVE iterator.
  */
 #define CVE_INFO_ITERATOR_FILTER_COLUMNS                         \
- { "uuid", "name", "comment", "published", "modified", "vector", \
+ { "uuid", "name", "comment", "created", "modified", "vector",   \
    "complexity", "authentication", "confidentiality_impact",     \
    "integrity_impact", "availability_impact", "products",        \
-   "cvss", "description", "severity", NULL }
+   "cvss", "description", "severity", "published", NULL }
 
 /**
  * @brief CVE iterator columns.
@@ -47966,7 +47966,7 @@ modify_setting (const gchar *uuid, const gchar *name,
    { "comment", NULL },                                         \
    { "iso_time (creation_time)", NULL },                        \
    { "iso_time (modification_time)", NULL },                    \
-   { "creation_time", "published" },                            \
+   { "creation_time", "created" },                              \
    { "modification_time", "modified" },                         \
    { "''", NULL },                                              \
    { "vector", NULL },                                          \
@@ -47979,6 +47979,7 @@ modify_setting (const gchar *uuid, const gchar *name,
    { "cvss", NULL },                                            \
    { "description", NULL },                                     \
    { "cvss", "severity" },                                      \
+   { "creation_time", "published" },                            \
    { NULL, NULL }                                               \
  }
 

@@ -1,5 +1,11 @@
 2014-09-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS)
+	(CVE_INFO_ITERATOR_COLUMNS): Allow both "created" and "published"
+	as aliases for the "creation_time" column.
+
+2014-09-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGGREGATES case
 	Add new response elements c_count and c_sum for cumulative count and
 	cumulative sum of data column.
