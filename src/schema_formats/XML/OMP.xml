@@ -7087,12 +7087,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <e>value</e>
             <e>count</e>
+            <e>c_count</e>
             <o>
               <g>
                 <e>min</e>
                 <e>max</e>
                 <e>mean</e>
                 <e>sum</e>
+                <e>c_sum</e>
               </g>
             </o>
           </pattern>
@@ -7104,6 +7106,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>count</name>
             <summary>Number of resources in the group</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>c_count</name>
+            <summary>Cumulative number of resources in all groups up to and including the current one</summary>
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
@@ -7124,6 +7131,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>sum</name>
             <summary>Sum of the numeric values of the data column</summary>
+            <pattern><t>text</t></pattern>
+          </ele>
+          <ele>
+            <name>c_sum</name>
+            <summary>Cumulative sum of the numeric values of the data column for all groups up to and including the current one</summary>
             <pattern><t>text</t></pattern>
           </ele>
         </ele>

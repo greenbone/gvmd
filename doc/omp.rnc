@@ -7620,10 +7620,12 @@ get_aggregates_response_aggregate_group
      {
        get_aggregates_response_aggregate_group_value
        & get_aggregates_response_aggregate_group_count
+       & get_aggregates_response_aggregate_group_c_count
        & ( get_aggregates_response_aggregate_group_min
            & get_aggregates_response_aggregate_group_max
            & get_aggregates_response_aggregate_group_mean
-           & get_aggregates_response_aggregate_group_sum )?
+           & get_aggregates_response_aggregate_group_sum
+           & get_aggregates_response_aggregate_group_c_sum )?
      }
 
 # Value of the group column.
@@ -7636,6 +7638,13 @@ get_aggregates_response_aggregate_group_value
 # Number of resources in the group.
 get_aggregates_response_aggregate_group_count
  = element count
+     {
+       integer
+     }
+
+# Cumulative number of resources in all groups up to and including the current one.
+get_aggregates_response_aggregate_group_c_count
+ = element c_count
      {
        integer
      }
@@ -7664,6 +7673,13 @@ get_aggregates_response_aggregate_group_mean
 # Sum of the numeric values of the data column.
 get_aggregates_response_aggregate_group_sum
  = element sum
+     {
+       text
+     }
+
+# Cumulative sum of the numeric values of the data column for all groups up to and including the current one.
+get_aggregates_response_aggregate_group_c_sum
+ = element c_sum
      {
        text
      }

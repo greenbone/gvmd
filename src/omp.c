@@ -15990,6 +15990,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           const char **filter_columns, *data_column, *group_column;
           int ret;
           GString *xml;
+          double c_sum;
+          long c_count;
 
           type = get_aggregates_data->type;
           if (type == NULL)
@@ -16105,46 +16107,63 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                     "<group_column>%s</group_column>",
                                     group_column);
 
+          c_sum = 0.0;
+          c_count = 0L;
           while (next (&aggregate))
             {
+              if (data_column || group_column == NULL)
+                c_sum += aggregate_iterator_sum (&aggregate);
+              c_count += aggregate_iterator_count (&aggregate);
+
               if (group_column && data_column)
                 g_string_append_printf (xml,
                                         "<group>"
                                         "<value>%s</value>"
                                         "<count>%d</count>"
+                                        "<c_count>%ld</c_count>"
                                         "<min>%g</min>"
                                         "<max>%g</max>"
                                         "<mean>%g</mean>"
                                         "<sum>%g</sum>"
+                                        "<c_sum>%g</c_sum>"
                                         "</group>",
                                         aggregate_iterator_value (&aggregate),
                                         aggregate_iterator_count (&aggregate),
+                                        c_count,
                                         aggregate_iterator_min (&aggregate),
                                         aggregate_iterator_max (&aggregate),
                                         aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate));
+                                        aggregate_iterator_sum (&aggregate),
+                                        c_sum);
               else if (group_column)
                 g_string_append_printf (xml,
                                         "<group>"
                                         "<value>%s</value>"
                                         "<count>%d</count>"
+                                        "<c_count>%ld</c_count>"
                                         "</group>",
                                         aggregate_iterator_value (&aggregate),
-                                        aggregate_iterator_count (&aggregate));
+                                        aggregate_iterator_count (&aggregate),
+                                        c_count);
               else
                 g_string_append_printf (xml,
                                         "<overall>"
                                         "<count>%d</count>"
+                                        "<c_count>%ld</c_count>"
                                         "<min>%g</min>"
                                         "<max>%g</max>"
                                         "<mean>%g</mean>"
                                         "<sum>%g</sum>"
+                                        "<c_sum>%g</c_sum>"
                                         "</overall>",
                                         aggregate_iterator_count (&aggregate),
+                                        c_count,
                                         aggregate_iterator_min (&aggregate),
                                         aggregate_iterator_max (&aggregate),
                                         aggregate_iterator_mean (&aggregate),
-                                        aggregate_iterator_sum (&aggregate));
+                                        aggregate_iterator_sum (&aggregate),
+                                        c_sum
+                                       );
             }
           g_string_append (xml, "</aggregate>");
           g_string_append (xml, "</get_aggregates_response>");

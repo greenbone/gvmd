@@ -12439,6 +12439,11 @@ get_configs_response_config_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>c_count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Cumulative number of resources in all groups up to and including the current one.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>min</b>&gt;
@@ -12458,6 +12463,11 @@ get_configs_response_config_count_page
 <li>
               &lt;<b>sum</b>&gt;
               <div style="margin-left: 15px; display: inline;">Sum of the numeric values of the data column.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>c_sum</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Cumulative sum of the numeric values of the data column for all groups up to and including the current one.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -12559,10 +12569,12 @@ get_aggregates_response_aggregate_group
      {
        get_aggregates_response_aggregate_group_value
        &amp; get_aggregates_response_aggregate_group_count
+       &amp; get_aggregates_response_aggregate_group_c_count
        &amp; ( get_aggregates_response_aggregate_group_min
            &amp; get_aggregates_response_aggregate_group_max
            &amp; get_aggregates_response_aggregate_group_mean
-           &amp; get_aggregates_response_aggregate_group_sum )?
+           &amp; get_aggregates_response_aggregate_group_sum
+           &amp; get_aggregates_response_aggregate_group_c_sum )?
      }
 
 get_aggregates_response_aggregate_group_value
@@ -12573,6 +12585,12 @@ get_aggregates_response_aggregate_group_value
 
 get_aggregates_response_aggregate_group_count
  = element count
+     {
+       integer
+     }
+
+get_aggregates_response_aggregate_group_c_count
+ = element c_count
      {
        integer
      }
@@ -12597,6 +12615,12 @@ get_aggregates_response_aggregate_group_mean
 
 get_aggregates_response_aggregate_group_sum
  = element sum
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_group_c_sum
+ = element c_sum
      {
        text
      }
