@@ -13735,40 +13735,40 @@ find_result_with_permission (const char* uuid, result_t* result,
  *                          result, a title for the result otherwise.
  * @param[in]  type         Type of result.  "Alarm", etc.
  * @param[in]  description  Description of the result.
+ * @param[in]  severity     Result severity.
  *
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
 make_osp_result (task_t task, const char *host, const char *nvt,
-                 const char *type, const char *description)
+                 const char *type, const char *description,
+                 const char *severity)
 {
-  char *nvt_revision = NULL, *severity = NULL, *quoted_desc;
+  char *nvt_revision = NULL, *quoted_desc, *result_severity;
 
   assert (task);
   assert (type);
 
   if (nvt && g_str_has_prefix (nvt, "oval:"))
-    {
-      nvt_revision = ovaldef_version (nvt);
-      severity = ovaldef_severity (nvt);
-    }
+    nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
   if (!severity || !strcmp (severity, ""))
     {
-      g_free (severity);
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
-        severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
+        result_severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
       else
-        severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
+        result_severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
     }
+  else
+    result_severity = g_strdup (severity);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
        "         '%s', make_uuid (), 0);",
-       task, host ?: "", nvt ?: "", nvt_revision ?: "", severity, type,
+       task, host ?: "", nvt ?: "", nvt_revision ?: "", result_severity, type,
        quoted_desc);
-  g_free (severity);
+  g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
 

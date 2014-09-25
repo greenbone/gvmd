@@ -1,3 +1,12 @@
+2014-09-25  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_result): Parse the result's severity if
+	available and adjust make_osp_result() call.
+
+	* src/manage.h: Modify function prototype.
+
+	* src/manage_sql.c (make_osp_result): Add severity function parameter.
+
 2014-09-24  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (ELSE_ERROR): Remove static strings comparison.
