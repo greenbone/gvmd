@@ -8689,7 +8689,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  */
 #define TASK_ITERATOR_FILTER_COLUMNS                                          \
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
-   "trend", "severity", "schedule", NULL }
+   "trend", "severity", "schedule", "next_due", NULL }
 
 #define TASK_ITERATOR_COLUMNS(overrides)                   \
  {                                                         \
@@ -8730,6 +8730,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "(SELECT schedules.name FROM schedules"               \
      " WHERE schedules.id = tasks.schedule)",              \
      "schedule"                                            \
+   },                                                      \
+   {                                                       \
+     "schedule_next_time",                                 \
+     "next_due"                                            \
    },                                                      \
    { NULL, NULL }                                          \
  }
