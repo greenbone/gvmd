@@ -1,5 +1,16 @@
 2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20493.
+
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS)
+	(TASK_ITERATOR_TRASH_COLUMNS): For next_due, use the
+	first_time of the schedule if the schedule is in the past, instead of
+	using schedule_next_time which is 0.  This ensures that tasks with
+	schedules in the past are sorted by schedule and that they come before
+	tasks that have had their schedules removed.
+
+2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20485.
 
 	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): Add "next_due".

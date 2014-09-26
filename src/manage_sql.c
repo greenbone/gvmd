@@ -8655,7 +8655,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT schedules.name FROM schedules"                 \
   "  WHERE schedules.id = tasks.schedule)"                 \
   " AS _schedule,"                                         \
-  " schedule_next_time AS next_due"
+  " (CASE WHEN schedule_next_time IS NULL"                 \
+  "  THEN -1"                                              \
+  "  WHEN schedule_next_time = 0 AND tasks.schedule > 0"   \
+  "  THEN (SELECT first_time"                              \
+  "        FROM schedules"                                 \
+  "        WHERE schedules.id = tasks.schedule)"           \
+  "  ELSE schedule_next_time"                              \
+  "  END)"                                                 \
+  " AS next_due"
 
 /**
  * @brief Task iterator columns for trash case.
@@ -8691,7 +8699,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   " (SELECT schedules.name FROM schedules"                 \
   "  WHERE schedules.id = tasks.schedule)"                 \
   " AS _schedule,"                                         \
-  " schedule_next_time AS next_due"
+  " (CASE WHEN schedule_next_time IS NULL"                 \
+  "  THEN -1"                                              \
+  "  WHEN schedule_next_time = 0 AND tasks.schedule > 0"   \
+  "  THEN (SELECT first_time"                              \
+  "        FROM schedules"                                 \
+  "        WHERE schedules.id = tasks.schedule)"           \
+  "  ELSE schedule_next_time"                              \
+  "  END)"                                                 \
+  " AS next_due"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.
