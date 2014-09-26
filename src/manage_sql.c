@@ -8691,51 +8691,58 @@ append_to_task_string (task_t task, const char* field, const char* value)
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
    "trend", "severity", "schedule", "next_due", NULL }
 
-#define TASK_ITERATOR_COLUMNS(overrides)                   \
- {                                                         \
-   GET_ITERATOR_COLUMNS (tasks),                           \
-   { "run_status", NULL },                                 \
-   {                                                       \
-     "(SELECT count(*) FROM reports"                       \
-     " WHERE task = tasks.id)",                            \
-     "total"                                               \
-   },                                                      \
-   {                                                       \
-     "(SELECT uuid FROM reports WHERE task = tasks.id"     \
-     /* TODO 1 == TASK_STATUS_DONE */                      \
-     " AND scan_run_status = 1"                            \
-     " ORDER BY date ASC LIMIT 1)",                        \
-     "first"                                               \
-   },                                                      \
-   { "task_threat_level (id, " overrides ")", "threat" },  \
-   { "task_trend (id, " overrides ")", "trend" },          \
-   { "run_status_name (run_status)", "status" },           \
-   {                                                       \
-     "(SELECT uuid FROM reports WHERE task = tasks.id"     \
-     /* TODO 1 == TASK_STATUS_DONE */                      \
-     " AND scan_run_status = 1"                            \
-     " ORDER BY date DESC LIMIT 1)",                       \
-     "last"                                                \
-   },                                                      \
-   { "task_severity (id, " overrides ")", "severity" },    \
-   {                                                       \
-     "(SELECT count(*) FROM reports"                       \
-     /* TODO 1 == TASK_STATUS_DONE */                      \
-     " WHERE task = tasks.id AND scan_run_status = 1)",    \
-     NULL                                                  \
-   },                                                      \
-   { "hosts_ordering", NULL },                             \
-   { "scanner", NULL },                                    \
-   {                                                       \
-     "(SELECT schedules.name FROM schedules"               \
-     " WHERE schedules.id = tasks.schedule)",              \
-     "schedule"                                            \
-   },                                                      \
-   {                                                       \
-     "schedule_next_time",                                 \
-     "next_due"                                            \
-   },                                                      \
-   { NULL, NULL }                                          \
+#define TASK_ITERATOR_COLUMNS(overrides)                                    \
+ {                                                                          \
+   GET_ITERATOR_COLUMNS (tasks),                                            \
+   { "run_status", NULL },                                                  \
+   {                                                                        \
+     "(SELECT count(*) FROM reports"                                        \
+     " WHERE task = tasks.id)",                                             \
+     "total"                                                                \
+   },                                                                       \
+   {                                                                        \
+     "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
+     /* TODO 1 == TASK_STATUS_DONE */                                       \
+     " AND scan_run_status = 1"                                             \
+     " ORDER BY date ASC LIMIT 1)",                                         \
+     "first"                                                                \
+   },                                                                       \
+   { "task_threat_level (id, " overrides ")", "threat" },                   \
+   { "task_trend (id, " overrides ")", "trend" },                           \
+   { "run_status_name (run_status)", "status" },                            \
+   {                                                                        \
+     "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
+     /* TODO 1 == TASK_STATUS_DONE */                                       \
+     " AND scan_run_status = 1"                                             \
+     " ORDER BY date DESC LIMIT 1)",                                        \
+     "last"                                                                 \
+   },                                                                       \
+   { "task_severity (id, " overrides ")", "severity" },                     \
+   {                                                                        \
+     "(SELECT count(*) FROM reports"                                        \
+     /* TODO 1 == TASK_STATUS_DONE */                                       \
+     " WHERE task = tasks.id AND scan_run_status = 1)",                     \
+     NULL                                                                   \
+   },                                                                       \
+   { "hosts_ordering", NULL },                                              \
+   { "scanner", NULL },                                                     \
+   {                                                                        \
+     "(SELECT schedules.name FROM schedules"                                \
+     " WHERE schedules.id = tasks.schedule)",                               \
+     "schedule"                                                             \
+   },                                                                       \
+   {                                                                        \
+     "(CASE WHEN schedule_next_time IS NULL"                                \
+     " THEN -1"                                                             \
+     " WHEN schedule_next_time = 0 AND tasks.schedule > 0"                  \
+     " THEN (SELECT first_time"                                             \
+     "       FROM schedules"                                                \
+     "       WHERE schedules.id = tasks.schedule)"                          \
+     " ELSE schedule_next_time"                                             \
+     " END)",                                                               \
+     "next_due"                                                             \
+   },                                                                       \
+   { NULL, NULL }                                                           \
  }
 
 /**
