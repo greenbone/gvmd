@@ -1,5 +1,13 @@
 2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20485.
+
+	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): Add "next_due".
+	(TASK_ITERATOR_COLUMNS, TASK_ITERATOR_TRASH_COLUMNS): Add schedule next
+	due time as "next_due".
+
+2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20484.
 
 	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): Add "schedule".
