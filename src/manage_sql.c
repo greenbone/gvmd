@@ -8618,7 +8618,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
  */
 #define TASK_ITERATOR_FILTER_COLUMNS                                          \
  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
-   "trend", "severity", NULL }
+   "trend", "severity", "_schedule", NULL }
 
 /**
  * @brief Task iterator columns.
@@ -8651,8 +8651,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
   "  THEN 'Container'"                                     \
   "  ELSE run_status_name (run_status)"                    \
   "  END)"                                                 \
-  " AS status_text"
-
+  " AS status_text,"                                       \
+  " (SELECT schedules.name FROM schedules"                 \
+  "  WHERE schedules.id = tasks.schedule)"                 \
+  " AS _schedule"
 
 /**
  * @brief Task iterator columns for trash case.
@@ -8684,7 +8686,10 @@ append_to_task_string (task_t task, const char* field, const char* value)
   "  THEN 'Container'"                                     \
   "  ELSE run_status_name (run_status)"                    \
   "  END)"                                                 \
-  " AS status_text"
+  " AS status_text,"                                       \
+  " (SELECT schedules.name FROM schedules"                 \
+  "  WHERE schedules.id = tasks.schedule)"                 \
+  " AS _schedule"
 
 /**
  * @brief Initialise a task iterator, limited to current user's tasks.

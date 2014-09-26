@@ -1,3 +1,11 @@
+2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20484.
+
+	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): Add "schedule".
+	(TASK_ITERATOR_COLUMNS, TASK_ITERATOR_TRASH_COLUMNS): Add schedule name
+	as "schedule".
+
 2014-09-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20425.
