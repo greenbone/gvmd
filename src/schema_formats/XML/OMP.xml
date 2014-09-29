@@ -12388,6 +12388,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </summary>
         <type>boolean</type>
       </attrib>
+      <attrib>
+        <name>timezone</name>
+        <summary>The timezone to use for dates in the report</summary>
+        <type>text</type>
+      </attrib>
     </pattern>
     <response>
       <pattern>

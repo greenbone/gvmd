@@ -2071,6 +2071,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  notes              Whether to include notes.
  * @param[out]  overrides          Whether to include overrides.
  * @param[out]  apply_overrides    Whether to apply overrides.
+ * @param[out]  zone               Timezone.
  */
 void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
@@ -2079,7 +2080,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
                                int *autofp, int *notes, int *overrides,
-                               int *apply_overrides)
+                               int *apply_overrides, gchar **zone)
 {
   keyword_t **point;
   array_t *split;
@@ -2278,6 +2279,16 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *min_cvss_base = NULL;
       else
         *min_cvss_base = string;
+    }
+
+  if (zone)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
+                              "timezone",
+                              &string))
+        *zone = NULL;
+      else
+        *zone = string;
     }
 
   filter_free (split);
@@ -7828,6 +7839,7 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  * @param[in]  first_result       The result to start from.  The results are 0
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  zone               Timezone.
  *
  * @return 0 success, -1 error.
  */
@@ -7841,7 +7853,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             const char *levels, int apply_overrides,
             const char *search_phrase, int autofp, int notes, int notes_details,
             int overrides, int overrides_details, int first_result,
-            int max_results)
+            int max_results, const char *zone)
 {
   g_log ("event alert", G_LOG_LEVEL_MESSAGE,
          "The alert for task %s was triggered "
@@ -7945,7 +7957,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   NULL, /* Type. */
                                                   &content_length,
                                                   NULL,    /* Extension. */
-                                                  NULL);   /* Content type. */
+                                                  NULL,   /* Content type. */
+                                                  zone);
                   if (report_content == NULL)
                     {
                       free (event_desc);
@@ -8062,7 +8075,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   NULL, /* Type. */
                                                   &content_length,
                                                   &extension,
-                                                  &type);
+                                                  &type,
+                                                  zone);
                   if (report_content == NULL)
                     {
                       g_free (event_desc);
@@ -8252,7 +8266,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
-                                          NULL);   /* Content type. */
+                                          NULL,    /* Content type. */
+                                          zone);
           if (report_content == NULL)
             return -1;
 
@@ -8361,7 +8376,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           NULL, /* Type. */
                                           &content_length,
                                           NULL,    /* Extension. */
-                                          NULL);   /* Content type. */
+                                          NULL,    /* Content type. */
+                                          zone);
           if (report_content == NULL)
             {
               g_warning ("Empty Report");
@@ -8423,7 +8439,8 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      1,       /* Overrides details. */
                      0,       /* First results. */
                      /* Max results. */
-                     (method == ALERT_METHOD_EMAIL ? 1000 : -1));
+                     (method == ALERT_METHOD_EMAIL ? 1000 : -1),
+                     NULL);   /* Timezone. */
 }
 
 /**
@@ -20541,7 +20558,7 @@ report_filter_term (int sort_order, const char* sort_field,
                     const char *levels, const char *delta_states,
                     const char *search_phrase, int search_phrase_exact,
                     int autofp, int notes, int overrides,
-                    int first_result, int max_results)
+                    int first_result, int max_results, const char *zone)
 {
   return g_strdup_printf ("%s%s%s"
                           "%s%s=%s"
@@ -20553,7 +20570,8 @@ report_filter_term (int sort_order, const char* sort_field,
                           " overrides=%i"
                           " first=%i"
                           " rows=%i"
-                          " delta_states=%s",
+                          " delta_states=%s"
+                          "%s%s",
                           (search_phrase
                            && strlen (search_phrase)
                            && search_phrase_exact)
@@ -20571,7 +20589,9 @@ report_filter_term (int sort_order, const char* sort_field,
                           overrides,
                           first_result + 1,
                           max_results,
-                          delta_states ? delta_states : "cgns");
+                          delta_states ? delta_states : "cgns",
+                          (zone && strlen (zone)) ? " timezone=" : "",
+                          (zone && strlen (zone)) ? zone : "");
 }
 
 /**
@@ -21921,6 +21941,38 @@ severity_class_xml (const gchar *severity)
 }
 
 /**
+ * @brief Restore original TZ.
+ *
+ * @param[in]  tz  Original TZ.  Freed here.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+tz_revert (gchar *zone, char *tz)
+{
+  if (zone && strlen (zone))
+    {
+      /* Revert to stored TZ. */
+      if (tz)
+        {
+          if (setenv ("TZ", tz, 1) == -1)
+            {
+              g_warning ("%s: Failed to switch to original TZ", __FUNCTION__);
+              g_free (tz);
+              g_free (zone);
+              return -1;
+            }
+        }
+      else
+        unsetenv ("TZ");
+
+      g_free (tz);
+    }
+  g_free (zone);
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report to a file.
  *
  * @param[in]  report      The report.
@@ -21966,6 +22018,7 @@ severity_class_xml (const gchar *severity)
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  ignore_pagination   Whether to ignore pagination data.
+ * @param[in]  given_zone          Timezone.  NULL or "" for user's timezone.
  *
  * @return 0 on success, -1 error, 2 failed to find filter (before any printing).
  */
@@ -21981,7 +22034,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const char *type, const char *host, int pos,
                   const char *host_search_phrase, const char *host_levels,
                   int host_first_result, int host_max_results,
-                  int ignore_pagination)
+                  int ignore_pagination, const char *given_zone)
 {
   FILE *out;
   gchar *clean, *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
@@ -21996,6 +22049,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
+  gchar *tz, *zone;
 
   /* Init some vars to prevent warnings from older compilers. */
   orig_filtered_result_count = 0;
@@ -22055,7 +22109,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                      &min_cvss_base, &levels, &delta_states,
                                      &search_phrase, &search_phrase_exact,
                                      &autofp, &notes, &overrides,
-                                     &apply_overrides);
+                                     &apply_overrides, &zone);
     }
   else
     {
@@ -22066,12 +22120,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       min_cvss_base = g_strdup (given_min_cvss_base);
       delta_states = g_strdup (given_delta_states);
       apply_overrides = given_apply_overrides;
+      zone = given_zone ? g_strdup (given_zone) : NULL;
 
       /* Build the filter term from the old style GET attributes. */
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
                                  min_cvss_base, levels, delta_states,
                                  search_phrase, search_phrase_exact, autofp,
-                                 notes, overrides, first_result, max_results);
+                                 notes, overrides, first_result, max_results,
+                                 zone);
     }
 
   levels = levels ? levels : g_strdup ("hmlgd");
@@ -22087,6 +22143,27 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (delta_states);
       return -1;
     }
+
+  if (zone && strlen (zone))
+    {
+      /* Store current TZ. */
+      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", zone, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to timezone", __FUNCTION__);
+          if (tz != NULL)
+            setenv ("TZ", tz, 1);
+          g_free (tz);
+          g_free (zone);
+          return -1;
+        }
+
+      tzset ();
+    }
+  else
+    /* Keep compiler quiet. */
+    tz = NULL;
 
   if (delta && report)
     {
@@ -22130,6 +22207,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_free (search_phrase);
           g_free (min_cvss_base);
           g_free (delta_states);
+          tz_revert (zone, tz);
           return -1;
         }
       PRINT (out,
@@ -22201,7 +22279,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<overrides>%i</overrides>"
     "<apply_overrides>%i</apply_overrides>"
     "<result_hosts_only>%i</result_hosts_only>"
-    "<min_cvss_base>%s</min_cvss_base>",
+    "<min_cvss_base>%s</min_cvss_base>"
+    "<timezone>%s</timezone>",
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
     get->filt_id ? get->filt_id : "0",
@@ -22213,7 +22292,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     overrides ? 1 : 0,
     apply_overrides ? 1 : 0,
     result_hosts_only ? 1 : 0,
-    min_cvss_base ? min_cvss_base : "");
+    min_cvss_base ? min_cvss_base : "",
+    zone ? zone : "");
 
   g_free (term);
 
@@ -22456,6 +22536,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (min_cvss_base);
       g_free (delta_states);
 
+      tz_revert (zone, tz);
+
       if (ret)
         return ret;
 
@@ -22490,6 +22572,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (min_cvss_base);
       g_free (delta_states);
 
+      tz_revert (zone, tz);
+
       if (ret)
         return ret;
 
@@ -22510,6 +22594,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   if (report_timestamp (uuid, &timestamp))
     {
       free (uuid);
+      tz_revert (zone, tz);
       return -1;
     }
   free (uuid);
@@ -22534,7 +22619,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  sort_order, sort_field, levels, autofp,
                                  search_phrase, search_phrase_exact,
                                  min_cvss_base, apply_overrides))
-        return -1;
+        {
+          tz_revert (zone, tz);
+          return -1;
+        }
     }
 
   /* Prepare result counts. */
@@ -22833,6 +22921,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (delta_states);
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
+              tz_revert (zone, tz);
               return -1;
             }
           PRINT_XML (out, buffer->str);
@@ -23134,6 +23223,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (delta_states);
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
+              tz_revert (zone, tz);
               return -1;
             }
 
@@ -23378,7 +23468,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
               if (print_report_host_details_xml
                   (host_iterator_report_host (&hosts), out))
-                return -1;
+                {
+                  tz_revert (zone, tz);
+                  return -1;
+                }
 
               PRINT (out,
                      "</host>");
@@ -23421,7 +23514,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
           if (print_report_host_details_xml
               (host_iterator_report_host (&hosts), out))
-            return -1;
+            {
+              tz_revert (zone, tz);
+              return -1;
+            }
 
           PRINT (out,
                  "</host>");
@@ -23450,7 +23546,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   free (end_time);
 
   if (delta == 0 && print_report_errors_xml (report, out))
-    return -1;
+    {
+      tz_revert (zone, tz);
+      return -1;
+    }
 
   PRINT (out, "</report>");
 
@@ -23502,6 +23601,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[out] extension          NULL or location for report format extension.
  * @param[out] content_type       NULL or location for report format content
  *                                type.
+ * @param[in]  zone               Timezone.  NULL or "" for user's timezone.
  *
  * @return Contents of report on success, NULL on error.
  */
@@ -23514,7 +23614,7 @@ manage_report (report_t report, report_format_t report_format,
                int notes, int notes_details, int overrides,
                int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
-               gchar **extension, gchar **content_type)
+               gchar **extension, gchar **content_type, const char *zone)
 {
   task_t task;
   gchar *xml_file;
@@ -23551,7 +23651,7 @@ manage_report (report_t report, report_format_t report_format,
                           levels, NULL, apply_overrides, search_phrase, autofp,
                           notes, notes_details, overrides, overrides_details,
                           first_result, max_results, type,
-                          NULL, 0, NULL, NULL, 0, 0, 0);
+                          NULL, 0, NULL, NULL, 0, 0, 0, zone);
   g_free (get.filt_id);
   if (ret)
     {
@@ -23982,6 +24082,7 @@ manage_report (report_t report, report_format_t report_format,
  *                                 are 0 indexed.
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  prefix              Text to send to client before the report.
+ * @param[in]  zone                Timezone.  NULL or "" for user's default.
  *
  * @return 0 success, -1 error, 1 failed to find alert, 2 failed to find filter
  *         (before anything sent to client).
@@ -24003,7 +24104,8 @@ manage_send_report (report_t report, report_t delta_report,
                     const char *alert_id, const char *type,
                     const char *host, int pos, const char *host_search_phrase,
                     const char *host_levels, int host_first_result,
-                    int host_max_results, const gchar* prefix)
+                    int host_max_results, const gchar* prefix,
+                    const char *zone)
 {
   task_t task;
   gchar *xml_file;
@@ -24042,7 +24144,8 @@ manage_send_report (report_t report, report_t delta_report,
                         sort_order, sort_field, result_hosts_only,
                         min_cvss_base, levels, apply_overrides,
                         search_phrase, autofp, notes, notes_details, overrides,
-                        overrides_details, first_result, max_results);
+                        overrides_details, first_result, max_results,
+                        zone);
       return ret;
     }
 
@@ -24066,7 +24169,7 @@ manage_send_report (report_t report, report_t delta_report,
                           overrides, overrides_details, first_result,
                           max_results, type, host, pos, host_search_phrase,
                           host_levels, host_first_result, host_max_results,
-                          ignore_pagination);
+                          ignore_pagination, zone);
   if (ret)
     {
       g_free (xml_file);

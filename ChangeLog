@@ -1,3 +1,26 @@
+2014-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add timezone keyword to powerfilter for report.
+
+	* src/omp.c (get_reports_data_t): Add timezone.
+	(omp_xml_handle_start_element): Parse timezone.
+	(omp_xml_handle_end_element): Pass timezone to manage_send_report.
+
+	* src/manage_sql.c (manage_report_filter_controls, escalate_2)
+	(escalate_1): Add timezone arg.
+	(report_filter_term): Include timezone if given.
+	(tz_revert): New function.
+	(print_report_xml): Add timezone arg.  If given then tzset the zone
+	before generating the report.  Also add the timezone to the filter
+	elements.
+	(manage_report, manage_send_report): Add timezone arg.
+
+	* src/manage.h: Update headers accordingly.
+
+	* src/schema_formats/XML/OMP.xml (get_reports): Add timezone attrib.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add support for Tasks in get_aggregates command and chart settings
@@ -25,7 +48,7 @@
 
 2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): For next_due, use the
+	* src/manage_sql.c (TASK_ITERATOR_COLUMNS): For next_due, use the
 	first_time of the schedule if the schedule is in the past, instead of
 	using schedule_next_time which is 0.  This ensures that tasks with
 	schedules in the past are sorted by schedule and that they come before

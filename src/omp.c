@@ -2688,6 +2688,7 @@ typedef struct
   char *host;            ///< Host for asset report.
   char *pos;             ///< Position of report from end.
   int ignore_pagination; ///< Boolean.  Whether to ignore pagination filters.
+  char *timezone;        ///< Timezone.
 } get_reports_data_t;
 
 /**
@@ -7150,6 +7151,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
               get_reports_data->ignore_pagination = atoi (attribute);
             else
               get_reports_data->ignore_pagination = 0;
+
+            append_attribute (attribute_names, attribute_values,
+                              "timezone",
+                              &get_reports_data->timezone);
 
             set_client_state (CLIENT_GET_REPORTS);
           }
@@ -14575,7 +14580,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       "assets",
                                       get_reports_data->host,
                                       pos,
-                                      NULL, NULL, 0, 0, NULL);
+                                      NULL, NULL, 0, 0, NULL,
+                                      get_reports_data->timezone);
 
             if (ret)
               {
@@ -14666,7 +14672,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->host_levels,
                                       get_reports_data->host_first_result,
                                       get_reports_data->host_max_results,
-                                      NULL);
+                                      NULL,
+                                      get_reports_data->timezone);
 
             if (ret)
               {
@@ -14883,7 +14890,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       write_to_client_data,
                                       get_reports_data->alert_id,
                                       get_reports_data->type,
-                                      NULL, 0, NULL, NULL, 0, 0, prefix->str);
+                                      NULL, 0, NULL, NULL, 0, 0, prefix->str,
+                                      get_reports_data->timezone);
             g_string_free (prefix, TRUE);
             if (ret)
               {

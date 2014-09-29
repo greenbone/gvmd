@@ -1178,7 +1178,8 @@ report_progress (report_t, task_t, gchar **);
 gchar *
 manage_report (report_t, report_format_t, const char *, int, const char*, int,
                const char *, const char *, int, const char *, int, int, int,
-               int, int, int, int, const char *, gsize *, gchar **, gchar **);
+               int, int, int, int, const char *, gsize *, gchar **, gchar **,
+               const char *);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
@@ -1190,7 +1191,7 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                                   void*),
                     int (*) (const char *, void*), void *, const char *,
                     const char *, const char *, int, const char *,
-                    const char *, int, int, const gchar *);
+                    const char *, int, int, const gchar *, const char *);
 
 
 /* Targets. */
@@ -1214,7 +1215,7 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, int *);
+                               int *, int *, int *, int *, int *, gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);

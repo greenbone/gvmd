@@ -4298,6 +4298,8 @@ get_reports
        attribute show_closed_cves { boolean }?
        & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
        attribute ignore_pagination { boolean }?
+       & # The timezone to use for dates in the report.
+       attribute timezone { text }?
      }
 
 ## Command get_report_formats
