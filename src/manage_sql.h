@@ -175,6 +175,11 @@
 /**
  * @brief Predefined role UUID.
  */
+#define ROLE_UUID_MONITOR "12cdb536-480b-11e4-8552-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
 #define ROLE_UUID_USER "8d453140-b74d-11e2-b0be-406186ea4fc5"
 
 /**

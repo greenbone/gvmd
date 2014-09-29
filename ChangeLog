@@ -1,5 +1,15 @@
 2014-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add predefined role Monitor.
+
+	* src/manage_sql.c (check_db_permissions, check_db_roles)
+	(permission_is_predefined, role_is_predefined)
+	(role_is_predefined_id): Add Monitor case.
+
+	* src/manage_sql.h (ROLE_UUID_MONITOR): New define.
+
+2014-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add timezone keyword to powerfilter for report.
 
 	* src/omp.c (get_reports_data_t): Add timezone.

@@ -11527,6 +11527,26 @@ check_db_permissions ()
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
                " AND subject = (SELECT id FROM roles"
+               "                WHERE uuid = '" ROLE_UUID_MONITOR "')"
+               " AND resource = 0;")
+      <= 1)
+    {
+      sql_begin_exclusive ();
+      /* Clean-up any remaining permissions. */
+      sql ("DELETE FROM permissions WHERE subject_type = 'role'"
+           " AND subject = (SELECT id FROM roles"
+           "                WHERE uuid = '" ROLE_UUID_MONITOR "');");
+      add_role_permission (ROLE_UUID_MONITOR, "AUTHENTICATE");
+      add_role_permission (ROLE_UUID_MONITOR, "COMMANDS");
+      add_role_permission (ROLE_UUID_MONITOR, "GET_SETTINGS");
+      add_role_permission (ROLE_UUID_MONITOR, "GET_SYSTEM_REPORTS");
+      add_role_permission (ROLE_UUID_MONITOR, "HELP");
+      sql ("COMMIT;");
+    }
+
+  if (sql_int ("SELECT count(*) FROM permissions"
+               " WHERE subject_type = 'role'"
+               " AND subject = (SELECT id FROM roles"
                "                WHERE uuid = '" ROLE_UUID_USER "')"
                " AND resource = 0;")
       <= 1)
@@ -11616,6 +11636,15 @@ check_db_roles ()
          " VALUES"
          " ('" ROLE_UUID_INFO "', NULL, 'Info',"
          "  'Information browser.',"
+         " m_now (), m_now ());");
+
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_MONITOR "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_MONITOR "', NULL, 'Monitor',"
+         "  'Performance monitor.',"
          " m_now (), m_now ());");
 
   if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_USER "';")
@@ -42604,6 +42633,7 @@ permission_is_predefined (permission_t permission)
                     "                  WHERE uuid = '" ROLE_UUID_ADMIN "'"
                     "                  OR uuid = '" ROLE_UUID_GUEST "'"
                     "                  OR uuid = '" ROLE_UUID_INFO "'"
+                    "                  OR uuid = '" ROLE_UUID_MONITOR "'"
                     "                  OR uuid = '" ROLE_UUID_USER "'"
                     "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
                     permission);
@@ -44881,6 +44911,7 @@ role_is_predefined (role_t role)
                   " WHERE id = %llu"
                   " AND (uuid = '" ROLE_UUID_ADMIN "'"
                   "      OR uuid = '" ROLE_UUID_GUEST "'"
+                  "      OR uuid = '" ROLE_UUID_MONITOR "'"
                   "      OR uuid = '" ROLE_UUID_INFO "'"
                   "      OR uuid = '" ROLE_UUID_USER "'"
                   "      OR uuid = '" ROLE_UUID_OBSERVER "');",
@@ -44900,6 +44931,7 @@ role_is_predefined_id (const char *uuid)
 {
   return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
                   || (strcmp (uuid, ROLE_UUID_GUEST) == 0)
+                  || (strcmp (uuid, ROLE_UUID_MONITOR) == 0)
                   || (strcmp (uuid, ROLE_UUID_INFO) == 0)
                   || (strcmp (uuid, ROLE_UUID_USER) == 0)
                   || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
