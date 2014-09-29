@@ -15986,8 +15986,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           iterator_t aggregate;
           const char *type;
           get_data_t *get;
-          char *columns, *trash_columns;
-          const char **filter_columns, *data_column, *group_column;
+          const char *data_column, *group_column;
           int ret;
           GString *xml;
           double c_sum;
@@ -16017,36 +16016,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               return;
             }
 
-          columns = type_columns (type);
-          trash_columns = type_trash_columns (type);
-          filter_columns = type_filter_columns (type);
-
-          if (columns == NULL || filter_columns == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                     "Invalid resource type"));
-              return;
-            }
-          if (get->trash && trash_columns == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-                  (XML_ERROR_SYNTAX ("get_aggregates",
-                                     "Trashcan not used by resource type"));
-              return;
-            }
-
-          ret = init_aggregate_iterator (&aggregate, type, get, columns,
-                                         trash_columns, filter_columns,
+          ret = init_aggregate_iterator (&aggregate, type, get,
                                          0 /* distinct */,
                                          data_column, group_column,
                                          NULL /* extra_tables */,
                                          NULL /* extra_where */,
-                                         1, /* no_pagination */
-                                         0 /* owned */);
-
-          g_free (columns);
-          g_free (trash_columns);
+                                         1 /* no_pagination */);
 
           switch (ret)
             {
@@ -16071,6 +16046,16 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("get_aggregates",
                                     "Invalid group_column"));
+                break;
+              case 5:
+                SEND_TO_CLIENT_OR_FAIL
+                    (XML_ERROR_SYNTAX ("get_aggregates",
+                                        "Invalid resource type"));
+                break;
+              case 6:
+                SEND_TO_CLIENT_OR_FAIL
+                    (XML_ERROR_SYNTAX ("get_aggregates",
+                                        "Trashcan not used by resource type"));
                 break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL

@@ -3414,10 +3414,9 @@ trash_tag_writable (tag_t);
 /* Resource aggregates */
 
 int
-init_aggregate_iterator (iterator_t*, const char *, const get_data_t *,
-                          const char *, const char *, const char **, int,
-                          const char *, const char *, const char *,
-                          const char *, int, int);
+init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
+                         const char *, const char *, const char *,
+                         const char *, int);
 
 int
 aggregate_iterator_count (iterator_t*);
@@ -3490,13 +3489,13 @@ int
 valid_db_resource_type (const char*);
 
 char*
-type_columns (const char *);
+type_columns (const char *, int);
 
 const char**
-type_filter_columns (const char *);
+type_filter_columns (const char *, int);
 
 char*
-type_trash_columns (const char *);
+type_trash_columns (const char *, int);
 
 gchar*
 type_table (const char *, int);

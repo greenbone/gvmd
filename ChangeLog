@@ -1,3 +1,28 @@
+2014-09-29  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add support for Tasks in get_aggregates command and chart settings
+	for Tasks.
+
+	* src/manage_sql.c (type_owned): Also consider info subtypes.
+	(init_aggregate_iterator): Remove parameters which are now determined
+	inside the function: columns, trash_columns, filter_columns, owned.
+	Support apply_overrides filter keyword and special trash handling for
+	Tasks. Document new failure return codes for invalid resource type
+	and trying to get trash for types that don't use the trashcan.
+	(modify_setting): Add cases for the Tasks charts.
+	(type_columns, type_select_columns, type_filter_columns)
+	(type_trash_columns): Add apply_overrides parameter and case for the
+	Task type.
+	(type_table): Fix special case for trash items being in the main table
+	of the resource type.
+
+	* src/manage.h (init_aggregate_iterator): Remove parameters.
+	(type_columns, type_filter_columns, type_trash_columns): Add parameter.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGGREGATES case
+	no longer determine columns, which are now handled by
+	init_aggregate_iterator. Add cases to handle new return codes.
+
 2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS): For next_due, use the

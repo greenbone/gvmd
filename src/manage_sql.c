@@ -3694,7 +3694,14 @@ type_has_comment (const char *type)
 int
 type_owned (const char* type)
 {
-  return strcasecmp (type, "info");
+  return (strcasecmp (type, "info")
+          && strcasecmp (type, "nvt")
+          && strcasecmp (type, "cve")
+          && strcasecmp (type, "cpe")
+          && strcasecmp (type, "ovaldef")
+          && strcasecmp (type, "cert_bund_adv")
+          && strcasecmp (type, "dfn_cert_adv")
+          && strcasecmp (type, "allinfo"));
 }
 
 /**
@@ -4365,7 +4372,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
 
 // FIX
 column_t *
-type_select_columns (const char *type);
+type_select_columns (const char *type, int);
 
 /**
  * @brief Initialise a GET_AGGREGATES iterator, including observed resources.
@@ -4388,20 +4395,25 @@ type_select_columns (const char *type);
  * @param[in]  owned           Only get items owned by the current user.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter,
- *         3 invalid stat_column, 4 invalid group_column, -1 error.
+ *         3 invalid stat_column, 4 invalid group_column, 5 invalid type,
+ *         6 trashcan not used by type, -1 error.
  */
 int
 init_aggregate_iterator (iterator_t* iterator, const char *type,
-                         const get_data_t *get, const char *columns,
-                         const char *trash_columns,
-                         const char **filter_columns, int distinct,
+                         const get_data_t *get, int distinct,
                          const char *stat_column, const char *group_column,
                          const char *extra_tables, const char *extra_where,
-                         int no_pagination, int owned)
+                         int no_pagination)
 {
+  int owned;
+  gchar* apply_overrides_str;
+  int apply_overrides;
   column_t *select_columns;
+  const char *columns;
+  const char *trash_columns;
+  const char **filter_columns;
   int first, max;
-  gchar *from_table, *clause, *order, *filter, *owned_clause;
+  gchar *from_table, *trash_extra, *clause, *order, *filter, *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
@@ -4409,21 +4421,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   assert (get);
 
-  if (columns == NULL)
-    {
-      assert (0);
-      return -1;
-    }
-
-  select_columns = type_select_columns (type);
-
   if (get->id)
     g_warning ("%s: Called with an id parameter", __FUNCTION__);
-
-  if (stat_column && vector_find_filter (filter_columns, stat_column) == 0)
-    return 3;
-  if (group_column && vector_find_filter (filter_columns, group_column) == 0)
-    return 4;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -4440,6 +4439,31 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     filter = NULL;
 
+  apply_overrides_str = filter_term_value (filter ? filter : get->filter, "apply_overrides");
+  apply_overrides = apply_overrides_str ? atoi (apply_overrides_str) : 1;
+  g_free (apply_overrides_str);
+
+  select_columns = type_select_columns (type, apply_overrides);
+  columns = type_columns (type, apply_overrides);
+  trash_columns = type_trash_columns (type, apply_overrides);
+  filter_columns = type_filter_columns (type, apply_overrides);
+
+  if (columns == NULL || filter_columns == NULL)
+    {
+      return 5;
+    }
+  if (get->trash && trash_columns == NULL)
+    {
+      return 6;
+    }
+
+  owned = type_owned (type);
+
+  if (stat_column && vector_find_filter (filter_columns, stat_column) == 0)
+    return 3;
+  if (group_column && vector_find_filter (filter_columns, group_column) == 0)
+    return 4;
+
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, get->trash, &order, &first, &max,
                           &permissions, &owner_filter);
@@ -4452,6 +4476,16 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   else
     owned_clause = where_owned (type, get, owned, owner_filter, resource,
                                 permissions);
+
+  if (strcasecmp (type, "TASK") == 0)
+    {
+      if (get->trash)
+        trash_extra = g_strdup (" AND hidden = 2");
+      else
+        trash_extra = g_strdup (" AND hidden = 0");
+    }
+  else
+    trash_extra = g_strdup ("");
 
   g_free (owner_filter);
   array_free (permissions);
@@ -4498,13 +4532,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " SELECT %s"
                    " FROM %s"
                    " WHERE ROWID = %llu"
-                   " AND %s"
+                   " AND %s%s"
                    " %s)%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
                    from_table,
                    resource,
                    owned_clause,
+                   trash_extra,
                    order,
                    outer_group_by);
   else if (get->trash)
@@ -4515,11 +4550,13 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " WHERE"
                    " %s"
                    " %s"
+                   " %s"
                    " %s)%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
                    from_table,
                    owned_clause,
+                   trash_extra,
                    extra_where ? extra_where : "",
                    order,
                    outer_group_by);
@@ -4529,13 +4566,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " SELECT %s"
                    " FROM %s"
                    " WHERE ROWID = %llu"
-                   " AND %s"
+                   " AND %s%s"
                    " %s)%s;",
                    outer_select,
                    columns,
                    from_table,
                    resource,
                    owned_clause,
+                   trash_extra,
                    order,
                    outer_group_by);
   else if (no_pagination)
@@ -4546,13 +4584,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " FROM %s%s"
                    " WHERE"
                    " %s"
-                   "%s%s%s%s%s)%s;",
+                   "%s%s%s%s%s%s)%s;",
                    outer_select,
                    distinct ? " DISTINCT" : "",
                    columns,
                    from_table,
                    extra_tables ? extra_tables : "",
                    owned_clause,
+                   trash_extra,
                    clause ? " AND (" : "",
                    clause ? clause : "",
                    clause ? ")" : "",
@@ -4568,7 +4607,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " FROM %s%s"
                    " WHERE"
                    " %s"
-                   "%s%s%s%s%s"
+                   "%s%s%s%s%s%s"
                    " LIMIT %i OFFSET %i)%s;",
                    outer_select,
                    distinct ? " DISTINCT" : "",
@@ -4576,6 +4615,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    from_table,
                    extra_tables ? extra_tables : "",
                    owned_clause,
+                   trash_extra,
                    clause ? " AND (" : "",
                    clause ? clause : "",
                    clause ? ")" : "",
@@ -4587,6 +4627,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
 
   g_free (owned_clause);
+  g_free (trash_extra);
   g_free (order);
   g_free (clause);
   g_free (outer_group_by);
@@ -47853,6 +47894,12 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
         setting_name = g_strdup ("All SecInfo Filter");
 
+      /* Scan Management charts */
+      if (strcmp (uuid, "3d5db3c7-5208-4b47-8c28-48efc621b1e0") == 0)
+        setting_name = g_strdup ("Chart Selection Tasks Left");
+      if (strcmp (uuid, "ce8608af-7e66-45a8-aa8a-76def4f9f838") == 0)
+        setting_name = g_strdup ("Chart Selection Tasks Right");
+
       /* SecInfo charts */
       if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 1");
@@ -51598,10 +51645,17 @@ trash_tag_writable (tag_t tag)
 }
 
 char*
-type_columns (const char *type)
+type_columns (const char *type, int apply_overrides)
 {
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    {
+      static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
+      static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
+      return columns_build_select (apply_overrides ? columns_overrides
+                                                   : columns);
+    }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
       static column_t columns[] = ALL_INFO_ITERATOR_COLUMNS;
@@ -51645,8 +51699,10 @@ type_columns (const char *type)
 
 // FIX
 column_t *
-type_select_columns (const char *type)
+type_select_columns (const char *type, int apply_overrides)
 {
+  static column_t task_columns[] = TASK_ITERATOR_COLUMNS ("0");
+  static column_t task_columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
   static column_t allinfo_columns[] = ALL_INFO_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
@@ -51658,6 +51714,8 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    return apply_overrides ? task_columns_overrides : task_columns;
   else if (strcasecmp (type, "ALLINFO") == 0)
     return allinfo_columns;
   else if (strcasecmp (type, "CPE") == 0)
@@ -51678,10 +51736,15 @@ type_select_columns (const char *type)
 }
 
 const char**
-type_filter_columns (const char *type)
+type_filter_columns (const char *type, int apply_overrides)
 {
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    {
+      static const char *ret[] = TASK_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
   else if (strcasecmp (type, "ALLINFO") == 0)
     {
       static const char *ret[] = ALL_INFO_ITERATOR_FILTER_COLUMNS;
@@ -51728,10 +51791,17 @@ type_filter_columns (const char *type)
 }
 
 char*
-type_trash_columns (const char *type)
+type_trash_columns (const char *type, int apply_overrides)
 {
   if (type == NULL)
     return NULL;
+  else if (strcasecmp (type, "TASK") == 0)
+    {
+      static column_t columns[] = TASK_ITERATOR_COLUMNS ("0");
+      static column_t columns_overrides[] = TASK_ITERATOR_COLUMNS ("1");
+      return columns_build_select (apply_overrides ? columns_overrides
+                                                   : columns);
+    }
   else if (strcasecmp (type, "ALERT") == 0)
     {
       static column_t columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
@@ -51754,7 +51824,7 @@ type_table (const char *type, int trash)
     {
       return g_strdup_printf ("%ss_trash", type);
     }
-  else if (trash == 0 || type_trash_in_table (type) == 0)
+  else if (trash == 0 || type_trash_in_table (type))
     {
       return g_strdup_printf ("%ss", type);
     }
