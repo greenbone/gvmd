@@ -14026,8 +14026,7 @@ result_detection_reference (result_t result, char **ref, char **product,
     return -1;
 
   *ref = *product = *location = *oid = *name = NULL;
-  report = sql_string ("SELECT report FROM report_results"
-                       " WHERE result = %llu;",
+  report = sql_string ("SELECT report FROM results WHERE id = %llu;",
                        result);
   if (report == NULL)
     goto detect_cleanup;
@@ -14082,9 +14081,7 @@ result_detection_reference (result_t result, char **ref, char **product,
 
   *ref = sql_string ("SELECT uuid"
                      " FROM results"
-                     " WHERE id IN (SELECT result"
-                     "                 FROM report_results"
-                     "                 WHERE report = %s)"
+                     " WHERE report = %s"
                      " AND host = '%s'"
                      " AND nvt = '%s'"
                      " AND (description LIKE '%%%s%%'"

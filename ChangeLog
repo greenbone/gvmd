@@ -1,3 +1,8 @@
+2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (result_detection_reference): Simplify sql queries by
+	using results' report column instead of report_results table.
+
 2014-09-29  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add predefined role Monitor.
