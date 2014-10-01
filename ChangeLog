@@ -1,5 +1,10 @@
 2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Remove break before goto in
+	create_task error.
+
+2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (result_detection_reference): Simplify sql queries by
 	using results' report column instead of report_results table.
 

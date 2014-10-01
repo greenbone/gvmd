@@ -21247,7 +21247,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                     SEND_TO_CLIENT_OR_FAIL
                       (XML_ERROR_SYNTAX ("create_task",
                                          "User name error in observers"));
-                    break;
                     goto create_task_fail;
                   case -1:
                   default:
