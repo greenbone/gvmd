@@ -3059,9 +3059,7 @@ filter_clause (const char* type, const char* filter,
 
       if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
         {
-          int ret;
-
-          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3169,9 +3167,8 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
         {
           gchar *column;
-          int ret;
 
-          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3192,9 +3189,8 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
         {
           gchar *column;
-          int ret;
 
-          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3230,9 +3226,8 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
         {
           gchar *column;
-          int ret;
 
-          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;
@@ -3268,9 +3263,8 @@ filter_clause (const char* type, const char* filter,
       else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
         {
           gchar *column;
-          int ret;
 
-          if ((ret = vector_find_filter (filter_columns, keyword->column)) == 0)
+          if (vector_find_filter (filter_columns, keyword->column) == 0)
             {
               last_was_and = 0;
               last_was_not = 0;

@@ -1,5 +1,9 @@
 2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (filter_clause): Remove set but unused variables.
+
+2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Remove break before goto in
 	create_task error.
 
