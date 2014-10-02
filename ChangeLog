@@ -1,3 +1,19 @@
+2014-10-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move SCAP and CERT attaching into backend specific files.
+
+	* src/manage_sql.c (init_manage_process): Delete NVT CVEs before NVTs
+	when updating, because they refer to NVTs.  Call manage_attach_databases
+	to do the attaching.
+	(manage_scap_loaded, manage_cert_loaded): Remove.  Now in backend files.
+
+	* src/manage_pg.c (manage_attach_databases, manage_cert_loaded)
+	(manage_scap_loaded): New functions.
+
+	* src/manage_sqlite3.c (manage_attach_databases): New function.
+	(manage_cert_loaded, manage_scap_loaded): New functions.  Were in
+	manage_sql.c
+
 2014-10-01  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Remove set but unused variables.

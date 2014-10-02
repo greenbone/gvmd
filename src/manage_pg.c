@@ -2079,6 +2079,48 @@ create_tables ()
 }
 
 
+/* SecInfo. */
+
+/**
+ * @brief Attach external databases.
+ */
+void
+manage_attach_databases ()
+{
+  return;
+}
+
+/**
+ * @brief Check whether CERT is available.
+ *
+ * @return 1 if CERT database is loaded, else 0.
+ */
+int
+manage_cert_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = 'tasks'"
+                    "               AND table_schema = 'scap'"
+                    "               AND table_name = 'dfn_cert_advs')"
+                    " ::integer;");
+}
+
+/**
+ * @brief Check whether SCAP is available.
+ *
+ * @return 1 if SCAP database is loaded, else 0.
+ */
+int
+manage_scap_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = 'tasks'"
+                    "               AND table_schema = 'scap'"
+                    "               AND table_name = 'cves')"
+                    " ::integer;");
+}
+
+
 /* Migrator helper. */
 
 /**

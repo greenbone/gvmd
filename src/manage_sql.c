@@ -82,6 +82,15 @@ manage_create_sql_functions ();
 void
 create_tables ();
 
+void
+manage_attach_databases ();
+
+int
+manage_cert_loaded ();
+
+int
+manage_scap_loaded ();
+
 
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
@@ -9123,6 +9132,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           if (progress)
             progress ();
           sql_begin_exclusive ();
+          sql ("DELETE FROM nvt_cves;");
           sql ("DELETE FROM nvts;");
           if (progress)
             progress ();
@@ -9189,6 +9199,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
           if (progress)
             progress ();
           sql_begin_exclusive ();
+          sql ("DELETE FROM nvt_cves;");
           sql ("DELETE FROM nvts;");
           if (progress)
             progress ();
@@ -9197,39 +9208,9 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     }
   else
     {
-      /* Attach the SCAP database. */
+      /* Attach the SCAP and CERT databases. */
 
-      if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
-        switch (errno)
-          {
-            case ENOENT:
-              break;
-            default:
-              g_warning ("%s: failed to stat SCAP database: %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              break;
-          }
-      else
-        sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
-                   " AS scap;");
-
-      /* Attach the CERT database. */
-
-      if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
-        switch (errno)
-          {
-            case ENOENT:
-              break;
-            default:
-              g_warning ("%s: failed to stat CERT database: %s\n",
-                         __FUNCTION__,
-                         strerror (errno));
-              break;
-          }
-      else
-        sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
-                   " AS cert;");
+      manage_attach_databases ();
     }
 
   /* Define functions for SQL. */
@@ -48322,66 +48303,6 @@ modify_setting (const gchar *uuid, const gchar *name,
   "                  'ovaldef' AS type, title as extra, max_cvss as severity"  \
   "           FROM ovaldefs)"                                                  \
   " AS allinfo"
-
-/**
- * @brief Check whether SCAP is available.
- *
- * @return 1 if SCAP database is loaded, else 0.
- */
-int
-manage_scap_loaded ()
-{
-  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
-    switch (errno)
-      {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat SCAP database: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 0;
-      }
-
-  if (sql_error ("SELECT count(*) FROM scap.sqlite_master"
-                 " WHERE type = 'table' AND name = 'cves';"))
-    /* There was an error, so probably the initial ATTACH failed. */
-    return 0;
-
-  return !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
-                    " WHERE type = 'table' AND name = 'cves';");
-}
-
-/**
- * @brief Check whether CERT is available.
- *
- * @return 1 if CERT database is loaded, else 0.
- */
-int
-manage_cert_loaded ()
-{
-  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
-    switch (errno)
-      {
-        case ENOENT:
-          return 0;
-          break;
-        default:
-          g_warning ("%s: failed to stat CERT database: %s\n",
-                     __FUNCTION__,
-                     strerror (errno));
-          return 0;
-      }
-
-  if (sql_error ("SELECT count(*) FROM cert.sqlite_master"
-                 " WHERE type = 'table' AND name = 'cves';"))
-    /* There was an error, so probably the initial ATTACH failed. */
-    return 0;
-
-  return !!sql_int ("SELECT count(*) FROM cert.sqlite_master"
-                    " WHERE type = 'table' AND name = 'dfn_cert_advs';");
-}
 
 /**
  * @brief Initialise an CVE iterator, for CVEs reported for a certain CPE.

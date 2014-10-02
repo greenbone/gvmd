@@ -2405,6 +2405,110 @@ create_tables ()
 }
 
 
+/* SecInfo. */
+
+/**
+ * @brief Attach external databases.
+ */
+void
+manage_attach_databases ()
+{
+  /* Attach the SCAP database. */
+
+  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          break;
+        default:
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          break;
+      }
+  else
+    sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/scap-data/scap.db'"
+               " AS scap;");
+
+  /* Attach the CERT database. */
+
+  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          break;
+        default:
+          g_warning ("%s: failed to stat CERT database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          break;
+      }
+  else
+    sql_error ("ATTACH DATABASE '" OPENVAS_STATE_DIR "/cert-data/cert.db'"
+               " AS cert;");
+}
+
+/**
+ * @brief Check whether CERT is available.
+ *
+ * @return 1 if CERT database is loaded, else 0.
+ */
+int
+manage_cert_loaded ()
+{
+  if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat CERT database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return 0;
+      }
+
+  if (sql_error ("SELECT count(*) FROM cert.sqlite_master"
+                 " WHERE type = 'table' AND name = 'dfn_cert_advs';"))
+    /* There was an error, so probably the initial ATTACH failed. */
+    return 0;
+
+  return !!sql_int ("SELECT count(*) FROM cert.sqlite_master"
+                    " WHERE type = 'table' AND name = 'dfn_cert_advs';");
+}
+
+/**
+ * @brief Check whether SCAP is available.
+ *
+ * @return 1 if SCAP database is loaded, else 0.
+ */
+int
+manage_scap_loaded ()
+{
+  if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
+    switch (errno)
+      {
+        case ENOENT:
+          return 0;
+          break;
+        default:
+          g_warning ("%s: failed to stat SCAP database: %s\n",
+                     __FUNCTION__,
+                     strerror (errno));
+          return 0;
+      }
+
+  if (sql_error ("SELECT count(*) FROM scap.sqlite_master"
+                 " WHERE type = 'table' AND name = 'cves';"))
+    /* There was an error, so probably the initial ATTACH failed. */
+    return 0;
+
+  return !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
+                    " WHERE type = 'table' AND name = 'cves';");
+}
+
+
 /* Migrator helper. */
 
 /**
