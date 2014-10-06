@@ -138,6 +138,12 @@ sql_open (const char *database)
 {
   int chunk_size = DB_CHUNK_SIZE;
 
+  // Workaround for SQLite temp file name conflicts that can occur if
+  //  concurrent forked processes have the same PRNG state.
+  #if SQLITE_VERSION_NUMBER < 3008003
+    sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
+  #endif
+
   if (sqlite3_open (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
                     &task_db))
     {
