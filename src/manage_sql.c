@@ -16582,7 +16582,7 @@ result_iterator_nvt_tag (iterator_t *iterator)
 DEF_ACCESS (result_iterator_original_type, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the original type from a result iterator.
+ * @brief Get the type from a result iterator.
  *
  * This is the the autofp adjusted overridden type.
  *
@@ -16599,7 +16599,7 @@ result_iterator_type (iterator_t *iterator)
   if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5))
     return "False Positive";
   /* new_type */
-  return iterator_string (iterator, 5);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**

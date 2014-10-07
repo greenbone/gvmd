@@ -1,3 +1,8 @@
+2014-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (result_iterator_type): Use correct column index and
+	fix documentation.
+
 2014-10-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_open): Add PRNG reset for SQLite versions
