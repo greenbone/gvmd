@@ -8997,6 +8997,12 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       }
   }
 
+// Workaround for SQLite temp file name conflicts that can occur if
+//  concurrent forked processes have the same PRNG state.
+#if SQLITE_VERSION_NUMBER < 3008003
+  sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
+#endif
+
 #ifndef S_SPLINT_S
   /* Open the database. */
   if (sqlite3_open (database ? database

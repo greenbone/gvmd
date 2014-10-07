@@ -1,3 +1,12 @@
+2014-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport 20535.
+
+	* src/manage_sql.c (init_manage_process): Add PRNG reset for SQLite
+	versions older than 3.8.3 as a workaround for SQLite temp file name
+	conflicts between forked processes. (Note: This change was originally
+	made to src/sql_sqlite3.c (sql_open) in trunk.)
+
 2014-09-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20493.
