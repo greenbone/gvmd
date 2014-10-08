@@ -1,3 +1,9 @@
+2014-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_attach_databases): Add SCAP and CERT to schema
+	search_path when they are loaded.
+	(manage_cert_loaded): Correct schema name.
+
 2014-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (result_iterator_type): Use correct column index and

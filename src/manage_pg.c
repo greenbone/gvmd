@@ -2087,7 +2087,15 @@ create_tables ()
 void
 manage_attach_databases ()
 {
-  return;
+  if (manage_scap_loaded ())
+    sql ("SELECT set_config ('search_path',"
+         "                   current_setting ('search_path') || ',scap',"
+         "                   false);");
+
+  if (manage_cert_loaded ())
+    sql ("SELECT set_config ('search_path',"
+         "                   current_setting ('search_path') || ',cert',"
+         "                   false);");
 }
 
 /**
@@ -2100,7 +2108,7 @@ manage_cert_loaded ()
 {
   return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                     "               WHERE table_catalog = 'tasks'"
-                    "               AND table_schema = 'scap'"
+                    "               AND table_schema = 'cert'"
                     "               AND table_name = 'dfn_cert_advs')"
                     " ::integer;");
 }

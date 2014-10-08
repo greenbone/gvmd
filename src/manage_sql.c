@@ -48289,7 +48289,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'nvt' AS type, CASE summary WHEN 'NOSUMMARY' THEN tag"    \
   "                                  ELSE summary END AS extra,"               \
-  "                  cvss_base as severity"                                    \
+  "                  CAST (cvss_base AS float) as severity"                    \
   "           FROM nvts"                                                       \
   " UNION ALL SELECT " GET_ITERATOR_COLUMNS_STRING ", '' AS _owner,"           \
   "                  'cert_bund_adv' AS type, title as extra,"                 \
