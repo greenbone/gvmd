@@ -1,5 +1,15 @@
 2014-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/cert_bund_update_pg.xsl, tools/cert_db_init_pg.sql,
+	tools/cpe_update_pg.xsl, tools/cve_update_pg.xsl,
+	tools/dfn_cert_update_pg.xsl, tools/oval_update_pg.xsl,
+	tools/scap_db_init_pg.sql: New files.  Postgres equivalents of existing
+	SQLite3 files.
+
+	* CMakeLists.txt: Install SecInfo tools according to SQL backend.
+
+2014-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_attach_databases): Add SCAP and CERT to schema
 	search_path when they are loaded.
 	(manage_cert_loaded): Correct schema name.

@@ -423,22 +423,60 @@ install (FILES tools/portnames_update.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
-         tools/cpe_youngerthan.xsl tools/cve_update.xsl
-         tools/cve_youngerthan.xsl tools/cpe_getbyname.xsl
-         tools/cve_getbyname.xsl tools/oval_update.xsl
+install (FILES tools/cpe_youngerthan.xsl tools/cve_youngerthan.xsl
+         tools/cpe_getbyname.xsl tools/cve_getbyname.xsl
          tools/oval_timestamp.xsl tools/ovaldef_getbyname.xsl
          tools/oval_verify.xsl tools/ovaldef_list_ids.xsl
          DESTINATION ${OPENVAS_SCAP_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
-install (FILES tools/cert_db_init.sql
-         tools/cert_bund_update.xsl
-         tools/cert_bund_getbyname.xsl
-         tools/dfn_cert_update.xsl
-         tools/dfn_cert_getbyname.xsl
+if (BACKEND STREQUAL SQLITE3)
+  install (tools/scap_db_init.sql tools/cpe_update.xsl
+           tools/cve_update.xsl tools/oval_update.xsl
+		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+else (BACKEND STREQUAL SQLITE3)
+  install (FILES tools/scap_db_init_pg.sql
+           RENAME scap_db_init.sql
+		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+  install (FILES tools/cpe_update_pg.xsl
+           RENAME cpe_update.xsl
+		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+  install (FILES tools/cve_update_pg.xsl
+           RENAME cve_update.xsl
+		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+  install (FILES tools/oval_update_pg.xsl
+           RENAME oval_update.xsl
+		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+endif (BACKEND STREQUAL SQLITE3)
+
+install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          DESTINATION ${OPENVAS_CERT_RES_DIR}
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
+if (BACKEND STREQUAL SQLITE3)
+  install (tools/cert_db_init.sql tools/cert_bund_update.xsl
+           tools/dfn_cert_update.xsl
+		   DESTINATION ${OPENVAS_CERT_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+else (BACKEND STREQUAL SQLITE3)
+  install (FILES tools/cert_db_init_pg.sql
+           RENAME cert_db_init.sql
+		   DESTINATION ${OPENVAS_CERT_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+  install (FILES tools/cert_bund_update_pg.xsl
+           RENAME cert_bund_update.xsl
+		   DESTINATION ${OPENVAS_CERT_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+  install (FILES tools/dfn_cert_update_pg.xsl
+           RENAME dfn_cert_update.xsl
+		   DESTINATION ${OPENVAS_CERT_RES_DIR}
+		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+endif (BACKEND STREQUAL SQLITE3)
 
 install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-scapdata-sync
          DESTINATION ${SBINDIR}
