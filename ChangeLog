@@ -1,5 +1,33 @@
 2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Make the OpenVAS sync scripts work for Postgres too.
+
+	* tools/openvas-certdata-sync.in (POSTGRES, SCHEMA)
+	(RECURSIVE_TRIGGERS_OFF): New variables.
+	(show_intro): Specify backend.
+	(reinit, check_db_version): Use functions to run SQL.
+	(PSQL): New variable.
+	(sql_pg, sql_scap, sql, scap_db_exists, cert_db_exists)
+	(cert_db_remove): New functions.
+	(update_cvss): Use functions to run SQL.  Use substitutions to fit the
+	SQL to the backend.
+	(update_sec_db): Use functions to run SQL.  Swap "if" cases.  Remove
+	empty lines from SQL output, else psql writes empty lines to stdout.
+
+	* tools/openvas-scapdata-sync.in (POSTGRES, SCHEMA)
+	(RECURSIVE_TRIGGERS_OFF): New variables.
+	(show_intro): Specify backend.
+	(reinit): Use functions to run SQL.
+	(PSQL): New variable.
+	(sql_pg, sql, sec_db_remove, sec_db_exists): New functions.
+	(reinit): Use functions to run SQL.  Skip old migrators with Postgres.
+	(init_sec_db_update, update_cvss, update_sec_db_private)
+	(update_sec_db): Use functions to run SQL.  Use substitutions to fit
+	parts of the SQL to the backend.  Use 0.0 for float columns instead of
+	''.  Remove empty lines from SQL output.
+
+2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/cert_bund_update_pg.xsl: Convert to Postgres.
 
 	* tools/dfn_cert_update_pg.xsl (/): Improve comment.

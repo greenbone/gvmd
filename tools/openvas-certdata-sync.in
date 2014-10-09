@@ -24,6 +24,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+POSTGRES=0
+SCHEMA_CERT=""
+SCHEMA_SCAP=""
+RECURSIVE_TRIGGERS_OFF="PRAGMA recursive_triggers = OFF;"
+ATTACH_SCAP=""
+if [ "@BACKEND@" = "POSTGRESQL" ]; then
+  POSTGRES=1
+  SCHEMA_CERT="cert."
+  SCHEMA_SCAP="scap."
+  RECURSIVE_TRIGGERS_OFF=""
+fi
+
 # configure CERT_DIR where we will sync CERT data
 if [ -z "$CERT_DIR" ]; then
   CERT_DIR=@OPENVAS_CERT_DATA_DIR@
@@ -44,6 +56,10 @@ if [ -z "$SCAP_DIR" ]; then
   fi
 fi
 SCAP_DB="$SCAP_DIR/scap.db"
+
+if [ ! $POSTGRES -eq 1 ] ; then
+  ATTACH_SCAP="ATTACH DATABASE '$SCAP_DB' AS scap;"
+fi
 
 # private directory
 if [ -z "$PRIVATE_SUBDIR" ]
@@ -85,7 +101,7 @@ if [ -z "$FEED_HOME" ] ; then
   FEED_HOME="http://www.openvas.org/"
 fi
 
-if [ -z "$OV_CERT_RSYNC_FEED" ]; then 
+if [ -z "$OV_CERT_RSYNC_FEED" ]; then
   OV_CERT_RSYNC_FEED=rsync://feed.openvas.org:/cert-data
   # An alternative syntax which might work if the above doesn't:
   # OV_RSYNC_FEED=rsync@feed.openvas.org::cert-data
@@ -181,6 +197,11 @@ do_feedversion () {
 
 show_intro () {
   echo "[i] This script synchronizes a CERT advisory directory with the OpenVAS one."
+  if [ $POSTGRES -eq 1 ] ; then
+    echo "[i] This script is for the PostgreSQL backend."
+  else
+    echo "[i] This script is for the SQLite3 backend."
+  fi
   echo "[i] CERT dir: $CERT_DIR"
 }
 
@@ -285,13 +306,68 @@ reinit () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+    sql < $CERT_RES_DIR/cert_db_init.sql
     test_sql_exit "Could not reinitialize CERT database"
   done
 }
 
+PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+
+sql_pg () {
+  if [ "$#" -gt 0 ]
+  then
+    $PSQL -c "$1"
+  else
+    $PSQL -f -
+  fi
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] psql exited with code $exit_code for sql: $1."
+    exit 1
+  fi
+}
+
+sql_scap () {
+  if [ $POSTGRES -eq 1 ]
+  then
+    if [ "$#" -gt 0 ]
+    then
+      sql_pg "$1"
+    else
+      sql_pg $*
+    fi
+  else
+    if [ "$#" -gt 0 ]
+    then
+      $SQLITE $SCAP_DB "$1"
+    else
+      $SQLITE $SCAP_DB $*
+    fi
+  fi
+}
+
+sql () {
+  if [ $POSTGRES -eq 1 ]
+  then
+    if [ "$#" -gt 0 ]
+    then
+      sql_pg "$1"
+    else
+      sql_pg $*
+    fi
+  else
+    if [ "$#" -gt 0 ]
+    then
+      $SQLITE $CERT_DB "$1"
+    else
+      $SQLITE $CERT_DB $*
+    fi
+  fi
+}
+
 check_db_version () {
-  DB_VERSION=`$SQLITE $CERT_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
+  DB_VERSION=`sql "select value from ${SCHEMA_CERT}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
@@ -302,15 +378,56 @@ check_db_version () {
   esac
 }
 
+scap_db_exists () {
+  if [ $POSTGRES -eq 1 ] ;
+  then
+    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'scap');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
+    if [ "$EXISTS" = "f" ] ;
+    then
+      return 1;
+    fi
+    return 0;
+  elif [ -f $SCAP_DB ]
+  then
+    return 0;
+  fi
+  return 1;
+}
+
+cert_db_exists () {
+  if [ $POSTGRES -eq 1 ] ;
+  then
+    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'cert');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
+    if [ "$EXISTS" = "f" ] ;
+    then
+      return 1;
+    fi
+    return 0;
+  elif [ -f $CERT_DB ]
+  then
+    return 0;
+  fi
+  return 1;
+}
+
+cert_db_remove () {
+  if [ $POSTGRES -eq 1 ] ;
+  then
+    sql_pg "DROP SCHEMA IF EXISTS cert CASCADE;"
+  else
+    rm -f $CERT_DB
+  fi
+}
+
 update_cvss () {
-  if [ ! -f "$SCAP_DB" ]
+  if ! scap_db_exists;
   then
     echo "[w] SCAP database not found. Cannot update max_cvss."
   else
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      SCAP_DB_LASTUPDATE=`$SQLITE $SCAP_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+      SCAP_DB_LASTUPDATE=`sql_scap "SELECT value FROM ${SCHEMA_SCAP}meta WHERE name = 'last_update';"`
       test_sql_exit "Could not get last_update timestamp from SCAP database"
     done
 
@@ -320,21 +437,21 @@ update_cvss () {
       reset_sql_tries
       until [ "$try_sql" -eq 0 ]
       do
-        $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
-                          PRAGMA recursive_triggers = OFF;
-                          UPDATE cert_bund_advs
-                            SET max_cvss =
-                                (
-                                  SELECT coalesce(max(cvss), '')
-                                  FROM scap_db.cves
-                                  WHERE name IN
-                                    (
-                                      SELECT cve_name
-                                      FROM cert_bund_cves
-                                      WHERE adv_id=cert_bund_advs.id
-                                    )
-                                    AND cvss != ''
-                                );"
+        sql "${ATTACH_SCAP}
+             ${RECURSIVE_TRIGGERS_OFF}
+             UPDATE ${SCHEMA_CERT}cert_bund_advs
+               SET max_cvss =
+                   (
+                     SELECT coalesce(max(cvss), 0.0)
+                     FROM scap.cves
+                     WHERE name IN
+                       (
+                         SELECT cve_name
+                         FROM ${SCHEMA_CERT}cert_bund_cves
+                         WHERE adv_id=cert_bund_advs.id
+                       )
+                       AND cvss != 0.0
+                   );"
         test_sql_exit "Could not update CVSS scores for CERT-Bund Advisories"
       done
     else
@@ -347,21 +464,21 @@ update_cvss () {
       reset_sql_tries
       until [ "$try_sql" -eq 0 ]
       do
-        $SQLITE $CERT_DB "ATTACH DATABASE '$SCAP_DB' AS scap_db;
-                          PRAGMA recursive_triggers = OFF;
-                          UPDATE dfn_cert_advs
-                            SET max_cvss =
-                                (
-                                  SELECT coalesce(max(cvss), '')
-                                  FROM scap_db.cves
-                                  WHERE name IN
-                                    (
-                                      SELECT cve_name
-                                      FROM dfn_cert_cves
-                                      WHERE adv_id=dfn_cert_advs.id
-                                    )
-                                    AND cvss != ''
-                                );"
+        sql "${ATTACH_SCAP}
+             ${RECURSIVE_TRIGGERS_OFF}
+             UPDATE ${SCHEMA_CERT}dfn_cert_advs
+               SET max_cvss =
+                   (
+                     SELECT coalesce(max(cvss), 0.0)
+                     FROM scap.cves
+                     WHERE name IN
+                       (
+                         SELECT cve_name
+                         FROM ${SCHEMA_CERT}dfn_cert_cves
+                         WHERE adv_id=dfn_cert_advs.id
+                       )
+                       AND cvss != 0.0
+                   );"
         test_sql_exit "Could not update CVSS scores for DFN-CERT Advisories"
       done
     else
@@ -381,32 +498,32 @@ update_sec_db () {
     updated_dfn=0
   fi
 
-  if [ ! -f $CERT_DB ]
+  if cert_db_exists
   then
-    echo "[i] Initializing CERT advisory database"
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
-      test_sql_exit "Could not initialize CERT database"
-    done
-    DB_LASTUPDATE=0
-  else
     check_db_version
 
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      CB_REFDATE=`$SQLITE $CERT_DB "SELECT max(modification_time) from cert_bund_advs;"`
+      CB_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA_CERT}cert_bund_advs;"`
       test_sql_exit "Could not get CERT-Bund reference date from database"
     done
 
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      DFN_REFDATE=`$SQLITE $CERT_DB "SELECT max(modification_time) from dfn_cert_advs;"`
+      DFN_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA_CERT}dfn_cert_advs;"`
       test_sql_exit "Could not get DFN-CERT reference date from database"
     done
+  else
+    echo "[i] Initializing CERT advisory database"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      sql < $CERT_RES_DIR/cert_db_init.sql
+      test_sql_exit "Could not initialize CERT database"
+    done
+    DB_LASTUPDATE=0
   fi
 
   if [ -z "$CB_REFDATE" ]
@@ -422,7 +539,7 @@ update_sec_db () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    DB_LASTUPDATE=`$SQLITE $CERT_DB "SELECT value FROM meta WHERE name = 'last_update';"`
+    DB_LASTUPDATE=`sql "SELECT value FROM ${SCHEMA_CERT}meta WHERE name = 'last_update';"`
     test_sql_exit "Could not get last_update timestamp from CERT database"
   done
 
@@ -430,12 +547,12 @@ update_sec_db () {
   then
     # Happens when initial sync was aborted
     echo "Error: Inconsistent data. Resetting CERT database."
-    rm -f $CERT_DB
+    cert_db_remove
 
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE $CERT_DB < $CERT_RES_DIR/cert_db_init.sql
+      sql < $CERT_RES_DIR/cert_db_init.sql
       test_sql_exit "Could not reinitialize CERT database"
     done
 
@@ -464,7 +581,7 @@ update_sec_db () {
               (
                 set_interrupt_trap
                 (xsltproc --stringparam refdate "$CB_REFDATE" $CERT_RES_DIR/cert_bund_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
-                ($SQLITE $CERT_DB || echo "sqlite3:$?" >&3)
+                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
               ) 3>&1 >&4
             )
           exec 4>&-
@@ -499,7 +616,7 @@ update_sec_db () {
               (
                 set_interrupt_trap
                 (xsltproc --stringparam refdate "$DFN_REFDATE" $CERT_RES_DIR/dfn_cert_update.xsl $certfile || echo "xsltproc:$?" >&3) | \
-                ($SQLITE $CERT_DB || echo "sqlite3:$?" >&3)
+                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
               ) 3>&1 >&4
             )
           exec 4>&-
@@ -520,7 +637,7 @@ update_sec_db () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE $CERT_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    sql "UPDATE ${SCHEMA_CERT}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
     test_sql_exit "Could not update last_update timestamp in CERT database"
   done
 }

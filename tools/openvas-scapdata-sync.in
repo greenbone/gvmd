@@ -25,6 +25,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+POSTGRES=0
+SCHEMA=""
+RECURSIVE_TRIGGERS_OFF="PRAGMA recursive_triggers = OFF;"
+if [ "@BACKEND@" = "POSTGRESQL" ]; then
+  POSTGRES=1
+  SCHEMA="scap."
+  RECURSIVE_TRIGGERS_OFF=""
+fi
+
 # configure SCAP_DIR where we will sync SCAP data
 if [ -z "$SCAP_DIR" ]; then
   SCAP_DIR=@OPENVAS_SCAP_DATA_DIR@
@@ -198,6 +207,11 @@ do_feedversion () {
 
 show_intro () {
   echo "[i] This script synchronizes a SCAP data directory with the OpenVAS one."
+  if [ $POSTGRES -eq 1 ] ; then
+    echo "[i] This script is for the PostgreSQL backend."
+  else
+    echo "[i] This script is for the SQLite3 backend."
+  fi
   echo "[i] SCAP dir: $SCAP_DIR"
 }
 
@@ -300,7 +314,7 @@ reinit () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+    sql < $SCAP_RES_DIR/scap_db_init.sql
     test_sql_exit "Could not reinitialize SCAP database"
   done
 }
@@ -469,8 +483,44 @@ db_migrate_14 () {
   REBUILD_OVAL=1
 }
 
+PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+
+sql_pg () {
+  if [ "$#" -gt 0 ]
+  then
+    $PSQL -c "$1"
+  else
+    $PSQL -f -
+  fi
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] psql exited with code $exit_code for sql: $1."
+    exit 1
+  fi
+}
+
+sql () {
+  if [ $POSTGRES -eq 1 ]
+  then
+    if [ "$#" -gt 0 ]
+    then
+      sql_pg "$1"
+    else
+      sql_pg $*
+    fi
+  else
+    if [ "$#" -gt 0 ]
+    then
+      $SQLITE $SEC_DB "$1"
+    else
+      $SQLITE $SEC_DB $*
+    fi
+  fi
+}
+
 check_db_version () {
-  DB_VERSION=`$SQLITE $SEC_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
+  DB_VERSION=`sql "select value from ${SCHEMA}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
@@ -480,57 +530,111 @@ check_db_version () {
     5) reinit;;
     6) reinit;;
     7) reinit;;
-    8) db_migrate_9
-       db_migrate_10
-       db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-    9) db_migrate_10
-       db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   10) db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   11) db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   12) db_migrate_13
-       db_migrate_14;;
-   13) db_migrate_14;;
+    8) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_9
+         db_migrate_10
+         db_migrate_11
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+       fi;;
+    9) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_10
+         db_migrate_11
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+       fi;;
+   10) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_11
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+       fi;;
+   11) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+       fi;;
+   12) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_13
+         db_migrate_14
+       fi;;
+   13) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_14
+       fi;;
   esac
 }
 
-init_sec_db_update () {
-  if [ ! -f $SEC_DB ]
+sec_db_remove () {
+  if [ $POSTGRES -eq 1 ] ;
   then
+    sql_pg "DROP SCHEMA IF EXISTS scap CASCADE;"
+  else
+    rm -f $SEC_DB
+  fi
+}
+
+sec_db_exists () {
+  if [ $POSTGRES -eq 1 ] ;
+  then
+    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'scap');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
+    if [ "$EXISTS" = "f" ] ;
+    then
+      return 1;
+    fi
+    return 0;
+  elif [ -f "$SCAP_DB" ]
+  then
+    return 0;
+  fi
+  return 1;
+}
+
+init_sec_db_update () {
+  if sec_db_exists; then
+    check_db_version
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      CVE_REFDATE=`sql "SELECT max(modification_time) from ${SCHEMA}cves;"`
+      test_sql_exit "Could not get reference date for CVEs and CPEs"
+    done
+  else
     echo "[i] Initializing scap database"
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+      sql < $SCAP_RES_DIR/scap_db_init.sql
       test_sql_exit "Could not initialize SCAP database"
     done
     DB_LASTUPDATE=0
     CVE_REFDATE=0
     OVAL_REFDATE=0
-  else
-    check_db_version
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      CVE_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) from cves;"`
-      test_sql_exit "Could not get reference date for CVEs and CPEs"
-    done
   fi
 
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    DB_LASTUPDATE=`$SQLITE $SEC_DB "select value from meta where name = 'last_update';"`
+    DB_LASTUPDATE=`sql "select value from ${SCHEMA}meta where name = 'last_update';"`
     test_sql_exit "Could not get last_update timestamp from database"
   done
 
@@ -543,11 +647,11 @@ init_sec_db_update () {
   then
     # Happens when initial sync was aborted
     echo "[e] Error: Inconsistent data. Resetting SCAP database."
-    rm -f $SEC_DB
+    sec_db_remove
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE $SEC_DB < $SCAP_RES_DIR/scap_db_init.sql
+      sql < $SCAP_RES_DIR/scap_db_init.sql
       test_sql_exit "Could not reinitialize SCAP database"
     done
     CVE_REFDATE=0
@@ -589,24 +693,24 @@ update_cvss () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE "$SEC_DB"  "
-      PRAGMA recursive_triggers = OFF;
-      UPDATE cpes
+      sql "
+      ${RECURSIVE_TRIGGERS_OFF}
+      UPDATE ${SCHEMA}cpes
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), '')
-              FROM cves
+              SELECT coalesce(max(cvss), 0.0)
+              FROM ${SCHEMA}cves
               WHERE id IN
                 (
                   SELECT cve
-                  FROM affected_products
+                  FROM ${SCHEMA}affected_products
                   WHERE cpe=cpes.id
                 )
             ),
           cve_refs =
             (
               SELECT count(cve)
-              FROM affected_products
+              FROM ${SCHEMA}affected_products
               WHERE cpe=cpes.id
             );
       "
@@ -622,20 +726,20 @@ update_cvss () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE "$SEC_DB"  "
-      PRAGMA recursive_triggers = OFF;
-      UPDATE ovaldefs
+      sql "
+      ${RECURSIVE_TRIGGERS_OFF}
+      UPDATE ${SCHEMA}ovaldefs
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), '')
-              FROM cves
+              SELECT coalesce(max(cvss), 0.0)
+              FROM ${SCHEMA}cves
               WHERE id IN
                 (
                   SELECT cve
-                  FROM affected_ovaldefs
+                  FROM ${SCHEMA}affected_ovaldefs
                   WHERE ovaldef=ovaldefs.id
                 )
-                AND cvss != ''
+                AND cvss != 0.0
             );
       "
       test_sql_exit "Could not update CVSS scores for OVAL definitions"
@@ -706,7 +810,7 @@ update_sec_db_private () {
               reset_sql_tries
               until [ "$try_sql" -eq 0 ]
               do
-                OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+                OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
                 test_sql_exit "Could not get OVAL reference date"
               done
               if [ -z "$OVAL_REFDATE" ]
@@ -741,7 +845,7 @@ update_sec_db_private () {
                       (
                         set_interrupt_trap
                         (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                        ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                        (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
                       ) 3>&1 >&4
                     )
                     exec 4>&-
@@ -775,10 +879,16 @@ update_sec_db_private () {
       oval_files_shortened=${oval_files_shortened##"', "}"'"
     fi
 
+    oval_files_clause=""
+    if [ ! -z "$oval_files_shortened" ]
+    then
+      oval_files_clause="AND (xml_file NOT IN ($oval_files_shortened))"
+    fi
+
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      deleted=`$SQLITE "$SEC_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+      deleted=`sql "SELECT DISTINCT xml_file FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"`
       test_sql_exit "Could not get list of deleted OVAL XML files"
     done
 
@@ -789,7 +899,7 @@ update_sec_db_private () {
       reset_sql_tries
       until [ "$try_sql" -eq 0 ]
       do
-        $SQLITE "$SEC_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+        sql "DELETE FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"
         test_sql_exit "Could not remove deleted OVAL definitions from database"
       done
     fi
@@ -800,7 +910,7 @@ update_sec_db_private () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+      sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
       test_sql_exit "Could not update last_update timestamp in database"
     done
   else
@@ -829,7 +939,7 @@ update_sec_db () {
             (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
             (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
             (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-            ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3) \
+            (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
           ) 3>&1 >&4
         )
         exec 4>&-
@@ -872,7 +982,7 @@ update_sec_db () {
                   set_interrupt_trap
                   (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
                   (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                  ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
                 ) 3>&1 >&4
               )
               exec 4>&-
@@ -890,7 +1000,7 @@ update_sec_db () {
                 set_interrupt_trap
                 (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
                 (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
               ) 3>&1 >&4
             )
             exec 4>&-
@@ -902,7 +1012,7 @@ update_sec_db () {
         echo "[i] Skipping $cvefile, file is older than last revision"
       fi
     done
-  else 
+  else
     echo "[w] No CVEs found in $SCAP_DIR"
   fi
 
@@ -937,7 +1047,7 @@ update_sec_db () {
           reset_sql_tries
           until [ "$try_sql" -eq 0 ]
           do
-            OVAL_REFDATE=`$SQLITE $SEC_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+            OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
             test_sql_exit "Could not get OVAL reference date from database"
           done
           if [ -z "$OVAL_REFDATE" ]
@@ -957,7 +1067,7 @@ update_sec_db () {
               (
                 set_interrupt_trap
                 (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                ($SQLITE $SEC_DB || echo "sqlite3:$?" >&3)
+                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
               ) 3>&1 >&4
             )
             exec 4>&-
@@ -982,7 +1092,7 @@ update_sec_db () {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE $SEC_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
     test_sql_exit "Could not update last_update timestamp in database"
   done
 }
