@@ -1,3 +1,8 @@
+2014-10-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* CMakeLists.txt: Adding missing "FILES" to make the cmake work
+	properly.
+
 2014-10-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/cert_bund_update_pg.xsl, tools/cert_db_init_pg.sql,

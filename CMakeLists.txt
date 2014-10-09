@@ -431,7 +431,7 @@ install (FILES tools/cpe_youngerthan.xsl tools/cve_youngerthan.xsl
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 if (BACKEND STREQUAL SQLITE3)
-  install (tools/scap_db_init.sql tools/cpe_update.xsl
+  install (FILES tools/scap_db_init.sql tools/cpe_update.xsl
            tools/cve_update.xsl tools/oval_update.xsl
 		   DESTINATION ${OPENVAS_SCAP_RES_DIR}
 		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
@@ -459,7 +459,7 @@ install (FILES tools/cert_bund_getbyname.xsl tools/dfn_cert_getbyname.xsl
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 if (BACKEND STREQUAL SQLITE3)
-  install (tools/cert_db_init.sql tools/cert_bund_update.xsl
+  install (FILES tools/cert_db_init.sql tools/cert_bund_update.xsl
            tools/dfn_cert_update.xsl
 		   DESTINATION ${OPENVAS_CERT_RES_DIR}
 		   PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
