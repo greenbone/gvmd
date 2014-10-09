@@ -91,8 +91,8 @@ CREATE FUNCTION merge_dfn_cert_cve (adv_id_arg INTEGER,
 RETURNS VOID AS $$
 BEGIN
 <!--
-    The SQLite3 version does INSERT OR REPLACE but there is no primary key
-    or UUID, so just INSERT.
+  The SQLite3 version does INSERT OR REPLACE but there is no primary key, so
+  just INSERT.
 
   LOOP
     UPDATE dfn_cert_cves

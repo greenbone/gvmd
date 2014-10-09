@@ -31,50 +31,126 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   xmlns:cb="http://www.cert-bund.de"
   xmlns:str="http://exslt.org/strings"
   xmlns:date="http://exslt.org/dates-and-times"
-  extension-element-prefixes="str date"
-  >
+  xmlns:func="http://exslt.org/functions"
+  xmlns:openvas="http://openvas.org"
+  extension-element-prefixes="str date func openvas">
   <xsl:output method="text"/>
   <xsl:param name="refdate" select="'0'"/>
 
+  <func:function name="openvas:sql-quote">
+    <xsl:param name="sql"/>
+    <xsl:variable name="single">'</xsl:variable>
+    <xsl:variable name="pair">''</xsl:variable>
+    <func:result select="str:replace ($sql, $single, $pair)"/>
+  </func:function>
+
   <xsl:template match="/">
-  BEGIN TRANSACTION;
+SET search_path TO cert;
+BEGIN TRANSACTION;
+
+CREATE FUNCTION merge_bund_adv (uuid_arg TEXT,
+                                name_arg TEXT,
+                                comment_arg TEXT,
+                                creation_time_arg INTEGER,
+                                modification_time_arg INTEGER,
+                                title_arg TEXT,
+                                summary_arg TEXT,
+                                cve_refs_arg INTEGER)
+RETURNS VOID AS $$
+BEGIN
+  LOOP
+    UPDATE cert_bund_advs
+    SET name = name_arg,
+        comment = comment_arg,
+        creation_time = creation_time_arg,
+        modification_time = modification_time_arg,
+        title = title_arg,
+        summary = summary_arg,
+        cve_refs = cve_refs_arg
+    WHERE uuid = uuid_arg;
+    IF found THEN
+      RETURN;
+    END IF;
+    BEGIN
+      INSERT INTO cert_bund_advs (uuid, name, comment, creation_time,
+                                  modification_time, title, summary, cve_refs)
+      VALUES (uuid_arg, name_arg, comment_arg, creation_time_arg,
+              modification_time_arg, title_arg, summary_arg, cve_refs_arg);
+      RETURN;
+    EXCEPTION WHEN unique_violation THEN
+      -- Try again.
+    END;
+  END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE FUNCTION merge_bund_cve (adv_id_arg INTEGER,
+                                cve_name_arg TEXT)
+RETURNS VOID AS $$
+BEGIN
+<!--
+  The SQLite3 version does INSERT OR REPLACE but there is no primary key, so
+  just INSERT.
+
+  LOOP
+    UPDATE cert_bund_cves
+    SET cve_name = cve_name_arg
+    WHERE adv_id = adv_id_arg;
+    IF found THEN
+      RETURN;
+    END IF;
+    BEGIN
+      INSERT INTO cert_bund_cves (adv_id, cve_name)
+      VALUES (adv_id_arg, cve_name_arg);
+      RETURN;
+    EXCEPTION WHEN unique_violation THEN
+      /* Try again. */
+    END;
+  END LOOP;
+-->
+  INSERT INTO cert_bund_cves (adv_id, cve_name)
+  VALUES (adv_id_arg, cve_name_arg);
+END;
+$$
+LANGUAGE plpgsql;
+
   <xsl:apply-templates select="Advisories"/>
-  COMMIT;
+
+DROP FUNCTION merge_bund_adv (uuid_arg TEXT,
+                              name_arg TEXT,
+                              comment_arg TEXT,
+                              creation_time_arg INTEGER,
+                              modification_time_arg INTEGER,
+                              title_arg TEXT,
+                              summary_arg TEXT,
+                              cve_refs_arg INTEGER);
+
+DROP FUNCTION merge_bund_cve (adv_id_arg INTEGER,
+                              cve_name_arg TEXT);
+
+COMMIT;
   </xsl:template>
 
   <xsl:template match="Advisory">
   <xsl:choose>
   <xsl:when test="floor (date:seconds (Date)) &gt; number($refdate)">
-  INSERT OR REPLACE INTO cert_bund_advs (
-    uuid,
-    name,
-    comment,
-    creation_time,
-    modification_time,
-    title,
-    summary,
-    cve_refs
-  ) VALUES (
-    "<xsl:value-of select="Ref_Num"/>",
-    "<xsl:value-of select="Ref_Num"/>",
-    "",
+  SELECT merge_bund_adv
+   ('<xsl:value-of select="Ref_Num"/>',
+    '<xsl:value-of select="Ref_Num"/>',
+    '',
     <xsl:value-of select="floor (date:seconds (Date))"/>,
     <xsl:value-of select="floor (date:seconds (Date))"/>,
-    "<xsl:value-of select="str:replace(Title/text(), '&quot;', '&quot;&quot;')"/>",
-    "<xsl:for-each select="Description/Element/TextBlock">
-      <xsl:value-of select="str:replace(text(), '&quot;', '&quot;&quot;')"/>
+    '<xsl:value-of select="openvas:sql-quote (Title/text())"/>',
+    '<xsl:for-each select="Description/Element/TextBlock">
+      <xsl:value-of select="openvas:sql-quote (text())"/>
       <xsl:if test="position() != last()"><xsl:text> </xsl:text></xsl:if>
-     </xsl:for-each>",
-    <xsl:value-of select="count(CVEList/CVE)"/>
-  );
+     </xsl:for-each>',
+    <xsl:value-of select="count(CVEList/CVE)"/>);
   <xsl:for-each select="CVEList/CVE">
-  INSERT OR REPLACE INTO cert_bund_cves (
-    adv_id,
-    cve_name
-  ) VALUES (
-    (SELECT id FROM cert_bund_advs WHERE name = "<xsl:value-of select="../../Ref_Num"/>"),
-     "<xsl:value-of select="."/>"
-  );
+  SELECT merge_bund_cve
+   ((SELECT id FROM cert_bund_advs WHERE name = '<xsl:value-of select="../../Ref_Num"/>'),
+    '<xsl:value-of select="."/>'::text);
   </xsl:for-each>
   </xsl:when>
   <xsl:otherwise>

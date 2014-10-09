@@ -1,6 +1,12 @@
 2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* tools/cert_bund_update_pg.xsl (merge_dfn_cert_cve): Just INSERT,
+	* tools/cert_bund_update_pg.xsl: Convert to Postgres.
+
+	* tools/dfn_cert_update_pg.xsl (/): Improve comment.
+
+2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/dfn_cert_update_pg.xsl (merge_dfn_cert_cve): Just INSERT,
 	because there is no UUID or key.
 
 2014-10-09  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
