@@ -90,6 +90,10 @@ CREATE FUNCTION merge_dfn_cert_cve (adv_id_arg INTEGER,
                                     cve_name_arg TEXT)
 RETURNS VOID AS $$
 BEGIN
+<!--
+    The SQLite3 version does INSERT OR REPLACE but there is no primary key
+    or UUID, so just INSERT.
+
   LOOP
     UPDATE dfn_cert_cves
     SET adv_id = adv_id_arg,
@@ -103,9 +107,12 @@ BEGIN
       VALUES (adv_id_arg, cve_name_arg);
       RETURN;
     EXCEPTION WHEN unique_violation THEN
-      -- Try again.
+      /* Try again. */
     END;
   END LOOP;
+-->
+  INSERT INTO dfn_cert_cves (adv_id, cve_name)
+  VALUES (adv_id_arg, cve_name_arg);
 END;
 $$
 LANGUAGE plpgsql;
