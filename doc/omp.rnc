@@ -7586,6 +7586,7 @@ get_aggregates_response_aggregate
        & get_aggregates_response_aggregate_group_column?
        & ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
+       & get_aggregates_response_aggregate_column_info
      }
 
 # The resource type the data is aggregated from.
@@ -7728,6 +7729,59 @@ get_aggregates_response_aggregate_overall_mean
 # Overall sum of the numeric values of the data column.
 get_aggregates_response_aggregate_overall_sum
  = element sum
+     {
+       text
+     }
+
+# Info on the aggregate columns.
+get_aggregates_response_aggregate_column_info
+ = element column_info
+     {
+       get_aggregates_response_aggregate_column_info_aggregate_column*
+     }
+
+# Info on one column of the aggregate.
+get_aggregates_response_aggregate_column_info_aggregate_column
+ = element aggregate_column
+     {
+       get_aggregates_response_aggregate_column_info_aggregate_column_name
+       & get_aggregates_response_aggregate_column_info_aggregate_column_stat
+       & get_aggregates_response_aggregate_column_info_aggregate_column_type
+       & get_aggregates_response_aggregate_column_info_aggregate_column_column
+       & get_aggregates_response_aggregate_column_info_aggregate_column_data_type
+     }
+
+# Name of the column as it appears in the group or overall element.
+get_aggregates_response_aggregate_column_info_aggregate_column_name
+ = element name
+     {
+       text
+     }
+
+# The type of statistic in the column, e.g. min, max, mean.
+get_aggregates_response_aggregate_column_info_aggregate_column_stat
+ = element stat
+     {
+       text
+     }
+
+# The resource type.
+get_aggregates_response_aggregate_column_info_aggregate_column_type
+ = element type
+     {
+       text
+     }
+
+# Name of the column in the non-aggregated table.
+get_aggregates_response_aggregate_column_info_aggregate_column_column
+ = element column
+     {
+       text
+     }
+
+# The data type of the column, e.g. integer, text, cvss.
+get_aggregates_response_aggregate_column_info_aggregate_column_data_type
+ = element data_type
      {
        text
      }

@@ -1,3 +1,13 @@
+2014-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGGREGATES case
+	add column_info section.
+
+	* src/schema_formats/XML/OMP.xml (get_aggregates): Add column_info
+	element in response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Get openvas-portnames-update working with Postgres.

@@ -15995,6 +15995,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           const char *type;
           get_data_t *get;
           const char *data_column, *group_column;
+          const char *data_column_type, *group_column_type;
           int ret;
           GString *xml;
           double c_sum;
@@ -16013,6 +16014,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           get = &get_aggregates_data->get;
           data_column = get_aggregates_data->data_column;
           group_column = get_aggregates_data->group_column;
+
+          if (group_column == NULL)
+            group_column_type = "";
+          else if (strcmp (group_column, "severity") == 0)
+            group_column_type = "cvss";
+          else if (strcmp (group_column, "created") == 0
+                   || strcmp (group_column, "modified") == 0)
+            group_column_type = "unix_time";
+          else
+            group_column_type = "text";
+
+          if (data_column == NULL)
+            data_column_type = "";
+          else if (strcmp (data_column, "severity") == 0)
+            data_column_type = "cvss";
+          else if (strcmp (data_column, "created") == 0
+                   || strcmp (data_column, "modified") == 0)
+            data_column_type = "unix_time";
+          else
+            data_column_type = "decimal";
 
           if (data_column == NULL && group_column == NULL)
             {
@@ -16158,6 +16179,105 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         c_sum
                                        );
             }
+
+          g_string_append (xml, "<column_info>");
+
+          if (group_column)
+            {
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>value</name>"
+                                      "<stat>value</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      group_column,
+                                      group_column_type);
+            }
+
+          g_string_append_printf (xml,
+                                  "<aggregate_column>"
+                                  "<name>count</name>"
+                                  "<stat>count</stat>"
+                                  "<type>%s</type>"
+                                  "<column></column>"
+                                  "<data_type>integer</data_type>"
+                                  "</aggregate_column>",
+                                  type);
+
+          g_string_append_printf (xml,
+                                  "<aggregate_column>"
+                                  "<name>c_count</name>"
+                                  "<stat>c_count</stat>"
+                                  "<type>%s</type>"
+                                  "<column></column>"
+                                  "<data_type>integer</data_type>"
+                                  "</aggregate_column>",
+                                  type);
+
+          if (data_column)
+            {
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>min</name>"
+                                      "<stat>min</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      data_column,
+                                      data_column_type);
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>max</name>"
+                                      "<stat>max</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      data_column,
+                                      data_column_type);
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>mean</name>"
+                                      "<stat>mean</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      data_column,
+                                      data_column_type);
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>sum</name>"
+                                      "<stat>sum</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      data_column,
+                                      data_column_type);
+              g_string_append_printf (xml,
+                                      "<aggregate_column>"
+                                      "<name>c_sum</name>"
+                                      "<stat>c_sum</stat>"
+                                      "<type>%s</type>"
+                                      "<column>%s</column>"
+                                      "<data_type>%s</data_type>"
+                                      "</aggregate_column>",
+                                      type,
+                                      data_column,
+                                      data_column_type);
+            }
+
+          g_string_append (xml, "</column_info>");
+
           g_string_append (xml, "</aggregate>");
           g_string_append (xml, "</get_aggregates_response>");
 

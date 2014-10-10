@@ -12507,6 +12507,41 @@ get_configs_response_config_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>column_info</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on the aggregate columns.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>aggregate_column</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Info on one column of the aggregate.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the column as it appears in the group or overall element.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>stat</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type of statistic in the column, e.g. min, max, mean.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The resource type.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the column in the non-aggregated table.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>data_type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The data type of the column, e.g. integer, text, cvss.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -12538,6 +12573,7 @@ get_aggregates_response_aggregate
        &amp; get_aggregates_response_aggregate_group_column?
        &amp; ( get_aggregates_response_aggregate_group*
            | get_aggregates_response_aggregate_overall )
+       &amp; get_aggregates_response_aggregate_column_info
      }
 
 get_aggregates_response_aggregate_data_type
@@ -12661,6 +12697,52 @@ get_aggregates_response_aggregate_overall_mean
 
 get_aggregates_response_aggregate_overall_sum
  = element sum
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_column_info
+ = element column_info
+     {
+       get_aggregates_response_aggregate_column_info_aggregate_column*
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column
+ = element aggregate_column
+     {
+       get_aggregates_response_aggregate_column_info_aggregate_column_name
+       &amp; get_aggregates_response_aggregate_column_info_aggregate_column_stat
+       &amp; get_aggregates_response_aggregate_column_info_aggregate_column_type
+       &amp; get_aggregates_response_aggregate_column_info_aggregate_column_column
+       &amp; get_aggregates_response_aggregate_column_info_aggregate_column_data_type
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column_name
+ = element name
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column_stat
+ = element stat
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column_type
+ = element type
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column_column
+ = element column
+     {
+       text
+     }
+
+get_aggregates_response_aggregate_column_info_aggregate_column_data_type
+ = element data_type
      {
        text
      }

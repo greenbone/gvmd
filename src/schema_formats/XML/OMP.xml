@@ -7060,6 +7060,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <any><e>group</e></any>
             <e>overall</e>
           </or>
+          <e>column_info</e>
         </pattern>
         <ele>
           <name>data_type</name>
@@ -7173,6 +7174,49 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>sum</name>
             <summary>Overall sum of the numeric values of the data column</summary>
             <pattern><t>text</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>column_info</name>
+          <summary>Info on the aggregate columns</summary>
+          <pattern>
+            <any><e>aggregate_column</e></any>
+          </pattern>
+          <ele>
+            <name>aggregate_column</name>
+            <summary>Info on one column of the aggregate</summary>
+            <pattern>
+              <e>name</e>
+              <e>stat</e>
+              <e>type</e>
+              <e>column</e>
+              <e>data_type</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the column as it appears in the group or overall element</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>stat</name>
+              <summary>The type of statistic in the column, e.g. min, max, mean</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The resource type</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>column</name>
+              <summary>Name of the column in the non-aggregated table</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
+            <ele>
+              <name>data_type</name>
+              <summary>The data type of the column, e.g. integer, text, cvss</summary>
+              <pattern><t>text</t></pattern>
+            </ele>
           </ele>
         </ele>
       </ele>
