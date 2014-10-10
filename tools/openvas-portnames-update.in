@@ -24,6 +24,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
+POSTGRES=0
+if [ "@BACKEND@" = "POSTGRESQL" ]; then
+  POSTGRES=1
+fi
 
 do_help () {
   echo "Update port names data from a port names XML file.\n";
@@ -59,10 +63,16 @@ if [ -z "$DB_DIR" ]; then
   DB_DIR="$OV_DIR/mgr"
 fi
 
-TASKS_DB="$DB_DIR/tasks.db"
-if [ ! -f $TASKS_DB ]; then
-  echo "$TASKS_DB not found. Rebuild DB before updating port names.";
-  exit 1;
+if [ $POSTGRES -eq 1 ]
+then
+  SQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+else
+  TASKS_DB="$DB_DIR/tasks.db"
+  if [ ! -f $TASKS_DB ]; then
+	echo "$TASKS_DB not found. Rebuild DB before updating port names.";
+	exit 1;
+  fi
+  SQL="sqlite3 $TASKS_DB"
 fi
 
 DATA_DIR=@OPENVAS_DATA_DIR@
@@ -72,10 +82,9 @@ if [ ! -f $XSL ]; then
   exit 1;
 fi
 
-SQLITE="sqlite3 $TASKS_DB"
 SED="sed s/^<.*>$//g"
 
 COUNT=`xsltproc "$XSL" "$XML" | grep INSERT | wc -l`
-xsltproc "$XSL" "$XML" | $SED | $SQLITE
+xsltproc "$XSL" "$XML" | $SED | $SQL
 
 echo "Updated $COUNT entries."

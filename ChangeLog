@@ -1,3 +1,15 @@
+2014-10-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Get openvas-portnames-update working with Postgres.
+
+	* tools/openvas-portnames-update.in: Update SQL for postgres.
+	(POSTGRES, SQL): New variables.
+	(SQLITE): Remove.  Now SQL.
+
+	* tools/portnames_update.xsl: Add missing copyright header.
+	(/, iana:record): DELETE and INSERT so that the SQL works in Postgres.
+	Neaten indenting.
+
 2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make the OpenVAS sync scripts work for Postgres too.
