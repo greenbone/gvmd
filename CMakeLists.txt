@@ -107,6 +107,8 @@ set (CPACK_SOURCE_IGNORE_FILES
 "Doxyfile$"
 "Doxyfile_full$"
 "VERSION$"
+"tools/greenbone-scapdata-sync$"
+"tools/greenbone-certdata-sync$"
 "tools/openvas-scapdata-sync$"
 "tools/openvas-certdata-sync$"
 "tools/openvas-portnames-update$"
@@ -287,6 +289,8 @@ configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
+configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
+configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
 configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
 configure_file (tools/openvas-certdata-sync.in tools/openvas-certdata-sync @ONLY)

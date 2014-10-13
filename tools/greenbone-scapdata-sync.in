@@ -26,11 +26,20 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20140625
+VERSION=20141010
 RESTRICTED=1
 
 # SETTINGS
 # ========
+
+POSTGRES=0
+SCHEMA=""
+RECURSIVE_TRIGGERS_OFF="PRAGMA recursive_triggers = OFF;"
+if [ "@BACKEND@" = "POSTGRESQL" ]; then
+  POSTGRES=1
+  SCHEMA="scap."
+  RECURSIVE_TRIGGERS_OFF=""
+fi
 
 # Path prefix for installation location
 PREFIX=
@@ -87,6 +96,10 @@ SPLIT_PART_SIZE=0
 # parameters.
 SQLITE3="sqlite3 -noheader -bail"
 
+# PSQL defines the name of the Postgres binary to call, along with additional
+# parameters.
+PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+
 # Maximum number of retries if database is locked
 if [ -z "$MAX_SQL_RETRIES" ]; then
   MAX_SQL_RETRIES="1" # 0 : try only once
@@ -135,7 +148,6 @@ if [ -z "$FEED_HOME" ] ; then
 fi
 
 RSYNC=`command -v rsync`
-SQLITE=`command -v sqlite3`
 
 if [ -z "$TMPDIR" ]; then
   SYNC_TMP_DIR=/tmp
@@ -235,6 +247,7 @@ test_exit_codes () {
 }
 
 test_sql_exit () {
+  # TODO For Postgres the exit check is done before this, in sql_pg.
   exit_code=$?
   try_sql=0
   if ( [ "5" = "$exit_code" ] || [ "1" = "$exit_code" ] )
@@ -347,6 +360,9 @@ is_feed_current () {
 
 is_db_broken () {
   DB_BROKEN=0
+  if [ $POSTGRES -eq 1 ] ; then
+    return
+  fi
   if [ ! -e $SCAP_DB ]
   then
     return
@@ -364,13 +380,56 @@ is_db_broken () {
   fi
 }
 
+sql_pg () {
+  if [ "$#" -gt 0 ]
+  then
+    $PSQL -c "$1"
+  else
+    $PSQL -f -
+  fi
+  exit_code=$?
+  if [ 0 -ne "$exit_code" ]
+  then
+    echo "[e] psql exited with code $exit_code for sql: $1."
+    exit 1
+  fi
+}
+
+sql () {
+  if [ $POSTGRES -eq 1 ]
+  then
+    if [ "$#" -gt 0 ]
+    then
+      sql_pg "$1"
+    else
+      sql_pg $*
+    fi
+  else
+    if [ "$#" -gt 0 ]
+    then
+      $SQLITE $SCAP_DB "$1"
+    else
+      $SQLITE $SCAP_DB $*
+    fi
+  fi
+}
+
+scap_db_remove () {
+  if [ $POSTGRES -eq 1 ] ;
+  then
+    sql_pg "DROP SCHEMA IF EXISTS scap CASCADE;"
+  else
+    rm -f $SCAP_DB
+  fi
+}
+
 reinit () {
   log_notice "Reinitialization of the database necessary."
-  rm -f $SCAP_DB
+  scap_db_remove
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+    sql < $SCAP_RES_DIR/scap_db_init.sql
     test_sql_exit "Could not reinitialize SCAP database"
   done
 }
@@ -540,7 +599,7 @@ db_migrate_14 () {
 }
 
 check_db_version () {
-  DB_VERSION=`$SQLITE3 $SCAP_DB "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
+  DB_VERSION=`sql "select value from ${SCHEMA}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
     0) reinit;;
     1) reinit;;
@@ -550,27 +609,57 @@ check_db_version () {
     5) reinit;;
     6) reinit;;
     7) reinit;;
-    8) db_migrate_9
-       db_migrate_10
-       db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-    9) db_migrate_10
-       db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   10) db_migrate_11
-       db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   11) db_migrate_12
-       db_migrate_13
-       db_migrate_14;;
-   12) db_migrate_13
-       db_migrate_14;;
-   13) db_migrate_14;;
+    8) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_9
+		 db_migrate_10
+		 db_migrate_11
+		 db_migrate_12
+		 db_migrate_13
+         db_migrate_14
+       fi;;
+    9) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_10
+         db_migrate_11
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+	   fi;;
+   10) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_11
+		 db_migrate_12
+		 db_migrate_13
+		 db_migrate_14
+	    fi;;
+   11) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_12
+         db_migrate_13
+         db_migrate_14
+	   fi;;
+   12) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_13
+         db_migrate_14
+       fi;;
+   13) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_14
+       fi;;
   esac
 }
 
@@ -612,31 +701,47 @@ do_help () {
   exit 0
 }
 
-init_scap_db_update () {
-  if [ ! -f $SCAP_DB ]
+scap_db_exists () {
+  if [ $POSTGRES -eq 1 ] ;
   then
-    log_notice "Initializing SCAP database."
-    reset_sql_tries
-    until [ "$try_sql" -eq 0 ]
-    do
-      $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
-      test_sql_exit "Could not initialize SCAP database"
-    done
-    CVE_REFDATE=0
-  else
+    EXISTS=`sql_pg "SELECT exists (SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'scap');" 2>/tmp/ERR | tr -d '\n\r' || echo 0`
+    if [ "$EXISTS" = "f" ] ;
+    then
+      return 1;
+    fi
+    return 0;
+  elif [ -f "$SCAP_DB" ]
+  then
+    return 0;
+  fi
+  return 1;
+}
+
+init_scap_db_update () {
+  if scap_db_exists
+  then
     check_db_version
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      CVE_REFDATE=`$SQLITE3 $SCAP_DB "select max(modification_time) from cves;"`
+      CVE_REFDATE=`sql "select max(modification_time) from ${SCHEMA}cves;"`
       test_sql_exit "Could not get reference date for CVEs and CPEs"
     done
+  else
+    log_notice "Initializing SCAP database."
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      sql < $SCAP_RES_DIR/scap_db_init.sql
+      test_sql_exit "Could not initialize SCAP database"
+    done
+    CVE_REFDATE=0
   fi
 
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    DB_LASTUPDATE=`$SQLITE3 $SCAP_DB "select value from meta where name = 'last_update';"`
+    DB_LASTUPDATE=`sql "select value from ${SCHEMA}meta where name = 'last_update';"`
     test_sql_exit "Could not get last_update timestamp from database"
   done
 
@@ -649,11 +754,11 @@ init_scap_db_update () {
   then
     # Happens when initial sync was aborted
     log_warning "Inconsistent data. Resetting SCAP database."
-    rm -f $SCAP_DB
+    scap_db_remove
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE3 $SCAP_DB < $SCAP_RES_DIR/scap_db_init.sql
+      sql < $SCAP_RES_DIR/scap_db_init.sql
       test_sql_exit "Could not reinitialize SCAP database"
     done
     CVE_REFDATE=0
@@ -672,24 +777,24 @@ update_cvss () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE3 "$SCAP_DB"  "
-      PRAGMA recursive_triggers = OFF;
-      UPDATE cpes
+      sql "
+      ${RECURSIVE_TRIGGERS_OFF}
+      UPDATE ${SCHEMA}cpes
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), '')
-              FROM cves
+              SELECT coalesce(max(cvss), 0.0)
+              FROM ${SCHEMA}cves
               WHERE id IN
                 (
                   SELECT cve
-                  FROM affected_products
+                  FROM ${SCHEMA}affected_products
                   WHERE cpe=cpes.id
                 )
             ),
           cve_refs =
             (
               SELECT count(cve)
-              FROM affected_products
+              FROM ${SCHEMA}affected_products
               WHERE cpe=cpes.id
             );
       "
@@ -705,20 +810,20 @@ update_cvss () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE3 "$SCAP_DB"  "
-      PRAGMA recursive_triggers = OFF;
-      UPDATE ovaldefs
+      sql "
+      ${RECURSIVE_TRIGGERS_OFF}
+      UPDATE ${SCHEMA}ovaldefs
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), '')
-              FROM cves
+              SELECT coalesce(max(cvss), 0.0)
+              FROM ${SCHEMA}cves
               WHERE id IN
                 (
                   SELECT cve
-                  FROM affected_ovaldefs
+                  FROM ${SCHEMA}affected_ovaldefs
                   WHERE ovaldef=ovaldefs.id
                 )
-                AND cvss != ''
+                AND cvss != 0.0
             );
       "
       test_sql_exit "Could not update CVSS scores for OVAL definitions"
@@ -789,7 +894,7 @@ update_scap_db_private () {
               reset_sql_tries
               until [ "$try_sql" -eq 0 ]
               do
-                OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+                OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
                 test_sql_exit "Could not get OVAL reference date"
               done
               if [ -z "$OVAL_REFDATE" ]
@@ -824,7 +929,7 @@ update_scap_db_private () {
                       (
                         set_interrupt_trap
                         (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                        ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3)
+                        (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
                       ) 3>&1 >&4
                     )
                     exec 4>&-
@@ -858,10 +963,16 @@ update_scap_db_private () {
       oval_files_shortened=${oval_files_shortened##"', "}"'"
     fi
 
+    oval_files_clause=""
+    if [ ! -z "$oval_files_shortened" ]
+    then
+      oval_files_clause="AND (xml_file NOT IN ($oval_files_shortened))"
+    fi
+
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      deleted=`$SQLITE3 "$SCAP_DB" "SELECT DISTINCT xml_file FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"`
+      deleted=`sql "SELECT DISTINCT xml_file FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"`
       test_sql_exit "Could not get list of deleted OVAL XML files"
     done
     if [ -n "$deleted" ]
@@ -870,7 +981,7 @@ update_scap_db_private () {
       reset_sql_tries
       until [ "$try_sql" -eq 0 ]
       do
-        $SQLITE3 "$SCAP_DB" "DELETE FROM ovaldefs WHERE (xml_file NOT LIKE 'oval/%') AND (xml_file NOT IN ($oval_files_shortened));"
+        sql "DELETE FROM ${SCHEMA}ovaldefs WHERE (xml_file NOT LIKE 'oval/%') $oval_files_clause;"
         test_sql_exit "Could not remove deleted OVAL definitions from database"
       done
     fi
@@ -881,7 +992,7 @@ update_scap_db_private () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+      sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
       test_sql_exit "Could not update last_update timestamp in database"
     done
   else
@@ -913,7 +1024,7 @@ update_scap_db() {
               (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
               (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
               (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-              ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+              (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
             ) 3>&1 >&4
           )
           exec 4>&-
@@ -956,7 +1067,7 @@ update_scap_db() {
                     set_interrupt_trap
                     (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvepart || echo "xsltproc:$?" >&3) | \
                     (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                    ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+                    (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
                   ) 3>&1 >&4
                 )
                 exec 4>&-
@@ -974,7 +1085,7 @@ update_scap_db() {
                   set_interrupt_trap
                   (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cve_youngerthan.xsl $cvefile || echo "xsltproc:$?" >&3) | \
                   (xsltproc $SCAP_RES_DIR/cve_update.xsl - || echo "xsltproc:$?" >&3) | \
-                  ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3) \
+                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
                 ) 3>&1 >&4
               )
               exec 4>&-
@@ -1021,7 +1132,7 @@ update_scap_db() {
             reset_sql_tries
             until [ "$try_sql" -eq 0 ]
             do
-              OVAL_REFDATE=`$SQLITE3 $SCAP_DB "SELECT max(modification_time) FROM ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
+              OVAL_REFDATE=`sql "SELECT max(modification_time) FROM ${SCHEMA}ovaldefs WHERE xml_file = '${ovalfile##$SCAP_DIR/}';"`
               test_sql_exit "Could not get OVAL reference date from database"
             done
             if [ -z "$OVAL_REFDATE" ]
@@ -1041,7 +1152,7 @@ update_scap_db() {
                 (
                   set_interrupt_trap
                   (xsltproc --stringparam filename "${ovalfile##$SCAP_DIR/}" --stringparam refdate "$OVAL_REFDATE" "$SCAP_RES_DIR/oval_update.xsl" "$ovalfile" || echo "xsltproc:$?" >&3) | \
-                  ($SQLITE3 $SCAP_DB || echo "sqlite3:$?" >&3)
+                  (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3)
                 ) 3>&1 >&4
               )
               exec 4>&-
@@ -1068,7 +1179,7 @@ update_scap_db() {
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
-    $SQLITE3 $SCAP_DB "UPDATE meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
+    sql "UPDATE ${SCHEMA}meta SET value ='$LAST_UPDATE_TIMESTAMP' WHERE name = 'last_update';"
     test_sql_exit "Could not update last_update timestamp in database"
   done
 }
@@ -1132,13 +1243,27 @@ do_self_test () {
     SELFTEST_STDERR=0
   fi
 
-  if [ -z "$SQLITE" ]; then
-    if [ 0 -ne $SELFTEST_STDERR ]
-    then
-      echo "sqlite3 not found (required)." 1>&2
-    fi
-    log_err "sqlite3 not found (required)."
-    SELFTEST_FAIL=1
+  if [ $POSTGRES -eq 1 ] ;
+  then
+	POSTGRESQL=`command -v psql`
+	if [ -z "$POSTGRESQL" ]; then
+	  if [ 0 -ne $SELFTEST_STDERR ]
+	  then
+		echo "psql not found (required)." 1>&2
+	  fi
+	  log_err "psql not found (required)."
+	  SELFTEST_FAIL=1
+	fi
+  else
+	SQLITE=`command -v sqlite3`
+	if [ -z "$SQLITE" ]; then
+	  if [ 0 -ne $SELFTEST_STDERR ]
+	  then
+		echo "sqlite3 not found (required)." 1>&2
+	  fi
+	  log_err "sqlite3 not found (required)."
+	  SELFTEST_FAIL=1
+	fi
   fi
 
   if [ -z "$RSYNC" ]
@@ -1228,7 +1353,7 @@ is_db_broken
 if [ $DB_BROKEN -eq 1 ]
 then
   log_notice "Purging corrupted database."
-  rm -f $SCAP_DB
+  scap_db_remove
 else
   is_feed_current
   if [ $FEED_CURRENT -eq 1 ]

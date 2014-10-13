@@ -1,3 +1,15 @@
+2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make the Greenbone sync scripts work for Postgres too.
+
+	* tools/greenbone-certdata-sync, tools/greenbone-scapdata-sync: Remove.
+
+	* tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: New files.  Copies of the removed
+	scripts, with Postgres support.
+
+	* src/CMakeLists.txt: Configure Greenbone scripts too.
+
 2014-10-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_AGGREGATES case
