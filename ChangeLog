@@ -1,4 +1,11 @@
-2014-10-09  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in (LOD_CMD): Remove -s.
+	(sql_scap): New function.
+	(sql): Use right database for SQLite case.
+	(update_cvss): Use sql_scap so that SQLite case accesses right database.
+
+2014-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make the Greenbone sync scripts work for Postgres too.
 

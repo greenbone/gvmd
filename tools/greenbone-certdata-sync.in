@@ -79,7 +79,7 @@ SCRIPT_NAME="greenbone-certdata-sync"
 
 # LOG_CMD defines the command to use for logging. To have logger log to stderr
 # as well as syslog, add "-s" here.
-LOG_CMD="logger -s -t $SCRIPT_NAME"
+LOG_CMD="logger -t $SCRIPT_NAME"
 
 # If ENABLED is set to 0, the sync script will not perform a synchronization.
 ENABLED=1
@@ -376,7 +376,7 @@ sql_pg () {
   fi
 }
 
-sql () {
+sql_scap () {
   if [ $POSTGRES -eq 1 ]
   then
     if [ "$#" -gt 0 ]
@@ -391,6 +391,25 @@ sql () {
       $SQLITE $SCAP_DB "$1"
     else
       $SQLITE $SCAP_DB $*
+    fi
+  fi
+}
+
+sql () {
+  if [ $POSTGRES -eq 1 ]
+  then
+    if [ "$#" -gt 0 ]
+    then
+      sql_pg "$1"
+    else
+      sql_pg $*
+    fi
+  else
+    if [ "$#" -gt 0 ]
+    then
+      $SQLITE $CERT_DB "$1"
+    else
+      $SQLITE $CERT_DB $*
     fi
   fi
 }
@@ -481,7 +500,7 @@ update_cvss () {
     reset_sql_tries
     until [ "$try_sql" -eq 0 ]
     do
-      SCAP_DB_LASTUPDATE=`sql "SELECT value FROM ${SCHEMA_SCAP}meta WHERE name = 'last_update';"`
+      SCAP_DB_LASTUPDATE=`sql_scap "SELECT value FROM ${SCHEMA_SCAP}meta WHERE name = 'last_update';"`
       test_sql_exit "Could not get last_update timestamp from SCAP database"
     done
 
