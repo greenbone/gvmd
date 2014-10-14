@@ -1,5 +1,11 @@
 2014-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 6.0+beta3 release.
+
+	* CHANGES: Updated.
+
+2014-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* CMakeLists.txt: Adjust location of Greenbone synchronization scripts
 	since they are now being generated.
 
