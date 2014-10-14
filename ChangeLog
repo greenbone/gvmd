@@ -1,3 +1,8 @@
+2014-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Adjust location of Greenbone synchronization scripts
+	since they are now being generated.
+
 2014-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Add NULL case to

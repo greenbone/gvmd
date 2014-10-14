@@ -497,12 +497,12 @@ install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-certdata-sync
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/tools/greenbone-scapdata-sync
+install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-scapdata-sync
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/tools/greenbone-certdata-sync
+install (FILES ${CMAKE_BINARY_DIR}/tools/greenbone-certdata-sync
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
