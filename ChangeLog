@@ -1,3 +1,8 @@
+2014-10-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Add NULL case to
+	severity_to_type, to match SQLite version.
+
 2014-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in (LOD_CMD): Remove -s.
