@@ -4547,7 +4547,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " FROM %s"
                    " WHERE ROWID = %llu"
                    " AND %s%s"
-                   " %s)%s;",
+                   " %s) AS init_agg_subquery"
+                   "%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
                    from_table,
@@ -4565,7 +4566,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " %s"
                    " %s"
                    " %s"
-                   " %s)%s;",
+                   " %s) AS init_agg_subquery"
+                   "%s;",
                    outer_select,
                    trash_columns ? trash_columns : columns,
                    from_table,
@@ -4581,7 +4583,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " FROM %s"
                    " WHERE ROWID = %llu"
                    " AND %s%s"
-                   " %s)%s;",
+                   " %s) AS init_agg_subquery"
+                   "%s;",
                    outer_select,
                    columns,
                    from_table,
@@ -4598,7 +4601,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " FROM %s%s"
                    " WHERE"
                    " %s"
-                   "%s%s%s%s%s%s)%s;",
+                   "%s%s%s%s%s%s) AS init_agg_subquery"
+                   "%s;",
                    outer_select,
                    distinct ? " DISTINCT" : "",
                    columns,
@@ -4622,7 +4626,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    " WHERE"
                    " %s"
                    "%s%s%s%s%s%s"
-                   " LIMIT %i OFFSET %i)%s;",
+                   " LIMIT %s OFFSET %i) AS init_agg_subquery"
+                   "%s;",
                    outer_select,
                    distinct ? " DISTINCT" : "",
                    columns,
@@ -4635,7 +4640,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    clause ? ")" : "",
                    extra_where ? extra_where : "",
                    order,
-                   max,
+                   sql_select_limit (max),
                    first,
                    outer_group_by);
     }
@@ -4788,22 +4793,31 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
   else
     columns = columns_build_select (select_columns);
 
-  ret = sql_int ("SELECT count (%scount_id)"
-                 " FROM (SELECT %ss%s.id AS count_id, %s"
-                 "       FROM %ss%s%s"
-                 "       WHERE %s"
-                 "       %s%s%s) AS subquery;",
-                 distinct ? "DISTINCT " : "",
-                 type,
-                 get->trash && strcmp (type, "task") ? "_trash" : "",
-                 columns,
-                 type,
-                 get->trash && strcmp (type, "task") ? "_trash" : "",
-                 extra_tables ? extra_tables : "",
-                 owned_clause,
-                 clause ? " AND " : "",
-                 clause ? clause : "",
-                 extra_where ? extra_where : "");
+  if ((distinct == 0)
+      && (extra_tables == NULL)
+      && (clause == NULL)
+      && (extra_where == NULL)
+      && (strcmp (owned_clause, " t ()") == 0))
+    ret = sql_int ("SELECT count (*) FROM %ss%s;",
+                   type,
+                   get->trash && strcmp (type, "task") ? "_trash" : "");
+  else
+    ret = sql_int ("SELECT count (%scount_id)"
+                   " FROM (SELECT %ss%s.id AS count_id, %s"
+                   "       FROM %ss%s%s"
+                   "       WHERE %s"
+                   "       %s%s%s) AS subquery;",
+                   distinct ? "DISTINCT " : "",
+                   type,
+                   get->trash && strcmp (type, "task") ? "_trash" : "",
+                   columns,
+                   type,
+                   get->trash && strcmp (type, "task") ? "_trash" : "",
+                   extra_tables ? extra_tables : "",
+                   owned_clause,
+                   clause ? " AND " : "",
+                   clause ? clause : "",
+                   extra_where ? extra_where : "");
 
   g_free (columns);
   g_free (owned_clause);
@@ -14093,7 +14107,8 @@ cpe_highest_cvss (const char *cpe)
   gchar *quoted_cpe;
   quoted_cpe = sql_quote (cpe);
   highest = sql_double ("SELECT"
-                        " (CASE WHEN (SELECT id FROM cpes WHERE name = '%s')"
+                        " (CASE WHEN EXISTS (SELECT id FROM cpes"
+                        "                    WHERE name = '%s')"
                         "  THEN (SELECT max_cvss FROM cpes WHERE name = '%s')"
                         "  ELSE -1"
                         "  END);",
@@ -14384,14 +14399,14 @@ init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                  " AND cpes.id=affected_products.cpe"
                  " AND cves.id=affected_products.cve"
                  "%s%s%s%s"
-                 " LIMIT %i OFFSET %i;",
+                 " LIMIT %s OFFSET %i;",
                  report_host,
                  report_host,
                  phrase_sql ? phrase_sql->str : "",
                  prognosis_where_levels (levels),
                  cvss_sql ? cvss_sql->str : "",
                  order_sql ? order_sql->str : "",
-                 max_results,
+                 sql_select_limit (max_results),
                  first_result);
 
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
@@ -16269,7 +16284,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              "%s"
                              " AND report_results.result = results.id"
                              "%s"
-                             " LIMIT %i OFFSET %i;",
+                             " LIMIT %s OFFSET %i;",
                              severity_sql,
                              new_severity_sql,
                              auto_type_sql,
@@ -16280,7 +16295,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              phrase_sql ? phrase_sql->str : "",
                              cvss_sql ? cvss_sql->str : "",
                              order_sql,
-                             max_results,
+                             sql_select_limit (max_results),
                              first_result);
 
       if (levels_sql) g_string_free (levels_sql, TRUE);
@@ -17236,9 +17251,8 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  "      OR (overrides.end_time >= m_now ()))"
                  /** @todo Include tasks.hidden and task pref in_assets? */
                  " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports, report_results"
-                 "       WHERE report_results.result = results.id"
-                 "       AND report_results.report = reports.id)"
+                 "      (SELECT reports.task FROM reports"
+                 "       WHERE reports.id = results.report)"
                  "      OR overrides.task = 0)"
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
@@ -17328,14 +17342,14 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             "             WHERE results.report = %s"
             "             AND results.host = distinct_host"
             "             %s)"
-            " LIMIT %i OFFSET %i;",
+            " LIMIT %s OFFSET %i;",
             quoted_search_phrase,
             last_report_sql,
             quoted_search_phrase,
             new_severity_sql,
             last_report_sql,
             levels_sql ? levels_sql->str : "",
-            max_results,
+            sql_select_limit (max_results),
             first_result);
           g_free (quoted_search_phrase);
         }
@@ -17353,11 +17367,11 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           "               WHERE results.report = %s"
           "               AND results.host = distinct_host"
           "               %s)"
-          " LIMIT %i OFFSET %i;",
+          " LIMIT %s OFFSET %i;",
           new_severity_sql,
           last_report_sql,
           levels_sql ? levels_sql->str : "",
-          max_results,
+          sql_select_limit (max_results),
           first_result);
 
       if (levels_sql)
@@ -17400,11 +17414,11 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "  AND source_type = 'nvt'"
                      "  AND value LIKE '%%%s%%')"
                      " ORDER BY inet (host)"
-                     " LIMIT %i OFFSET %i;",
+                     " LIMIT %s OFFSET %i;",
                      current_credentials.uuid,
                      quoted_search_phrase,
                      quoted_search_phrase,
-                     max_results,
+                     sql_select_limit (max_results),
                      first_result);
       g_free (quoted_search_phrase);
     }
@@ -17428,9 +17442,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    "     = 'yes'"
                    " AND report_hosts.end_time IS NOT NULL"
                    " ORDER BY inet (host)"
-                   " LIMIT %i OFFSET %i;",
+                   " LIMIT %s OFFSET %i;",
                    current_credentials.uuid,
-                   max_results,
+                   sql_select_limit (max_results),
                    first_result);
 }
 
@@ -20317,9 +20331,8 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " AND ((overrides.end_time = 0)"
                  "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task ="
-                 "      (SELECT reports.task FROM reports, report_results"
-                 "       WHERE report_results.result = results.id"
-                 "       AND report_results.report = reports.id)"
+                 "      (SELECT reports.task FROM reports"
+                 "       WHERE reports.id = results.report)"
                  "      OR overrides.task = 0)"
                  " AND (overrides.result = results.id"
                  "      OR overrides.result = 0)"
@@ -30867,7 +30880,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                    quoted_selector,
                    family,
                    // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                   sort_field ? sort_field : "3", /* 3 is nvts.name. */
+                   sort_field && strcmp (sort_field, "nvts.name")
+                    ? sort_field : "3", /* 3 is nvts.name. */
                    ascending ? "ASC" : "DESC");
         }
       else
@@ -30909,7 +30923,8 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                      quoted_selector,
                      family,
                      // FIX PG "ERROR: missing FROM-clause" using nvts.name.
-                     sort_field ? sort_field : "3", /* 3 is nvts.name. */
+                     sort_field && strcmp (sort_field, "nvts.name")
+                      ? sort_field : "3", /* 3 is nvts.name. */
                      ascending ? "ASC" : "DESC");
 
           return g_strdup_printf
@@ -49341,8 +49356,12 @@ total_info_count (const get_data_t *get, int filtered)
                         clause);
     }
 
-  return sql_int ("SELECT count (id) FROM"
-                  ALL_INFO_UNION_COLUMNS ";");
+  return sql_int ("SELECT (SELECT count (*) FROM cves)"
+                  " + (SELECT count (*) FROM cpes)"
+                  " + (SELECT count (*) FROM nvts)"
+                  " + (SELECT count (*) FROM cert_bund_advs)"
+                  " + (SELECT count (*) FROM dfn_cert_advs)"
+                  " + (SELECT count (*) FROM ovaldefs);");
 }
 
 /**
@@ -49384,12 +49403,12 @@ init_all_info_iterator (iterator_t* iterator, get_data_t *get,
                  " FROM" ALL_INFO_UNION_COLUMNS
                  " %s%s"
                  " %s"
-                 " LIMIT %i OFFSET %i;",
+                 " LIMIT %s OFFSET %i;",
                  columns,
                  clause ? "WHERE " : "",
                  clause ? clause   : "",
                  order,
-                 max,
+                 sql_select_limit (max),
                  first);
 
   g_free (order);

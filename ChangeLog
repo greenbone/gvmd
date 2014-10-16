@@ -1,8 +1,18 @@
 2014-10-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_pg.c (create_tables): In result_new_severities add a LIMIT
-	on the override selections, as there may be multiple overrides that
-	match the severity.  Correct indenting in that area too.a
+	* src/manage_sql.c (init_aggregate_iterator): Add alias for subquery,
+	and get LIMIT arg via sql_select_limit, for Postgres.
+	(count): When the args effectively produce a simple count, then just do
+	the simple count, because this is fastest, at least for Postgres.
+	(cpe_highest_cvss): Add exists so that WHEN arg is a boolean.
+	(init_host_prognosis_iterator, init_result_iterator)
+	(init_all_info_iterator): Get LIMIT arg via sql_select_limit.
+	(init_asset_iterator, filtered_host_count): Get LIMIT arg via
+	sql_select_limit.  Remove report_results join, as this is much faster in
+	Postgres.
+	(select_config_nvts): Use 3 when "nvts.name" is given explicitly, too.
+	(total_info_count): Just count simply when there is no filtering, as
+	this is much faster.
 
 2014-10-14  Michael Wiegand <michael.wiegand@greenbone.net>
 
