@@ -1,5 +1,11 @@
 2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_report_host_details_iterator): Use a join
+	instead of a subquery, to prevent SQLite from iterating of all NVTs.
+	This greatly speeds up the GSA Hosts page.
+
+2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add create_index.
 	(create_tables): Create some indexes.
 
@@ -43,7 +49,7 @@
 
 2014-10-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* tools/greenbone-certdata-sync.in (LOD_CMD): Remove -s.
+	* tools/greenbone-certdata-sync.in (LOG_CMD): Remove -s.
 	(sql_scap): New function.
 	(sql): Use right database for SQLite case.
 	(update_cvss): Use sql_scap so that SQLite case accesses right database.

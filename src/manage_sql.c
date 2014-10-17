@@ -17124,15 +17124,14 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " AND NOT name IN ('detected_at', 'detected_by')"
                  " UNION"
                  " SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
-                 "  name, cvss_base"
-                 " FROM nvts"
+                 "  nvts.name, cvss_base"
+                 " FROM nvts, report_host_details"
                  " WHERE cve != 'NOCVE'"
                  " AND family IN (" LSC_FAMILY_LIST ")"
-                 " AND oid IN"
-                 " (SELECT source_name FROM report_host_details"
-                 "  WHERE report_host = %llu"
-                 "  AND name = 'EXIT_CODE'"
-                 "  AND value = 'EXIT_NOTVULN');",
+                 " AND nvts.oid = report_host_details.source_name"
+                 " AND report_host = %llu"
+                 " AND report_host_details.name = 'EXIT_CODE'"
+                 " AND report_host_details.value = 'EXIT_NOTVULN';",
                  report_host,
                  report_host);
 }
