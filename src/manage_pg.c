@@ -569,6 +569,32 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION create_index (schema_name text,"
+       "                                         index_name text,"
+       "                                         table_name text,"
+       "                                         columns text)"
+       " RETURNS void AS $$"
+       " BEGIN"
+       "   IF (SELECT count(*) = 0 FROM pg_indexes"
+       "       WHERE schemaname = lower (schema_name)"
+       "       AND tablename = lower (table_name)"
+       "       AND indexname = lower (index_name))"
+       "   THEN"
+       "     EXECUTE 'CREATE INDEX ' || index_name"
+       "             || ' ON ' || table_name || ' (' || columns || ');';"
+       "   END IF;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
+  sql ("CREATE OR REPLACE FUNCTION create_index (index_name text,"
+       "                                         table_name text,"
+       "                                         columns text)"
+       " RETURNS void AS $$"
+       " BEGIN"
+       "   PERFORM create_index ('public', index_name, table_name, columns);"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   /* Functions in SQL. */
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
@@ -1950,7 +1976,7 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
-  /* Result views */
+  /* Create result views. */
 
   sql ("CREATE OR REPLACE VIEW result_overrides AS"
        " SELECT users.id AS user,"
@@ -2080,6 +2106,52 @@ create_tables ()
        "  (SELECT 0 AS autofp_selection"
        "   UNION SELECT 1 AS autofp_selection"
        "   UNION SELECT 2 AS autofp_selection) AS autofp_opts;");
+
+  /* Create indexes. */
+
+  sql ("SELECT create_index ('nvt_cves_by_oid', 'nvt_cves', 'oid');");
+  sql ("SELECT create_index ('nvt_selectors_by_family_or_nvt',"
+       "                     'nvt_selectors',"
+       "                     'type, family_or_nvt');");
+  sql ("SELECT create_index ('nvt_selectors_by_name',"
+       "                     'nvt_selectors',"
+       "                     'name');");
+  sql ("SELECT create_index ('nvts_by_creation_time',"
+       "                     'nvts',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
+  sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
+  sql ("SELECT create_index"
+       "        ('report_host_details_by_report_host_and_name_and_value',"
+       "         'report_host_details',"
+       "         'report_host, name, value');");
+  sql ("SELECT create_index"
+       "        ('report_hosts_by_report_and_host',"
+       "         'report_hosts',"
+       "         'report, host');");
+  sql ("SELECT create_index ('results_by_report', 'results', 'report');");
+
+  sql ("SELECT create_index ('scap',"
+       "                     'cpes_by_creation_time',"
+       "                     'cpes',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('scap',"
+       "                     'cves_by_creation_time',"
+       "                     'cves',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('scap',"
+       "                     'ovaldefs_by_creation_time',"
+       "                     'ovaldefs',"
+       "                     'creation_time');");
+
+  sql ("SELECT create_index ('cert',"
+       "                     'cert_bund_advs_by_creation_time',"
+       "                     'cert_bund_advs',"
+       "                     'creation_time');");
+  sql ("SELECT create_index ('cert',"
+       "                     'dfn_cert_advs_by_creation_time',"
+       "                     'dfn_cert_advs',"
+       "                     'creation_time');");
 }
 
 
