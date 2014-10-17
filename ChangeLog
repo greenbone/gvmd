@@ -1,5 +1,11 @@
 2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite.c (manage_cert_loaded, manage_scap_loaded): Use a
+	static variable to prevent multiple checks.  This has negligible affect
+	on performance, but keeps the logs a little cleaner.
+
+2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_report_host_details_iterator): Use a join
 	instead of a subquery, to prevent SQLite from iterating of all NVTs.
 	This greatly speeds up the GSA Hosts page.

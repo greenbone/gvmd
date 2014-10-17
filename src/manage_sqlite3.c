@@ -2456,6 +2456,11 @@ manage_attach_databases ()
 int
 manage_cert_loaded ()
 {
+  static int loaded = 0;
+
+  if (loaded)
+    return 1;
+
   if (access (OPENVAS_STATE_DIR "/cert-data/cert.db", R_OK))
     switch (errno)
       {
@@ -2474,8 +2479,9 @@ manage_cert_loaded ()
     /* There was an error, so probably the initial ATTACH failed. */
     return 0;
 
-  return !!sql_int ("SELECT count(*) FROM cert.sqlite_master"
-                    " WHERE type = 'table' AND name = 'dfn_cert_advs';");
+  loaded = !!sql_int ("SELECT count(*) FROM cert.sqlite_master"
+                      " WHERE type = 'table' AND name = 'dfn_cert_advs';");
+  return loaded;
 }
 
 /**
@@ -2486,6 +2492,11 @@ manage_cert_loaded ()
 int
 manage_scap_loaded ()
 {
+  static int loaded = 0;
+
+  if (loaded)
+    return 1;
+
   if (access (OPENVAS_STATE_DIR "/scap-data/scap.db", R_OK))
     switch (errno)
       {
@@ -2504,8 +2515,9 @@ manage_scap_loaded ()
     /* There was an error, so probably the initial ATTACH failed. */
     return 0;
 
-  return !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
-                    " WHERE type = 'table' AND name = 'cves';");
+  loaded = !!sql_int ("SELECT count(*) FROM scap.sqlite_master"
+                      " WHERE type = 'table' AND name = 'cves';");
+  return loaded;
 }
 
 
