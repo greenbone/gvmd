@@ -1,3 +1,11 @@
+2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20627.
+
+	* src/manage_sql.c (init_report_host_details_iterator): Use a join
+	instead of a subquery, to prevent SQLite from iterating of all NVTs.
+	This greatly speeds up the GSA Hosts page.
+
 2014-10-07  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport 20535.
