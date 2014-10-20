@@ -1,5 +1,10 @@
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* doc/postgres-HOWTO: In script section remove leading spaces and add
+	indexes.
+
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_asset_iterator): Add ORDER expression to
 	columns, as required by Postgres.
 	(delete_trash_tasks): Delete tasks after referential dependencies,
