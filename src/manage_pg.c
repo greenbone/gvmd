@@ -2130,28 +2130,6 @@ create_tables ()
        "         'report_hosts',"
        "         'report, host');");
   sql ("SELECT create_index ('results_by_report', 'results', 'report');");
-
-  sql ("SELECT create_index ('scap',"
-       "                     'cpes_by_creation_time',"
-       "                     'cpes',"
-       "                     'creation_time');");
-  sql ("SELECT create_index ('scap',"
-       "                     'cves_by_creation_time',"
-       "                     'cves',"
-       "                     'creation_time');");
-  sql ("SELECT create_index ('scap',"
-       "                     'ovaldefs_by_creation_time',"
-       "                     'ovaldefs',"
-       "                     'creation_time');");
-
-  sql ("SELECT create_index ('cert',"
-       "                     'cert_bund_advs_by_creation_time',"
-       "                     'cert_bund_advs',"
-       "                     'creation_time');");
-  sql ("SELECT create_index ('cert',"
-       "                     'dfn_cert_advs_by_creation_time',"
-       "                     'dfn_cert_advs',"
-       "                     'creation_time');");
 }
 
 

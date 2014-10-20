@@ -53,6 +53,7 @@ CREATE TABLE cves (
   cvss FLOAT DEFAULT 0
 );
 CREATE UNIQUE INDEX cve_idx ON cves (name);
+CREATE INDEX cves_by_creation_time ON cves (creation_time);
 
 CREATE TABLE cpes (
   id SERIAL PRIMARY KEY,
@@ -69,6 +70,7 @@ CREATE TABLE cpes (
   nvd_id text
 );
 CREATE UNIQUE INDEX cpe_idx ON cpes (name);
+CREATE INDEX cpes_by_creation_time ON cpes (creation_time);
 
 CREATE TABLE affected_products (
   cve INTEGER NOT NULL,
@@ -97,6 +99,7 @@ CREATE TABLE ovaldefs (
   cve_refs INTEGER DEFAULT 0
 );
 CREATE INDEX ovaldefs_idx ON ovaldefs (name);
+CREATE INDEX ovaldefs_by_creation_time ON ovaldefs (creation_time);
 
 CREATE TABLE ovalfiles (
   id SERIAL PRIMARY KEY,

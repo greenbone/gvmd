@@ -47,6 +47,7 @@ CREATE TABLE cert_bund_advs (
   max_cvss FLOAT
 );
 CREATE UNIQUE INDEX cert_bund_advs_idx ON cert_bund_advs (name);
+CREATE INDEX cert_bund_advs_by_creation_time ON cert_bund_advs (creation_time);
 
 CREATE TABLE cert_bund_cves (
   adv_id INTEGER,
@@ -68,6 +69,7 @@ CREATE TABLE dfn_cert_advs (
   max_cvss FLOAT
 );
 CREATE UNIQUE INDEX dfn_cert_advs_idx ON dfn_cert_advs (name);
+CREATE INDEX dfn_cert_advs_by_creation_time ON dfn_cert_advs (creation_time);
 
 CREATE TABLE dfn_cert_cves (
   adv_id INTEGER,

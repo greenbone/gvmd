@@ -1,5 +1,13 @@
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (create_tables): Remove SecInfo indexes that belong in
+	tools scripts.
+
+	* tools/cert_db_init_pg.sql, tools/scap_db_init_pg.sql: Add indexes from
+	create_tables.
+
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add SQLite to Postgres handling for db version 134.
 
 	* tools/openvas-migrate-to-postgres (migrate_133): Remove.  Now
