@@ -1,5 +1,9 @@
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_nvt_from_nvti): Add NVT OID to error messages.
+
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Remove SecInfo indexes that belong in
 	tools scripts.
 

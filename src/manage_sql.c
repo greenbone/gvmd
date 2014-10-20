@@ -29613,7 +29613,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   switch (parse_time (value, &creation_time))
     {
       case -1:
-        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, value);
+        g_warning ("%s: Failed to parse creation time of %s: %s",
+                   __FUNCTION__, nvti_oid (nvti), value);
         creation_time = 0;
         break;
       case -2:
@@ -29633,7 +29634,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   switch (parse_time (value, &modification_time))
     {
       case -1:
-        g_warning ("%s: Failed to parse time: %s", __FUNCTION__, value);
+        g_warning ("%s: Failed to parse last_modification time of %s: %s",
+                   __FUNCTION__, nvti_oid (nvti), value);
         modification_time = 0;
         break;
       case -2:
