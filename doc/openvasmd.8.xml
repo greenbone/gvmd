@@ -68,7 +68,12 @@
       </optdesc>
     </option>
 
-        <option>
+    <option>
+      <p><opt>--gnutls-priorities=<arg>PRIORITY</arg></opt></p>
+      <optdesc><p>Set the GnuTLS priority string to PRIORITY.</p></optdesc>
+    </option>
+
+    <option>
       <p><opt>-u, --update</opt></p>
       <optdesc>
         <p>Updates the database with information from a running

@@ -1,3 +1,16 @@
+2014-10-20  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Add --gnutls-priorities option to Manager. Backport based on r19047 by
+	Hani Benhabiles.
+
+	* src/openvasmd.c (set_gnutls_priority): New function.
+	(main): Add option to set GnuTLS priority string. Call new function
+	accordingly.
+
+	* doc/openvasmd.8.xml: Update documentation for new option.
+
+	* doc/openvasmd.8, doc/openvasmd.html: Update from source.
+
 2014-09-18  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20396.
