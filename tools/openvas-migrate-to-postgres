@@ -149,7 +149,7 @@ do_help () {
 }
 
 create_tables_133() {
-  log_info "Creating tables (version 133)."
+  log_info "Creating tables."
 
   pg "CREATE TABLE IF NOT EXISTS current_credentials
        (id SERIAL PRIMARY KEY,
@@ -938,11 +938,7 @@ create_tables_133() {
 		modification_time integer);";
 }
 
-migrate_133 () {
-  log_info "Migrating database (version 133)."
-
-  create_tables_133;
-
+migrate_rest () {
   # Remove stray task_alerts.
   sqlite "DELETE FROM task_alerts WHERE alert_location = 0 AND alert NOT IN (SELECT id FROM alerts);"
   test_sql_exit "Failed to clean up task_alerts"
@@ -1051,10 +1047,24 @@ migrate_133 () {
 migrate () {
   DB_VERSION=`sqlite "select value from meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
-    133) migrate_133;;
+    133)
+      log_info "Migrating database (version 133)."
+      create_tables_133;
+      migrate_rest;;
+
+    134)
+      log_info "Migrating database (version 134)."
+      create_tables_133;
+
+      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+
+      migrate_rest;;
+
     *)
-	     log_notice "Database version not supported."
-		 exit 1
+      log_notice "Database version not supported."
+      exit 1
   esac
 }
 

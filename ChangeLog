@@ -1,5 +1,14 @@
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add SQLite to Postgres handling for db version 134.
+
+	* tools/openvas-migrate-to-postgres (migrate_133): Remove.  Now
+	migrate_rest.
+	(migrate_rest): New function.  Was migrate_133.
+	(migrate): Add 134 case.
+
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* doc/postgres-HOWTO: In script section remove leading spaces and add
 	indexes.
 
