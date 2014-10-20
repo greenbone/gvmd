@@ -17423,7 +17423,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
     }
   else
     init_iterator (iterator,
-                   "SELECT DISTINCT host FROM report_hosts"
+                   "SELECT DISTINCT host, inet (host) FROM report_hosts"
                    " WHERE (SELECT reports.owner FROM reports"
                    "        WHERE reports.id = report_hosts.report)"
                    "       = (SELECT id FROM users"
@@ -25380,10 +25380,10 @@ delete_trash_tasks ()
         }
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
-      sql ("DELETE FROM tasks WHERE id = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE id = %llu;", task);
     }
   cleanup_iterator (&tasks);
 

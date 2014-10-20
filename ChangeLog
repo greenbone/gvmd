@@ -1,3 +1,10 @@
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_asset_iterator): Add ORDER expression to
+	columns, as required by Postgres.
+	(delete_trash_tasks): Delete tasks after referential dependencies,
+	because Postgres checks this.
+
 2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite.c (manage_cert_loaded, manage_scap_loaded): Use a
