@@ -1,3 +1,9 @@
+2014-10-21  Henri Doreau <henri.doreau@gmail.com>
+
+	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END, stop
+	the transaction before calling set_scan_end_time_otp, because it also
+	runs a transaction.
+
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (delete_report_format): Delete trash report formats

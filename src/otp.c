@@ -1619,12 +1619,12 @@ process_otp_scanner_input (void (*progress) ())
                             set_task_end_time (current_scanner_task,
                                                g_strdup (field));
                         }
+                      manage_transaction_stop (TRUE);
                       if (current_report)
                         {
                           set_scan_end_time_otp (current_report, field);
                           current_report = (report_t) 0;
                         }
-                      manage_transaction_stop (TRUE);
                       current_scanner_task = (task_t) 0;
                     }
                   set_scanner_state (SCANNER_DONE);
