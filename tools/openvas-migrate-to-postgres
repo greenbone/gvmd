@@ -30,7 +30,7 @@ VERSION=20140904
 # ========
 
 # Path prefix for installation location
-PREFIX=/home/mattm/
+PREFIX=
 
 # SCRIPT_NAME is the name the script will use to identify itself and to mark
 # log messages.

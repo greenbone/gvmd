@@ -1,5 +1,9 @@
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres (PREFIX): Clear.
+
+2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres (does_pg_db_exist): Use column
 	instead of *, to avoid escaping issue.
 	(is_db_broken): Drop and replace report_hosts_by_host, to remove
