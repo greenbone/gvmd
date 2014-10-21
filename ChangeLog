@@ -1,5 +1,9 @@
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres: Replace tabs with spaces.
+
+2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Disable report_hosts_details index,
 	because one of the columns can go out of bounds.  Add alternative with
 	fewer columns.

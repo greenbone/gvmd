@@ -141,9 +141,9 @@ is_db_broken () {
 
 do_help () {
   echo "$0: Migrate Manager database from SQLite3 to Postgres"
-  echo " --help		display this help"
-  echo " --selftest	perform self-test"
-  echo " --version	display version"
+  echo " --help     display this help"
+  echo " --selftest perform self-test"
+  echo " --version  display version"
   echo ""
   exit 0
 }
@@ -161,781 +161,781 @@ create_tables_133() {
         value text);";
 
   pg "CREATE TABLE IF NOT EXISTS users
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		password text,
-		timezone text,
-		hosts text,
-		hosts_allow integer,
-		ifaces text,
-		ifaces_allow integer,
-		method text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        password text,
+        timezone text,
+        hosts text,
+        hosts_allow integer,
+        ifaces text,
+        ifaces_allow integer,
+        method text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS agents
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		installer bytea,
-		installer_64 text,
-		installer_filename text,
-		installer_signature_64 text,
-		installer_trust integer,
-		installer_trust_time integer,
-		howto_install text,
-		howto_use text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        installer bytea,
+        installer_64 text,
+        installer_filename text,
+        installer_signature_64 text,
+        installer_trust integer,
+        installer_trust_time integer,
+        howto_install text,
+        howto_use text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS agents_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		installer bytea,
-		installer_64 text,
-		installer_filename text,
-		installer_signature_64 text,
-		installer_trust integer,
-		installer_trust_time integer,
-		howto_install text,
-		howto_use text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        installer bytea,
+        installer_64 text,
+        installer_filename text,
+        installer_signature_64 text,
+        installer_trust integer,
+        installer_trust_time integer,
+        howto_install text,
+        howto_use text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS alerts
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		event integer,
-		condition integer,
-		method integer,
-		filter integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        event integer,
+        condition integer,
+        method integer,
+        filter integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS alerts_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		event integer,
-		condition integer,
-		method integer,
-		filter integer,
-		filter_location integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        event integer,
+        condition integer,
+        method integer,
+        filter integer,
+        filter_location integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_condition_data
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_condition_data_trash
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_event_data
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_event_data_trash
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_method_data
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS alert_method_data_trash
-	   (id SERIAL PRIMARY KEY,
-		alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
-		name text,
-		data text);";
+       (id SERIAL PRIMARY KEY,
+        alert integer REFERENCES alerts_trash (id) ON DELETE RESTRICT,
+        name text,
+        data text);";
 
   pg "CREATE TABLE IF NOT EXISTS filters
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		type text,
-		term text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        type text,
+        term text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS filters_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		type text,
-		term text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        type text,
+        term text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS groups
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS groups_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS group_users
-	   (id SERIAL PRIMARY KEY,
-		\"group\" integer REFERENCES groups (id) ON DELETE RESTRICT,
-		\"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+       (id SERIAL PRIMARY KEY,
+        \"group\" integer REFERENCES groups (id) ON DELETE RESTRICT,
+        \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS group_users_trash
-	   (id SERIAL PRIMARY KEY,
-		\"group\" integer REFERENCES groups_trash (id) ON DELETE RESTRICT,
-		\"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+       (id SERIAL PRIMARY KEY,
+        \"group\" integer REFERENCES groups_trash (id) ON DELETE RESTRICT,
+        \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS roles
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS roles_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS role_users
-	   (id SERIAL PRIMARY KEY,
-		role integer REFERENCES roles (id) ON DELETE RESTRICT,
-		\"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+       (id SERIAL PRIMARY KEY,
+        role integer REFERENCES roles (id) ON DELETE RESTRICT,
+        \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS role_users_trash
-	   (id SERIAL PRIMARY KEY,
-		role integer REFERENCES roles (id) ON DELETE RESTRICT,
-		\"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
+       (id SERIAL PRIMARY KEY,
+        role integer REFERENCES roles (id) ON DELETE RESTRICT,
+        \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS nvt_selectors
-	   (id SERIAL PRIMARY KEY,
-		name text,
-		exclude integer,
-		type integer,
-		family_or_nvt text,
-		family text);";
+       (id SERIAL PRIMARY KEY,
+        name text,
+        exclude integer,
+        type integer,
+        family_or_nvt text,
+        family text);";
 
   pg "CREATE TABLE IF NOT EXISTS port_lists
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS port_lists_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS port_ranges
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
-		type integer,
-		start integer,
-		\"end\" integer,
-		comment text,
-		exclude integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        port_list integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+        type integer,
+        start integer,
+        \"end\" integer,
+        comment text,
+        exclude integer);";
 
   pg "CREATE TABLE IF NOT EXISTS port_ranges_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		port_list integer REFERENCES port_lists_trash (id) ON DELETE RESTRICT,
-		type integer,
-		start integer,
-		\"end\" integer,
-		comment text,
-		exclude integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        port_list integer REFERENCES port_lists_trash (id) ON DELETE RESTRICT,
+        type integer,
+        start integer,
+        \"end\" integer,
+        comment text,
+        exclude integer);";
 
   pg "CREATE TABLE IF NOT EXISTS port_names
-	   (id SERIAL PRIMARY KEY,
-		number integer,
-		protocol text,
-		name text,
-		UNIQUE (number, protocol));";
+       (id SERIAL PRIMARY KEY,
+        number integer,
+        protocol text,
+        name text,
+        UNIQUE (number, protocol));";
 
   pg "CREATE TABLE IF NOT EXISTS lsc_credentials
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		login text,
-		password text,
-		comment text,
-		private_key text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        login text,
+        password text,
+        comment text,
+        private_key text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS lsc_credentials_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		login text,
-		password text,
-		comment text,
-		private_key text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        login text,
+        password text,
+        comment text,
+        private_key text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS targets
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		hosts text,
-		exclude_hosts text,
-		reverse_lookup_only integer,
-		reverse_lookup_unify integer,
-		comment text,
-		lsc_credential integer,
-		ssh_port text,
-		smb_lsc_credential integer,
-		port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
-		alive_test integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        hosts text,
+        exclude_hosts text,
+        reverse_lookup_only integer,
+        reverse_lookup_unify integer,
+        comment text,
+        lsc_credential integer,
+        ssh_port text,
+        smb_lsc_credential integer,
+        port_range integer REFERENCES port_lists (id) ON DELETE RESTRICT,
+        alive_test integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS targets_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		hosts text,
-		exclude_hosts text,
-		reverse_lookup_only integer,
-		reverse_lookup_unify integer,
-		comment text,
-		lsc_credential integer,
-		ssh_port text,
-		smb_lsc_credential integer,
-		port_range integer,
-		ssh_location integer,
-		smb_location integer,
-		port_list_location integer,
-		alive_test integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        hosts text,
+        exclude_hosts text,
+        reverse_lookup_only integer,
+        reverse_lookup_unify integer,
+        comment text,
+        lsc_credential integer,
+        ssh_port text,
+        smb_lsc_credential integer,
+        port_range integer,
+        ssh_location integer,
+        smb_location integer,
+        port_list_location integer,
+        alive_test integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS configs
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		nvt_selector text,
-		comment text,
-		family_count integer,
-		nvt_count integer,
-		families_growing integer,
-		nvts_growing integer,
-		type integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        nvt_selector text,
+        comment text,
+        family_count integer,
+        nvt_count integer,
+        families_growing integer,
+        nvts_growing integer,
+        type integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS configs_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		nvt_selector text,
-		comment text,
-		family_count integer,
-		nvt_count integer,
-		families_growing integer,
-		nvts_growing integer,
-		type integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        nvt_selector text,
+        comment text,
+        family_count integer,
+        nvt_count integer,
+        families_growing integer,
+        nvts_growing integer,
+        type integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS config_preferences
-	   (id SERIAL PRIMARY KEY,
-		config integer REFERENCES configs (id) ON DELETE RESTRICT,
-		type text,
-		name text,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        config integer REFERENCES configs (id) ON DELETE RESTRICT,
+        type text,
+        name text,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS config_preferences_trash
-	   (id SERIAL PRIMARY KEY,
-		config integer REFERENCES configs_trash (id) ON DELETE RESTRICT,
-		type text,
-		name text,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        config integer REFERENCES configs_trash (id) ON DELETE RESTRICT,
+        type text,
+        name text,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS schedules
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		first_time integer,
-		period integer,
-		period_months integer,
-		duration integer,
-		timezone text,
-		initial_offset integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        first_time integer,
+        period integer,
+        period_months integer,
+        duration integer,
+        timezone text,
+        initial_offset integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS schedules_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		first_time integer,
-		period integer,
-		period_months integer,
-		duration integer,
-		timezone text,
-		initial_offset integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        first_time integer,
+        period integer,
+        period_months integer,
+        duration integer,
+        timezone text,
+        initial_offset integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS slaves
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		host text,
-		port text,
-		login text,
-		password text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        host text,
+        port text,
+        login text,
+        password text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS slaves_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		host text,
-		port text,
-		login text,
-		password text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        host text,
+        port text,
+        login text,
+        password text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS scanners
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text,
-		comment text,
-		host text,
-		port integer,
-		type integer,
-		ca_pub text,
-		key_pub text,
-		key_priv text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text,
+        comment text,
+        host text,
+        port integer,
+        type integer,
+        ca_pub text,
+        key_pub text,
+        key_priv text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS scanners_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text,
-		comment text,
-		host text,
-		port integer,
-		type integer,
-		ca_pub text,
-		key_pub text,
-		key_priv text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text,
+        comment text,
+        host text,
+        port integer,
+        type integer,
+        ca_pub text,
+        key_pub text,
+        key_priv text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS tasks
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text,
-		hidden integer,
-		comment text,
-		run_status integer,
-		start_time integer,
-		end_time integer,
-		config integer,
-		target integer,
-		schedule integer,
-		schedule_next_time integer,
-		slave integer,
-		scanner integer,
-		config_location integer,
-		target_location integer,
-		schedule_location integer,
-		slave_location integer,
-		upload_result_count integer,
-		hosts_ordering text,
-		alterable integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text,
+        hidden integer,
+        comment text,
+        run_status integer,
+        start_time integer,
+        end_time integer,
+        config integer,
+        target integer,
+        schedule integer,
+        schedule_next_time integer,
+        slave integer,
+        scanner integer,
+        config_location integer,
+        target_location integer,
+        schedule_location integer,
+        slave_location integer,
+        upload_result_count integer,
+        hosts_ordering text,
+        alterable integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS task_files
-	   (id SERIAL PRIMARY KEY,
-		task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-		name text,
-		content text);";
+       (id SERIAL PRIMARY KEY,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        name text,
+        content text);";
 
   pg "CREATE TABLE IF NOT EXISTS task_alerts
-	   (id SERIAL PRIMARY KEY,
-		task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-		alert integer,
-		alert_location integer);";
+       (id SERIAL PRIMARY KEY,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        alert integer,
+        alert_location integer);";
 
   pg "CREATE TABLE IF NOT EXISTS task_preferences
-	   (id SERIAL PRIMARY KEY,
-		task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-		name text,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        name text,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS reports
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		hidden integer,
-		task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-		date integer,
-		start_time integer,
-		end_time integer,
-		nbefile text,
-		comment text,
-		scan_run_status integer,
-		slave_progress integer,
-		slave_task_uuid text,
-		slave_uuid text,
-		slave_name text,
-		slave_host text,
-		slave_port integer,
-		source_iface text);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        hidden integer,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        date integer,
+        start_time integer,
+        end_time integer,
+        nbefile text,
+        comment text,
+        scan_run_status integer,
+        slave_progress integer,
+        slave_task_uuid text,
+        slave_uuid text,
+        slave_name text,
+        slave_host text,
+        slave_port integer,
+        source_iface text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_counts
-	   (id SERIAL PRIMARY KEY,
-		report integer REFERENCES reports (id) ON DELETE RESTRICT,
-		\"user\" integer REFERENCES users (id) ON DELETE RESTRICT,
-		severity decimal,
-		count integer,
-		override integer,
-		end_time integer);";
+       (id SERIAL PRIMARY KEY,
+        report integer REFERENCES reports (id) ON DELETE RESTRICT,
+        \"user\" integer REFERENCES users (id) ON DELETE RESTRICT,
+        severity decimal,
+        count integer,
+        override integer,
+        end_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS results
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		task integer REFERENCES tasks (id) ON DELETE RESTRICT,
-		host text,
-		port text,
-		nvt text,
-		type text,
-		description text,
-		report integer REFERENCES reports (id) ON DELETE RESTRICT,
-		nvt_version text,
-		severity real,
-		qod integer,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		date integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        task integer REFERENCES tasks (id) ON DELETE RESTRICT,
+        host text,
+        port text,
+        nvt text,
+        type text,
+        description text,
+        report integer REFERENCES reports (id) ON DELETE RESTRICT,
+        nvt_version text,
+        severity real,
+        qod integer,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        date integer);";
 
   pg "CREATE TABLE IF NOT EXISTS report_formats
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		extension text,
-		content_type text,
-		summary text,
-		description text,
-		signature text,
-		trust integer,
-		trust_time integer,
-		flags integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        extension text,
+        content_type text,
+        summary text,
+        description text,
+        signature text,
+        trust integer,
+        trust_time integer,
+        flags integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS report_formats_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		extension text,
-		content_type text,
-		summary text,
-		description text,
-		signature text,
-		trust integer,
-		trust_time integer,
-		flags integer,
-		original_uuid text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        extension text,
+        content_type text,
+        summary text,
+        description text,
+        signature text,
+        trust integer,
+        trust_time integer,
+        flags integer,
+        original_uuid text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS report_format_params
-	   (id SERIAL PRIMARY KEY,
-		report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
-		name text,
-		type integer,
-		value text,
-		type_min bigint,
-		type_max bigint,
-		type_regex text,
-		fallback text);";
+       (id SERIAL PRIMARY KEY,
+        report_format integer REFERENCES report_formats (id) ON DELETE RESTRICT,
+        name text,
+        type integer,
+        value text,
+        type_min bigint,
+        type_max bigint,
+        type_regex text,
+        fallback text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_format_params_trash
-	   (id SERIAL PRIMARY KEY,
-		report_format integer REFERENCES report_formats_trash (id) ON DELETE RESTRICT,
-		name text,
-		type integer,
-		value text,
-		type_min bigint,
-		type_max bigint,
-		type_regex text,
-		fallback text);";
+       (id SERIAL PRIMARY KEY,
+        report_format integer REFERENCES report_formats_trash (id) ON DELETE RESTRICT,
+        name text,
+        type integer,
+        value text,
+        type_min bigint,
+        type_max bigint,
+        type_regex text,
+        fallback text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_format_param_options
-	   (id SERIAL PRIMARY KEY,
-		report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        report_format_param integer REFERENCES report_format_params (id) ON DELETE RESTRICT,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_format_param_options_trash
-	   (id SERIAL PRIMARY KEY,
-		report_format_param integer REFERENCES report_format_params_trash (id) ON DELETE RESTRICT,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        report_format_param integer REFERENCES report_format_params_trash (id) ON DELETE RESTRICT,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_hosts
-	   (id SERIAL PRIMARY KEY,
-		report integer REFERENCES reports (id) ON DELETE RESTRICT,
-		host text,
-		start_time integer,
-		end_time integer,
-		attack_state text,
-		current_port integer,
-		max_port integer);";
+       (id SERIAL PRIMARY KEY,
+        report integer REFERENCES reports (id) ON DELETE RESTRICT,
+        host text,
+        start_time integer,
+        end_time integer,
+        attack_state text,
+        current_port integer,
+        max_port integer);";
 
   pg "CREATE TABLE IF NOT EXISTS report_host_details
-	   (id SERIAL PRIMARY KEY,
-		report_host integer REFERENCES report_hosts (id) ON DELETE RESTRICT,
-		source_type text,
-		source_name text,
-		source_description text,
-		name text,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        report_host integer REFERENCES report_hosts (id) ON DELETE RESTRICT,
+        source_type text,
+        source_name text,
+        source_description text,
+        name text,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS report_results
-	   (id SERIAL PRIMARY KEY,
-		report integer REFERENCES reports (id) ON DELETE RESTRICT,
-		result integer REFERENCES results (id) ON DELETE RESTRICT);";
+       (id SERIAL PRIMARY KEY,
+        report integer REFERENCES reports (id) ON DELETE RESTRICT,
+        result integer REFERENCES results (id) ON DELETE RESTRICT);";
 
   pg "CREATE TABLE IF NOT EXISTS nvt_preferences
-	   (id SERIAL PRIMARY KEY,
-		name text UNIQUE NOT NULL,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        name text UNIQUE NOT NULL,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS nvts
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		oid text UNIQUE NOT NULL,
-		version text,
-		name text,
-		comment text,
-		summary text,
-		copyright text,
-		cve text,
-		bid text,
-		xref text,
-		tag text,
-		category text,
-		family text,
-		cvss_base text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        oid text UNIQUE NOT NULL,
+        version text,
+        name text,
+        comment text,
+        summary text,
+        copyright text,
+        cve text,
+        bid text,
+        xref text,
+        tag text,
+        category text,
+        family text,
+        cvss_base text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS nvt_cves
-	   (id SERIAL PRIMARY KEY,
-		nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
-		oid text,
-		cve_name text);";
+       (id SERIAL PRIMARY KEY,
+        nvt integer REFERENCES nvts (id) ON DELETE RESTRICT,
+        oid text,
+        cve_name text);";
 
   pg "CREATE TABLE IF NOT EXISTS notes
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		nvt text NOT NULL,
-		creation_time integer,
-		modification_time integer,
-		text text,
-		hosts text,
-		port text,
-		severity double precision,
-		task integer,
-		result integer,
-		end_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        nvt text NOT NULL,
+        creation_time integer,
+        modification_time integer,
+        text text,
+        hosts text,
+        port text,
+        severity double precision,
+        task integer,
+        result integer,
+        end_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS notes_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		nvt text NOT NULL,
-		creation_time integer,
-		modification_time integer,
-		text text,
-		hosts text,
-		port text,
-		severity double precision,
-		task integer,
-		result integer,
-		end_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        nvt text NOT NULL,
+        creation_time integer,
+        modification_time integer,
+        text text,
+        hosts text,
+        port text,
+        severity double precision,
+        task integer,
+        result integer,
+        end_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS overrides
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		nvt text NOT NULL,
-		creation_time integer,
-		modification_time integer,
-		text text,
-		hosts text,
-		new_severity double precision,
-		port text,
-		severity double precision,
-		task integer,
-		result integer,
-		end_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        nvt text NOT NULL,
+        creation_time integer,
+        modification_time integer,
+        text text,
+        hosts text,
+        new_severity double precision,
+        port text,
+        severity double precision,
+        task integer,
+        result integer,
+        end_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS overrides_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		nvt text NOT NULL,
-		creation_time integer,
-		modification_time integer,
-		text text,
-		hosts text,
-		new_severity double precision,
-		port text,
-		severity double precision,
-		task integer,
-		result integer,
-		end_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        nvt text NOT NULL,
+        creation_time integer,
+        modification_time integer,
+        text text,
+        hosts text,
+        new_severity double precision,
+        port text,
+        severity double precision,
+        task integer,
+        result integer,
+        end_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS permissions
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		resource_type text,
-		resource integer,
-		resource_uuid text,
-		resource_location integer,
-		subject_type text,
-		subject integer,
-		subject_location integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer,
+        subject_type text,
+        subject integer,
+        subject_location integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS permissions_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		resource_type text,
-		resource integer,
-		resource_uuid text,
-		resource_location integer,
-		subject_type text,
-		subject integer,
-		subject_location integer,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer,
+        subject_type text,
+        subject integer,
+        subject_location integer,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS settings
-	   (id SERIAL PRIMARY KEY,
-		uuid text NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		value text);";
+       (id SERIAL PRIMARY KEY,
+        uuid text NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        value text);";
 
   pg "CREATE TABLE IF NOT EXISTS tags
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		resource_type text,
-		resource integer,
-		resource_uuid text,
-		resource_location integer,
-		active integer,
-		value text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer,
+        active integer,
+        value text,
+        creation_time integer,
+        modification_time integer);";
 
   pg "CREATE TABLE IF NOT EXISTS tags_trash
-	   (id SERIAL PRIMARY KEY,
-		uuid text UNIQUE NOT NULL,
-		owner integer REFERENCES users (id) ON DELETE RESTRICT,
-		name text NOT NULL,
-		comment text,
-		resource_type text,
-		resource integer,
-		resource_uuid text,
-		resource_location integer,
-		active integer,
-		value text,
-		creation_time integer,
-		modification_time integer);";
+       (id SERIAL PRIMARY KEY,
+        uuid text UNIQUE NOT NULL,
+        owner integer REFERENCES users (id) ON DELETE RESTRICT,
+        name text NOT NULL,
+        comment text,
+        resource_type text,
+        resource integer,
+        resource_uuid text,
+        resource_location integer,
+        active integer,
+        value text,
+        creation_time integer,
+        modification_time integer);";
 }
 
 migrate_rest () {
@@ -958,7 +958,7 @@ migrate_rest () {
   test_sql_exit "Failed to clean up report_hosts"
 
   # Make end_time in tasks consistent.
-  sqlite "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT * FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
+  sqlite "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
   test_sql_exit "Failed to make end_time in tasks consistent"
 
   # Make end_time in report_hosts consistent.
@@ -1005,12 +1005,12 @@ migrate_rest () {
   log_debug "TABLES: $TABLES"
   for TABLE in $TABLES; do
     # Get the Postgres columns because the import CSV must be in that order.
-	#
-	# This also works around extra columns that were hanging around in old
+    #
+    # This also works around extra columns that were hanging around in old
     # database.
-	#
+    #
     COLS=`pg "SELECT string_agg ('\"' || column_name || '\"', ',') from (select column_name from information_schema.columns where table_schema = 'public' and table_name = '$TABLE' order by ordinal_position) as sub;"`
-	log_debug "COLS: $COLS"
+    log_debug "COLS: $COLS"
     # Pipe SQLite CSV output into Postgres COPY FROM.
     $SQLITE3 -csv $SQLITE_DB "SELECT $COLS FROM $TABLE;" | pg "COPY $TABLE ($COLS) FROM STDIN DELIMITER ',' CSV";
     test_sql_exit "Could not generate CSV for $TABLE"
@@ -1027,15 +1027,15 @@ migrate_rest () {
       quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
       FROM pg_class AS S,
            pg_depend AS D,
-		   pg_class AS T,
-		   pg_attribute AS C,
-		   pg_tables AS PGT
-	  WHERE S.relkind = 'S'
-	  AND S.oid = D.objid
-	  AND D.refobjid = T.oid
-	  AND D.refobjid = C.attrelid
-	  AND D.refobjsubid = C.attnum
-	  AND T.relname = PGT.tablename
+           pg_class AS T,
+           pg_attribute AS C,
+           pg_tables AS PGT
+      WHERE S.relkind = 'S'
+      AND S.oid = D.objid
+      AND D.refobjid = T.oid
+      AND D.refobjid = C.attrelid
+      AND D.refobjsubid = C.attnum
+      AND T.relname = PGT.tablename
       ORDER BY S.relname;" > $TEMP_DIR/reset.sql;
   test_sql_exit "Could not generate reset SQL"
   $PSQL -f $TEMP_DIR/reset.sql;
