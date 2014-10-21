@@ -14328,7 +14328,10 @@ prognosis_order_by (const char* sort_field, int ascending)
   else if (strcmp (sort_field, "host") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY"
-                            " inet (host) %s,"
+                            " inet ((SELECT host FROM report_hosts"
+                            "        WHERE id"
+                            "              = report_host_details.report_host))"
+                            " %s,"
                             " severity DESC",
                             ascending ? "ASC" : "DESC");
   else if (strcmp (sort_field, "vulnerability") == 0)

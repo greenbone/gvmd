@@ -1,5 +1,10 @@
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (prognosis_order_by): Get host manually, because
+	Postgres refuses to accept aliases that are expressions in ORDER BY.
+
+2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (make_nvt_from_nvti): Add NVT OID to error messages.
 
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
