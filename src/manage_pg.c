@@ -2121,10 +2121,21 @@ create_tables ()
        "                     'creation_time');");
   sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
   sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
+#if 0
+  /* TODO The value column can be bigger than 8191, the maximum size that
+   *      Postgres can handle.  For example, this can happen for "ports".
+   *      Mostly value is short, like a CPE for the "App" detail, which is
+   *      what the index is for. */
   sql ("SELECT create_index"
        "        ('report_host_details_by_report_host_and_name_and_value',"
        "         'report_host_details',"
        "         'report_host, name, value');");
+#else
+  sql ("SELECT create_index"
+       "        ('report_host_details_by_report_host_and_name',"
+       "         'report_host_details',"
+       "         'report_host, name');");
+#endif
   sql ("SELECT create_index"
        "        ('report_hosts_by_report_and_host',"
        "         'report_hosts',"

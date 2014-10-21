@@ -1,3 +1,9 @@
+2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Disable report_hosts_details index,
+	because one of the columns can go out of bounds.  Add alternative with
+	fewer columns.
+
 2014-10-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (prognosis_order_by): Get host manually, because
