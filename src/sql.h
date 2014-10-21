@@ -84,7 +84,7 @@ int
 sql_changes ();
 
 resource_t
-sql_last_insert_rowid ();
+sql_last_insert_id ();
 
 gchar *
 sql_nquote (const char *, size_t);

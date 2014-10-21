@@ -55,7 +55,7 @@ make_config_system_discovery (char *const uuid, char *const selector_name)
        uuid,
        selector_name);
 
-  config = sql_last_insert_rowid ();
+  config = sql_last_insert_id ();
 
   /* Add NVTs to the config. */
 

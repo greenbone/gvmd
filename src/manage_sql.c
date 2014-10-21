@@ -4016,7 +4016,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
          type,
          quoted_uuid);
 
-  new = sql_last_insert_rowid ();
+  new = sql_last_insert_id ();
 
   /* Copy attached tags */
   sql ("INSERT INTO tags"
@@ -4046,7 +4046,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   g_free (quoted_uuid);
   g_free (quoted_name);
   g_free (uniquify);
-  if (sql_last_insert_rowid () == 0)
+  if (sql_last_insert_id () == 0)
     return -1;
   return 0;
 }
@@ -5809,7 +5809,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
   g_free (quoted_comment);
   g_free (quoted_name);
 
-  *alert = sql_last_insert_rowid ();
+  *alert = sql_last_insert_id ();
 
   index = 0;
   while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
@@ -6277,7 +6277,7 @@ delete_alert (const char *alert_id, int ultimate)
            " FROM alerts WHERE id = %llu;",
            alert);
 
-      trash_alert = sql_last_insert_rowid ();
+      trash_alert = sql_last_insert_id ();
 
       sql ("INSERT INTO alert_condition_data_trash"
            " (alert, name, data)"
@@ -10091,7 +10091,7 @@ check_db_tasks ()
                " 1251236905, 1251237136,"
                " %u, 0, '');",
                task, TASK_STATUS_DONE);
-          report = sql_last_insert_rowid ();
+          report = sql_last_insert_id ();
           sql ("INSERT into results (uuid, task, host, port, nvt, type,"
                " severity, description, qod)"
                " VALUES ('cb291ec0-1b0d-11df-8aa1-002264764cea', %llu,"
@@ -10100,7 +10100,7 @@ check_db_tasks ()
                " 'A telnet server seems to be running on this port',"
                " -1);",
                task);
-          result = sql_last_insert_rowid ();
+          result = sql_last_insert_id ();
           report_add_result (report, result);
           sql ("INSERT into report_hosts (report, host, start_time, end_time)"
                " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
@@ -10205,7 +10205,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
            " '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_openvas_default (list);
     }
 
@@ -10218,7 +10218,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP "', NULL, 'All TCP',"
            " '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       RANGE (PORT_PROTOCOL_TCP, 1, 65535);
     }
 
@@ -10231,7 +10231,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_100 "', NULL,"
            " 'All TCP and Nmap 5.51 top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_all_tcp_nmap_5_51_top_100 (list);
     }
 
@@ -10244,7 +10244,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_TCP_NMAP_5_51_TOP_1000 "', NULL,"
            " 'All TCP and Nmap 5.51 top 1000 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_all_tcp_nmap_5_51_top_1000 (list);
     }
 
@@ -10257,7 +10257,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP "', NULL,"
            " 'All privileged TCP', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
     }
 
@@ -10270,7 +10270,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_PRIV_TCP_UDP "', NULL,"
            " 'All privileged TCP and UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       RANGE (PORT_PROTOCOL_TCP, 1, 1023);
       RANGE (PORT_PROTOCOL_UDP, 1, 1023);
     }
@@ -10284,7 +10284,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_2012 "', NULL,"
            " 'All IANA assigned TCP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_iana_tcp_2012 (list);
     }
 
@@ -10297,7 +10297,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_ALL_IANA_TCP_UDP_2012 "', NULL,"
            " 'All IANA assigned TCP and UDP 2012-02-10', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_iana_tcp_udp_2012 (list);
     }
 
@@ -10310,7 +10310,7 @@ check_db_port_lists ()
            "                        modification_time)"
            " VALUES ('" PORT_LIST_UUID_NMAP_5_51_TOP_2000_TOP_100 "', NULL,"
            " 'Nmap 5.51 top 2000 TCP and top 100 UDP', '', m_now (), m_now ())");
-      list = sql_last_insert_rowid ();
+      list = sql_last_insert_id ();
       make_port_ranges_nmap_5_51_top_2000_top_100 (list);
     }
   /*
@@ -11129,7 +11129,7 @@ check_db_report_formats ()
            " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES,
            time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11155,7 +11155,7 @@ check_db_report_formats ()
            "as a comma separated values file.\n',"
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11172,7 +11172,7 @@ check_db_report_formats ()
            " 'List of results.',"
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11189,7 +11189,7 @@ check_db_report_formats ()
            " 'Base host information and result counts',"
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11207,7 +11207,7 @@ check_db_report_formats ()
            "the HTML, so the page is suitable for viewing in a browser as is.\n',"
            " 'html', 'text/html', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11225,7 +11225,7 @@ check_db_report_formats ()
            "as published and maintained by the German Federal Agency for IT-Security.\n',"
            " 'csv', 'text/csv', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11242,7 +11242,7 @@ check_db_report_formats ()
            " 'Report as LaTeX source file for further processing.\n',"
            " 'tex', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11259,7 +11259,7 @@ check_db_report_formats ()
            " 'The traditional OpenVAS Scanner text based format.',"
            " 'nbe', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11276,7 +11276,7 @@ check_db_report_formats ()
            " 'Scan results in Portable Document Format (PDF).',"
            "'pdf', 'application/pdf', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11293,7 +11293,7 @@ check_db_report_formats ()
            " 'Plain text report, best viewed with fixed font size.',"
            " 'txt', 'text/plain', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11310,7 +11310,7 @@ check_db_report_formats ()
            " 'Complete scan report in OpenVAS Manager XML format.',"
            " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -11331,7 +11331,7 @@ check_db_report_formats ()
            " 'Scan results in topologic structure as scalable vector graphics.\n',"
            " 'svg', 'image/svg+xml', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
 
       /* Create report "Graph Type" format parameter and parameter options */
       sql ("INSERT INTO report_format_params (report_format, name, type, value,"
@@ -11339,7 +11339,7 @@ check_db_report_formats ()
            " VALUES (%lli, 'Graph Type', 2, 'twopi', -9223372036854775808,"
            " 9223372036854775807,'','twopi');",
            report_format);
-      report_format_param = sql_last_insert_rowid ();
+      report_format_param = sql_last_insert_id ();
       sql ("INSERT INTO report_format_param_options (report_format_param, value)"
            "VALUES (%lli, 'circo');",
            report_format_param);
@@ -11370,7 +11370,7 @@ check_db_report_formats ()
            " 'Information Security Management Report for Verinice import, version 1.1.10.\n',"
            " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
            TRUST_YES, time (NULL));
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
       report_format_verify (report_format);
     }
 
@@ -13735,7 +13735,7 @@ set_task_observers (task_t task, const gchar *observers)
                    quoted_name);
               g_free (quoted_name);
 
-              user = sql_last_insert_rowid ();
+              user = sql_last_insert_id ();
             }
           else
             {
@@ -13864,7 +13864,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   g_free (nvt_revision);
   g_free (quoted_desc);
 
-  return sql_last_insert_rowid ();
+  return sql_last_insert_id ();
 }
 
 /**
@@ -13971,7 +13971,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   g_free (quoted_descr);
   g_free (nvt_revision);
   g_free (severity);
-  result = sql_last_insert_rowid ();
+  result = sql_last_insert_id ();
   return result;
 }
 
@@ -14562,7 +14562,7 @@ make_report (task_t task, const char* uuid, task_status_t status)
        " (SELECT owner FROM tasks WHERE tasks.id = %llu),"
        " 0, %llu, %i, '', '', %u, 0, '');",
        uuid, task, task, time (NULL), status);
-  return sql_last_insert_rowid ();
+  return sql_last_insert_id ();
 }
 
 /**
@@ -14802,7 +14802,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_scan_nvt_version);
       g_free (quoted_severity);
 
-      report_add_result (report, sql_last_insert_rowid ());
+      report_add_result (report, sql_last_insert_id ());
     }
 
   index = 0;
@@ -24857,7 +24857,7 @@ make_task (char* name, char* comment)
        uuid,
        quoted_name ? quoted_name : "",
        quoted_comment ? quoted_comment : "");
-  task = sql_last_insert_rowid ();
+  task = sql_last_insert_id ();
   set_task_run_status (task, TASK_STATUS_NEW);
   sql ("INSERT INTO task_preferences (task, name, value)"
        " VALUES (%llu, 'in_assets', 'yes')",
@@ -26194,7 +26194,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
          port_list, reverse_lookup_only, reverse_lookup_unify, alive_test);
 
   if (target)
-    *target = sql_last_insert_rowid ();
+    *target = sql_last_insert_id ();
 
   g_free (quoted_name);
   g_free (quoted_hosts);
@@ -26331,14 +26331,14 @@ delete_target (const char *target_id, int ultimate)
            "     target_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE target = %llu"
            " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            target);
 
       permissions_set_locations ("target", target,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("target", target,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else if (sql_int ("SELECT count(*) FROM tasks"
@@ -27825,7 +27825,7 @@ create_config (const char* proposed_name, const char* comment,
 
   /* Insert the selectors into the nvt_selectors table. */
 
-  *config = sql_last_insert_rowid ();
+  *config = sql_last_insert_id ();
   if ((ret = insert_nvt_selectors (selector_uuid, selectors)))
     {
       sql ("ROLLBACK;");
@@ -27949,7 +27949,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
        quoted_name, current_credentials.uuid, quoted_comment);
   g_free (quoted_name);
   g_free (quoted_comment);
-  config = sql_last_insert_rowid ();
+  config = sql_last_insert_id ();
   *uuid = config_uuid (config);
 
   element = params;
@@ -28395,7 +28395,7 @@ delete_config (const char *config_id, int ultimate)
            " FROM configs WHERE id = %llu;",
            config);
 
-      trash_config = sql_last_insert_rowid ();
+      trash_config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences_trash"
            " (config, type, name, value)"
@@ -29679,7 +29679,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_cvss_base);
   g_free (quoted_family);
 
-  return sql_last_insert_rowid ();
+  return sql_last_insert_id ();
 }
 
 /**
@@ -32164,7 +32164,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       lsc_crypt_release (crypt_ctx);
 
       if (lsc_credential)
-        *lsc_credential = sql_last_insert_rowid ();
+        *lsc_credential = sql_last_insert_id ();
 
       sql ("COMMIT;");
       return 0;
@@ -32223,7 +32223,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
       lsc_crypt_release (crypt_ctx);
 
       if (lsc_credential)
-        *lsc_credential = sql_last_insert_rowid ();
+        *lsc_credential = sql_last_insert_id ();
 
       sql ("COMMIT;");
       return 0;
@@ -32318,7 +32318,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
   g_free (private_key);
 
   if (lsc_credential)
-    *lsc_credential = sql_last_insert_rowid ();
+    *lsc_credential = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -32549,26 +32549,26 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
            " SET ssh_location = " G_STRINGIFY (LOCATION_TRASH) ","
            "     lsc_credential = %llu"
            " WHERE lsc_credential = %llu;",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            lsc_credential);
       sql ("UPDATE targets_trash"
            " SET smb_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " smb_lsc_credential = %llu"
            " WHERE smb_lsc_credential = %llu;",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            lsc_credential);
       sql ("UPDATE targets_trash"
            " SET esxi_location = " G_STRINGIFY (LOCATION_TRASH) ","
            " esxi_lsc_credential = %llu"
            " WHERE esxi_lsc_credential = %llu;",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            lsc_credential);
 
       permissions_set_locations ("lsc_credential", lsc_credential,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("lsc_credential", lsc_credential,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -33618,7 +33618,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
   }
 
   if (agent)
-    *agent = sql_last_insert_rowid ();
+    *agent = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -33783,10 +33783,10 @@ delete_agent (const char *agent_id, int ultimate)
            agent);
 
       permissions_set_locations ("agent", agent,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("agent", agent,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -34438,7 +34438,7 @@ create_note (const char* active, const char* nvt, const char* text,
   g_free (quoted_severity);
 
   if (note)
-    *note = sql_last_insert_rowid ();
+    *note = sql_last_insert_id ();
 
   return 0;
 }
@@ -34526,10 +34526,10 @@ delete_note (const char *note_id, int ultimate)
            note);
 
       permissions_set_locations ("note", note,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("note", note,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -35368,7 +35368,7 @@ create_override (const char* active, const char* nvt, const char* text,
   g_free (quoted_severity);
 
   if (override)
-    *override = sql_last_insert_rowid ();
+    *override = sql_last_insert_id ();
 
   reports_clear_count_cache (1);
 
@@ -35477,10 +35477,10 @@ delete_override (const char *override_id, int ultimate)
            override);
 
       permissions_set_locations ("override", override,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("override", override,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -36529,7 +36529,7 @@ create_scanner (const char* name, const char *comment, const char *host,
        iport, itype, quoted_ca_pub, quoted_key_pub, quoted_key_priv);
 
   if (new_scanner)
-    *new_scanner = sql_last_insert_rowid ();
+    *new_scanner = sql_last_insert_id ();
 
   sql ("COMMIT;");
   g_free (quoted_host);
@@ -36735,10 +36735,10 @@ delete_scanner (const char *scanner_id, int ultimate)
            " FROM scanners WHERE id = %llu;", scanner);
 
       permissions_set_locations ("scanner", scanner,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("scanner", scanner,
-                          sql_last_insert_rowid (), LOCATION_TRASH);
+                          sql_last_insert_id (), LOCATION_TRASH);
     }
   else
     {
@@ -37297,7 +37297,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
          period_months, duration, insert_timezone, offset);
 
   if (schedule)
-    *schedule = sql_last_insert_rowid ();
+    *schedule = sql_last_insert_id ();
 
   g_free (quoted_name);
   g_free (insert_timezone);
@@ -37422,14 +37422,14 @@ delete_schedule (const char *schedule_id, int ultimate)
            "     schedule_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE schedule = %llu"
            " AND schedule_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            schedule);
 
       permissions_set_locations ("schedule", schedule,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("schedule", schedule,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else if (sql_int ("SELECT count(*) FROM tasks"
@@ -38821,7 +38821,7 @@ create_report_format (const char *uuid, const char *name,
 
   /* Add params to database. */
 
-  report_format_rowid = sql_last_insert_rowid ();
+  report_format_rowid = sql_last_insert_id ();
   index = 0;
   while ((param = (create_report_format_param_t*) g_ptr_array_index (params,
                                                                      index++)))
@@ -38921,7 +38921,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (quoted_param_value);
       g_free (quoted_param_fallback);
 
-      param_rowid = sql_last_insert_rowid ();
+      param_rowid = sql_last_insert_id ();
 
       {
         array_t *options;
@@ -39487,7 +39487,7 @@ delete_report_format (const char *report_format_id, int ultimate)
            " WHERE id = %llu;",
            report_format);
 
-      trash_report_format = sql_last_insert_rowid ();
+      trash_report_format = sql_last_insert_id ();
 
       init_report_format_param_iterator (&params, report_format, 0, 1, NULL);
       while (next (&params))
@@ -39507,7 +39507,7 @@ delete_report_format (const char *report_format_id, int ultimate)
                trash_report_format,
                param);
 
-          trash_param = sql_last_insert_rowid ();
+          trash_param = sql_last_insert_id ();
 
           sql ("INSERT INTO report_format_param_options_trash"
                " (report_format_param, value)"
@@ -40880,7 +40880,7 @@ create_slave (const char* name, const char* comment, const char* host,
          quoted_login, quoted_password);
 
   if (slave)
-    *slave = sql_last_insert_rowid ();
+    *slave = sql_last_insert_id ();
 
   g_free (quoted_name);
   g_free (quoted_host);
@@ -41101,14 +41101,14 @@ delete_slave (const char *slave_id, int ultimate)
            "     slave_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE slave = %llu"
            " AND slave_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            slave);
 
       permissions_set_locations ("slave", slave,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("slave", slave,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else if (sql_int ("SELECT count(*) FROM tasks"
@@ -41739,7 +41739,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
                        quoted_name);
                   g_free (quoted_name);
 
-                  user = sql_last_insert_rowid ();
+                  user = sql_last_insert_id ();
                 }
               else
                 {
@@ -41816,7 +41816,7 @@ create_group (const char *group_name, const char *comment, const char *users,
   g_free (quoted_comment);
   g_free (quoted_group_name);
 
-  *group = sql_last_insert_rowid ();
+  *group = sql_last_insert_id ();
   ret = add_users ("group", *group, users);
 
   if (ret)
@@ -41917,7 +41917,7 @@ delete_group (const char *group_id, int ultimate)
            " FROM groups WHERE id = %llu;",
            group);
 
-      trash_group = sql_last_insert_rowid ();
+      trash_group = sql_last_insert_id ();
 
       sql ("INSERT INTO group_users_trash"
            " (\"group\", \"user\")"
@@ -42465,7 +42465,7 @@ create_permission (const char *name_arg, const char *comment,
   g_free (resource_type);
 
   if (permission)
-    *permission = sql_last_insert_rowid ();
+    *permission = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -43074,7 +43074,7 @@ delete_permission (const char *permission_id, int ultimate)
           " WHERE id = %llu;",
           permission);
       tags_set_locations ("permission", permission,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -43617,7 +43617,7 @@ create_port_list_lock (const char *quoted_id, const char *quoted_name,
          quoted_comment);
   g_free (quoted_comment);
 
-  *port_list = sql_last_insert_rowid ();
+  *port_list = sql_last_insert_id ();
 
   ranges_sort_merge (ranges);
   array_terminate (ranges);
@@ -43826,7 +43826,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       g_free (quoted_comment);
       g_free (quoted_name);
 
-      port_list = sql_last_insert_rowid ();
+      port_list = sql_last_insert_id ();
       make_port_ranges_openvas_default (port_list);
     }
   else
@@ -44077,7 +44077,7 @@ create_port_range (const char *port_list_id, const char *type,
   g_free (quoted_comment);
 
   if (port_range_return)
-    *port_range_return = sql_last_insert_rowid ();
+    *port_range_return = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -44179,7 +44179,7 @@ delete_port_list (const char *port_list_id, int ultimate)
            " FROM port_lists WHERE id = %llu;",
            port_list);
 
-      trash_port_list = sql_last_insert_rowid ();
+      trash_port_list = sql_last_insert_id ();
 
       sql ("INSERT INTO port_ranges_trash"
            " (uuid, port_list, type, start, \"end\", comment, exclude)"
@@ -44877,7 +44877,7 @@ create_role (const char *role_name, const char *comment, const char *users,
   g_free (quoted_comment);
   g_free (quoted_role_name);
 
-  *role = sql_last_insert_rowid ();
+  *role = sql_last_insert_id ();
   ret = add_users ("role", *role, users);
 
   if (ret)
@@ -45024,7 +45024,7 @@ delete_role (const char *role_id, int ultimate)
            " FROM roles WHERE id = %llu;",
            role);
 
-      trash_role = sql_last_insert_rowid ();
+      trash_role = sql_last_insert_id ();
 
       sql ("INSERT INTO role_users_trash"
            " (\"role\", \"user\")"
@@ -45572,7 +45572,7 @@ create_filter (const char *name, const char *comment, const char *type,
          quoted_term);
 
   if (filter)
-    *filter = sql_last_insert_rowid ();
+    *filter = sql_last_insert_id ();
 
   g_free (quoted_name);
   g_free (quoted_term);
@@ -45696,14 +45696,14 @@ delete_filter (const char *filter_id, int ultimate)
            "     filter_location = " G_STRINGIFY (LOCATION_TRASH)
            " WHERE filter = %llu"
            " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            filter);
 
       permissions_set_locations ("filter", filter,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
       tags_set_locations ("filter", filter,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TRASH);
     }
   else
@@ -46294,10 +46294,10 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("agent", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("agent", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM agents_trash WHERE id = %llu;", resource);
@@ -46339,7 +46339,7 @@ manage_restore (const char *id)
            " FROM configs_trash WHERE id = %llu;",
            resource);
 
-      config = sql_last_insert_rowid ();
+      config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences"
            " (config, type, name, value)"
@@ -46410,7 +46410,7 @@ manage_restore (const char *id)
            " FROM alerts_trash WHERE id = %llu;",
            resource);
 
-      alert = sql_last_insert_rowid ();
+      alert = sql_last_insert_id ();
 
       sql ("INSERT INTO alert_condition_data"
            " (alert, name, data)"
@@ -46495,14 +46495,14 @@ manage_restore (const char *id)
            "     filter_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE filter = %llu"
            " AND filter_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            resource);
 
       permissions_set_locations ("filter", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("filter", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM filters_trash WHERE id = %llu;", resource);
@@ -46542,7 +46542,7 @@ manage_restore (const char *id)
            " FROM groups_trash WHERE id = %llu;",
            resource);
 
-      group = sql_last_insert_rowid ();
+      group = sql_last_insert_id ();
 
       sql ("INSERT INTO group_users"
            " (\"group\", \"user\")"
@@ -46594,7 +46594,7 @@ manage_restore (const char *id)
            " FROM lsc_credentials_trash WHERE id = %llu;",
            resource);
 
-      credential = sql_last_insert_rowid ();
+      credential = sql_last_insert_id ();
 
       /* Update the credentials in any trashcan targets. */
       sql ("UPDATE targets_trash"
@@ -46648,10 +46648,10 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("note", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("note", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
 
       sql ("DELETE FROM notes_trash WHERE id = %llu;", resource);
@@ -46679,10 +46679,10 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("override", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("override", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM overrides_trash WHERE id = %llu;", resource);
@@ -46713,7 +46713,7 @@ manage_restore (const char *id)
            resource);
 
       tags_set_locations ("permission", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM permissions_trash WHERE id = %llu;", resource);
@@ -46751,7 +46751,7 @@ manage_restore (const char *id)
            " FROM port_lists_trash WHERE id = %llu;",
            resource);
 
-      table_port_list = sql_last_insert_rowid ();
+      table_port_list = sql_last_insert_id ();
 
       sql ("INSERT INTO port_ranges"
            " (uuid, port_list, type, start, \"end\", comment, exclude)"
@@ -46772,7 +46772,7 @@ manage_restore (const char *id)
       permissions_set_locations ("port_list", resource, table_port_list,
                                  LOCATION_TABLE);
       tags_set_locations ("port_list", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM port_ranges_trash WHERE port_list = %llu;", resource);
@@ -46833,7 +46833,7 @@ manage_restore (const char *id)
            " WHERE id = %llu;",
            resource);
 
-      report_format = sql_last_insert_rowid ();
+      report_format = sql_last_insert_id ();
 
       init_report_format_param_iterator (&params, resource, 1, 1, NULL);
       while (next (&params))
@@ -46853,7 +46853,7 @@ manage_restore (const char *id)
                report_format,
                trash_param);
 
-          param = sql_last_insert_rowid ();
+          param = sql_last_insert_id ();
 
           sql ("INSERT INTO report_format_param_options"
                " (report_format_param, value)"
@@ -46974,7 +46974,7 @@ manage_restore (const char *id)
            " FROM roles_trash WHERE id = %llu;",
            resource);
 
-      role = sql_last_insert_rowid ();
+      role = sql_last_insert_id ();
 
       sql ("INSERT INTO role_users"
            " (role, \"user\")"
@@ -47022,10 +47022,10 @@ manage_restore (const char *id)
            " FROM scanners_trash WHERE id = %llu;", resource);
 
       permissions_set_locations ("scanner", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("scanner", resource,
-                          sql_last_insert_rowid (), LOCATION_TABLE);
+                          sql_last_insert_id (), LOCATION_TABLE);
 
       sql ("DELETE FROM scanners_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");
@@ -47070,14 +47070,14 @@ manage_restore (const char *id)
            "     schedule_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE schedule = %llu"
            " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            resource);
 
       permissions_set_locations ("schedule", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("schedule", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM schedules_trash WHERE id = %llu;", resource);
@@ -47122,14 +47122,14 @@ manage_restore (const char *id)
            "     slave_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE slave = %llu"
            " AND slave_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            resource);
 
       permissions_set_locations ("slave", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("slave", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM slaves_trash WHERE id = %llu;", resource);
@@ -47158,7 +47158,7 @@ manage_restore (const char *id)
            resource);
 
       permissions_set_locations ("tag", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
 
       sql ("DELETE FROM tags_trash WHERE id = %llu;", resource);
@@ -47218,14 +47218,14 @@ manage_restore (const char *id)
            "     target_location = " G_STRINGIFY (LOCATION_TABLE)
            " WHERE target = %llu"
            " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-           sql_last_insert_rowid (),
+           sql_last_insert_id (),
            resource);
 
       permissions_set_locations ("target", resource,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TABLE);
       tags_set_locations ("target", resource,
-                          sql_last_insert_rowid (),
+                          sql_last_insert_id (),
                           LOCATION_TABLE);
 
       sql ("DELETE FROM targets_trash WHERE id = %llu;", resource);
@@ -49943,7 +49943,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
        quoted_ifaces,
        ifaces_allow,
        quoted_method);
-  user = sql_last_insert_rowid ();
+  user = sql_last_insert_id ();
   g_free (generated);
   g_free (hash);
   g_free (quoted_hosts);
@@ -51053,7 +51053,7 @@ create_tag (const char * name, const char * comment, const char * value,
   g_free (quoted_value);
 
   if (tag)
-    *tag = sql_last_insert_rowid ();
+    *tag = sql_last_insert_id ();
 
   sql ("COMMIT;");
 
@@ -51126,7 +51126,7 @@ delete_tag (const char *tag_id, int ultimate)
            tag);
 
       permissions_set_locations ("tag", tag,
-                                 sql_last_insert_rowid (),
+                                 sql_last_insert_id (),
                                  LOCATION_TRASH);
     }
   else

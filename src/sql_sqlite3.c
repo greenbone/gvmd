@@ -198,7 +198,7 @@ sql_changes ()
  * @brief Get the ID of the last inserted row.
  */
 resource_t
-sql_last_insert_rowid ()
+sql_last_insert_id ()
 {
   return sqlite3_last_insert_rowid (task_db);
 }
@@ -220,7 +220,7 @@ sqli (resource_t *resource, char* sql, ...)
     abort ();
   va_end (args);
   if (resource)
-    *resource = sql_last_insert_rowid ();
+    *resource = sql_last_insert_id ();
 }
 
 /**

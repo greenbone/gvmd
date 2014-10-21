@@ -1,3 +1,15 @@
+2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_pg.c, src/sql_sqlite3.c (sql_last_insert_rowid): Remove.  Now
+	sql_last_insert_id.  Update call.
+	(sql_last_insert_id): New function.
+
+	* src/manage_config_host_discovery.c,
+	src/manage_config_system_discovery.c, src/manage_migrators.c,
+	src/manage_sql.c: Update sql_last_insert_rowid calls.
+
+	* src/sql.h: Update headers accordingly.
+
 2014-10-21  Henri Doreau <henri.doreau@gmail.com>
 
 	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END, stop

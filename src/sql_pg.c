@@ -245,7 +245,7 @@ sql_changes ()
  * @brief Get the ID of the last inserted row.
  */
 resource_t
-sql_last_insert_rowid ()
+sql_last_insert_id ()
 {
   return sql_int ("SELECT LASTVAL ();");
 }
