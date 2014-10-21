@@ -1,5 +1,12 @@
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_report_format): Delete trash report formats
+	after their params, otherwise Postgres sees the referential error.
+	(manage_empty_trashcan): Delete report format params and their options
+	too.
+
+2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres (PREFIX): Clear.
 
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>

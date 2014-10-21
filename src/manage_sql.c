@@ -39351,14 +39351,14 @@ delete_report_format (const char *report_format_id, int ultimate)
                          " FROM report_formats_trash"
                          " WHERE id = %llu;",
                          report_format);
-      sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
-           report_format);
       sql ("DELETE FROM report_format_param_options_trash"
            " WHERE report_format_param"
            " IN (SELECT id from report_format_params_trash"
            "     WHERE report_format = %llu);",
            report_format);
       sql ("DELETE FROM report_format_params_trash WHERE report_format = %llu;",
+           report_format);
+      sql ("DELETE FROM report_formats_trash WHERE id = %llu;",
            report_format);
 
       /* Remove the dirs last, in case any SQL rolls back. */
@@ -47360,6 +47360,8 @@ manage_empty_trashcan ()
        " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
        " WHERE resource_location = " G_STRINGIFY (LOCATION_TRASH) ";");
 
+  sql ("DELETE FROM report_format_param_options_trash;");
+  sql ("DELETE FROM report_format_params_trash;");
   sql ("DELETE FROM report_formats_trash;");
 
   /* Remove the report formats dir last, in case any SQL rolls back. */
