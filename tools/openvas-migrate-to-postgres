@@ -111,7 +111,8 @@ pg () {
 }
 
 does_pg_db_exist () {
-  PG_DB_EXISTS=`pg "SELECT EXISTS (SELECT * FROM information_schema.tables
+  PG_DB_EXISTS=`pg "SELECT EXISTS (SELECT table_name
+                    FROM information_schema.tables
                     WHERE table_catalog = 'tasks'
                     AND table_schema = 'public'
                     AND table_name = 'meta')
@@ -126,6 +127,22 @@ is_db_broken () {
   then
     return
   fi
+
+  # Index report_hosts_by_host may have been created with COLLATE collate_ip.
+  # collate_ip has been removed.  So just recreate the index.
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    sqlite "DROP INDEX report_hosts_by_host;"
+    test_sql_exit "Could not drop index report_hosts_by_host"
+  done
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    sqlite "CREATE INDEX report_hosts_by_host ON report_hosts (host);"
+    test_sql_exit "Could not create index report_hosts_by_host"
+  done
+
   reset_sql_tries
   until [ "$try_sql" -eq 0 ]
   do
