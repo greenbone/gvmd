@@ -1,3 +1,14 @@
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add Postgres handling of --backup.
+
+	* src/manage_sql.c (backup_db): Remove.  Now in manage_sqlite.c.
+	(manage_backup_db): Remove.  Now in backend files.
+
+	* src/sql_sqlite3.c (backup_db, manage_backup_db): New functions.
+
+	* src/sql_pg.c (manage_backup_db): New function.
+
 2014-10-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_pg.c, src/sql_sqlite3.c (sql_last_insert_rowid): Remove.  Now

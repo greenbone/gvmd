@@ -4855,69 +4855,6 @@ info_name_count (const char *type, const char *name)
 
 
 /**
- * @brief Backup the database to a file.
- *
- * @param[in]   database     Database to backup.
- * @param[out]  backup_file  Freshly allocated name of backup file.
- *
- * @return 0 success, -1 error.
- */
-static int
-backup_db (const gchar *database, gchar **backup_file)
-{
-  gchar *command;
-  int ret;
-
-  sql_begin_exclusive ();
-
-  command = g_strdup_printf ("cp %s %s.bak > /dev/null 2>&1"
-                             "&& for f in `ls %s-* 2> /dev/null | grep --invert .\\*bak`;"
-                             "   do cp $f $f.bak > /dev/null 2>&1;"
-                             "   done",
-                             database,
-                             database,
-                             database);
-  tracef ("   command: %s\n", command);
-  ret = system (command);
-  g_free (command);
-
-  if (ret == -1 || WEXITSTATUS (ret))
-    {
-      sql ("ROLLBACK;");
-      return -1;
-    }
-
-  sql ("COMMIT;");
-
-  if (backup_file)
-    *backup_file = g_strdup_printf ("%s.bak", database);
-
-  return 0;
-}
-
-/**
- * @brief Backup the database to a file.
- *
- * @param[in]  database  Location of manage database.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_backup_db (const gchar *database)
-{
-  int ret;
-  const gchar *db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
-
-  init_manage_process (0, db);
-
-  ret = backup_db (db, NULL);
-
-  cleanup_manage_process (TRUE);
-
-  return ret;
-}
-
-/**
  * @brief Return the database version supported by this manager.
  *
  * @return Database version supported by this manager.

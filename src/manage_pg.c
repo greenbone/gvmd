@@ -2194,6 +2194,23 @@ manage_scap_loaded ()
 }
 
 
+/* Backup. */
+
+/**
+ * @brief Backup the database to a file.
+ *
+ * @param[in]  database  Name of manage database.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+manage_backup_db (const gchar *database)
+{
+  g_warning ("%s: database backup not supported for Postgres", __FUNCTION__);
+  return -1;
+}
+
+
 /* Migrator helper. */
 
 /**
