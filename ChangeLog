@@ -1,5 +1,14 @@
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (sql_threat_level): Remove.  Now
+	sql_task_threat_level, which matches the naming convention.
+	(sql_task_threat_level): New function.
+	(sql_severity_to_level): Remove single argument case.  This is always
+	called with two arguments.
+	(manage_create_sql_functions): Update task_threat_level call.
+
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add Postgres handling of --database.
 
 	* src/manage_pg.c (manage_db_empty, manage_create_sql_functions)
@@ -125,7 +134,7 @@
 2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (init_report_host_details_iterator): Use a join
-	instead of a subquery, to prevent SQLite from iterating of all NVTs.
+	instead of a subquery, to prevent SQLite from iterating over all NVTs.
 	This greatly speeds up the GSA Hosts page.
 
 2014-10-17  Matthew Mundell <matthew.mundell@greenbone.net>

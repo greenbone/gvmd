@@ -919,7 +919,7 @@ cached_task_severity (sqlite3_context *context, task_t task, int overrides)
  * @param[in]  argv     Argument array.
  */
 void
-sql_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
+sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   task_t task;
   report_t last_report;
@@ -1202,7 +1202,7 @@ sql_severity_matches_ov (sqlite3_context *context, int argc,
 /**
  * @brief Get the threat level matching a severity score.
  *
- * This is a callback for a scalar SQL function of one argument.
+ * This is a callback for a scalar SQL function of two arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1215,7 +1215,7 @@ sql_severity_to_level (sqlite3_context *context, int argc,
   double severity;
   int mode;
 
-  assert (argc == 1 || argc == 2);
+  assert (argc == 2);
 
   if (sqlite3_value_type (argv[0]) == SQLITE_NULL
       || strcmp ((const char*)(sqlite3_value_text (argv[0])), "") == 0)
@@ -1224,8 +1224,7 @@ sql_severity_to_level (sqlite3_context *context, int argc,
       return;
     }
 
-  mode = (argc >= 2) ? sqlite3_value_int (argv[1])
-                     : 0;
+  mode = sqlite3_value_int (argv[1]);
 
   severity = sqlite3_value_double (argv[0]);
 
@@ -1774,7 +1773,7 @@ manage_create_sql_functions ()
                                2,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
-                               sql_threat_level,
+                               sql_task_threat_level,
                                NULL,            /* xStep. */
                                NULL)            /* xFinal. */
       != SQLITE_OK)
