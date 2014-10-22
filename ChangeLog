@@ -1,3 +1,8 @@
+2014-10-22  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Set prefix automatically, using CMAKE_INSTALL_PREFIX.
+
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres (migrate_rest): Wrap the reset SQL
