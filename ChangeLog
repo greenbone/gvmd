@@ -1,5 +1,15 @@
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (handle_sigabrt_simple): New function.
+	(update_or_rebuild_nvt_cache, rebuild_nvt_cache_retry): Add info
+	messages for clarity.
+	(main): Init simple sigabrt handler before doing any SQL.  This ensures
+	that when the process aborts it has an error exit code, otherwise it may
+	appear to have succeeded.  This was happening, for example, when
+	aborting due to SQL error in table init, during a --rebuild.
+
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sqlite3.c (sql_threat_level): Remove.  Now
 	sql_task_threat_level, which matches the naming convention.
 	(sql_task_threat_level): New function.

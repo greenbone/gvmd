@@ -747,6 +747,17 @@ spin_progress ()
 }
 
 /**
+ * @brief Handle a SIGABRT signal.
+ *
+ * @param[in]  signal  The signal that caused this function to run.
+ */
+void
+handle_sigabrt_simple (int signal)
+{
+  exit (EXIT_FAILURE);
+}
+
+/**
  * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
  *
  * @param[in]  update_nvt_cache        Whether the nvt cache should be updated
@@ -764,9 +775,16 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   /* Initialise OMP daemon. */
 
   if (update_nvt_cache == 0)
-    proctitle_set ("openvasmd: Rebuilding");
+    {
+      proctitle_set ("openvasmd: Rebuilding");
+      infof ("%s: Rebuilding NVT cache\n", __FUNCTION__);
+    }
   else
-    proctitle_set ("openvasmd: Updating");
+    {
+      proctitle_set ("openvasmd: Updating");
+      infof ("%s: Updating NVT cache\n", __FUNCTION__);
+    }
+
   switch (init_ompd (log_config,
                      update_nvt_cache ? -1 : -2,
                      database,
@@ -854,6 +872,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
                          void (*progress) ())
 {
   proctitle_set ("openvasmd: Reloading");
+  infof ("%s: Reloading NVT cache\n", __FUNCTION__);
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
   signal (SIGCHLD, SIG_DFL);
@@ -1203,6 +1222,15 @@ main (int argc, char** argv)
   /* Set process title. */
   proctitle_init (argc, argv);
   proctitle_set ("openvasmd: Initializing.");
+
+  /* Setup initial signal handlers. */
+
+  if (signal (SIGABRT, handle_sigabrt_simple) == SIG_ERR)
+    {
+      g_critical ("%s: failed to register initial signal handler\n",
+                  __FUNCTION__);
+      return EXIT_FAILURE;
+    }
 
   /* Switch to UTC for scheduling. */
 
