@@ -1,5 +1,11 @@
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres (migrate_rest): Wrap the reset SQL
+	in a SELECT with a WHERE clause, to prevent the reset counts from going
+	to stdout.  Remove empty lines from the output of the reset SQL too.
+
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres (migrate_rest): Indent reset SQL.
 
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -1038,13 +1038,17 @@ migrate_rest () {
 
   log_info "Resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
-  pg "SELECT 'SELECT'
-             || ' SETVAL (' || quote_literal (quote_ident (PGT.schemaname)
-             ||           '.' || quote_ident (S.relname)) || ','
-             ||           'COALESCE (MAX (' || quote_ident (C.attname) || '),'
-             ||                    ' 1))'
-             || ' FROM ' || quote_ident (PGT.schemaname)
-             ||             '.' || quote_ident (T.relname) || ';'
+  pg "SELECT 'SELECT 1'
+             || ' WHERE'
+             || ' SETVAL'
+             || '  (' || quote_literal (quote_ident (PGT.schemaname)
+             ||          '.' || quote_ident (S.relname)) || ','
+             ||     ' COALESCE'
+             ||     '  ((SELECT MAX (' || quote_ident (C.attname) || ')'
+             ||     '    FROM ' || quote_ident (PGT.schemaname)
+             ||                    '.' || quote_ident (T.relname) || '),'
+             ||     '   1))'
+             || ' < 0;'
       FROM pg_class AS S,
            pg_depend AS D,
            pg_class AS T,
@@ -1058,7 +1062,7 @@ migrate_rest () {
       AND T.relname = PGT.tablename
       ORDER BY S.relname;" > $TEMP_DIR/reset.sql;
   test_sql_exit "Could not generate reset SQL"
-  $PSQL -f $TEMP_DIR/reset.sql;
+  $PSQL -f $TEMP_DIR/reset.sql | sed '/^\s*$/d'
   test_sql_exit "Could not run reset SQL"
 
   rm -rf $TEMP_DIR
