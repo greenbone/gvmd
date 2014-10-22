@@ -2575,7 +2575,7 @@ int
 manage_backup_db (const gchar *database)
 {
   int ret;
-  const gchar *db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  const gchar *db = database ? database : sql_default_database ();
 
   init_manage_process (0, db);
 

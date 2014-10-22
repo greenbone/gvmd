@@ -57,10 +57,11 @@ int
 manage_db_empty ()
 {
   return sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                  "               WHERE table_catalog = 'tasks'"
+                  "               WHERE table_catalog = '%s'"
                   "               AND table_schema = 'public'"
                   "               AND table_name = 'meta')"
-                  "        ::integer;")
+                  "        ::integer;",
+                  sql_database ())
          == 0;
 }
 
@@ -142,10 +143,11 @@ manage_create_sql_functions ()
   /* Functions in pl/pgsql. */
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = 'tasks'"
+               "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
                "               AND table_name = 'meta')"
-               " ::integer;"))
+               " ::integer;",
+               sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION resource_name (text, text, integer)"
            " RETURNS text AS $$"
@@ -632,10 +634,11 @@ manage_create_sql_functions ()
        "$$ LANGUAGE SQL;");
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = 'tasks'"
+               "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
                "               AND table_name = 'meta')"
-               " ::integer;"))
+               " ::integer;",
+               sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION report_active (integer)"
            " RETURNS boolean AS $$"
@@ -993,10 +996,11 @@ manage_create_sql_functions ()
        TASK_STATUS_STOPPED);
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = 'tasks'"
+               "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
                "               AND table_name = 'permissions')"
-               " ::integer;"))
+               " ::integer;",
+               sql_database ()))
     sql ("CREATE OR REPLACE FUNCTION user_can_everything (text)"
          " RETURNS boolean AS $$"
          /* Test whether a user may perform any operation.
@@ -1044,10 +1048,11 @@ manage_create_sql_functions ()
        "  initcond    = '');");
 
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = 'tasks'"
+               "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
                "               AND table_name = 'meta')"
-               " ::integer;"))
+               " ::integer;",
+               sql_database ()))
     {
       sql ("CREATE OR REPLACE FUNCTION severity_in_level (double precision,"
            "                                              text)"
@@ -2172,10 +2177,11 @@ int
 manage_cert_loaded ()
 {
   return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = 'tasks'"
+                    "               WHERE table_catalog = '%s'"
                     "               AND table_schema = 'cert'"
                     "               AND table_name = 'dfn_cert_advs')"
-                    " ::integer;");
+                    " ::integer;",
+                    sql_database ());
 }
 
 /**
@@ -2187,10 +2193,11 @@ int
 manage_scap_loaded ()
 {
   return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = 'tasks'"
+                    "               WHERE table_catalog = '%s'"
                     "               AND table_schema = 'scap'"
                     "               AND table_name = 'cves')"
-                    " ::integer;");
+                    " ::integer;",
+                    sql_database ());
 }
 
 

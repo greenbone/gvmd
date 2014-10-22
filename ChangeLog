@@ -1,5 +1,32 @@
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add Postgres handling of --database.
+
+	* src/manage_pg.c (manage_db_empty, manage_create_sql_functions)
+	(manage_cert_loaded, manage_scap_loaded): Use current db name, instead
+	of assuming 'tasks'.
+
+	* src/manage_sql.c (manage_encrypt_all_credentials, init_manage_process)
+	(manage_create_scanner, manage_delete_scanner, manage_verify_scanner)
+	(manage_create_user, manage_delete_user, manage_get_users)
+	(manage_get_scanners, manage_set_password): Use function to get default
+	database file/name.
+
+	* src/manage_sqlite3.c (manage_backup_db): Use sql_default_database.
+
+	* src/sql_sqlite3.c (sql_database, sql_default_database): New functions.
+
+	* src/sql_pg.c, src/sql_sqlite3.c (sql_database)
+	(sql_default_database): New functions.
+	(sql_open): Get default database name with function, instead of assuming
+	'tasks'.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/openvasmd.c (main): Adjust help message for Postgres.
+
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add Postgres handling of --backup.
 
 	* src/manage_sql.c (backup_db): Remove.  Now in manage_sqlite.c.

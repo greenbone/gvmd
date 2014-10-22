@@ -181,6 +181,28 @@ log_notice (void *arg, const char *message)
 }
 
 /**
+ * @brief Return name of current database.
+ *
+ * @return Name of database.
+ */
+const char *
+sql_database ()
+{
+  return PQdb (conn);
+}
+
+/**
+ * @brief Return name of default database.
+ *
+ * @return Name.
+ */
+const char *
+sql_default_database ()
+{
+  return "tasks";
+}
+
+/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.
@@ -190,12 +212,19 @@ log_notice (void *arg, const char *message)
 int
 sql_open (const char *database)
 {
-  // FIX database
-  conn = PQconnectdb ("dbname = tasks");
+  gchar *conn_info;
+
+  conn_info = g_strdup_printf ("dbname = %s",
+                               database
+                                ? database
+                                : sql_default_database ());
+  conn = PQconnectdb (conn_info);
+  g_free (conn_info);
   if (PQstatus (conn) != CONNECTION_OK)
     {
-      g_warning ("%s: PQconnectdb failed: %s\n",
+      g_warning ("%s: PQconnectdb to '%s' failed: %s\n",
                  __FUNCTION__,
+                 database ? database : sql_default_database (),
                  PQerrorMessage (conn));
       return -1;
     }

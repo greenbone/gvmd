@@ -1116,7 +1116,7 @@ main (int argc, char** argv)
   static GOptionEntry option_entries[]
     = {
         { "backup", '\0', 0, G_OPTION_ARG_NONE, &backup_database, "Backup the database.", NULL },
-        { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file> as database.", "<file>" },
+        { "database", 'd', 0, G_OPTION_ARG_STRING, &database, "Use <file/name> as database for SQLite/Postgres.", "<file/name>" },
         { "disable-cmds", '\0', 0, G_OPTION_ARG_STRING, &disable, "Disable comma-separated <commands>.", "<commands>" },
         { "disable-encrypted-credentials", '\0', 0, G_OPTION_ARG_NONE,
           &disable_encrypted_credentials,

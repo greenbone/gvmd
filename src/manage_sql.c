@@ -5180,7 +5180,7 @@ manage_encrypt_all_credentials (GSList *log_config, const gchar *database,
   int ret;
   const gchar *db;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -9108,7 +9108,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
     struct stat state;
     int err;
 
-    err = stat (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+    err = stat (database ? database : sql_default_database (),
                 &state);
     if (err)
       switch (errno)
@@ -9125,7 +9125,7 @@ init_manage_process (int update_nvt_cache, const gchar *database)
       {
         g_warning ("%s: database permissions are too loose, repairing\n",
                    __FUNCTION__);
-        if (chmod (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+        if (chmod (database ? database : sql_default_database (),
                    S_IRUSR | S_IWUSR))
           {
             g_warning ("%s: chmod failed: %s\n",
@@ -36194,7 +36194,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -36279,7 +36279,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -36334,7 +36334,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
   if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
                                manage_user_exists, manage_user_uuid))
     return -1;
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -49422,7 +49422,7 @@ manage_create_user (GSList *log_config, const gchar *database,
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -49507,7 +49507,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -49561,7 +49561,7 @@ manage_get_users (GSList *log_config, const gchar *database)
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -49599,7 +49599,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -49680,7 +49680,7 @@ manage_set_password (GSList *log_config, const gchar *database,
                                manage_user_exists, manage_user_uuid))
     return -1;
 
-  db = database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db";
+  db = database ? database : sql_default_database ();
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);

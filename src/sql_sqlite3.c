@@ -127,6 +127,29 @@ sql_is_open ()
 }
 
 /**
+ * @brief Return file name of current database.
+ *
+ * @return File name of database.
+ */
+const char *
+sql_database ()
+{
+  /* This is currently only used by Postgres. */
+  return "TODO";
+}
+
+/**
+ * @brief Return name of default database file.
+ *
+ * @return File name.
+ */
+const char *
+sql_default_database ()
+{
+  return OPENVAS_STATE_DIR "/mgr/tasks.db";
+}
+
+/**
  * @brief Open the database.
  *
  * @param[in]  database  Database, or NULL for default.
@@ -144,7 +167,7 @@ sql_open (const char *database)
     sqlite3_test_control (SQLITE_TESTCTRL_PRNG_RESET);
   #endif
 
-  if (sqlite3_open (database ? database : OPENVAS_STATE_DIR "/mgr/tasks.db",
+  if (sqlite3_open (database ? database : sql_default_database (),
                     &task_db))
     {
       g_warning ("%s: sqlite3_open failed: %s\n",

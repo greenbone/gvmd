@@ -68,6 +68,12 @@ sql_select_limit (int);
 const char *
 sql_regexp_op ();
 
+const char *
+sql_database ();
+
+const char *
+sql_default_database ();
+
 int
 sql_is_open ();
 
