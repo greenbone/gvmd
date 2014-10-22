@@ -1038,10 +1038,13 @@ migrate_rest () {
 
   log_info "Resetting Postgres sequences"
   # Reset ID sequences, because the COPY specified the ID values explicitly.
-  pg "SELECT 'SELECT SETVAL(' ||
-      quote_literal(quote_ident(PGT.schemaname) || '.' || quote_ident(S.relname)) ||
-      ', COALESCE(MAX(' ||quote_ident(C.attname)|| '), 1) ) FROM ' ||
-      quote_ident(PGT.schemaname)|| '.'||quote_ident(T.relname)|| ';'
+  pg "SELECT 'SELECT'
+             || ' SETVAL (' || quote_literal (quote_ident (PGT.schemaname)
+             ||           '.' || quote_ident (S.relname)) || ','
+             ||           'COALESCE (MAX (' || quote_ident (C.attname) || '),'
+             ||                    ' 1))'
+             || ' FROM ' || quote_ident (PGT.schemaname)
+             ||             '.' || quote_ident (T.relname) || ';'
       FROM pg_class AS S,
            pg_depend AS D,
            pg_class AS T,

@@ -1,5 +1,9 @@
 2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres (migrate_rest): Indent reset SQL.
+
+2014-10-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (handle_sigabrt_simple): New function.
 	(update_or_rebuild_nvt_cache, rebuild_nvt_cache_retry): Add info
 	messages for clarity.
