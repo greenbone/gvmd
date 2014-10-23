@@ -128,6 +128,11 @@ do_help () {
   echo " --version      display version"
   echo " --describe     display current CERT feed info"
   echo " --feedversion   display current CERT feed version"
+  echo "Options:"
+  if [ $POSTGRES -eq 1 ];
+  then
+    echo " --database       database name"
+  fi
   echo ""
   echo "Environment variables:"
   echo "CERT_DIR             where to place CERT advisories"
@@ -311,7 +316,10 @@ reinit () {
   done
 }
 
-PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+PSQL=""
+psql_setup () {
+  PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
+}
 
 sql_pg () {
   if [ "$#" -gt 0 ]
@@ -647,6 +655,7 @@ do_refresh () {
   update_sec_db
 }
 
+psql_setup
 if [ -n "$1" ]; then
   while test $# -gt 0; do
     case "$1" in
@@ -685,6 +694,21 @@ if [ -n "$1" ]; then
       --feedversion)
         do_feedversion
         exit 0
+        ;;
+      --database)
+		if [ $POSTGRES -eq 1 ] ;
+		then
+		  shift
+          if [ $# -gt 0 ]; then
+		    psql_setup $1
+	      else
+			echo "[e] --database argument missing"
+			exit 1
+		  fi
+		else
+		  echo "[e] --database option available only for Postgres"
+		  exit 1
+		fi
         ;;
     esac
     shift

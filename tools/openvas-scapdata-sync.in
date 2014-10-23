@@ -126,6 +126,10 @@ do_help () {
   echo " --feedversion   display current scap feed version"
   echo "Options:"
   echo " --verbose       enable verbose log messages"
+  if [ $POSTGRES -eq 1 ];
+  then
+    echo " --database       database name"
+  fi
   echo ""
   echo "Environment variables:"
   echo "SCAP_DIR		where to extract plugins (absolute path)"
@@ -483,7 +487,10 @@ db_migrate_14 () {
   REBUILD_OVAL=1
 }
 
-PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+PSQL=""
+psql_setup () {
+  PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
+}
 
 sql_pg () {
   if [ "$#" -gt 0 ]
@@ -1109,6 +1116,7 @@ do_refresh_private () {
   update_cvss
 }
 
+psql_setup
 if [ -n "$1" ]; then
   while test $# -gt 0; do
     case "$1" in
@@ -1127,6 +1135,21 @@ if [ -n "$1" ]; then
       --curl)
         do_curl
         exit 0
+        ;;
+      --database)
+		if [ $POSTGRES -eq 1 ] ;
+		then
+		  shift
+          if [ $# -gt 0 ]; then
+		    psql_setup $1
+	      else
+			echo "[e] --database argument missing"
+			exit 1
+		  fi
+		else
+		  echo "[e] --database option available only for Postgres"
+		  exit 1
+		fi
         ;;
       --verbose)
         VERBOSE=1
