@@ -1,5 +1,15 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove last uses of table report_results.
+
+	* src/manage_acl.c (user_owns_result): Link results and reports
+	directly.
+
+	* src/manage_sql.c (init_result_iterator): Link results and reports
+	directly.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in,
 	tools/greenbone-scapdata-sync.in: Add --database option, to match
 	Manager --database option.

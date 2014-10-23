@@ -200,10 +200,9 @@ user_owns_result (const char *uuid)
 
   assert (current_credentials.uuid);
 
-  ret = sql_int ("SELECT count(*) FROM results, report_results, reports"
+  ret = sql_int ("SELECT count(*) FROM results, reports"
                  " WHERE results.uuid = '%s'"
-                 " AND report_results.result = results.id"
-                 " AND report_results.report = reports.id"
+                 " AND results.report = reports.id"
                  " AND ((reports.owner IS NULL) OR (reports.owner ="
                  " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                  uuid,
