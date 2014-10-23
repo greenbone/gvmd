@@ -1,5 +1,13 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_results_xml): Print severity as double with
+	precision limiter, otherwise it includes the small fraction from the
+	approximation in floating point.
+
+	* src/manage.h: Add header now used in omp.c.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres: Add 135 migration.
 
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>

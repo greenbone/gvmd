@@ -11037,11 +11037,11 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
    (buffer,
     "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
-    "<severity>%s</severity>"
+    "<severity>%.1f</severity>"
     "<description>%s</description>",
     result_iterator_scan_nvt_version (results),
     result_iterator_level (results),
-    result_iterator_severity (results),
+    result_iterator_severity_double (results),
     descr ? nl_descr : "");
 
   if (include_overrides)

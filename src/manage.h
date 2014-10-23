@@ -1135,6 +1135,9 @@ result_iterator_original_severity (iterator_t*);
 const char*
 result_iterator_severity (iterator_t*);
 
+double
+result_iterator_severity_double (iterator_t *);
+
 const char*
 result_iterator_original_level (iterator_t*);
 
