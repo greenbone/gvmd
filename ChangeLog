@@ -1,5 +1,11 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Remove severity_to_type from
+	auto_type_sql arg, because auto_type_sql evaluates to a severity these
+	days.  Similarly, remove the enclosing order_message_type.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Convert negative values of
 	first_result to 0 for OFFSET, for Postgres.
 
