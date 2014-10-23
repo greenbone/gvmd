@@ -9584,6 +9584,48 @@ migrate_134_to_135 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 135 to version 136.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_135_to_136 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 135. */
+
+  if (manage_db_version () != 135)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* In the past the task end time was sometimes stored as a string instead
+   * of as an integer.  Update the end times from the reports, clearing the
+   * end time when the task has no reports. */
+
+  sql ("UPDATE tasks"
+       " SET end_time = (SELECT reports.end_time FROM reports"
+       "                 WHERE task = tasks.id ORDER BY id DESC LIMIT 1)"
+       " WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id);");
+
+  sql ("UPDATE tasks"
+       " SET end_time = NULL"
+       " WHERE NOT EXISTS (SELECT id FROM reports WHERE task = tasks.id);");
+
+  /* Set the database version to 136. */
+
+  set_db_version (136);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -9730,6 +9772,7 @@ static migrator_t database_migrators[]
     {133, migrate_132_to_133},
     {134, migrate_133_to_134},
     {135, migrate_134_to_135},
+    {136, migrate_135_to_136},
     /* End marker. */
     {-1, NULL}};
 

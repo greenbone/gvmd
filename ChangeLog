@@ -1,5 +1,17 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Ensure task end_times are correct.  Hence increase database version to
+	136.  Add database migration from version 135 to 136.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 136.
+
+	* src/manage_migrators.c (migrate_135_to_136): New function.
+	(database_migrators): Add migrate_135_to_136.
+
+	* doc/db.png: Update for version change.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_results_xml): Print severity as double with
 	precision limiter, otherwise it includes the small fraction from the
 	approximation in floating point.
