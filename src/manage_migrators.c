@@ -9551,6 +9551,39 @@ migrate_133_to_134 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 134 to version 135.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_134_to_135 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 134. */
+
+  if (manage_db_version () != 134)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The table report_results was removed. */
+
+  sql ("DROP TABLE report_results;");
+
+  /* Set the database version to 135. */
+
+  set_db_version (135);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -9696,6 +9729,7 @@ static migrator_t database_migrators[]
     {132, migrate_131_to_132},
     {133, migrate_132_to_133},
     {134, migrate_133_to_134},
+    {135, migrate_134_to_135},
     /* End marker. */
     {-1, NULL}};
 

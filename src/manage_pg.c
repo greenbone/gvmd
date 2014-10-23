@@ -1814,11 +1814,6 @@ create_tables ()
        "  name text,"
        "  value text);");
 
-  sql ("CREATE TABLE IF NOT EXISTS report_results"
-       " (id SERIAL PRIMARY KEY,"
-       "  report integer REFERENCES reports (id) ON DELETE RESTRICT,"
-       "  result integer REFERENCES results (id) ON DELETE RESTRICT);");
-
   sql ("CREATE TABLE IF NOT EXISTS nvt_preferences"
        " (id SERIAL PRIMARY KEY,"
        "  name text UNIQUE NOT NULL,"

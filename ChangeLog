@@ -1,5 +1,29 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove table report_results, which is no longer used.  Hence increase
+	database version to 135.  Add database migration from version 134 to
+	135.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 135.
+
+	* src/manage_migrators.c (migrate_134_to_135): New function.
+	(database_migrators): Add migrate_134_to_135.
+
+	* src/manage_pg.c (create_tables): Remove report_results.
+
+	* src/manage_sqlite3.c (create_tables): Remove report_results,
+	report_results_by_report and report_results_by_result.
+
+	* src/manage_sql.c (report_add_result, delete_report_internal)
+	(trim_report, trim_partial_report, delete_user): Remove SQL that
+	inserted and deleted report_results.
+
+	* doc/db_postgres.sql (report_results): Remove.
+
+	* doc/db.png: Update from source.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove last uses of table report_results.
 
 	* src/manage_acl.c (user_owns_result): Link results and reports

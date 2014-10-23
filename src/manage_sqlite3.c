@@ -2163,12 +2163,6 @@ create_tables ()
        "  content_type, summary, description, signature, trust INTEGER,"
        "  trust_time, flags INTEGER, original_uuid, creation_time,"
        "  modification_time);");
-  sql ("CREATE TABLE IF NOT EXISTS report_results"
-       " (id INTEGER PRIMARY KEY, report INTEGER, result INTEGER);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_report"
-       " ON report_results (report);");
-  sql ("CREATE INDEX IF NOT EXISTS report_results_by_result"
-       " ON report_results (result);");
   sql ("CREATE TABLE IF NOT EXISTS reports"
        " (id INTEGER PRIMARY KEY, uuid, owner INTEGER, hidden INTEGER,"
        "  task INTEGER, date INTEGER, start_time, end_time, nbefile, comment,"

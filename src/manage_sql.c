@@ -15026,9 +15026,6 @@ report_add_result (report_t report, result_t result)
   if (report == 0 || result == 0)
     return;
 
-  sql ("INSERT into report_results (report, result)"
-       " VALUES (%llu, %llu);",
-       report, result);
   sql ("UPDATE results SET report = %llu,"
        "                   owner = (SELECT reports.owner"
        "                            FROM reports WHERE id = %llu)"
@@ -18904,7 +18901,6 @@ delete_report_internal (report_t report)
        " (SELECT id FROM report_hosts WHERE report = %llu);",
        report);
   sql ("DELETE FROM report_hosts WHERE report = %llu;", report);
-  sql ("DELETE FROM report_results WHERE report = %llu;", report);
 
   sql ("UPDATE tags"
        " SET resource = 0, resource_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -19150,12 +19146,6 @@ trim_report (report_t report)
 {
   /* Remove results for all hosts. */
 
-  sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
-       " (SELECT results.id FROM results"
-       "  WHERE results.report = %llu);",
-       report,
-       report);
-
   sql ("DELETE FROM results WHERE id IN"
        " (SELECT results.id FROM results"
        "  WHERE results.report = %llu);",
@@ -19185,16 +19175,6 @@ void
 trim_partial_report (report_t report)
 {
   /* Remove results for partial hosts. */
-
-  sql ("DELETE FROM report_results WHERE report = %llu AND result IN"
-       " (SELECT results.id FROM results, report_hosts"
-       "  WHERE results.report = %llu"
-       "  AND report_hosts.report = %llu"
-       "  AND results.host = report_hosts.host"
-       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
-       report,
-       report,
-       report);
 
   sql ("DELETE FROM results WHERE id IN"
        " (SELECT results.id FROM results, report_hosts"
@@ -50209,9 +50189,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
        "                                        WHERE owner = %llu));",
        user);
   sql ("DELETE FROM report_hosts"
-       " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
-       user);
-  sql ("DELETE FROM report_results"
        " WHERE report IN (SELECT id FROM reports WHERE owner = %llu);",
        user);
   sql ("DELETE FROM results"

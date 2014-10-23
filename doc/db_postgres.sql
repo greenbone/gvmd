@@ -536,11 +536,6 @@ CREATE TABLE report_host_details
   name text,
   value text);
 
-CREATE TABLE report_results
- (id SERIAL PRIMARY KEY,
-  report integer REFERENCES reports (id) ON DELETE RESTRICT,
-  result integer REFERENCES results (id) ON DELETE RESTRICT);
-
 CREATE TABLE nvt_preferences
  (id SERIAL PRIMARY KEY,
   name text UNIQUE NOT NULL,
