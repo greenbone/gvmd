@@ -1086,6 +1086,18 @@ migrate () {
 
       migrate_rest;;
 
+    135)
+      log_info "Migrating database (version 135)."
+      create_tables_133;
+
+      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+
+      migrate_rest
+
+      pg "DROP TABLE report_results;";;
+
     *)
       log_notice "Database version not supported."
       exit 1

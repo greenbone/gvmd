@@ -1,5 +1,9 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres: Add 135 migration.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Remove table report_results, which is no longer used.  Hence increase
 	database version to 135.  Add database migration from version 134 to
 	135.
