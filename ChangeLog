@@ -1,5 +1,10 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Convert negative values of
+	first_result to 0 for OFFSET, for Postgres.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres (migrate_rest): Remove
 	scan_run_status constraint from end_time SQL, because the task end_time
 	will be set in all cases, like when the scan is stopped.

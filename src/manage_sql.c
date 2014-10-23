@@ -16232,7 +16232,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              cvss_sql ? cvss_sql->str : "",
                              order_sql,
                              sql_select_limit (max_results),
-                             first_result);
+                             first_result > 0 ? first_result : 0);
 
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
