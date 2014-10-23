@@ -1,5 +1,11 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres (migrate_rest): Remove
+	scan_run_status constraint from end_time SQL, because the task end_time
+	will be set in all cases, like when the scan is stopped.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Ensure task end_times are correct.  Hence increase database version to
 	136.  Add database migration from version 135 to 136.
 

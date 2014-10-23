@@ -975,7 +975,10 @@ migrate_rest () {
   test_sql_exit "Failed to clean up report_hosts"
 
   # Make end_time in tasks consistent.
-  sqlite "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id AND scan_run_status = 1 ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id AND scan_run_status = 1);"
+  #
+  # Manager --migrate only does this in migrate_135_to_136, but Postgres needs
+  # the end_times to be a single type for import.
+  sqlite "UPDATE tasks SET end_time = (SELECT reports.end_time FROM reports WHERE task = tasks.id ORDER BY id DESC LIMIT 1) WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id);"
   test_sql_exit "Failed to make end_time in tasks consistent"
 
   # Make end_time in report_hosts consistent.
