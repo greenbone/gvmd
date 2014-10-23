@@ -92,7 +92,10 @@ SQLITE3="sqlite3 -noheader -bail"
 
 # PSQL defines the name of the Postgres binary to call, along with additional
 # parameters.
-PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d tasks -t"
+PSQL=""
+psql_setup () {
+  PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
+}
 
 # Maximum number of retries if database is locked
 if [ -z "$MAX_SQL_RETRIES" ]; then
@@ -448,6 +451,10 @@ check_db_version () {
 
 do_help () {
   echo "$0: Sync CERT data"
+  if [ $POSTGRES -eq 1 ];
+  then
+    echo " --database       database name"
+  fi
   echo " --describe	display current feed info"
   echo " --feedversion	display version of this feed"
   echo " --help		display this help"
@@ -821,8 +828,24 @@ do_self_test () {
   fi
 }
 
+psql_setup
 while test $# -gt 0; do
  case "$1" in
+		--database)
+		  if [ $POSTGRES -eq 1 ] ;
+		  then
+			shift
+			if [ $# -gt 0 ]; then
+			  psql_setup $1
+			else
+			  echo "[e] --database argument missing"
+			  exit 1
+			fi
+		  else
+			echo "[e] --database option available only for Postgres"
+			exit 1
+		  fi
+		  ;;
         --version)
           echo $VERSION
           exit 0

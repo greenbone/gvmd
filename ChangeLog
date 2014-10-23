@@ -1,5 +1,11 @@
 2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in,
+	tools/greenbone-scapdata-sync.in: Add --database option, to match
+	Manager --database option.
+
+2014-10-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-certdata-sync.in, tools/openvas-scapdata-sync.in: Add
 	--database option, to match Manager --database option.
 
