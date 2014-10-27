@@ -1,3 +1,8 @@
+2014-10-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (make_result): Check that nvt param is not an empty
+	string before trying to find the NVT.
+
 2014-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (create_report_format): Add log messages for more

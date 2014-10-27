@@ -13826,7 +13826,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   int qod;
   nvt_t nvt_id = 0;
 
-  if (nvt && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
+  if (nvt && strcmp (nvt, "") && (find_nvt (nvt, &nvt_id) || nvt_id <= 0))
     {
       g_warning ("NVT '%s' not found. Result not created.\n", nvt);
       return 0;
