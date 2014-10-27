@@ -38497,6 +38497,7 @@ create_report_format (const char *uuid, const char *name,
               count = readlink (old, real_old, state.st_size + 1);
               if (count < 0 || count > state.st_size)
                 {
+                  g_warning ("%s: readlink failed", __FUNCTION__);
                   sql ("ROLLBACK;");
                   return -1;
                 }
@@ -38515,6 +38516,7 @@ create_report_format (const char *uuid, const char *name,
       g_free (base);
       if (symlink (old, new))
         {
+          g_warning ("%s: symlink failed: %s", __FUNCTION__, strerror (errno));
           sql ("ROLLBACK;");
           return -1;
         }
@@ -38842,6 +38844,7 @@ create_report_format (const char *uuid, const char *name,
         options = (array_t*) g_ptr_array_index (params_options, index - 1);
         if (options == NULL)
           {
+            g_warning ("%s: options was NULL", __FUNCTION__);
             openvas_file_remove_recurse (dir);
             g_free (dir);
             sql ("ROLLBACK;");
