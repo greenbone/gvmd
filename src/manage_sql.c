@@ -7704,6 +7704,9 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
  *                            NULL.
+ * @param[in]  delta_states       Delta states.  Allows caller to specify the
+ *                                value for the delta_states param in the filter
+ *                                string.
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
@@ -7725,7 +7728,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             /* Report filtering. */
             int sort_order, const char* sort_field,
             int result_hosts_only, const char *min_cvss_base,
-            const char *levels, int apply_overrides,
+            const char *levels, const char *delta_states, int apply_overrides,
             const char *search_phrase, int autofp, int notes, int notes_details,
             int overrides, int overrides_details, int first_result,
             int max_results)
@@ -7823,7 +7826,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
-                                                  apply_overrides,
+                                                  delta_states, apply_overrides,
                                                   search_phrase, autofp,
                                                   notes, notes_details,
                                                   overrides,
@@ -7941,7 +7944,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
                                                   min_cvss_base, levels,
-                                                  apply_overrides,
+                                                  delta_states, apply_overrides,
                                                   search_phrase, autofp,
                                                   notes, notes_details,
                                                   overrides, overrides_details,
@@ -8131,7 +8134,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           sort_order, sort_field,
                                           result_hosts_only,
                                           min_cvss_base, levels,
-                                          apply_overrides,
+                                          delta_states, apply_overrides,
                                           search_phrase, autofp,
                                           notes, notes_details, overrides,
                                           overrides_details, first_result,
@@ -8240,7 +8243,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           sort_order, sort_field,
                                           result_hosts_only,
                                           min_cvss_base, levels,
-                                          apply_overrides,
+                                          delta_states, apply_overrides,
                                           search_phrase, autofp,
                                           notes, notes_details, overrides,
                                           overrides_details,
@@ -8301,6 +8304,7 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      0,       /* Result hosts only. */
                      NULL,    /* Min CVSS base. */
                      NULL,    /* Levels. */
+                     NULL,    /* Delta states. */
                      1,       /* Apply overrides. */
                      NULL,    /* Search phrase. */
                      1,       /* Auto FP. */
@@ -23969,6 +23973,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
  *                            NULL.
++ * @param[in] delta_states       Delta states.  Allows caller to specify the
++ *                               value for the delta_states param in the filter
++ *                               string.
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
@@ -23993,7 +24000,8 @@ manage_report (report_t report, report_format_t report_format,
                const char *filt_id, int sort_order,
                const char* sort_field, int result_hosts_only,
                const char *min_cvss_base, const char *levels,
-               int apply_overrides, const char *search_phrase, int autofp,
+               const char *delta_states, int apply_overrides,
+               const char *search_phrase, int autofp,
                int notes, int notes_details, int overrides,
                int overrides_details, int first_result,
                int max_results, const char *type, gsize *output_length,
@@ -24031,9 +24039,9 @@ manage_report (report_t report, report_format_t report_format,
   ret = print_report_xml (report, 0, task, xml_file, &get,
                           sort_order, sort_field,
                           result_hosts_only, min_cvss_base, report_format,
-                          levels, NULL, apply_overrides, search_phrase, autofp,
-                          notes, notes_details, overrides, overrides_details,
-                          first_result, max_results, type,
+                          levels, delta_states, apply_overrides, search_phrase,
+                          autofp, notes, notes_details, overrides,
+                          overrides_details, first_result, max_results, type,
                           NULL, 0, NULL, NULL, 0, 0);
   g_free (get.filt_id);
   if (ret)
@@ -24517,7 +24525,7 @@ manage_send_report (report_t report, report_t delta_report,
                         (void*) TASK_STATUS_DONE, method, condition,
                         /* Report filtering. */
                         sort_order, sort_field, result_hosts_only,
-                        min_cvss_base, levels, apply_overrides,
+                        min_cvss_base, levels, delta_states, apply_overrides,
                         search_phrase, autofp, notes, notes_details, overrides,
                         overrides_details, first_result, max_results);
       return ret;
