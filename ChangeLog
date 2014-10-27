@@ -1,5 +1,13 @@
 2014-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20695.
+
+	* src/otp.c (process_otp_scanner_input): Set the report and task end
+	times before setting the task run status, so that reports generated in
+	the associated alerts have the end times.
+
+2014-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20647 by Henri Doreau.
 
 	* src/otp.c (process_otp_scanner_input): In SCANNER_TIME_SCAN_END, stop
