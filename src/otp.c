@@ -1586,6 +1586,11 @@ process_otp_scanner_input (void (*progress) ())
                 {
                   if (current_scanner_task)
                     {
+                      /* Stop transaction now, because delete_task_lock and
+                       * set_scan_end_time_otp run transactions themselves. */
+                      manage_transaction_stop (TRUE);
+                      if (current_report)
+                        set_scan_end_time_otp (current_report, field);
                       switch (task_run_status (current_scanner_task))
                         {
                           case TASK_STATUS_INTERNAL_ERROR:
@@ -1597,8 +1602,6 @@ process_otp_scanner_input (void (*progress) ())
                             break;
                           case TASK_STATUS_DELETE_REQUESTED:
                           case TASK_STATUS_DELETE_WAITING:
-                            /* Stop transaction so that delete can run one. */
-                            manage_transaction_stop (TRUE);
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
                             delete_task_lock (current_scanner_task, 0);
@@ -1606,25 +1609,18 @@ process_otp_scanner_input (void (*progress) ())
                             break;
                           case TASK_STATUS_DELETE_ULTIMATE_REQUESTED:
                           case TASK_STATUS_DELETE_ULTIMATE_WAITING:
-                            /* Stop transaction so that delete can run one. */
-                            manage_transaction_stop (TRUE);
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_STOPPED);
                             delete_task_lock (current_scanner_task, 1);
                             current_report = (report_t) 0;
                             break;
                           default:
-                            set_task_run_status (current_scanner_task,
-                                                 TASK_STATUS_DONE);
                             set_task_end_time (current_scanner_task,
                                                g_strdup (field));
+                            set_task_run_status (current_scanner_task,
+                                                 TASK_STATUS_DONE);
                         }
-                      manage_transaction_stop (TRUE);
-                      if (current_report)
-                        {
-                          set_scan_end_time_otp (current_report, field);
-                          current_report = (report_t) 0;
-                        }
+                      current_report = (report_t) 0;
                       current_scanner_task = (task_t) 0;
                     }
                   set_scanner_state (SCANNER_DONE);
