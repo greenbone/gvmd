@@ -1,5 +1,11 @@
 2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20712.
+
+	* src/sql_sqlite3.c (sql_exec_internal): Add upper limit to retry sleep.
+
+2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20705.
 
 	* src/sql.c (sqlv, sql_quiet, sql_x_internal): After a certain number of
