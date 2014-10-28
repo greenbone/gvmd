@@ -6156,7 +6156,6 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
           }
         /*@notreached@ */
         exit (EXIT_FAILURE);
-        break;
       }
     case -1:
       /* Parent when error. */
@@ -6384,7 +6383,6 @@ openvas_migrate_secinfo (const gchar * sync_script, int feed_type)
           }
         /*@notreached@ */
         exit (EXIT_FAILURE);
-        break;
       }
     case -1:
       /* Parent when error. */

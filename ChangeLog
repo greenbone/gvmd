@@ -1,3 +1,10 @@
+2014-10-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo),
+	src/manage_sql.c (send_to_sourcefire, send_to_verinice, escalate_2)
+	(manage_report, manage_send_report), src/pg_sql.c (sqli): Remove
+	break/return/exit/abort duplications.
+
 2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_exec_internal): After a certain number of

@@ -313,14 +313,12 @@ sqli (resource_t *resource, char* sql, ...)
       case  1:
         sql_finalize (stmt);
         abort ();
-        return;
       default:
         assert (0);
         /* Fall through. */
       case -1:
         sql_finalize (stmt);
         abort ();
-        return;
     }
   if (resource)
     *resource = sql_column_int64 (stmt, 0);

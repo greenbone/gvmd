@@ -7227,7 +7227,6 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                   }
 
                 exit (EXIT_SUCCESS);
-                break;
               }
 
           case -1:
@@ -7548,7 +7547,6 @@ send_to_verinice (const char *url, const char *username, const char *password,
                   }
 
                 exit (EXIT_SUCCESS);
-                break;
               }
 
           case -1:
@@ -8108,7 +8106,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
           return -1;
-          break;
         }
       case ALERT_METHOD_HTTP_GET:
         {
@@ -8176,7 +8173,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               return ret;
             }
           return -1;
-          break;
         }
       case ALERT_METHOD_SOURCEFIRE:
         {
@@ -23776,7 +23772,6 @@ manage_report (report_t report, report_format_t report_format,
                     }
 
                   exit (EXIT_SUCCESS);
-                  break;
                 }
 
               case -1:
@@ -24280,7 +24275,6 @@ manage_send_report (report_t report, report_t delta_report,
                     }
 
                   exit (EXIT_SUCCESS);
-                  break;
                 }
 
               case -1:
