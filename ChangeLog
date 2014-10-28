@@ -1,3 +1,12 @@
+2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20705.
+
+	* src/sql.c (sqlv, sql_quiet, sql_x_internal): After a certain number of
+	retries, start to sleep between retries.  Sleep for longer as more
+	retries happen.  Hopefully this reduces load from retries when a single
+	long-running statement is blocking many statements.
+
 2014-10-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20700.

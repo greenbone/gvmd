@@ -202,7 +202,12 @@ sqlv (int retry, char* sql, va_list args)
       if (ret == SQLITE_BUSY)
         {
           if (retry)
-            continue;
+            {
+              if (retries < 0)
+                usleep (-retries * 10000);
+              retries--;
+              continue;
+            }
           if (retries--)
             continue;
           sqlite3_finalize (stmt);
@@ -314,7 +319,7 @@ void
 sql_quiet (char* sql, ...)
 {
   const char* tail;
-  int ret;
+  int ret, retries;
   sqlite3_stmt* stmt;
   va_list args;
   gchar* formatted;
@@ -349,10 +354,17 @@ sql_quiet (char* sql, ...)
 
   /* Run statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (-retries * 10000);
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_DONE) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {
@@ -384,7 +396,7 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
                 char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
   const char* tail;
-  int ret;
+  int ret, retries;
   sqlite3_stmt* stmt;
   gchar* formatted;
 
@@ -422,10 +434,17 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
 
   /* Run statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_step (stmt);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (-retries * 10000);
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_DONE)
         {
           return 1;
