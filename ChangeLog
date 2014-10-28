@@ -1,5 +1,9 @@
 2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_sqlite3.c (sql_exec_internal): Add upper limit to retry sleep.
+
+2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move retries after SQLITE_ERROR up a level, so that the statement is
 	prepared again before the retry.
 
