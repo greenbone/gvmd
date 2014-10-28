@@ -332,7 +332,12 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
       if (ret == SQLITE_BUSY)
         {
           if (retry)
-            continue;
+            {
+              if (retries < 0)
+                usleep (-retries * 10000);
+              retries--;
+              continue;
+            }
           if (retries--)
             continue;
           return -2;
