@@ -129,7 +129,7 @@ sql_insert (const char *string)
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
  *
- * @return 0 success, 1 gave up, -1 error.
+ * @return 0 success, 1 gave up (even when retry given), -1 error.
  */
 int
 sqlv (int retry, char* sql, va_list args)
@@ -153,6 +153,7 @@ sqlv (int retry, char* sql, va_list args)
   sql_finalize (stmt);
   if (ret == -2)
     return 1;
+  assert (ret == -1 || ret == 0);
   return ret;
 }
 
@@ -165,12 +166,21 @@ sqlv (int retry, char* sql, va_list args)
 void
 sql (char* sql, ...)
 {
-  va_list args;
+  while (1)
+    {
+      va_list args;
+      int ret;
 
-  va_start (args, sql);
-  if (sqlv (1, sql, args) == -1)
-    abort ();
-  va_end (args);
+      va_start (args, sql);
+      ret = sqlv (1, sql, args);
+      va_end (args);
+      if (ret == -1)
+        abort ();
+      if (ret == 1)
+        /* Gave up with statement reset. */
+        continue;
+      break;
+    }
 }
 
 /**
@@ -187,11 +197,18 @@ int
 sql_error (char* sql, ...)
 {
   int ret;
-  va_list args;
 
-  va_start (args, sql);
-  ret = sqlv (1, sql, args);
-  va_end (args);
+  while (1)
+    {
+      va_list args;
+      va_start (args, sql);
+      ret = sqlv (1, sql, args);
+      va_end (args);
+      if (ret == 1)
+        /* Gave up with statement reset. */
+        continue;
+      break;
+    }
 
   return ret;
 }
@@ -231,22 +248,32 @@ sql_quiet (char* sql, ...)
 
   /* Prepare statement. */
 
-  va_start (args, sql);
-  ret = sql_prepare_internal (1, 0, sql, args, &stmt);
-  va_end (args);
-  if (ret)
+  while (1)
     {
-      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
-      abort ();
-    }
+      va_start (args, sql);
+      ret = sql_prepare_internal (1, 0, sql, args, &stmt);
+      va_end (args);
+      if (ret)
+        {
+          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+          abort ();
+        }
 
-  /* Run statement. */
+      /* Run statement. */
 
-  while ((ret = sql_exec_internal (1, stmt)) > 0);
-  if (ret == -1)
-    {
-      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-      abort ();
+      while ((ret = sql_exec_internal (1, stmt)) > 0);
+      if (ret == -1)
+        {
+          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          abort ();
+        }
+      if (ret == -2)
+        {
+          /* Busy or locked, with statement reset. */
+          sql_finalize (stmt);
+          continue;
+        }
+      break;
     }
   sql_finalize (stmt);
 }
@@ -268,26 +295,36 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 
   assert (stmt_return);
 
-  /* Prepare statement. */
-
-  ret = sql_prepare_internal (1, log, sql, args, stmt_return);
-  if (ret)
+  while (1)
     {
-      g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
-      return -1;
-    }
+      /* Prepare statement. */
 
-  /* Run statement. */
+      ret = sql_prepare_internal (1, log, sql, args, stmt_return);
+      if (ret)
+        {
+          g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+          return -1;
+        }
 
-  ret = sql_exec_internal (1, *stmt_return);
-  if (ret == -1)
-    {
-      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-      return -1;
+      /* Run statement. */
+
+      ret = sql_exec_internal (1, *stmt_return);
+      if (ret == -1)
+        {
+          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          return -1;
+        }
+      if (ret == 0)
+        /* Too few rows. */
+        return 1;
+      if (ret == -2)
+        {
+          /* Busy or locked, with statement reset. */
+          sql_finalize (*stmt_return);
+          continue;
+        }
+      break;
     }
-  if (ret == 0)
-    /* Too few rows. */
-    return 1;
   assert (ret == 1);
   if (log)
     tracef ("   sql_x end\n");
@@ -647,16 +684,29 @@ next (iterator_t* iterator)
   if (iterator->done) return FALSE;
 
   lsc_crypt_flush (iterator->crypt_ctx);
-  ret = sql_exec_internal (1, iterator->stmt);
-  if (ret == 0)
+  while (1)
     {
-      iterator->done = TRUE;
-      return FALSE;
-    }
-  if (ret == -1)
-    {
-      g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-      abort ();
+      ret = sql_exec_internal (1, iterator->stmt);
+      if (ret == 0)
+        {
+          iterator->done = TRUE;
+          return FALSE;
+        }
+      if (ret == -1)
+        {
+          g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+          abort ();
+        }
+      if (ret == -2)
+        {
+          /* Busy or locked, with statement reset.  Just try step again like
+           * we used to do in sql_exec_internal.  We're not supposed to do this
+           * for SQLite, but it would mean quite a bit of reworking in the
+           * callers to be able to handle this case. */
+          g_warning ("%s: stepping after reset\n", __FUNCTION__);
+          continue;
+        }
+      break;
     }
   assert (ret == 1);
   return TRUE;
@@ -692,7 +742,8 @@ sql_prepare (const char* sql, ...)
  *
  * @param[in]  stmt  Statement.
  *
- * @return 0 complete, 1 row available in results, -1 error.
+ * @return 0 complete, 1 row available in results, -1 error, -2 gave up with
+ *         statement reset.
  */
 int
 sql_exec (sql_stmt_t *stmt)

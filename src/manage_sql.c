@@ -18090,6 +18090,78 @@ report_counts_match (iterator_t *results, const char *search_phrase,
 }
 
 /**
+ * @brief Prepare quick statement for report_severity_data.
+ *
+ * @return Statement.
+ */
+sql_stmt_t *
+report_severity_data_prepare ()
+{
+  sql_stmt_t *stmt;
+
+  stmt = sql_prepare ("SELECT 1 FROM overrides"
+                      " WHERE (overrides.nvt = $1)"
+                      " AND ((overrides.owner IS NULL)"
+                      "      OR (overrides.owner"
+                      "          = (SELECT id FROM users"
+                      "             WHERE users.uuid = '%s')))"
+                      " AND ((overrides.end_time = 0)"
+                      "      OR (overrides.end_time >= m_now ()))",
+                      current_credentials.uuid);
+  if (stmt == NULL)
+    {
+      g_warning ("%s: sql_prepare stmt failed\n", __FUNCTION__);
+      abort ();
+    }
+  return stmt;
+}
+
+/**
+ * @brief Prepare quick statement for report_severity_data.
+ *
+ * @return Statement.
+ */
+sql_stmt_t *
+report_severity_data_prepare_full (task_t task)
+{
+  sql_stmt_t *full_stmt;
+  full_stmt = sql_prepare
+               ("SELECT severity_to_type (overrides.new_severity),"
+                 "       overrides.new_severity"
+                 " FROM overrides"
+                 " WHERE overrides.nvt = $1" // 1
+                 " AND ((overrides.owner IS NULL)"
+                 " OR (overrides.owner ="
+                 " (SELECT users.id FROM users"
+                 "  WHERE users.uuid = '%s')))"
+                 " AND ((overrides.end_time = 0)"
+                 "      OR (overrides.end_time >= m_now ()))"
+                 " AND (overrides.task = 0"
+                 "      OR overrides.task = %llu)"
+                 " AND (overrides.result = 0"
+                 "      OR overrides.result = $2)" // 2
+                 " AND (overrides.hosts is NULL"
+                 "      OR overrides.hosts = ''"
+                 "      OR hosts_contains (overrides.hosts, $3))" // 3
+                 " AND (overrides.port is NULL"
+                 "      OR overrides.port = ''"
+                 "      OR overrides.port = $4)" // 4
+                 " AND severity_matches_ov ($5," // 5
+                 "                          overrides.severity)"
+                 " ORDER BY overrides.result DESC, overrides.task DESC,"
+                 " overrides.port DESC, overrides.severity ASC,"
+                 " overrides.modification_time DESC;",
+                 current_credentials.uuid,
+                 task);
+  if (full_stmt == NULL)
+    {
+      g_warning ("%s: sql_prepare full_stmt failed\n", __FUNCTION__);
+      abort ();
+    }
+  return full_stmt;
+}
+
+/**
  * @brief Get the result severity counts for a report.
  *
  * @param[in]  report     Report.
@@ -18131,58 +18203,13 @@ report_severity_data (report_t report, int override,
     {
       /* Prepare quick inner statement. */
 
-      stmt = sql_prepare ("SELECT 1 FROM overrides"
-                          " WHERE (overrides.nvt = $1)"
-                          " AND ((overrides.owner IS NULL)"
-                          "      OR (overrides.owner"
-                          "          = (SELECT id FROM users"
-                          "             WHERE users.uuid = '%s')))"
-                          " AND ((overrides.end_time = 0)"
-                          "      OR (overrides.end_time >= m_now ()))",
-                          current_credentials.uuid);
-      if (stmt == NULL)
-        {
-          g_warning ("%s: sql_prepare stmt failed\n", __FUNCTION__);
-          abort ();
-        }
+      stmt = report_severity_data_prepare ();
 
       /* Prepare full inner statement. */
 
       report_task (report, &task);
 
-      full_stmt = sql_prepare
-                   ("SELECT severity_to_type (overrides.new_severity),"
-                     "       overrides.new_severity"
-                     " FROM overrides"
-                     " WHERE overrides.nvt = $1" // 1
-                     " AND ((overrides.owner IS NULL)"
-                     " OR (overrides.owner ="
-                     " (SELECT users.id FROM users"
-                     "  WHERE users.uuid = '%s')))"
-                     " AND ((overrides.end_time = 0)"
-                     "      OR (overrides.end_time >= m_now ()))"
-                     " AND (overrides.task = 0"
-                     "      OR overrides.task = %llu)"
-                     " AND (overrides.result = 0"
-                     "      OR overrides.result = $2)" // 2
-                     " AND (overrides.hosts is NULL"
-                     "      OR overrides.hosts = ''"
-                     "      OR hosts_contains (overrides.hosts, $3))" // 3
-                     " AND (overrides.port is NULL"
-                     "      OR overrides.port = ''"
-                     "      OR overrides.port = $4)" // 4
-                     " AND severity_matches_ov ($5," // 5
-                     "                          overrides.severity)"
-                     " ORDER BY overrides.result DESC, overrides.task DESC,"
-                     " overrides.port DESC, overrides.severity ASC,"
-                     " overrides.modification_time DESC;",
-                     current_credentials.uuid,
-                     task);
-      if (full_stmt == NULL)
-        {
-          g_warning ("%s: sql_prepare full_stmt failed\n", __FUNCTION__);
-          abort ();
-        }
+      full_stmt = report_severity_data_prepare_full (task);
 
       /* Loop through all results. */
       if (host)
@@ -18223,21 +18250,32 @@ report_severity_data (report_t report, int override,
 
           nvt = iterator_string (&results, 1);
 
-          /* Bind the current result values into the quick statement. */
-
-          if (sql_bind_text (stmt, 1, nvt, -1))
+          while (1)
             {
-              g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-              abort ();
-            }
+              /* Bind the current result values into the quick statement. */
 
-          /* Run the quick inner statement to check for overrides. */
+              if (sql_bind_text (stmt, 1, nvt, -1))
+                {
+                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+                  abort ();
+                }
 
-          ret = sql_exec (stmt);
-          if (ret < 0)
-            {
-              g_warning ("%s: sql_exec failed\n", __FUNCTION__);
-              abort ();
+              /* Run the quick inner statement to check for overrides. */
+
+              ret = sql_exec (stmt);
+              if (ret == -2)
+                {
+                  /* Gave up with statement reset.  Retry. */
+                  sql_finalize (stmt);
+                  stmt = report_severity_data_prepare ();
+                  continue;
+                }
+              if (ret < 0)
+                {
+                  g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+                  abort ();
+                }
+              break;
             }
 
           /* Check the result. */
@@ -18282,49 +18320,60 @@ report_severity_data (report_t report, int override,
 
               /* There is an override on this NVT, get the new threat value. */
 
-              /* Bind the current result values into the full statement. */
-
-              if (sql_bind_text (full_stmt, 1, nvt, -1))
+              while (1)
                 {
-                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-                  abort ();
-                }
+                  /* Bind the current result values into the full statement. */
 
-              result = (result_t) iterator_int64 (&results, 0);
-              if (sql_bind_int64 (full_stmt, 2, &result))
-                {
-                  g_warning ("%s: sql_bind_int64 failed\n", __FUNCTION__);
-                  abort ();
-                }
+                  if (sql_bind_text (full_stmt, 1, nvt, -1))
+                    {
+                      g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+                      abort ();
+                    }
 
-              host = iterator_string (&results, 3);
-              if (sql_bind_text (full_stmt, 3, host, -1))
-                {
-                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-                  abort ();
-                }
+                  result = (result_t) iterator_int64 (&results, 0);
+                  if (sql_bind_int64 (full_stmt, 2, &result))
+                    {
+                      g_warning ("%s: sql_bind_int64 failed\n", __FUNCTION__);
+                      abort ();
+                    }
 
-              port = iterator_string (&results, 4);
-              if (sql_bind_text (full_stmt, 4, port, -1))
-                {
-                  g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-                  abort ();
-                }
+                  host = iterator_string (&results, 3);
+                  if (sql_bind_text (full_stmt, 3, host, -1))
+                    {
+                      g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+                      abort ();
+                    }
 
-              severity = iterator_double (&results, 7);
-              if (sql_bind_double (full_stmt, 5, &severity))
-                {
-                  g_warning ("%s: sql_bind_double failed\n", __FUNCTION__);
-                  abort ();
-                }
+                  port = iterator_string (&results, 4);
+                  if (sql_bind_text (full_stmt, 4, port, -1))
+                    {
+                      g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+                      abort ();
+                    }
 
-              /* Run the full inner statement. */
+                  severity = iterator_double (&results, 7);
+                  if (sql_bind_double (full_stmt, 5, &severity))
+                    {
+                      g_warning ("%s: sql_bind_double failed\n", __FUNCTION__);
+                      abort ();
+                    }
 
-              ret = sql_exec (full_stmt);
-              if (ret < 0)
-                {
-                  g_warning ("%s: sql_exec failed\n", __FUNCTION__);
-                  abort ();
+                  /* Run the full inner statement. */
+
+                  ret = sql_exec (full_stmt);
+                  if (ret == -2)
+                    {
+                      /* Gave up with statement reset.  Retry. */
+                      sql_finalize (full_stmt);
+                      full_stmt = report_severity_data_prepare_full (task);
+                      continue;
+                    }
+                  if (ret < 0)
+                    {
+                      g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+                      abort ();
+                    }
+                  break;
                 }
 
               /* Check the result. */
@@ -33436,95 +33485,105 @@ create_agent (const char* name, const char* comment, const char* installer_64,
     sql_stmt_t *stmt;
     gchar *quoted_name, *quoted_comment, *quoted_filename;
 
-    quoted_name = sql_quote (name);
-    quoted_comment = sql_quote (comment ?: "");
-    quoted_filename = sql_quote (installer_filename);
-
-    /* Prepare statement. */
-
-    stmt = sql_prepare ("INSERT INTO agents"
-                        " (uuid, name, owner, comment, installer,"
-                        "  installer_64, installer_filename,"
-                        "  installer_signature_64,"
-                        "  installer_trust, installer_trust_time,"
-                        "  howto_install, howto_use,"
-                        "  creation_time, modification_time)"
-                        " VALUES"
-                        " (make_uuid (), '%s',"
-                        "  (SELECT id FROM users"
-                        "   WHERE users.uuid = '%s'),"
-                        "  '%s',"
-                        "  $1, $2,"               /* installer, installer_64 */
-                        "  '%s',"
-                        "  $3,"                   /* installer_signature_64 */
-                        "  %i, %i, $4,"           /* howto_install */
-                        "  $5, m_now (), m_now ());", /* howto_use */
-                        quoted_name, current_credentials.uuid,
-                        quoted_comment, quoted_filename,
-                        installer_trust, (int) time (NULL));
-    g_free (quoted_name);
-    g_free (quoted_comment);
-    g_free (quoted_filename);
-    if (stmt == NULL)
+    while (1)
       {
-        g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+        quoted_name = sql_quote (name);
+        quoted_comment = sql_quote (comment ?: "");
+        quoted_filename = sql_quote (installer_filename);
+
+        /* Prepare statement. */
+
+        stmt = sql_prepare ("INSERT INTO agents"
+                            " (uuid, name, owner, comment, installer,"
+                            "  installer_64, installer_filename,"
+                            "  installer_signature_64,"
+                            "  installer_trust, installer_trust_time,"
+                            "  howto_install, howto_use,"
+                            "  creation_time, modification_time)"
+                            " VALUES"
+                            " (make_uuid (), '%s',"
+                            "  (SELECT id FROM users"
+                            "   WHERE users.uuid = '%s'),"
+                            "  '%s',"
+                            "  $1, $2,"           /* installer, installer_64 */
+                            "  '%s',"
+                            "  $3,"               /* installer_signature_64 */
+                            "  %i, %i, $4,"       /* howto_install */
+                            "  $5, m_now (), m_now ());", /* howto_use */
+                            quoted_name, current_credentials.uuid,
+                            quoted_comment, quoted_filename,
+                            installer_trust, (int) time (NULL));
+        g_free (quoted_name);
+        g_free (quoted_comment);
+        g_free (quoted_filename);
+        if (stmt == NULL)
+          {
+            g_warning ("%s: sql_prepare failed\n", __FUNCTION__);
+            g_free (installer);
+            g_free (installer_signature);
+            sql ("ROLLBACK;");
+            return -1;
+          }
+
+        /* Bind the packages to the "$numbers" in the SQL statement. */
+
+        if (sql_bind_text (stmt, 1, installer, installer_size))
+          {
+            g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            g_free (installer);
+            g_free (installer_signature);
+            return -1;
+          }
         g_free (installer);
+
+        if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
+          {
+            g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            g_free (installer_signature);
+            return -1;
+          }
         g_free (installer_signature);
-        sql ("ROLLBACK;");
-        return -1;
-      }
 
-    /* Bind the packages to the "$numbers" in the SQL statement. */
+        if (sql_bind_text (stmt, 3, installer_signature_64,
+                           strlen (installer_signature_64)))
+          {
+            g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            return -1;
+          }
 
-    if (sql_bind_text (stmt, 1, installer, installer_size))
-      {
-        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        g_free (installer);
-        g_free (installer_signature);
-        return -1;
-      }
-    g_free (installer);
+        if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
+          {
+            g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            return -1;
+          }
 
-    if (sql_bind_text (stmt, 2, installer_64, strlen (installer_64)))
-      {
-        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        g_free (installer_signature);
-        return -1;
-      }
-    g_free (installer_signature);
+        if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
+          {
+            g_warning ("%s: sql_bind_blob failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            return -1;
+          }
 
-    if (sql_bind_text (stmt, 3, installer_signature_64,
-                       strlen (installer_signature_64)))
-      {
-        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        return -1;
-      }
+        /* Run the statement. */
 
-    if (sql_bind_text (stmt, 4, howto_install, strlen (howto_install)))
-      {
-        g_warning ("%s: sql_bind_text failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        return -1;
-      }
-
-    if (sql_bind_blob (stmt, 5, howto_use, strlen (howto_use)))
-      {
-        g_warning ("%s: sql_bind_blob failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        return -1;
-      }
-
-    /* Run the statement. */
-
-    while ((ret = sql_exec (stmt)) > 0);
-    if (ret < 0)
-      {
-        g_warning ("%s: sql_exec failed\n", __FUNCTION__);
-        sql ("ROLLBACK;");
-        return -1;
+        while ((ret = sql_exec (stmt)) > 0);
+        if (ret == -2)
+          {
+            /* Gave up with statement reset.  Retry. */
+            sql_finalize (stmt);
+            continue;
+          }
+        if (ret < 0)
+          {
+            g_warning ("%s: sql_exec failed\n", __FUNCTION__);
+            sql ("ROLLBACK;");
+            return -1;
+          }
+        break;
       }
 
     sql_finalize (stmt);

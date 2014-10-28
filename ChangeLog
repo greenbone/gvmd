@@ -1,3 +1,24 @@
+2014-10-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move retries after SQLITE_ERROR up a level, so that the statement is
+	prepared again before the retry.
+
+	* src/sql_sqlite3.c (sql_exec_internal): Remove retry after
+	sqlite3_reset, because sqlite3_step should not be called after
+	SQLITE_ERROR, according to the manual.
+
+	* src/sql.c (sqlv): Clarify 1 return.  Add assert.
+	(sql, sql_error): Retry if sqlv returns 1.
+	(sql_quiet, sql_x_internal): Retry if sql_exec_internal returns -2.
+	(next): Rerun sql_x_internal if it returns -2.
+	(sql_exec): Add new return.
+
+	* src/manage_sql.c (report_severity_data_prepare)
+	(report_severity_data_prepare_full): New functions.
+	(report_severity_data): Prepare statements via new functions.  Retry
+	when sql_exec returns -2.
+	(create_agent): Retry when sql_exec returns -2.
+
 2014-10-28  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (openvas_sync_feed, openvas_migrate_secinfo),
