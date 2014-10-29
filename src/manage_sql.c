@@ -29649,7 +29649,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "severity", "cvss", NULL }
+   "family", "cvss_base", "severity", "cvss", "script_tags", NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -29672,6 +29672,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
  }
 
@@ -29696,6 +29697,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
  }
 
