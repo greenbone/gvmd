@@ -609,7 +609,7 @@ sec_db_exists () {
       return 1;
     fi
     return 0;
-  elif [ -f "$SCAP_DB" ]
+  elif [ -f "$SEC_DB" ]
   then
     return 0;
   fi

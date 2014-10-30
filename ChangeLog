@@ -1,5 +1,10 @@
 2014-10-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/openvas-scapdata-sync.in (sec_db_exists): Correct variable name
+	for SQLite database path.
+
+2014-10-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Set timestamps of placeholder CPEs created from CVEs to creation date
 	of oldest CVE.
 
