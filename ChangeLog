@@ -1,3 +1,9 @@
+2014-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/otp.c (blank_slash_zeros): New functions.
+	(messages_value): Convert "\0" to "\\" in field, otherwise g_strcompress
+	converts the "\0" to a zero byte, which truncates the field.
+
 2014-10-20  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Add --gnutls-priorities option to Manager. Backport based on r19047 by

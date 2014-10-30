@@ -826,6 +826,33 @@ sync_buffer ()
 }
 
 /**
+ * @brief Convert "\0" to "".
+ *
+ * @param  old  String.
+ *
+ * @return Freshly allocated string.
+ */
+static gchar *
+blank_slash_zeros (gchar *old)
+{
+  gchar *new, *ret;
+
+  ret = new = g_strdup (old);
+
+  while (*new)
+    {
+      if (*new == '\\')
+        {
+          new++;
+          if (*new == '0')
+            *new = '\\';
+        }
+      new++;
+    }
+  return ret;
+}
+
+/**
  * @brief Get the current message string, handling encoding.
  *
  * @param  messages  A pointer into the OTP input buffer.
@@ -843,11 +870,13 @@ messages_value (char** messages)
   /* ISO-8859-1 input to UTF-8 hack. */
   {
     gsize size_dummy;
-    gchar *compressed;
+    gchar *compressed, *blank_iso_field;
     char* iso_field;
 
     iso_field = *messages;
-    compressed = g_strcompress (iso_field);
+    blank_iso_field = blank_slash_zeros (iso_field);
+    compressed = g_strcompress (blank_iso_field);
+    g_free (blank_iso_field);
     blank_control_chars (compressed);
     value = g_convert (compressed, strlen (compressed),
                        "UTF-8", "ISO_8859-1",
