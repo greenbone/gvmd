@@ -1,3 +1,7 @@
+2014-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/openvas-migrate-to-postgres (migrate): Add migration to 136.
+
 2014-10-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/openvas-scapdata-sync.in (sec_db_exists): Correct variable name

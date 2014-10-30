@@ -30,7 +30,7 @@ VERSION=20140904
 # ========
 
 # Path prefix for installation location
-PREFIX=
+PREFIX=/home/mattm/
 
 # SCRIPT_NAME is the name the script will use to identify itself and to mark
 # log messages.
@@ -1096,6 +1096,27 @@ migrate () {
       pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
       pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
       pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+
+      migrate_rest
+
+      pg "DROP TABLE report_results;";;
+
+    136)
+      log_info "Migrating database (version 136)."
+      create_tables_133;
+
+      pg "ALTER TABLE targets ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_lsc_credential integer;"
+      pg "ALTER TABLE targets_trash ADD COLUMN esxi_location integer;"
+
+	  pg "UPDATE tasks
+	      SET end_time = (SELECT reports.end_time FROM reports
+		                  WHERE task = tasks.id ORDER BY id DESC LIMIT 1)
+		  WHERE EXISTS (SELECT id FROM reports WHERE task = tasks.id);"
+
+	  pg "UPDATE tasks
+	      SET end_time = NULL
+		  WHERE NOT EXISTS (SELECT id FROM reports WHERE task = tasks.id);"
 
       migrate_rest
 
