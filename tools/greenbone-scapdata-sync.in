@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20141010
+VERSION=20141030
 RESTRICTED=1
 
 # SETTINGS
@@ -840,6 +840,47 @@ update_cvss () {
   fi
 }
 
+update_placeholders () {
+  if [ 0 -ne $updated_cves ]
+  then
+    log_info "Updating placeholder CPEs"
+    reset_sql_tries
+    until [ "$try_sql" -eq 0 ]
+    do
+      sql "
+      UPDATE ${SCHEMA}cpes
+        SET creation_time =
+            (
+              SELECT min(creation_time)
+              FROM ${SCHEMA}cves
+              WHERE id IN
+                (
+                  SELECT cve
+                  FROM ${SCHEMA}affected_products
+                  WHERE cpe=cpes.id
+                )
+            ),
+            modification_time =
+            (
+              SELECT min(creation_time)
+              FROM ${SCHEMA}cves
+              WHERE id IN
+                (
+                  SELECT cve
+                  FROM ${SCHEMA}affected_products
+                  WHERE cpe=cpes.id
+                )
+            )
+        WHERE cpes.title IS NULL
+        AND (cpes.creation_time IS NULL OR cpes.modification_time IS NULL);
+      "
+      test_sql_exit "Could not update placeholder CPEs"
+    done
+  else
+    log_notice "No CVEs updated, skipping placeholder CPE update."
+  fi
+}
+
 update_scap_db_private () {
   SCAP_PRIVATE_DIR="$SCAP_DIR/$PRIVATE_SUBDIR"
   if [ -d "$SCAP_PRIVATE_DIR" ]
@@ -1180,6 +1221,7 @@ update_scap_db() {
 
   update_scap_db_private
   update_cvss
+  update_placeholders
 
   LAST_UPDATE_TIMESTAMP=`sed 's/^\(.\{8\}\)/\1 /' $TIMESTAMP | env TZ="UTC" date +%s -f -`
 
