@@ -1,5 +1,16 @@
 2014-10-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Add new functions to write the query plan of SQL queries to the log.
+
+	* src/sql.c (sql_explain_internal): New function prototype.
+	(sql_explain): New function.
+
+	* src/sql_pg.c (sql_explain_internal): New function.
+
+	* src/sql_sqlite3.c (sql_explain_internal): New function.
+
+2014-10-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS): Change column alias
 	"report" to "report_id" so it matches RESULT_ITERATOR_FILTER_COLUMNS.
 

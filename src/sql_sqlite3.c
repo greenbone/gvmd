@@ -364,6 +364,55 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
     }
 }
 
+/**
+ * @brief Write debug messages with the query plan for an SQL query to the log.
+ *
+ * @param[in] sql   Format string for the SQL query.
+ * @param[in] args  Format string arguments in a va_list.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_explain_internal (const char* sql, va_list args)
+{
+  char *explain_sql;
+  sql_stmt_t *explain_stmt;
+  int explain_ret;
+
+  explain_sql = g_strconcat ("EXPLAIN QUERY PLAN ", sql, NULL);
+  if (sql_prepare_internal (1, 1, explain_sql, args, &explain_stmt))
+    {
+      g_warning ("%s : Failed to prepare EXPLAIN statement", __FUNCTION__);
+      g_free (explain_sql);
+      return -1;
+    };
+
+  while (1)
+  {
+    explain_ret = sql_exec_internal (1, explain_stmt);
+    if (explain_ret == 1)
+      g_debug ("%s : %s|%s|%s|%s",
+               __FUNCTION__,
+               sqlite3_column_text (explain_stmt->stmt, 0),
+               sqlite3_column_text (explain_stmt->stmt, 1),
+               sqlite3_column_text (explain_stmt->stmt, 2),
+               sqlite3_column_text (explain_stmt->stmt, 3));
+    else if (explain_ret == 0)
+      break;
+    else
+      {
+        g_warning ("%s : Failed to get EXPLAIN row", __FUNCTION__);
+        sql_finalize (explain_stmt);
+        g_free (explain_sql);
+        return -1;
+      }
+  }
+
+  sql_finalize (explain_stmt);
+  g_free (explain_sql);
+  return 0;
+}
+
 
 /* Transactions. */
 
