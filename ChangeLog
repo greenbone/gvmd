@@ -1,3 +1,8 @@
+2014-10-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS): Change column alias
+	"report" to "report_id" so it matches RESULT_ITERATOR_FILTER_COLUMNS.
+
 2014-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres (migrate): Add migration to 136.

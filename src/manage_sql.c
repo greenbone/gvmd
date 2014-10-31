@@ -15891,7 +15891,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
       "vulnerability" },                                                      \
     { "date" , NULL },                                                        \
-    { "(SELECT uuid FROM reports WHERE id = report)", "report" },             \
+    { "(SELECT uuid FROM reports WHERE id = report)", "report_id" },          \
     { NULL, NULL }                                                            \
   }
 
