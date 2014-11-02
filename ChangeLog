@@ -1,3 +1,8 @@
+2014-11-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/manage.c (run_task): Drop setting "ntp_short_status" as this is
+	not supported by OTP anymore.
+
 2014-10-31  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add new functions to write the query plan of SQL queries to the log.
