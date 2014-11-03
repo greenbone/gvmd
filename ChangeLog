@@ -1,5 +1,11 @@
 2014-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,
+	tools/openvas-scapdata-sync.in, tools/greenbone-certdata-sync.in: Supply
+	default db to psql_setup.
+
+2014-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres (migrate_rest): Remove stray report
 	host details.
 

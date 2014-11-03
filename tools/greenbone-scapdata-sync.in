@@ -1336,7 +1336,7 @@ do_self_test () {
   fi
 }
 
-psql_setup
+psql_setup "tasks"
 while test $# -gt 0; do
  case "$1" in
         --version)

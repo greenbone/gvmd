@@ -655,7 +655,7 @@ do_refresh () {
   update_sec_db
 }
 
-psql_setup
+psql_setup "tasks"
 if [ -n "$1" ]; then
   while test $# -gt 0; do
     case "$1" in
