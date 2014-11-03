@@ -1,3 +1,11 @@
+2014-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/sql_pg.c (sql_explain_internal): Remove unnecessary semicolon.
+	Correct indentation of while block.
+
+	* src/sql_sqlite3.c (sql_explain_internal): Remove unnecessary
+	semicolon. Correct indentation of while block.
+
 2014-11-02  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/manage.c (run_task): Drop setting "ntp_short_status" as this is
