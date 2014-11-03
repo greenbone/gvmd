@@ -33364,23 +33364,23 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "risk_factor", NULL }
+   "family", "cvss_base", "risk_factor", "script_tags", NULL }
 
 /**
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS                                           \
   GET_ITERATOR_COLUMNS ", oid, version, name, summary, description,"   \
-  " copyright, cve, bid, xref, tag, sign_key_ids, category, family,"   \
-  " cvss_base, risk_factor"
+  " copyright, cve, bid, xref, tag AS script_tags, sign_key_ids,"      \
+  " category, family, cvss_base, risk_factor"
 
 /**
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS_NVTS                                              \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", oid, version, nvts.name, summary,"   \
-  " description, copyright, cve, bid, xref, tag, sign_key_ids, category,"      \
-  " nvts.family, cvss_base, risk_factor"
+  " description, copyright, cve, bid, xref, tag AS script_tags, sign_key_ids," \
+  " category, nvts.family, cvss_base, risk_factor"
 
 /**
  * @brief Initialise an NVT iterator.

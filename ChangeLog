@@ -1,3 +1,11 @@
+2014-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r20724.
+
+	* src/manage_sql.c (NVT_INFO_ITERATOR_FILTER_COLUMNS)
+	(NVT_ITERATOR_COLUMNS, NVT_ITERATOR_COLUMNS_NVTS): Add "script_tags"
+	column, which corresponds to the "tag" column in the database.
+
 2014-10-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/otp.c (blank_slash_zeros): New functions.
