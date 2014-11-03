@@ -974,6 +974,10 @@ migrate_rest () {
   sqlite "DELETE FROM report_hosts WHERE report NOT IN (SELECT id FROM reports);"
   test_sql_exit "Failed to clean up report_hosts"
 
+  # Remove stray report_host_details.  Not sure where these came from.
+  sqlite "DELETE FROM report_host_details WHERE report_host NOT IN (SELECT id FROM report_hosts);"
+  test_sql_exit "Failed to clean up report_host_details"
+
   # Make end_time in tasks consistent.
   #
   # Manager --migrate only does this in migrate_135_to_136, but Postgres needs

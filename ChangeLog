@@ -1,3 +1,8 @@
+2014-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* tools/openvas-migrate-to-postgres (migrate_rest): Remove stray report
+	host details.
+
 2014-11-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/sql_pg.c (sql_explain_internal): Remove unnecessary semicolon.
