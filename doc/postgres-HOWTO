@@ -37,6 +37,26 @@ WARNING: This is work in progress, and far from ready for any realistic use.
 
 	psql tasks
 
+
+Migrating from SQLite to PostgreSQL
+-----------------------------------
+
+1 Run "openvas-migrate-to-postgres" into a clean newly created
+  PostgreSQL database like described above. It is esentially important
+  that you do not run "--rebuild" before the migration as it would
+  create a fresh one and therefore prevent migration.
+
+  If you accidently already rebuild the database or for other reasons
+  want to start from scratch, apply the dopping of all data as
+  described below. 
+
+2 Run "openvasmd --rebuild".
+
+3 Run "openvas-scapdata-sync".
+
+4 Run "openvas-certdata-sync".
+
+
 Handy script to drop all data
 -----------------------------
 

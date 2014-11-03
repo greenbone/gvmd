@@ -1,3 +1,7 @@
+2014-11-03  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* doc/postgres-HOWTO: Added section about migration.
+
 2014-11-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,
