@@ -30508,14 +30508,14 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "severity", "cvss", NULL }
+   "family", "cvss_base", "severity", "cvss", "script_tags", NULL }
 
 /**
  * @brief NVT iterator columns.
  */
 #define NVT_ITERATOR_COLUMNS                                                \
   GET_ITERATOR_COLUMNS_PREFIX ("") ", '' AS _owner, oid, version, name,"    \
-  " summary, copyright, cve, bid, xref, tag,"                               \
+  " summary, copyright, cve, bid, xref, tag AS script_tags,"                \
   " category, family, cvss_base, cvss_base AS severity, cvss_base AS cvss"
 
 /**
@@ -30523,7 +30523,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_ITERATOR_COLUMNS_NVTS                                             \
   GET_ITERATOR_COLUMNS_PREFIX("nvts.") ", '' AS _owner, oid, version,"        \
-  " nvts.name, summary, copyright, cve, bid, xref, tag,"                      \
+  " nvts.name, summary, copyright, cve, bid, xref, tag AS script_tags,"       \
   " category, nvts.family, cvss_base, cvss_base AS severity,"                 \
   " cvss_base AS cvss"
 
