@@ -1,3 +1,41 @@
+openvas-manager 5.0.5 (2014-11-04)
+
+This is the fifth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release contains a number of improvements backported from the current
+development trunk, for example support for persistent user refresh selections,
+additional filters and improved support for resuming slave scans. It also
+improves performance and addresses a number of issues found in the last release.
+
+Many thanks to everyone who contributed to this release:
+Benoît Allard, Henri Doreau, Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner
+and Michael Wiegand.
+
+Main changes since 5.0.4:
+* Support for persistent user refresh selections has been added.
+* Support for filtering tasks based on their association with a schedule has
+  been added.
+* Support for filtering NVTs based on their script_tags has been added.
+* Support for resuming slave scans has been improved.
+* The value of the NVT tag "affected" is now included in more report formats.
+* Asset management performance has been improved.
+* The handling of SQL transactions involved in setting the scan end time has
+  been improved.
+* The strategy of SQL retries in high-load situation has been improved.
+* An issue which caused end times to not be included in reports send by alerts
+  has been addressed.
+* Handling of schedules with missing timezone abbreviation has been fixed.
+* Handling of duplicate report format UUIDs during migration has been improved.
+* Communication of host end times for running slave scans has been improved.
+* An issue which showed an incorrect "Next due:" time for scheduled tasks under
+  certain circumstances has been addressed.
+* A workaround for an issue with concurrent SQLite processes when using SQLite
+  versions older than 3.8.3 has been added.
+
+
 openvas-manager 5.0.4 (2014-09-09)
 
 This is the fourth maintenance release of the openvas-manager 5.0 module for
