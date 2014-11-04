@@ -1,5 +1,10 @@
 2014-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/openvas-migrate-to-postgres.in: New file.  Missed in last
+	commit.
+
+2014-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/openvas-migrate-to-postgres: Remove.
 
 	* tools/openvas-migrate-to-postgres.in: New file.  Copies of the removed
