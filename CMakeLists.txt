@@ -112,6 +112,7 @@ set (CPACK_SOURCE_IGNORE_FILES
 "tools/openvas-scapdata-sync$"
 "tools/openvas-certdata-sync$"
 "tools/openvas-portnames-update$"
+"tools/openvas-migrate-to-postgres$"
 )
 
 include (CPack)
@@ -294,6 +295,7 @@ configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
 configure_file (tools/openvas-portnames-update.in tools/openvas-portnames-update @ONLY)
 configure_file (tools/openvas-certdata-sync.in tools/openvas-certdata-sync @ONLY)
+configure_file (tools/openvas-migrate-to-postgres.in tools/openvas-migrate-to-postgres @ONLY)
 
 ## Program
 
@@ -513,7 +515,7 @@ install (FILES ${CMAKE_SOURCE_DIR}/tools/openvas-lsc-rpm-creator.sh
                      GROUP_READ GROUP_EXECUTE
                      WORLD_READ WORLD_EXECUTE)
 
-install (FILES ${CMAKE_SOURCE_DIR}/tools/openvas-migrate-to-postgres
+install (FILES ${CMAKE_BINARY_DIR}/tools/openvas-migrate-to-postgres
          DESTINATION ${SBINDIR}
          PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
