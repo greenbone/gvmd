@@ -6267,11 +6267,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -6819,11 +6825,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -7048,6 +7060,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>aggregate</e></any>
+        <e>filters</e>
       </pattern>
       <ele>
         <name>aggregate</name>
@@ -7216,6 +7229,66 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <name>data_type</name>
               <summary>The data type of the column, e.g. integer, text, cvss</summary>
               <pattern><t>text</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
             </ele>
           </ele>
         </ele>
@@ -7775,11 +7848,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -8124,11 +8203,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -8909,12 +8994,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
           <type>text</type>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>keywords</name>
@@ -9446,11 +9537,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -9719,11 +9816,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -10771,11 +10874,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11499,11 +11608,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11936,11 +12051,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -12475,11 +12596,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -13070,11 +13197,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -13617,11 +13750,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -14045,11 +14184,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -14436,11 +14581,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -14858,11 +15009,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -15374,11 +15531,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -15808,11 +15971,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -16303,11 +16472,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -17222,11 +17397,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -17830,11 +18011,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>term</e>
+          <o><e>name</e></o>
           <e>keywords</e>
         </pattern>
         <ele>
           <name>term</name>
           <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
           <pattern>text</pattern>
         </ele>
         <ele>

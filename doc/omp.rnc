@@ -7047,12 +7047,20 @@ get_agents_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_agents_response_filters_term
+       & get_agents_response_filters_name?
        & get_agents_response_filters_keywords
      }
 
 # Filter term.
 get_agents_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_agents_response_filters_name
+ = element name
      {
        text
      }
@@ -7470,12 +7478,20 @@ get_configs_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_configs_response_filters_term
+       & get_configs_response_filters_name?
        & get_configs_response_filters_keywords
      }
 
 # Filter term.
 get_configs_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_configs_response_filters_name
+ = element name
      {
        text
      }
@@ -7575,6 +7591,7 @@ get_aggregates_response
        attribute status { status }
        & attribute status_text { text }
        & get_aggregates_response_aggregate*
+       & get_aggregates_response_filters
      }
 
 # A collection of aggregated data of the selected type.
@@ -7782,6 +7799,68 @@ get_aggregates_response_aggregate_column_info_aggregate_column_column
 # The data type of the column, e.g. integer, text, cvss.
 get_aggregates_response_aggregate_column_info_aggregate_column_data_type
  = element data_type
+     {
+       text
+     }
+
+get_aggregates_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_aggregates_response_filters_term
+       & get_aggregates_response_filters_name?
+       & get_aggregates_response_filters_keywords
+     }
+
+# Filter term.
+get_aggregates_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_aggregates_response_filters_name
+ = element name
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_aggregates_response_filters_keywords
+ = element keywords
+     {
+       get_aggregates_response_filters_keywords_keyword*
+     }
+
+get_aggregates_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_aggregates_response_filters_keywords_keyword_column
+       & get_aggregates_response_filters_keywords_keyword_relation
+       & get_aggregates_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_aggregates_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_aggregates_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_aggregates_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -8225,12 +8304,20 @@ get_filters_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_filters_response_filters_term
+       & get_filters_response_filters_name?
        & get_filters_response_filters_keywords
      }
 
 # Filter term.
 get_filters_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_filters_response_filters_name
+ = element name
      {
        text
      }
@@ -8488,12 +8575,20 @@ get_groups_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_groups_response_filters_term
+       & get_groups_response_filters_name?
        & get_groups_response_filters_keywords
      }
 
 # Filter term.
 get_groups_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_groups_response_filters_name
+ = element name
      {
        text
      }
@@ -9184,6 +9279,7 @@ get_info_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_info_response_filters_term
+       & get_info_response_filters_name?
        & get_info_response_filters_keywords
      }
 
@@ -9191,6 +9287,13 @@ get_info_response_filters
 get_info_response_filters_term
  = element term    # type text
      {
+     }
+
+# Filter name, if applicable.
+get_info_response_filters_name
+ = element name
+     {
+       text
      }
 
 # Filter broken down into keywords.
@@ -9488,12 +9591,20 @@ get_lsc_credentials_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_lsc_credentials_response_filters_term
+       & get_lsc_credentials_response_filters_name?
        & get_lsc_credentials_response_filters_keywords
      }
 
 # Filter term.
 get_lsc_credentials_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_lsc_credentials_response_filters_name
+ = element name
      {
        text
      }
@@ -9605,12 +9716,20 @@ get_notes_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_notes_response_filters_term
+       & get_notes_response_filters_name?
        & get_notes_response_filters_keywords
      }
 
 # Filter term.
 get_notes_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_notes_response_filters_name
+ = element name
      {
        text
      }
@@ -10340,12 +10459,20 @@ get_overrides_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_overrides_response_filters_term
+       & get_overrides_response_filters_name?
        & get_overrides_response_filters_keywords
      }
 
 # Filter term.
 get_overrides_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_overrides_response_filters_name
+ = element name
      {
        text
      }
@@ -10983,12 +11110,20 @@ get_permissions_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_permissions_response_filters_term
+       & get_permissions_response_filters_name?
        & get_permissions_response_filters_keywords
      }
 
 # Filter term.
 get_permissions_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_permissions_response_filters_name
+ = element name
      {
        text
      }
@@ -11333,12 +11468,20 @@ get_port_lists_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_port_lists_response_filters_term
+       & get_port_lists_response_filters_name?
        & get_port_lists_response_filters_keywords
      }
 
 # Filter term.
 get_port_lists_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_port_lists_response_filters_name
+ = element name
      {
        text
      }
@@ -11533,12 +11676,20 @@ get_reports_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_reports_response_filters_term
+       & get_reports_response_filters_name?
        & get_reports_response_filters_keywords
      }
 
 # Filter term.
 get_reports_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_reports_response_filters_name
+ = element name
      {
        text
      }
@@ -11954,12 +12105,20 @@ get_report_formats_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_report_formats_response_filters_term
+       & get_report_formats_response_filters_name?
        & get_report_formats_response_filters_keywords
      }
 
 # Filter term.
 get_report_formats_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_report_formats_response_filters_name
+ = element name
      {
        text
      }
@@ -12360,12 +12519,20 @@ get_results_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_results_response_filters_term
+       & get_results_response_filters_name?
        & get_results_response_filters_keywords
      }
 
 # Filter term.
 get_results_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_results_response_filters_name
+ = element name
      {
        text
      }
@@ -12623,12 +12790,20 @@ get_roles_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_roles_response_filters_term
+       & get_roles_response_filters_name?
        & get_roles_response_filters_keywords
      }
 
 # Filter term.
 get_roles_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_roles_response_filters_name
+ = element name
      {
        text
      }
@@ -12937,12 +13112,20 @@ get_scanners_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_scanners_response_filters_term
+       & get_scanners_response_filters_name?
        & get_scanners_response_filters_keywords
      }
 
 # Filter term.
 get_scanners_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_scanners_response_filters_name
+ = element name
      {
        text
      }
@@ -13297,12 +13480,20 @@ get_schedules_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_schedules_response_filters_term
+       & get_schedules_response_filters_name?
        & get_schedules_response_filters_keywords
      }
 
 # Filter term.
 get_schedules_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_schedules_response_filters_name
+ = element name
      {
        text
      }
@@ -13677,12 +13868,20 @@ get_slaves_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_slaves_response_filters_term
+       & get_slaves_response_filters_name?
        & get_slaves_response_filters_keywords
      }
 
 # Filter term.
 get_slaves_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_slaves_response_filters_name
+ = element name
      {
        text
      }
@@ -13962,12 +14161,20 @@ get_tags_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_tags_response_filters_term
+       & get_tags_response_filters_name?
        & get_tags_response_filters_keywords
      }
 
 # Filter term.
 get_tags_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_tags_response_filters_name
+ = element name
      {
        text
      }
@@ -14388,12 +14595,20 @@ get_targets_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_targets_response_filters_term
+       & get_targets_response_filters_name?
        & get_targets_response_filters_keywords
      }
 
 # Filter term.
 get_targets_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_targets_response_filters_name
+ = element name
      {
        text
      }
@@ -15238,12 +15453,20 @@ get_tasks_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_tasks_response_filters_term
+       & get_tasks_response_filters_name?
        & get_tasks_response_filters_keywords
      }
 
 # Filter term.
 get_tasks_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_tasks_response_filters_name
+ = element name
      {
        text
      }
@@ -15549,12 +15772,20 @@ get_users_response_filters
        # UUID of filter if any, else 0.
        attribute id { uuid }
        & get_users_response_filters_term
+       & get_users_response_filters_name?
        & get_users_response_filters_keywords
      }
 
 # Filter term.
 get_users_response_filters_term
  = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_users_response_filters_name
+ = element name
      {
        text
      }

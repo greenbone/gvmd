@@ -5907,6 +5907,66 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 }
 
 /**
+ * @brief Write data of a GET command filter to a string buffer as XML.
+ *
+ * @param[in] msg          The string buffer to write to.
+ * @param[in] type         The filtered type.
+ * @param[in] get          GET data.
+ * @param[in] filter_term  Filter term.
+ */
+int
+buffer_get_filter_xml (GString *msg, const char* type,
+                       get_data_t *get, const char* filter_term)
+{
+  keyword_t **point;
+  array_t *split;
+  filter_t filter;
+
+  buffer_xml_append_printf (msg,
+                            "<filters id=\"%s\">"
+                            "<term>%s</term>",
+                            get->filt_id ? get->filt_id : "",
+                            filter_term);
+
+  if (get->filt_id
+      && strcmp (get->filt_id, "")
+      && (find_filter (get->filt_id, &filter) == 0)
+      && filter != 0)
+    buffer_xml_append_printf (msg,
+                              "<name>%s</name>",
+                              filter_name (filter));
+
+  buffer_xml_append_printf (msg,
+                            "<keywords>");
+
+  split = split_filter (filter_term);
+  point = (keyword_t**) split->pdata;
+  while (*point)
+    {
+      keyword_t *keyword;
+      keyword = *point;
+      buffer_xml_append_printf (msg,
+                                "<keyword>"
+                                "<column>%s</column>"
+                                "<relation>%s</relation>"
+                                "<value>%s%s%s</value>"
+                                "</keyword>",
+                                keyword->column ? keyword->column : "",
+                                keyword_relation_symbol (keyword->relation),
+                                keyword->quoted ? "\"" : "",
+                                keyword->string ? keyword->string : "",
+                                keyword->quoted ? "\"" : "");
+      point++;
+    }
+  filter_free (split);
+
+  buffer_xml_append_printf (msg,
+                            "</keywords>"
+                            "</filters>");
+  return 0;
+}
+
+/**
  * @brief Send end of GET response.
  *
  * @param[in]  type                  Type.
@@ -5925,8 +5985,6 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   gchar *sort_field, *filter;
   int first, max, sort_order;
   GString *type_many, *msg;
-  keyword_t **point;
-  array_t *split;
 
   if (get->filt_id && strcmp (get->filt_id, "0"))
     {
@@ -5969,37 +6027,9 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 
   msg = g_string_new ("");
 
-  buffer_xml_append_printf (msg,
-                            "<filters id=\"%s\">"
-                            "<term>%s</term>"
-                            "<keywords>",
-                            get->filt_id ? get->filt_id : "",
-                            filter);
-
-  split = split_filter (filter);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-      keyword = *point;
-      buffer_xml_append_printf (msg,
-                                "<keyword>"
-                                "<column>%s</column>"
-                                "<relation>%s</relation>"
-                                "<value>%s%s%s</value>"
-                                "</keyword>",
-                                keyword->column ? keyword->column : "",
-                                keyword_relation_symbol (keyword->relation),
-                                keyword->quoted ? "\"" : "",
-                                keyword->string ? keyword->string : "",
-                                keyword->quoted ? "\"" : "");
-      point++;
-    }
-  filter_free (split);
+  buffer_get_filter_xml (msg, type, get, filter);
 
   buffer_xml_append_printf (msg,
-                            "</keywords>"
-                            "</filters>"
                             "<sort>"
                             "<field>%s<order>%s</order></field>"
                             "</sort>"
@@ -16000,6 +16030,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           GString *xml;
           double c_sum;
           long c_count;
+          gchar *sort_field, *filter;
+          int first, max, sort_order;
+          GString *type_many;
 
           type = get_aggregates_data->type;
           if (type == NULL)
@@ -16012,6 +16045,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             }
 
           get = &get_aggregates_data->get;
+          INIT_GET (aggregate, Aggregate);
           data_column = get_aggregates_data->data_column;
           group_column = get_aggregates_data->group_column;
 
@@ -16278,7 +16312,52 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           g_string_append (xml, "</column_info>");
 
+          if (get->filt_id && strcmp (get->filt_id, "0"))
+            {
+              if (get->filter_replacement)
+                filter = g_strdup (get->filter_replacement);
+              else
+                filter = filter_term (get->filt_id);
+              if (filter == NULL)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("get_aggregates",
+                                    "Failed to find filter"));
+            }
+          else
+            filter = NULL;
+
+          manage_filter_controls (filter ? filter : get->filter,
+                                  &first, &max, &sort_field, &sort_order);
+
+          if (filter || get->filter)
+            {
+              gchar *new_filter;
+              new_filter = manage_clean_filter (filter ? filter : get->filter);
+              g_free (filter);
+              if ((strcmp (type, "task") == 0)
+                  && (filter_term_value (new_filter, "apply_overrides")
+                      == NULL))
+                {
+                  filter = new_filter;
+                  new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                                APPLY_OVERRIDES_DEFAULT,
+                                                filter);
+                  g_free (filter);
+                }
+              filter = new_filter;
+            }
+          else
+            filter = manage_clean_filter ("");
+
+          type_many = g_string_new (type);
+
+          if (strcmp (type, "info") != 0)
+            g_string_append (type_many, "s");
+
           g_string_append (xml, "</aggregate>");
+
+          buffer_get_filter_xml (xml, type, get, filter);
+
           g_string_append (xml, "</get_aggregates_response>");
 
 

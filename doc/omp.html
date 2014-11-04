@@ -11103,6 +11103,11 @@ describe_scap_response_scap_currently_syncing_user
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -11356,11 +11361,18 @@ get_agents_response_filters
      {
        attribute id { uuid }
        &amp; get_agents_response_filters_term
+       &amp; get_agents_response_filters_name?
        &amp; get_agents_response_filters_keywords
      }
 
 get_agents_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_agents_response_filters_name
+ = element name
      {
        text
      }
@@ -11814,6 +11826,11 @@ get_agents_response_agent_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -12185,11 +12202,18 @@ get_configs_response_filters
      {
        attribute id { uuid }
        &amp; get_configs_response_filters_term
+       &amp; get_configs_response_filters_name?
        &amp; get_configs_response_filters_keywords
      }
 
 get_configs_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_configs_response_filters_name
+ = element name
      {
        text
      }
@@ -12544,6 +12568,50 @@ get_configs_response_config_count_page
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -12563,6 +12631,7 @@ get_configs_response_config_count_page
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_aggregates_response_aggregate*
+       &amp; get_aggregates_response_filters
      }
 
 get_aggregates_response_aggregate
@@ -12743,6 +12812,61 @@ get_aggregates_response_aggregate_column_info_aggregate_column_column
 
 get_aggregates_response_aggregate_column_info_aggregate_column_data_type
  = element data_type
+     {
+       text
+     }
+
+get_aggregates_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_aggregates_response_filters_term
+       &amp; get_aggregates_response_filters_name?
+       &amp; get_aggregates_response_filters_keywords
+     }
+
+get_aggregates_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_aggregates_response_filters_name
+ = element name
+     {
+       text
+     }
+
+get_aggregates_response_filters_keywords
+ = element keywords
+     {
+       get_aggregates_response_filters_keywords_keyword*
+     }
+
+get_aggregates_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_aggregates_response_filters_keywords_keyword_column
+       &amp; get_aggregates_response_filters_keywords_keyword_relation
+       &amp; get_aggregates_response_filters_keywords_keyword_value
+     }
+
+get_aggregates_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_aggregates_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_aggregates_response_filters_keywords_keyword_value
+ = element value
      {
        text
      }
@@ -13423,6 +13547,11 @@ get_alerts_response_alert_filter_trash
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -13479,6 +13608,11 @@ get_alerts_response_alert_filter_trash
 <li>
               &lt;<b>term</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -13719,11 +13853,18 @@ get_filters_response_filters
      {
        attribute id { uuid }
        &amp; get_filters_response_filters_term
+       &amp; get_filters_response_filters_name?
        &amp; get_filters_response_filters_keywords
      }
 
 get_filters_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_filters_response_filters_name
+ = element name
      {
        text
      }
@@ -14021,6 +14162,11 @@ get_filters_response_filter_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -14245,11 +14391,18 @@ get_groups_response_filters
      {
        attribute id { uuid }
        &amp; get_groups_response_filters_term
+       &amp; get_groups_response_filters_name?
        &amp; get_groups_response_filters_keywords
      }
 
 get_groups_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_groups_response_filters_name
+ = element name
      {
        text
      }
@@ -14847,6 +15000,11 @@ get_groups_response_group_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -15440,12 +15598,19 @@ get_info_response_filters
      {
        attribute id { uuid }
        &amp; get_info_response_filters_term
+       &amp; get_info_response_filters_name?
        &amp; get_info_response_filters_keywords
      }
 
 get_info_response_filters_term
  = element term    # type text
      {
+     }
+
+get_info_response_filters_name
+ = element name
+     {
+       text
      }
 
 get_info_response_filters_keywords
@@ -15884,6 +16049,11 @@ get_info_response_details
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -16152,11 +16322,18 @@ get_lsc_credentials_response_filters
      {
        attribute id { uuid }
        &amp; get_lsc_credentials_response_filters_term
+       &amp; get_lsc_credentials_response_filters_name?
        &amp; get_lsc_credentials_response_filters_keywords
      }
 
 get_lsc_credentials_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_lsc_credentials_response_filters_name
+ = element name
      {
        text
      }
@@ -16609,6 +16786,11 @@ get_lsc_credentials_response_lsc_credential_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -16708,11 +16890,18 @@ get_notes_response_filters
      {
        attribute id { uuid }
        &amp; get_notes_response_filters_term
+       &amp; get_notes_response_filters_name?
        &amp; get_notes_response_filters_keywords
      }
 
 get_notes_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_notes_response_filters_name
+ = element name
      {
        text
      }
@@ -18248,6 +18437,11 @@ get_nvt_feed_version_response_version
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -18347,11 +18541,18 @@ get_overrides_response_filters
      {
        attribute id { uuid }
        &amp; get_overrides_response_filters_term
+       &amp; get_overrides_response_filters_name?
        &amp; get_overrides_response_filters_keywords
      }
 
 get_overrides_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_overrides_response_filters_name
+ = element name
      {
        text
      }
@@ -18997,6 +19198,11 @@ get_overrides_response_override_result_description
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -19284,11 +19490,18 @@ get_permissions_response_filters
      {
        attribute id { uuid }
        &amp; get_permissions_response_filters_term
+       &amp; get_permissions_response_filters_name?
        &amp; get_permissions_response_filters_keywords
      }
 
 get_permissions_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_permissions_response_filters_name
+ = element name
      {
        text
      }
@@ -19658,6 +19871,11 @@ get_permissions_response_permission_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -19965,11 +20183,18 @@ get_port_lists_response_filters
      {
        attribute id { uuid }
        &amp; get_port_lists_response_filters_term
+       &amp; get_port_lists_response_filters_name?
        &amp; get_port_lists_response_filters_keywords
      }
 
 get_port_lists_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_port_lists_response_filters_name
+ = element name
      {
        text
      }
@@ -20514,6 +20739,11 @@ get_preferences_response_preference_default
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -20657,11 +20887,18 @@ get_reports_response_filters
      {
        attribute id { uuid }
        &amp; get_reports_response_filters_term
+       &amp; get_reports_response_filters_name?
        &amp; get_reports_response_filters_keywords
      }
 
 get_reports_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_reports_response_filters_name
+ = element name
      {
        text
      }
@@ -21171,6 +21408,11 @@ get_reports_response_report_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -21544,11 +21786,18 @@ get_report_formats_response_filters
      {
        attribute id { uuid }
        &amp; get_report_formats_response_filters_term
+       &amp; get_report_formats_response_filters_name?
        &amp; get_report_formats_response_filters_keywords
      }
 
 get_report_formats_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_report_formats_response_filters_name
+ = element name
      {
        text
      }
@@ -22015,6 +22264,11 @@ get_report_formats_response_report_format_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -22371,11 +22625,18 @@ get_results_response_filters
      {
        attribute id { uuid }
        &amp; get_results_response_filters_term
+       &amp; get_results_response_filters_name?
        &amp; get_results_response_filters_keywords
      }
 
 get_results_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_results_response_filters_name
+ = element name
      {
        text
      }
@@ -22753,6 +23014,11 @@ get_results_response_result_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -22977,11 +23243,18 @@ get_roles_response_filters
      {
        attribute id { uuid }
        &amp; get_roles_response_filters_term
+       &amp; get_roles_response_filters_name?
        &amp; get_roles_response_filters_keywords
      }
 
 get_roles_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_roles_response_filters_name
+ = element name
      {
        text
      }
@@ -23313,6 +23586,11 @@ get_roles_response_role_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -23586,11 +23864,18 @@ get_scanners_response_filters
      {
        attribute id { uuid }
        &amp; get_scanners_response_filters_term
+       &amp; get_scanners_response_filters_name?
        &amp; get_scanners_response_filters_keywords
      }
 
 get_scanners_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_scanners_response_filters_name
+ = element name
      {
        text
      }
@@ -23937,6 +24222,11 @@ get_scanners_response_scanner_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -24252,11 +24542,18 @@ get_schedules_response_filters
      {
        attribute id { uuid }
        &amp; get_schedules_response_filters_term
+       &amp; get_schedules_response_filters_name?
        &amp; get_schedules_response_filters_keywords
      }
 
 get_schedules_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_schedules_response_filters_name
+ = element name
      {
        text
      }
@@ -24788,6 +25085,11 @@ get_settings_response_setting_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -25047,11 +25349,18 @@ get_slaves_response_filters
      {
        attribute id { uuid }
        &amp; get_slaves_response_filters_term
+       &amp; get_slaves_response_filters_name?
        &amp; get_slaves_response_filters_keywords
      }
 
 get_slaves_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_slaves_response_filters_name
+ = element name
      {
        text
      }
@@ -25487,6 +25796,11 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -25694,11 +26008,18 @@ get_tags_response_filters
      {
        attribute id { uuid }
        &amp; get_tags_response_filters_term
+       &amp; get_tags_response_filters_name?
        &amp; get_tags_response_filters_keywords
      }
 
 get_tags_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_tags_response_filters_name
+ = element name
      {
        text
      }
@@ -26111,6 +26432,11 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -26483,11 +26809,18 @@ get_targets_response_filters
      {
        attribute id { uuid }
        &amp; get_targets_response_filters_term
+       &amp; get_targets_response_filters_name?
        &amp; get_targets_response_filters_keywords
      }
 
 get_targets_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_targets_response_filters_name
+ = element name
      {
        text
      }
@@ -27231,6 +27564,11 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>term</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -28008,11 +28346,18 @@ get_tasks_response_filters
      {
        attribute id { uuid }
        &amp; get_tasks_response_filters_term
+       &amp; get_tasks_response_filters_name?
        &amp; get_tasks_response_filters_keywords
      }
 
 get_tasks_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_tasks_response_filters_name
+ = element name
      {
        text
      }
@@ -28563,6 +28908,11 @@ get_tasks_response_task_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>keywords</b>&gt;
               <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
 <ul style="list-style: none"><li>
@@ -28828,11 +29178,18 @@ get_users_response_filters
      {
        attribute id { uuid }
        &amp; get_users_response_filters_term
+       &amp; get_users_response_filters_name?
        &amp; get_users_response_filters_keywords
      }
 
 get_users_response_filters_term
  = element term
+     {
+       text
+     }
+
+get_users_response_filters_name
+ = element name
      {
        text
      }
