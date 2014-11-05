@@ -1,5 +1,11 @@
 2014-11-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/database-statistics-sqlite: New. Shell script to gather
+	information about potentially superfluous data from an OpenVAS Manager
+	SQLite3 database.
+
+2014-11-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* report_formats/verinice-itg/create_report_import: Bump version.
 
 2014-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
