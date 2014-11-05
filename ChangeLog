@@ -1,3 +1,7 @@
+2014-11-05  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* report_formats/verinice-itg/create_report_import: Bump version.
+
 2014-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (manage_result_type_threat, task_run_status_name): Remove

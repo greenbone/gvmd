@@ -2,8 +2,8 @@ NAME="Verinice ITG"
 UUID=`uuid`
 EXTENSION=vna
 CONTENT_TYPE="application/zip"
-SUMMARY="Greenbone Verinice ITG Report v1.0.0"
-DESCRIPTION="IT-Grundschutz Report for Verinice import, version 1.0.0"
+SUMMARY="Greenbone Verinice ITG Report v1.0.1"
+DESCRIPTION="IT-Grundschutz Report for Verinice import, version 1.0.1"
 
 # Names must be in alphabetical order.
 FNAME1=classification-helpers.xsl
