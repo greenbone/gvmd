@@ -1,3 +1,15 @@
+2014-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20666.
+
+	Remove last uses of table report_results.
+
+	* src/manage_acl.c (user_owns_result): Link results and reports
+	directly.
+
+	* src/manage_sql.c (init_result_iterator): Link results and reports
+	directly.
+
 2014-11-04  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
