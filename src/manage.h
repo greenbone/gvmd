@@ -812,9 +812,6 @@ severity_data_level_counts (const severity_data_t*, const gchar*,
 const char*
 run_status_name (task_status_t);
 
-const char*
-task_run_status_name (task_t);
-
 int
 start_task (const char *, char**);
 
@@ -877,10 +874,6 @@ int
 result_detection_reference (result_t, char **, char **, char **, char **,
                             char **);
 
-const char*
-manage_result_type_threat (const char*);
-
-
 /* Reports. */
 
 /** @todo How is this documented? */

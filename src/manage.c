@@ -391,28 +391,6 @@ delete_reports (task_t task)
   return 0;
 }
 
-/**
- * @brief Return the threat associated with a result type.
- *
- * @param[in]  type  Result type.
- *
- * @return Threat name.
- */
-const char*
-manage_result_type_threat (const char* type)
-{
-  if (strcasecmp (type, "Security Hole") == 0)
-    return "High";
-  if (strcasecmp (type, "Security Warning") == 0)
-    return "Medium";
-  if (strcasecmp (type, "Security Note") == 0)
-    return "Low";
-  if (strcasecmp (type, "False Positive") == 0)
-    return "False Positive";
-  return "Log";
-}
-
-
 /* Array index of severity 0.0 in the severity_data_t.counts array */
 #define ZERO_SEVERITY_INDEX 4
 
@@ -899,20 +877,6 @@ run_status_name_internal (task_status_t status)
       case TASK_STATUS_STOPPED:          return "Stopped";
       default:                           return "Internal Error";
     }
-}
-
-/**
- * @brief Get the name of the status of a task.
- *
- * @param[in]  task  The task.
- *
- * @return The name of the status of the given task (for example, "Done" or
- *         "Running").
- */
-const char*
-task_run_status_name (task_t task)
-{
-  return run_status_name (task_run_status (task));
 }
 
 /**

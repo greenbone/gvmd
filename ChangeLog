@@ -1,3 +1,10 @@
+2014-11-05  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (manage_result_type_threat, task_run_status_name): Remove
+	unused functions.
+
+	* src/manage.h: Delete removed functions headers.
+
 2014-11-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* tools/openvas-migrate-to-postgres.in: New file.  Missed in last
