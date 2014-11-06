@@ -1,3 +1,16 @@
+2014-11-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Delete permissions for User and Observer roles so that they are
+	recreated along with new ones.  Hence increase database version to
+	137.  Add database migration from version 136 to 137.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 137.
+
+	* src/manage_migrators.c (migrate_136_to_137): New function.
+	(database_migrators): Add migrate_136_to_137.
+
+	* doc/db.png: Update for version change.
+
 2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_exec_internal): Use MIN because an upper limit

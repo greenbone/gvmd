@@ -9626,6 +9626,43 @@ migrate_135_to_136 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 136 to version 137.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_136_to_137 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 136. */
+
+  if (manage_db_version () != 136)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Commands like get_scanners have a permission check, delete the roles'
+   * permissions and they will be recreated (along with the new permissions) on
+   * start-up. */
+  sql ("DELETE FROM permissions"
+       " WHERE subject_type = 'role' AND subject IN"
+       "   (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_USER "'"
+       "    OR uuid = '" ROLE_UUID_OBSERVER "');");
+
+  /* Set the database version to 137. */
+
+  set_db_version (137);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -9773,6 +9810,7 @@ static migrator_t database_migrators[]
     {134, migrate_133_to_134},
     {135, migrate_134_to_135},
     {136, migrate_135_to_136},
+    {137, migrate_136_to_137},
     /* End marker. */
     {-1, NULL}};
 
