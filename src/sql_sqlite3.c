@@ -334,7 +334,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           if (retry)
             {
               if (retries < 0)
-                usleep (MAX (-retries * 10000, 5000000));
+                usleep (MIN (-retries * 10000, 5000000));
               retries--;
               continue;
             }

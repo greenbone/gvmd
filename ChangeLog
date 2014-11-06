@@ -1,5 +1,10 @@
 2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql_sqlite3.c (sql_exec_internal): Use MIN because an upper limit
+	is required.  MAX gives a lower limit.
+
+2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (main): Add version to log message.
 
 2014-11-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
