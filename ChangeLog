@@ -1,3 +1,10 @@
+2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20805.
+
+	* src/sql.c (sqlv, sql_quiet, sql_x_internal): Use MIN because an upper
+	limit is required.  MAX gives a lower limit.
+
 2014-11-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20666.

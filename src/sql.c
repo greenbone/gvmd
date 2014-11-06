@@ -204,7 +204,7 @@ sqlv (int retry, char* sql, va_list args)
           if (retry)
             {
               if (retries < 0)
-                usleep (MAX (-retries * 10000, 5000000));
+                usleep (MIN (-retries * 10000, 5000000));
               retries--;
               continue;
             }
@@ -361,7 +361,7 @@ sql_quiet (char* sql, ...)
       if (ret == SQLITE_BUSY)
         {
           if (retries < 0)
-            usleep (MAX (-retries * 10000, 5000000));
+            usleep (MIN (-retries * 10000, 5000000));
           retries--;
           continue;
         }
@@ -441,7 +441,7 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
       if (ret == SQLITE_BUSY)
         {
           if (retries < 0)
-            usleep (MAX (-retries * 10000, 5000000));
+            usleep (MIN (-retries * 10000, 5000000));
           retries--;
           continue;
         }
