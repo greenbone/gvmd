@@ -1258,7 +1258,9 @@ main (int argc, char** argv)
   g_free (rc_name);
   setup_log_handlers (log_config);
 
-  infof ("   OpenVAS Manager\n");
+  infof ("   OpenVAS Manager version %s (DB revision %i)\n",
+         OPENVASMD_VERSION,
+         manage_db_supported_version ());
 
   if (backup_database)
     {

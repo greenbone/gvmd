@@ -1,3 +1,7 @@
+2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c (main): Add version to log message.
+
 2014-11-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (check_db_settings, modify_setting): Add new
