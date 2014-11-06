@@ -10405,6 +10405,40 @@ check_db_settings ()
          " ('578a1c14-e2dc-45ef-a591-89d31391d007', NULL, 'Auto-Refresh',"
          "  'The delay between automatic page refreshs in seconds.',"
          "  '0');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = 'a6ac88c5-729c-41ba-ac0a-deea4a3441f2'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('a6ac88c5-729c-41ba-ac0a-deea4a3441f2', NULL,"
+         "  'Details Export File Name',"
+         "  'File name format string for the export of resource details.',"
+         "  '%T-%U');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('0872a6ed-4f85-48c5-ac3f-a5ef5e006745', NULL,"
+         "  'List Export File Name',"
+         "  'File name format string for the export of resource lists.',"
+         "  '%T-%D');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
+               " AND owner IS NULL;")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('e1a2ae0b-736e-4484-b029-330c9e15b900', NULL,"
+         "  'Report Export File Name',"
+         "  'File name format string for the export of reports.',"
+         "  '%T-%U');");
+
 }
 
 /**
@@ -47937,6 +47971,73 @@ modify_setting (const gchar *uuid, const gchar *name,
              quoted_value);
 
       g_free (quoted_uuid);
+      g_free (quoted_value);
+
+      return 0;
+    }
+
+  /* Export file name format */
+  if (uuid
+      && (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0
+          || strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0
+          || strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0))
+    {
+      gsize value_size;
+      gchar *value, *quoted_value;
+
+      assert (current_credentials.uuid);
+      if (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0)
+        setting_name = "Details Export File Name";
+      else if (strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0)
+        setting_name = "List Export File Name";
+      else if (strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0)
+        setting_name = "Report Export File Name";
+      else
+        return -1;
+
+      if (value_64 && strlen (value_64))
+        value = (gchar*) g_base64_decode (value_64, &value_size);
+      else
+        {
+          value = g_strdup ("");
+          value_size = 0;
+        }
+      quoted_value = sql_quote (value);
+
+      if (strcmp (value, "") == 0)
+        {
+          g_free (value);
+          g_free (quoted_value);
+          return 2;
+        }
+
+      if (sql_int ("SELECT count(*) FROM settings"
+                   " WHERE uuid = '%s'"
+                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
+                   uuid,
+                   current_credentials.uuid))
+        sql ("UPDATE settings SET value = '%s'"
+             " WHERE uuid = '%s'"
+             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
+             quoted_value,
+             uuid,
+             current_credentials.uuid);
+      else
+        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+             " VALUES"
+             " ('%s',"
+             "  (SELECT id FROM users WHERE uuid = '%s'),"
+             "  '%s',"
+             "  (SELECT comment FROM settings"
+             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "  '%s');",
+             uuid,
+             current_credentials.uuid,
+             setting_name,
+             uuid,
+             quoted_value);
+
+      g_free (value);
       g_free (quoted_value);
 
       return 0;

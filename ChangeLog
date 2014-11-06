@@ -1,3 +1,9 @@
+2014-11-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (check_db_settings, modify_setting): Add new
+	settings "Details Export File Name", "List Export File Name" and
+	"Report Export File Name".
+
 2014-11-05  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* tools/database-statistics-sqlite: New. Shell script to gather
