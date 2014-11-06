@@ -1,3 +1,20 @@
+2014-11-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add get_aggregates permission to all predefined roles except Monitor.
+	Hence increase database version to 138.  Add database migration from
+	version 137 to 138.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 138.
+
+	* src/manage_migrators.c (migrate_137_to_138): New function.
+	(database_migrators): Add migrate_137_to_138.
+	
+	* src/manage_sql.c (omp_commands): Add get_aggregates.
+	(check_db_permissions): Explicitly add get_aggregates permission for
+	roles Guest and Info.
+
+	* doc/db.png: Update for version change.
+
 2014-11-06  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Delete permissions for User and Observer roles so that they are

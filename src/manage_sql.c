@@ -346,6 +346,7 @@ command_t omp_commands[]
     {"DESCRIBE_SCAP", "Get details of the SCAP feed this Manager uses."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"GET_AGENTS", "Get all agents."},
+    {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_CONFIGS", "Get all configs."},
     {"GET_FILTERS", "Get all filters."},
@@ -11455,6 +11456,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_GUEST, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_GUEST, "COMMANDS");
       add_role_permission (ROLE_UUID_GUEST, "HELP");
+      add_role_permission (ROLE_UUID_GUEST, "GET_AGGREGATES");
       add_role_permission (ROLE_UUID_GUEST, "GET_FILTERS");
       add_role_permission (ROLE_UUID_GUEST, "GET_INFO");
       add_role_permission (ROLE_UUID_GUEST, "GET_NVTS");
@@ -11477,6 +11479,7 @@ check_db_permissions ()
       add_role_permission (ROLE_UUID_INFO, "AUTHENTICATE");
       add_role_permission (ROLE_UUID_INFO, "COMMANDS");
       add_role_permission (ROLE_UUID_INFO, "HELP");
+      add_role_permission (ROLE_UUID_INFO, "GET_AGGREGATES");
       add_role_permission (ROLE_UUID_INFO, "GET_INFO");
       add_role_permission (ROLE_UUID_INFO, "GET_NVTS");
       add_role_permission (ROLE_UUID_INFO, "GET_SETTINGS");

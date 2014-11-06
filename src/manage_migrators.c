@@ -9663,6 +9663,82 @@ migrate_136_to_137 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 137 to version 138.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_137_to_138 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 137. */
+
+  if (manage_db_version () != 137)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add get_aggregates permissions to all predefined roles except Monitor. */
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, 'get_aggregates', '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       ROLE_UUID_GUEST);
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, 'get_aggregates', '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       ROLE_UUID_INFO);
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, 'get_aggregates', '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       ROLE_UUID_OBSERVER);
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), NULL, 'get_aggregates', '', '',"
+       "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+       "  (SELECT id FROM roles WHERE uuid = '%s'),"
+       "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       ROLE_UUID_USER);
+
+  /* Set the database version to 138. */
+
+  set_db_version (138);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -9811,6 +9887,7 @@ static migrator_t database_migrators[]
     {135, migrate_134_to_135},
     {136, migrate_135_to_136},
     {137, migrate_136_to_137},
+    {138, migrate_137_to_138},
     /* End marker. */
     {-1, NULL}};
 
