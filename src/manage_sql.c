@@ -16457,11 +16457,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " (SELECT name FROM nvts"
                              "  WHERE nvts.oid = results.nvt)"
                              "  AS vulnerability"
-                             " FROM results"
-                             " WHERE results.report = %llu"
+                             " FROM results, report_results"
+                             " WHERE report_results.report = %llu"
                              "%s"
                              "%s"
                              "%s"
+                             " AND report_results.result = results.ROWID"
                              "%s"
                              " LIMIT %i OFFSET %i;",
                              severity_sql,
@@ -16630,8 +16631,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                            " severity_to_type (%s), description,"
                            " results.task, results.report, NULL,"
                            " nvt_version, %s, %s"
-                           " FROM results, reports"
-                           " WHERE results.report = reports.id"
+                           " FROM results, report_results, reports"
+                           " WHERE results.ROWID = report_results.result"
+                           " AND report_results.report = reports.ROWID"
                            " AND reports.owner ="
                            " (SELECT ROWID FROM users WHERE uuid = '%s');",
                            severity_sql,

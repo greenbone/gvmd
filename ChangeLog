@@ -1,5 +1,16 @@
 2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Revert backport of r20666.  This patch did not actually help performance
+	and would require further backporting to function correctly.
+
+	* src/manage_acl.c (user_owns_result): Link results and reports
+	directly.
+
+	* src/manage_sql.c (init_result_iterator): Link results and reports
+	directly.
+
+2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20805.
 
 	* src/sql.c (sqlv, sql_quiet, sql_x_internal): Use MIN because an upper
