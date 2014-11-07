@@ -38068,6 +38068,9 @@ task_schedule_iterator_start_due (iterator_t* iterator)
 
   if (iterator->done) return FALSE;
 
+  if (task_schedule_iterator_next_time (iterator) == 0)
+    return FALSE;
+
   run_status = task_run_status (task_schedule_iterator_task (iterator));
   start_time = task_schedule_iterator_next_time (iterator)
                 + task_schedule_iterator_initial_offset (iterator)

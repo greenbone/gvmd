@@ -1,3 +1,10 @@
+2014-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20820.
+
+	* src/manage_sql.c (task_schedule_iterator_start_due): Check whether
+	the "next due time" is 0 before adjusting it for the initial timezone.
+
 2014-11-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Revert backport of r20666.  This patch did not actually help performance
