@@ -1,3 +1,8 @@
+2014-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (task_schedule_iterator_start_due): Check whether
+	the "next due time" is 0 before adjusting it for the initial timezone.
+
 2014-11-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (send_to_sourcefire, send_to_verinice, manage_report)
