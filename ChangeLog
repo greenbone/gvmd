@@ -1,3 +1,9 @@
+2014-11-07  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (send_to_sourcefire, send_to_verinice, manage_report)
+	(manage_send_report): Call setgroups() before setgid(). Adjusted patch
+	from Michal Ambroz.
+
 2014-11-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add get_aggregates permission to all predefined roles except Monitor.
@@ -8,7 +14,7 @@
 
 	* src/manage_migrators.c (migrate_137_to_138): New function.
 	(database_migrators): Add migrate_137_to_138.
-	
+
 	* src/manage_sql.c (omp_commands): Add get_aggregates.
 	(check_db_permissions): Explicitly add get_aggregates permission for
 	roles Guest and Info.

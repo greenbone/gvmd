@@ -57,6 +57,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <grp.h>
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
@@ -7197,6 +7198,12 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                 /* Child.  Drop privileges, run command, exit. */
                 cleanup_manage_process (FALSE);
 
+                if (setgroups (0,NULL))
+                  {
+                    g_warning ("%s (child): setgroups: %s\n",
+                               __FUNCTION__, strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
                 if (setgid (nobody->pw_gid))
                   {
                     g_warning ("%s (child): setgid: %s\n",
@@ -7517,6 +7524,12 @@ send_to_verinice (const char *url, const char *username, const char *password,
 
                 cleanup_manage_process (FALSE);
 
+                if (setgroups (0,NULL))
+                  {
+                    g_warning ("%s (child): setgroups: %s\n",
+                               __FUNCTION__, strerror (errno));
+                    exit (EXIT_FAILURE);
+                  }
                 if (setgid (nobody->pw_gid))
                   {
                     g_warning ("%s (child): setgid: %s\n",
@@ -23827,6 +23840,12 @@ manage_report (report_t report, report_format_t report_format,
 
                   cleanup_manage_process (FALSE);
 
+                  if (setgroups (0,NULL))
+                    {
+                      g_warning ("%s (child): setgroups: %s\n",
+                                 __FUNCTION__, strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
                   if (setgid (nobody->pw_gid))
                     {
                       g_warning ("%s (child): setgid: %s\n",
@@ -24330,6 +24349,12 @@ manage_send_report (report_t report, report_t delta_report,
 
                   cleanup_manage_process (FALSE);
 
+                  if (setgroups (0,NULL))
+                    {
+                      g_warning ("%s (child): setgroups: %s\n",
+                                 __FUNCTION__, strerror (errno));
+                      exit (EXIT_FAILURE);
+                    }
                   if (setgid (nobody->pw_gid))
                     {
                       g_warning ("%s (child): setgid: %s\n",
