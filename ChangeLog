@@ -1,5 +1,9 @@
 2014-11-11  Benoît Allard  <benoit.allard@greenbone.net>
 
+	* CMakeLists.txt: Remove trailing hash.
+
+2014-11-11  Benoît Allard  <benoit.allard@greenbone.net>
+
 	* CMakeLists.txt: Define _DEFAULT_SOURCE to silent a warning with glibc
 	  >= 2.20. See
 	  https://sourceware.org/glibc/wiki/Release/2.20#Packaging_Changes
