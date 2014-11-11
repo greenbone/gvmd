@@ -1,3 +1,9 @@
+2014-11-11  Benoît Allard  <benoit.allard@greenbone.net>
+
+	* CMakeLists.txt: Define _DEFAULT_SOURCE to silent a warning with glibc
+	  >= 2.20. See
+	  https://sourceware.org/glibc/wiki/Release/2.20#Packaging_Changes
+
 2014-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (task_schedule_iterator_start_due): Check whether
