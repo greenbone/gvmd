@@ -1,3 +1,9 @@
+2014-11-11  Michael Meyer  <michael.meyer@greenbone.net>
+
+	* tools/openvas-certdata-sync.in(chk_system_tools()):
+	  Don't check for wget/curl as both are not used by this
+	  script.
+
 2014-11-11  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* CMakeLists.txt: Remove trailing hash.

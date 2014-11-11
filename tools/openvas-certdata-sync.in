@@ -162,7 +162,7 @@ chk_system_tools () {
     exit 1
   fi
 
-  if [ -z "$CMD_RSYNC" -a -z "$CMD_WGET" -a -z "$CMD_CURL" ]; then
+  if [ -z "$CMD_RSYNC" ]; then
     SELFTEST_FAIL=1
   fi
 
