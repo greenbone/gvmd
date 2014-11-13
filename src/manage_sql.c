@@ -4425,8 +4425,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar* apply_overrides_str;
   int apply_overrides;
   column_t *select_columns;
-  const char *columns;
-  const char *trash_columns;
+  gchar *columns;
+  gchar *trash_columns;
   const char **filter_columns;
   int first, max;
   gchar *from_table, *trash_extra, *clause, *order, *filter, *owned_clause;
@@ -4466,19 +4466,31 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   if (columns == NULL || filter_columns == NULL)
     {
+      g_free (columns);
+      g_free (trash_columns);
       return 5;
     }
   if (get->trash && trash_columns == NULL)
     {
+      g_free (columns);
+      g_free (trash_columns);
       return 6;
     }
 
   owned = type_owned (type);
 
   if (stat_column && vector_find_filter (filter_columns, stat_column) == 0)
-    return 3;
+    {
+      g_free (columns);
+      g_free (trash_columns);
+      return 3;
+    }
   if (group_column && vector_find_filter (filter_columns, group_column) == 0)
-    return 4;
+    {
+      g_free (columns);
+      g_free (trash_columns);
+      return 4;
+    }
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, get->trash, &order, &first, &max,
@@ -4535,7 +4547,15 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                         stat_column,
                                         stat_column);
       else
-        return -1;
+        {
+          g_free (columns);
+          g_free (trash_columns);
+          g_free (owned_clause);
+          g_free (trash_extra);
+          g_free (order);
+          g_free (clause);
+          return -1;
+        }
 
       outer_group_by = g_strdup ("");
     }
@@ -4647,6 +4667,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                    outer_group_by);
     }
 
+  g_free (columns);
+  g_free (trash_columns);
   g_free (owned_clause);
   g_free (trash_extra);
   g_free (order);

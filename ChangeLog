@@ -1,3 +1,8 @@
+2014-11-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Free strings on errors.
+	Also free columns and trash_columns on normal return.
+
 2014-11-11  Michael Meyer  <michael.meyer@greenbone.net>
 
 	* tools/openvas-certdata-sync.in(chk_system_tools()):
