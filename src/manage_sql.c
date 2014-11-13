@@ -22657,6 +22657,28 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
          start_time);
   free (start_time);
 
+  {
+    time_t start_time_epoch;
+    const char *abbrev;
+    gchar *report_zone;
+
+    start_time_epoch = scan_start_time_epoch (report);
+    abbrev = NULL;
+    if (zone && strlen (zone))
+      report_zone = g_strdup (zone);
+    else
+      report_zone = setting_timezone ();
+    iso_time_tz (&start_time_epoch, report_zone, &abbrev);
+    PRINT (out,
+           "<timezone>%s</timezone>"
+           "<timezone_abbrev>%s</timezone_abbrev>",
+           report_zone
+            ? report_zone
+            : "Coordinated Universal Time",
+           abbrev ? abbrev : "UTC");
+    g_free (report_zone);
+  }
+
   /* Port summary. */
 
   if (get->details && (delta == 0))
@@ -47697,6 +47719,18 @@ setting_dynamic_severity_int ()
                   "           WHERE users.uuid = '%s')))"
                   " ORDER BY owner DESC LIMIT 1;",
                   current_credentials.uuid);
+}
+
+/**
+ * @brief Return the user's timezone.
+ *
+ * @return User Severity Class in settings if it exists, else NULL.
+ */
+char *
+setting_timezone ()
+{
+  return sql_string ("SELECT timezone FROM users WHERE uuid = '%s'",
+                     current_credentials.uuid);
 }
 
 /**

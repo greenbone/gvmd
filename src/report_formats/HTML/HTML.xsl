@@ -41,6 +41,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <!-- <xsl:key name="host_results" match="*/result" use="host" /> -->
   <!-- <xsl:key name="host_ports" match="*/result[port]" use="../host" /> -->
 
+<func:function name="openvas:timezone-abbrev">
+  <xsl:choose>
+    <xsl:when test="/report/@extension='xml'">
+      <func:result select="/report/report/timezone_abbrev"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="/report/timezone_abbrev"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
 <func:function name="openvas:get-nvt-tag">
   <xsl:param name="tags"/>
   <xsl:param name="name"/>
@@ -254,17 +265,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template name="date">
     <xsl:param name="time" select="text ()"/>
-    <xsl:choose>
-      <xsl:when test="contains($time, '+')">
-        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' +', substring-after ($time, '+'))"/>
-      </xsl:when>
-      <xsl:when test="count (str:split ($time, '-')) &gt; 3">
-        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' -', (str:split ($time, '-'))[4])"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' UTC')"/>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' ', openvas:timezone-abbrev ())"/>
   </xsl:template>
 
   <xsl:template match="scan_start">
@@ -966,6 +967,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:text> results.</xsl:text>
         </xsl:otherwise>
       </xsl:choose>
+    </p>
+    <p>
+      <xsl:text>All dates are displayed using the timezone "</xsl:text>
+      <xsl:value-of select="timezone"/>
+      <xsl:text>", which is abbreviated "</xsl:text>
+      <xsl:value-of select="timezone_abbrev"/>
+      <xsl:text>".</xsl:text>
     </p>
 
     <xsl:choose>

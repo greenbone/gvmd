@@ -3177,6 +3177,9 @@ setting_severity ();
 int
 setting_dynamic_severity_int ();
 
+char *
+setting_timezone ();
+
 void
 init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
                        const char *);
