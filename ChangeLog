@@ -1,3 +1,30 @@
+2014-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20851.
+
+	In report formats use abbreviation instead of ISO style for timezone.
+
+	* src/manage_sql.c (print_report_xml): Add TIMEZONE and TIMEZONE_ABBREV.
+	(setting_timezone): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/report_formats/HTML/HTML.xsl (openvas:timezone-abbrev): New
+	function.
+	(date): Use abbreviation instead of ISO style timezone.
+	(real-report): Note report timezone.
+
+	* src/report_formats/LaTeX/latex.xsl (openvas:timezone-abbrev): New
+	function.
+	(format-date, scan_end): Use abbreviation instead of ISO style timezone.
+	(abstract): Note report timezone.  Also correct end time of second scan
+	in delta case.
+
+	* src/report_formats/TXT/TXT.xsl (openvas:timezone-abbrev): New
+	function.
+	(date): Use abbreviation instead of ISO style timezone.
+	(real-report): Note report timezone.
+
 2014-09-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20382.

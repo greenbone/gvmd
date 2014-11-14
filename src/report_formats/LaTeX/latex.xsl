@@ -39,6 +39,17 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:output method="text" encoding="string" indent="no"/>
   <xsl:strip-space elements="*"/>
 
+  <func:function name="openvas:timezone-abbrev">
+    <xsl:choose>
+      <xsl:when test="/report/@extension='xml'">
+        <func:result select="/report/report/timezone_abbrev"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <func:result select="/report/timezone_abbrev"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </func:function>
+
   <func:function name="openvas:get-nvt-tag">
     <xsl:param name="tags"/>
     <xsl:param name="name"/>
@@ -69,34 +80,14 @@ TODOS: Solve Whitespace/Indentation problem of this file.
   <xsl:template match="scan_start" name="format-date">
     <xsl:param name="date" select="."/>
     <xsl:if test="string-length ($date)">
-      <xsl:choose>
-        <xsl:when test="contains($date, '+')">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' +', substring-after ($date, '+'))"/>
-        </xsl:when>
-        <xsl:when test="count (str:split ($date, '-')) &gt; 3">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' -', (str:split ($date, '-'))[4])"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
   <xsl:template match="scan_end">
     <xsl:param name="date" select="."/>
     <xsl:if test="string-length ($date)">
-      <xsl:choose>
-        <xsl:when test="contains($date, '+')">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' +', substring-after ($date, '+'))"/>
-        </xsl:when>
-        <xsl:when test="count (str:split ($date, '-')) &gt; 3">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' -', (str:split ($date, '-'))[4])"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
@@ -560,6 +551,11 @@ TODOS: Solve Whitespace/Indentation problem of this file.
 \begin{abstract}
 This document predicts the results of a security scan, based on
 scan information already gathered for the hosts.
+All dates are displayed using the timezone ``</xsl:text>
+        <xsl:value-of select="timezone"/>
+        <xsl:text>'', which is abbreviated ``</xsl:text>
+        <xsl:value-of select="timezone_abbrev"/>
+        <xsl:text>''.
 The report first summarises the predicted results.  Then, for each host,
 the report describes every predicted issue.  Please consider the
 advice given in each description, in order to rectify the issue.
@@ -571,6 +567,11 @@ advice given in each description, in order to rectify the issue.
 \renewcommand{\abstractname}{Delta Report Summary}
 \begin{abstract}
 This document compares the results of two security scans.
+All dates are displayed using the timezone ``</xsl:text>
+        <xsl:value-of select="timezone"/>
+        <xsl:text>'', which is abbreviated ``</xsl:text>
+        <xsl:value-of select="timezone_abbrev"/>
+        <xsl:text>''.
 The task was ``</xsl:text>
         <xsl:value-of select="/report/task/name"/>
         <xsl:text>''.  The first scan started at </xsl:text>
@@ -581,7 +582,7 @@ The task was ``</xsl:text>
 The second scan started at </xsl:text>
         <xsl:apply-templates select="delta/report/scan_start"/>
 <xsl:text> and ended at </xsl:text>
-        <xsl:apply-templates select="delta/report/scan_start"/>
+        <xsl:apply-templates select="delta/report/scan_end"/>
 <xsl:text>.
 The report first summarises the hosts found.  Then, for each host,
 the report describes the changes that occurred between the two scans.
@@ -593,6 +594,11 @@ the report describes the changes that occurred between the two scans.
 \renewcommand{\abstractname}{Summary}
 \begin{abstract}
 This document reports on the results of an automatic security scan.
+All dates are displayed using the timezone ``</xsl:text>
+        <xsl:value-of select="timezone"/>
+        <xsl:text>'', which is abbreviated ``</xsl:text>
+        <xsl:value-of select="timezone_abbrev"/>
+        <xsl:text>''.
 The task was ``</xsl:text>
         <xsl:value-of select="/report/task/name"/>
         <xsl:text>''.  The scan started at </xsl:text>

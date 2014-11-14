@@ -35,6 +35,17 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 -->
 
+<func:function name="openvas:timezone-abbrev">
+  <xsl:choose>
+    <xsl:when test="/report/@extension='xml'">
+      <func:result select="/report/report/timezone_abbrev"/>
+    </xsl:when>
+    <xsl:otherwise>
+      <func:result select="/report/timezone_abbrev"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</func:function>
+
 <func:function name="openvas:get-nvt-tag">
   <xsl:param name="tags"/>
   <xsl:param name="name"/>
@@ -209,34 +220,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   <xsl:template match="scan_start" name="format-date">
     <xsl:param name="date" select="text ()"/>
     <xsl:if test="string-length ($date)">
-      <xsl:choose>
-        <xsl:when test="contains($date, '+')">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' +', substring-after ($date, '+'))"/>
-        </xsl:when>
-        <xsl:when test="count (str:split ($date, '-')) &gt; 3">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' -', (str:split ($date, '-'))[4])"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
   <xsl:template name="scan_end">
     <xsl:param name="date" select="scan_end"/>
     <xsl:if test="string-length ($date)">
-      <xsl:choose>
-        <xsl:when test="contains($date, '+')">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' +', substring-after ($date, '+'))"/>
-        </xsl:when>
-        <xsl:when test="count (str:split ($date, '-')) &gt; 3">
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' -', (str:split ($date, '-'))[4])"/>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' UTC')"/>
-        </xsl:otherwise>
-      </xsl:choose>
+      <xsl:value-of select="concat (date:day-abbreviation ($date), ' ', date:month-abbreviation ($date), ' ', date:day-in-month ($date), ' ', format-number(date:hour-in-day($date), '00'), ':', format-number(date:minute-in-hour($date), '00'), ':', format-number(date:second-in-minute($date), '00'), ' ', date:year($date), ' ', openvas:timezone-abbrev ())"/>
     </xsl:if>
   </xsl:template>
 
@@ -779,6 +770,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:text>the issue.</xsl:text><xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
+    <xsl:call-template name="newline"/>
+
+    <xsl:text>All dates are displayed using the timezone "</xsl:text>
+    <xsl:value-of select="timezone"/>
+    <xsl:text>",</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:text>which is abbreviated "</xsl:text>
+    <xsl:value-of select="timezone_abbrev"/>
+    <xsl:text>".</xsl:text>
+    <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
 
     <xsl:choose>
