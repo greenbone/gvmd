@@ -665,6 +665,13 @@ then
   exit 1
 fi
 
+if [ $(id -u) -ne $(stat -c %u $CERT_DB) ]
+then
+  log_err "Not synchronizing or updating the database since the current user is not the owner of the database."
+  echo "Not synchronizing or updating the database since the current user is not the owner of the database."
+  exit 1
+fi
+
 if [ $ENABLED -ne 1 ]
 then
   log_notice "Synchronization of CERT data with network is disabled, will only perform local operations."

@@ -1,3 +1,9 @@
+2014-11-14  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-scapdata-sync, tools/greenbone-certdata-sync: Check
+	if the current user is indeed the owner of the database and abort
+	before doing any write operations if not.
+
 2014-11-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20820.
