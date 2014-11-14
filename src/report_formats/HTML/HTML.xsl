@@ -252,23 +252,28 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
 </xsl:template>
 
+  <xsl:template name="date">
+    <xsl:param name="time" select="text ()"/>
+    <xsl:choose>
+      <xsl:when test="contains($time, '+')">
+        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' +', substring-after ($time, '+'))"/>
+      </xsl:when>
+      <xsl:when test="count (str:split ($time, '-')) &gt; 3">
+        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' -', (str:split ($time, '-'))[4])"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="concat (date:day-abbreviation ($time), ' ', date:month-abbreviation ($time), ' ', date:day-in-month ($time), ' ', format-number(date:hour-in-day($time), '00'), ':', format-number(date:minute-in-hour($time), '00'), ':', format-number(date:second-in-minute($time), '00'), ' ', date:year($time), ' UTC')"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="scan_start">
     <tr>
       <td>Scan started:</td>
       <td>
         <xsl:if test="string-length (text ())">
           <b>
-            <xsl:choose>
-              <xsl:when test="contains(text (), '+')">
-                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' +', substring-after (text (), '+'))"/>
-              </xsl:when>
-              <xsl:when test="count (str:split (text (), '-')) &gt; 2">
-                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' -', (str:split (text (), '-'))[4])"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' UTC')"/>
-              </xsl:otherwise>
-            </xsl:choose>
+            <xsl:call-template name="date"/>
           </b>
         </xsl:if>
       </td>
@@ -280,17 +285,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <td>Scan ended:</td>
       <td>
         <xsl:if test="string-length (text ())">
-          <xsl:choose>
-            <xsl:when test="contains(text (), '+')">
-              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' +', substring-after (text (), '+'))"/>
-            </xsl:when>
-            <xsl:when test="count (str:split (text (), '-')) &gt; 2">
-              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' -', (str:split (text (), '-'))[4])"/>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="concat (date:day-abbreviation (text ()), ' ', date:month-abbreviation (text ()), ' ', date:day-in-month (text ()), ' ', format-number(date:hour-in-day(text ()), '00'), ':', format-number(date:minute-in-hour(text ()), '00'), ':', format-number(date:second-in-minute(text ()), '00'), ' ', date:year(text ()), ' UTC')"/>
-            </xsl:otherwise>
-          </xsl:choose>
+          <xsl:call-template name="date"/>
         </xsl:if>
       </td>
     </tr>
@@ -309,12 +304,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:when test="active='0'">
         </xsl:when>
         <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          Active until: <xsl:value-of select="end_time"/>.<br/>
+          <xsl:text>Active until: </xsl:text>
+          <xsl:call-template name="date">
+            <xsl:with-param name="time" select="modification_time"/>
+          </xsl:call-template>
+          <xsl:text>.</xsl:text>
+          <br/>
         </xsl:when>
         <xsl:otherwise>
         </xsl:otherwise>
       </xsl:choose>
-      Last modified: <xsl:value-of select="modification_time"/>.
+      <xsl:text>Last modified: </xsl:text>
+      <xsl:call-template name="date">
+        <xsl:with-param name="time" select="modification_time"/>
+      </xsl:call-template>
+      <xsl:text>.</xsl:text>
+      <br/>
     </div>
   </xsl:template>
 
@@ -341,12 +346,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <xsl:when test="active='0'">
         </xsl:when>
         <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          Active until: <xsl:value-of select="end_time"/>.<br/>
+          <xsl:text>Active until: </xsl:text>
+          <xsl:call-template name="date">
+            <xsl:with-param name="time" select="end_time"/>
+          </xsl:call-template>
+          <xsl:text>.</xsl:text>
+          <br/>
         </xsl:when>
         <xsl:otherwise>
         </xsl:otherwise>
       </xsl:choose>
-      Last modified: <xsl:value-of select="modification_time"/>.
+      <xsl:text>Last modified: </xsl:text>
+      <xsl:call-template name="date">
+        <xsl:with-param name="time" select="modification_time"/>
+      </xsl:call-template>
+      <xsl:text>.</xsl:text>
     </div>
   </xsl:template>
 
@@ -1064,7 +1078,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <xsl:otherwise>
             <tr>
               <td>Scanning of this host started at:</td>
-              <td><xsl:value-of select="start"/></td>
+              <td>
+                <xsl:call-template name="date">
+                  <xsl:with-param name="time" select="start"/>
+                </xsl:call-template>
+              </td>
             </tr>
           </xsl:otherwise>
         </xsl:choose>
