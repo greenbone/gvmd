@@ -2617,6 +2617,16 @@ result_overrides
 </ul>
 </li>
 <li>
+              &lt;<b>timezone</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of timezone used for dates.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>timezone_abbrev</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Abbreviation used for timezone.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>permissions</b>&gt;
               <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the report.</div>
 <ul style="list-style: none"><li>
@@ -3137,6 +3147,8 @@ report_report
        &amp; report_report_delta?
        &amp; ( report_report_sort
            &amp; report_report_filters
+           &amp; report_report_timezone
+           &amp; report_report_timezone_abbrev
            &amp; report_report_permissions
            &amp; report_report_user_tags
            &amp; report_report_scan_run_status
@@ -3363,6 +3375,18 @@ report_report_filters_delta_same
  = element same
      {
        boolean
+     }
+
+report_report_timezone
+ = element timezone
+     {
+       text
+     }
+
+report_report_timezone_abbrev
+ = element timezone_abbrev
+     {
+       text
      }
 
 report_report_permissions

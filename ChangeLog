@@ -1,3 +1,9 @@
+2014-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/html/XML/OMP.xml (report): Add TIMEZONE and TIMEZONE_ABBREV.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-11-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	In report formats use abbreviation instead of ISO style for timezone.

@@ -1144,6 +1144,8 @@ report_report
        & report_report_delta?
        & ( report_report_sort
            & report_report_filters
+           & report_report_timezone
+           & report_report_timezone_abbrev
            & report_report_permissions
            & report_report_user_tags
            & report_report_scan_run_status
@@ -1399,6 +1401,20 @@ report_report_filters_delta_same
  = element same
      {
        boolean
+     }
+
+# Name of timezone used for dates.
+report_report_timezone
+ = element timezone
+     {
+       text
+     }
+
+# Abbreviation used for timezone.
+report_report_timezone_abbrev
+ = element timezone_abbrev
+     {
+       text
      }
 
 # Permissions that the current user has on the report.

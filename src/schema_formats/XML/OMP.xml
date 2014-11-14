@@ -954,6 +954,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <g>
             <e>sort</e>
             <e>filters</e>
+            <e>timezone</e>
+            <e>timezone_abbrev</e>
             <e>permissions</e>
             <e>user_tags</e>
             <e>scan_run_status</e>
@@ -1216,6 +1218,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
+      </ele>
+      <ele>
+        <name>timezone</name>
+        <summary>Name of timezone used for dates</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+      <ele>
+        <name>timezone_abbrev</name>
+        <summary>Abbreviation used for timezone</summary>
+        <pattern>
+          text
+        </pattern>
       </ele>
       <ele>
         <name>permissions</name>
