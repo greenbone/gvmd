@@ -193,7 +193,9 @@ message ("-- Install prefix: ${CMAKE_INSTALL_PREFIX}")
 ## list and throw an error, otherwise long install-cmake-install-cmake cycles
 ## might occur.
 
-pkg_check_modules (LIBOPENVAS REQUIRED libopenvas>=8.0.0)
+pkg_check_modules (LIBOPENVAS_OMP REQUIRED libopenvas_omp>=8.0.0)
+pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=8.0.0)
+pkg_check_modules (LIBOPENVAS_BASE REQUIRED libopenvas_base>=8.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
 if (BACKEND STREQUAL SQLITE3)
@@ -250,11 +252,25 @@ execute_process (COMMAND pkg-config --libs glib-2.0
   OUTPUT_VARIABLE GLIB_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-execute_process (COMMAND pkg-config --cflags libopenvas
-  OUTPUT_VARIABLE OPENVAS_CFLAGS
+execute_process (COMMAND pkg-config --cflags libopenvas_omp
+  OUTPUT_VARIABLE OPENVAS_OMP_CFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs libopenvas
-  OUTPUT_VARIABLE OPENVAS_LDFLAGS
+execute_process (COMMAND pkg-config --libs libopenvas_omp
+  OUTPUT_VARIABLE OPENVAS_OMP_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags libopenvas_misc
+  OUTPUT_VARIABLE OPENVAS_MISC_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs libopenvas_misc
+  OUTPUT_VARIABLE OPENVAS_MISC_LDFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND pkg-config --cflags libopenvas_base
+  OUTPUT_VARIABLE OPENVAS_BASE_CFLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process (COMMAND pkg-config --libs libopenvas_base
+  OUTPUT_VARIABLE OPENVAS_BASE_LDFLAGS
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 execute_process (COMMAND pkg-config --cflags gnutls
@@ -279,6 +295,9 @@ if (BACKEND STREQUAL SQLITE3)
     OUTPUT_VARIABLE SQLITE3_LDFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (BACKEND STREQUAL SQLITE3)
+
+set (OPENVAS_CFLAGS "${OPENVAS_OMP_CFLAGS} ${OPENVAS_BASE_CFLAGS} ${OPENVAS_MISC_CFLAGS}")
+set (OPENVAS_LDFLAGS "${OPENVAS_OMP_LDFLAGS} ${OPENVAS_BASE_LDFLAGS} ${OPENVAS_MISC_LDFLAGS}")
 
 ## Version
 

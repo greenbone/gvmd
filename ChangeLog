@@ -1,3 +1,9 @@
+2014-11-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* CMakeLists.txt: Check for and link against libopenvas_omp,
+	libopenvas_misc, libopenvas_base libraries instead of the whole
+	libopenvas package.
+
 2014-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/html/XML/OMP.xml (report): Add TIMEZONE and TIMEZONE_ABBREV.
