@@ -1,3 +1,8 @@
+2014-11-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (omp_command_type): Handle resume_or_start_task
+	and resume_stopped_task separately to give correct type.
+
 2014-11-17  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* CMakeLists.txt: Check for and link against libopenvas_omp,
