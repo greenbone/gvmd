@@ -141,18 +141,18 @@ endif (SQLT_EXECUTABLE)
 
 add_custom_command (OUTPUT omp.rnc
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && xsltproc ./RNC.xsl ../XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.rnc\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/RNC && xsltproc ./RNC.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.rnc\;\"
 					DEPENDS
-					${CMAKE_SOURCE_DIR}/src/schema_formats/XML/OMP.xml
+					${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/generate
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/RNC.xsl
 					${CMAKE_SOURCE_DIR}/src/schema_formats/RNC/rnc.xsl)
 
 add_custom_command (OUTPUT omp.html
                     COMMAND sh
-					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && xsltproc ./HTML.xsl ../XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.html\;\"
+					ARGS -c \"cd ${CMAKE_SOURCE_DIR}/src/schema_formats/HTML && xsltproc ./HTML.xsl ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml > ${CMAKE_BINARY_DIR}/doc/omp.html\;\"
 					DEPENDS
-					${CMAKE_SOURCE_DIR}/src/schema_formats/XML/OMP.xml
+					${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/generate
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/HTML.xsl
 					${CMAKE_SOURCE_DIR}/src/schema_formats/HTML/rnc.xsl)

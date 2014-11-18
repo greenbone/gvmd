@@ -125,6 +125,8 @@ set (OPENVASMD_SCAP_DATABASE_VERSION 14)
 
 set (OPENVASMD_CERT_DATABASE_VERSION 6)
 
+set (OMP_VERSION "6.0")
+
 if (SYSCONF_INSTALL_DIR)
   set (SYSCONFDIR "${SYSCONF_INSTALL_DIR}")
 endif (SYSCONF_INSTALL_DIR)
@@ -309,6 +311,7 @@ configure_file (doc/Doxyfile.in doc/Doxyfile)
 configure_file (doc/Doxyfile_full.in doc/Doxyfile_full)
 configure_file (VERSION.in VERSION)
 configure_file (src/openvasmd_log_conf.cmake_in src/openvasmd_log.conf)
+configure_file (src/schema_formats/XML/OMP.xml.in src/schema_formats/XML/OMP.xml @ONLY)
 configure_file (tools/greenbone-scapdata-sync.in tools/greenbone-scapdata-sync @ONLY)
 configure_file (tools/greenbone-certdata-sync.in tools/greenbone-certdata-sync @ONLY)
 configure_file (tools/openvas-scapdata-sync.in tools/openvas-scapdata-sync @ONLY)
@@ -416,7 +419,7 @@ install (FILES src/schema_formats/RNC/generate
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
 install (FILES src/schema_formats/XML/generate
-         src/schema_formats/XML/OMP.xml
+         ${CMAKE_BINARY_DIR}/src/schema_formats/XML/OMP.xml
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_schema_formats/18e826fc-dab6-11df-b913-002264764cea/
          PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 
