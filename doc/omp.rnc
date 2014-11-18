@@ -1140,6 +1140,7 @@ report_report
      {
        attribute id { uuid }
        & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & report_report_omp
        & report_report_report_format
        & report_report_delta?
        & ( report_report_sort
@@ -1164,6 +1165,20 @@ report_report
            & report_report_host_start*
            & report_report_host_end*
            & report_report_scan_end )?
+     }
+
+# Information of the OMP server.
+report_report_omp
+ = element omp
+     {
+       report_report_omp_version
+     }
+
+# The OMP version.
+report_report_omp_version
+ = element version
+     {
+       text
      }
 
 report_report_report_format

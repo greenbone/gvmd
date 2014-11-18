@@ -948,6 +948,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </alts>
           </type>
         </attrib>
+        <e>omp</e>
         <e>report_format</e>
         <o><e>delta</e></o>
         <o>
@@ -977,6 +978,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </g>
         </o>
       </pattern>
+      <ele>
+        <name>omp</name>
+        <summary>Information of the OMP server</summary>
+        <pattern>
+          <e>version</e>
+        </pattern>
+        <ele>
+          <name>version</name>
+          <summary>The OMP version</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+      </ele>
       <ele>
         <name>report_format</name>
         <pattern>
@@ -12752,6 +12767,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   extension="xml"
                   content_type="text/xml">
             <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
+              <omp>
+                <version>@OMP_VERSION@</version>
+              </omp>
               <sort>
                 <field>
                   type

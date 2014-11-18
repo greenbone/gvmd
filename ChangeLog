@@ -1,5 +1,16 @@
 2014-11-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (print_report_xml): Add the element "omp" to the
+	report, containing the OMP version in a subelement.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add the "omp" element and
+	the version subelement.
+	(get_reports): Update XML example response accordingly.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2014-11-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Make the OMP version a macro defined centrally in the CMake files
 	like the database and daemon versions.
 

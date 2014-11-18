@@ -2454,6 +2454,15 @@ result_overrides
           ("scan" or "assets")
           </li>
 <li>
+              &lt;<b>omp</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Information of the OMP server.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The OMP version.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>report_format</b>&gt;
               <ul style="list-style: none"><li>
               &lt;<b>param</b>&gt;
@@ -3143,6 +3152,7 @@ report_report
      {
        attribute id { uuid }
        &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; report_report_omp
        &amp; report_report_report_format
        &amp; report_report_delta?
        &amp; ( report_report_sort
@@ -3167,6 +3177,18 @@ report_report
            &amp; report_report_host_start*
            &amp; report_report_host_end*
            &amp; report_report_scan_end )?
+     }
+
+report_report_omp
+ = element omp
+     {
+       report_report_omp_version
+     }
+
+report_report_omp_version
+ = element version
+     {
+       text
      }
 
 report_report_report_format
@@ -21032,6 +21054,9 @@ get_reports_response_report_count_page
            extension="xml"
            content_type="text/xml"&gt;
      &lt;report id="f0fdf522-276d-4893-9274-fb8699dc2270"&gt;
+       &lt;omp&gt;
+         &lt;version&gt;6.0&lt;/version&gt;
+       &lt;/omp&gt;
        &lt;sort&gt;
          &lt;field&gt;
            type

@@ -22236,6 +22236,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   else
     PRINT (out, "<report type=\"%s\">", type);
 
+  PRINT (out, "<omp><version>%s</version></omp>", OMP_VERSION);
+
   if (delta)
     {
       delta_states = delta_states ? delta_states : g_strdup("cgns");
