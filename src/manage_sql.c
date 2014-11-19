@@ -48194,62 +48194,62 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("All SecInfo Filter");
 
       /* Scan Management charts */
-      if (strcmp (uuid, "3d5db3c7-5208-4b47-8c28-48efc621b1e0") == 0)
+      else if (strcmp (uuid, "3d5db3c7-5208-4b47-8c28-48efc621b1e0") == 0)
         setting_name = g_strdup ("Chart Selection Tasks Left");
-      if (strcmp (uuid, "ce8608af-7e66-45a8-aa8a-76def4f9f838") == 0)
+      else if (strcmp (uuid, "ce8608af-7e66-45a8-aa8a-76def4f9f838") == 0)
         setting_name = g_strdup ("Chart Selection Tasks Right");
 
       /* SecInfo charts */
-      if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
+      else if (strcmp (uuid, "84ab32da-fe69-44d8-8a8f-70034cf28d4e") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 1");
-      if (strcmp (uuid, "517d0efe-426e-49a9-baa7-eda2832c93e8") == 0)
+      else if (strcmp (uuid, "517d0efe-426e-49a9-baa7-eda2832c93e8") == 0)
         setting_name = g_strdup ("Chart Filter SecInfo Dashboard 1");
-      if (strcmp (uuid, "42d48049-3153-43bf-b30d-72ca5ab1eb49") == 0)
+      else if (strcmp (uuid, "42d48049-3153-43bf-b30d-72ca5ab1eb49") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 2");
-      if (strcmp (uuid, "3c693fb2-4f87-4b1f-a09e-cb9aa66440f4") == 0)
+      else if (strcmp (uuid, "3c693fb2-4f87-4b1f-a09e-cb9aa66440f4") == 0)
         setting_name = g_strdup ("Chart Filter SecInfo Dashboard 2");
-      if (strcmp (uuid, "76f34fe0-254a-4481-97aa-c6f1da2f842b") == 0)
+      else if (strcmp (uuid, "76f34fe0-254a-4481-97aa-c6f1da2f842b") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 3");
-      if (strcmp (uuid, "bffa72a5-8110-49f9-aa5e-f431ce834826") == 0)
+      else if (strcmp (uuid, "bffa72a5-8110-49f9-aa5e-f431ce834826") == 0)
         setting_name = g_strdup ("Chart Filter SecInfo Dashboard 3");
-      if (strcmp (uuid, "71106ed7-b677-414e-bf67-2e7716441db3") == 0)
+      else if (strcmp (uuid, "71106ed7-b677-414e-bf67-2e7716441db3") == 0)
         setting_name = g_strdup ("Chart Selection SecInfo Dashboard 4");
-      if (strcmp (uuid, "268079c6-f353-414f-9b7c-43f5419edf2d") == 0)
+      else if (strcmp (uuid, "268079c6-f353-414f-9b7c-43f5419edf2d") == 0)
         setting_name = g_strdup ("Chart Filter SecInfo Dashboard 4");
 
-      if (strcmp (uuid, "f68d9369-1945-477b-968f-121c6029971b") == 0)
+      else if (strcmp (uuid, "f68d9369-1945-477b-968f-121c6029971b") == 0)
         setting_name = g_strdup ("Chart Selection NVTs Left");
-      if (strcmp (uuid, "af89a84a-d3ec-43a8-97a8-aa688bf093bc") == 0)
+      else if (strcmp (uuid, "af89a84a-d3ec-43a8-97a8-aa688bf093bc") == 0)
         setting_name = g_strdup ("Chart Selection NVTs Right");
 
-      if (strcmp (uuid, "815ddd2e-8654-46c7-a05b-d73224102240") == 0)
+      else if (strcmp (uuid, "815ddd2e-8654-46c7-a05b-d73224102240") == 0)
         setting_name = g_strdup ("Chart Selection CVEs Left");
-      if (strcmp (uuid, "418a5746-d68a-4a2d-864a-0da993b32220") == 0)
+      else if (strcmp (uuid, "418a5746-d68a-4a2d-864a-0da993b32220") == 0)
         setting_name = g_strdup ("Chart Selection CVEs Right");
 
-      if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
+      else if (strcmp (uuid, "9cff9b4d-b164-43ce-8687-f2360afc7500") == 0)
         setting_name = g_strdup ("Chart Selection CPEs Left");
-      if (strcmp (uuid, "629fdb73-35fa-4247-9018-338c202f7c03") == 0)
+      else if (strcmp (uuid, "629fdb73-35fa-4247-9018-338c202f7c03") == 0)
         setting_name = g_strdup ("Chart Selection CPEs Right");
 
-      if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
+      else if (strcmp (uuid, "9563efc0-9f4e-4d1f-8f8d-0205e32b90a4") == 0)
         setting_name = g_strdup ("Chart Selection OVAL Definitions Left");
-      if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
+      else if (strcmp (uuid, "fe1610a3-4e87-4b0d-9b7a-f0f66fef586b") == 0)
         setting_name = g_strdup ("Chart Selection OVAL Definitions Right");
 
-      if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
+      else if (strcmp (uuid, "a6946f44-480f-4f37-8a73-28a4cd5310c4") == 0)
         setting_name = g_strdup ("Chart Selection CERT-Bund Advisories Left");
-      if (strcmp (uuid, "469d50da-880a-4bfc-88ed-22e53764c683") == 0)
+      else if (strcmp (uuid, "469d50da-880a-4bfc-88ed-22e53764c683") == 0)
         setting_name = g_strdup ("Chart Selection CERT-Bund Advisories Right");
 
-      if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
+      else if (strcmp (uuid, "9812ea49-682d-4f99-b3cc-eca051d1ce59") == 0)
         setting_name = g_strdup ("Chart Selection DFN-CERT Advisories Left");
-      if (strcmp (uuid, "72014b52-4389-435d-9438-8c13601ecbd2") == 0)
+      else if (strcmp (uuid, "72014b52-4389-435d-9438-8c13601ecbd2") == 0)
         setting_name = g_strdup ("Chart Selection DFN-CERT Advisories Right");
 
-      if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
+      else if (strcmp (uuid, "4c7b1ea7-b7e6-4d12-9791-eb9f72b6f864") == 0)
         setting_name = g_strdup ("Chart Selection All SecInfo Left");
-      if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
+      else if (strcmp (uuid, "985f38eb-1a30-4a35-abb6-3eec05b5d54a") == 0)
         setting_name = g_strdup ("Chart Selection All SecInfo Right");
     }
 
