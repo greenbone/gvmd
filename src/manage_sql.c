@@ -40503,6 +40503,7 @@ report_format_trust (report_format_t report_format)
      "(SELECT name FROM users WHERE users.id = report_formats.owner)",  \
      "_owner"                                                           \
    },                                                                   \
+   { "owner", NULL },                                                   \
    { "extension", NULL },                                               \
    { "content_type", NULL },                                            \
    { "summary", NULL },                                                 \
@@ -40532,6 +40533,7 @@ report_format_trust (report_format_t report_format)
      " WHERE users.id = report_formats_trash.owner)",                   \
      "_owner"                                                           \
    },                                                                   \
+   { "owner", NULL },                                                   \
    { "extension", NULL },                                               \
    { "content_type", NULL },                                            \
    { "summary", NULL },                                                 \

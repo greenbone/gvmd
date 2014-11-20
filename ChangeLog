@@ -1,5 +1,11 @@
 2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS)
+	(REPORT_FORMAT_ITERATOR_TRASH_COLUMNS): Add owner column, recently added
+	to GET iterators.
+
+2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS, init_result_iterator): Add
 	owner column, recently added to GET iterators.
 	(RESULT_ITERATOR_COLUMN_COUNT): Increment for new column.
