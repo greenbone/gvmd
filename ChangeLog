@@ -1,5 +1,11 @@
 2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (RESULT_ITERATOR_COLUMNS, init_result_iterator): Add
+	owner column, recently added to GET iterators.
+	(RESULT_ITERATOR_COLUMN_COUNT): Increment for new column.
+
+2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add permission type "Super" and predefined role "Super Admin".
 
 	* src/manage_acl.c (user_has_super, user_is_super_admin): New functions.

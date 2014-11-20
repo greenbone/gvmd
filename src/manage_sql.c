@@ -15967,6 +15967,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "date", "modified" },                                                   \
     { "(SELECT name FROM users WHERE users.id = results.owner)",              \
       "_owner" },                                                             \
+    { "owner", NULL },                                                        \
     { "host", NULL },                                                         \
     { "port", "location" },                                                   \
     { "nvt", NULL },                                                          \
@@ -16005,7 +16006,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { NULL, NULL }                                                            \
   }
 
-#define RESULT_ITERATOR_COLUMN_COUNT 26
+#define RESULT_ITERATOR_COLUMN_COUNT 27
 
 #define RESULT_ITERATOR_COLUMNS_ARRAY                 \
       {                                               \
@@ -16305,7 +16306,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " date AS modified,"
                              " (SELECT name FROM users WHERE users.id"
                              "  = results.owner) AS _owner,"
-                             " host, port, nvt,"
+                             " owner, host, port, nvt,"
                              " severity_to_type (%s) AS type,"
                              " severity_to_type (%s) AS new_type,"
                              " %s AS auto_type,"
@@ -16393,7 +16394,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " date AS modified,"
                              " (SELECT name FROM users WHERE users.id"
                              "  = results.owner) AS _owner,"
-                             " host, port, nvt,"
+                             " owner, host, port, nvt,"
                              " severity_to_type (%s), severity_to_type (%s),"
                              " %s, description,"
                              " results.task,"
@@ -16430,7 +16431,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                            " date AS modified,"
                            " (SELECT name FROM users WHERE users.id"
                            "  = results.owner) AS _owner,"
-                           " host, port, nvt,"
+                           " results.owner, host, port, nvt,"
                            " severity_to_type (%s), severity_to_type (%s),"
                            " severity_to_type (%s), description,"
                            " results.task, results.report, NULL,"
