@@ -1,3 +1,23 @@
+2014-11-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):
+	Remove attack_state column from report_hosts table.
+
+	* src/manage_sql.c (init_host_iterator): Don't iterate over attack_state
+	column.
+	(host_iterator_attack_state, set_scan_attack_state): Remove function.
+	(host_iterator_current_port, host_iterator_max_port)
+	(host_iterator_report, host_iterator_report_uuid): Adjust column order.
+
+	* src/otp.c (scanner_state_t): Remove SCANNER_STATUS_ATTACK_STATE and
+	SCANNER_STATUS_PORTS scanner states.
+	(process_otp_scanner_input): In SCANNER_STATUS_HOST case, go next to
+	SCANNER_STATUS_PROGRESS. Don't handle removed scanner states.
+
+	* doc/db_postgres.sql (report_hosts): Remove attack_state column.
+
+	* src/manage.h: Remove functions prototypes
+
 2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (REPORT_FORMAT_ITERATOR_COLUMNS)

@@ -1801,7 +1801,6 @@ create_tables ()
        "  host text,"
        "  start_time integer,"
        "  end_time integer,"
-       "  attack_state text,"
        "  current_port integer,"
        "  max_port integer);");
 

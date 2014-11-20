@@ -2139,7 +2139,7 @@ create_tables ()
        " ON report_host_details (report_host, name, value);");
   sql ("CREATE TABLE IF NOT EXISTS report_hosts"
        " (id INTEGER PRIMARY KEY, report INTEGER, host, start_time, end_time,"
-       "  attack_state, current_port, max_port);");
+       "  current_port, max_port);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_host"
        " ON report_hosts (host);");
   sql ("CREATE INDEX IF NOT EXISTS report_hosts_by_report"

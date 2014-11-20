@@ -384,9 +384,7 @@ typedef enum
   SCANNER_PREFERENCE_VALUE,
   SCANNER_SERVER,
   SCANNER_STATUS,
-  SCANNER_STATUS_ATTACK_STATE,
   SCANNER_STATUS_HOST,
-  SCANNER_STATUS_PORTS,
   SCANNER_STATUS_PROGRESS,
   SCANNER_TIME,
   SCANNER_TIME_HOST_START_HOST,
@@ -1404,49 +1402,11 @@ process_otp_scanner_input (void (*progress) ())
                     goto return_error;
                   }
                 break;
-              case SCANNER_STATUS_ATTACK_STATE:
-                {
-                  if (current_report && current_host)
-                    {
-                      if (strcmp (field, "portscan"))
-                        {
-                          char* state = g_strdup (field);
-                          set_scan_attack_state (current_report,
-                                                 current_host,
-                                                 state);
-                          set_scanner_state (SCANNER_STATUS_PROGRESS);
-                        }
-                      else
-                        set_scanner_state (SCANNER_STATUS_PORTS);
-                    }
-                  else
-                    set_scanner_state (SCANNER_STATUS_PORTS);
-                  break;
-                }
               case SCANNER_STATUS_HOST:
                 {
                   assert (current_host == NULL);
                   current_host = g_strdup (field);
-                  set_scanner_state (SCANNER_STATUS_ATTACK_STATE);
-                  break;
-                }
-              case SCANNER_STATUS_PORTS:
-                {
-                  /* For now, just read over the ports. */
-                  if (current_host)
-                    {
-                      g_free (current_host);
-                      current_host = NULL;
-                    }
-                  set_scanner_state (SCANNER_DONE);
-                  switch (parse_scanner_done (&messages))
-                    {
-                      case -1: goto return_error;
-                      case -2:
-                        /* Need more input. */
-                        if (sync_buffer ()) goto return_error;
-                        goto return_need_more;
-                    }
+                  set_scanner_state (SCANNER_STATUS_PROGRESS);
                   break;
                 }
               case SCANNER_STATUS_PROGRESS:

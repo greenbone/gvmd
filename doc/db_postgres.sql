@@ -523,7 +523,6 @@ CREATE TABLE report_hosts
   host text,
   start_time date,
   end_time date,
-  attack_state INTEGER,
   current_port text,
   max_port text);
 

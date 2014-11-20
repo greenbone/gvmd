@@ -16870,8 +16870,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
       if (report_host)
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), attack_state, current_port,"
-                       " max_port, report,"
+                       " iso_time (end_time), current_port, max_port, report,"
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE id = %llu"
                        " AND report = %llu"
@@ -16885,8 +16884,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
       else
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), attack_state, current_port,"
-                       " max_port, report,"
+                       " iso_time (end_time), current_port, max_port, report,"
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE report = %llu"
                        "%s%s%s"
@@ -16901,8 +16899,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
       if (report_host)
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), attack_state, current_port,"
-                       " max_port, report,"
+                       " iso_time (end_time), current_port, max_port, report,"
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts WHERE id = %llu"
                        "%s%s%s"
@@ -16914,8 +16911,7 @@ init_host_iterator (iterator_t* iterator, report_t report, const char *host,
       else
         init_iterator (iterator,
                        "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), attack_state, current_port,"
-                       " max_port, report,"
+                       " iso_time (end_time), current_port, max_port, report,"
                        " (SELECT uuid FROM reports WHERE id = report)"
                        " FROM report_hosts"
                        "%s%s%s"
@@ -16972,16 +16968,6 @@ DEF_ACCESS (host_iterator_start_time, 2);
 DEF_ACCESS (host_iterator_end_time, 3);
 
 /**
- * @brief Get the attack state from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The attack state of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-DEF_ACCESS (host_iterator_attack_state, 4);
-
-/**
  * @brief Get the current port from a host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -16993,7 +16979,7 @@ host_iterator_current_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, 5);
+  ret = iterator_int (iterator, 4);
   return ret;
 }
 
@@ -17009,7 +16995,7 @@ host_iterator_max_port (iterator_t* iterator)
 {
   int ret;
   if (iterator->done) return -1;
-  ret = iterator_int (iterator, 6);
+  ret = iterator_int (iterator, 5);
   return ret;
 }
 
@@ -17024,7 +17010,7 @@ static report_t
 host_iterator_report (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return (report_host_t) iterator_int64 (iterator, 7);
+  return (report_host_t) iterator_int64 (iterator, 6);
 }
 
 /**
@@ -17035,7 +17021,7 @@ host_iterator_report (iterator_t* iterator)
  * @return The UUID of the report of the host.  Caller must use only before
  *         calling cleanup_iterator.
  */
-DEF_ACCESS (host_iterator_report_uuid, 8);
+DEF_ACCESS (host_iterator_report_uuid, 7);
 
 /**
  * @brief Initialise a report errors iterator.
@@ -21842,13 +21828,6 @@ report_progress_active (report_t report, int maximum_hosts, gchar **hosts_xml)
       else
         progress = current_port ? 100 : 0;
 
-#if 0
-      tracef ("   attack_state: %s\n", host_iterator_attack_state (&hosts));
-      tracef ("   current_port: %u\n", current_port);
-      tracef ("   max_port: %u\n", max_port);
-      tracef ("   progress for %s: %li\n", host_iterator_host (&hosts), progress);
-      tracef ("   total now: %li\n", total);
-#endif
       total += progress;
       num_hosts++;
 
@@ -24906,23 +24885,6 @@ task_trend (task_t task, int override)
 
   return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
                           holes_b, warns_b, infos_b, severity_b);
-}
-
-/**
- * @brief Set the attack state of a scan (given by a report).
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host to which the state refers.
- * @param[in]  state   New state.
- */
-void
-set_scan_attack_state (report_t report, const char* host, const char* state)
-{
-  sql ("UPDATE report_hosts SET attack_state = '%s'"
-       " WHERE host = '%s' AND report = %llu;",
-       state,
-       host,
-       report);
 }
 
 /**

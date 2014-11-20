@@ -638,9 +638,6 @@ task_schedule_in_trash (task_t);
 int
 task_schedule_next_time_tz (task_t);
 
-void
-set_scan_attack_state (report_t, const char*, const char*);
-
 char *
 task_severity (task_t, int, int);
 
@@ -1158,9 +1155,6 @@ host_iterator_start_time (iterator_t*);
 
 const char*
 host_iterator_end_time (iterator_t*);
-
-const char*
-host_iterator_attack_state (iterator_t*);
 
 int
 host_iterator_current_port (iterator_t*);
