@@ -118,6 +118,63 @@ user_can_everything (const char *user_id)
 }
 
 /**
+ * @brief Test whether a user has super permission on another user.
+ *
+ * @param[in]  super_user_id  UUID of user who may have super permission.
+ * @param[in]  other_user     Other user.
+ *
+ * @return 1 if user has permission, else 0.
+ */
+int
+user_has_super (const char *super_user_id, user_t other_user)
+{
+  if (sql_int (/* The user has super permission on everyone. */
+               " SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE name = 'Super'"
+               "                AND resource = 0"
+               "                AND ((subject_type = 'user'"
+               "                      AND subject"
+               "                          = (SELECT id FROM users"
+               "                             WHERE users.uuid = '%s'))"
+               "                     OR (subject_type = 'group'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT \"group\""
+               "                                 FROM group_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))"
+               "                     OR (subject_type = 'role'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT role"
+               "                                 FROM role_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))))"
+               // TODO Role has super on the other user.
+               // TODO Group has super on the other user.
+               /* Or the user has super permission on the other user. */
+               " OR EXISTS (SELECT * FROM permissions"
+               "            WHERE name = 'Super'"
+               "            AND resource_type = 'user'"
+               "            AND %lli = resource"
+               "            AND subject"
+               "                = (SELECT id FROM users"
+               "                   WHERE users.uuid = '%s')"
+               "            AND subject_type = 'user');",
+               super_user_id,
+               super_user_id,
+               super_user_id,
+               other_user,
+               super_user_id))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Check whether a user is an Admin.
  *
  * @param[in]  uuid  Uuid of user.
@@ -157,6 +214,29 @@ user_is_observer (const char *uuid)
   ret = sql_int ("SELECT count (*) FROM role_users"
                  " WHERE role = (SELECT id FROM roles"
                  "               WHERE uuid = '" ROLE_UUID_OBSERVER "')"
+                 " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
+                 quoted_uuid);
+  g_free (quoted_uuid);
+  return ret;
+}
+
+/**
+ * @brief Check whether a user is a Super Admin.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if user is a Super Admin, else 0.
+ */
+int
+user_is_super_admin (const char *uuid)
+{
+  int ret;
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
+  ret = sql_int ("SELECT count (*) FROM role_users"
+                 " WHERE role = (SELECT id FROM roles"
+                 "               WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "')"
                  " AND \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
                  quoted_uuid);
   g_free (quoted_uuid);
@@ -227,6 +307,53 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 
   assert (current_credentials.uuid);
 
+  if (sql_int (/* The user has super permission on everyone. */
+               " SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE name = 'Super'"
+               "                AND resource = 0"
+               "                AND ((subject_type = 'user'"
+               "                      AND subject"
+               "                          = (SELECT id FROM users"
+               "                             WHERE users.uuid = '%s'))"
+               "                     OR (subject_type = 'group'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT \"group\""
+               "                                 FROM group_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))"
+               "                     OR (subject_type = 'role'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT role"
+               "                                 FROM role_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))))"
+               // TODO role,group
+               /* Or the user has super permission on the owner. */
+               "     OR EXISTS (SELECT * FROM permissions"
+               "                WHERE name = 'Super'"
+               "                AND resource_type = 'user'"
+               "                AND (SELECT %ss.owner FROM %ss"
+               "                     WHERE uuid = '%s')"
+               "                    = resource"
+               "                AND subject"
+               "                    = (SELECT id FROM users"
+               "                       WHERE users.uuid = '%s')"
+               "                AND subject_type = 'user');",
+               current_credentials.uuid,
+               current_credentials.uuid,
+               current_credentials.uuid,
+               type,
+               type,
+               uuid,
+               current_credentials.uuid))
+    return 1;
+
   if (strcmp (type, "result") == 0)
     return user_owns_result (uuid);
   if ((strcmp (type, "nvt") == 0)
@@ -276,6 +403,7 @@ user_has_access_uuid (const char *type, const char *uuid,
   if (!strcmp (current_credentials.uuid,  ""))
     return 1;
 
+  // FIX or super
   ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
@@ -448,7 +576,7 @@ type_is_shared (const char *type)
 }
 
 /**
- * @brief Initialise a target iterator, limited to the current user's targets.
+ * @brief FIX Initialise a target iterator, limited to the current user's targets.
  *
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
@@ -615,6 +743,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
 
       g_string_free (permission_or, TRUE);
 
+      // FIX super trash?
       if (resource || (current_credentials.uuid == NULL))
         owned_clause
          = g_strdup (" (t ())");
@@ -657,6 +786,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                         current_credentials.uuid);
       else if (strcmp (type, "permission") == 0)
         {
+          // FIX super
           int admin;
           admin = user_can_everything (current_credentials.uuid);
           /* A user sees permissions that involve the user.  Admin users also
@@ -701,6 +831,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               permission_clause ? permission_clause : "");
         }
       else if (type_is_shared (type))
+        // FIX super?
         owned_clause
          = g_strdup_printf (" (((%ss.owner IS NULL)"
                             "   AND user_can_everything ('%s'))"
@@ -710,16 +841,60 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             permission_clause ? permission_clause : "");
       else if (type_has_permissions (type))
         owned_clause
-         = g_strdup_printf (" ((%ss.owner IS NULL)"
+         = g_strdup_printf (/* Either a global resource. */
+                            " ((%ss.owner IS NULL)"
+                            /* Or the user is the owner. */
                             "  OR (%ss.owner"
                             "      = (SELECT id FROM users"
                             "         WHERE users.uuid = '%s'))"
+                            /* Or the user has super permission on everyone. */
+                            "  OR EXISTS (SELECT * FROM permissions"
+                            "             WHERE name = 'Super'"
+                            "             AND resource = 0"
+                            "             AND ((subject_type = 'user'"
+                            "                   AND subject"
+                            "                       = (SELECT id FROM users"
+                            "                          WHERE users.uuid = '%s'))"
+                            "                  OR (subject_type = 'group'"
+                            "                      AND subject"
+                            "                          IN (SELECT DISTINCT \"group\""
+                            "                              FROM group_users"
+                            "                              WHERE \"user\""
+                            "                                    = (SELECT id"
+                            "                                       FROM users"
+                            "                                       WHERE users.uuid"
+                            "                                             = '%s')))"
+                            "                  OR (subject_type = 'role'"
+                            "                      AND subject"
+                            "                          IN (SELECT DISTINCT role"
+                            "                              FROM role_users"
+                            "                              WHERE \"user\""
+                            "                                    = (SELECT id"
+                            "                                       FROM users"
+                            "                                       WHERE users.uuid"
+                            "                                             = '%s')))))"
+                            // TODO role,group
+                            /* Or the user has super permission on the owner. */
+                            "  OR EXISTS (SELECT * FROM permissions"
+                            "             WHERE name = 'Super'"
+                            "             AND resource_type = 'user'"
+                            "             AND %ss.owner = resource"
+                            "             AND subject"
+                            "                 = (SELECT id FROM users"
+                            "                    WHERE users.uuid = '%s')"
+                            "             AND subject_type = 'user')"
                             "  %s)",
                             type,
                             type,
                             current_credentials.uuid,
+                            current_credentials.uuid,
+                            current_credentials.uuid,
+                            current_credentials.uuid,
+                            type,
+                            current_credentials.uuid,
                             permission_clause ? permission_clause : "");
       else
+        // FIX super
         owned_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
                                         "  (SELECT id FROM users"
                                         "   WHERE users.uuid = '%s')))",

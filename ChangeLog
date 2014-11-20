@@ -1,3 +1,33 @@
+2014-11-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add permission type "Super" and predefined role "Super Admin".
+
+	* src/manage_acl.c (user_has_super, user_is_super_admin): New functions.
+	(user_owns_uuid, where_owned): Add Super checks.
+
+	* src/manage_acl.h: Add headers accordingly.
+
+	* src/manage_sql.c (GET_ITERATOR_COLUMNS): Add owner.
+	(GET_ITERATOR_COLUMN_COUNT): Increment.
+	(check_db_permissions): Add Super Admin permissions.
+	(check_db_role): Add Super Admin.
+	(authenticate): Add Super Admin to possible roles in response.
+	(NVT_ITERATOR_COLUMNS, NVT_ITERATOR_COLUMNS_NVTS): Add dummy owner.
+	(get_iterator_owner): New function.
+	(permission_is_predefined): Check for Super.
+	(role_is_predefined, role_is_predefined_id): Check for Super Admin.
+	(CPE_INFO_ITERATOR_COLUMNS, OVALDEF_INFO_ITERATOR_COLUMNS)
+	(CERT_BUND_ADV_INFO_ITERATOR_COLUMNS)
+	(DFN_CERT_ADV_INFO_ITERATOR_COLUMNS): Add dummy owner.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/manage_sql.h (PERMISSION_UUID_SUPER_ADMIN_EVERYTHING)
+	(ROLE_UUID_SUPER_ADMIN): New defines.
+
+	* src/omp.c (send_get_common): Send Everything in permissions if user
+	has Super on the owner.
+
 2014-11-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (modify_setting): Use "else if" instead of "if"

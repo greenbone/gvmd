@@ -3529,12 +3529,13 @@ filter_clause (const char* type, const char* filter,
     "(SELECT name FROM users"                                                   \
     " WHERE users.id = " G_STRINGIFY (table) ".owner)",                         \
     "_owner"                                                                    \
-  }
+  },                                                                            \
+  { "owner", NULL }
 
 /**
  * @brief Number of columns for GET iterator.
  */
-#define GET_ITERATOR_COLUMN_COUNT 9
+#define GET_ITERATOR_COLUMN_COUNT 10
 
 /**
  * @brief Check whether a resource type name is valid.
@@ -11466,7 +11467,6 @@ check_db_report_formats_trash ()
 static void
 check_db_permissions ()
 {
-
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "';")
       == 0)
@@ -11479,6 +11479,30 @@ check_db_permissions ()
          "  0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
          "  (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_ADMIN "'),"
          "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());");
+
+  if (sql_int ("SELECT count(*) FROM permissions"
+               " WHERE uuid = '" PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "';")
+      == 0)
+    {
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+           "  resource_location, subject_type, subject, subject_location,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " ('" PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "', NULL, 'Everything',"
+           "  '', '', 0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+           "  (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "'),"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());");
+      sql ("INSERT INTO permissions"
+           " (uuid, owner, name, comment, resource_type, resource, resource_uuid,"
+           "  resource_location, subject_type, subject, subject_location,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), NULL, 'Super',"
+           "  '', '', 0, '', " G_STRINGIFY (LOCATION_TABLE) ", 'role',"
+           "  (SELECT id FROM roles WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "'),"
+           "  " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());");
+    }
 
   if (sql_int ("SELECT count(*) FROM permissions"
                " WHERE subject_type = 'role'"
@@ -11658,6 +11682,15 @@ check_db_roles ()
          "  'Standard user.',"
          " m_now (), m_now ());");
 
+  if (sql_int ("SELECT count(*) FROM roles WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "';")
+      == 0)
+    sql ("INSERT INTO roles"
+         " (uuid, owner, name, comment, creation_time, modification_time)"
+         " VALUES"
+         " ('" ROLE_UUID_SUPER_ADMIN "', NULL, 'Super Admin',"
+         "  'Super administrator.  Full privileges with access to all users.',"
+         " m_now (), m_now ());");
+
   if (sql_int ("SELECT count(*) FROM roles"
                " WHERE uuid = '" ROLE_UUID_OBSERVER "';")
       == 0)
@@ -11667,7 +11700,6 @@ check_db_roles ()
          " ('" ROLE_UUID_OBSERVER "', NULL, 'Observer',"
          "  'Observer.',"
          " m_now (), m_now ());");
-
 }
 
 /**
@@ -12303,13 +12335,15 @@ authenticate (credentials_t* credentials)
           assert (credentials->uuid);
 
           credentials->role
-            = g_strdup (user_is_admin (credentials->uuid)
-                         ? "Admin"
-                         : (user_is_observer (credentials->uuid)
-                             ? "Observer"
-                             : (user_is_user (credentials->uuid)
-                                 ? "User"
-                                 : "")));
+            = g_strdup (user_is_super_admin (credentials->uuid)
+                         ? "Super Admin"
+                         : (user_is_admin (credentials->uuid)
+                             ? "Admin"
+                             : (user_is_observer (credentials->uuid)
+                                 ? "Observer"
+                                 : (user_is_user (credentials->uuid)
+                                     ? "User"
+                                     : ""))));
 
           if (user_may ("authenticate") == 0)
             {
@@ -29770,6 +29804,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  {                                                                          \
    GET_ITERATOR_COLUMNS_PREFIX (""),                                        \
    { "''", "_owner" },                                                      \
+   { "0", NULL },                                                           \
    { "oid", NULL },                                                         \
    { "version", NULL },                                                     \
    { "name", NULL },                                                        \
@@ -29795,6 +29830,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  {                                                                          \
    GET_ITERATOR_COLUMNS_PREFIX ("nvts."),                                   \
    { "''", "_owner" },                                                      \
+   { "0", NULL },                                                           \
    { "oid", NULL },                                                         \
    { "version", NULL },                                                     \
    { "nvts.name", NULL },                                                   \
@@ -34219,6 +34255,20 @@ DEF_ACCESS (get_iterator_modification_time, 5);
  * @return Owner name of the resource or NULL if iteration is complete.
  */
 DEF_ACCESS (get_iterator_owner_name, 8);
+
+/**
+ * @brief Get the owner from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Owner.
+ */
+user_t
+get_iterator_owner (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, 9);
+}
 
 /**
  * @brief Initialise an agent iterator.
@@ -42718,6 +42768,7 @@ permission_is_predefined (permission_t permission)
                     "                  OR uuid = '" ROLE_UUID_INFO "'"
                     "                  OR uuid = '" ROLE_UUID_MONITOR "'"
                     "                  OR uuid = '" ROLE_UUID_USER "'"
+                    "                  OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
                     "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
                     permission);
 }
@@ -44997,6 +45048,7 @@ role_is_predefined (role_t role)
                   "      OR uuid = '" ROLE_UUID_MONITOR "'"
                   "      OR uuid = '" ROLE_UUID_INFO "'"
                   "      OR uuid = '" ROLE_UUID_USER "'"
+                  "      OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
                   "      OR uuid = '" ROLE_UUID_OBSERVER "');",
                   role)
          != 0;
@@ -45017,6 +45069,7 @@ role_is_predefined_id (const char *uuid)
                   || (strcmp (uuid, ROLE_UUID_MONITOR) == 0)
                   || (strcmp (uuid, ROLE_UUID_INFO) == 0)
                   || (strcmp (uuid, ROLE_UUID_USER) == 0)
+                  || (strcmp (uuid, ROLE_UUID_SUPER_ADMIN) == 0)
                   || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
 }
 
@@ -48360,6 +48413,7 @@ modify_setting (const gchar *uuid, const gchar *name,
  {                                                              \
    GET_ITERATOR_COLUMNS_PREFIX (""),                            \
    { "''", "_owner" },                                          \
+   { "0", NULL },                                                           \
    { "title", NULL },                                           \
    { "status", NULL },                                          \
    { "deprecated_by_id", NULL },                                \
@@ -48385,6 +48439,7 @@ modify_setting (const gchar *uuid, const gchar *name,
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
    { "''", "_owner" },                                           \
+   { "0", NULL },                                                           \
    { "version", NULL },                                          \
    { "deprecated", NULL },                                       \
    { "def_class", "class"},                                      \
@@ -48412,6 +48467,7 @@ modify_setting (const gchar *uuid, const gchar *name,
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
    { "''", "_owner" },                                           \
+   { "0", NULL },                                                           \
    { "title", NULL },                                            \
    { "summary", NULL },                                          \
    { "cve_refs", "cves" },                                       \
@@ -48434,6 +48490,7 @@ modify_setting (const gchar *uuid, const gchar *name,
  {                                                               \
    GET_ITERATOR_COLUMNS_PREFIX (""),                             \
    { "''", "_owner" },                                           \
+   { "0", NULL },                                                           \
    { "title", NULL },                                            \
    { "summary", NULL },                                          \
    { "cve_refs", "cves" },                                       \

@@ -113,6 +113,11 @@
 #define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
 
 /**
+ * @brief Predefined role UUID.
+ */
+#define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
+
+/**
  * @brief UUID of 'OpenVAS Default' port list.
  */
 #define PORT_LIST_UUID_DEFAULT "c7e03b6c-3bbe-11e1-a057-406186ea4fc5"
@@ -181,6 +186,11 @@
  * @brief Predefined role UUID.
  */
 #define ROLE_UUID_USER "8d453140-b74d-11e2-b0be-406186ea4fc5"
+
+/**
+ * @brief Predefined role UUID.
+ */
+#define ROLE_UUID_SUPER_ADMIN "9c5a6ec6-6fe2-11e4-8cb6-406186ea4fc5"
 
 /**
  * @brief Predefined role UUID.

@@ -276,6 +276,9 @@ get_iterator_modification_time (iterator_t*);
 const char*
 get_iterator_owner_name (iterator_t*);
 
+user_t
+get_iterator_owner (iterator_t*);
+
 
 /* Resources. */
 
@@ -840,6 +843,9 @@ user_may (const char *);
 
 extern int
 user_can_everything (const char *);
+
+extern int
+user_has_super (const char *, user_t);
 
 
 /* Results. */

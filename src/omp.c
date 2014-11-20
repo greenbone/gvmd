@@ -5808,6 +5808,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
        && (strcmp (get_iterator_owner_name (iterator),
                    current_credentials.username)
            == 0))
+      || user_has_super (current_credentials.uuid,
+                         get_iterator_owner (iterator))
       || (current_credentials.uuid
           && ((strcmp (type, "group") == 0)
               || ((strcmp (type, "permission") == 0)

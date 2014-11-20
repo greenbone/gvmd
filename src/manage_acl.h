@@ -72,7 +72,13 @@ int
 user_can_everything (const char *);
 
 int
+user_has_super (const char *, user_t);
+
+int
 user_is_admin (const char *);
+
+int
+user_is_super_admin (const char *);
 
 int
 user_is_observer (const char *);
