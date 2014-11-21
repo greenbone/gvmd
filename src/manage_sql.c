@@ -49775,7 +49775,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
   /* Setup a dummy user, so that delete_user will work. */
   current_credentials.uuid = "";
 
-  switch ((ret = delete_user (NULL, name, 1)))
+  switch ((ret = delete_user (NULL, name, 1, 0)))
     {
       case 0:
         printf ("User deleted.\n");
@@ -50294,12 +50294,14 @@ copy_user (const char* name, const char* comment, const char *user_id,
  * @param[in]  user_id_arg  UUID of user.
  * @param[in]  name_arg     Name of user.  Overridden by user_id.
  * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
+ * @param[in]  forbid_super_admin  Whether to forbid removal of Super Admin.
  *
  * @return 0 success, 2 failed to find user, 4 user has active tasks,
  *         5 attempted suicide, 99 permission denied, -1 error.
  */
 int
-delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
+delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
+             int forbid_super_admin)
 {
   iterator_t tasks;
   user_t user;
@@ -50332,6 +50334,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
   user = 0;
   if (user_id_arg)
     {
+      if (forbid_super_admin
+          && (strcmp (user_id_arg, ROLE_UUID_SUPER_ADMIN) == 0))
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
+
       if (find_user (user_id_arg, &user))
         {
           sql ("ROLLBACK;");
@@ -50346,6 +50355,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate)
 
   if (user == 0)
     return 2;
+
+  if (forbid_super_admin)
+    {
+      char *uuid;
+
+      uuid = user_uuid (user);
+      if (user_is_super_admin (uuid))
+        {
+          free (uuid);
+          sql ("ROLLBACK;");
+          return 99;
+        }
+      free (uuid);
+    }
 
   /* Set requested and running tasks to stopped. */
 
@@ -50611,6 +50634,14 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
 
   uuid = sql_string ("SELECT uuid FROM users WHERE id = %llu",
                      user);
+
+  /* The only user that can edit a Super Admin is the Super Admin themself. */
+  if (user_is_super_admin (uuid) && strcmp (uuid, current_credentials.uuid))
+    {
+      g_free (uuid);
+      sql ("ROLLBACK;");
+      return 99;
+    }
 
   was_admin = user_is_admin (uuid);
 

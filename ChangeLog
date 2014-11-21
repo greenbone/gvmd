@@ -1,3 +1,16 @@
+2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent deletion of users with Super Admin role via OMP.  Prevent
+	modification of Super Admin users by everyone except the user themself.
+
+	* src/manage_sql.c (manage_delete_user): Update delete_user call.
+	(delete_user): Add forbid_super_admin arg.
+	(modify_user): Prevent edit of Super Admin user by other users.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Update delete_user call.
+
 2014-11-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* CMakeLists.txt (GPGME_LDFLAGS, GPGME_CFLAGS): New variables.

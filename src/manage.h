@@ -3289,7 +3289,7 @@ create_user (const gchar *, const gchar *, const gchar *, int, const gchar *,
              gchar **, user_t *, int);
 
 int
-delete_user (const char *, const char *, int);
+delete_user (const char *, const char *, int, int);
 
 int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *, int,

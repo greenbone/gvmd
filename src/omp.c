@@ -11669,7 +11669,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (delete_user_data->user_id || delete_user_data->name)
           switch (delete_user (delete_user_data->user_id,
                                delete_user_data->name,
-                               delete_user_data->ultimate))
+                               delete_user_data->ultimate,
+                               1))
             {
               case 0:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("delete_user"));
