@@ -1,3 +1,15 @@
+2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent creation of users with Super Admin role via OMP.
+
+	* src/manage_sql.c (manage_create_user): Update create_user call.
+	(create_user): Add forbid_super_admin arg.
+	(copy_user): Prevent cloning users who have the Super Admin role.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Update create_user call.
+
 2014-11-20  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	* src/manage_pg.c (create_tables), src/manage_sqlite3.c (create_tables):

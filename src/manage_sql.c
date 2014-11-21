@@ -49716,7 +49716,7 @@ manage_create_user (GSList *log_config, const gchar *database,
   current_credentials.uuid = "";
 
   ret = create_user (name, uuid, NULL, 0, NULL, 0, NULL, NULL, NULL, roles,
-                     NULL, NULL, NULL);
+                     NULL, NULL, NULL, 0);
 
   switch (ret)
     {
@@ -50020,6 +50020,7 @@ find_user_by_name (const char* name, user_t *user)
  *                          a malloced string with the error description.  Will
  *                          always be set to NULL on success.
  * @param[out] new_user     Created user.
+ * @param[in]  forbid_super_admin  Whether to forbid creation of Super Admin.
  *
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find role, 3 syntax error in hosts, 99 permission denied,
@@ -50030,7 +50031,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
              int hosts_allow, const gchar *ifaces, int ifaces_allow,
              const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
-             gchar **r_errdesc, user_t *new_user)
+             gchar **r_errdesc, user_t *new_user, int forbid_super_admin)
 {
   char *errstr;
   gchar *quoted_hosts, *quoted_ifaces, *quoted_method, *quoted_name, *hash;
@@ -50194,6 +50195,12 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           continue;
         }
 
+      if (forbid_super_admin && (strcmp (role_id, ROLE_UUID_SUPER_ADMIN) == 0))
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
+
       if (find_role (role_id, &role))
         {
           sql ("ROLLBACK;");
@@ -50230,7 +50237,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
  * @param[out] new_user  New user.
  *
  * @return 0 success, 1 user exists already, 2 failed to find existing
- *         user, -1 error.
+ *         user, 99 permission denied, -1 error.
  */
 int
 copy_user (const char* name, const char* comment, const char *user_id,
@@ -50239,6 +50246,9 @@ copy_user (const char* name, const char* comment, const char *user_id,
   user_t user;
   int ret;
   gchar *quoted_uuid;
+
+  if (user_is_super_admin (user_id))
+    return 99;
 
   sql_begin_immediate ();
 

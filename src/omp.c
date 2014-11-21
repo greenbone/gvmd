@@ -21718,7 +21718,8 @@ create_task_fail:
                       create_user_data->roles,
                       &fail_role_id,
                       &errdesc,
-                      &new_user))
+                      &new_user,
+                      1))
               {
                 case 0:
                   {
