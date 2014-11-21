@@ -1,3 +1,9 @@
+2014-11-21  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 6.0+beta4 release.
+
+	* CHANGES: Updated.
+
 2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.h: Export user_is_super_admin.

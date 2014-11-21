@@ -1,3 +1,35 @@
+openvas-manager 6.0+beta4 (2014-11-21)
+
+This is the fourth beta version of the upcoming 6.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanners and various user clients.
+
+This release establishes support for PostgreSQL as an alternative database
+backend. It also adds support for a "Super Admin" role and contains a number of
+smaller improvements.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
+Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes since 6.0+beta3:
+* OpenVAS Manager now supports the alternative use of PostgreSQL as database
+  backend instead of SQLite3.
+* Support for a "Super Admin" role has been added.
+* Performance for iterating over host details has been improved.
+* The handling of SIGABRT signals has been improved, ensuring an appropriate
+  exit code if such a signal occurs.
+* The handling of task end times has been improved.
+* The strategy of SQL retries in high-load situation has been improved.
+* Support for filtering NVTs based on their script_tags has been added.
+* Logging has been improved.
+* The handling of user groups when dropping privileges has been improved.
+* Timezone usage has been improved.
+* The build process has been adjusted for changes in OpenVAS Libraries.
+* The OMP version is now included in reports.
+* Code cleanups.
+
+
 openvas-manager 6.0+beta3 (2014-10-14)
 
 This is the third beta version of the upcoming 6.0 release of the OpenVAS
