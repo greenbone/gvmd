@@ -5819,9 +5819,21 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
               || (strcmp (type, "role") == 0)
               || (strcmp (type, "user") == 0))
           && user_can_everything (current_credentials.uuid)))
-    buffer_xml_append_printf (buffer,
-                              "<permission><name>Everything</name></permission>"
-                              "</permissions>");
+    {
+      if ((strcmp (type, "user") == 0)
+          && user_is_super_admin (get_iterator_uuid (iterator))
+          && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
+        {
+          writable = 0;
+          buffer_xml_append_printf (buffer,
+                                    "<permission><name>get_users</name></permission>"
+                                    "</permissions>");
+        }
+      else
+        buffer_xml_append_printf (buffer,
+                                  "<permission><name>Everything</name></permission>"
+                                  "</permissions>");
+    }
   else
     {
       iterator_t perms;

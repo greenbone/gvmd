@@ -1,5 +1,12 @@
 2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.h: Export user_is_super_admin.
+
+	* src/omp.c (send_get_common): Add special case for listing permissions
+	when the resource is a Super Admin user.
+
+2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Prevent deletion of users with Super Admin role via OMP.  Prevent
 	modification of Super Admin users by everyone except the user themself.
 

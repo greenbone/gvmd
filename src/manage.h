@@ -3300,6 +3300,9 @@ int
 user_is_admin (const char *);
 
 int
+user_is_super_admin (const char *);
+
+int
 user_is_observer (const char *);
 
 int
