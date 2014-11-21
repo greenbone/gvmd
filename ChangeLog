@@ -1,3 +1,9 @@
+2014-11-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* CMakeLists.txt (GPGME_LDFLAGS, GPGME_CFLAGS): New variables.
+
+	* src/CMakeLists.txt: Properly link against libgpgme.
+
 2014-11-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Prevent creation of users with Super Admin role via OMP.
