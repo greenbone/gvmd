@@ -48154,7 +48154,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       return 0;
     }
 
-  /* Resources filters and chart preferences. */
+  /* Resources filters, default resource selections and chart preferences. */
 
   setting_name = NULL;
   if (uuid)
@@ -48210,6 +48210,39 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("DFN-CERT Filter");
       else if (strcmp (uuid, "feefe56b-e2da-4913-81cc-1a6ae3b36e64") == 0)
         setting_name = g_strdup ("All SecInfo Filter");
+
+      /* Default resource selections */
+      else if (strcmp (uuid, "f9f5a546-8018-48d0-bef5-5ad4926ea899") == 0)
+        setting_name = g_strdup ("Default Alert");
+
+      else if (strcmp (uuid, "fe7ea321-e3e3-4cc6-9952-da836aae83ce") == 0)
+        setting_name = g_strdup ("Default OpenVAS Scan Config");
+      else if (strcmp (uuid, "fb19ac4b-614c-424c-b046-0bc32bf1be73") == 0)
+        setting_name = g_strdup ("Default OSP Scan Config");
+
+      else if (strcmp (uuid, "6fc56b72-c1cf-451c-a4c4-3a9dc784c3bd") == 0)
+        setting_name = g_strdup ("Default SSH Credential");
+      else if (strcmp (uuid, "a25c0cfe-f977-417b-b1da-47da370c03e8") == 0)
+        setting_name = g_strdup ("Default SMB Credential");
+      else if (strcmp (uuid, "83545bcf-0c49-4b4c-abbf-63baf82cc2a7") == 0)
+        setting_name = g_strdup ("Default ESXi Credential");
+
+      else if (strcmp (uuid, "d74a9ee8-7d35-4879-9485-ab23f1bd45bc") == 0)
+        setting_name = g_strdup ("Default Port List");
+
+      else if (strcmp (uuid, "f7d0f6ed-6f9e-45dc-8bd9-05cced84e80d") == 0)
+        setting_name = g_strdup ("Default OpenVAS Scanner");
+      else if (strcmp (uuid, "b20697c9-be0a-4cd4-8b4d-5fe7841ebb03") == 0)
+        setting_name = g_strdup ("Default OSP Scanner");
+
+      else if (strcmp (uuid, "778eedad-5550-4de0-abb6-1320d13b5e18") == 0)
+        setting_name = g_strdup ("Default Schedule");
+
+      else if (strcmp (uuid, "aec201fa-8a82-4b61-bebe-a44ea93b2909") == 0)
+        setting_name = g_strdup ("Default Slave");
+
+      else if (strcmp (uuid, "23409203-940a-4b4a-b70c-447475f18323") == 0)
+        setting_name = g_strdup ("Default Target");
 
       /* Scan Management charts */
       else if (strcmp (uuid, "3d5db3c7-5208-4b47-8c28-48efc621b1e0") == 0)

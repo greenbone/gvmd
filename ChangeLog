@@ -1,3 +1,12 @@
+2014-11-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add settings for default resource selections on the "New Task" and
+	"New Target" pages in GSA and get settings in Advanced Task Wizard.
+
+	* src/manage_sql.c (modify_setting): Add default resource settings.
+
+	* src/wizards/quick_task.xml (init): Get settings.
+
 2014-11-21  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
