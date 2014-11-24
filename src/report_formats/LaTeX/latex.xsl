@@ -1141,9 +1141,6 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="text-to-escaped-row">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
           </xsl:call-template>
-          <xsl:text>\rowcolor{white}{\verb==}</xsl:text>
-          <xsl:call-template name="latex-newline"/>
-          <xsl:text>OID of test routine: </xsl:text><xsl:value-of select="nvt/@oid"/>
         </xsl:if>
 
         <!-- Result -->

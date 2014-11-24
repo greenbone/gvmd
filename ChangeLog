@@ -1,6 +1,14 @@
 2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
+	Drop line with "OID" in the section "Summary" of results. It is a
+	redundant information because the OID appears also in the section
+	"Log Method"/"Vulnerability Detection Method". This reduces the size
+	of the report.
+
+2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
 	Removed an empty line before and an empty line after the "OID" line
 	in the section "Summary" of a result. This reduces size of documents
 	by several pages.
