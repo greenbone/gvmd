@@ -926,7 +926,6 @@ advice given in each description, in order to rectify the issue.
     </xsl:variable>
 
     <xsl:if test="$cve_ref != '' or $bid_ref != '' or $xref_ref != ''">
-      <xsl:call-template name="latex-newline"/>
       \hline
       <xsl:call-template name="latex-newline"/>
       <xsl:text>\textbf{References}</xsl:text>
@@ -1155,7 +1154,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <!-- Result -->
-        <xsl:call-template name="latex-newline"/>
         <xsl:choose>
           <xsl:when test="delta/text() = 'changed'">
             <xsl:call-template name="latex-newline"/>
@@ -1163,7 +1161,6 @@ advice given in each description, in order to rectify the issue.
             <xsl:call-template name="latex-newline"/>
           </xsl:when>
         </xsl:choose>
-        <xsl:call-template name="latex-newline"/>
         \hline
         <xsl:call-template name="latex-newline"/>
         <xsl:text>\textbf{Vulnerability Detection Result}</xsl:text>
@@ -1181,7 +1178,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:choose>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'impact')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'impact') != 'N/A'">
-          <xsl:call-template name="latex-newline"/>
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Impact}</xsl:text>
@@ -1192,7 +1188,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
-          <xsl:call-template name="latex-newline"/>
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Solution}</xsl:text>
@@ -1203,7 +1198,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'affected')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'affected') != 'N/A'">
-          <xsl:call-template name="latex-newline"/>
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Affected Software/OS}</xsl:text>
@@ -1214,7 +1208,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'insight')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'insight') != 'N/A'">
-          <xsl:call-template name="latex-newline"/>
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Vulnerability Insight}</xsl:text>
@@ -1224,7 +1217,6 @@ advice given in each description, in order to rectify the issue.
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:call-template name="latex-newline"/>
         \hline
         <xsl:call-template name="latex-newline"/>
         <xsl:choose>
@@ -1273,7 +1265,6 @@ advice given in each description, in order to rectify the issue.
         </xsl:if>
 
         <xsl:if test="count (detection)">
-          <xsl:call-template name="latex-newline"/>
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Product Detection Result}</xsl:text>

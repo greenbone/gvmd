@@ -1,6 +1,11 @@
 2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
+	Drop empty lines at the end of the several sections of the result.
+
+2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
 	Replaced use of text-to-escaped-row by direct application of the text
 	for NVT names and OIDs which do not contain any characters that
 	need escaping or multi-line formatting.
