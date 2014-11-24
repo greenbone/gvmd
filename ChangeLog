@@ -1,5 +1,12 @@
 2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
+	Replaced use of text-to-escaped-row by direct application of the text
+	for NVT names and OIDs which do not contain any characters that
+	need escaping or multi-line formatting.
+
+2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (structured-text): New. A simple
 	approach to format the structured text adequately of LaTeX. Copied
 	from the omp.xsl of GSA.
