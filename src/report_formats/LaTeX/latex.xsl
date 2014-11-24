@@ -1268,11 +1268,11 @@ advice given in each description, in order to rectify the issue.
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Product Detection Result}</xsl:text>
+          <xsl:call-template name="latex-newline"/>
           Product:
           <xsl:call-template name="text-to-escaped-row">
             <xsl:with-param name="string" select="detection/result/details/detail[name = 'product']/value/text()"/>
           </xsl:call-template>
-          <xsl:call-template name="latex-newline"/>
           Method:
           <xsl:value-of select="detection/result/details/detail[name = 'source_name']/value/text()"/>
           <xsl:call-template name="latex-newline"/>
