@@ -1,5 +1,15 @@
 2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl (structured-text): New. A simple
+	approach to format the structured text adequately of LaTeX. Copied
+	from the omp.xsl of GSA.
+	(result-details-host-port-threat): Use structured-text instead of
+	text-to-escaped-row for those elements where it is assured no
+	overlong words or strange characters do appear. This makes
+	the formatting nicer and also reduces size of the document.
+	
+2014-11-24  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
 	Drop line with "OID" in the section "Summary" of results. It is a
 	redundant information because the OID appears also in the section

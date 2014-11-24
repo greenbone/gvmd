@@ -472,6 +472,19 @@ TODOS: Solve Whitespace/Indentation problem of this file.
     </xsl:if>
   </xsl:template>
 
+  <!-- Currently only a very simple formatting method to produce
+       nice LaTeX from a structured text:
+       - create paragraphs for each text block separated with a empty line
+  -->
+  <xsl:template name="structured-text">
+    <xsl:param name="string"/>
+  
+    <xsl:for-each select="str:split($string, '&#10;&#10;')">
+      <xsl:value-of select="."/>
+      <xsl:call-template name="latex-newline"/>
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- -->
   <xsl:template name="text-to-escaped-row">
     <xsl:param name="string"/>
@@ -1138,7 +1151,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Summary}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:call-template name="text-to-escaped-row">
+          <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'summary')"/>
           </xsl:call-template>
         </xsl:if>
@@ -1175,7 +1188,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Impact}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:call-template name="text-to-escaped-row">
+          <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'impact')"/>
           </xsl:call-template>
         </xsl:if>
@@ -1186,7 +1199,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Solution}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:call-template name="text-to-escaped-row">
+          <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
           </xsl:call-template>
         </xsl:if>
@@ -1197,7 +1210,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Affected Software/OS}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:call-template name="text-to-escaped-row">
+          <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'affected')"/>
           </xsl:call-template>
         </xsl:if>
@@ -1208,7 +1221,7 @@ advice given in each description, in order to rectify the issue.
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Vulnerability Insight}</xsl:text>
           <xsl:call-template name="latex-newline"/>
-          <xsl:call-template name="text-to-escaped-row">
+          <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'insight')"/>
           </xsl:call-template>
         </xsl:if>
@@ -1225,7 +1238,7 @@ advice given in each description, in order to rectify the issue.
           </xsl:otherwise>
         </xsl:choose>
         <xsl:call-template name="latex-newline"/>
-        <xsl:call-template name="text-to-escaped-row">
+        <xsl:call-template name="structured-text">
           <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'vuldetect')"/>
         </xsl:call-template>
 
