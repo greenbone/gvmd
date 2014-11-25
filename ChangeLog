@@ -1,3 +1,11 @@
+2014-11-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add new "Modify Task" wizard.
+
+	* CMakeLists.txt: Install new file src/wizards/modify_task.xml.
+
+	* src/wizards/modify_task.xml: New file.
+
 2014-11-25  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/lsc_crypt.c (lsc_crypt_encrypt): Set the name variable correctly
