@@ -93,7 +93,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <param>
       <optional>1</optional>
       <name>start_timezone</name>
-      <regex>^[0-5][0-9]$</regex>
+      <regex>^.{0,1000}$</regex>
     </param>
 
     <!-- Login credentials -->
@@ -196,6 +196,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                   <hour><xsl:value-of select="/wizard/params/param[name='start_hour']/value"/></hour>
                   <minute><xsl:value-of select="/wizard/params/param[name='start_minute']/value"/></minute>
                 </first_time>
+                <xsl:if test="(/wizard/params/param[name='start_timezone']/value != '')">
+                  <timezone><xsl:value-of select="/wizard/params/param[name='start_timezone']/value"/></timezone>
+                </xsl:if>
               </create_schedule>
             </xsl:if>
 

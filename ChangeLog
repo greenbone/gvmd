@@ -1,5 +1,10 @@
 2014-11-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/wizards/quick_task.xml: Use regex from Modify Task wizard for
+	parameter "start_timezone" and use it in the schedule creation.
+
+2014-11-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/wizards/modify_task.xml: Use parameter name "start_timezone" to
 	set timezone of schedule. Remove now unused parameter "timezone".
 
