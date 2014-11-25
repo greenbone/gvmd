@@ -1,3 +1,20 @@
+2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20992.
+
+	Retry starting of scheduled tasks when the start OMP fails.
+
+	* src/manage.c (reschedule_task): New function.
+	(manage_schedule): Do an extra fork and use the extra process to check
+	if the child doing the OMP succeeded, when starting the tasks.   If it
+	failed to run the OMP, then reschedule the task.  The idea is that the
+	OMP commands may fail due to low memory or socket timeouts when another
+	process is at 100%.  So we retry them if they fail, instead of just
+	leaving them, otherwise the task may skip a scheduled run.
+
+	* src/openvasmd.c (fork_connection_for_schedular): Swap parent and child
+	so that the caller gets the direct child of itself.
+
 2014-11-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20851.
