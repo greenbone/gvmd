@@ -1,5 +1,10 @@
 2014-11-25  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in:
+	Remove redundant directories from last commit.
+
+2014-11-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,
 	tools/openvas-migrate-to-postgres.in: Use existing CMake variables
 	directly instead of attempting to derive them from

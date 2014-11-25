@@ -104,7 +104,7 @@ if [ -z "$SQL_RETRY_DELAY" ]; then
   SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
 fi
 
-[ -r @OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/etc/openvas/greenbone-certdata-sync.conf
+[ -r @OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf
 
 BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
 CERT_DIR="@OPENVAS_CERT_DATA_DIR@"

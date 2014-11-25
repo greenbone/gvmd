@@ -118,7 +118,7 @@ SCRIPT_NAME="greenbone-scapdata-sync"
 # as well as syslog, add "-s" here.
 LOG_CMD="logger -t $SCRIPT_NAME"
 
-[ -r @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/etc/openvas/greenbone-scapdata-sync.conf
+[ -r @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/greenbone-scapdata-sync.conf
 
 BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
 SCAP_DIR="@OPENVAS_SCAP_DATA_DIR@"
