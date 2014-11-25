@@ -12420,6 +12420,44 @@ manage_user_exists (const gchar *name, auth_method_t method)
 }
 
 /**
+ * @brief Set credentials for authenticate.
+ *
+ * @param[in]  credentials  Credentials.
+ *
+ * @return 0 success, 99 permission denied.
+ */
+static int
+credentials_setup (credentials_t *credentials)
+{
+  assert (credentials->uuid);
+
+  credentials->role
+    = g_strdup (user_is_admin (credentials->uuid)
+                 ? "Admin"
+                 : (user_is_observer (credentials->uuid)
+                     ? "Observer"
+                     : (user_is_user (credentials->uuid)
+                         ? "User"
+                         : "")));
+
+  if (user_may ("authenticate") == 0)
+    {
+      free (credentials->uuid);
+      credentials->uuid = NULL;
+      g_free (credentials->role);
+      credentials->role = NULL;
+      return 99;
+    }
+
+  credentials->timezone = sql_string (0, 0,
+                                      "SELECT timezone FROM users"
+                                      " WHERE uuid = '%s';",
+                                      credentials->uuid);
+
+  return 0;
+}
+
+/**
  * @brief Authenticate credentials.
  *
  * @param[in]  credentials  Credentials.
@@ -12442,7 +12480,12 @@ authenticate (credentials_t* credentials)
            * authenticated users (in order to fetch the correct rules). */
           credentials->uuid = get_scheduled_user_uuid ();
           if (*credentials->uuid)
-            return 0;
+            {
+              if (credentials_setup (credentials))
+                return 99;
+
+              return 0;
+            }
           return -1;
         }
 
@@ -12468,30 +12511,13 @@ authenticate (credentials_t* credentials)
           g_free (quoted_name);
           g_free (quoted_method);
 
-          assert (credentials->uuid);
-
-          credentials->role
-            = g_strdup (user_is_admin (credentials->uuid)
-                         ? "Admin"
-                         : (user_is_observer (credentials->uuid)
-                             ? "Observer"
-                             : (user_is_user (credentials->uuid)
-                                 ? "User"
-                                 : "")));
-
-          if (user_may ("authenticate") == 0)
+          if (credentials_setup (credentials))
             {
               free (credentials->uuid);
               credentials->uuid = NULL;
-              g_free (credentials->role);
               credentials->role = NULL;
               return 99;
             }
-
-          credentials->timezone = sql_string (0, 0,
-                                              "SELECT timezone FROM users"
-                                              " WHERE uuid = '%s';",
-                                              credentials->uuid);
 
           return 0;
         }

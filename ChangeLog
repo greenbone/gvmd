@@ -1,5 +1,13 @@
 2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r20993.
+
+	* src/manage_sql.c (credentials_setup): New function.
+	(authenticate): Also do the credentials setup for authentications from
+	task scheduling.
+
+2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20992.
 
 	Retry starting of scheduled tasks when the start OMP fails.
