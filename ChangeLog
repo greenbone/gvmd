@@ -1,5 +1,11 @@
 2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (credentials_setup): New function.
+	(authenticate): Also do the credentials setup for authentications from
+	task scheduling.
+
+2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Retry starting of scheduled tasks when the start OMP fails.
 
 	* src/manage.c (reschedule_task): New function.
