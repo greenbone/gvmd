@@ -29,9 +29,6 @@ VERSION=20140904
 # SETTINGS
 # ========
 
-# Path prefix for installation location
-PREFIX=@CMAKE_INSTALL_PREFIX@
-
 # SCRIPT_NAME is the name the script will use to identify itself and to mark
 # log messages.
 SCRIPT_NAME="openvas-migrate-to-postgres"
@@ -53,9 +50,9 @@ if [ -z "$SQL_RETRY_DELAY" ]; then
   SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
 fi
 
-[ -r $PREFIX/etc/openvas/migrate-to-postgres.conf ] && . $PREFIX/etc/openvas/migrate-to-postgres.conf
+[ -r @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf ] && . @OPENVAS_SYSCONF_DIR@/migrate-to-postgres.conf
 
-SQLITE_DB_DIR="$PREFIX/var/lib/openvas/mgr"
+SQLITE_DB_DIR="@OPENVAS_STATE_DIR@/mgr"
 SQLITE_DB="$SQLITE_DB_DIR/tasks.db"
 
 SQLITE=`command -v sqlite3`

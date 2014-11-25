@@ -42,9 +42,6 @@ if [ "@BACKEND@" = "POSTGRESQL" ]; then
   RECURSIVE_TRIGGERS_OFF=""
 fi
 
-# Path prefix for installation location
-PREFIX=@CMAKE_INSTALL_PREFIX@
-
 # PRIVATE_SUBDIR defines a subdirectory of the CERT data directory
 # where files not part of the feed or database will not be deleted by rsync.
 if [ -z "$PRIVATE_SUBDIR" ]
@@ -107,17 +104,13 @@ if [ -z "$SQL_RETRY_DELAY" ]; then
   SQL_RETRY_DELAY="10m" # allowed unit suffixes: see sleep command
 fi
 
-[ -r $PREFIX/etc/openvas/greenbone-certdata-sync.conf ] && . $PREFIX/etc/openvas/greenbone-certdata-sync.conf
+[ -r @OPENVAS_SYSCONF_DIR@/greenbone-certdata-sync.conf ] && . @OPENVAS_SYSCONF_DIR@/etc/openvas/greenbone-certdata-sync.conf
 
-BASE_SYNC_DIR="$PREFIX/var/lib/openvas"
-CERT_DIR="$BASE_SYNC_DIR/cert-data"
-SCAP_DIR="$BASE_SYNC_DIR/scap-data"
+BASE_SYNC_DIR="@OPENVAS_STATE_DIR@"
+CERT_DIR="@OPENVAS_CERT_DATA_DIR@"
+SCAP_DIR="@OPENVAS_SCAP_DATA_DIR@"
 
-if [ -z "$PREFIX" ] ; then
-  CERT_RES_DIR="/usr/share/openvas/cert"
-else
-  CERT_RES_DIR="$PREFIX/share/openvas/cert"
-fi
+CERT_RES_DIR="@OPENVAS_CERT_RES_DIR@"
 
 CERT_DB="$CERT_DIR/cert.db"
 SCAP_DB="$SCAP_DIR/scap.db"
@@ -126,7 +119,7 @@ if [ ! $POSTGRES -eq 1 ] ; then
   ATTACH_SCAP="ATTACH DATABASE '$SCAP_DB' AS scap;"
 fi
 
-ACCESSKEY="$PREFIX/etc/openvas/gsf-access-key"
+ACCESSKEY="@OPENVAS_SYSCONF_DIR@/gsf-access-key"
 
 TIMESTAMP="$CERT_DIR/timestamp"
 

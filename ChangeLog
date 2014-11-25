@@ -1,3 +1,10 @@
+2014-11-25  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* tools/greenbone-certdata-sync.in, tools/greenbone-scapdata-sync.in,
+	tools/openvas-migrate-to-postgres.in: Use existing CMake variables
+	directly instead of attempting to derive them from
+	CMAKE_INSTALL_PREFIX.
+
 2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (credentials_setup): New function.
