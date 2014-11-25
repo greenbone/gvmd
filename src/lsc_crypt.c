@@ -659,7 +659,7 @@ lsc_crypt_encrypt (lsc_crypt_ctx_t ctx, const char *first_name, ...)
           g_string_append (stringbuf, value);
         }
     }
-  while (va_arg (arg_ptr, const char *))
+  while ((name = va_arg (arg_ptr, const char *)))
     ;
   va_end (arg_ptr);
   plaintext = stringbuf->str;
