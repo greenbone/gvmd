@@ -4174,12 +4174,40 @@ set_scheduled_user_uuid (gchar* user_uuid)
 }
 
 /**
+ * @brief Set a task's schedule so that it runs again next scheduling round.
+ *
+ * @param  task_id  UUID of task.
+ */
+void
+reschedule_task (const gchar *task_id)
+{
+  task_t task;
+  task = 0;
+  switch (sql_int64 (&task,
+                     "SELECT id FROM tasks WHERE uuid = '%s'"
+                     " AND hidden != 2;",
+                     task_id))
+    {
+      case 0:
+        g_warning ("%s: rescheduling task '%s'\n", __FUNCTION__, task_id);
+        set_task_schedule_next_time (task, time (NULL) - 1);
+        break;
+      case 1:        /* Too few rows in result of query. */
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        break;
+    }
+}
+
+/**
  * @brief Schedule any actions that are due.
  *
  * In openvasmd, periodically called from the main daemon loop.
  *
  * @param[in]  fork_connection  Function that forks a child which is connected
- *                              to the Manager.  Must return 0 in parent, PID
+ *                              to the Manager.  Must return PID in parent, 0
  *                              in child, or -1 on error.
  * @param[in]  run_tasks        Whether to run scheduled tasks.
  *
@@ -4325,7 +4353,7 @@ manage_schedule (int (*fork_connection) (int *,
 
   while (starts)
     {
-      int socket;
+      int socket, pid;
       gnutls_session_t session;
       gnutls_certificate_credentials_t credentials;
       gchar *task_uuid, *owner, *owner_uuid;
@@ -4343,65 +4371,143 @@ manage_schedule (int (*fork_connection) (int *,
       g_slist_free_1 (head->next);
       g_slist_free_1 (head);
 
-      /* Run the callback to fork a child connected to the Manager. */
+      /* Fork a child to start the task and wait for the response, so that the
+       * parent can return to the main loop. */
 
-      switch (fork_connection (&socket, &session, &credentials, owner_uuid))
+      pid = fork ();
+      switch (pid)
         {
           case 0:
-            /* Parent.  Continue to next task. */
+            /* Child.  Carry on to start the task, reopen the database (required
+             * after fork). */
+            reinit_manage_process ();
+            while (starts)
+              {
+                g_free (starts->data);
+                starts = g_slist_delete_link (starts, starts);
+              }
+            break;
+
+          case -1:
+            /* Parent on error.  Reschedule and continue to next task. */
+            g_warning ("%s: fork failed\n", __FUNCTION__);
+            reschedule_task (task_uuid);
             g_free (task_uuid);
             g_free (owner);
             g_free (owner_uuid);
             continue;
+
+          default:
+            /* Parent.  Continue to next task. */
+            g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+            g_free (task_uuid);
+            g_free (owner);
+            g_free (owner_uuid);
+            continue;
+
+        }
+
+      /* Run the callback to fork a child connected to the Manager. */
+
+      pid = fork_connection (&socket, &session, &credentials, owner_uuid);
+      switch (pid)
+        {
+          case 0:
+            /* Child.  Break, start task, exit. */
+            g_free (owner_uuid);
             break;
 
           case -1:
             /* Parent on error. */
+            g_warning ("%s: fork_connection failed\n", __FUNCTION__);
+            reschedule_task (task_uuid);
             g_free (task_uuid);
             g_free (owner);
             g_free (owner_uuid);
-            while (starts)
-              {
-                g_free (starts->data);
-                starts = g_slist_delete_link (starts, starts);
-              }
-            g_warning ("%s: start fork failed\n", __FUNCTION__);
-            return -1;
-            break;
+            exit (EXIT_FAILURE);
 
           default:
-            /* Child.  Break, start task, exit. */
-            while (starts)
-              {
-                g_free (starts->data);
-                starts = g_slist_delete_link (starts, starts);
-              }
-            break;
+            {
+              int status;
+
+              /* Parent.  Wait for child, to check return. */
+
+              g_debug ("%s: %i fork_connectioned %i",
+                       __FUNCTION__, getpid (), pid);
+
+              g_free (owner);
+              g_free (owner_uuid);
+
+              if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+                g_warning ("%s: failed to set SIGCHLD", __FUNCTION__);
+              while (waitpid (pid, &status, 0) < 0)
+                {
+                  if (errno == ECHILD)
+                    {
+                      g_warning ("%s: Failed to get child exit,"
+                                 " so task '%s' may not have been scheduled",
+                                 __FUNCTION__,
+                                 task_uuid);
+                      g_free (task_uuid);
+                      exit (EXIT_FAILURE);
+                    }
+                  if (errno == EINTR)
+                    continue;
+                  g_warning ("%s: waitpid: %s",
+                             __FUNCTION__,
+                             strerror (errno));
+                  g_warning ("%s: As a result, task '%s' may not have been"
+                             " scheduled",
+                             __FUNCTION__,
+                             task_uuid);
+                  g_free (task_uuid);
+                  exit (EXIT_FAILURE);
+                }
+              if (WIFEXITED (status))
+                switch (WEXITSTATUS (status))
+                  {
+                    case EXIT_SUCCESS:
+                      /* Child succeeded. */
+                      g_free (task_uuid);
+                      exit (EXIT_SUCCESS);
+
+                    case EXIT_FAILURE:
+                    default:
+                      break;
+                  }
+
+              /* Child failed, reset task schedule time and exit. */
+
+              g_warning ("%s: child failed\n", __FUNCTION__);
+              reschedule_task (task_uuid);
+              g_free (task_uuid);
+
+              exit (EXIT_FAILURE);
+            }
         }
 
       /* Start the task. */
 
       if (omp_authenticate (&session, owner, ""))
         {
+          g_warning ("%s: omp_authenticate failed", __FUNCTION__);
           g_free (task_uuid);
           g_free (owner);
-          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
+      g_free (owner);
+
       if (omp_resume_or_start_task (&session, task_uuid))
         {
+          g_warning ("%s: omp_resume_or_start_task failed", __FUNCTION__);
           g_free (task_uuid);
-          g_free (owner);
-          g_free (owner_uuid);
           openvas_server_free (socket, session, credentials);
           exit (EXIT_FAILURE);
         }
 
       g_free (task_uuid);
-      g_free (owner);
-      g_free (owner_uuid);
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);
    }
@@ -4427,6 +4533,8 @@ manage_schedule (int (*fork_connection) (int *,
       g_slist_free_1 (head->next->next);
       g_slist_free_1 (head->next);
       g_slist_free_1 (head);
+
+      /* TODO As with starts above, this should retry if the stop failed. */
 
       /* Run the callback to fork a child connected to the Manager. */
 

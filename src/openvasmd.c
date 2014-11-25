@@ -438,7 +438,7 @@ accept_and_maybe_fork (int server_socket)
  * @param[in]  client_credentials  Client credentials.
  * @param[in]  uuid                UUID of schedule user.
  *
- * @return 0 parent on success, 1 child on success, -1 error.
+ * @return PID parent on success, 0 child on success, -1 error.
  */
 static int
 fork_connection_for_schedular (int *client_socket,
@@ -468,13 +468,14 @@ fork_connection_for_schedular (int *client_socket,
 
       default:
         /* Parent.  Return to caller. */
-        return 0;
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        return pid;
         break;
     }
 
   /* This is now a child of the main Manager process.  It forks again.  The
-   * only case that returns is the child after a connection is successfully
-   * set up.  The caller must exit this child.
+   * only case that returns is the process that the caller can use for OMP
+   * commands.  The caller must exit this process.
    *
    * Create a connected pair of sockets. */
 
@@ -493,36 +494,7 @@ fork_connection_for_schedular (int *client_socket,
   switch (pid)
     {
       case 0:
-        /* Child.  */
-
-        /** @todo Give the parent time to prepare. */
-        sleep (5);
-
-        *client_socket = sockets[1];
-
-        if (openvas_server_new (GNUTLS_CLIENT,
-                                CACERT,
-                                SCANNERCERT,
-                                SCANNERKEY,
-                                client_session,
-                                client_credentials))
-          exit (EXIT_FAILURE);
-
-        if (openvas_server_attach (*client_socket, client_session))
-          exit (EXIT_FAILURE);
-
-        return 1;
-        break;
-
-      case -1:
-        /* Parent when error. */
-
-        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
-        exit (EXIT_FAILURE);
-        break;
-
-      default:
-        /* Parent.  Serve the schedular OMP, then exit. */
+        /* Child.  Serve the schedular OMP, then exit. */
 
         parent_client_socket = sockets[0];
 
@@ -562,6 +534,41 @@ fork_connection_for_schedular (int *client_socket,
         /** @todo This should be done through libomp. */
         save_tasks ();
         exit (ret);
+        break;
+
+      case -1:
+        /* Parent when error. */
+
+        g_warning ("%s: fork: %s\n", __FUNCTION__, strerror (errno));
+        exit (EXIT_FAILURE);
+        break;
+
+      default:
+        /* Parent.  */
+
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+
+        /* This process is returned as the child of
+         * fork_connection_for_schedular so that the returned parent can wait
+         * on this process. */
+
+        /** @todo Give the parent time to prepare. */
+        sleep (5);
+
+        *client_socket = sockets[1];
+
+        if (openvas_server_new (GNUTLS_CLIENT,
+                                CACERT,
+                                SCANNERCERT,
+                                SCANNERKEY,
+                                client_session,
+                                client_credentials))
+          exit (EXIT_FAILURE);
+
+        if (openvas_server_attach (*client_socket, client_session))
+          exit (EXIT_FAILURE);
+
+        return 0;
         break;
     }
 
