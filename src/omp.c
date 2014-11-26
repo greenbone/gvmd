@@ -3291,6 +3291,7 @@ typedef struct
   char *name;                    ///< Name of permission.
   char *permission_id;           ///< Permission UUID.
   char *resource_id;             ///< Resource.
+  char *resource_type;           ///< Resource type, for Super permissions.
   char *subject_type;            ///< Subject type.
   char *subject_id;              ///< Subject UUID.
 } modify_permission_data_t;
@@ -3306,6 +3307,7 @@ modify_permission_data_reset (modify_permission_data_t *data)
   free (data->comment);
   free (data->name);
   free (data->resource_id);
+  free (data->resource_type);
   free (data->permission_id);
   free (data->subject_type);
   free (data->subject_id);
@@ -5311,6 +5313,7 @@ typedef enum
   CLIENT_MODIFY_PERMISSION_COMMENT,
   CLIENT_MODIFY_PERMISSION_NAME,
   CLIENT_MODIFY_PERMISSION_RESOURCE,
+  CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE,
   CLIENT_MODIFY_PERMISSION_SUBJECT,
   CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE,
   CLIENT_MODIFY_PORT_LIST,
@@ -8004,6 +8007,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_permission_data->subject_id);
             set_client_state (CLIENT_MODIFY_PERMISSION_SUBJECT);
           }
+        ELSE_ERROR ("modify_permission");
+
+      case CLIENT_MODIFY_PERMISSION_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE);
         ELSE_ERROR ("modify_permission");
 
       case CLIENT_MODIFY_PERMISSION_SUBJECT:
@@ -23107,6 +23115,7 @@ create_task_fail:
                          modify_permission_data->name,
                          modify_permission_data->comment,
                          modify_permission_data->resource_id,
+                         modify_permission_data->resource_type,
                          modify_permission_data->subject_type,
                          modify_permission_data->subject_id))
             {
@@ -23228,6 +23237,7 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_PERMISSION_SUBJECT, TYPE);
       CLOSE (CLIENT_MODIFY_PERMISSION, NAME);
       CLOSE (CLIENT_MODIFY_PERMISSION, RESOURCE);
+      CLOSE (CLIENT_MODIFY_PERMISSION_RESOURCE, TYPE);
 
       case CLIENT_MODIFY_PORT_LIST:
         {
@@ -26808,6 +26818,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_PERMISSION_NAME,
               &modify_permission_data->name);
+
+      APPEND (CLIENT_MODIFY_PERMISSION_RESOURCE_TYPE,
+              &modify_permission_data->resource_type);
 
       APPEND (CLIENT_MODIFY_PERMISSION_SUBJECT_TYPE,
               &modify_permission_data->subject_type);

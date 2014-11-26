@@ -5200,6 +5200,14 @@ modify_permission_resource
      {
        # UUID if permission applies to resource, else 0.
        attribute id { uuid }?
+       & modify_permission_resource_type
+     }
+
+# OMP type, for Super permissions: user, group or role.
+modify_permission_resource_type
+ = element type
+     {
+       text
      }
 
 # A subject to whom the permission is granted.

@@ -31254,11 +31254,18 @@ modify_override_result
 <li>
               &lt;<b>resource</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A resource to which the permission applies.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           UUID if permission applies to resource, else 0.
-          </li></ul>
+          </li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">OMP type, for Super permissions: user, group or role.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>subject</b>&gt;
@@ -31318,6 +31325,13 @@ modify_permission_resource
  = element resource
      {
        attribute id { uuid }?
+       &amp; modify_permission_resource_type
+     }
+
+modify_permission_resource_type
+ = element type
+     {
+       text
      }
 
 modify_permission_subject

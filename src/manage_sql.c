@@ -43272,6 +43272,7 @@ strdown (gchar *string)
  * @param[in]   name            Name of permission.
  * @param[in]   comment         Comment on permission.
  * @param[in]   resource_id     UUID of resource.
+ * @param[in]   resource_type   Type of resource, for Super permissions.
  * @param[in]   subject_type    Type of subject.
  * @param[in]   subject_id      UUID of subject.
  *
@@ -43284,7 +43285,8 @@ strdown (gchar *string)
 int
 modify_permission (const char *permission_id, const char *name,
                    const char *comment, const char *resource_id,
-                   const char *subject_type, const char *subject_id)
+                   const char *resource_type_arg, const char *subject_type,
+                   const char *subject_id)
 {
   permission_t permission;
   resource_t resource, subject;
@@ -43342,15 +43344,21 @@ modify_permission (const char *permission_id, const char *name,
     {
       gchar *quoted_name;
 
-      if (valid_omp_command (name) == 0)
+      if (strcasecmp (name, "Super") == 0)
+        quoted_name = g_strdup ("Super");
+      else
         {
-          sql ("ROLLBACK;");
-          return 7;
+          if (valid_omp_command (name) == 0)
+            {
+              sql ("ROLLBACK;");
+              return 7;
+            }
+          quoted_name = sql_quote (name);
+          strdown (quoted_name);
         }
 
-      quoted_name = sql_quote (name);
       sql ("UPDATE permissions SET"
-           " name = lower ('%s')"
+           " name = '%s'"
            " WHERE id = %llu;",
            quoted_name,
            permission);
@@ -43374,8 +43382,10 @@ modify_permission (const char *permission_id, const char *name,
     {
       gchar *command, *resource_type;
 
-      if (name)
-        command = g_strdup (name);
+      if (name && (strcasecmp (name, "Super") == 0))
+        command = g_strdup ("Super");
+      else if (name)
+        command = strdown (g_strdup (name));
       else
         {
           command = sql_string ("SELECT name FROM permissions"
@@ -43387,14 +43397,17 @@ modify_permission (const char *permission_id, const char *name,
               sql ("ROLLBACK;");
               return 8;
             }
+          strdown (command);
         }
 
-      strdown (command);
       resource_type = NULL;
       resource = 0;
       if (strlen (resource_id) == 0
           || strcmp (resource_id, "0") == 0
-          || (resource_type = omp_command_type (command)) == NULL)
+          || (resource_type = strcasecmp (command, "super")
+                               ? omp_command_type (command)
+                               : g_strdup (resource_type_arg))
+             == NULL)
         resource_id = "";
       else
         {
@@ -43418,7 +43431,8 @@ modify_permission (const char *permission_id, const char *name,
 
       if (resource)
         {
-          if (omp_command_takes_resource (name) == 0)
+          if (strcasecmp (name, "Super")
+              && (omp_command_takes_resource (name) == 0))
             {
               g_free (resource_type);
               sql ("ROLLBACK;");
@@ -43428,6 +43442,14 @@ modify_permission (const char *permission_id, const char *name,
       else
         {
           /* Ensure the user may grant this permission. */
+
+          if (strcasecmp (name, "Super") == 0)
+            {
+              g_free (resource_type);
+              sql ("ROLLBACK;");
+              return 99;
+            }
+
           if (user_can_everything (current_credentials.uuid) == 0)
             {
               g_free (resource_type);

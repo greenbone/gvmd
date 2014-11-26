@@ -19572,7 +19572,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>0</required>
         </attrib>
+        <e>type</e>
       </pattern>
+      <ele>
+        <name>type</name>
+        <summary>OMP type, for Super permissions: user, group or role</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>subject</name>
