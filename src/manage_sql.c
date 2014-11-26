@@ -6794,6 +6794,7 @@ DEF_ACCESS (task_alert_iterator_name, 2);
  * @param[in]  body          Body of email.
  * @param[in]  attachment    Attachment in line broken base64, or NULL.
  * @param[in]  attachment_type  Attachment MIME type, or NULL.
+ * @param[in]  attachment_name  Base file name of the attachment, or NULL.
  * @param[in]  attachment_extension  Attachment file extension, or NULL.
  *
  * @return 0 success, -1 error.
@@ -6801,7 +6802,7 @@ DEF_ACCESS (task_alert_iterator_name, 2);
 static int
 email (const char *to_address, const char *from_address, const char *subject,
        const char *body, const gchar *attachment, const char *attachment_type,
-       const char *attachment_extension)
+       const char *attachment_name, const char *attachment_extension)
 {
   int ret, content_fd, to_fd;
   gchar *command;
@@ -6870,10 +6871,11 @@ email (const char *to_address, const char *from_address, const char *subject,
                    "--=-=-=-=-=\n"
                    "Content-Type: %s\n"
                    "Content-Disposition: attachment;"
-                   " filename=\"openvas-report.%s\"\n"
+                   " filename=\"%s.%s\"\n"
                    "Content-Transfer-Encoding: base64\n"
                    "Content-Description: OpenVAS report\n\n",
                    attachment_type,
+                   attachment_name,
                    attachment_extension)
           < 0)
         {
@@ -8137,13 +8139,55 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               free (filt_id);
               free (name);
               free (notice);
+
+              gchar *fname_format, *file_name;
+              gchar *report_id, *creation_time, *modification_time;
+
+              fname_format
+                = sql_string ("SELECT value FROM settings"
+                              " WHERE name"
+                              "       = 'Report Export File Name'"
+                              " AND ((owner IS NULL)"
+                              "      OR (owner ="
+                              "          (SELECT id FROM users"
+                              "           WHERE users.uuid = '%s')))"
+                              " ORDER BY owner DESC LIMIT 1;",
+                              current_credentials.uuid);
+
+              report_id = report_uuid (report);
+
+              creation_time
+                = sql_string ("SELECT iso_time (start_time)"
+                              " FROM reports"
+                              " WHERE id = %llu",
+                              report);
+
+              modification_time
+                = sql_string ("SELECT iso_time (end_time)"
+                              " FROM reports"
+                              " WHERE id = %llu",
+                              report);
+
+              file_name
+                = openvas_export_file_name (fname_format,
+                                            current_credentials.username,
+                                            "report", report_id,
+                                            creation_time, modification_time);
+
               ret = email (to_address, from_address, subject, body, base64,
-                           type, extension);
+                           type, file_name ? file_name : "openvas-report",
+                           extension);
+
               g_free (base64);
               free (to_address);
               free (from_address);
               g_free (subject);
               g_free (body);
+              g_free (fname_format);
+              g_free (file_name);
+              g_free (report_id);
+              g_free (creation_time);
+              g_free (modification_time);
               return ret;
             }
           return -1;
