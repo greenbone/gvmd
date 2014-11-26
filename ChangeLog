@@ -1,3 +1,8 @@
+2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (user_has_super, user_owns_uuid, where_owned): Extend
+	Super permission to apply to groups and roles.
+
 2014-11-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/wizards/quick_task.xml: Use regex from Modify Task wizard for

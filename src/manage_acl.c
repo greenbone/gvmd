@@ -128,10 +128,25 @@ user_can_everything (const char *user_id)
 int
 user_has_super (const char *super_user_id, user_t other_user)
 {
-  if (sql_int (/* The user has super permission on everyone. */
-               " SELECT EXISTS (SELECT * FROM permissions"
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE name = 'Super'"
-               "                AND resource = 0"
+               /*                    Super on everyone. */
+               "                AND ((resource = 0)"
+               /*                    Super on other_user. */
+               "                     OR ((resource_type = 'user')"
+               "                         AND (resource = %llu))"
+               /*                    Super on other_user's role. */
+               "                     OR ((resource_type = 'role')"
+               "                         AND (resource"
+               "                              IN (SELECT DISTINCT role"
+               "                                  FROM role_users"
+               "                                  WHERE \"user\" = %llu)))"
+               /*                    Super on other_user's group. */
+               "                     OR ((resource_type = 'group')"
+               "                         AND (resource"
+               "                              IN (SELECT DISTINCT \"group\""
+               "                                  FROM group_users"
+               "                                  WHERE \"user\" = %llu))))"
                "                AND ((subject_type = 'user'"
                "                      AND subject"
                "                          = (SELECT id FROM users"
@@ -153,22 +168,12 @@ user_has_super (const char *super_user_id, user_t other_user)
                "                                       = (SELECT id"
                "                                          FROM users"
                "                                          WHERE users.uuid"
-               "                                                = '%s')))))"
-               // TODO Role has super on the other user.
-               // TODO Group has super on the other user.
-               /* Or the user has super permission on the other user. */
-               " OR EXISTS (SELECT * FROM permissions"
-               "            WHERE name = 'Super'"
-               "            AND resource_type = 'user'"
-               "            AND %lli = resource"
-               "            AND subject"
-               "                = (SELECT id FROM users"
-               "                   WHERE users.uuid = '%s')"
-               "            AND subject_type = 'user');",
-               super_user_id,
-               super_user_id,
-               super_user_id,
+               "                                                = '%s')))));",
                other_user,
+               other_user,
+               other_user,
+               super_user_id,
+               super_user_id,
                super_user_id))
     return 1;
   return 0;
@@ -310,7 +315,33 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
   if (sql_int (/* The user has super permission on everyone. */
                " SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE name = 'Super'"
-               "                AND resource = 0"
+               /*                    Super on everyone. */
+               "                AND ((resource = 0)"
+               /*                    Super on other_user. */
+               "                     OR ((resource_type = 'user')"
+               "                         AND (resource = (SELECT %ss.owner"
+               "                                          FROM %ss"
+               "                                          WHERE uuid = '%s')))"
+               /*                    Super on other_user's role. */
+               "                     OR ((resource_type = 'role')"
+               "                         AND (resource"
+               "                              IN (SELECT DISTINCT role"
+               "                                  FROM role_users"
+               "                                  WHERE \"user\""
+               "                                        = (SELECT %ss.owner"
+               "                                           FROM %ss"
+               "                                           WHERE uuid"
+               "                                                 = '%s'))))"
+               /*                    Super on other_user's group. */
+               "                     OR ((resource_type = 'group')"
+               "                         AND (resource"
+               "                              IN (SELECT DISTINCT \"group\""
+               "                                  FROM group_users"
+               "                                  WHERE \"user\""
+               "                                        = (SELECT %ss.owner"
+               "                                           FROM %ss"
+               "                                           WHERE uuid"
+               "                                                 = '%s')))))"
                "                AND ((subject_type = 'user'"
                "                      AND subject"
                "                          = (SELECT id FROM users"
@@ -332,25 +363,18 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                "                                       = (SELECT id"
                "                                          FROM users"
                "                                          WHERE users.uuid"
-               "                                                = '%s')))))"
-               // TODO role,group
-               /* Or the user has super permission on the owner. */
-               "     OR EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               "                AND resource_type = 'user'"
-               "                AND (SELECT %ss.owner FROM %ss"
-               "                     WHERE uuid = '%s')"
-               "                    = resource"
-               "                AND subject"
-               "                    = (SELECT id FROM users"
-               "                       WHERE users.uuid = '%s')"
-               "                AND subject_type = 'user');",
-               current_credentials.uuid,
-               current_credentials.uuid,
-               current_credentials.uuid,
+               "                                                = '%s')))));",
                type,
                type,
                uuid,
+               type,
+               type,
+               uuid,
+               type,
+               type,
+               uuid,
+               current_credentials.uuid,
+               current_credentials.uuid,
                current_credentials.uuid))
     return 1;
 
@@ -847,10 +871,28 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "  OR (%ss.owner"
                             "      = (SELECT id FROM users"
                             "         WHERE users.uuid = '%s'))"
-                            /* Or the user has super permission on everyone. */
+                            /* Or the user has super permission. */
                             "  OR EXISTS (SELECT * FROM permissions"
                             "             WHERE name = 'Super'"
-                            "             AND resource = 0"
+                            /*                 Super on everyone. */
+                            "             AND ((resource = 0)"
+                            /*                 Super on other_user. */
+                            "                  OR ((resource_type = 'user')"
+                            "                      AND (resource = %ss.owner))"
+                            /*                 Super on other_user's role. */
+                            "                  OR ((resource_type = 'role')"
+                            "                      AND (resource"
+                            "                           IN (SELECT DISTINCT role"
+                            "                               FROM role_users"
+                            "                               WHERE \"user\""
+                            "                                     = %ss.owner)))"
+                            /*                 Super on other_user's group. */
+                            "                  OR ((resource_type = 'group')"
+                            "                      AND (resource"
+                            "                           IN (SELECT DISTINCT \"group\""
+                            "                               FROM group_users"
+                            "                               WHERE \"user\""
+                            "                                     = %ss.owner))))"
                             "             AND ((subject_type = 'user'"
                             "                   AND subject"
                             "                       = (SELECT id FROM users"
@@ -873,24 +915,15 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                                       FROM users"
                             "                                       WHERE users.uuid"
                             "                                             = '%s')))))"
-                            // TODO role,group
-                            /* Or the user has super permission on the owner. */
-                            "  OR EXISTS (SELECT * FROM permissions"
-                            "             WHERE name = 'Super'"
-                            "             AND resource_type = 'user'"
-                            "             AND %ss.owner = resource"
-                            "             AND subject"
-                            "                 = (SELECT id FROM users"
-                            "                    WHERE users.uuid = '%s')"
-                            "             AND subject_type = 'user')"
                             "  %s)",
                             type,
                             type,
                             current_credentials.uuid,
-                            current_credentials.uuid,
-                            current_credentials.uuid,
-                            current_credentials.uuid,
                             type,
+                            type,
+                            type,
+                            current_credentials.uuid,
+                            current_credentials.uuid,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
       else
