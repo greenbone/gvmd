@@ -31966,26 +31966,6 @@ nvt_preference_count (const char *name)
 }
 
 /**
- * @brief Get the name from an task preference iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_preference_iterator_name, 0);
-
-/**
- * @brief Get the value from an task preference iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Value, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_preference_iterator_value, 1);
-
-/**
  * @brief Get the value of a task preference.
  *
  * @param[in]  task  Task.
@@ -41305,7 +41285,6 @@ trash_slave_writable (slave_t slave)
    { "host", NULL },                                                    \
    { "port", NULL },                                                    \
    { "login", NULL },                                                   \
-   { "password", NULL },                                                \
    { NULL, NULL }                                                       \
  }
 
@@ -41318,7 +41297,6 @@ trash_slave_writable (slave_t slave)
    { "host", NULL },                                                    \
    { "port", NULL },                                                    \
    { "login", NULL },                                                   \
-   { "password", NULL },                                                \
    { NULL, NULL }                                                       \
  }
 
@@ -41393,15 +41371,6 @@ DEF_ACCESS (slave_iterator_port, GET_ITERATOR_COLUMN_COUNT + 1);
  * @return Login of the slave or NULL if iteration is complete.
  */
 DEF_ACCESS (slave_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the password of the slave from a slave iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Password of the slave or NULL if iteration is complete.
- */
-DEF_ACCESS (slave_iterator_password, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Return the UUID of a slave.
@@ -51874,14 +51843,13 @@ DEF_ACCESS (tag_name_iterator_name, 0);
 int
 init_resource_tag_iterator (iterator_t* iterator, const char* type,
                             resource_t resource, int active_only,
-                            const char* sort_field,
-                            int ascending)
+                            const char* sort_field, int ascending)
 {
   assert (type);
   assert (resource);
 
   init_iterator (iterator,
-                 "SELECT id, uuid, name, value, comment, active"
+                 "SELECT id, uuid, name, value, comment"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
                  "   AND resource = %llu"
@@ -51931,15 +51899,6 @@ DEF_ACCESS (resource_tag_iterator_value, 3);
  * @return The comment of the tag.
  */
 DEF_ACCESS (resource_tag_iterator_comment, 4);
-
-/**
- * @brief Get if Tag is active from a resource Tag iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Whether the tag is active.
- */
-DEF_ACCESS (resource_tag_iterator_active, 5);
 
 /**
  * @brief Count number of tags attached to a resource.

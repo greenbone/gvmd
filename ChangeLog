@@ -1,3 +1,14 @@
+2014-11-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (task_preference_iterator_name)
+	(task_preference_iterator_value, slave_iterator_password)
+	(resource_tag_iterator_active): Remove unused functions.
+	(SLAVE_ITERATOR_COLUMNS, SLAVE_ITERATOR_TRASH_COLUMNS): Remove password
+	column.
+	(init_resource_tag_iterator): Remove active column from iterator.
+
+	* src/manage.h: Remove functions prototypes.
+
 2014-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add RESOURCE/TYPE to CREATE_PERMISSION, so that Super permissions can be

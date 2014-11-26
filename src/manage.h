@@ -1678,12 +1678,6 @@ nvt_preference_count (const char *);
 gchar*
 get_nvti_xml (iterator_t*, int, int, const char*, int);
 
-const char*
-task_preference_iterator_name (iterator_t*);
-
-const char*
-task_preference_iterator_value (iterator_t*);
-
 char*
 task_preference_value (task_t, const char *);
 
@@ -2509,9 +2503,6 @@ slave_iterator_port (iterator_t*);
 
 const char*
 slave_iterator_login (iterator_t*);
-
-const char*
-slave_iterator_password (iterator_t*);
 
 char*
 slave_uuid (slave_t);
@@ -3394,9 +3385,6 @@ resource_tag_iterator_value (iterator_t*);
 
 const char*
 resource_tag_iterator_comment (iterator_t*);
-
-const char*
-resource_tag_iterator_active (iterator_t*);
 
 int
 resource_tag_count (const char*, resource_t, int);
