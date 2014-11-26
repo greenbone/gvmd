@@ -6835,10 +6835,17 @@ create_override_threat
 <li>
               &lt;<b>resource</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">A resource to which the permission applies.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
-          </li></ul>
+          </li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">OMP type, for Super permissions: user, group or role.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>copy</b>&gt;
@@ -6904,6 +6911,13 @@ create_permission_resource
  = element resource
      {
        attribute id { uuid }?
+       &amp; create_permission_resource_type
+     }
+
+create_permission_resource_type
+ = element type
+     {
+       text
      }
 
 create_permission_copy

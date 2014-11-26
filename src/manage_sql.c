@@ -42439,6 +42439,7 @@ find_permission (const char* uuid, permission_t* permission)
  *
  * @param[in]   name_arg        Name of permission.
  * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
  * @param[in]   resource_id     UUID of resource.
  * @param[in]   subject_type    Type of subject.
  * @param[in]   subject_id      UUID of subject.
@@ -42451,8 +42452,9 @@ find_permission (const char* uuid, permission_t* permission)
  */
 int
 create_permission (const char *name_arg, const char *comment,
-                   const char *resource_id, const char *subject_type,
-                   const char *subject_id, permission_t *permission)
+                   const char *resource_type_arg, const char *resource_id,
+                   const char *subject_type, const char *subject_id,
+                   permission_t *permission)
 {
   gchar *name, *owner, *quoted_name, *quoted_comment, *resource_type;
   resource_t resource, subject;
@@ -42460,19 +42462,27 @@ create_permission (const char *name_arg, const char *comment,
   assert (current_credentials.uuid);
 
   if ((name_arg == NULL)
-      || (valid_omp_command (name_arg) == 0)
+      || ((valid_omp_command (name_arg) == 0)
+          && strcasecmp (name_arg, "super"))
       || (strcasecmp (name_arg, "get_version") == 0))
     return 7;
 
   if (resource_id
       && strcmp (resource_id, "")
       && strcmp (resource_id, "0")
-      && ((omp_command_takes_resource (name_arg) == 0)
+      && (((omp_command_takes_resource (name_arg) == 0)
+           && strcasecmp (name_arg, "super"))
           /* Permission on users, groups and roles is limited, for now. */
           || strcasestr (name_arg, "_user")
           || strcasestr (name_arg, "_role")
           || strcasestr (name_arg, "_group")))
     return 9;
+
+  if (resource_type_arg
+      && strcmp (resource_type_arg, "group")
+      && strcmp (resource_type_arg, "role")
+      && strcmp (resource_type_arg, "user"))
+    return 5;
 
   if (subject_type
       && strcmp (subject_type, "group")
@@ -42501,12 +42511,16 @@ create_permission (const char *name_arg, const char *comment,
       return 99;
     }
 
-  name = g_ascii_strdown (name_arg, -1);
+  name = strcasecmp (name_arg, "super")
+          ? g_ascii_strdown (name_arg, -1)
+          : g_strdup ("Super");
   resource = 0;
   if (resource_id
       && strcmp (resource_id, "")
       && strcmp (resource_id, "0")
-      && (resource_type = omp_command_type (name)))
+      && (resource_type = strcasecmp (name, "super")
+                           ? omp_command_type (name)
+                           : g_strdup (resource_type_arg)))
     {
       if (find_resource (resource_type, resource_id, &resource))
         {
@@ -42538,7 +42552,8 @@ create_permission (const char *name_arg, const char *comment,
     }
 
   /* Ensure the user may grant this permission. */
-  if ((resource == 0) && (user_can_everything (current_credentials.uuid) == 0))
+  if (((resource == 0) || strcasecmp (name, "super") == 0)
+      && (user_can_everything (current_credentials.uuid) == 0))
     {
       sql ("ROLLBACK;");
       return 99;

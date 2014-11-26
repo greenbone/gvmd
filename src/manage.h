@@ -2605,7 +2605,7 @@ modify_group (const char *, const char *, const char *, const char *);
 
 int
 create_permission (const char *, const char *, const char *, const char *,
-                   const char *, permission_t *);
+                   const char *, const char *, permission_t *);
 
 int
 copy_permission (const char*, const char *, permission_t *);

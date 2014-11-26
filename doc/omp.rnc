@@ -2826,6 +2826,14 @@ create_permission_resource
  = element resource
      {
        attribute id { uuid }?
+       & create_permission_resource_type
+     }
+
+# OMP type, for Super permissions: user, group or role.
+create_permission_resource_type
+ = element type
+     {
+       text
      }
 
 # UUID of an existing permission to copy.

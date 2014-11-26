@@ -1153,6 +1153,7 @@ typedef struct
   char *comment;         ///< Comment.
   char *copy;            ///< UUID of resource to copy.
   char *name;            ///< Permission name.
+  char *resource_type;   ///< Resource type, for special permissions.
   char *resource_id;     ///< Resource permission applies to.
   char *subject_type;    ///< Subject type permission applies to.
   char *subject_id;      ///< Subject permission applies to.
@@ -1169,6 +1170,7 @@ create_permission_data_reset (create_permission_data_t *data)
   free (data->comment);
   free (data->copy);
   free (data->name);
+  free (data->resource_type);
   free (data->resource_id);
   free (data->subject_type);
   free (data->subject_id);
@@ -4973,6 +4975,7 @@ typedef enum
   CLIENT_CREATE_PERMISSION_COPY,
   CLIENT_CREATE_PERMISSION_NAME,
   CLIENT_CREATE_PERMISSION_RESOURCE,
+  CLIENT_CREATE_PERMISSION_RESOURCE_TYPE,
   CLIENT_CREATE_PERMISSION_SUBJECT,
   CLIENT_CREATE_PERMISSION_SUBJECT_TYPE,
   CLIENT_CREATE_PORT_LIST,
@@ -8830,6 +8833,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_permission_data->subject_id);
             set_client_state (CLIENT_CREATE_PERMISSION_SUBJECT);
           }
+        ELSE_ERROR ("create_permission");
+
+      case CLIENT_CREATE_PERMISSION_RESOURCE:
+        if (strcasecmp ("TYPE", element_name) == 0)
+          set_client_state (CLIENT_CREATE_PERMISSION_RESOURCE_TYPE);
         ELSE_ERROR ("create_permission");
 
       case CLIENT_CREATE_PERMISSION_SUBJECT:
@@ -19237,6 +19245,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else switch (create_permission
                         (create_permission_data->name,
                          create_permission_data->comment,
+                         create_permission_data->resource_type,
                          create_permission_data->resource_id,
                          create_permission_data->subject_type,
                          create_permission_data->subject_id,
@@ -19331,6 +19340,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_PERMISSION, COPY);
       CLOSE (CLIENT_CREATE_PERMISSION, NAME);
       CLOSE (CLIENT_CREATE_PERMISSION, RESOURCE);
+      CLOSE (CLIENT_CREATE_PERMISSION_RESOURCE, TYPE);
       CLOSE (CLIENT_CREATE_PERMISSION, SUBJECT);
       CLOSE (CLIENT_CREATE_PERMISSION_SUBJECT, TYPE);
 
@@ -26313,6 +26323,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_PERMISSION_NAME,
               &create_permission_data->name);
+
+      APPEND (CLIENT_CREATE_PERMISSION_RESOURCE_TYPE,
+              &create_permission_data->resource_type);
 
       APPEND (CLIENT_CREATE_PERMISSION_SUBJECT_TYPE,
               &create_permission_data->subject_type);

@@ -1,3 +1,23 @@
+2014-11-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add RESOURCE/TYPE to CREATE_PERMISSION, so that Super permissions can be
+	created on Roles, Groups and Users.
+
+	* src/manage_sql.c (create_permission): Add resource_type_arg arg.  Add
+	checks for Super.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (create_permission_data_t, create_permission_data_reset)
+	(client_state_t): Add RESOURCE/TYPE entry.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add RESOURCE/TYPE to CREATE_PERMISSION.
+
+	* src/schema_formats/XML/OMP.xml.in (create_permission): Add
+	RESOURCE/TYPE.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (user_has_super, user_owns_uuid, where_owned): Extend
