@@ -1,5 +1,12 @@
 2014-11-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (CVE_INFO_ITERATOR_FILTER_COLUMNS): Use the macro
+	GET_ITERATOR_FILTER_COLUMNS for consistency.
+	(CVE_INFO_ITERATOR_COLUMNS): Use the macro GET_ITERATOR_COLUMNS_PREFIX
+	for consistency and add missing dummy "owner" column.
+
+2014-11-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (email): New parameter attachment_name which
 	sets the base name of the attachment.
 	(escalate_2): Generate file name for report attachment.
