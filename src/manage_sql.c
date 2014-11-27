@@ -42033,6 +42033,16 @@ delete_group (const char *group_id, int ultimate)
         }
 
       sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'group'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'group'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
+      sql ("DELETE FROM permissions"
            " WHERE subject_type = 'group'"
            " AND subject = %llu"
            " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
@@ -42077,11 +42087,22 @@ delete_group (const char *group_id, int ultimate)
            trash_group,
            group);
 
+      permissions_set_locations ("group", group, trash_group, LOCATION_TRASH);
       tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
       permissions_set_subjects ("group", group, trash_group, LOCATION_TRASH);
     }
   else
     {
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'group'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'group'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           group);
       sql ("DELETE FROM permissions"
            " WHERE subject_type = 'group'"
            " AND subject = %llu"
@@ -45174,6 +45195,16 @@ delete_role (const char *role_id, int ultimate)
         }
 
       sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions"
            " WHERE subject_type = 'role'"
            " AND subject = %llu"
            " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
@@ -45223,11 +45254,22 @@ delete_role (const char *role_id, int ultimate)
            " FROM role_users WHERE \"role\" = %llu;",
            role);
 
+      permissions_set_locations ("role", role, trash_role, LOCATION_TRASH);
       tags_set_locations ("role", role, trash_role, LOCATION_TRASH);
       permissions_set_subjects ("role", role, trash_role, LOCATION_TRASH);
     }
   else
     {
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
       sql ("DELETE FROM permissions"
            " WHERE subject_type = 'role'"
            " AND subject = %llu"

@@ -1,3 +1,8 @@
+2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_group): Delete permissions according to
+	resource_type too, for Super permissions.
+
 2014-11-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
