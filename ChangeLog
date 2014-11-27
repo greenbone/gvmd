@@ -1,5 +1,11 @@
 2014-11-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS)
+	(ALL_INFO_ITERATOR_COLUMNS): Add missing owner column.
+
+2014-11-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Allow severity to be null in CERT-Bund and DFN-CERT Advisories, CPEs
 	and OVAL definitions if no severity is available from CVEs.
 

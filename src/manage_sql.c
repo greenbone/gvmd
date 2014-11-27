@@ -34869,6 +34869,7 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes.creation_time", "created" },                                   \
    { "notes.modification_time", "modified" },                              \
    { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
+   { "owner", NULL },                                                      \
    /* Columns specific to notes. */                                        \
    { "notes.nvt", "oid" },                                                 \
    { "notes.text", NULL },                                                 \
@@ -34902,6 +34903,7 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes_trash.creation_time", "created" },                                   \
    { "notes_trash.modification_time", "modified" },                              \
    { "(SELECT name FROM users WHERE users.id = notes_trash.owner)", "_owner" },  \
+   { "owner", NULL },                                                            \
    /* Columns specific to notes_trash. */                                        \
    { "notes_trash.nvt", "oid" },                                                 \
    { "notes_trash.text", NULL },                                                 \
@@ -35863,6 +35865,7 @@ modify_override (override_t override, const char *active, const char* text,
      "(SELECT name FROM users WHERE users.id = overrides.owner)",           \
      "_owner"                                                               \
    },                                                                       \
+   { "owner", NULL },                                                       \
    /* Columns specific to overrides. */                                     \
    { "overrides.nvt", "oid" },                                              \
    { "overrides.text", "text" },                                            \
@@ -35907,6 +35910,7 @@ modify_override (override_t override, const char *active, const char* text,
      "(SELECT name FROM users WHERE users.id = overrides_trash.owner)",     \
      "_owner"                                                               \
    },                                                                       \
+   { "owner", NULL },                                                       \
    /* Columns specific to overrides_trash. */                               \
    { "overrides_trash.nvt", "oid" },                                        \
    { "overrides_trash.text", "text" },                                      \
@@ -48588,6 +48592,7 @@ modify_setting (const gchar *uuid, const gchar *name,
    { "created", NULL },                                                 \
    { "modified", NULL },                                                \
    { "''", "_owner" },                                                  \
+   { "0", NULL },                                                       \
    { "type", NULL },                                                    \
    { "extra", NULL },                                                   \
    { "severity", NULL },                                                \
