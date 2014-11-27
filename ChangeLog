@@ -1,3 +1,16 @@
+2014-11-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Allow severity to be null in CERT-Bund and DFN-CERT Advisories, CPEs
+	and OVAL definitions if no severity is available from CVEs.
+
+	* tools/greenbone-certdata-sync.in (update_cvss)
+	tools/openvas-certdata-sync.in (update_cvss): Remove coalesce to
+	allow null severity values in CERT-Bund and DFN-CERT Advisories.
+
+	* tools/openvas-scapdata-sync.in (update_cvss)
+	tools/greenbone-scapdata-sync.in (update_cvss): Remove coalesce to
+	allow null severity values in CPEs and OVAL Definitions.
+
 2014-11-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/wizards/quick_first_scan.xml: Support optional params for

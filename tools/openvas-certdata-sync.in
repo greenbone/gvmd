@@ -450,7 +450,7 @@ update_cvss () {
              UPDATE ${SCHEMA_CERT}cert_bund_advs
                SET max_cvss =
                    (
-                     SELECT coalesce(max(cvss), 0.0)
+                     SELECT max(cvss)
                      FROM scap.cves
                      WHERE name IN
                        (
@@ -477,7 +477,7 @@ update_cvss () {
              UPDATE ${SCHEMA_CERT}dfn_cert_advs
                SET max_cvss =
                    (
-                     SELECT coalesce(max(cvss), 0.0)
+                     SELECT max(cvss)
                      FROM scap.cves
                      WHERE name IN
                        (

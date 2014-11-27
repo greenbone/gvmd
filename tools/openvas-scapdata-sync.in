@@ -705,7 +705,7 @@ update_cvss () {
       UPDATE ${SCHEMA}cpes
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), 0.0)
+              SELECT max(cvss)
               FROM ${SCHEMA}cves
               WHERE id IN
                 (
@@ -738,7 +738,7 @@ update_cvss () {
       UPDATE ${SCHEMA}ovaldefs
         SET max_cvss =
             (
-              SELECT coalesce(max(cvss), 0.0)
+              SELECT max(cvss)
               FROM ${SCHEMA}cves
               WHERE id IN
                 (
