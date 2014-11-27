@@ -1,3 +1,27 @@
+openvas-manager 5.0.6 (2014-11-27)
+
+This is the sixth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release contains a number of fixes and other improvements backported from
+the current development trunk. It fixes a bug in the database contention
+handling and a bug regarding the next due time of a task. It also addresses a
+bug which could cause schedules to fail when under high load and improves the
+handling and display of timezones in reports.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell.
+
+Main changes since 5.0.5:
+* A bug in the database contention handling has been fixed.
+* A bug in adjusting the timezone of the next due time has been fixed.
+* A bug which caused schedules to fails when under high load has been
+  addressed.
+* Timezone display and handling in reports has been improved.
+
+
 openvas-manager 5.0.5 (2014-11-04)
 
 This is the fifth maintenance release of the openvas-manager 5.0 module for

@@ -1,3 +1,9 @@
+2014-11-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 5.0.6 release.
+
+	* CHANGES: Updated.
+
 2014-11-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r20993.
