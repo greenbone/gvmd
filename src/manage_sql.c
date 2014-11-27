@@ -42618,14 +42618,14 @@ create_permission (const char *name_arg, const char *comment,
     }
 
   quoted_name = sql_quote (name);
-  g_free (name);
   quoted_comment = sql_quote (comment ? comment : "");
-  if (resource)
+  if (resource && strcasecmp (name, "super"))
     owner = g_strdup_printf ("(SELECT id FROM users"
                              " WHERE users.uuid = '%s')",
                              current_credentials.uuid);
   else
     owner = g_strdup ("NULL");
+  g_free (name);
 
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
@@ -45027,7 +45027,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
        " WHERE subject_type = 'role'"
        " AND subject = %llu"
        " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-       " AND resource = 0;",
+       " AND owner IS NULL;",
        new_role,
        old_role);
 

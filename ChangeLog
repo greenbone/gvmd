@@ -1,7 +1,21 @@
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (delete_group): Delete permissions according to
-	resource_type too, for Super permissions.
+	Account for Super in global permission checks.
+
+	* src/manage_acl.c (where_owned): Check permission owner instead of
+	permission resource, to see if the permission is global, because Super
+	permissions are global but can have resources.
+
+	* src/manage_sql.c (create_permission): Set the owner to NULL for Super
+	permissions, because they are global.
+	(copy_role): Use permission owner instead of resource in global check.
+
+2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (delete_group, delete_role): Delete permissions
+	according to resource_type too, for Super permissions.  When moving item
+	to trash, update the resource locations, because groups and roles can
+	have these with Super.
 
 2014-11-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
