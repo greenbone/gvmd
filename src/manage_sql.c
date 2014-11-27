@@ -50604,7 +50604,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   sql ("DELETE FROM permissions"
        " WHERE owner = %llu"
-       " OR subject_type = 'user' AND subject = %llu;",
+       " OR subject_type = 'user' AND subject = %llu"
+       " OR (resource_type = 'user' AND resource = %llu);",  /* For Super. */
+       user,
        user,
        user);
 

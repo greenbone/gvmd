@@ -1,5 +1,9 @@
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_user): Include Super permissions in delete.
+
+2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Account for Super in global permission checks.
 
 	* src/manage_acl.c (where_owned): Check permission owner instead of
