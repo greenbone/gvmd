@@ -37253,7 +37253,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
                  time_t period, time_t period_months, time_t duration,
                  const char* timezone, schedule_t *schedule)
 {
-  gchar *quoted_name;
+  gchar *quoted_name, *quoted_timezone;
   gchar *insert_timezone;
   long offset;
 
@@ -37303,6 +37303,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
     }
 
   offset = current_offset (insert_timezone);
+  quoted_timezone = sql_quote (insert_timezone);
 
   if (comment)
     {
@@ -37318,7 +37319,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
            "  '%s',"
            "  %li, now(), now());",
            quoted_name, current_credentials.uuid, quoted_comment, first_time,
-           period, period_months, duration, insert_timezone, offset);
+           period, period_months, duration, quoted_timezone, offset);
       g_free (quoted_comment);
     }
   else
@@ -37333,13 +37334,14 @@ create_schedule (const char* name, const char *comment, time_t first_time,
          "  '%s',"
          "  %li, now(), now());",
          quoted_name, current_credentials.uuid, first_time, period,
-         period_months, duration, insert_timezone, offset);
+         period_months, duration, quoted_timezone, offset);
 
   if (schedule)
     *schedule = sqlite3_last_insert_rowid (task_db);
 
   g_free (quoted_name);
   g_free (insert_timezone);
+  g_free (quoted_timezone);
 
   sql ("COMMIT;");
 
