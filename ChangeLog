@@ -1,5 +1,12 @@
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (task_writable): Remove access check to match other
+	such functions.  The permissions name was missing the type, causing the
+	WRITABLE element to be wrong.  Access is sent to the client in the
+	PERMISSIONS element.
+
+2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_user): Include Super permissions in delete.
 
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
