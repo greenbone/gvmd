@@ -1,3 +1,20 @@
+openvas-manager 5.0.7 (2014-11-28)
+
+This is the seventh maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release contains a security critical bugfix.
+
+Many thanks to everyone who contributed to this release:
+Timo Pollmeier.
+
+Main changes since 5.0.6:
+* Fix a sql injection attack vector for timezone parameter
+  of schedule objects.
+
+
 openvas-manager 5.0.6 (2014-11-27)
 
 This is the sixth maintenance release of the openvas-manager 5.0 module for
