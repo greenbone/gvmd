@@ -1,3 +1,8 @@
+2014-11-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (create_schedule): Quote the timezone string for
+	insert.
+
 2014-11-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl: Partially revert r20989 as NVT
