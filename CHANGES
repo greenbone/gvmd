@@ -1,3 +1,33 @@
+openvas-manager 4.0.6 (2014-11-28)
+
+This is the sixth maintenance release of the openvas-manager 4.0 module for the
+Open Vulnerability Assessment System release 6 (OpenVAS-6). The OpenVAS Manager
+is the central management service between the actual security scanner and
+various user clients.
+
+This release fixes a number of bugs, one of them security critical,
+and adds robustness in general.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell, Tim Pollmeier, Michael Wiegand
+and Jan-Oliver Wagner.
+
+Main changes since 4.0.5:
+* Fix a sql injection attack vector for timezone parameter.
+* Improved syntax check for netmasks.
+* More robustness in case of scanner connection interrupt.
+* Extend NVT filter to consider "script_tags".
+* Run ANALYZE after migrate instead of on startup, to speed up startup.
+* More robustness for cases when NVTs where removed from the feed.
+* More robustness for UTF-8 texts. 
+* Bugfix for applying default filters in some filter dialogs.
+* Bugfix about resuming tasks on a slave.
+* Add --gnutls-priorities option to Manager.
+* Fixed a bug where results via OTP where truncated upon \0.
+* Set the start time of a report once only, the first time the scan is
+  started.  This ensures that the start time remains the same, even when
+  the task is resumed, because the start time is what identifies the scan.
+
 openvas-manager 4.0.5 (2014-02-28)
 
 This is the fifth maintenance release of the openvas-manager 4.0 module for the
