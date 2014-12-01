@@ -12343,6 +12343,26 @@ credentials_setup (credentials_t *credentials)
                                       " WHERE uuid = '%s';",
                                       credentials->uuid);
 
+  credentials->severity_class
+    = sql_string ("SELECT value FROM settings"
+                  " WHERE name = 'Severity Class'"
+                  " AND ((owner IS NULL)"
+                  "      OR (owner ="
+                  "          (SELECT id FROM users"
+                  "           WHERE users.uuid = '%s')))"
+                  " ORDER BY owner DESC LIMIT 1;",
+                  credentials->uuid);
+
+  credentials->dynamic_severity
+    = sql_int ("SELECT value FROM settings"
+                " WHERE name = 'Dynamic Severity'"
+                " AND ((owner IS NULL)"
+                "      OR (owner ="
+                "          (SELECT id FROM users"
+                "           WHERE users.uuid = '%s')))"
+                " ORDER BY owner DESC LIMIT 1;",
+                credentials->uuid);
+
   return 0;
 }
 
@@ -12408,26 +12428,6 @@ authenticate (credentials_t* credentials)
               credentials->role = NULL;
               return 99;
             }
-
-          credentials->severity_class
-            = sql_string ("SELECT value FROM settings"
-                          " WHERE name = 'Severity Class'"
-                          " AND ((owner IS NULL)"
-                          "      OR (owner ="
-                          "          (SELECT id FROM users"
-                          "           WHERE users.uuid = '%s')))"
-                          " ORDER BY owner DESC LIMIT 1;",
-                          credentials->uuid);
-
-          credentials->dynamic_severity
-            = sql_int ("SELECT value FROM settings"
-                       " WHERE name = 'Dynamic Severity'"
-                       " AND ((owner IS NULL)"
-                       "      OR (owner ="
-                       "          (SELECT id FROM users"
-                       "           WHERE users.uuid = '%s')))"
-                       " ORDER BY owner DESC LIMIT 1;",
-                       credentials->uuid);
 
           manage_session_init (credentials->uuid);
 
