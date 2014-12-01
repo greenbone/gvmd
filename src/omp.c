@@ -11504,8 +11504,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-                  const char *timezone;
-                  char *severity, *pw_warning;
+                  const char *timezone, *severity;
+                  char *pw_warning;
 
                   timezone = (current_credentials.timezone
                               && strlen (current_credentials.timezone))
@@ -11557,7 +11557,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         : "",
                       timezone,
                       severity);
-                  g_free (severity);
 
                   set_client_state (CLIENT_AUTHENTIC);
                 }

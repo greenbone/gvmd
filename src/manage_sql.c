@@ -12409,6 +12409,26 @@ authenticate (credentials_t* credentials)
               return 99;
             }
 
+          credentials->severity_class
+            = sql_string ("SELECT value FROM settings"
+                          " WHERE name = 'Severity Class'"
+                          " AND ((owner IS NULL)"
+                          "      OR (owner ="
+                          "          (SELECT id FROM users"
+                          "           WHERE users.uuid = '%s')))"
+                          " ORDER BY owner DESC LIMIT 1;",
+                          credentials->uuid);
+
+          credentials->dynamic_severity
+            = sql_int ("SELECT value FROM settings"
+                       " WHERE name = 'Dynamic Severity'"
+                       " AND ((owner IS NULL)"
+                       "      OR (owner ="
+                       "          (SELECT id FROM users"
+                       "           WHERE users.uuid = '%s')))"
+                       " ORDER BY owner DESC LIMIT 1;",
+                       credentials->uuid);
+
           manage_session_init (credentials->uuid);
 
           return 0;
@@ -18894,7 +18914,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        double* filtered_severity)
 {
   int filtered_requested, cache_exists;
-  char *severity_class;
+  const char *severity_class;
   severity_data_t severity_data, filtered_severity_data;
 
   filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
@@ -18964,7 +18984,6 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   cleanup_severity_data (&severity_data);
   cleanup_severity_data (&filtered_severity_data);
-  free (severity_class);
 
   return 0;
 }
@@ -22455,11 +22474,11 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   PRINT (out, "</filters>");
 
   {
-    gchar *severity_setting, *class_xml;
+    const char *severity_setting;
+    gchar *class_xml;
 
     severity_setting = setting_severity ();
     class_xml = severity_class_xml (severity_setting);
-    g_free (severity_setting);
     if (class_xml)
       {
         PRINT_XML (out, class_xml);
@@ -47818,17 +47837,10 @@ setting_filter (const char *resource)
  *
  * @return User Severity Class in settings if it exists, "" otherwise.
  */
-char *
+const char *
 setting_severity ()
 {
-  return sql_string_quiet ("SELECT value FROM settings"
-                           " WHERE name = 'Severity Class'"
-                           " AND ((owner IS NULL)"
-                           "      OR (owner ="
-                           "          (SELECT id FROM users"
-                           "           WHERE users.uuid = '%s')))"
-                           " ORDER BY owner DESC LIMIT 1;",
-                           current_credentials.uuid);
+  return current_credentials.severity_class;
 }
 
 /**
@@ -47840,14 +47852,7 @@ setting_severity ()
 int
 setting_dynamic_severity_int ()
 {
-  return sql_int ("SELECT value FROM settings"
-                  " WHERE name = 'Dynamic Severity'"
-                  " AND ((owner IS NULL)"
-                  "      OR (owner ="
-                  "          (SELECT id FROM users"
-                  "           WHERE users.uuid = '%s')))"
-                  " ORDER BY owner DESC LIMIT 1;",
-                  current_credentials.uuid);
+  return current_credentials.dynamic_severity;
 }
 
 /**
@@ -48154,6 +48159,19 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (quoted_uuid);
               return 2;
             }
+        }
+
+      if (strcmp (uuid, "f16bb236-a32d-4cd5-a880-e0fcf2599f59") == 0)
+        {
+          /* Severity Class */
+          g_free (current_credentials.severity_class);
+          current_credentials.severity_class = g_strdup (value);
+        }
+
+      if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
+        {
+          /* Dynamic Severity */
+          current_credentials.dynamic_severity = atoi (value);
         }
 
       quoted_value = sql_quote (value);
