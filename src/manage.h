@@ -3103,7 +3103,7 @@ setting_count (const char *);
 char *
 setting_filter (const char *);
 
-char *
+const char *
 setting_severity ();
 
 int

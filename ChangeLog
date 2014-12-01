@@ -1,3 +1,29 @@
+2014-12-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r21068.
+
+	Cache "Severity Class" and "Dynamic Severity" settings in the
+	current_credentials struct to reduce the amount of SQL queries by OMP
+	commands like GET_REPORTS that frequently use these settings.
+
+	* src/manage_sql.c (authenticate): Get "Severity Class" and
+	"Dynamic Severity" setting for the credentials struct.
+	(report_counts_id_filt, print_report_xml): Add const qualifier to
+	local variables for Dynamic Severity setting and remove free / g_free.
+	(setting_severity): Add const qualifier and get value from
+	current_credentials.
+	(setting_dynamic_severity_int): Get value from current_credentials.
+	(modify_setting): Update current_credentials when setting Severity
+	Class or Dynamic Severity.
+
+	* src/manage.c (severity_in_level): Add const qualifier to variable
+	"class" and remove g_free calls.
+
+	* src/manage.h (severity_in_level): Add const qualifier.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_AUTHENTICATE
+	add const qualifier to variable "severity" and remove g_free calls.
+
 2014-11-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
