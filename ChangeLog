@@ -1,5 +1,14 @@
 2014-12-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r21071.
+
+	* src/manage_sql.c (credentials_setup): Get "Severity Class" and
+	"Dynamic Severity" settings here for consistency with timezone setting.
+	(authenticate): Remove queries for "Severity Class" and "Dynamic
+	Severity" which are now sent by credentials_setup.
+
+2014-12-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r21068.
 
 	Cache "Severity Class" and "Dynamic Severity" settings in the
