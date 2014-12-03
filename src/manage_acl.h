@@ -93,7 +93,7 @@ int
 user_has_access_uuid (const char *, const char *, const char *, int);
 
 gchar *
-where_owned (const char *, const get_data_t *, int, gchar *, resource_t,
+where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
              array_t *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_ACL_H */

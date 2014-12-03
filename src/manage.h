@@ -2481,6 +2481,9 @@ param_option_iterator_value (iterator_t *);
 gboolean
 find_slave (const char*, slave_t*);
 
+gboolean
+find_slave_with_permission (const char*, slave_t*, const char *);
+
 int
 create_slave (const char*, const char*, const char*, const char*,
               const char*, const char*, slave_t*);
@@ -2541,6 +2544,9 @@ int
 trash_slave_writable (slave_t);
 
 int
+trash_slave_readable (slave_t);
+
+int
 slave_writable (slave_t);
 
 int
@@ -2554,6 +2560,9 @@ slave_task_iterator_name (iterator_t*);
 
 const char*
 slave_task_iterator_uuid (iterator_t*);
+
+int
+slave_task_iterator_readable (iterator_t*);
 
 
 /* Groups. */

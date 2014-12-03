@@ -41364,6 +41364,31 @@ trash_slave_writable (slave_t slave)
 }
 
 /**
+ * @brief Return whether a trashcan slave is readable.
+ *
+ * @param[in]  slave  Slave.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_slave_readable (slave_t slave)
+{
+  char *uuid;
+  slave_t found;
+
+  if (slave == 0)
+    return 0;
+  uuid = slave_uuid (slave);
+  if (find_trash ("slave", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
+}
+
+/**
  * @brief Filter columns for slave iterator.
  */
 #define SLAVE_ITERATOR_FILTER_COLUMNS                                         \
@@ -41625,16 +41650,25 @@ trash_slave_in_use (slave_t slave)
 void
 init_slave_task_iterator (iterator_t* iterator, slave_t slave)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
   assert (current_credentials.uuid);
 
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
   init_iterator (iterator,
-                 "SELECT id, uuid, name FROM tasks"
+                 "SELECT id, uuid, name, %s FROM tasks"
                  " WHERE slave = %llu AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name ASC;",
+                 available,
                  slave,
                  current_credentials.uuid);
+  g_free (available);
 }
 
 /**
@@ -41656,6 +41690,20 @@ DEF_ACCESS (slave_task_iterator_name, 2);
  *         cleanup_iterator.
  */
 DEF_ACCESS (slave_task_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+slave_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 3);
+}
 
 /**
  * @brief Update the local task from the slave task.

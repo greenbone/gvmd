@@ -2772,7 +2772,8 @@ scanner_connect (scanner_t scanner)
  * @param[in]   permission  Permission required on task.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
- *         4 resuming task not supported, -1 error, -2 task is missing a target,
+ *         4 resuming task not supported, 99 permission denied, -1 error,
+ *         -2 task is missing a target,
  *         -3 creating the report failed, -4 target missing hosts, -5 scanner is
  *         down or still loading, -6 already a task running in this process, -9
  *         fork failed.  After forking: 0 success (parent), 2 success (child),
@@ -2785,6 +2786,7 @@ run_task (const char *task_id, char **report_id, int from,
   task_t task;
   target_t target;
   scanner_t scanner;
+  slave_t slave;
   char *hosts, *port_range, *port;
   gchar *plugins;
   int fail, pid;
@@ -2811,6 +2813,23 @@ run_task (const char *task_id, char **report_id, int from,
   assert (scanner);
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task, report_id);
+
+  slave = task_slave (task);
+  if (slave)
+    {
+      char *uuid;
+      slave_t found;
+
+      uuid = slave_uuid (slave);
+      if (find_slave_with_permission (uuid, &found, "get_slave"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
 
   /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
   if (scanner_connect (scanner))
@@ -2961,7 +2980,7 @@ run_task (const char *task_id, char **report_id, int from,
     free (iface);
   }
 
-  if (task_slave (task))
+  if (slave)
     {
       if (run_slave_task (task, target, ssh_credential, smb_credential,
                           last_stopped_report))
