@@ -1583,6 +1583,9 @@ nvt_iterator_family (iterator_t*);
 const char*
 nvt_iterator_cvss_base (iterator_t*);
 
+const char*
+nvt_iterator_solution_type (iterator_t*);
+
 int
 family_nvt_count (const char *);
 

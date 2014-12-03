@@ -9738,6 +9738,58 @@ migrate_137_to_138 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 138 to version 139.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_138_to_139 ()
+{
+  iterator_t nvts;
+
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 138. */
+
+  if (manage_db_version () != 138)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  /* Add new solution_type column */
+  sql ("ALTER TABLE nvts ADD COLUMN solution_type text;");
+
+  init_iterator (&nvts, "SELECT id, tag FROM nvts;");
+
+  while (next (&nvts))
+    {
+      nvt_t nvt = iterator_int64 (&nvts, 0);
+      const gchar* tags = iterator_string (&nvts, 1);
+      gchar *solution_type = tag_value (tags, "solution_type");
+      gchar *quoted_solution_type = sql_quote (solution_type);
+
+      sql ("UPDATE nvts SET"
+           " solution_type = '%s'"
+           " WHERE id = %llu;",
+           quoted_solution_type,
+           nvt);
+
+      g_free (solution_type);
+      g_free (quoted_solution_type);
+    }
+
+  /* Set the database version to 139. */
+
+  set_db_version (139);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
@@ -9888,6 +9940,7 @@ static migrator_t database_migrators[]
     {136, migrate_135_to_136},
     {137, migrate_136_to_137},
     {138, migrate_137_to_138},
+    {139, migrate_138_to_139},
     /* End marker. */
     {-1, NULL}};
 

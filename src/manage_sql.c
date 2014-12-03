@@ -29676,6 +29676,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   gchar *quoted_version, *quoted_name, *quoted_summary;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
   gchar *quoted_cvss_base, *quoted_family, *value;
+  gchar *quoted_solution_type;
+
   int creation_time, modification_time;
 
   if (remove)
@@ -29795,16 +29797,25 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
     }
   g_free (value);
 
+  value = tag_value (nvti_tag (nvti), "solution_type");
+  if (value)
+    {
+      quoted_solution_type = sql_quote (value);
+      g_free (value);
+    }
+  else
+    quoted_solution_type = g_strdup ("");
+
   sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
-       " creation_time, modification_time, uuid)"
+       " creation_time, modification_time, uuid, solution_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s');",
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s');",
        nvti_oid (nvti), quoted_version, quoted_name, quoted_summary,
        quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti));
+       modification_time, nvti_oid (nvti), quoted_solution_type);
 
   if (remove)
     sql ("COMMIT;");
@@ -29819,6 +29830,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_tag);
   g_free (quoted_cvss_base);
   g_free (quoted_family);
+  g_free (quoted_solution_type);
 
   return sql_last_insert_id ();
 }
@@ -29828,7 +29840,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "severity", "cvss", "script_tags", NULL }
+   "family", "cvss_base", "severity", "cvss", "script_tags",                \
+   "solution_type", NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -29852,6 +29865,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "solution_type" , NULL },                                              \
    { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
  }
@@ -29878,6 +29892,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "solution_type" , NULL },                                              \
    { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
  }
@@ -30212,6 +30227,16 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 10);
  *         cleanup_iterator.
  */
 DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get the solution_type from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Solution type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 12);
 
 /**
  * @brief Get the number of NVTs in one or all families.

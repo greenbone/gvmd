@@ -1,3 +1,33 @@
+2014-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add solution_type column to NVTs.  Hence increase database version
+	to 139.  Add database migration from version 138 to 139.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 139.
+
+	* src/manage_migrators.c (migrate_138_to_139): New function.
+	(database_migrators): Add migrate_138_to_139.
+	
+	* doc/db_postgres.sql (nvts): Add solution_type column.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_pg.c (create_tables): Add solution_type column to the
+	nvts table.
+
+	* src/manage_sqlite3.c (create_tables): Add solution_type column to the
+	nvts table.
+
+	* src/manage_sql.c (make_nvt_from_nvti): Add solution_type tag.
+	(NVT_INFO_ITERATOR_FILTER_COLUMNS, NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS): Add solution_type column.
+	(nvt_iterator_solution_type): New function.
+
+	* src/manage_sql.h (tag_value): New prototype to make the function
+	available in manage_migrators.c.
+
+	* src/manage.h (nvt_iterator_solution_type): New function prototype.
+
 2014-12-01  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (credentials_setup): Get "Severity Class" and

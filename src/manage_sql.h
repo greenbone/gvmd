@@ -249,6 +249,8 @@ void manage_transaction_start ();
 
 void manage_transaction_stop (gboolean);
 
+gchar *tag_value (const gchar *, const gchar *);
+
 void trim_report (report_t);
 
 int delete_report_internal (report_t);

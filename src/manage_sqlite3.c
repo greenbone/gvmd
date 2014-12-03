@@ -2084,7 +2084,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
        "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
-       "  creation_time, modification_time);");
+       "  creation_time, modification_time, solution_type TEXT);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
        " ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name"

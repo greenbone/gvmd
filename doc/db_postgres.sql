@@ -557,7 +557,8 @@ CREATE TABLE nvts
   family text,
   cvss_base text,
   creation_time date,
-  modification_time date);
+  modification_time date,
+  solution_type text);
 
 CREATE TABLE nvt_cves
  (id SERIAL PRIMARY KEY,
