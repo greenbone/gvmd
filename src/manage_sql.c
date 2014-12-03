@@ -28217,30 +28217,49 @@ int
 modify_task_check_slave_scanner (task_t task, const char *slave_id,
                                  const char *scanner_id)
 {
-  slave_t slave;
-  scanner_t scanner;
+  gchar *existing_scanner_id;
 
-  if (scanner_id == NULL)
-    scanner_id = "0";
+  /* If slave ID is NULL caller will leave the slave as it is. */
+
   if (slave_id == NULL)
-    slave_id = "0";
+    {
+      /* If scanner ID is NULL or 0, caller will leave the scanner alone
+       * too.  They should already match, so that's fine. */
+      if ((scanner_id == NULL) || (strcmp (scanner_id, "0") == 0))
+        return 1;
 
-  /* Setting a non-default Scanner, and setting or keeping a Slave. */
-  slave = task_slave (task);
-  if (strcmp (scanner_id, "0")
-      && strcmp (scanner_id, SCANNER_UUID_DEFAULT)
-      && (strcmp (slave_id, "0") || slave))
-    return 0;
+      if (task_slave (task))
+        {
+          /* Scanner will change, so ensure the new one accepts slaves. */
+          if (strcmp (scanner_id, SCANNER_UUID_DEFAULT))
+            return 0;
+        }
+      return 1;
+    }
 
-  /* Setting a slave, and a non-default Scanner. */
-  if (strcmp (slave_id, "0") && strcmp (scanner_id, SCANNER_UUID_DEFAULT))
-    return 0;
-  scanner = task_scanner (task);
-  /* Setting a slave, and keeping the non-default Scanner. */
-  if (strcmp (slave_id, "0") && !strcmp (scanner_id, "0")
-      && strcmp (scanner_uuid (scanner), SCANNER_UUID_DEFAULT))
-    return 0;
+  /* If slave ID is 0 caller will clear the slave, which is always fine. */
 
+  if (slave_id && (strcmp (slave_id, "0") == 0))
+    return 1;
+
+  /* Otherwise, caller will set an existing slave on the task. */
+
+  if ((scanner_id == NULL) || (strcmp (scanner_id, "0") == 0))
+    /* Scanner ID is NULL or 0, caller will leave the scanner as it is. */
+    existing_scanner_id = scanner_uuid (task_scanner (task));
+  else
+    /* Caller will set a new scanner on the task. */
+    existing_scanner_id = NULL;
+
+  /* Either way, ensure that the scanner accepts slaves. */
+
+  if (strcmp (existing_scanner_id ? existing_scanner_id : scanner_id,
+              SCANNER_UUID_DEFAULT))
+    {
+      g_free (existing_scanner_id);
+      return 0;
+    }
+  g_free (existing_scanner_id);
   return 1;
 }
 

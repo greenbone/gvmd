@@ -1,3 +1,10 @@
+2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_task_check_slave_scanner): Correctly account
+	for the case where slave ID is 0 (caller will clear slave from task).
+	Try make implementation more obvious at the same time.  Also free
+	scanner_uuid return.
+
 2014-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/sql_sqlite3.c (sql_exec_internal): Retry after resetting the
@@ -12,7 +19,7 @@
 
 	* src/manage_migrators.c (migrate_138_to_139): New function.
 	(database_migrators): Add migrate_138_to_139.
-	
+
 	* doc/db_postgres.sql (nvts): Add solution_type column.
 
 	* doc/db.png: Update for version change.
@@ -76,10 +83,10 @@
 
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (task_writable): Remove access check to match other
-	such functions.  The permissions name was missing the type, causing the
-	WRITABLE element to be wrong.  Access is sent to the client in the
-	PERMISSIONS element.
+	* src/manage_sql.c (task_writable, trash_task_writable): Remove access
+	check to match other such functions.  The permissions name was missing
+	the type, causing the WRITABLE element to be wrong.  Access is sent to
+	the client in the PERMISSIONS element anyway.
 
 2014-11-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
