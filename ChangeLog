@@ -1,5 +1,10 @@
 2014-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/sql_sqlite3.c (sql_exec_internal): Retry after resetting the
+	statement in SQLITE_ERROR case, like it is done in SQLITE_BUSY case.
+
+2014-12-03  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Add solution_type column to NVTs.  Hence increase database version
 	to 139.  Add database migration from version 138 to 139.
 

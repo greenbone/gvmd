@@ -350,9 +350,18 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
             {
               ret = sqlite3_reset (stmt->stmt);
               if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
-                /* "SQLITE_ERROR means that a run-time error has occurred.
-                 *  sqlite3_step() should not be called again on the VM." */
-                return -2;
+                {
+                  if (retry)
+                    {
+                      if (retries < 0)
+                        usleep (MIN (-retries * 10000, 5000000));
+                      retries--;
+                      continue;
+                    }
+                  if (retries--)
+                    continue;
+                  return -2;
+                }
             }
           g_warning ("%s: sqlite3_step failed: %s\n",
                      __FUNCTION__,
