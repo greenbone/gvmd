@@ -21609,7 +21609,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               goto create_task_fail;
             }
           if (create_task_data->slave_id
-              && find_slave (create_task_data->slave_id, &slave))
+              && find_slave_with_permission (create_task_data->slave_id,
+                                             &slave,
+                                             "get_slave"))
             {
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;

@@ -1,7 +1,12 @@
 2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Enable mixing of the current users slaves and tasks, with other people's
-	slaves and tasks, when permissions allow it.
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK find the
+	task with permission, in case the owner has given the user read access.
+
+2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current user's slaves and tasks, with other
+	people's slaves and tasks, when permissions allow it.
 
 	* src/manage_sql.c (init_slave_task_iterator): Get all tasks that use
 	the slave.  Add a column to indicate whether the user has read access to
@@ -20,7 +25,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
 	TASK in GET_SLAVES when task is not readable.  Same for SLAVE in
 	GET_TASKS when slave is not readable.  In CLIENT_MODIFY_TASK find the
-	task with permission, in case the owner has granted MODIFY to the user.
+	task with permission, in case the owner has given the user read access.
 	And find slave with permission, for same reason.
 
 2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
