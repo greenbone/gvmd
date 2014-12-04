@@ -20534,7 +20534,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
           else if (create_task_data->slave_id
-                   && find_slave (create_task_data->slave_id, &slave))
+                   && find_slave_with_permission (create_task_data->slave_id,
+                                                  &slave,
+                                                  "get_slave"))
             {
               request_delete_task (&create_task_data->task);
               free (tsk_uuid);
