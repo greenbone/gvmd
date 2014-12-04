@@ -317,7 +317,9 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
  *
- * @return 0 complete, 1 row available in results, -1 error, -2 gave up.
+ * @return 0 complete, 1 row available in results, 2 condition where caller must rerun
+ *         prepare (for example schema changed internally after VACUUM), -1 error,
+ *         -2 gave up.
  */
 int
 sql_exec_internal (int retry, sql_stmt_t *stmt)
@@ -362,6 +364,9 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                     continue;
                   return -2;
                 }
+              if (ret == SQLITE_SCHEMA)
+                /* Schema has changed, caller must rerun prepare. */
+                return 2;
             }
           g_warning ("%s: sqlite3_step failed: %s\n",
                      __FUNCTION__,

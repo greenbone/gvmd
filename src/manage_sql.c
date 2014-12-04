@@ -18431,9 +18431,9 @@ report_severity_data (report_t report, int override,
               /* Run the quick inner statement to check for overrides. */
 
               ret = sql_exec (stmt);
-              if (ret == -2)
+              if (ret == -2 || ret == 2)
                 {
-                  /* Gave up with statement reset.  Retry. */
+                  /* Gave up with statement reset, or schema error.  Retry. */
                   sql_finalize (stmt);
                   stmt = report_severity_data_prepare ();
                   continue;
@@ -18529,9 +18529,10 @@ report_severity_data (report_t report, int override,
                   /* Run the full inner statement. */
 
                   ret = sql_exec (full_stmt);
-                  if (ret == -2)
+                  if (ret == -2 || ret == 2)
                     {
-                      /* Gave up with statement reset.  Retry. */
+                      /* Gave up with statement reset, or schema error.
+                       * Retry. */
                       sql_finalize (full_stmt);
                       full_stmt = report_severity_data_prepare_full (task);
                       continue;
@@ -33778,9 +33779,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         /* Run the statement. */
 
         while ((ret = sql_exec (stmt)) > 0);
-        if (ret == -2)
+        if (ret == -2 || ret == 2)
           {
-            /* Gave up with statement reset.  Retry. */
+            /* Gave up with statement reset, or schema error.  Retry. */
             sql_finalize (stmt);
             continue;
           }

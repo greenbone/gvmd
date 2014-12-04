@@ -140,27 +140,32 @@ sql_insert (const char *string)
 int
 sqlv (int retry, char* sql, va_list args)
 {
-  int ret;
-  sql_stmt_t* stmt;
+  while (1)
+    {
+      int ret;
+      sql_stmt_t* stmt;
 
-  /* Prepare statement. */
+      /* Prepare statement. */
 
-  ret = sql_prepare_internal (retry, 1, sql, args, &stmt);
-  if (ret == -1)
-    g_warning ("%s: sql_prepare_internal failed\n", __FUNCTION__);
-  if (ret)
-    return ret;
+      ret = sql_prepare_internal (retry, 1, sql, args, &stmt);
+      if (ret == -1)
+        g_warning ("%s: sql_prepare_internal failed\n", __FUNCTION__);
+      if (ret)
+        return ret;
 
-  /* Run statement. */
+      /* Run statement. */
 
-  while ((ret = sql_exec_internal (retry, stmt)) > 0);
-  if (ret == -1)
-    g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
-  sql_finalize (stmt);
-  if (ret == -2)
-    return 1;
-  assert (ret == -1 || ret == 0);
-  return ret;
+      while ((ret = sql_exec_internal (retry, stmt)) > 0);
+      if (ret == -1)
+        g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
+      sql_finalize (stmt);
+      if (ret == 2)
+        continue;
+      if (ret == -2)
+        return 1;
+      assert (ret == -1 || ret == 0);
+      return ret;
+    }
 }
 
 /**
@@ -273,9 +278,9 @@ sql_quiet (char* sql, ...)
           g_warning ("%s: sql_exec_internal failed\n", __FUNCTION__);
           abort ();
         }
-      if (ret == -2)
+      if (ret == -2 || ret == 2)
         {
-          /* Busy or locked, with statement reset. */
+          /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (stmt);
           continue;
         }
@@ -323,9 +328,9 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
       if (ret == 0)
         /* Too few rows. */
         return 1;
-      if (ret == -2)
+      if (ret == -2 || ret == 2)
         {
-          /* Busy or locked, with statement reset. */
+          /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (*stmt_return);
           continue;
         }
@@ -732,6 +737,23 @@ next (iterator_t* iterator)
           g_warning ("%s: stepping after reset\n", __FUNCTION__);
           continue;
         }
+      if (ret == 2)
+        {
+          /* Schema changed, for example an internal change due to a VACUUM.
+           * Retrying will result in the same error, so abort.  We lock
+           * exclusively around the VACUUM in --optimize, so hopefully when
+           * using --optimize the schema error will happen earlier, in the
+           * the init function for the iterator.
+           *
+           * This only applies to SQLite3. */
+          g_warning ("%s: schema error.\n"
+                     "  This is possibly due to running VACUUM while Manager\n"
+                     "  is running.  Restart Manager.  In future use\n"
+                     "  --optimize=vacuum instead of running VACUUM"
+                     "  directly.\n",
+                     __FUNCTION__);
+          abort ();
+        }
       break;
     }
   assert (ret == 1);
@@ -768,8 +790,8 @@ sql_prepare (const char* sql, ...)
  *
  * @param[in]  stmt  Statement.
  *
- * @return 0 complete, 1 row available in results, -1 error, -2 gave up with
- *         statement reset.
+ * @return 0 complete, 1 row available in results, 2 rerun prepare, -1 error,
+ *         -2 gave up with statement reset.
  */
 int
 sql_exec (sql_stmt_t *stmt)

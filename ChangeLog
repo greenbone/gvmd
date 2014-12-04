@@ -1,5 +1,20 @@
 2014-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Handle SQLITE_SCHEMA properly, instead of aborting.
+
+	* src/manage_sql.c (report_severity_data, create_agent): Handle new
+	sql_exec return.
+
+	* src/sql.c (sqlv, sql_quiet, sql_x_internal, next): Handle new
+	sql_exec_internal return.
+	(sql_exec): Update doc.
+
+	* src/sql_sqlite3.c (sql_exec_internal): Return if SQLITE_SCHEMA occurs,
+	so that caller can prepare and run the statement again.  This can happen
+	after a VACUUM, because the VACUUM may change the schema internally.
+
+2014-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (manage_optimize): Lock database around VACUUM, to minimize
 	chance of SQLITE_SCHEMA in statements that run afterwards.
 
