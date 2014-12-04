@@ -467,7 +467,8 @@ type_is_shared (const char *type)
  */
 gchar *
 where_owned (const char *type, const get_data_t *get, int owned,
-             gchar *owner_filter, resource_t resource, array_t *permissions)
+             const gchar *owner_filter, resource_t resource,
+             array_t *permissions)
 {
   gchar *owned_clause;
 

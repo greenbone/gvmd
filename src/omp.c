@@ -15311,11 +15311,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                 slave_iterator_slave
                                                  (&slaves));
                       while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                 "<name>%s</name>"
-                                                 "</task>",
-                                                 slave_task_iterator_uuid (&tasks),
-                                                 slave_task_iterator_name (&tasks));
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                   "<name>%s</name>",
+                                                   slave_task_iterator_uuid
+                                                    (&tasks),
+                                                   slave_task_iterator_name
+                                                    (&tasks));
+                          if (slave_task_iterator_readable (&tasks))
+                            SEND_TO_CLIENT_OR_FAIL ("</task>");
+                          else
+                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                    "</task>");
+                        }
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
@@ -15898,7 +15906,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int target_in_trash, schedule_in_trash;
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2, infos_2, warnings_2;
-              int false_positives;
+              int false_positives, slave_available;
               double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
@@ -16192,15 +16200,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_target_uuid = target_uuid (target);
                   task_target_name = target_name (target);
                 }
+              slave_available = 1;
               if (task_slave_in_trash (index))
                 {
                   task_slave_uuid = trash_slave_uuid (slave);
                   task_slave_name = trash_slave_name (slave);
+                  slave_available = trash_slave_readable (slave);
+                }
+              else if (slave)
+                {
+                  slave_t found;
+                  task_slave_uuid = slave_uuid (slave);
+                  task_slave_name = slave_name (slave);
+                  if (find_slave_with_permission (task_slave_uuid,
+                                                  &found,
+                                                  "get_slave"))
+                    abort ();
+
+                  slave_available = (found > 0);
                 }
               else
                 {
-                  task_slave_uuid = slave_uuid (slave);
-                  task_slave_name = slave_name (slave);
+                  task_slave_uuid = g_strdup ("");
+                  task_slave_name = g_strdup ("");
                 }
               schedule = task_schedule (index);
               if (schedule)
@@ -16232,6 +16254,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
+                           "%s"
                            "</slave>"
                            "<status>%s</status>"
                            "<progress>%s</progress>"
@@ -16259,6 +16282,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_slave_uuid ? task_slave_uuid : "",
                            task_slave_name ? task_slave_name : "",
                            task_slave_in_trash (index),
+                           slave_available ? "" : "<permissions/>",
                            task_run_status_name (index),
                            progress_xml,
                            description64,
@@ -23126,7 +23150,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if (modify_task_data->task_id)
           {
             task_t task = 0;
-            if (find_task (modify_task_data->task_id, &task))
+            if (find_task_with_permission (modify_task_data->task_id,
+                                           &task,
+                                           "modify_task"))
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_task"));
             else if (task == 0)
               {
@@ -23446,9 +23472,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       {
                         set_task_slave (task, 0);
                       }
-                    else if ((fail = find_slave
+                    else if ((fail = find_slave_with_permission
                                       (modify_task_data->slave_id,
-                                       &slave)))
+                                       &slave,
+                                       "get_slave")))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
                     else if (slave == 0)

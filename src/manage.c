@@ -2727,7 +2727,8 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
  * @param[in]   permission  Permission required on task.
  *
  * @return Before forking: 1 task is active already, 3 failed to find task,
- *         -1 error, -2 task is missing a target, -3 creating the report failed,
+ *         -1 error, 99 permission denied,
+ *         -2 task is missing a target, -3 creating the report failed,
  *         -4 target missing hosts, -5 scanner is down, -6 already a task
  *         running in this process, -9 fork failed.
  *         After forking: 0 success (parent), 2 success (child),
@@ -2739,6 +2740,7 @@ run_task (const char *task_id, char **report_id, int from,
 {
   task_t task;
   target_t target;
+  slave_t slave;
   char *hosts, *port_range, *port;
   gchar *plugins;
   int fail, pid;
@@ -2757,6 +2759,23 @@ run_task (const char *task_id, char **report_id, int from,
 
   if (scanner_up == 0)
     return -5;
+
+  slave = task_slave (task);
+  if (slave)
+    {
+      char *uuid;
+      slave_t found;
+
+      uuid = slave_uuid (slave);
+      if (find_slave_with_permission (uuid, &found, "get_slave"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
 
   if (set_task_requested (task, &run_status))
     return 1;
@@ -2892,7 +2911,7 @@ run_task (const char *task_id, char **report_id, int from,
     free (iface);
   }
 
-  if (task_slave (task))
+  if (slave)
     {
       if (run_slave_task (task, target, ssh_credential, smb_credential,
                           last_stopped_report))
