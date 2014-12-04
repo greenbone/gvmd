@@ -52425,3 +52425,66 @@ tags_set_orphans (const char *type, resource_t resource, int location)
        resource,
        location);
 }
+
+
+/* Optimize. */
+
+/**
+ * @brief Run one of the optimizations.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ * @param[in]  name        Name of optimization.
+ *
+ * @return 0 success, 1 error in name, -1 error,
+ *         -2 database is wrong version, -3 database needs to be initialised
+ *         from server.
+ */
+int
+manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
+{
+  const gchar *db;
+  int ret;
+
+  if (name == NULL)
+    {
+      printf ("Name required for optimize.\n");
+      return 1;
+    }
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+
+  ret = 0;
+  if (strcasecmp (name, "vacuum") == 0)
+    {
+      sql ("VACUUM;");
+      printf ("Optimized: vacuum.\n");
+    }
+  else if (strcasecmp (name, "analyze") == 0)
+    {
+      sql ("ANALYZE;");
+      printf ("Optimized: analyze.\n");
+    }
+  else
+    {
+      printf ("Error in optimize name.\n");
+      ret = 1;
+    }
+
+  current_credentials.uuid = NULL;
+
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}

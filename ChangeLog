@@ -1,5 +1,15 @@
 2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add option --optimize, with arguments "analyze" and "vacuum".
+
+	* src/omp.c (manage_optimize): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add --optimize.
+
+2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_CREATE_TASK find the
 	task with permission, in case the owner has given the user read access.
 
@@ -11,7 +21,7 @@
 	* src/manage_sql.c (init_slave_task_iterator): Get all tasks that use
 	the slave.  Add a column to indicate whether the user has read access to
 	the slave.
-	(slave_task_iterator_readable): New function.
+	(slave_task_iterator_readable, trash_slave_readable): New functions.
 
 	* src/manage.c (run_task): Before forking, if task has slave and user is
 	denied access to the slave, then return 99.
@@ -20,7 +30,7 @@
 
 	* src/manage_acl.c (where_owned): Add const to owner_filter arg.
 
-	* src/manage_acl.h: Add header accordingly.
+	* src/manage_acl.h: Update header accordingly.
 
 	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
 	TASK in GET_SLAVES when task is not readable.  Same for SLAVE in

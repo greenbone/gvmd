@@ -1130,6 +1130,7 @@ main (int argc, char** argv)
   static gchar *gnutls_priorities = "NORMAL";
   static gchar *dh_params = NULL;
   static gchar *new_password = NULL;
+  static gchar *optimize = NULL;
   static gchar *manager_address_string = NULL;
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
@@ -1190,6 +1191,7 @@ main (int argc, char** argv)
           G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
           &decrypt_all_credentials, NULL, NULL },
         { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
+        { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum or analyze.", "<name>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
@@ -1304,6 +1306,38 @@ main (int argc, char** argv)
                    __FUNCTION__,
                    password_policy);
       g_free (password_policy);
+    }
+
+  if (optimize)
+    {
+      infof ("   Optimizing: %s.\n", optimize);
+
+      /* Create the user and then exit. */
+      switch (manage_optimize (log_config, database, optimize))
+        {
+          case 0:
+            free_log_configuration (log_config);
+            return EXIT_SUCCESS;
+          case 1:
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -2:
+            g_critical ("%s: database is wrong version\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -3:
+            g_critical ("%s: database must be initialised"
+                        " (with --update or --rebuild)\n",
+                        __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+          case -1:
+          default:
+            g_critical ("%s: internal error\n", __FUNCTION__);
+            free_log_configuration (log_config);
+            return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
     }
 
   if (create_scanner)
