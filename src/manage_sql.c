@@ -52468,7 +52468,9 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
+      sql_begin_exclusive ();
       sql ("VACUUM;");
+      sql ("COMMIT;");
       printf ("Optimized: vacuum.\n");
     }
   else if (strcasecmp (name, "analyze") == 0)

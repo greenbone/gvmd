@@ -1,4 +1,9 @@
-2014-12-03  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (manage_optimize): Lock database around VACUUM, to minimize
+	chance of SQLITE_SCHEMA in statements that run afterwards.
+
+2014-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add option --optimize, with arguments "analyze" and "vacuum".
 
