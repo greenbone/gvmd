@@ -32144,12 +32144,12 @@ manage_set_config_families (config_t config,
               /* Update the cached config info. */
 
               sql ("UPDATE configs SET nvt_count = nvt_count - %i + %i,"
-                   " nvts_growing = %i, family_count = family_count + %i,"
+                   " nvts_growing = %s, family_count = family_count + %i,"
                    " modification_time = now ()"
                    " WHERE ROWID = %llu;",
                    old_nvt_count,
                    new_nvt_count,
-                   growing_all ? 1 : 0,
+                   growing_all ? "1" : "nvts_growing",
                    was_selected ? 0 : 1,
                    config);
             }
