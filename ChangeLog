@@ -1,3 +1,8 @@
+2014-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_aggregate_iterator): Round time columns down
+	to the beginning of the day to reduce the amount of columns returned.
+
 2014-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_set_config_families): When modifying a family

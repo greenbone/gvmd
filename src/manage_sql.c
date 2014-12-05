@@ -4439,6 +4439,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   resource_t resource = 0;
   gchar *owner_filter;
   gchar *outer_select, *outer_group_by;
+  gchar *select_group_column;
 
   assert (get);
 
@@ -4523,6 +4524,22 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (owner_filter);
   array_free (permissions);
 
+  /* Round time fields to the next day to reduce amount of rows returned
+   * This returns "pseudo-UTC" dates which are used by the GSA charts because
+   *  the JavaScript Date objects do not support setting the timezone.
+   */
+  if (strcmp (group_column, "created") == 0
+      || strcmp (group_column, "modified") == 0
+      || strcmp (group_column, "published") == 0)
+    select_group_column
+      = g_strdup_printf ("CAST (strftime ('%%s',"
+                         "                date(%s, 'unixepoch', 'localtime'),"
+                         "                'localtime')"
+                         "      AS INTEGER)",
+                         group_column);
+  else
+    select_group_column = g_strdup (group_column);
+
   if (group_column && strcmp (group_column, ""))
     {
       if (stat_column && strcmp (stat_column, ""))
@@ -4533,14 +4550,14 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                                         stat_column,
                                         stat_column,
                                         stat_column,
-                                        group_column);
+                                        select_group_column);
       else
         outer_select = g_strdup_printf (" count(*),"
                                         " NULL, NULL, NULL, NULL, %s ",
-                                        group_column);
+                                        select_group_column);
 
       outer_group_by = g_strdup_printf (" GROUP BY %s",
-                                        group_column);
+                                        select_group_column);
     }
   else
     {
@@ -4680,6 +4697,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (clause);
   g_free (outer_group_by);
   g_free (outer_select);
+  g_free (select_group_column);
   return 0;
 }
 
