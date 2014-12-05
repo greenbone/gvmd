@@ -52491,10 +52491,55 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   ret = 0;
   if (strcasecmp (name, "vacuum") == 0)
     {
-      sql_begin_exclusive ();
-      sql ("VACUUM;");
-      sql ("COMMIT;");
-      printf ("Optimized: vacuum.\n");
+      struct stat state;
+      long long int old_size, new_size;
+
+      old_size = 0LL;
+      new_size = 0LL;
+      ret = stat (db, &state);
+      if (ret)
+        switch (errno)
+          {
+            case ENOENT:
+              break;
+            default:
+              g_warning ("%s: failed to stat database: %s\n",
+                          __FUNCTION__,
+                          strerror (errno));
+          }
+      else
+        old_size = state.st_size;
+
+      if (sql_is_sqlite3 ())
+        sql ("VACUUM;");
+      else
+        {
+          sql_begin_exclusive ();
+          sql ("VACUUM;");
+          sql ("COMMIT;");
+        }
+
+      ret = stat (db, &state);
+      if (ret)
+        switch (errno)
+          {
+            case ENOENT:
+              break;
+            default:
+              g_warning ("%s: failed to stat database: %s\n",
+                          __FUNCTION__,
+                          strerror (errno));
+          }
+      else
+        new_size = state.st_size;
+
+      if (old_size && new_size)
+        printf ("Optimized: vacuum. Database file size reduced by %lld MiB"
+                " (%0.1f %%).\n",
+                (old_size - new_size) / (1024 * 1024),
+                (old_size - new_size) * 100.0 / old_size);
+      else
+        printf ("Optimized: vacuum.\n");
     }
   else if (strcasecmp (name, "analyze") == 0)
     {
