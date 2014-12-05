@@ -1,3 +1,10 @@
+2014-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_set_config_families): When modifying a family
+	to include all NVTs, and the family does not grow, then use the previous
+	value of the nvts_growing cache column.  Using 0 is correct for the
+	family being modified, but there may be existing families that grow.
+
 2014-12-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Handle SQLITE_SCHEMA properly, instead of aborting.
