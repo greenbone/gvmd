@@ -1,5 +1,15 @@
 2014-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r21118.
+
+	* src/manage_sql.c (manage_set_config_families): When modifying a family
+	to include all NVTs, and the family does not grow, recalculate the value
+	of the nvts_growing cache column.  Using the previous value gives the
+	wrong value when the family being modified was previously the only
+	growing family.
+
+2014-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r21115.
 
 	* src/manage_sql.c (manage_set_config_families): When modifying a family
