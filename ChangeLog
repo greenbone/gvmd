@@ -1,3 +1,9 @@
+2014-12-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sqlite3.c (cached_task_severity): In overrides case return
+	overrides_severity of cache struct after updating it instead of
+	returning the severity component without overrides.
+
 2014-12-05  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_optimize): Make vacuum work for SQLite,

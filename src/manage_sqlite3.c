@@ -879,7 +879,7 @@ cached_task_severity (sqlite3_context *context, task_t task, int overrides)
           cache->overrides_task = task;
           free (cache->overrides_severity);
           cache->overrides_severity = task_severity (task, 1, 0);
-          return cache->severity;
+          return cache->overrides_severity;
         }
       else
         {
