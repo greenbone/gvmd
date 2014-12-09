@@ -1,5 +1,13 @@
 2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (user_has_access_uuid): Remove Super note, as this is
+	now done in user_owns_uuid.
+	(type_has_permissions): Remove.  Always 1.
+	(where_owned): Correct doc.  Just do the "type has permission" cases,
+	because all types have permissions now.
+
+2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Correct indenting.
 
 2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>

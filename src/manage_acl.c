@@ -427,7 +427,6 @@ user_has_access_uuid (const char *type, const char *uuid,
   if (!strcmp (current_credentials.uuid,  ""))
     return 1;
 
-  // FIX or super
   ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
@@ -581,26 +580,13 @@ user_has_access_uuid (const char *type, const char *uuid,
  * @return 1 yes, 0 no.
  */
 static int
-type_has_permissions (const char *type)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a type has permission support.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
 type_is_shared (const char *type)
 {
   return 0;
 }
 
 /**
- * @brief FIX Initialise a target iterator, limited to the current user's targets.
+ * @brief Generate the ownership part of an SQL WHERE clause.
  *
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
@@ -793,7 +779,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else if (get->trash && type_has_permissions (type))
+      else if (get->trash)
         owned_clause
          = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
                             "  OR (%ss_trash.owner"
@@ -804,11 +790,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else if (get->trash)
-        owned_clause = g_strdup_printf (" ((owner IS NULL) OR (owner ="
-                                        "  (SELECT id FROM users"
-                                        "   WHERE users.uuid = '%s')))",
-                                        current_credentials.uuid);
       else if (strcmp (type, "permission") == 0)
         {
           // FIX super
@@ -864,7 +845,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else if (type_has_permissions (type))
+      else
         owned_clause
          = g_strdup_printf (/* Either a global resource. */
                             " ((%ss.owner IS NULL)"
@@ -927,14 +908,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             current_credentials.uuid,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else
-        // FIX super
-        owned_clause = g_strdup_printf (" ((%ss.owner IS NULL) OR (%ss.owner ="
-                                        "  (SELECT id FROM users"
-                                        "   WHERE users.uuid = '%s')))",
-                                        type,
-                                        type,
-                                        current_credentials.uuid);
 
       if (owner_filter && (strcmp (owner_filter, "any") == 0))
         filter_owned_clause = g_strdup (owned_clause);
