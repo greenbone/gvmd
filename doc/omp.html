@@ -12461,6 +12461,16 @@ get_configs_response_config_count_page
 <li>
 <i>Command</i><ul style="list-style: none">
 <li>
+          @<b>filter</b>
+          (<a href="#type_uuid">uuid</a>)
+          Filter term to use to filter query of the resources to aggregate.
+          </li>
+<li>
+          @<b>filt_id</b>
+          (<a href="#type_uuid">uuid</a>)
+          ID of filter to use to filter query of the resources to aggregate.
+          </li>
+<li>
           @<b>type</b>
           (text)
           The OMP resource type to gather data from.
@@ -12680,7 +12690,9 @@ get_configs_response_config_count_page
 <i>Command</i><div style="margin-left: 5%"><pre>get_aggregates
  = element get_aggregates
      {
-       attribute type { text }
+       attribute filter { uuid }?
+       &amp; attribute filt_id { uuid }?
+       &amp; attribute type { text }
        &amp; attribute data_column { text }?
        &amp; attribute group_column { text }?
      }

@@ -4034,7 +4034,11 @@ get_configs
 get_aggregates
  = element get_aggregates
      {
-       # The OMP resource type to gather data from.
+       # Filter term to use to filter query of the resources to aggregate.
+       attribute filter { uuid }?
+       & # ID of filter to use to filter query of the resources to aggregate.
+       attribute filt_id { uuid }?
+       & # The OMP resource type to gather data from.
        attribute type { text }
        & # The column to get the data to aggregate from.
        attribute data_column { text }?
