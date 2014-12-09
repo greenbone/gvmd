@@ -42698,6 +42698,14 @@ create_permission (const char *name_arg, const char *comment,
       resource_type = NULL;
     }
 
+  if (strcasecmp (name, "super") == 0 && resource == 0)
+    {
+      g_free (name);
+      g_free (resource_type);
+      sql ("ROLLBACK;");
+      return 3;
+    }
+
   /* For simplicity refuse to make permissions on permissions. */
   if (resource && strcasestr (name_arg, "permission"))
     {
