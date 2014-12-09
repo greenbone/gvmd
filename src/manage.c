@@ -3026,11 +3026,11 @@ run_task (const char *task_id, char **report_id, int from,
           if (esxi_credential)
             g_string_append (auth_plugins, "1.3.6.1.4.1.25623.1.0.105058;");
 
-        fail = sendf_to_server ("plugin_set <|> %s%s\n",
-                                auth_plugins->str,
-                                plugins);
-        g_string_free (auth_plugins, TRUE);
-      }
+          fail = sendf_to_server ("plugin_set <|> %s%s\n",
+                                  auth_plugins->str,
+                                  plugins);
+          g_string_free (auth_plugins, TRUE);
+        }
     }
   else
     fail = send_to_server ("plugin_set <|> 0\n");

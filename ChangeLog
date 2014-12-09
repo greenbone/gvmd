@@ -1,5 +1,9 @@
 2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Correct indenting.
+
+2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_permission): Check for Super on everything
 	after finding the resource, to prevent this permission from being
 	created by passing in a fake or deleted resource ID.
