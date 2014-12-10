@@ -1,3 +1,8 @@
+2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (where_owned): In permissions case, add comments and
+	use table name directly.
+
 2014-12-10 Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add indices for NVTs, CVEs and CPEs and change init_aggregate_iterator

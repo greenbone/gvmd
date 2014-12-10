@@ -798,23 +798,28 @@ where_owned (const char *type, const get_data_t *get, int owned,
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
           owned_clause
-           = g_strdup_printf (" ((%ss.owner = (SELECT id FROM users"
+           = g_strdup_printf (/* Either the user is the owner. */
+                              " ((permissions.owner = (SELECT id FROM users"
                               "                WHERE users.uuid = '%s'))"
+                              /* Or, for admins, it's a global permission. */
                               "  %s"
-                              "  OR (%ss.subject_type = 'user'"
-                              "      AND %ss.subject"
+                              /* Or permission applies to the user. */
+                              "  OR (permissions.subject_type = 'user'"
+                              "      AND permissions.subject"
                               "          = (SELECT id FROM users"
                               "             WHERE users.uuid = '%s'))"
-                              "  OR (%ss.subject_type = 'group'"
-                              "      AND %ss.subject"
+                              /* Or permission applies to the user's group. */
+                              "  OR (permissions.subject_type = 'group'"
+                              "      AND permissions.subject"
                               "          IN (SELECT DISTINCT \"group\""
                               "              FROM group_users"
                               "              WHERE \"user\" = (SELECT id"
                               "                                FROM users"
                               "                                WHERE users.uuid"
                               "                                      = '%s')))"
-                              "  OR (%ss.subject_type = 'role'"
-                              "      AND %ss.subject"
+                              /* Or permission applies to the user's role. */
+                              "  OR (permissions.subject_type = 'role'"
+                              "      AND permissions.subject"
                               "          IN (SELECT DISTINCT role"
                               "              FROM role_users"
                               "              WHERE \"user\" = (SELECT id"
@@ -822,17 +827,10 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                                WHERE users.uuid"
                               "                                      = '%s')))"
                               "  %s)",
-                              type,
                               current_credentials.uuid,
                               admin ? "OR (permissions.owner IS NULL)" : "",
-                              type,
-                              type,
                               current_credentials.uuid,
-                              type,
-                              type,
                               current_credentials.uuid,
-                              type,
-                              type,
                               current_credentials.uuid,
                               permission_clause ? permission_clause : "");
         }
