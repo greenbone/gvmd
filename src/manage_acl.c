@@ -758,17 +758,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else if (get->trash)
-        owned_clause
-         = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
-                            "  OR (%ss_trash.owner"
-                            "      = (SELECT id FROM users"
-                            "         WHERE users.uuid = '%s'))"
-                            "  %s)",
-                            type,
-                            type,
-                            current_credentials.uuid,
-                            permission_clause ? permission_clause : "");
       else if (strcmp (type, "permission") == 0)
         {
           int admin;
@@ -777,27 +766,27 @@ where_owned (const char *type, const get_data_t *get, int owned,
            * see all higher level permissions. */
           owned_clause
            = g_strdup_printf (/* Either the user is the owner. */
-                              " ((permissions.owner = (SELECT id FROM users"
+                              " ((permissions%s.owner = (SELECT id FROM users"
                               "                WHERE users.uuid = '%s'))"
                               /* Or, for admins, it's a global permission. */
                               "  %s"
-                              /* Or permission applies to the user. */
-                              "  OR (permissions.subject_type = 'user'"
-                              "      AND permissions.subject"
+                              /* Or the permission applies to the user. */
+                              "  OR (permissions%s.subject_type = 'user'"
+                              "      AND permissions%s.subject"
                               "          = (SELECT id FROM users"
                               "             WHERE users.uuid = '%s'))"
-                              /* Or permission applies to the user's group. */
-                              "  OR (permissions.subject_type = 'group'"
-                              "      AND permissions.subject"
+                              /* Or the permission applies to the user's group. */
+                              "  OR (permissions%s.subject_type = 'group'"
+                              "      AND permissions%s.subject"
                               "          IN (SELECT DISTINCT \"group\""
                               "              FROM group_users"
                               "              WHERE \"user\" = (SELECT id"
                               "                                FROM users"
                               "                                WHERE users.uuid"
                               "                                      = '%s')))"
-                              /* Or permission applies to the user's role. */
-                              "  OR (permissions.subject_type = 'role'"
-                              "      AND permissions.subject"
+                              /* Or the permission applies to the user's role. */
+                              "  OR (permissions%s.subject_type = 'role'"
+                              "      AND permissions%s.subject"
                               "          IN (SELECT DISTINCT role"
                               "              FROM role_users"
                               "              WHERE \"user\" = (SELECT id"
@@ -811,21 +800,21 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "             AND ((inner.resource = 0)"
                               /*                 Super on outer permission user. */
                               "                  OR ((inner.resource_type = 'user')"
-                              "                      AND (inner.resource = permissions.owner))"
+                              "                      AND (inner.resource = permissions%s.owner))"
                               /*                 Super on outer permission user's role. */
                               "                  OR ((inner.resource_type = 'role')"
                               "                      AND (inner.resource"
                               "                           IN (SELECT DISTINCT role"
                               "                               FROM role_users"
                               "                               WHERE \"user\""
-                              "                                     = permissions.owner)))"
+                              "                                     = permissions%s.owner)))"
                               /*                 Super on outer permission user's group. */
                               "                  OR ((inner.resource_type = 'group')"
                               "                      AND (inner.resource"
                               "                           IN (SELECT DISTINCT \"group\""
                               "                               FROM group_users"
                               "                               WHERE \"user\""
-                              "                                     = permissions.owner))))"
+                              "                                     = permissions%s.owner))))"
                               "             AND ((inner.subject_type = 'user'"
                               "                   AND inner.subject"
                               "                       = (SELECT id FROM users"
@@ -849,11 +838,25 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                                       WHERE users.uuid"
                               "                                             = '%s')))))"
                               "  %s)",
+                              get->trash ? "_trash" : "",
                               current_credentials.uuid,
-                              admin ? "OR (permissions.owner IS NULL)" : "",
+                              admin
+                               ? (get->trash
+                                   ? "OR (permissions_trash.owner IS NULL)"
+                                   : "OR (permissions.owner IS NULL)")
+                               : "",
+                              get->trash ? "_trash" : "",
+                              get->trash ? "_trash" : "",
                               current_credentials.uuid,
+                              get->trash ? "_trash" : "",
+                              get->trash ? "_trash" : "",
                               current_credentials.uuid,
+                              get->trash ? "_trash" : "",
+                              get->trash ? "_trash" : "",
                               current_credentials.uuid,
+                              get->trash ? "_trash" : "",
+                              get->trash ? "_trash" : "",
+                              get->trash ? "_trash" : "",
                               current_credentials.uuid,
                               current_credentials.uuid,
                               current_credentials.uuid,
@@ -862,9 +865,9 @@ where_owned (const char *type, const get_data_t *get, int owned,
       else
         owned_clause
          = g_strdup_printf (/* Either a global resource. */
-                            " ((%ss.owner IS NULL)"
+                            " ((%ss%s.owner IS NULL)"
                             /* Or the user is the owner. */
-                            "  OR (%ss.owner"
+                            "  OR (%ss%s.owner"
                             "      = (SELECT id FROM users"
                             "         WHERE users.uuid = '%s'))"
                             /* Or the user has super permission. */
@@ -874,21 +877,21 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "             AND ((resource = 0)"
                             /*                 Super on other_user. */
                             "                  OR ((resource_type = 'user')"
-                            "                      AND (resource = %ss.owner))"
+                            "                      AND (resource = %ss%s.owner))"
                             /*                 Super on other_user's role. */
                             "                  OR ((resource_type = 'role')"
                             "                      AND (resource"
                             "                           IN (SELECT DISTINCT role"
                             "                               FROM role_users"
                             "                               WHERE \"user\""
-                            "                                     = %ss.owner)))"
+                            "                                     = %ss%s.owner)))"
                             /*                 Super on other_user's group. */
                             "                  OR ((resource_type = 'group')"
                             "                      AND (resource"
                             "                           IN (SELECT DISTINCT \"group\""
                             "                               FROM group_users"
                             "                               WHERE \"user\""
-                            "                                     = %ss.owner))))"
+                            "                                     = %ss%s.owner))))"
                             "             AND ((subject_type = 'user'"
                             "                   AND subject"
                             "                       = (SELECT id FROM users"
@@ -913,11 +916,16 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                                             = '%s')))))"
                             "  %s)",
                             type,
+                            get->trash ? "_trash" : "",
                             type,
+                            get->trash ? "_trash" : "",
                             current_credentials.uuid,
                             type,
+                            get->trash ? "_trash" : "",
                             type,
+                            get->trash ? "_trash" : "",
                             type,
+                            get->trash ? "_trash" : "",
                             current_credentials.uuid,
                             current_credentials.uuid,
                             current_credentials.uuid,

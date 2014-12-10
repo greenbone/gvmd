@@ -1,5 +1,11 @@
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned): Move general trash table case into the
+	cases for the regular tables, so that permissions are consulted when
+	getting the trash.
+
+2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (type_is_shared): Remove.  Always 0.
 	(where_owned): Remove "type is shared" cases, which are no longer used.
 
