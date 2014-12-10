@@ -26,7 +26,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-VERSION=20141030
+VERSION=20141209
 RESTRICTED=1
 
 # SETTINGS
@@ -594,6 +594,34 @@ db_migrate_14 () {
   REBUILD_OVAL=1
 }
 
+db_migrate_15 () {
+  log_notice "Migrating database to version 15."
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE3 "$SCAP_DB" "CREATE INDEX IF NOT EXISTS cpes_by_creation_time_idx
+                           ON cpes (creation_time);
+                         CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
+                           ON cpes (modification_time);
+                         CREATE INDEX IF NOT EXISTS cpes_by_cvss
+                           ON cpes (max_cvss);
+
+                         CREATE INDEX IF NOT EXISTS cves_by_creation_time_idx
+                           ON cves (creation_time);
+                         CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
+                           ON cves (modification_time);
+                         CREATE INDEX IF NOT EXISTS cpes_by_cvss
+                           ON cves (max_cvss);
+
+                         UPDATE meta
+                           SET value = '15'
+                           WHERE name = 'database_version';
+                        "
+    test_sql_exit "Could not migrate SCAP database"
+  done
+  log_notice "Migration done."
+}
+
 check_db_version () {
   DB_VERSION=`sql "select value from ${SCHEMA}meta where name = 'database_version';" 2>/dev/null | tr -d '\n\r' || echo 0`
   case "$DB_VERSION" in
@@ -615,6 +643,7 @@ check_db_version () {
 		 db_migrate_12
 		 db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
     9) if [ $POSTGRES -eq 1 ]
        then
@@ -625,6 +654,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
 	   fi;;
    10) if [ $POSTGRES -eq 1 ]
        then
@@ -634,6 +664,7 @@ check_db_version () {
 		 db_migrate_12
 		 db_migrate_13
 		 db_migrate_14
+         db_migrate_15
 	    fi;;
    11) if [ $POSTGRES -eq 1 ]
        then
@@ -642,6 +673,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
 	   fi;;
    12) if [ $POSTGRES -eq 1 ]
        then
@@ -649,12 +681,20 @@ check_db_version () {
        else
          db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
    13) if [ $POSTGRES -eq 1 ]
        then
          reinit
        else
          db_migrate_14
+         db_migrate_15
+       fi;;
+   14) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_15
        fi;;
   esac
 }

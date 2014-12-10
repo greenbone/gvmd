@@ -3419,7 +3419,7 @@ trash_tag_writable (tag_t);
 int
 init_aggregate_iterator (iterator_t*, const char *, const get_data_t *, int,
                          const char *, const char *, const char *,
-                         const char *, int);
+                         const char *);
 
 int
 aggregate_iterator_count (iterator_t*);

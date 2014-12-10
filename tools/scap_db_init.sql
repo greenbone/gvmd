@@ -39,7 +39,7 @@ DROP TABLE IF EXISTS affected_ovaldefs;
 
 /* create new tables and indices */
 CREATE TABLE meta (id INTEGER PRIMARY KEY AUTOINCREMENT, name UNIQUE, value);
-INSERT INTO meta (name, value) VALUES ("database_version", "14");
+INSERT INTO meta (name, value) VALUES ("database_version", "15");
 INSERT INTO meta (name, value) VALUES ("last_update", "0");
 
 CREATE TABLE cves (
@@ -60,6 +60,9 @@ CREATE TABLE cves (
   cvss FLOAT DEFAULT 0
 );
 CREATE UNIQUE INDEX cve_idx ON cves (name);
+CREATE INDEX cves_by_creation_time_idx ON cves (creation_time);
+CREATE INDEX cves_by_modification_time_idx ON cves (modification_time);
+CREATE INDEX cves_by_cvss ON cves (cvss);
 
 
 CREATE TABLE cpes (
@@ -77,6 +80,9 @@ CREATE TABLE cpes (
   nvd_id
 );
 CREATE UNIQUE INDEX cpe_idx ON cpes (name);
+CREATE INDEX cpes_by_creation_time_idx ON cpes (creation_time);
+CREATE INDEX cpes_by_modification_time_idx ON cpes (modification_time);
+CREATE INDEX cpes_by_cvss ON cpes (max_cvss);
 
 
 CREATE TABLE affected_products (

@@ -2093,6 +2093,14 @@ create_tables ()
        " ON nvts (family);");
   sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
        " (nvt, oid, cve_name)");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_creation_time"
+       " ON nvts (creation_time);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_modification_time"
+       " ON nvts (modification_time);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_cvss_base"
+       " ON nvts (cvss_base);");
+  sql ("CREATE INDEX IF NOT EXISTS nvts_by_solution_type"
+       " ON nvts (solution_type);");
   sql ("CREATE INDEX IF NOT EXISTS nvt_cves_by_oid"
        " ON nvt_cves (oid);");
   sql ("CREATE TABLE IF NOT EXISTS overrides"

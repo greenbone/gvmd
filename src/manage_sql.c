@@ -4423,8 +4423,7 @@ int
 init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const get_data_t *get, int distinct,
                          const char *stat_column, const char *group_column,
-                         const char *extra_tables, const char *extra_where,
-                         int no_pagination)
+                         const char *extra_tables, const char *extra_where)
 {
   int owned;
   gchar* apply_overrides_str;
@@ -4434,12 +4433,15 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   gchar *trash_columns;
   const char **filter_columns;
   int first, max;
-  gchar *from_table, *trash_extra, *clause, *order, *filter, *owned_clause;
+  gchar *from_table, *trash_extra, *clause, *filter_order, *filter;
+  gchar *owned_clause;
   array_t *permissions;
   resource_t resource = 0;
   gchar *owner_filter;
-  gchar *outer_select, *outer_group_by;
-  gchar *select_group_column;
+  gchar *aggregate_select, *aggregate_group_by;
+  gchar *outer_group_by;
+  gchar *select_group_column, *select_stat_column;
+  gchar *order;
 
   assert (get);
 
@@ -4499,8 +4501,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     }
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
-                          select_columns, get->trash, &order, &first, &max,
-                          &permissions, &owner_filter);
+                          select_columns, get->trash, &filter_order,
+                          &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -4524,50 +4526,108 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
   g_free (owner_filter);
   array_free (permissions);
 
+  select_group_column = NULL;
+  select_stat_column = NULL;
+
+  if (group_column == NULL)
+    {
+      select_group_column = NULL;
+    }
+  else
+    {
+      int i = 0;
+      while (select_columns[i].select != NULL)
+        {
+          if (strcmp (select_columns[i].select, group_column) == 0
+              || (select_columns[i].filter
+                  && strcmp (select_columns[i].filter, group_column) == 0))
+            {
+              select_group_column = g_strdup (select_columns[i].select);
+              break;
+            }
+          i++;
+        }
+    }
+
+  if (stat_column == NULL)
+    select_stat_column = NULL;
+  else
+    {
+      int i = 0;
+      while (select_columns[i].select != NULL)
+        {
+          if (strcmp (select_columns[i].select, stat_column) == 0
+              || (select_columns[i].filter
+                  && strcmp (select_columns[i].filter, stat_column) == 0))
+            {
+              select_stat_column = g_strdup (select_columns[i].select);
+              break;
+            }
+          i++;
+        }
+    }
+
   /* Round time fields to the next day to reduce amount of rows returned
    * This returns "pseudo-UTC" dates which are used by the GSA charts because
    *  the JavaScript Date objects do not support setting the timezone.
    */
   if (strcmp (group_column, "created") == 0
-      || strcmp (group_column, "modified") == 0
-      || strcmp (group_column, "published") == 0)
-    select_group_column
-      = g_strdup_printf ("CAST (strftime ('%%s',"
-                         "                date(%s, 'unixepoch', 'localtime'),"
-                         "                'localtime')"
+              || strcmp (group_column, "modified") == 0
+              || strcmp (group_column, "published") == 0)
+    outer_group_by
+      = g_strdup_printf ("GROUP BY CAST (strftime ('%%s',"
+                         "               date(%s, 'unixepoch',"
+                         "                    'localtime'),"
+                         "               'localtime')"
                          "      AS INTEGER)",
-                         group_column);
+                         "aggregate_group_value");
   else
-    select_group_column = g_strdup (group_column);
+    outer_group_by = g_strdup ("GROUP BY aggregate_group_value");
+
+  order = g_strdup_printf ("ORDER BY %s ASC",
+                           "aggregate_group_value");
 
   if (group_column && strcmp (group_column, ""))
     {
       if (stat_column && strcmp (stat_column, ""))
-        outer_select = g_strdup_printf (" count(*),"
-                                        " min(%s), max(%s), avg(%s), sum(%s),"
-                                        " %s ",
-                                        stat_column,
-                                        stat_column,
-                                        stat_column,
-                                        stat_column,
-                                        select_group_column);
+        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
+                                            " min(%s) AS aggregate_min,"
+                                            " max(%s) AS aggregate_max,"
+                                            " avg(%s) * count(*)"
+                                            "   AS aggregate_avg,"
+                                            " sum(%s) AS aggregate_sum,"
+                                            " %s as aggregate_group_value",
+                                            select_stat_column,
+                                            select_stat_column,
+                                            select_stat_column,
+                                            select_stat_column,
+                                            select_group_column);
       else
-        outer_select = g_strdup_printf (" count(*),"
-                                        " NULL, NULL, NULL, NULL, %s ",
-                                        select_group_column);
+        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
+                                            " NULL AS aggregate_min,"
+                                            " NULL AS aggregate_max,"
+                                            " NULL AS aggregate_avg,"
+                                            " NULL AS aggregate_sum,"
+                                            " %s as aggregate_group_value",
+                                            select_group_column);
 
-      outer_group_by = g_strdup_printf (" GROUP BY %s",
-                                        select_group_column);
+      aggregate_group_by = g_strdup_printf (" GROUP BY %s",
+                                            select_group_column);
     }
   else
     {
       if (stat_column && strcmp (stat_column, ""))
-        outer_select = g_strdup_printf (" count(*),"
-                                        " min(%s), max(%s), avg(%s), sum(%s) ",
-                                        stat_column,
-                                        stat_column,
-                                        stat_column,
-                                        stat_column);
+        aggregate_select = g_strdup_printf (" count(*) AS aggregate_count,"
+                                            " min(%s) AS aggregate_min,"
+                                            " max(%s) AS aggregate_max,"
+                                            " avg(%s) * count(*)"
+                                            "   AS aggregate_avg,"
+                                            " sum(%s) AS aggregate_sum,"
+                                            " NULL as aggregate_group_value",
+                                            select_stat_column,
+                                            select_stat_column,
+                                            select_stat_column,
+                                            select_stat_column);
       else
         {
           g_free (columns);
@@ -4579,124 +4639,48 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
           return -1;
         }
 
-      outer_group_by = g_strdup ("");
+      aggregate_group_by = g_strdup ("");
     }
 
   from_table = type_table (type, get->trash);
 
-  if (resource && get->trash)
-    init_iterator (iterator,
-                   "SELECT %s FROM ("
-                   " SELECT %s"
-                   " FROM %s"
-                   " WHERE ROWID = %llu"
-                   " AND %s%s"
-                   " %s) AS init_agg_subquery"
-                   "%s;",
-                   outer_select,
-                   trash_columns ? trash_columns : columns,
-                   from_table,
-                   resource,
-                   owned_clause,
-                   trash_extra,
-                   order,
-                   outer_group_by);
-  else if (get->trash)
-    init_iterator (iterator,
-                   "SELECT %s FROM ("
-                   " SELECT %s"
-                   " FROM %s"
-                   " WHERE"
-                   " %s"
-                   " %s"
-                   " %s"
-                   " %s) AS init_agg_subquery"
-                   "%s;",
-                   outer_select,
-                   trash_columns ? trash_columns : columns,
-                   from_table,
-                   owned_clause,
-                   trash_extra,
-                   extra_where ? extra_where : "",
-                   order,
-                   outer_group_by);
-  else if (resource)
-    init_iterator (iterator,
-                   "SELECT %s FROM ("
-                   " SELECT %s"
-                   " FROM %s"
-                   " WHERE ROWID = %llu"
-                   " AND %s%s"
-                   " %s) AS init_agg_subquery"
-                   "%s;",
-                   outer_select,
-                   columns,
-                   from_table,
-                   resource,
-                   owned_clause,
-                   trash_extra,
-                   order,
-                   outer_group_by);
-  else if (no_pagination)
-    {
-      init_iterator (iterator,
-                   "SELECT %s FROM ("
-                   " SELECT%s %s"
-                   " FROM %s%s"
-                   " WHERE"
-                   " %s"
-                   "%s%s%s%s%s%s) AS init_agg_subquery"
-                   "%s;",
-                   outer_select,
-                   distinct ? " DISTINCT" : "",
-                   columns,
-                   from_table,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   trash_extra,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order,
-                   outer_group_by);
-    }
-  else
-    {
-      init_iterator (iterator,
-                   "SELECT %s FROM ("
-                   " SELECT%s %s"
-                   " FROM %s%s"
-                   " WHERE"
-                   " %s"
-                   "%s%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i) AS init_agg_subquery"
-                   "%s;",
-                   outer_select,
-                   distinct ? " DISTINCT" : "",
-                   columns,
-                   from_table,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   trash_extra,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order,
-                   sql_select_limit (max),
-                   first,
-                   outer_group_by);
-    }
+  init_iterator (iterator,
+                 "SELECT sum(aggregate_count),"
+                 " min(aggregate_min), max (aggregate_max),"
+                 " sum (aggregate_avg) / sum(aggregate_count),"
+                 " sum (aggregate_sum), aggregate_group_value"
+                 " FROM (SELECT%s %s, %s"
+                 "       FROM %s%s"
+                 "       WHERE"
+                 "       %s%s"
+                 "       %s%s%s%s"
+                 "       %s)"
+                 " %s %s;",
+                 distinct ? " DISTINCT" : "",
+                 aggregate_select,
+                 columns,
+                 from_table,
+                 extra_tables ? extra_tables : "",
+                 owned_clause,
+                 trash_extra,
+                 clause ? " AND (" : "",
+                 clause ? clause : "",
+                 clause ? ")" : "",
+                 extra_where ? extra_where : "",
+                 aggregate_group_by,
+                 outer_group_by,
+                 order);
 
   g_free (columns);
   g_free (trash_columns);
   g_free (owned_clause);
   g_free (trash_extra);
+  g_free (filter_order);
   g_free (order);
   g_free (clause);
+  g_free (aggregate_group_by);
+  g_free (aggregate_select);
   g_free (outer_group_by);
-  g_free (outer_select);
   g_free (select_group_column);
   return 0;
 }

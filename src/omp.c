@@ -16121,8 +16121,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                          0 /* distinct */,
                                          data_column, group_column,
                                          NULL /* extra_tables */,
-                                         NULL /* extra_where */,
-                                         1 /* no_pagination */);
+                                         NULL /* extra_where */);
 
           switch (ret)
             {

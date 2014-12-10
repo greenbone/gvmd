@@ -12456,6 +12456,11 @@ get_configs_response_config_count_page
         The client uses the get_aggregate command to get aggregated data like
         counts or averages of various resources.
       </p>
+<p>
+        Unlike other get_... commands, get_aggregates ignores the filter
+        keywords "first" and "rows". It also does not support selecting single
+        items by id or getting items from the trashcan.
+      </p>
 <h4>7.52.1 Structure</h4>
 <ul style="list-style: none">
 <li>

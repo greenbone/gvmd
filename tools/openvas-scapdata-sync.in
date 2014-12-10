@@ -487,6 +487,34 @@ db_migrate_14 () {
   REBUILD_OVAL=1
 }
 
+db_migrate_15 () {
+  echo "[i] Migrating database to version 15."
+  reset_sql_tries
+  until [ "$try_sql" -eq 0 ]
+  do
+    $SQLITE "$SEC_DB"  "CREATE INDEX IF NOT EXISTS cpes_by_creation_time_idx
+                          ON cpes (creation_time);
+                        CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
+                          ON cpes (modification_time);
+                        CREATE INDEX IF NOT EXISTS cpes_by_cvss
+                          ON cpes (max_cvss);
+
+                        CREATE INDEX IF NOT EXISTS cves_by_creation_time_idx
+                          ON cves (creation_time);
+                        CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
+                          ON cves (modification_time);
+                        CREATE INDEX IF NOT EXISTS cpes_by_cvss
+                          ON cves (max_cvss);
+
+                        UPDATE meta
+                          SET value = '15'
+                          WHERE name = 'database_version';
+                      "
+    test_sql_exit "Could not migrate SCAP database"
+  done
+  echo "[i] Migration done."
+}
+
 PSQL=""
 psql_setup () {
   PSQL="psql -v ON_ERROR_STOP=1 -q --pset pager=off --no-align -d $1 -t"
@@ -547,6 +575,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
     9) if [ $POSTGRES -eq 1 ]
        then
@@ -557,6 +586,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
    10) if [ $POSTGRES -eq 1 ]
        then
@@ -566,6 +596,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
    11) if [ $POSTGRES -eq 1 ]
        then
@@ -574,6 +605,7 @@ check_db_version () {
          db_migrate_12
          db_migrate_13
          db_migrate_14
+         db_migrate_15
        fi;;
    12) if [ $POSTGRES -eq 1 ]
        then
@@ -581,12 +613,20 @@ check_db_version () {
        else
          db_migrate_13
          db_migrate_14
+         db_migrate_14
        fi;;
    13) if [ $POSTGRES -eq 1 ]
        then
          reinit
        else
          db_migrate_14
+         db_migrate_15
+       fi;;
+   14) if [ $POSTGRES -eq 1 ]
+       then
+         reinit
+       else
+         db_migrate_15
        fi;;
   esac
 }

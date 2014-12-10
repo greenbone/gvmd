@@ -1,3 +1,43 @@
+2014-12-10 Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add indices for NVTs, CVEs and CPEs and change init_aggregate_iterator
+	to use them. Remove unused features from init_aggregate_iterator for
+	simplicity.
+
+	* CMakeLists.txt (OPENVASMD_SCAP_DATABASE_VERSION): Increase to 15.
+
+	* src/manage_pg.c (create_tables): Add indices
+	nvts_by_modification_time, nvts_by_cvss_base, nvts_by_solution_type.
+
+	* src/manage_sqlite3.c (create_tables): Add indices
+	nvts_by_creation_time, nvts_by_modification_time, nvts_by_cvss_base,
+	nvts_by_solution_type.
+
+	* src/manage_sql.c (init_aggregate_iterator): Restructure query so
+	indices can be used. Remove ignore_pagination parameter and always
+	ignore the filter keywords "first" and "rows". Remove unused cases for
+	trash and single resources.
+
+	* src/manage.h (init_aggregate_iterator): Remove ignore_pagination
+	parameter.
+
+	* tools/greenbone-scapdata-sync.in: Increase version.
+	(db_migrate_15): New function.
+	(check_db_version): Add migration to version 15.
+
+	* tools/openvas-scapdata-sync.in (db_migrate_15): New function.
+	(check_db_version): Add migration to version 15.
+
+	* tools/scap_db_init.sql, tools/scap_db_init_pg.sql: Add indices
+	cpes_by_creation_time, cpes_by_modification_time, cpes_by_max_cvss,
+	cves_by_creation_time, cves_by_modification_time, cpes_by_cvss.
+
+	* src/schema_formats/XML/OMP.xml.in (get_aggregates): Add note about
+	the command ignoring the filter keywords "first" and "rows" and not
+	supporting the trash and id attributes.
+
+	* doc/omp.html: Update from source.
+
 2014-12-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (user_has_access_uuid): Remove Super note, as this is

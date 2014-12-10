@@ -54,6 +54,9 @@ CREATE TABLE cves (
 );
 CREATE UNIQUE INDEX cve_idx ON cves (name);
 CREATE INDEX cves_by_creation_time ON cves (creation_time);
+CREATE INDEX cves_by_creation_time_idx ON cves (creation_time);
+CREATE INDEX cves_by_modification_time_idx ON cves (modification_time);
+CREATE INDEX cves_by_cvss ON cves (max_cvss);
 
 CREATE TABLE cpes (
   id SERIAL PRIMARY KEY,
@@ -71,6 +74,9 @@ CREATE TABLE cpes (
 );
 CREATE UNIQUE INDEX cpe_idx ON cpes (name);
 CREATE INDEX cpes_by_creation_time ON cpes (creation_time);
+CREATE INDEX cpes_by_creation_time_idx ON cpes (creation_time);
+CREATE INDEX cpes_by_modification_time_idx ON cpes (modification_time);
+CREATE INDEX cpes_by_cvss ON cpes (max_cvss);
 
 CREATE TABLE affected_products (
   cve INTEGER NOT NULL,

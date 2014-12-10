@@ -2121,6 +2121,13 @@ create_tables ()
        "                     'creation_time');");
   sql ("SELECT create_index ('nvts_by_family', 'nvts', 'family');");
   sql ("SELECT create_index ('nvts_by_name', 'nvts', 'name');");
+  sql ("SELECT create_index ('nvts_by_modification_time',"
+       "                     'nvts', 'modification_time');");
+  sql ("SELECT create_index ('nvts_by_cvss_base',"
+       "                     'nvts', 'cvss_base');");
+  sql ("SELECT create_index ('nvts_by_solution_type',"
+       "                     'nvts', 'solution_type');");
+
 #if 0
   /* TODO The value column can be bigger than 8191, the maximum size that
    *      Postgres can handle.  For example, this can happen for "ports".
