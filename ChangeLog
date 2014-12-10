@@ -1,5 +1,10 @@
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (type_is_shared): Remove.  Always 0.
+	(where_owned): Remove "type is shared" cases, which are no longer used.
+
+2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): In permissions case, add Super clause.
 
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>

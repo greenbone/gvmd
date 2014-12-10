@@ -573,19 +573,6 @@ user_has_access_uuid (const char *type, const char *uuid,
 }
 
 /**
- * @brief Check whether a type has permission support.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_shared (const char *type)
-{
-  return 0;
-}
-
-/**
  * @brief Generate the ownership part of an SQL WHERE clause.
  *
  * @param[in]  type            Type of resource.
@@ -771,14 +758,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             type,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
-      else if (get->trash && type_is_shared (type))
-        owned_clause
-         = g_strdup_printf (" (((%ss_trash.owner IS NULL)"
-                            "   AND user_can_everything ('%s'))"
-                            "  %s)",
-                            type,
-                            current_credentials.uuid,
-                            permission_clause ? permission_clause : "");
       else if (get->trash)
         owned_clause
          = g_strdup_printf (" ((%ss_trash.owner IS NULL)"
@@ -880,15 +859,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               current_credentials.uuid,
                               permission_clause ? permission_clause : "");
         }
-      else if (type_is_shared (type))
-        // FIX super?
-        owned_clause
-         = g_strdup_printf (" (((%ss.owner IS NULL)"
-                            "   AND user_can_everything ('%s'))"
-                            "  %s)",
-                            type,
-                            current_credentials.uuid,
-                            permission_clause ? permission_clause : "");
       else
         owned_clause
          = g_strdup_printf (/* Either a global resource. */
