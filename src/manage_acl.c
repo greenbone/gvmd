@@ -792,7 +792,6 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             permission_clause ? permission_clause : "");
       else if (strcmp (type, "permission") == 0)
         {
-          // FIX super
           int admin;
           admin = user_can_everything (current_credentials.uuid);
           /* A user sees permissions that involve the user.  Admin users also
@@ -826,9 +825,56 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                                FROM users"
                               "                                WHERE users.uuid"
                               "                                      = '%s')))"
+                              /* Or the user has super permission. */
+                              "  OR EXISTS (SELECT * FROM permissions AS inner"
+                              "             WHERE name = 'Super'"
+                              /*                 Super on everyone. */
+                              "             AND ((inner.resource = 0)"
+                              /*                 Super on outer permission user. */
+                              "                  OR ((inner.resource_type = 'user')"
+                              "                      AND (inner.resource = permissions.owner))"
+                              /*                 Super on outer permission user's role. */
+                              "                  OR ((inner.resource_type = 'role')"
+                              "                      AND (inner.resource"
+                              "                           IN (SELECT DISTINCT role"
+                              "                               FROM role_users"
+                              "                               WHERE \"user\""
+                              "                                     = permissions.owner)))"
+                              /*                 Super on outer permission user's group. */
+                              "                  OR ((inner.resource_type = 'group')"
+                              "                      AND (inner.resource"
+                              "                           IN (SELECT DISTINCT \"group\""
+                              "                               FROM group_users"
+                              "                               WHERE \"user\""
+                              "                                     = permissions.owner))))"
+                              "             AND ((inner.subject_type = 'user'"
+                              "                   AND inner.subject"
+                              "                       = (SELECT id FROM users"
+                              "                          WHERE users.uuid = '%s'))"
+                              "                  OR (inner.subject_type = 'group'"
+                              "                      AND inner.subject"
+                              "                          IN (SELECT DISTINCT \"group\""
+                              "                              FROM group_users"
+                              "                              WHERE \"user\""
+                              "                                    = (SELECT id"
+                              "                                       FROM users"
+                              "                                       WHERE users.uuid"
+                              "                                             = '%s')))"
+                              "                  OR (inner.subject_type = 'role'"
+                              "                      AND inner.subject"
+                              "                          IN (SELECT DISTINCT role"
+                              "                              FROM role_users"
+                              "                              WHERE \"user\""
+                              "                                    = (SELECT id"
+                              "                                       FROM users"
+                              "                                       WHERE users.uuid"
+                              "                                             = '%s')))))"
                               "  %s)",
                               current_credentials.uuid,
                               admin ? "OR (permissions.owner IS NULL)" : "",
+                              current_credentials.uuid,
+                              current_credentials.uuid,
+                              current_credentials.uuid,
                               current_credentials.uuid,
                               current_credentials.uuid,
                               current_credentials.uuid,

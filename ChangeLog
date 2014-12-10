@@ -1,5 +1,9 @@
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned): In permissions case, add Super clause.
+
+2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): In permissions case, add comments and
 	use table name directly.
 
