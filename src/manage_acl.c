@@ -595,7 +595,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
     {
       gchar *permission_clause, *filter_owned_clause;
       GString *permission_or;
-      int index;
+      int index, table_trash;
 
       permission_or = g_string_new ("");
       index = 0;
@@ -741,23 +741,10 @@ where_owned (const char *type, const get_data_t *get, int owned,
 
       g_string_free (permission_or, TRUE);
 
-      // FIX super trash?
+      table_trash = get->trash && strcasecmp (type, "task");
       if (resource || (current_credentials.uuid == NULL))
         owned_clause
          = g_strdup (" (t ())");
-      else if (get->trash && (strcasecmp (type, "task") == 0))
-        owned_clause
-         = g_strdup_printf (" (%ss.hidden = 2"
-                            "  AND ((%ss.owner IS NULL)"
-                            "       OR (%ss.owner"
-                            "           = (SELECT id FROM users"
-                            "              WHERE users.uuid = '%s'))"
-                            "       %s))",
-                            type,
-                            type,
-                            type,
-                            current_credentials.uuid,
-                            permission_clause ? permission_clause : "");
       else if (strcmp (type, "permission") == 0)
         {
           int admin;
@@ -845,18 +832,18 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                    ? "OR (permissions_trash.owner IS NULL)"
                                    : "OR (permissions.owner IS NULL)")
                                : "",
-                              get->trash ? "_trash" : "",
-                              get->trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
-                              get->trash ? "_trash" : "",
-                              get->trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
-                              get->trash ? "_trash" : "",
-                              get->trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
-                              get->trash ? "_trash" : "",
-                              get->trash ? "_trash" : "",
-                              get->trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
                               current_credentials.uuid,
                               current_credentials.uuid,
@@ -916,20 +903,31 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                                             = '%s')))))"
                             "  %s)",
                             type,
-                            get->trash ? "_trash" : "",
+                            table_trash ? "_trash" : "",
                             type,
-                            get->trash ? "_trash" : "",
+                            table_trash ? "_trash" : "",
                             current_credentials.uuid,
                             type,
-                            get->trash ? "_trash" : "",
+                            table_trash ? "_trash" : "",
                             type,
-                            get->trash ? "_trash" : "",
+                            table_trash ? "_trash" : "",
                             type,
-                            get->trash ? "_trash" : "",
+                            table_trash ? "_trash" : "",
                             current_credentials.uuid,
                             current_credentials.uuid,
                             current_credentials.uuid,
                             permission_clause ? permission_clause : "");
+
+      if (get->trash && (strcasecmp (type, "task") == 0))
+        {
+          gchar *new;
+          new = g_strdup_printf (" (%ss.hidden = 2"
+                                 "  AND %s)",
+                                 type,
+                                 owned_clause);
+          g_free (owned_clause);
+          owned_clause = new;
+        }
 
       if (owner_filter && (strcmp (owner_filter, "any") == 0))
         filter_owned_clause = g_strdup (owned_clause);

@@ -1,5 +1,11 @@
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned): Apply task trash case on top of the
+	case for the regular tasks, so that permissions are consulted when
+	getting the trash.
+
+2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): Move general trash table case into the
 	cases for the regular tables, so that permissions are consulted when
 	getting the trash.
