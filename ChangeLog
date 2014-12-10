@@ -1,3 +1,11 @@
+2014-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (RESULT_ITERATOR_FILTER_COLUMNS)
+	(RESULT_ITERATOR_COLUMNS): Add solution_type column.
+	(RESULT_ITERATOR_COLUMN_COUNT): Increase to 28.
+	(init_result_iterator): Add columns report_id and solution_type
+	and case for sorting by solution_type.
+
 2014-12-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (where_owned): Apply task trash case on top of the

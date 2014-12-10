@@ -16023,7 +16023,7 @@ where_search_phrase (const char* search_phrase, int exact)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    NULL }
+    "solution_type", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -16076,10 +16076,12 @@ where_search_phrase (const char* search_phrase, int exact)
       "vulnerability" },                                                      \
     { "date" , NULL },                                                        \
     { "(SELECT uuid FROM reports WHERE id = report)", "report_id" },          \
+    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+      "solution_type" },                                                      \
     { NULL, NULL }                                                            \
   }
 
-#define RESULT_ITERATOR_COLUMN_COUNT 27
+#define RESULT_ITERATOR_COLUMN_COUNT 28
 
 #define RESULT_ITERATOR_COLUMNS_ARRAY                 \
       {                                               \
@@ -16337,6 +16339,30 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      auto_type_sql,
                                      new_severity_sql,
                                      auto_type_sql);
+      else if (strcmp (sort_field, "solution_type") == 0)
+        order_sql = g_strdup_printf (" ORDER BY"
+                                     " solution_type %s,"
+                                     " vulnerability,"
+                                     " order_port (port),"
+                                     " inet (host),"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " DESC,"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN %s"
+                                     "  ELSE %s"
+                                     "  END)"
+                                     " DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
       else
         order_sql = g_strdup_printf (" ORDER BY "
                                      " (CASE WHEN %s IS NULL"
@@ -16393,7 +16419,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " (SELECT name FROM nvts"
                              "  WHERE nvts.oid = results.nvt)"
                              "  AS vulnerability,"
-                             " date"
+                             " date,"
+                             " (SELECT uuid FROM reports"
+                             "  WHERE id = results.report) AS report_id,"
+                             " (SELECT solution_type FROM nvts"
+                             "  WHERE oid = nvt) AS solution_type"
                              " FROM results"
                              " WHERE results.report = %llu"
                              "%s"
@@ -16479,7 +16509,11 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " (SELECT name FROM nvts"
                              "  WHERE nvts.oid = results.nvt)"
                              "  AS vulnerability,"
-                             " date"
+                             " date,"
+                             " (SELECT uuid FROM reports"
+                             "  WHERE id = results.report) AS report_id,"
+                             " (SELECT solution_type FROM nvts"
+                             "  WHERE oid = nvt) AS solution_type"
                              " FROM results"
                              " WHERE id = %llu;",
                              severity_sql,
