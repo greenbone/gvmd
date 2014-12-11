@@ -50095,11 +50095,13 @@ manage_delete_user (GSList *log_config, const gchar *database,
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Location of manage database.
+ * @param[in]  role_name   Role name.
  *
  * @return 0 success, -1 error.
  */
 int
-manage_get_users (GSList *log_config, const gchar *database)
+manage_get_users (GSList *log_config, const gchar *database,
+                  const gchar* role_name)
 {
   iterator_t users;
   const gchar *db;
@@ -50118,7 +50120,29 @@ manage_get_users (GSList *log_config, const gchar *database)
 
   init_manage_process (0, db);
 
-  init_iterator (&users, "SELECT name FROM users;");
+  if (role_name)
+    {
+      role_t role;
+      if (find_role_by_name (role_name, &role))
+        {
+          cleanup_manage_process (TRUE);
+          printf ("Internal Error.\n");
+          return -1;
+        }
+      if (role == 0)
+        {
+          cleanup_manage_process (TRUE);
+          printf ("Failed to find role.\n");
+          return -1;
+        }
+      init_iterator (&users,
+                     "SELECT name FROM users"
+                     " WHERE id IN (SELECT user FROM role_users"
+                     "              WHERE role = %llu);",
+                     role);
+    }
+  else
+    init_iterator (&users, "SELECT name FROM users;");
   while (next (&users))
     printf ("%s\n", iterator_string (&users, 0));
   cleanup_iterator (&users);

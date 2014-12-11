@@ -1196,7 +1196,7 @@ main (int argc, char** argv)
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },
         { "rebuild", '\0', 0, G_OPTION_ARG_NONE, &rebuild_nvt_cache, "Rebuild the NVT cache and exit.", NULL },
-        { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user.", "<role>" },
+        { "role", '\0', 0, G_OPTION_ARG_STRING, &role, "Role for --create-user and --get-users.", "<role>" },
         { "update", 'u', 0, G_OPTION_ARG_NONE, &update_nvt_cache, "Update the NVT cache and exit.", NULL },
         { "user", '\0', 0, G_OPTION_ARG_STRING, &user, "User for --new-password.", "<username>" },
         { "gnutls-priorities", '\0', 0, G_OPTION_ARG_STRING, &gnutls_priorities, "Sets the GnuTLS priorities for the Manager socket.", "<priorities-string>" },
@@ -1454,7 +1454,7 @@ main (int argc, char** argv)
   if (get_users)
     {
       /* List the users and then exit. */
-      switch (manage_get_users (log_config, database))
+      switch (manage_get_users (log_config, database, role))
         {
           case 0:
             free_log_configuration (log_config);

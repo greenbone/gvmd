@@ -1,3 +1,13 @@
+2014-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make --role apply to --get-users too.
+
+	* src/manage_sql.c (manage_get_users): Add role_name arg.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/openvasmd.c (main): Pass role to manage_get_users too.
+
 2014-12-11  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Include CVSS score
