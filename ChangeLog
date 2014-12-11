@@ -1,3 +1,8 @@
+2014-12-11  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl: Include CVSS score
+	as severity for vulnerabilities as well.
+
 2014-12-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (RESULT_ITERATOR_FILTER_COLUMNS)

@@ -703,6 +703,12 @@ CIS</value>
           <xsl:value-of select="threat"/>
         </value>
       </syncAttribute>
+      <syncAttribute>
+        <name>gsm_ism_vulnerability_cvss</name>
+        <value>
+          <xsl:value-of select="severity"/>
+        </value>
+      </syncAttribute>
       <extId><xsl:value-of select="$task_id"/>-<xsl:value-of select="nvt/@oid"/>-vulnerability</extId>
       <extObjectType>gsm_ism_vulnerability</extObjectType>
     </children>
