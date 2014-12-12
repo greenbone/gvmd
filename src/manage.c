@@ -1774,8 +1774,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           trim_report (last_stopped_report);
           last_stopped_report = 0;
         }
-      else switch (omp_resume_stopped_task_report (session, slave_task_uuid,
-                                                   &slave_report_uuid))
+      else switch (omp_resume_task_report (session, slave_task_uuid,
+                                           &slave_report_uuid))
         {
           case 0:
             if (slave_report_uuid == NULL)
@@ -3516,7 +3516,7 @@ stop_task (const char *task_id)
 }
 
 /**
- * @brief Resume a stopped task.
+ * @brief Resume a task.
  *
  * @param[in]   task_id    Task UUID.
  * @param[out]  report_id  If successful, ID of the resultant report.
@@ -3525,23 +3525,23 @@ stop_task (const char *task_id)
  *         start_task error.
  */
 int
-resume_stopped_task (const char *task_id, char **report_id)
+resume_task (const char *task_id, char **report_id)
 {
   task_t task;
   task_status_t run_status;
 
-  if (user_may ("resume_stopped_task") == 0)
+  if (user_may ("resume_task") == 0)
     return 99;
 
   task = 0;
-  if (find_task_with_permission (task_id, &task, "resume_stopped_task"))
+  if (find_task_with_permission (task_id, &task, "resume_task"))
     return -1;
   if (task == 0)
     return 3;
 
   run_status = task_run_status (task);
   if (run_status == TASK_STATUS_STOPPED)
-    return run_task (task_id, report_id, 1, "resume_stopped_task");
+    return run_task (task_id, report_id, 1, "resume_task");
   return 22;
 }
 

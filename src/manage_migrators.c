@@ -9790,6 +9790,43 @@ migrate_138_to_139 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 139 to version 140.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_139_to_140 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 139. */
+
+  if (manage_db_version () != 139)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("UPDATE permissions SET"
+       " name = 'resume_task'"
+       " WHERE name = 'resume_stopped_task';");
+
+  sql ("UPDATE permissions_trash SET"
+       " name = 'resume_task'"
+       " WHERE name = 'resume_stopped_task';");
+
+  /* Set the database version to 140. */
+
+  set_db_version (140);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
@@ -9941,6 +9978,7 @@ static migrator_t database_migrators[]
     {137, migrate_136_to_137},
     {138, migrate_137_to_138},
     {139, migrate_138_to_139},
+    {140, migrate_139_to_140},
     /* End marker. */
     {-1, NULL}};
 

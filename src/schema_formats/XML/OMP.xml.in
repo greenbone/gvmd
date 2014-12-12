@@ -2037,7 +2037,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_user</c>
           <c>restore</c>
           <c>resume_or_start_task</c>
-          <c>resume_stopped_task</c>
+          <c>resume_task</c>
           <c>run_wizard</c>
           <c>start_task</c>
           <c>stop_task</c>
@@ -2163,7 +2163,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_user</r>
             <r>restore</r>
             <r>resume_or_start_task</r>
-            <r>resume_stopped_task</r>
+            <r>resume_task</r>
             <r>run_wizard</r>
             <r>start_task</r>
             <r>stop_task</r>
@@ -18457,7 +18457,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_USER            Modify a user.
             RESTORE                Restore a resource.
             RESUME_OR_START_TASK   Resume task if stopped, else start task.
-            RESUME_STOPPED_TASK    Resume a stopped task.
+            RESUME_TASK            Resume a task.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
             STOP_TASK              Stop a running task.
@@ -20810,11 +20810,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>resume_stopped_task</name>
-    <summary>Resume a stopped task</summary>
+    <name>resume_task</name>
+    <summary>Resume a task</summary>
     <description>
       <p>
-        The client uses the resume_stopped_task command to manually resume a
+        The client uses the resume_task command to manually resume a
         stopped task.
       </p>
     </description>
@@ -20840,13 +20840,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
     </response>
     <example>
-      <summary>Resume a stopped task</summary>
+      <summary>Resume a task</summary>
       <request>
-        <resume_stopped_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </resume_stopped_task>
+        <resume_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </resume_task>
       </request>
       <response>
-        <resume_stopped_task_response status="200" status_text="OK"/>
+        <resume_task_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
@@ -21277,6 +21277,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <p>
         The task pausing feature has been removed and thus, the PAUSE_TASK and
         RESUME_PAUSED_TASK commands don't exist anymore.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>RESUME_STOPPED_TASK, RESUME_TASK</command>
+    <summary>RESUME_STOPPED_TASK renamed to RESUME_TASK</summary>
+    <description>
+      <p>
+        The resuming of tasks is now done via the new command RESUME_TASK,
+	which is the former RESUME_STOPPED_TASK. There is no other resumable
+	status than "stopped" anymore and thus the command names are
+        consolidated for consistency and to avoid confusion.
       </p>
     </description>
     <version>6.0</version>

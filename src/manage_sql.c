@@ -401,7 +401,7 @@ command_t omp_commands[]
     {"MODIFY_USER", "Modify a user."},
     {"RESTORE", "Restore a resource."},
     {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
-    {"RESUME_STOPPED_TASK", "Resume a stopped task."},
+    {"RESUME_TASK", "Resume a stopped task."},
     {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
@@ -445,7 +445,7 @@ gchar *
 omp_command_type (const char* name)
 {
   if (strcmp (name, "resume_or_start_task") == 0
-      || strcmp (name, "resume_stopped_task") == 0)
+      || strcmp (name, "resume_task") == 0)
     return g_strdup ("task");
 
   const char *under;

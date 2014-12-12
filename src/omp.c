@@ -3873,12 +3873,12 @@ resume_or_start_task_data_reset (resume_or_start_task_data_t *data)
 }
 
 /**
- * @brief Command data for the resume_stopped_task command.
+ * @brief Command data for the resume_task command.
  */
 typedef struct
 {
-  char *task_id;   ///< ID of stopped task to resume.
-} resume_stopped_task_data_t;
+  char *task_id;   ///< ID of task to resume.
+} resume_task_data_t;
 
 /**
  * @brief Reset command data.
@@ -3886,11 +3886,11 @@ typedef struct
  * @param[in]  data  Command data.
  */
 static void
-resume_stopped_task_data_reset (resume_stopped_task_data_t *data)
+resume_task_data_reset (resume_task_data_t *data)
 {
   free (data->task_id);
 
-  memset (data, 0, sizeof (resume_stopped_task_data_t));
+  memset (data, 0, sizeof (resume_task_data_t));
 }
 
 /**
@@ -4162,7 +4162,7 @@ typedef union
   modify_user_data_t modify_user;                     ///< modify_user
   restore_data_t restore;                             ///< restore
   resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
-  resume_stopped_task_data_t resume_stopped_task;     ///< resume_stopped_task
+  resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
   test_alert_data_t test_alert;                       ///< test_alert
@@ -4765,10 +4765,10 @@ resume_or_start_task_data_t *resume_or_start_task_data
  = (resume_or_start_task_data_t*) &(command_data.resume_or_start_task);
 
 /**
- * @brief Parser callback data for RESUME_STOPPED_TASK.
+ * @brief Parser callback data for RESUME_TASK.
  */
-resume_stopped_task_data_t *resume_stopped_task_data
- = (resume_stopped_task_data_t*) &(command_data.resume_stopped_task);
+resume_task_data_t *resume_task_data
+ = (resume_task_data_t*) &(command_data.resume_task);
 
 /**
  * @brief Parser callback data for START_TASK.
@@ -5415,7 +5415,7 @@ typedef enum
   CLIENT_MODIFY_USER_SOURCES_SOURCE,
   CLIENT_RESTORE,
   CLIENT_RESUME_OR_START_TASK,
-  CLIENT_RESUME_STOPPED_TASK,
+  CLIENT_RESUME_TASK,
   CLIENT_RUN_WIZARD,
   CLIENT_RUN_WIZARD_MODE,
   CLIENT_RUN_WIZARD_NAME,
@@ -7605,11 +7605,11 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &resume_or_start_task_data->task_id);
             set_client_state (CLIENT_RESUME_OR_START_TASK);
           }
-        else if (strcasecmp ("RESUME_STOPPED_TASK", element_name) == 0)
+        else if (strcasecmp ("RESUME_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
-                              &resume_stopped_task_data->task_id);
-            set_client_state (CLIENT_RESUME_STOPPED_TASK);
+                              &resume_task_data->task_id);
+            set_client_state (CLIENT_RESUME_TASK);
           }
         else if (strcasecmp ("RUN_WIZARD", element_name) == 0)
           {
@@ -25156,8 +25156,8 @@ create_task_fail:
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
-      case CLIENT_RESUME_STOPPED_TASK:
-        if (resume_stopped_task_data->task_id)
+      case CLIENT_RESUME_TASK:
+        if (resume_task_data->task_id)
           {
             if (forked == 2)
               /* Prevent the forked child from forking again, as then both
@@ -25166,20 +25166,19 @@ create_task_fail:
             else
               {
                 char *report_id;
-                switch (resume_stopped_task (resume_stopped_task_data->task_id,
-                                             &report_id))
+                switch (resume_task (resume_task_data->task_id, &report_id))
                   {
                     case 0:
                       {
                         gchar *msg;
                         msg = g_strdup_printf
-                               ("<resume_stopped_task_response"
+                               ("<resume_task_response"
                                 " status=\"" STATUS_OK_REQUESTED "\""
                                 " status_text=\""
                                 STATUS_OK_REQUESTED_TEXT
                                 "\">"
                                 "<report_id>%s</report_id>"
-                                "</resume_stopped_task_response>",
+                                "</resume_task_response>",
                                 report_id);
                         free (report_id);
                         if (send_to_client (msg,
@@ -25194,23 +25193,23 @@ create_task_fail:
                       }
                       forked = 1;
                       log_event ("task", "Task",
-                                 resume_stopped_task_data->task_id,
+                                 resume_task_data->task_id,
                                  "resumed");
                       break;
                     case 1:
                       SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                       (XML_ERROR_SYNTAX ("resume_task",
                                           "Task is active already"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case 22:
                       SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                       (XML_ERROR_SYNTAX ("resume_task",
                                           "Task must be in Stopped state"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case 2:
@@ -25223,17 +25222,17 @@ create_task_fail:
                       break;
                     case 4:
                       SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                       (XML_ERROR_SYNTAX ("resume_task",
                                           "Resuming not supported"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case 3:   /* Find failed. */
                       if (send_find_error_to_client
-                           ("resume_stopped_task",
+                           ("resume_task",
                             "task",
-                            resume_stopped_task_data->task_id,
+                            resume_task_data->task_id,
                             write_to_client,
                             write_to_client_data))
                         {
@@ -25243,10 +25242,10 @@ create_task_fail:
                       break;
                     case 99:
                       SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                       (XML_ERROR_SYNTAX ("resume_task",
                                           "Permission denied"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case -10:
@@ -25259,11 +25258,11 @@ create_task_fail:
                       break;
                     case -6:
                       SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_stopped_task",
+                       (XML_ERROR_SYNTAX ("resume_task",
                                           "There is already a task running in"
                                           " this process"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case -2:
@@ -25278,22 +25277,22 @@ create_task_fail:
                       /*@fallthrough@*/
                     case -1:
                     case -3: /* Failed to create report. */
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     case -5:
-                      SEND_XML_SERVICE_DOWN ("resume_stopped_task");
+                      SEND_XML_SERVICE_DOWN ("resume_task");
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                     default: /* Programming error. */
                       assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_stopped_task"));
+                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
                       log_event_fail ("task", "Task",
-                                      resume_stopped_task_data->task_id,
+                                      resume_task_data->task_id,
                                       "resumed");
                       break;
                   }
@@ -25301,10 +25300,10 @@ create_task_fail:
           }
         else
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("resume_stopped_task",
-                              "RESUME_STOPPED_TASK requires a task_id"
+           (XML_ERROR_SYNTAX ("resume_task",
+                              "RESUME_TASK requires a task_id"
                               " attribute"));
-        resume_stopped_task_data_reset (resume_stopped_task_data);
+        resume_task_data_reset (resume_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 
