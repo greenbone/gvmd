@@ -1,3 +1,8 @@
+2014-12-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Don't adjust type for
+	definitions_file parameter as it is now separated from normal files.
+
 2014-12-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make --role apply to --get-users too.

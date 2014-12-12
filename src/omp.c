@@ -12577,8 +12577,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_preference_iterator (&prefs, config);
                   while (next (&prefs))
                     {
-                      const char *name, *value;
-                      char *def = NULL, *type;
+                      const char *name, *value, *type;
+                      char *def = NULL;
 
                       name = preference_iterator_name (&prefs);
                       value = preference_iterator_value (&prefs);
@@ -12588,20 +12588,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                        * type.
                        */
                       if (!strcmp (name, "definitions_file"))
-                        {
-                          def = get_ovaldi_files ();
-                          type = g_strdup ("osp_ovaldi_file");
-                        }
-                      else
-                        type = g_strdup_printf
-                                ("osp_%s", preference_iterator_type (&prefs));
+                        def = get_ovaldi_files ();
+                      type = preference_iterator_type (&prefs);
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<preference><nvt oid=\"\"><name/></nvt>"
-                        "<name>%s</name><type>%s</type>"
+                        "<name>%s</name><type>osp_%s</type>"
                         "<value>%s</value><default>%s</default></preference>",
                         name, type, value, def ?: "");
                       g_free (def);
-                      g_free (type);
                     }
                   cleanup_iterator (&prefs);
 
