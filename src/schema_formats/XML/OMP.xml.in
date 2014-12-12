@@ -7,7 +7,7 @@ Authors:
 Matthew Mundell <matthew.mundell@greenbone.de>
 
 Copyright:
-Copyright (C) 2010 Greenbone Networks GmbH
+Copyright (C) 2010-2014 Greenbone Networks GmbH
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -6055,7 +6055,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_agents</name>
-    <summary>Get all agents</summary>
+    <summary>Get one or many agents</summary>
     <description>
       <p>
         The client uses the get_agents command to get agent information.
@@ -6414,7 +6414,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all agents</summary>
+      <summary>Get one or many agents</summary>
       <request>
         <get_agents></get_agents>
       </request>
@@ -6496,7 +6496,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_configs</name>
-    <summary>Get all configs</summary>
+    <summary>Get one or many configs</summary>
     <description>
       The client uses the get_configs command to get config information.
       If the command sent by the client was valid, the manager will
@@ -6972,7 +6972,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all configs</summary>
+      <summary>Get one or many configs</summary>
       <request>
         <get_configs></get_configs>
       </request>
@@ -7351,7 +7351,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <command>
     <name>get_alerts</name>
-    <summary>Get all alerts</summary>
+    <summary>Get one or many alerts</summary>
     <description>
       The client uses the get_alerts command to get alert information.
       If the command sent by the client was valid, the manager will
@@ -7676,7 +7676,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_filters</name>
-    <summary>Get all filters</summary>
+    <summary>Get one or many filters</summary>
     <description>
       The client uses the get_filters command to get filter information.
     </description>
@@ -8010,7 +8010,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all filters</summary>
+      <summary>Get one or many filters</summary>
       <request>
         <get_filters></get_filters>
       </request>
@@ -8066,7 +8066,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_groups</name>
-    <summary>Get all groups</summary>
+    <summary>Get one or many groups</summary>
     <description>
       The client uses the get_groups command to get group information.
     </description>
@@ -8365,7 +8365,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all groups</summary>
+      <summary>Get one or many groups</summary>
       <request>
         <get_groups></get_groups>
       </request>
@@ -9324,7 +9324,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_lsc_credentials</name>
-    <summary>Get all LSC credentials</summary>
+    <summary>Get one or many LSC credentials</summary>
     <description>
       The client uses the get_lsc_credentials command to get LSC credentials information.
       If the command sent by the client was valid, the manager will
@@ -9699,7 +9699,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all the LSC credentials</summary>
+      <summary>Get one or many the LSC credentials</summary>
       <request>
         <get_lsc_credentials></get_lsc_credentials>
       </request>
@@ -9801,7 +9801,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_notes</name>
-    <summary>Get all notes</summary>
+    <summary>Get one or many notes</summary>
     <description>
       The client uses the get_notes command to get note information.
       If the command sent by the client was valid, the manager will
@@ -10249,7 +10249,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all notes</summary>
+      <summary>Get one or many notes</summary>
       <request>
         <get_notes></get_notes>
       </request>
@@ -10324,7 +10324,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_nvts</name>
-    <summary>Get all NVTs</summary>
+    <summary>Get one or many NVTs</summary>
     <description>
       <p>
         The client uses the get_nvts command to get NVT information.
@@ -10859,7 +10859,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_overrides</name>
-    <summary>Get all overrides</summary>
+    <summary>Get one or many overrides</summary>
     <description>
       The client uses the get_overrides command to get override information.
       If the command sent by the client was valid, the manager will
@@ -11337,7 +11337,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all overrides</summary>
+      <summary>Get one or many overrides</summary>
       <request>
         <get_overrides></get_overrides>
       </request>
@@ -11404,7 +11404,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_permissions</name>
-    <summary>Get all permissions</summary>
+    <summary>Get one or many permissions</summary>
     <description>
       The client uses the get_permissions command to get permission information.
     </description>
@@ -11770,7 +11770,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all permissions</summary>
+      <summary>Get one or many permissions</summary>
       <request>
         <get_permissions></get_permissions>
       </request>
@@ -11818,7 +11818,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_port_lists</name>
-    <summary>Get all port lists</summary>
+    <summary>Get one or many port lists</summary>
     <description>
       <p>
         The client uses the get_port_lists command to get port list
@@ -12255,7 +12255,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_preferences</name>
-    <summary>Get all preferences</summary>
+    <summary>Get one or many preferences</summary>
     <description>
       <p>
         The client uses the get_preferences command to get preference information.
@@ -12424,7 +12424,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_reports</name>
-    <summary>Get all reports</summary>
+    <summary>Get one or many reports</summary>
     <description>
       <p>
         The client uses the get_reports command to get report information.
@@ -12887,7 +12887,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_report_formats</name>
-    <summary>Get all report formats</summary>
+    <summary>Get one or many report formats</summary>
     <description>
       <p>
         The client uses the get_report_formats command to get report format
@@ -13915,7 +13915,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all results</summary>
+      <summary>Get one or many results</summary>
       <request>
         <get_results></get_results>
       </request>
@@ -14050,7 +14050,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_roles</name>
-    <summary>Get all roles</summary>
+    <summary>Get one or many roles</summary>
     <description>
       The client uses the get_roles command to get role information.
     </description>
@@ -14349,7 +14349,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all roles</summary>
+      <summary>Get one or many roles</summary>
       <request>
         <get_roles></get_roles>
       </request>
@@ -14397,7 +14397,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_scanners</name>
-    <summary>Get all scanners</summary>
+    <summary>Get one or many scanners</summary>
     <description>
       <p>
         The client uses the get_scanners command to get scanner information.
@@ -14781,7 +14781,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_schedules</name>
-    <summary>Get all schedules</summary>
+    <summary>Get one or many schedules</summary>
     <description>
       <p>
         The client uses the get_schedules command to get schedule information.
@@ -15213,7 +15213,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_settings</name>
-    <summary>Get all settings</summary>
+    <summary>Get one or many settings</summary>
     <description>
       <p>
         The client uses the get_settings command to get the settings.
@@ -15333,7 +15333,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all settings</summary>
+      <summary>Get one or many settings</summary>
       <request>
         <get_settings></get_settings>
       </request>
@@ -15351,7 +15351,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_slaves</name>
-    <summary>Get all slaves</summary>
+    <summary>Get one or many slaves</summary>
     <description>
       <p>
         The client uses the get_slaves command to get slave information.
@@ -15696,7 +15696,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all slaves, including task lists</summary>
+      <summary>Get one or many slaves, including task lists</summary>
       <request>
         <get_slaves tasks="1"></get_slaves>
       </request>
@@ -15728,7 +15728,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_system_reports</name>
-    <summary>Get all system reports</summary>
+    <summary>Get one or many system reports</summary>
     <description>
       <p>
         The client uses the get_system_reports command to get system reports.
@@ -15852,7 +15852,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_tags</name>
-    <summary>Get all tags</summary>
+    <summary>Get one or many tags</summary>
     <description>
       <p>
         The client uses the get_tags command to get tag information.
@@ -16136,7 +16136,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all tags</summary>
+      <summary>Get one or many tags</summary>
       <request>
         <get_tags></get_tags>
       </request>
@@ -16165,7 +16165,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_targets</name>
-    <summary>Get all targets</summary>
+    <summary>Get one or many targets</summary>
     <description>
       The client uses the get_targets command to get target information.
     </description>
@@ -16637,7 +16637,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all targets</summary>
+      <summary>Get one or many targets</summary>
       <request>
         <get_targets></get_targets>
       </request>
@@ -16711,7 +16711,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_tasks</name>
-    <summary>Get all tasks</summary>
+    <summary>Get one or many tasks</summary>
     <description>
       <p>
         The client uses the get_tasks command to get task information.
@@ -17562,7 +17562,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
     </response>
     <example>
-      <summary>Get all tasks</summary>
+      <summary>Get one or many tasks</summary>
       <request>
         <get_tasks></get_tasks>
       </request>
@@ -17812,7 +17812,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
   </command>
   <command>
     <name>get_users</name>
-    <summary>Get all users</summary>
+    <summary>Get one or many users</summary>
     <description>
       <p>
         The client uses the "get_users" command to retrieve the list of user
@@ -18403,34 +18403,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             DESCRIBE_FEED          Get details of the NVT feed this Manager uses.
             DESCRIBE_SCAP          Get details of the SCAP feed this Manager uses.
             EMPTY_TRASHCAN         Empty the trashcan.
-            GET_AGENTS             Get all agents.
-            GET_ALERTS             Get all alerts.
-            GET_CONFIGS            Get all configs.
-            GET_FILTERS            Get all filters.
-            GET_GROUPS             Get all groups.
+            GET_AGENTS             Get one or many agents.
+            GET_ALERTS             Get one or many alerts.
+            GET_CONFIGS            Get one or many configs.
+            GET_FILTERS            Get one or many filters.
+            GET_GROUPS             Get one or many groups.
             GET_INFO               Get raw information for a given item.
-            GET_LSC_CREDENTIALS    Get all local security check credentials.
-            GET_NOTES              Get all notes.
+            GET_LSC_CREDENTIALS    Get one or many local security check credentials.
+            GET_NOTES              Get one or many notes.
             GET_NVTS               Get one or all available NVTs.
             GET_NVT_FAMILIES       Get a list of all NVT families.
             GET_NVT_FEED_VERSION   Get NVT feed version.
-            GET_OVERRIDES          Get all overrides.
-            GET_PERMISSIONS        Get all permissions.
-            GET_PORT_LISTS         Get all port lists.
+            GET_OVERRIDES          Get one or many overrides.
+            GET_PERMISSIONS        Get one or many permissions.
+            GET_PORT_LISTS         Get one or many port lists.
             GET_PREFERENCES        Get preferences for all available NVTs.
-            GET_REPORTS            Get all reports.
-            GET_REPORT_FORMATS     Get all report formats.
+            GET_REPORTS            Get one or many reports.
+            GET_REPORT_FORMATS     Get one or many report formats.
             GET_RESULTS            Get results.
-            GET_ROLES              Get all roles.
-            GET_SCANNERS           Get all scanners.
-            GET_SCHEDULES          Get all schedules.
-            GET_SETTINGS           Get all settings.
-            GET_SLAVES             Get all slaves.
-            GET_SYSTEM_REPORTS     Get all system reports.
-            GET_TAGS               Get all tags.
-            GET_TARGETS            Get all targets.
-            GET_TASKS              Get all tasks.
-            GET_USERS              Get all users.
+            GET_ROLES              Get one or many roles.
+            GET_SCANNERS           Get one or many scanners.
+            GET_SCHEDULES          Get one or many schedules.
+            GET_SETTINGS           Get one or many settings.
+            GET_SLAVES             Get one or many slaves.
+            GET_SYSTEM_REPORTS     Get one or many system reports.
+            GET_TAGS               Get one or many tags.
+            GET_TARGETS            Get one or many targets.
+            GET_TASKS              Get one or many tasks.
+            GET_USERS              Get one or many users.
             GET_VERSION            Get the OpenVAS Manager Protocol version.
             HELP                   Get this help text.
             MODIFY_AGENT           Modify an existing agent.

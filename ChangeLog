@@ -1,3 +1,8 @@
+2014-12-12  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in: Replaced any "Get all" by
+	the more precise and less confusing phrase "Get one or many".
+
 2014-12-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (omp_xml_handle_end_element): Don't adjust type for
