@@ -210,6 +210,9 @@ gboolean
 find_role (const char *, group_t *);
 
 gboolean
+find_role_with_permission (const char *, role_t *, const char *);
+
+gboolean
 find_user (const char *uuid, user_t *user);
 
 static gboolean
@@ -565,6 +568,7 @@ member (GPtrArray *array, const char *string)
   return 0;
 }
 
+// FIX s/b in acl
 /**
  * @brief Test whether a user owns a resource.
  *
@@ -580,6 +584,7 @@ user_owns_trash_uuid (const char *resource, const char *uuid)
 
   assert (current_credentials.uuid);
 
+  // FIX super?
   ret = sql_int ("SELECT count(*) FROM %ss_trash"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
@@ -591,6 +596,7 @@ user_owns_trash_uuid (const char *resource, const char *uuid)
   return ret;
 }
 
+// FIX s/b in acl
 /**
  * @brief Test whether a user owns a resource.
  *
@@ -607,6 +613,7 @@ user_owns (const char *resource, const char *field, const char *value)
 
   assert (current_credentials.uuid);
 
+  // FIX super?
   ret = sql_int ("SELECT count(*) FROM %ss"
                  " WHERE %s = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
@@ -3526,8 +3533,8 @@ filter_clause (const char* type, const char* filter,
 #define GET_ITERATOR_COLUMNS(table)                                             \
   GET_ITERATOR_COLUMNS_PREFIX(""),                                              \
   {                                                                             \
-    "(SELECT name FROM users"                                                   \
-    " WHERE users.id = " G_STRINGIFY (table) ".owner)",                         \
+    "(SELECT name FROM users AS inner_users"                                    \
+    " WHERE inner_users.id = " G_STRINGIFY (table) ".owner)",                   \
     "_owner"                                                                    \
   },                                                                            \
   { "owner", NULL }
@@ -3878,6 +3885,67 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
 }
 
 /**
+ * @brief Find a resource given a UUID and a permission.
+ *
+ * @param[in]   type        Type of resource.
+ * @param[in]   name        Name of resource.
+ * @param[out]  resource    Resource return, 0 if succesfully failed to find
+ *                          resource.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+gboolean
+find_resource_by_name_with_permission (const char *type, const char *name,
+                                       resource_t *resource,
+                                       const char *permission)
+{
+  gchar *quoted_name;
+  assert (strcmp (type, "task"));
+  if (name == NULL)
+    return TRUE;
+  quoted_name = sql_quote (name);
+  // TODO should really check type
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss WHERE name = '%s'"
+                     " ORDER BY id DESC;",
+                     type,
+                     quoted_name))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          uuid = sql_string (0, 0,
+                             "SELECT uuid FROM %ss WHERE id = %llu;",
+                             type, resource);
+          if (user_has_access_uuid (type, uuid, permission, 0) == 0)
+            {
+              g_free (uuid);
+              g_free (quoted_name);
+              *resource = 0;
+              return FALSE;
+            }
+          g_free (uuid);
+        }
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
+
+/**
  * @brief Create a resource from an existing resource.
  *
  * @param[in]  type          Type of resource.
@@ -3900,7 +3968,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                     resource_t *old_resource)
 {
   gchar *quoted_name, *quoted_uuid, *uniquify, *command;
-  int named, admin_type;
+  int named;
   user_t owner;
   resource_t resource;
   resource_t new;
@@ -3957,10 +4025,6 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
                                 strcmp (type, "user") ? ' ' : '_');
   else
     uniquify = g_strdup ("name");
-  /* The special admin types are shared, so they always have NULL owner. */
-  admin_type = (strcmp (type, "group") == 0)
-               || (strcmp (type, "role") == 0)
-               || (strcmp (type, "user") == 0);
   if (named && comment && strlen (comment))
     {
       gchar *quoted_comment;
@@ -3968,15 +4032,13 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
       sql ("INSERT INTO %ss"
            " (uuid, owner, name, comment, creation_time, modification_time%s%s)"
            " SELECT make_uuid (),"
-           " %s%s%s,"
-           " %s%s%s, '%s', m_now (), m_now ()%s%s"
+           "        (SELECT id FROM users where users.uuid = '%s'),"
+           "        %s%s%s, '%s', m_now (), m_now ()%s%s"
            " FROM %ss WHERE uuid = '%s';",
            type,
            columns ? ", " : "",
            columns ? columns : "",
-           admin_type ? "" : "(SELECT id FROM users where users.uuid = '",
-           admin_type ? "NULL" : current_credentials.uuid,
-           admin_type ? "" : "')",
+           current_credentials.uuid,
            quoted_name ? "'" : "",
            quoted_name ? quoted_name : uniquify,
            quoted_name ? "'" : "",
@@ -3990,15 +4052,15 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else if (named)
     sql ("INSERT INTO %ss"
          " (uuid, owner, name%s, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s%s%s, %s%s%s%s, m_now (), m_now ()%s%s"
+         " SELECT make_uuid (),"
+         "        (SELECT id FROM users where users.uuid = '%s'),"
+         "        %s%s%s%s, m_now (), m_now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          type_has_comment (type) ? ", comment" : "",
          columns ? ", " : "",
          columns ? columns : "",
-         admin_type ? "" : "(SELECT id FROM users where users.uuid = '",
-         admin_type ? "NULL" : current_credentials.uuid,
-         admin_type ? "" : "')",
+         current_credentials.uuid,
          quoted_name ? "'" : "",
          quoted_name ? quoted_name : uniquify,
          quoted_name ? "'" : "",
@@ -4010,14 +4072,13 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
   else
     sql ("INSERT INTO %ss"
          " (uuid, owner, creation_time, modification_time%s%s)"
-         " SELECT make_uuid (), %s%s%s, m_now (), m_now ()%s%s"
+         " SELECT make_uuid (), (SELECT id FROM users where users.uuid = '%s'),"
+         "        m_now (), m_now ()%s%s"
          " FROM %ss WHERE uuid = '%s';",
          type,
          columns ? ", " : "",
          columns ? columns : "",
-         admin_type ? "" : "(SELECT id FROM users where users.uuid = '",
-         admin_type ? "NULL" : current_credentials.uuid,
-         admin_type ? "" : "')",
+         current_credentials.uuid,
          columns ? ", " : "",
          columns ? columns : "",
          type,
@@ -4030,14 +4091,13 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
        " (uuid, owner, name, comment, creation_time, modification_time,"
        "  resource_type, resource, resource_uuid, resource_location,"
        "  active, value)"
-       " SELECT make_uuid (), %s%s%s, name, comment, m_now (), m_now (),"
+       " SELECT make_uuid (), (SELECT id FROM users where users.uuid = '%s'),"
+       "        name, comment, m_now (), m_now (),"
        "        resource_type, %llu, (SELECT uuid FROM %ss WHERE id = %llu),"
        "        resource_location, active, value"
        " FROM tags WHERE resource_type = '%s' AND resource = %llu"
        "           AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-       admin_type ? "" : "(SELECT id FROM users where users.uuid = '",
-       admin_type ? "NULL" : current_credentials.uuid,
-       admin_type ? "" : "')",
+       current_credentials.uuid,
        new,
        type,
        new,
@@ -41887,6 +41947,22 @@ find_group (const char* uuid, group_t* group)
 }
 
 /**
+ * @brief Find a group for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of group.
+ * @param[out]  group       Group return, 0 if succesfully failed to find group.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find group), TRUE on error.
+ */
+gboolean
+find_group_with_permission (const char* uuid, group_t* group,
+                           const char *permission)
+{
+  return find_resource_with_permission ("group", uuid, group, permission, 0);
+}
+
+/**
  * @brief Create a group from an existing group.
  *
  * @param[in]  name       Name of new group.  NULL to copy from existing.
@@ -42095,8 +42171,11 @@ create_group (const char *group_name, const char *comment, const char *users,
   sql ("INSERT INTO groups"
        " (uuid, name, owner, comment, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), '%s', NULL, '%s', m_now (), m_now ());",
+       " (make_uuid (), '%s',"
+       "  (SELECT id FROM users WHERE uuid = '%s'),"
+       "  '%s', m_now (), m_now ());",
        quoted_group_name,
+       current_credentials.uuid,
        quoted_comment);
   g_free (quoted_comment);
   g_free (quoted_group_name);
@@ -42134,8 +42213,7 @@ delete_group (const char *group_id, int ultimate)
       return 99;
     }
 
-  /* Groups are owned collectively by the admins, hence no permission check. */
-  if (find_group (group_id, &group))
+  if (find_group_with_permission (group_id, &group, "delete_group"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -42446,8 +42524,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
   group = 0;
 
-  /* Groups are owned collectively by the admins, so no permission check. */
-  if (find_group (group_id, &group))
+  if (find_group_with_permission (group_id, &group, "modify_group"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -42644,6 +42721,7 @@ create_permission (const char *name_arg, const char *comment,
       && strcmp (resource_id, "0")
       && (((omp_command_takes_resource (name_arg) == 0)
            && strcasecmp (name_arg, "super"))
+          // FIX  leads to "permission does not accept a resource"
           /* Permission on users, groups and roles is limited, for now. */
           || strcasestr (name_arg, "_user")
           || strcasestr (name_arg, "_role")
@@ -42716,12 +42794,24 @@ create_permission (const char *name_arg, const char *comment,
       resource_type = NULL;
     }
 
-  if (strcasecmp (name, "super") == 0 && resource == 0)
+  if (strcasecmp (name, "super") == 0)
     {
-      g_free (name);
-      g_free (resource_type);
-      sql ("ROLLBACK;");
-      return 3;
+      if (resource == 0)
+        {
+          g_free (name);
+          g_free (resource_type);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
+      if ((user_is_owner (resource_type, resource_id) == 0)
+          && (user_can_super_everyone (current_credentials.uuid) == 0))
+        {
+          g_free (name);
+          g_free (resource_type);
+          sql ("ROLLBACK;");
+          return 99;
+        }
     }
 
   /* For simplicity refuse to make permissions on permissions. */
@@ -45304,8 +45394,7 @@ delete_role (const char *role_id, int ultimate)
       return 99;
     }
 
-  /* Roles are owned collectively by the admins, hence no permission check. */
-  if (find_role (role_id, &role))
+  if (find_role_with_permission (role_id, &role, "delete_role"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -45448,6 +45537,22 @@ find_role (const char* uuid, role_t* role)
 }
 
 /**
+ * @brief Find a role for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of role.
+ * @param[out]  role        Role return, 0 if succesfully failed to find role.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find role), TRUE on error.
+ */
+gboolean
+find_role_with_permission (const char* uuid, role_t* role,
+                           const char *permission)
+{
+  return find_resource_with_permission ("role", uuid, role, permission, 0);
+}
+
+/**
  * @brief Find a role given a name.
  *
  * @param[in]   name  A role name.
@@ -45583,8 +45688,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 
   role = 0;
 
-  /* Roles are owned collectively by the admins, so no permission check. */
-  if (find_role (role_id, &role))
+  if (find_role_with_permission (role_id, &role, "modify_role"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -50289,6 +50393,22 @@ manage_set_password (GSList *log_config, const gchar *database,
 }
 
 /**
+ * @brief Find a user for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of user.
+ * @param[out]  user        User return, 0 if succesfully failed to find user.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user_with_permission (const char* uuid, user_t* user,
+                           const char *permission)
+{
+  return find_resource_with_permission ("user", uuid, user, permission, 0);
+}
+
+/**
  * @brief Find a user given a UUID.
  *
  * @param[in]   uuid    UUID of user.
@@ -50300,6 +50420,22 @@ gboolean
 find_user (const char *uuid, user_t *user)
 {
   return find_resource ("user", uuid, user);
+}
+
+/**
+ * @brief Find a user given a name.
+ *
+ * @param[in]   name  A user name.
+ * @param[out]  user  User return, 0 if succesfully failed to find user.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+static gboolean
+find_user_by_name_with_permission (const char* name, user_t *user,
+                                   const char *permission)
+{
+  return find_resource_by_name_with_permission ("user", name, user, permission);
 }
 
 /**
@@ -50444,8 +50580,11 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
        " (uuid, owner, name, password, hosts, hosts_allow,"
        "  ifaces, ifaces_allow, method, creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), NULL, '%s', '%s', '%s', %i,"
+       " (make_uuid (),"
+       "  (SELECT id FROM users WHERE uuid = '%s'),"
+       "  '%s', '%s', '%s', %i,"
        "  '%s', %i, '%s', m_now (), m_now ());",
+       current_credentials.uuid,
        quoted_name,
        hash,
        quoted_hosts,
@@ -50646,7 +50785,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
       return 99;
     }
 
-  /* Users are owned collectively by the admins, hence no permission checks. */
   user = 0;
   if (user_id_arg)
     {
@@ -50657,13 +50795,13 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
           return 99;
         }
 
-      if (find_user (user_id_arg, &user))
+      if (find_user_with_permission (user_id_arg, &user, "delete_user"))
         {
           sql ("ROLLBACK;");
           return -1;
         }
     }
-  else if (find_user_by_name (name_arg, &user))
+  else if (find_user_by_name_with_permission (name_arg, &user, "delete_user"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -50719,6 +50857,9 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   cleanup_iterator (&tasks);
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
+
+  // FIX this should delete the users recursively
+  sql ("UPDATE users SET owner = NULL where owner = %llu;", user);
 
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
@@ -50929,17 +51070,16 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
       return 99;
     }
 
-  /* Users are owned collectively by the admins, so no permission check. */
   user = 0;
   if (user_id)
     {
-      if (find_user (user_id, &user))
+      if (find_user_with_permission (user_id, &user, "modify_user"))
         {
           sql ("ROLLBACK;");
           return -1;
         }
     }
-  else if (find_user_by_name (*name, &user))
+  else if (find_user_by_name_with_permission (*name, &user, "modify_user"))
     {
       sql ("ROLLBACK;");
       return -1;
@@ -50954,6 +51094,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
                      user);
 
   /* The only user that can edit a Super Admin is the Super Admin themself. */
+  // FIX user_can_super_everyone?
   if (user_is_super_admin (uuid) && strcmp (uuid, current_credentials.uuid))
     {
       g_free (uuid);

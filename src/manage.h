@@ -839,6 +839,9 @@ int
 user_may (const char *);
 
 extern int
+user_can_super_everyone (const char *);
+
+extern int
 user_can_everything (const char *);
 
 extern int

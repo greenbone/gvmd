@@ -1,10 +1,34 @@
+2014-12-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Introduce ownership of users, roles and groups.
+
+	* src/manage_acl.c (user_can_super_everyone, user_is_owner): New
+	functions.
+
+	* src/manage.h, src/manage_acl.h: Add headers accordingly.
+
+	* src/manage_sql.c (GET_ITERATOR_COLUMNS_PREFIX): Use alias for nested
+	users query.
+	(find_resource_by_name_with_permission, find_group_with_permission)
+	(find_role_with_permission, find_user_with_permission)
+	(find_user_by_name_with_permission): New functions.
+	(copy_resource_lock): Remove special case for admin types.
+	(create_group, create_user): Set owner.
+	(delete_group, modify_group, delete_role, modify_role)
+	(modify_user): Check permissions, now that there are owners.
+	(create_permission): Only allow creation of super permissions when the
+	user is the direct owner of the resource.  This limits users to giving
+	super permission on users/roles/groups that they created.
+	(delete_user): Check permissions, now that there are owners.  Make
+	children users shared by everyone, for now.
+
 2014-12-12  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	Rename the OMP command RESUME_STOPPED_TASK to RESUME_TASK
 	as the first consolidation step to have only a single
 	RESUME function.
 	This includes the name of the permission, hence increase
-	database version to 140 and aadjust permissions in the migrator. 
+	database version to 140 and aadjust permissions in the migrator.
 
 	* src/manage_sql.c (omp_commands): Rename RESUME_STOPPED_TASK
 	to RESUME_TASK.

@@ -87,6 +87,9 @@ int
 user_owns_result (const char *);
 
 int
+user_is_owner (const char *, const char *);
+
+int
 user_owns_uuid (const char *, const char *, int);
 
 int

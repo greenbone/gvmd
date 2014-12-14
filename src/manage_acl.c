@@ -80,6 +80,50 @@ user_may (const char *operation)
 }
 
 /**
+ * @brief Check whether a user is a Super Admin.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if user is a Super Admin, else 0.
+ */
+int
+user_can_super_everyone (const char *uuid)
+{
+  // FIX quote uuid
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE name = 'Super'"
+               /*                    Super on everyone. */
+               "                AND (resource = 0)"
+               "                AND ((subject_type = 'user'"
+               "                      AND subject"
+               "                          = (SELECT id FROM users"
+               "                             WHERE users.uuid = '%s'))"
+               "                     OR (subject_type = 'group'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT \"group\""
+               "                                 FROM group_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))"
+               "                     OR (subject_type = 'role'"
+               "                         AND subject"
+               "                             IN (SELECT DISTINCT role"
+               "                                 FROM role_users"
+               "                                 WHERE \"user\""
+               "                                       = (SELECT id"
+               "                                          FROM users"
+               "                                          WHERE users.uuid"
+               "                                                = '%s')))));",
+               uuid,
+               uuid,
+               uuid))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Test whether a user may perform any operation.
  *
  * @param[in]  user_id  UUID of user.
@@ -89,6 +133,7 @@ user_may (const char *operation)
 int
 user_can_everything (const char *user_id)
 {
+  // FIX quote user_id?
   return sql_int ("SELECT count(*) > 0 FROM permissions"
                   " WHERE resource = 0"
                   " AND ((subject_type = 'user'"
@@ -128,6 +173,7 @@ user_can_everything (const char *user_id)
 int
 user_has_super (const char *super_user_id, user_t other_user)
 {
+  // FIX quote super_user_id?
   if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE name = 'Super'"
                /*                    Super on everyone. */
@@ -285,6 +331,7 @@ user_owns_result (const char *uuid)
 
   assert (current_credentials.uuid);
 
+  // FIX super
   ret = sql_int ("SELECT count(*) FROM results, reports"
                  " WHERE results.uuid = '%s'"
                  " AND results.report = reports.id"
@@ -297,7 +344,39 @@ user_owns_result (const char *uuid)
 }
 
 /**
- * @brief Test whether a user owns a resource.
+ * @brief Test whether a user is the actual owner of a resource.
+ *
+ * @param[in]  type   Type of resource, for example "task".
+ * @param[in]  uuid   UUID of resource.
+ *
+ * @return 1 if user actually owns resource, else 0.
+ */
+int
+user_is_owner (const char *type, const char *uuid)
+{
+  int ret;
+  gchar *quoted_uuid;
+
+  assert (uuid && current_credentials.uuid);
+
+  quoted_uuid = g_strdup (uuid);
+  ret = sql_int ("SELECT count(*) FROM %ss"
+                 " WHERE uuid = '%s'"
+                 " AND owner = (SELECT users.id FROM users"
+                 "              WHERE users.uuid = '%s');",
+                 type,
+                 quoted_uuid,
+                 current_credentials.uuid);
+  g_free (quoted_uuid);
+
+  return ret;
+}
+
+/**
+ * @brief Test whether a user effectively owns a resource.
+ *
+ * A Super permissions can give a user effective ownership of another
+ * user's resource.
  *
  * @param[in]  type  Type of resource, for example "task".
  * @param[in]  uuid      UUID of resource.
@@ -329,7 +408,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                "                                  FROM role_users"
                "                                  WHERE \"user\""
                "                                        = (SELECT %ss.owner"
-               "                                           FROM %ss"
+               "                                           from %ss"
                "                                           WHERE uuid"
                "                                                 = '%s'))))"
                /*                    Super on other_user's group. */
@@ -427,6 +506,7 @@ user_has_access_uuid (const char *type, const char *uuid,
   if (!strcmp (current_credentials.uuid,  ""))
     return 1;
 
+  // FIX note that super case is done in here
   ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
