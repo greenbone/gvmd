@@ -1,5 +1,16 @@
 2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (user_owns): Check for SecInfo types first, because
+	the check is valid for users with Super too.
+	(user_owns_result): Remove.
+	(user_owns_uuid): Check for SecInfo types first, because the check is
+	valid for users with Super too.  Inline user_owns_result because this is
+	the only place it is called.
+
+	* src/manage_acl.h: Remove header accordingly.
+
+2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (SUPER_CLAUSE): New define.
 	(SUPER_CLAUSE_ARGS): New macro.
 	(user_owns): Rename "resource" arg to "type".  Add Super check.  Add

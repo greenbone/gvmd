@@ -413,18 +413,18 @@ user_owns (const char *type, const char *field, const char *value)
   assert (current_credentials.uuid);
   assert (type && strcmp (type, "result"));
 
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, field, value,
-                                  current_credentials.uuid)))
-    return 1;
-
   if ((strcmp (type, "nvt") == 0)
       || (strcmp (type, "cve") == 0)
       || (strcmp (type, "cpe") == 0)
       || (strcmp (type, "ovaldef") == 0)
       || (strcmp (type, "cert_bund_adv") == 0)
       || (strcmp (type, "dfn_cert_adv") == 0))
+    return 1;
+
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, field, value,
+                                  current_credentials.uuid)))
     return 1;
 
   ret = sql_int ("SELECT count(*) FROM %ss"
@@ -434,32 +434,6 @@ user_owns (const char *type, const char *field, const char *value)
                  type,
                  field,
                  value,
-                 current_credentials.uuid);
-
-  return ret;
-}
-
-/**
- * @brief Test whether a user owns a result.
- *
- * @param[in]  uuid      UUID of result.
- *
- * @return 1 if user owns result, else 0.
- */
-int
-user_owns_result (const char *uuid)
-{
-  int ret;
-
-  assert (current_credentials.uuid);
-
-  // FIX super
-  ret = sql_int ("SELECT count(*) FROM results, reports"
-                 " WHERE results.uuid = '%s'"
-                 " AND results.report = reports.id"
-                 " AND ((reports.owner IS NULL) OR (reports.owner ="
-                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
-                 uuid,
                  current_credentials.uuid);
 
   return ret;
@@ -513,15 +487,6 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 
   assert (current_credentials.uuid);
 
-  // FIX after next section?
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
-                                  current_credentials.uuid)))
-    return 1;
-
-  if (strcmp (type, "result") == 0)
-    return user_owns_result (uuid);
   if ((strcmp (type, "nvt") == 0)
       || (strcmp (type, "cve") == 0)
       || (strcmp (type, "cpe") == 0)
@@ -530,18 +495,33 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  ret = sql_int ("SELECT count(*) FROM %ss%s"
-                 " WHERE uuid = '%s'"
-                 "%s"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
-                 type,
-                 (strcmp (type, "task") && trash) ? "_trash" : "",
-                 uuid,
-                 (strcmp (type, "task")
-                   ? ""
-                   : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-                 current_credentials.uuid);
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
+                                  current_credentials.uuid)))
+    return 1;
+
+  if (strcmp (type, "result") == 0)
+    ret = sql_int ("SELECT count(*) FROM results, reports"
+                   " WHERE results.uuid = '%s'"
+                   " AND results.report = reports.id"
+                   " AND ((reports.owner IS NULL) OR (reports.owner ="
+                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   uuid,
+                   current_credentials.uuid);
+  else
+    ret = sql_int ("SELECT count(*) FROM %ss%s"
+                   " WHERE uuid = '%s'"
+                   "%s"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   type,
+                   (strcmp (type, "task") && trash) ? "_trash" : "",
+                   uuid,
+                   (strcmp (type, "task")
+                     ? ""
+                     : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+                   current_credentials.uuid);
 
   return ret;
 }
