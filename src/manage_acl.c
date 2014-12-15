@@ -326,8 +326,8 @@ user_is_user (const char *uuid)
   "                AND ((resource = 0)"                                   \
   /*                    Super on other_user. */                           \
   "                     OR ((resource_type = 'user')"                     \
-  "                         AND (resource = (SELECT %ss.owner"            \
-  "                                          FROM %ss"                    \
+  "                         AND (resource = (SELECT %ss%s.owner"          \
+  "                                          FROM %ss%s"                  \
   "                                          WHERE %s = '%s')))"          \
   /*                    Super on other_user's role. */                    \
   "                     OR ((resource_type = 'role')"                     \
@@ -335,8 +335,8 @@ user_is_user (const char *uuid)
   "                              IN (SELECT DISTINCT role"                \
   "                                  FROM role_users"                     \
   "                                  WHERE \"user\""                      \
-  "                                        = (SELECT %ss.owner"           \
-  "                                           from %ss"                   \
+  "                                        = (SELECT %ss%s.owner"         \
+  "                                           FROM %ss%s"                 \
   "                                           WHERE %s"                   \
   "                                                 = '%s'))))"           \
   /*                    Super on other_user's group. */                   \
@@ -345,8 +345,8 @@ user_is_user (const char *uuid)
   "                              IN (SELECT DISTINCT \"group\""           \
   "                                  FROM group_users"                    \
   "                                  WHERE \"user\""                      \
-  "                                        = (SELECT %ss.owner"           \
-  "                                           FROM %ss"                   \
+  "                                        = (SELECT %ss%s.owner"         \
+  "                                           FROM %ss%s"                 \
   "                                           WHERE %s = '%s')))))"       \
   "                AND ((subject_type = 'user'"                           \
   "                      AND subject"                                     \
@@ -379,21 +379,27 @@ user_is_user (const char *uuid)
  * @param[in]  value    Expected value of field.
  * @param[in]  user_id  UUID of user.
  */
-#define SUPER_CLAUSE_ARGS(type, field, value, user_id) \
-  type,                                                \
-  type,                                                \
-  field,                                               \
-  value,                                               \
-  type,                                                \
-  type,                                                \
-  field,                                               \
-  value,                                               \
-  type,                                                \
-  type,                                                \
-  field,                                               \
-  value,                                               \
-  user_id,                                             \
-  user_id,                                             \
+#define SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  field,                                                      \
+  value,                                                      \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  field,                                                      \
+  value,                                                      \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  type,                                                       \
+  trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
+  field,                                                      \
+  value,                                                      \
+  user_id,                                                    \
+  user_id,                                                    \
   user_id
 
 /**
@@ -424,7 +430,7 @@ user_owns (const char *type, const char *field, const char *value)
   if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE " SUPER_CLAUSE ");",
                SUPER_CLAUSE_ARGS (type, field, value,
-                                  current_credentials.uuid)))
+                                  current_credentials.uuid, 0)))
     return 1;
 
   ret = sql_int ("SELECT count(*) FROM %ss"
@@ -498,7 +504,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
   if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE " SUPER_CLAUSE ");",
                SUPER_CLAUSE_ARGS (type, "uuid", uuid,
-                                  current_credentials.uuid)))
+                                  current_credentials.uuid, 0)))
     return 1;
 
   if (strcmp (type, "result") == 0)
@@ -529,24 +535,30 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 /**
  * @brief Test whether a user owns a resource.
  *
- * @param[in]  resource  Type of resource, for example "task".
- * @param[in]  uuid      UUID of resource.
+ * @param[in]  type  Type of resource, for example "task".
+ * @param[in]  uuid  UUID of resource.
  *
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns_trash_uuid (const char *resource, const char *uuid)
+user_owns_trash_uuid (const char *type, const char *uuid)
 {
   int ret;
 
   assert (current_credentials.uuid);
+  assert (type && strcmp (type, "task"));
 
-  // FIX super?
+  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
+               "               WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
+                                  current_credentials.uuid, 1)))
+    return 1;
+
   ret = sql_int ("SELECT count(*) FROM %ss_trash"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
-                 resource,
+                 type,
                  uuid,
                  current_credentials.uuid);
 
