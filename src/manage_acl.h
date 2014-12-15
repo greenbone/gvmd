@@ -84,6 +84,9 @@ int
 user_is_observer (const char *);
 
 int
+user_owns (const char *, const char *, const char *);
+
+int
 user_owns_result (const char *);
 
 int
@@ -91,6 +94,9 @@ user_is_owner (const char *, const char *);
 
 int
 user_owns_uuid (const char *, const char *, int);
+
+int
+user_owns_trash_uuid (const char *resource, const char *uuid);
 
 int
 user_has_access_uuid (const char *, const char *, const char *, int);

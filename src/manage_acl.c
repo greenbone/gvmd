@@ -318,6 +318,35 @@ user_is_user (const char *uuid)
 }
 
 /**
+ * @brief Test whether a user owns a resource.
+ *
+ * @param[in]  resource  Type of resource, for example "report_format".
+ * @param[in]  field     Field to compare with value.
+ * @param[in]  value     Identifier value of resource.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+int
+user_owns (const char *resource, const char *field, const char *value)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  // FIX super?
+  ret = sql_int ("SELECT count(*) FROM %ss"
+                 " WHERE %s = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                 resource,
+                 field,
+                 value,
+                 current_credentials.uuid);
+
+  return ret;
+}
+
+/**
  * @brief Test whether a user owns a result.
  *
  * @param[in]  uuid      UUID of result.
@@ -478,6 +507,33 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                  (strcmp (type, "task")
                    ? ""
                    : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+                 current_credentials.uuid);
+
+  return ret;
+}
+
+/**
+ * @brief Test whether a user owns a resource.
+ *
+ * @param[in]  resource  Type of resource, for example "task".
+ * @param[in]  uuid      UUID of resource.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+int
+user_owns_trash_uuid (const char *resource, const char *uuid)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  // FIX super?
+  ret = sql_int ("SELECT count(*) FROM %ss_trash"
+                 " WHERE uuid = '%s'"
+                 " AND ((owner IS NULL) OR (owner ="
+                 " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                 resource,
+                 uuid,
                  current_credentials.uuid);
 
   return ret;

@@ -1,7 +1,16 @@
+2014-12-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (user_owns, user_owns_trash_uuid): New functions.
+	From manage_sql.c.
+
+	* src/manage_acl.h: Add header accordingly.
+
+	* src/manage_sql.c (user_owns, user_owns_trash_uuid): Remove.  Now in
+	manage_acl.c.
+
 2014-12-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
-	Remove support for the RESUME_OR_START_TASK and
-	CLIENT_RESUME_OR_START_TASK OMP commands.
+	Remove support for the RESUME_OR_START_TASK OMP command.
 
 	* src/omp.c (resume_or_start_task_data_t,
 	resume_or_start_task_data_reset, resume_or_start_task_data): Removed.
