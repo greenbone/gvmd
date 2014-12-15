@@ -1,4 +1,9 @@
-2014-12-14  Matthew Mundell <matthew.mundell@greenbone.net>
+2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): Correct command name in find
+	slave permissions.
+
+2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (user_owns, user_owns_trash_uuid): New functions.
 	From manage_sql.c.

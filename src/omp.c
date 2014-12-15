@@ -17200,7 +17200,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_slave_name = slave_name (slave);
                   if (find_slave_with_permission (task_slave_uuid,
                                                   &found,
-                                                  "get_slave"))
+                                                  "get_slaves"))
                     abort ();
 
                   slave_available = (found > 0);
@@ -21569,7 +21569,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (create_task_data->slave_id
               && find_slave_with_permission (create_task_data->slave_id,
                                              &slave,
-                                             "get_slave"))
+                                             "get_slaves"))
             {
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;
@@ -24568,7 +24568,7 @@ create_task_fail:
                     else if ((fail = find_slave_with_permission
                                       (modify_task_data->slave_id,
                                        &slave,
-                                       "get_slave")))
+                                       "get_slaves")))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
                     else if (slave == 0)
