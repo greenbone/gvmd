@@ -1,5 +1,10 @@
 2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_user): Use "user_can" function to include the
+	case of a Super Admin created via permission instead of role.
+
+2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (user_owns, user_owns_trash_uuid): Clarify doc.
 	(user_has_access_uuid): Note where super check is done.
 

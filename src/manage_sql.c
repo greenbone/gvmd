@@ -42661,7 +42661,7 @@ create_permission (const char *name_arg, const char *comment,
       && strcmp (resource_id, "0")
       && (((omp_command_takes_resource (name_arg) == 0)
            && strcasecmp (name_arg, "super"))
-          // FIX  leads to "permission does not accept a resource"
+          // FIX owner  leads to "permission does not accept a resource"
           /* Permission on users, groups and roles is limited, for now. */
           || strcasestr (name_arg, "_user")
           || strcasestr (name_arg, "_role")
@@ -50798,7 +50798,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
 
-  // FIX this should delete the users recursively
+  // FIX owner  this should delete the users recursively
   sql ("UPDATE users SET owner = NULL where owner = %llu;", user);
 
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
@@ -51034,8 +51034,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
                      user);
 
   /* The only user that can edit a Super Admin is the Super Admin themself. */
-  // FIX user_can_super_everyone?
-  if (user_is_super_admin (uuid) && strcmp (uuid, current_credentials.uuid))
+  if (user_can_super_everyone (uuid) && strcmp (uuid, current_credentials.uuid))
     {
       g_free (uuid);
       sql ("ROLLBACK;");
