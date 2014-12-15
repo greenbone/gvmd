@@ -403,7 +403,10 @@ user_is_user (const char *uuid)
   user_id
 
 /**
- * @brief Test whether a user owns a resource.
+ * @brief Test whether a user effectively owns a resource.
+ *
+ * A Super permissions can give a user effective ownership of another
+ * user's resource.
  *
  * @param[in]  type      Type of resource, for example "report_format".
  * @param[in]  field     Field to compare with value.
@@ -533,7 +536,10 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 }
 
 /**
- * @brief Test whether a user owns a resource.
+ * @brief Test whether a user effectively owns a resource.
+ *
+ * A Super permissions can give a user effective ownership of another
+ * user's resource.
  *
  * @param[in]  type  Type of resource, for example "task".
  * @param[in]  uuid  UUID of resource.
@@ -588,7 +594,7 @@ user_has_access_uuid (const char *type, const char *uuid,
   if (!strcmp (current_credentials.uuid,  ""))
     return 1;
 
-  // FIX note that super case is done in here
+  /* The Super case is checked here. */
   ret = user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
