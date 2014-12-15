@@ -318,27 +318,120 @@ user_is_user (const char *uuid)
 }
 
 /**
+ * @brief Super clause.
+ */
+#define SUPER_CLAUSE                                                      \
+  "                name = 'Super'"                                        \
+  /*                    Super on everyone. */                             \
+  "                AND ((resource = 0)"                                   \
+  /*                    Super on other_user. */                           \
+  "                     OR ((resource_type = 'user')"                     \
+  "                         AND (resource = (SELECT %ss.owner"            \
+  "                                          FROM %ss"                    \
+  "                                          WHERE %s = '%s')))"          \
+  /*                    Super on other_user's role. */                    \
+  "                     OR ((resource_type = 'role')"                     \
+  "                         AND (resource"                                \
+  "                              IN (SELECT DISTINCT role"                \
+  "                                  FROM role_users"                     \
+  "                                  WHERE \"user\""                      \
+  "                                        = (SELECT %ss.owner"           \
+  "                                           from %ss"                   \
+  "                                           WHERE %s"                   \
+  "                                                 = '%s'))))"           \
+  /*                    Super on other_user's group. */                   \
+  "                     OR ((resource_type = 'group')"                    \
+  "                         AND (resource"                                \
+  "                              IN (SELECT DISTINCT \"group\""           \
+  "                                  FROM group_users"                    \
+  "                                  WHERE \"user\""                      \
+  "                                        = (SELECT %ss.owner"           \
+  "                                           FROM %ss"                   \
+  "                                           WHERE %s = '%s')))))"       \
+  "                AND ((subject_type = 'user'"                           \
+  "                      AND subject"                                     \
+  "                          = (SELECT id FROM users"                     \
+  "                             WHERE users.uuid = '%s'))"                \
+  "                     OR (subject_type = 'group'"                       \
+  "                         AND subject"                                  \
+  "                             IN (SELECT DISTINCT \"group\""            \
+  "                                 FROM group_users"                     \
+  "                                 WHERE \"user\""                       \
+  "                                       = (SELECT id"                   \
+  "                                          FROM users"                  \
+  "                                          WHERE users.uuid"            \
+  "                                                = '%s')))"             \
+  "                     OR (subject_type = 'role'"                        \
+  "                         AND subject"                                  \
+  "                             IN (SELECT DISTINCT role"                 \
+  "                                 FROM role_users"                      \
+  "                                 WHERE \"user\""                       \
+  "                                       = (SELECT id"                   \
+  "                                          FROM users"                  \
+  "                                          WHERE users.uuid"            \
+  "                                                = '%s'))))"
+
+/**
+ * @brief Super clause arguments.
+ *
+ * @param[in]  type     Type of resource.
+ * @param[in]  field    Field to compare.  Typically "uuid".
+ * @param[in]  value    Expected value of field.
+ * @param[in]  user_id  UUID of user.
+ */
+#define SUPER_CLAUSE_ARGS(type, field, value, user_id) \
+  type,                                                \
+  type,                                                \
+  field,                                               \
+  value,                                               \
+  type,                                                \
+  type,                                                \
+  field,                                               \
+  value,                                               \
+  type,                                                \
+  type,                                                \
+  field,                                               \
+  value,                                               \
+  user_id,                                             \
+  user_id,                                             \
+  user_id
+
+/**
  * @brief Test whether a user owns a resource.
  *
- * @param[in]  resource  Type of resource, for example "report_format".
+ * @param[in]  type      Type of resource, for example "report_format".
  * @param[in]  field     Field to compare with value.
  * @param[in]  value     Identifier value of resource.
  *
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns (const char *resource, const char *field, const char *value)
+user_owns (const char *type, const char *field, const char *value)
 {
   int ret;
 
   assert (current_credentials.uuid);
+  assert (type && strcmp (type, "result"));
 
-  // FIX super?
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, field, value,
+                                  current_credentials.uuid)))
+    return 1;
+
+  if ((strcmp (type, "nvt") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "cpe") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0))
+    return 1;
+
   ret = sql_int ("SELECT count(*) FROM %ss"
                  " WHERE %s = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
-                 resource,
+                 type,
                  field,
                  value,
                  current_credentials.uuid);
@@ -420,70 +513,11 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
 
   assert (current_credentials.uuid);
 
-  if (sql_int (/* The user has super permission on everyone. */
-               " SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND ((resource = 0)"
-               /*                    Super on other_user. */
-               "                     OR ((resource_type = 'user')"
-               "                         AND (resource = (SELECT %ss.owner"
-               "                                          FROM %ss"
-               "                                          WHERE uuid = '%s')))"
-               /*                    Super on other_user's role. */
-               "                     OR ((resource_type = 'role')"
-               "                         AND (resource"
-               "                              IN (SELECT DISTINCT role"
-               "                                  FROM role_users"
-               "                                  WHERE \"user\""
-               "                                        = (SELECT %ss.owner"
-               "                                           from %ss"
-               "                                           WHERE uuid"
-               "                                                 = '%s'))))"
-               /*                    Super on other_user's group. */
-               "                     OR ((resource_type = 'group')"
-               "                         AND (resource"
-               "                              IN (SELECT DISTINCT \"group\""
-               "                                  FROM group_users"
-               "                                  WHERE \"user\""
-               "                                        = (SELECT %ss.owner"
-               "                                           FROM %ss"
-               "                                           WHERE uuid"
-               "                                                 = '%s')))))"
-               "                AND ((subject_type = 'user'"
-               "                      AND subject"
-               "                          = (SELECT id FROM users"
-               "                             WHERE users.uuid = '%s'))"
-               "                     OR (subject_type = 'group'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT \"group\""
-               "                                 FROM group_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))"
-               "                     OR (subject_type = 'role'"
-               "                         AND subject"
-               "                             IN (SELECT DISTINCT role"
-               "                                 FROM role_users"
-               "                                 WHERE \"user\""
-               "                                       = (SELECT id"
-               "                                          FROM users"
-               "                                          WHERE users.uuid"
-               "                                                = '%s')))));",
-               type,
-               type,
-               uuid,
-               type,
-               type,
-               uuid,
-               type,
-               type,
-               uuid,
-               current_credentials.uuid,
-               current_credentials.uuid,
-               current_credentials.uuid))
+  // FIX after next section?
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
+                                  current_credentials.uuid)))
     return 1;
 
   if (strcmp (type, "result") == 0)
