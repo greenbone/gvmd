@@ -403,7 +403,6 @@ command_t omp_commands[]
     {"MODIFY_TASK", "Update an existing task."},
     {"MODIFY_USER", "Modify a user."},
     {"RESTORE", "Restore a resource."},
-    {"RESUME_OR_START_TASK", "Resume task if stopped, else start task."},
     {"RESUME_TASK", "Resume a stopped task."},
     {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
@@ -447,8 +446,7 @@ valid_omp_command (const char* name)
 gchar *
 omp_command_type (const char* name)
 {
-  if (strcmp (name, "resume_or_start_task") == 0
-      || strcmp (name, "resume_task") == 0)
+  if (strcmp (name, "resume_task") == 0)
     return g_strdup ("task");
 
   const char *under;
@@ -11954,7 +11952,7 @@ init_manage_internal (GSList *log_config,
    *                             init_manage_process
    *                         serve_client
    *                     fork two
-   *                         omp_auth, omp_resume_or_start_task
+   *                         omp_auth, omp_start_task_report, omp_resume_task_report. 
    *     --rebuild --update
    *         rebuild_nvt_cache_retry
    *             forks update_or_rebuild_nvt_cache

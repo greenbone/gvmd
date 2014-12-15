@@ -821,9 +821,6 @@ stop_task (const char *);
 int
 resume_task (const char *, char **);
 
-int
-resume_or_start_task (const char *, char **);
-
 /* Iteration. */
 
 void

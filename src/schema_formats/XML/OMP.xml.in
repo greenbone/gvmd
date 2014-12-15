@@ -2036,7 +2036,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <c>modify_task</c>
           <c>modify_user</c>
           <c>restore</c>
-          <c>resume_or_start_task</c>
           <c>resume_task</c>
           <c>run_wizard</c>
           <c>start_task</c>
@@ -2162,7 +2161,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <r>modify_task</r>
             <r>modify_user</r>
             <r>restore</r>
-            <r>resume_or_start_task</r>
             <r>resume_task</r>
             <r>run_wizard</r>
             <r>start_task</r>
@@ -18456,7 +18454,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             MODIFY_TASK            Update an existing task.
             MODIFY_USER            Modify a user.
             RESTORE                Restore a resource.
-            RESUME_OR_START_TASK   Resume task if stopped, else start task.
             RESUME_TASK            Resume a task.
             RUN_WIZARD             Run a wizard.
             START_TASK             Manually start an existing task.
@@ -20768,48 +20765,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </example>
   </command>
   <command>
-    <name>resume_or_start_task</name>
-    <summary>Resume task if stopped, else start task</summary>
-    <description>
-      <p>
-        The client uses the resume_or_start_task command to manually start
-        an existing task, ensuring that the task will resume from its
-        previous position if the task is in the Stopped state.
-      </p>
-    </description>
-    <pattern>
-      <attrib>
-        <name>task_id</name>
-        <type>uuid</type>
-        <required>1</required>
-      </attrib>
-    </pattern>
-    <response>
-      <pattern>
-        <attrib>
-          <name>status</name>
-          <type>status</type>
-          <required>1</required>
-        </attrib>
-        <attrib>
-          <name>status_text</name>
-          <type>text</type>
-          <required>1</required>
-        </attrib>
-      </pattern>
-    </response>
-    <example>
-      <summary>Resume a running task</summary>
-      <request>
-        <resume_or_start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
-        </resume_or_start_task>
-      </request>
-      <response>
-        <resume_or_start_task_response status="200" status_text="OK"/>
-      </response>
-    </example>
-  </command>
-  <command>
     <name>resume_task</name>
     <summary>Resume a task</summary>
     <description>
@@ -21290,6 +21245,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 	which is the former RESUME_STOPPED_TASK. There is no other resumable
 	status than "stopped" anymore and thus the command names are
         consolidated for consistency and to avoid confusion.
+      </p>
+    </description>
+    <version>6.0</version>
+  </change>
+  <change>
+    <command>RESUME_OR_START_TASK</command>
+    <summary>Command removed</summary>
+    <description>
+      <p>
+        As part of the consolidation of the start/resume handling of tasks,
+	the command RESUME_OR_START_TASK was removed. Use a combination of
+        START_TASK and RESUME_TASK to establish the same functionality.
       </p>
     </description>
     <version>6.0</version>

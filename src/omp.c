@@ -3852,27 +3852,6 @@ restore_data_reset (restore_data_t *data)
 }
 
 /**
- * @brief Command data for the resume_or_start_task command.
- */
-typedef struct
-{
-  char *task_id;   ///< ID of task to resume or start.
-} resume_or_start_task_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-resume_or_start_task_data_reset (resume_or_start_task_data_t *data)
-{
-  free (data->task_id);
-
-  memset (data, 0, sizeof (resume_or_start_task_data_t));
-}
-
-/**
  * @brief Command data for the resume_task command.
  */
 typedef struct
@@ -4161,7 +4140,6 @@ typedef union
   modify_task_data_t modify_task;                     ///< modify_task
   modify_user_data_t modify_user;                     ///< modify_user
   restore_data_t restore;                             ///< restore
-  resume_or_start_task_data_t resume_or_start_task;   ///< resume_or_start_task
   resume_task_data_t resume_task;                     ///< resume_task
   start_task_data_t start_task;                       ///< start_task
   stop_task_data_t stop_task;                         ///< stop_task
@@ -4757,12 +4735,6 @@ modify_user_data_t *modify_user_data = &(command_data.modify_user);
  */
 restore_data_t *restore_data
  = (restore_data_t*) &(command_data.restore);
-
-/**
- * @brief Parser callback data for RESUME_OR_START_TASK.
- */
-resume_or_start_task_data_t *resume_or_start_task_data
- = (resume_or_start_task_data_t*) &(command_data.resume_or_start_task);
 
 /**
  * @brief Parser callback data for RESUME_TASK.
@@ -5414,7 +5386,6 @@ typedef enum
   CLIENT_MODIFY_USER_SOURCES,
   CLIENT_MODIFY_USER_SOURCES_SOURCE,
   CLIENT_RESTORE,
-  CLIENT_RESUME_OR_START_TASK,
   CLIENT_RESUME_TASK,
   CLIENT_RUN_WIZARD,
   CLIENT_RUN_WIZARD_MODE,
@@ -7598,12 +7569,6 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
             append_attribute (attribute_names, attribute_values, "id",
                               &restore_data->id);
             set_client_state (CLIENT_RESTORE);
-          }
-        else if (strcasecmp ("RESUME_OR_START_TASK", element_name) == 0)
-          {
-            append_attribute (attribute_names, attribute_values, "task_id",
-                              &resume_or_start_task_data->task_id);
-            set_client_state (CLIENT_RESUME_OR_START_TASK);
           }
         else if (strcasecmp ("RESUME_TASK", element_name) == 0)
           {
@@ -25000,159 +24965,6 @@ create_task_fail:
            (XML_ERROR_SYNTAX ("restore",
                               "RESTORE requires an id attribute"));
         restore_data_reset (restore_data);
-        set_client_state (CLIENT_AUTHENTIC);
-        break;
-
-      case CLIENT_RESUME_OR_START_TASK:
-        if (resume_or_start_task_data->task_id)
-          {
-            if (forked == 2)
-              /* Prevent the forked child from forking again, as then both
-               * forked children would be using the same server session. */
-              abort (); /** @todo Respond with error or something. */
-            else
-              {
-                char *report_id;
-                switch (resume_or_start_task
-                         (resume_or_start_task_data->task_id, &report_id))
-                  {
-                    case 0:
-                      {
-                        gchar *msg;
-                        msg = g_strdup_printf
-                               ("<resume_or_start_task_response"
-                                " status=\"" STATUS_OK_REQUESTED "\""
-                                " status_text=\""
-                                STATUS_OK_REQUESTED_TEXT
-                                "\">"
-                                "<report_id>%s</report_id>"
-                                "</resume_or_start_task_response>",
-                                report_id);
-                        free (report_id);
-                        if (send_to_client (msg,
-                                            write_to_client,
-                                            write_to_client_data))
-                          {
-                            g_free (msg);
-                            error_send_to_client (error);
-                            return;
-                          }
-                        g_free (msg);
-                        log_event ("task", "Task",
-                                   resume_or_start_task_data->task_id,
-                                   "requested to start");
-                      }
-                      forked = 1;
-                      break;
-                    case 1:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Task is active already"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    case 22:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Task must be in Stopped state"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    case 2:
-                      /* Forked task process: success. */
-                      current_error = 2;
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case 3:   /* Find failed. */
-                      if (send_find_error_to_client
-                           ("resume_or_start_task",
-                            "task",
-                            resume_or_start_task_data->task_id,
-                            write_to_client,
-                            write_to_client_data))
-                        {
-                          error_send_to_client (error);
-                          return;
-                        }
-                      break;
-                    case 4:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Resuming not supported"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "resumed");
-                      break;
-                    case 99:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "Permission denied"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("resume_or_start_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -2:
-                      /* Task target lacks hosts.  This is checked when the
-                       * target is created. */
-                      assert (0);
-                      /*@fallthrough@*/
-                    case -4:
-                      /* Task lacks target.  This is checked when the task is
-                       * created anyway. */
-                      assert (0);
-                      /*@fallthrough@*/
-                    case -1:
-                    case -3: /* Failed to create report. */
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR
-                                               ("resume_or_start_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    case -5:
-                      SEND_XML_SERVICE_DOWN ("resume_or_start_task");
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                    default: /* Programming error. */
-                      assert (0);
-                      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
-                      log_event_fail ("task", "Task",
-                                      resume_or_start_task_data->task_id,
-                                      "started");
-                      break;
-                  }
-              }
-          }
-        else
-          SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("resume_task",
-                              "RESUME_TASK requires a task_id attribute"));
-          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_or_start_task"));
-        resume_or_start_task_data_reset (resume_or_start_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
 

@@ -3545,25 +3545,6 @@ resume_task (const char *task_id, char **report_id)
   return 22;
 }
 
-/**
- * @brief Resume task if stopped, else start task.
- *
- * Only one task can run at a time in a process.
- *
- * @param[out]  task_id    The task ID.
- * @param[out]  report_id  The report ID.
- *
- * @return Any start_task error.
- */
-int
-resume_or_start_task (const char *task_id, char **report_id)
-{
-  if (user_may ("resume_or_start_task") == 0)
-    return 99;
-
-  return run_task (task_id, report_id, 2, "resume_or_start_task");
-}
-
 
 /* Scanner messaging. */
 
@@ -4515,12 +4496,15 @@ manage_schedule (int (*fork_connection) (int *,
 
       g_free (owner);
 
-      if (omp_resume_or_start_task (&session, task_uuid))
+      if (omp_start_task_report (&session, task_uuid, NULL))
         {
-          g_warning ("%s: omp_resume_or_start_task failed", __FUNCTION__);
-          g_free (task_uuid);
-          openvas_server_free (socket, session, credentials);
-          exit (EXIT_FAILURE);
+          if (omp_resume_task_report (&session, task_uuid, NULL))
+            {
+              g_warning ("%s: omp_start_task and omp_resume_task failed", __FUNCTION__);
+              g_free (task_uuid);
+              openvas_server_free (socket, session, credentials);
+              exit (EXIT_FAILURE);
+            }
         }
 
       g_free (task_uuid);

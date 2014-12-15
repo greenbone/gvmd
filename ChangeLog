@@ -1,3 +1,27 @@
+2014-12-15  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/omp.c (resume_or_start_task_data_t,
+	resume_or_start_task_data_reset, resume_or_start_task_data): Removed.
+	(command_data_t): Remove resume_or_start_task.
+	(omp_xml_handle_start_element): Drop handling of RESUME_OR_START_TASK
+	and CLIENT_RESUME_OR_START_TASK.
+	(client_state_t): Removed CLIENT_RESUME_OR_START_TASK.
+
+	* src/manage.c (resume_or_start_task): Removed.
+	(manage_schedule): Instead of calling omp_resume_or_start_task,
+	first try omp_start_task_report and if this fails try
+	omp_resume_task_report.
+
+	* src/manage.h: Remove proto accordingly.
+
+	* src/manage_sql.c: Update documentation.
+	(omp_command_type): Don't consider the command "resume_or_start_task"
+	any more.
+	(omp_commands): Remove RESUME_OR_START_TASK.
+
+	* src/schema_formats/XML/OMP.xml.in: Remove RESUME_OR_START_TASK
+	and document this as a protocol change.
+
 2014-12-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Introduce ownership of users, roles and groups.
