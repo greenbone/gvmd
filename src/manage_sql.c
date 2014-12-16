@@ -42679,12 +42679,7 @@ create_permission (const char *name_arg, const char *comment,
       && strcmp (resource_id, "")
       && strcmp (resource_id, "0")
       && (((omp_command_takes_resource (name_arg) == 0)
-           && strcasecmp (name_arg, "super"))
-          // FIX owner  leads to "permission does not accept a resource"
-          /* Permission on users, groups and roles is limited, for now. */
-          || strcasestr (name_arg, "_user")
-          || strcasestr (name_arg, "_role")
-          || strcasestr (name_arg, "_group")))
+           && strcasecmp (name_arg, "super"))))
     return 9;
 
   if (resource_type_arg

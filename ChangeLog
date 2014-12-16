@@ -1,5 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Enable creation of permissions
+	on users, roles and groups.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): Skip permissions that apply to user
 	when getting trash permissions.
 
