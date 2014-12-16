@@ -80,6 +80,36 @@ user_may (const char *operation)
 }
 
 /**
+ * @brief Check whether a role has Super Admin capability.
+ *
+ * @param[in]  uuid  Uuid of user.
+ *
+ * @return 1 if role can Super Admin, else 0.
+ */
+int
+role_can_super_everyone (const char *role_id)
+{
+  gchar *quoted_role_id;
+  quoted_role_id = sql_quote (role_id);
+  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
+               "                WHERE name = 'Super'"
+               /*                    Super on everyone. */
+               "                AND (resource = 0)"
+               "                AND (subject_type = 'role'"
+               "                     AND subject"
+               "                         = (SELECT id"
+               "                            FROM roles"
+               "                            WHERE uuid = '%s')));",
+               role_id))
+    {
+      g_free (quoted_role_id);
+      return 1;
+    }
+  g_free (quoted_role_id);
+  return 0;
+}
+
+/**
  * @brief Check whether a user is a Super Admin.
  *
  * @param[in]  uuid  Uuid of user.

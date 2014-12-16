@@ -72,6 +72,12 @@ int
 user_can_everything (const char *);
 
 int
+role_can_super_everyone (const char *);
+
+int
+user_can_super_everyone (const char *);
+
+int
 user_has_super (const char *, user_t);
 
 int

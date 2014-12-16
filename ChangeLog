@@ -2,8 +2,27 @@
 
 	Introduce ownership of permissions.
 
+	* src/manage.h: Remove header now in manage_acl.h.
+
+	* src/manage_acl.c (role_can_super_everyone): New function.
+
+	* src/manage_acl.h: Add headers accordingly.
+
+	* src/manage_sql.c (create_user): Check role for effective Super Admin
+	too.
+	(modify_user): Refuse to give user roles that have Super Admin.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Introduce ownership of permissions.
+
 	* src/manage_acl.c (user_has_access_uuid): Remove permission super
 	check, as this is covered by the user_owns_uuid call at the top.
+
+	* src/manage_sql.c (create_permission): Always set the owner to the
+	current user.
+	(copy_permission): Remove call that cleared owner.
+	(copy_role): Set owner of permissions to current user.
 
 2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 

@@ -50581,7 +50581,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           continue;
         }
 
-      if (forbid_super_admin && (strcmp (role_id, ROLE_UUID_SUPER_ADMIN) == 0))
+      if (forbid_super_admin && role_can_super_everyone (role_id))
         {
           sql ("ROLLBACK;");
           return 99;
@@ -51185,6 +51185,12 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
               sql ("ROLLBACK;");
               if (role_id_return) *role_id_return = role_id;
               return 1;
+            }
+
+          if (role_can_super_everyone (role_id))
+            {
+              sql ("ROLLBACK;");
+              return 99;
             }
 
           sql ("INSERT INTO role_users (role, \"user\") VALUES (%llu, %llu);",
