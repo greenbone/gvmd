@@ -45211,6 +45211,9 @@ copy_role (const char *name, const char *comment, const char *role_id,
   if (user_may ("create_role") == 0)
     return 99;
 
+  if (role_can_super_everyone (role_id))
+    return 99;
+
   ret = copy_resource_lock ("role", name, comment, role_id, NULL, 1, &new_role,
                             &old_role);
   if (ret)

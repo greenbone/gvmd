@@ -1,12 +1,17 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_role): Refuse to copy roles that have Super
+	Admin capability.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_permission): Refuse to copy the permission that
 	gives Super Admin capability.
 	(permission_name): New function.
 
 	* src/manage.h: Add header accordingly.
 
-2014-12-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2014-12-16  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	Add default_value column to config_preferences table, hence increase
 	database version to 141.
