@@ -1,6 +1,11 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (role_can_super_everyone, user_can_super_everyone)
+	* src/manage_acl.c (where_owned): Skip permissions that apply to user
+	when getting trash permissions.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (role_can_super_everyone, user_can_super_everyone)
 	(user_can_everything, user_has_super, user_is_user)
 	(user_has_access_uuid, where_owned): Add missing subject_location tests.
 	Without these tests, permissions in the trashcan can randomly affect the

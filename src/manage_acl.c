@@ -990,28 +990,31 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               /* Or, for admins, it's a global permission. */
                               "  %s"
                               /* Or the permission applies to the user. */
-                              "  OR (permissions%s.subject_type = 'user'"
-                              "      AND permissions%s.subject"
-                              "          = (SELECT id FROM users"
-                              "             WHERE users.uuid = '%s'))"
+                              "  OR (%i = 1" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'user'"
+                              "           AND permissions%s.subject"
+                              "               = (SELECT id FROM users"
+                              "                  WHERE users.uuid = '%s')))"
                               /* Or the permission applies to the user's group. */
-                              "  OR (permissions%s.subject_type = 'group'"
-                              "      AND permissions%s.subject"
-                              "          IN (SELECT DISTINCT \"group\""
-                              "              FROM group_users"
-                              "              WHERE \"user\" = (SELECT id"
-                              "                                FROM users"
-                              "                                WHERE users.uuid"
-                              "                                      = '%s')))"
+                              "  OR (%i = 1" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'group'"
+                              "           AND permissions%s.subject"
+                              "               IN (SELECT DISTINCT \"group\""
+                              "                   FROM group_users"
+                              "                   WHERE \"user\" = (SELECT id"
+                              "                                     FROM users"
+                              "                                     WHERE users.uuid"
+                              "                                           = '%s'))))"
                               /* Or the permission applies to the user's role. */
-                              "  OR (permissions%s.subject_type = 'role'"
-                              "      AND permissions%s.subject"
-                              "          IN (SELECT DISTINCT role"
-                              "              FROM role_users"
-                              "              WHERE \"user\" = (SELECT id"
-                              "                                FROM users"
-                              "                                WHERE users.uuid"
-                              "                                      = '%s')))"
+                              "  OR (%i = 1" /* Skip for trash. */
+                              "      AND (permissions%s.subject_type = 'role'"
+                              "           AND permissions%s.subject"
+                              "               IN (SELECT DISTINCT role"
+                              "                   FROM role_users"
+                              "                   WHERE \"user\" = (SELECT id"
+                              "                                     FROM users"
+                              "                                     WHERE users.uuid"
+                              "                                           = '%s'))))"
                               /* Or the user has super permission. */
                               "  OR EXISTS (SELECT * FROM permissions AS inner"
                               "             WHERE name = 'Super'"
@@ -1066,12 +1069,15 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                    ? "OR (permissions_trash.owner IS NULL)"
                                    : "OR (permissions.owner IS NULL)")
                                : "",
+                              get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               current_credentials.uuid,
+                              get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               current_credentials.uuid,
+                              get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               current_credentials.uuid,
