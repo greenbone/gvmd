@@ -459,6 +459,28 @@ user_is_user (const char *uuid)
   user_id
 
 /**
+ * @brief Test whether a user has Super permission on a resource.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  field     Field to compare with value.
+ * @param[in]  value     Identifier value of resource.
+ * @param[in]  trash     Whether resource is in trash.
+ *
+ * @return 1 if user has Super, else 0.
+ */
+int
+user_has_super_on (const char *type, const char *field, const char *value,
+                   int trash)
+{
+  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
+               "               WHERE " SUPER_CLAUSE ");",
+               SUPER_CLAUSE_ARGS (type, field, value, current_credentials.uuid,
+                                  trash)))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Test whether a user effectively owns a resource.
  *
  * A Super permissions can give a user effective ownership of another
@@ -486,10 +508,7 @@ user_owns (const char *type, const char *field, const char *value)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, field, value,
-                                  current_credentials.uuid, 0)))
+  if (user_has_super_on (type, field, value, 0))
     return 1;
 
   ret = sql_int ("SELECT count(*) FROM %ss"
@@ -560,10 +579,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
-                                  current_credentials.uuid, 0)))
+  if (user_has_super_on (type, "uuid", uuid, 0))
     return 1;
 
   if (strcmp (type, "result") == 0)
@@ -610,10 +626,7 @@ user_owns_trash_uuid (const char *type, const char *uuid)
   assert (current_credentials.uuid);
   assert (type && strcmp (type, "task"));
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, "uuid", uuid,
-                                  current_credentials.uuid, 1)))
+  if (user_has_super_on (type, "uuid", uuid, 1))
     return 1;
 
   ret = sql_int ("SELECT count(*) FROM %ss_trash"
