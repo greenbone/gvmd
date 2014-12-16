@@ -472,11 +472,17 @@ int
 user_has_super_on (const char *type, const char *field, const char *value,
                    int trash)
 {
+  gchar *quoted_value;
+  quoted_value = sql_quote (value);
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
                "               WHERE " SUPER_CLAUSE ");",
-               SUPER_CLAUSE_ARGS (type, field, value, current_credentials.uuid,
-                                  trash)))
-    return 1;
+               SUPER_CLAUSE_ARGS (type, field, quoted_value,
+                                  current_credentials.uuid, trash)))
+    {
+      g_free (quoted_value);
+      return 1;
+    }
+  g_free (quoted_value);
   return 0;
 }
 

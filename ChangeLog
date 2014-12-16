@@ -1,6 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (user_has_super_on): New function.
+	* src/manage_acl.c (user_has_super_on): Quote value for SQL.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (user_has_super_on): New function.
 	(user_owns, user_owns_uuid, user_owns_trash_uuid): Call
 	user_has_super_on instead of using macros.
 
