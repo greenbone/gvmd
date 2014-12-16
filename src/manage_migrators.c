@@ -9827,6 +9827,37 @@ migrate_139_to_140 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 140 to version 141.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_140_to_141 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 140. */
+
+  if (manage_db_version () != 140)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+  sql ("ALTER TABLE config_preferences ADD COLUMN default_value text;");
+  sql ("ALTER TABLE config_preferences_trash ADD COLUMN default_value text;");
+
+  /* Set the database version to 141. */
+
+  set_db_version (141);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
@@ -9979,6 +10010,7 @@ static migrator_t database_migrators[]
     {138, migrate_137_to_138},
     {139, migrate_138_to_139},
     {140, migrate_139_to_140},
+    {141, migrate_140_to_141},
     /* End marker. */
     {-1, NULL}};
 

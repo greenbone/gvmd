@@ -28142,15 +28142,22 @@ create_config_from_scanner (const char *scanner_id, const char *name,
       if (strcmp (param_id, "username") && strcmp (param_id, "password")
           && strcmp (param_id, "port"))
         {
-          char *param_type, *param_def;
+          char *param_type, *param_def, *param_value = NULL;
 
           param_type = sql_quote (osp_param_type_str (param));
           param_def = sql_quote (osp_param_default (param));
-          sql ("INSERT INTO config_preferences (config, name, type, value)"
-               " VALUES (%llu, '%s', '%s', '%s')",
-               config , param_id, param_type, param_def);
+          if (!strcmp (param_type, "selection"))
+            {
+              param_value = g_strdup (param_def);
+              param_value = strtok (param_value, "|");
+            }
+          sql ("INSERT INTO config_preferences (config, name, type, value,"
+               " default_value) VALUES (%llu, '%s', '%s', '%s', '%s')",
+               config , param_id, param_type, param_value ?: param_def,
+               param_def);
           g_free (param_type);
           g_free (param_def);
+          g_free (param_value);
         }
       g_free (param_id);
       osp_param_free (element->data);
@@ -28428,8 +28435,9 @@ copy_config (const char* name, const char* comment, const char *config_id,
       return ret;
     }
 
-  sql ("INSERT INTO config_preferences (config, type, name, value)"
-       " SELECT %llu, type, name, value FROM config_preferences"
+  sql ("INSERT INTO config_preferences (config, type, name, value,"
+       "                                default_value)"
+       " SELECT %llu, type, name, value, default_value FROM config_preferences"
        " WHERE config = %llu;", new, old);
 
   type = config_type (new);
@@ -28595,8 +28603,8 @@ delete_config (const char *config_id, int ultimate)
       trash_config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences_trash"
-           " (config, type, name, value)"
-           " SELECT %llu, type, name, value"
+           " (config, type, name, value, default_value)"
+           " SELECT %llu, type, name, value, default_value"
            " FROM config_preferences WHERE config = %llu;",
            trash_config,
            config);
@@ -28933,8 +28941,8 @@ init_preference_iterator (iterator_t* iterator, config_t config)
 {
   gchar* sql;
 
-  sql = g_strdup_printf ("SELECT name, value, type FROM config_preferences"
-                         " WHERE config = %llu;", config);
+  sql = g_strdup_printf ("SELECT name, value, type, default_value FROM"
+                         " config_preferences WHERE config = %llu;", config);
   init_iterator (iterator, sql);
   g_free (sql);
 }
@@ -28968,6 +28976,16 @@ DEF_ACCESS (preference_iterator_value, 1);
  *         complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (preference_iterator_type, 2);
+
+/**
+ * @brief Get the default from a preference iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The default of the preference iterator, or NULL if iteration is
+ *         complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (preference_iterator_default, 3);
 
 /**
  * @brief Initialise an "OTP" preference iterator.
@@ -46752,8 +46770,8 @@ manage_restore (const char *id)
       config = sql_last_insert_id ();
 
       sql ("INSERT INTO config_preferences"
-           " (config, type, name, value)"
-           " SELECT %llu, type, name, value"
+           " (config, type, name, value, default_value)"
+           " SELECT %llu, type, name, value, default_value"
            " FROM config_preferences_trash WHERE config = %llu;",
            config,
            resource);

@@ -2003,9 +2003,11 @@ create_tables ()
        "  installer_trust_time, howto_install TEXT, howto_use TEXT,"
        "  creation_time, modification_time);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences"
-       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value,"
+       "  default_value);");
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
-       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value);");
+       " (id INTEGER PRIMARY KEY, config INTEGER, type, name, value,"
+       "  default_value);");
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id INTEGER PRIMARY KEY, uuid UNIQUE, owner INTEGER, name,"
        "  nvt_selector, comment, family_count INTEGER, nvt_count INTEGER,"

@@ -1,3 +1,28 @@
+2014-12-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Add default_value column to config_preferences table, hence increase
+	database version to 141.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 141.
+
+	* src/manage_migrators.c (migrate_140_to_141): New.
+	(database_migrators): Add migrate_140_to_141.
+
+	* src/manage.h: Add function prototype.
+
+	* src/manage_sql.c (create_config_from_scanner): In preference of type
+	selection, insert the first value of the list as the current value for
+	the preference.
+	(copy_config, delete_config, init_preference_iterator, manage_restore):
+	Adjust to handle new default_value column properly.
+	(preference_iterator_default): New function
+
+	* src/manage_sqlite3.c (create_tables): Add default_value column to
+	config_preferences and config_preferences_trash tables.
+
+	* src/omp.c (omp_xml_handle_end_element): Remove work-around for osp
+	config preferences and get the default value correctly.
+
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (add_role_permission): Correct doc.
