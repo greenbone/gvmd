@@ -2616,6 +2616,9 @@ copy_permission (const char*, const char *, permission_t *);
 char*
 permission_uuid (permission_t);
 
+char *
+permission_name (permission_t);
+
 int
 permission_in_use (permission_t);
 

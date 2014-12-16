@@ -42859,7 +42859,7 @@ copy_permission (const char* comment, const char *permission_id,
 {
   int ret;
   permission_t permission, new, old;
-  char *subject_type;
+  char *subject_type, *name;
   resource_t subject;
 
   sql_begin_immediate ();
@@ -42890,6 +42890,17 @@ copy_permission (const char* comment, const char *permission_id,
       return 99;
     }
   free (subject_type);
+
+  /* Refuse to copy Super On Everyone. */
+  name = permission_name (permission);
+  if ((strcmp (name, "Super") == 0)
+      && (permission_resource (permission) == 0))
+    {
+      free (name);
+      sql ("ROLLBACK;");
+      return 99;
+    }
+  free (name);
 
   ret = copy_resource_lock ("permission", NULL, comment, permission_id,
                             "resource_type, resource, resource_uuid,"
@@ -42937,6 +42948,20 @@ permission_resource (permission_t permission)
              "SELECT resource FROM permissions WHERE id = %llu;",
              permission);
   return resource;
+}
+
+/**
+ * @brief Return the name of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char *
+permission_name (permission_t permission)
+{
+  return sql_string ("SELECT name FROM permissions WHERE id = %llu;",
+                     permission);
 }
 
 /**
