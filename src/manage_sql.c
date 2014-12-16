@@ -50679,7 +50679,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
 
-  if (user_is_super_admin (user_id))
+  if (user_can_super_everyone (user_id))
     return 99;
 
   sql_begin_immediate ();

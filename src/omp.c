@@ -5798,7 +5798,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
           && user_can_everything (current_credentials.uuid)))
     {
       if ((strcmp (type, "user") == 0)
-          && user_is_super_admin (get_iterator_uuid (iterator))
+          && user_can_super_everyone (get_iterator_uuid (iterator))
           && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
         {
           writable = 0;

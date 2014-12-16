@@ -1,5 +1,13 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_user): Use fuller Super Admin check.
+
+	* src/omp.c (copy_user): Use fuller Super Admin check.
+
+	* src/manage.h: Add header accordingly.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_role): Refuse to copy roles that have Super
 	Admin capability.
 

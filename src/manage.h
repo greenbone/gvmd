@@ -839,6 +839,9 @@ extern int
 user_can_everything (const char *);
 
 extern int
+user_can_super_everyone (const char *);
+
+extern int
 user_has_super (const char *, user_t);
 
 
