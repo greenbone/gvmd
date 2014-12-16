@@ -1,5 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (user_owns_uuid, user_owns_trash_uuid)
+	(user_has_access_uuid, where_owned): Quote args for SQL.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (user_has_super_on): Quote value for SQL.
 
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>

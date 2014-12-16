@@ -574,6 +574,7 @@ int
 user_owns_uuid (const char *type, const char *uuid, int trash)
 {
   int ret;
+  gchar *quoted_uuid;
 
   assert (current_credentials.uuid);
 
@@ -588,13 +589,14 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
   if (user_has_super_on (type, "uuid", uuid, 0))
     return 1;
 
+  quoted_uuid = sql_quote (uuid);
   if (strcmp (type, "result") == 0)
     ret = sql_int ("SELECT count(*) FROM results, reports"
                    " WHERE results.uuid = '%s'"
                    " AND results.report = reports.id"
                    " AND ((reports.owner IS NULL) OR (reports.owner ="
                    " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
-                   uuid,
+                   quoted_uuid,
                    current_credentials.uuid);
   else
     ret = sql_int ("SELECT count(*) FROM %ss%s"
@@ -604,11 +606,12 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                    " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                    type,
                    (strcmp (type, "task") && trash) ? "_trash" : "",
-                   uuid,
+                   quoted_uuid,
                    (strcmp (type, "task")
                      ? ""
                      : (trash ? " AND hidden = 2" : " AND hidden < 2")),
                    current_credentials.uuid);
+  g_free (quoted_uuid);
 
   return ret;
 }
@@ -628,6 +631,7 @@ int
 user_owns_trash_uuid (const char *type, const char *uuid)
 {
   int ret;
+  gchar *quoted_uuid;
 
   assert (current_credentials.uuid);
   assert (type && strcmp (type, "task"));
@@ -635,13 +639,15 @@ user_owns_trash_uuid (const char *type, const char *uuid)
   if (user_has_super_on (type, "uuid", uuid, 1))
     return 1;
 
+  quoted_uuid = sql_quote (uuid);
   ret = sql_int ("SELECT count(*) FROM %ss_trash"
                  " WHERE uuid = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                  type,
-                 uuid,
+                 quoted_uuid,
                  current_credentials.uuid);
+  g_free (quoted_uuid);
 
   return ret;
 }
@@ -662,7 +668,7 @@ user_has_access_uuid (const char *type, const char *uuid,
 {
   int ret, get;
   char *uuid_task;
-  gchar *quoted_permission;
+  gchar *quoted_permission, *quoted_uuid;
 
   assert (current_credentials.uuid);
 
@@ -678,6 +684,7 @@ user_has_access_uuid (const char *type, const char *uuid,
     /* For simplicity, trashcan items are visible only to their owners. */
     return 0;
 
+  quoted_uuid = sql_quote (uuid);
   if (strcasecmp (type, "report") == 0)
     {
       task_t task;
@@ -685,23 +692,28 @@ user_has_access_uuid (const char *type, const char *uuid,
 
       switch (sql_int64 (&report,
                          "SELECT id FROM reports WHERE uuid = '%s';",
-                         uuid))
+                         quoted_uuid))
         {
           case 0:
             break;
           case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
             return 0;
             break;
           default:       /* Programming error. */
             assert (0);
           case -1:
+            g_free (quoted_uuid);
             return 0;
             break;
         }
 
       report_task (report, &task);
       if (task == 0)
-        return 0;
+        {
+          g_free (quoted_uuid);
+          return 0;
+        }
       task_uuid (task, &uuid_task);
     }
   else if (strcasecmp (type, "result") == 0)
@@ -715,11 +727,13 @@ user_has_access_uuid (const char *type, const char *uuid,
           case 0:
             break;
           case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
             return 0;
             break;
           default:       /* Programming error. */
             assert (0);
           case -1:
+            g_free (quoted_uuid);
             return 0;
             break;
         }
@@ -759,12 +773,13 @@ user_has_access_uuid (const char *type, const char *uuid,
                      "                                    FROM users"
                      "                                    WHERE users.uuid"
                      "                                          = '%s'))));",
-                     uuid_task ? uuid_task : uuid,
-                     uuid_task ? uuid_task : uuid,
+                     uuid_task ? uuid_task : quoted_uuid,
+                     uuid_task ? uuid_task : quoted_uuid,
                      current_credentials.uuid,
                      current_credentials.uuid,
                      current_credentials.uuid);
       free (uuid_task);
+      g_free (quoted_uuid);
       return ret;
     }
   else if (strcmp (type, "permission") == 0)
@@ -773,6 +788,7 @@ user_has_access_uuid (const char *type, const char *uuid,
        * effectively own a permission, there's no way for the user to access
        * the permission. */
       free (uuid_task);
+      g_free (quoted_uuid);
       return 0;
     }
 
@@ -804,7 +820,7 @@ user_has_access_uuid (const char *type, const char *uuid,
                  "                                    WHERE users.uuid"
                  "                                          = '%s'))))"
                  " %s%s%s;",
-                 uuid_task ? uuid_task : uuid,
+                 uuid_task ? uuid_task : quoted_uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -814,6 +830,7 @@ user_has_access_uuid (const char *type, const char *uuid,
 
   free (uuid_task);
   g_free (quoted_permission);
+  g_free (quoted_uuid);
   return ret;
 }
 
@@ -847,7 +864,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
       if (permissions)
         for (; index < permissions->len; index++)
           {
-            gchar *permission;
+            gchar *permission, *quoted;
             permission = (gchar*) g_ptr_array_index (permissions, index);
             if (strcasecmp (permission, "any") == 0)
               {
@@ -856,11 +873,13 @@ where_owned (const char *type, const get_data_t *get, int owned,
                 index = 1;
                 break;
               }
+            quoted = sql_quote (permission);
             if (index == 0)
-              g_string_append_printf (permission_or, "name = '%s'", permission);
+              g_string_append_printf (permission_or, "name = '%s'", quoted);
             else
               g_string_append_printf (permission_or, " OR name = '%s'",
-                                      permission);
+                                      quoted);
+            g_free (quoted);
           }
 
       /* Check on index is because default is owner and global, for backward
