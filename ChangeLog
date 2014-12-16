@@ -1,5 +1,13 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (omp_command_takes_resource): Exclude DESCRIBE
+	commands too.
+	(create_permission): If a resource ID is given but the resource type
+	is NULL then return with "failed to find resource" instead of making a
+	command level permission.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_permission): Remove call that cleared owner.
 	Permissions have owners now.
 

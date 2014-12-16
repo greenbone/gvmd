@@ -481,6 +481,7 @@ omp_command_takes_resource (const char* name)
   return strcasecmp (name, "AUTHENTICATE")
          && strcasecmp (name, "COMMANDS")
          && strcasestr (name, "CREATE_") != name
+         && strcasestr (name, "DESCRIBE_") != name
          && strcasecmp (name, "EMPTY_TRASHCAN")
          && strcasecmp (name, "GET_VERSION")
          && strcasecmp (name, "HELP")
@@ -42725,11 +42726,20 @@ create_permission (const char *name_arg, const char *comment,
   resource = 0;
   if (resource_id
       && strcmp (resource_id, "")
-      && strcmp (resource_id, "0")
-      && (resource_type = strcasecmp (name, "super")
-                           ? omp_command_type (name)
-                           : g_strdup (resource_type_arg)))
+      && strcmp (resource_id, "0"))
     {
+      resource_type = strcasecmp (name, "super")
+                       ? omp_command_type (name)
+                       : g_strdup (resource_type_arg);
+
+      if (resource_type == NULL)
+        {
+          g_free (name);
+          g_free (resource_type);
+          sql ("ROLLBACK;");
+          return 3;
+        }
+
       if (find_resource (resource_type, resource_id, &resource))
         {
           g_free (name);
