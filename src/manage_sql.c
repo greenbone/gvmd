@@ -43751,12 +43751,6 @@ modify_permission (const char *permission_id, const char *name,
        " WHERE id = %llu;",
        permission);
 
-  /* Clear the owner if it's a command level permission. */
-
-  sql ("UPDATE permissions SET owner = NULL"
-       " WHERE id = %llu AND resource = 0;",
-       permission);
-
   sql ("COMMIT;");
 
   return 0;

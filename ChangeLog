@@ -1,5 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_permission): Remove call that cleared owner.
+	Permissions have owners now.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (user_can_super_everyone, user_can_everything)
 	(user_has_super): Quote SQL args.
 
