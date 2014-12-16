@@ -693,11 +693,11 @@ user_has_access_uuid (const char *type, const char *uuid,
     }
   else if (strcmp (type, "permission") == 0)
     {
-      /* Only Admins can modify, delete, etc other users' permissions.
-       * This only really affects higher level permissions, because that's
-       * all Admins can see of others' permissions. */
+      /* There are no "permissions on permissions", so if a user does not
+       * effectively own a permission, there's no way for the user to access
+       * the permission. */
       free (uuid_task);
-      return user_can_everything (current_credentials.uuid);
+      return 0;
     }
 
   get = (permission == NULL

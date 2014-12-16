@@ -42645,7 +42645,7 @@ create_permission (const char *name_arg, const char *comment,
                    const char *subject_type, const char *subject_id,
                    permission_t *permission)
 {
-  gchar *name, *owner, *quoted_name, *quoted_comment, *resource_type;
+  gchar *name, *quoted_name, *quoted_comment, *resource_type;
   resource_t resource, subject;
 
   assert (current_credentials.uuid);
@@ -42790,24 +42790,19 @@ create_permission (const char *name_arg, const char *comment,
     }
 
   quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment ? comment : "");
-  if (resource && strcasecmp (name, "super"))
-    owner = g_strdup_printf ("(SELECT id FROM users"
-                             " WHERE users.uuid = '%s')",
-                             current_credentials.uuid);
-  else
-    owner = g_strdup ("NULL");
   g_free (name);
+  quoted_comment = sql_quote (comment ? comment : "");
 
   sql ("INSERT INTO permissions"
        " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
        "  resource_location, subject_type, subject, subject_location,"
        "  creation_time, modification_time)"
        " VALUES"
-       " (make_uuid (), %s,"
+       " (make_uuid (),"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
        "  '%s', '%s', '%s', '%s', %llu, " G_STRINGIFY (LOCATION_TABLE) ","
        "  %s%s%s, %llu, " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
-       owner,
+       current_credentials.uuid,
        quoted_name,
        quoted_comment,
        resource_id ? resource_type : "",
@@ -42818,7 +42813,6 @@ create_permission (const char *name_arg, const char *comment,
        subject_id ? "'" : "",
        subject);
 
-  g_free (owner);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (resource_type);
@@ -42889,12 +42883,6 @@ copy_permission (const char* comment, const char *permission_id,
       sql ("ROLLBACK;");
       return ret;
     }
-
-  /* Clear the owner if it's a command level permission. */
-
-  sql ("UPDATE permissions SET owner = NULL"
-       " WHERE id = %llu AND resource = 0;",
-       new);
 
   sql ("COMMIT;");
   if (new_permission) *new_permission = new;
@@ -45192,7 +45180,9 @@ copy_role (const char *name, const char *comment, const char *role_id,
        " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
        "  resource_location, subject_type, subject, subject_location,"
        "  creation_time, modification_time)"
-       " SELECT make_uuid (), owner, name, comment, resource_type,"
+       " SELECT make_uuid (),"
+       "        (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "        name, comment, resource_type,"
        "        resource_uuid, resource, resource_location, subject_type, %llu,"
        "        subject_location, m_now (), m_now ()"
        " FROM permissions"
@@ -45200,6 +45190,7 @@ copy_role (const char *name, const char *comment, const char *role_id,
        " AND subject = %llu"
        " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
        " AND owner IS NULL;",
+       current_credentials.uuid,
        new_role,
        old_role);
 

@@ -1,3 +1,10 @@
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Introduce ownership of permissions.
+
+	* src/manage_acl.c (user_has_access_uuid): Remove permission super
+	check, as this is covered by the user_owns_uuid call at the top.
+
 2014-12-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_user): Use "user_can" function to include the
