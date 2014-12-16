@@ -10509,7 +10509,7 @@ check_db_settings ()
 }
 
 /**
- * @brief Bring report format UUIDs in database up to date.
+ * @brief Add permission to role.
  *
  * Caller must ensure args are SQL escaped.
  *

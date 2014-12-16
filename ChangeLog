@@ -1,6 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Introduce ownership of permissions.
+	* src/manage_sql.c (add_role_permission): Correct doc.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Prevent assignment of roles that have Super Admin capability.
 
 	* src/manage.h: Remove header now in manage_acl.h.
 
