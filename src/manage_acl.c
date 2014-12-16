@@ -95,6 +95,8 @@ role_can_super_everyone (const char *role_id)
                "                WHERE name = 'Super'"
                /*                    Super on everyone. */
                "                AND (resource = 0)"
+               "                AND subject_location"
+               "                    = " G_STRINGIFY (LOCATION_TABLE)
                "                AND (subject_type = 'role'"
                "                     AND subject"
                "                         = (SELECT id"
@@ -126,6 +128,8 @@ user_can_super_everyone (const char *uuid)
                "                WHERE name = 'Super'"
                /*                    Super on everyone. */
                "                AND (resource = 0)"
+               "                AND subject_location"
+               "                    = " G_STRINGIFY (LOCATION_TABLE)
                "                AND ((subject_type = 'user'"
                "                      AND subject"
                "                          = (SELECT id FROM users"
@@ -175,6 +179,8 @@ user_can_everything (const char *user_id)
   quoted_user_id = sql_quote (user_id);
   ret = sql_int ("SELECT count(*) > 0 FROM permissions"
                  " WHERE resource = 0"
+                 " AND subject_location"
+                 "     = " G_STRINGIFY (LOCATION_TABLE)
                  " AND ((subject_type = 'user'"
                  "       AND subject"
                  "           = (SELECT id FROM users"
@@ -236,6 +242,8 @@ user_has_super (const char *super_user_id, user_t other_user)
                "                              IN (SELECT DISTINCT \"group\""
                "                                  FROM group_users"
                "                                  WHERE \"user\" = %llu))))"
+               "                AND subject_location"
+               "                    = " G_STRINGIFY (LOCATION_TABLE)
                "                AND ((subject_type = 'user'"
                "                      AND subject"
                "                          = (SELECT id FROM users"
@@ -395,6 +403,7 @@ user_is_user (const char *uuid)
   "                                        = (SELECT %ss%s.owner"         \
   "                                           FROM %ss%s"                 \
   "                                           WHERE %s = '%s')))))"       \
+  "                AND subject_location = " G_STRINGIFY (LOCATION_TABLE)  \
   "                AND ((subject_type = 'user'"                           \
   "                      AND subject"                                     \
   "                          = (SELECT id FROM users"                     \
@@ -710,6 +719,7 @@ user_has_access_uuid (const char *type, const char *uuid,
                      " WHERE (resource_uuid = '%s'"
                      /* Users may view any permissions that affect them. */
                      "        OR uuid = '%s')"
+                     " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
                      " AND ((subject_type = 'user'"
                      "       AND subject"
                      "           = (SELECT id FROM users"
@@ -753,6 +763,7 @@ user_has_access_uuid (const char *type, const char *uuid,
 
   ret = sql_int ("SELECT count(*) FROM permissions"
                  " WHERE resource_uuid = '%s'"
+                 " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
                  " AND ((subject_type = 'user'"
                  "       AND subject"
                  "           = (SELECT id FROM users"
@@ -844,6 +855,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "  WHERE resource = %ss%s.id"
                               "  AND resource_type = '%s'"
                               "  AND resource_location = %i"
+                              "  AND subject_location"
+                              "      = " G_STRINGIFY (LOCATION_TABLE)
                               "  AND ((subject_type = 'user'"
                               "        AND subject"
                               "            = (SELECT id FROM users"
@@ -883,6 +896,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 " (SELECT id FROM permissions"
                                 "  WHERE resource = reports%s.task"
                                 "  AND resource_type = 'task'"
+                                "  AND subject_location"
+                                "      = " G_STRINGIFY (LOCATION_TABLE)
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
                                 "            = (SELECT id FROM users"
@@ -919,6 +934,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 " (SELECT id FROM permissions"
                                 "  WHERE resource = results%s.task"
                                 "  AND resource_type = 'task'"
+                                "  AND subject_location"
+                                "      = " G_STRINGIFY (LOCATION_TABLE)
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
                                 "            = (SELECT id FROM users"
@@ -1017,6 +1034,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                               FROM group_users"
                               "                               WHERE \"user\""
                               "                                     = permissions%s.owner))))"
+                              "             AND subject_location"
+                              "                 = " G_STRINGIFY (LOCATION_TABLE)
                               "             AND ((inner.subject_type = 'user'"
                               "                   AND inner.subject"
                               "                       = (SELECT id FROM users"
@@ -1094,6 +1113,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                               FROM group_users"
                             "                               WHERE \"user\""
                             "                                     = %ss%s.owner))))"
+                            "             AND subject_location"
+                            "                 = " G_STRINGIFY (LOCATION_TABLE)
                             "             AND ((subject_type = 'user'"
                             "                   AND subject"
                             "                       = (SELECT id FROM users"

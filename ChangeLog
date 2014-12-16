@@ -1,5 +1,13 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (role_can_super_everyone, user_can_super_everyone)
+	(user_can_everything, user_has_super, user_is_user)
+	(user_has_access_uuid, where_owned): Add missing subject_location tests.
+	Without these tests, permissions in the trashcan can randomly affect the
+	rights that are assiged to users.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (omp_command_takes_resource): Exclude DESCRIBE
 	commands too.
 	(create_permission): If a resource ID is given but the resource type
