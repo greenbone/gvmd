@@ -119,7 +119,9 @@ role_can_super_everyone (const char *role_id)
 int
 user_can_super_everyone (const char *uuid)
 {
-  // FIX quote uuid
+  gchar *quoted_uuid;
+
+  quoted_uuid = sql_quote (uuid);
   if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE name = 'Super'"
                /*                    Super on everyone. */
@@ -146,10 +148,14 @@ user_can_super_everyone (const char *uuid)
                "                                          FROM users"
                "                                          WHERE users.uuid"
                "                                                = '%s')))));",
-               uuid,
-               uuid,
-               uuid))
-    return 1;
+               quoted_uuid,
+               quoted_uuid,
+               quoted_uuid))
+    {
+      g_free (quoted_uuid);
+      return 1;
+    }
+  g_free (quoted_uuid);
   return 0;
 }
 
@@ -163,33 +169,38 @@ user_can_super_everyone (const char *uuid)
 int
 user_can_everything (const char *user_id)
 {
-  // FIX quote user_id?
-  return sql_int ("SELECT count(*) > 0 FROM permissions"
-                  " WHERE resource = 0"
-                  " AND ((subject_type = 'user'"
-                  "       AND subject"
-                  "           = (SELECT id FROM users"
-                  "              WHERE users.uuid = '%s'))"
-                  "      OR (subject_type = 'group'"
-                  "          AND subject"
-                  "              IN (SELECT DISTINCT \"group\""
-                  "                  FROM group_users"
-                  "                  WHERE \"user\" = (SELECT id"
-                  "                                    FROM users"
-                  "                                    WHERE users.uuid"
-                  "                                          = '%s')))"
-                  "      OR (subject_type = 'role'"
-                  "          AND subject"
-                  "              IN (SELECT DISTINCT role"
-                  "                  FROM role_users"
-                  "                  WHERE \"user\" = (SELECT id"
-                  "                                    FROM users"
-                  "                                    WHERE users.uuid"
-                  "                                          = '%s'))))"
-                  " AND name = 'Everything';",
-                  user_id,
-                  user_id,
-                  user_id);
+  gchar *quoted_user_id;
+  int ret;
+
+  quoted_user_id = sql_quote (user_id);
+  ret = sql_int ("SELECT count(*) > 0 FROM permissions"
+                 " WHERE resource = 0"
+                 " AND ((subject_type = 'user'"
+                 "       AND subject"
+                 "           = (SELECT id FROM users"
+                 "              WHERE users.uuid = '%s'))"
+                 "      OR (subject_type = 'group'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT \"group\""
+                 "                  FROM group_users"
+                 "                  WHERE \"user\" = (SELECT id"
+                 "                                    FROM users"
+                 "                                    WHERE users.uuid"
+                 "                                          = '%s')))"
+                 "      OR (subject_type = 'role'"
+                 "          AND subject"
+                 "              IN (SELECT DISTINCT role"
+                 "                  FROM role_users"
+                 "                  WHERE \"user\" = (SELECT id"
+                 "                                    FROM users"
+                 "                                    WHERE users.uuid"
+                 "                                          = '%s'))))"
+                 " AND name = 'Everything';",
+                 quoted_user_id,
+                 quoted_user_id,
+                 quoted_user_id);
+  g_free (quoted_user_id);
+  return ret;
 }
 
 /**
@@ -203,7 +214,9 @@ user_can_everything (const char *user_id)
 int
 user_has_super (const char *super_user_id, user_t other_user)
 {
-  // FIX quote super_user_id?
+  gchar *quoted_super_user_id;
+
+  quoted_super_user_id = sql_quote (super_user_id);
   if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
                "                WHERE name = 'Super'"
                /*                    Super on everyone. */
@@ -251,7 +264,11 @@ user_has_super (const char *super_user_id, user_t other_user)
                super_user_id,
                super_user_id,
                super_user_id))
-    return 1;
+    {
+      g_free (quoted_super_user_id);
+      return 1;
+    }
+  g_free (quoted_super_user_id);
   return 0;
 }
 

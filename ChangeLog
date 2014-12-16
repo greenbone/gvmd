@@ -1,5 +1,10 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (user_can_super_everyone, user_can_everything)
+	(user_has_super): Quote SQL args.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_user): Use fuller Super Admin check.
 
 	* src/omp.c (copy_user): Use fuller Super Admin check.
