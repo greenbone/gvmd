@@ -1030,12 +1030,16 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               /* Or the permission applies to the user. */
                               "  OR (%i = 1" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'user'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
                               "           AND permissions%s.subject"
                               "               = (SELECT id FROM users"
                               "                  WHERE users.uuid = '%s')))"
                               /* Or the permission applies to the user's group. */
                               "  OR (%i = 1" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'group'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
                               "           AND permissions%s.subject"
                               "               IN (SELECT DISTINCT \"group\""
                               "                   FROM group_users"
@@ -1046,6 +1050,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               /* Or the permission applies to the user's role. */
                               "  OR (%i = 1" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'role'"
+                              "           AND permissions%s.subject_location"
+                              "               = " G_STRINGIFY (LOCATION_TABLE)
                               "           AND permissions%s.subject"
                               "               IN (SELECT DISTINCT role"
                               "                   FROM role_users"
@@ -1110,12 +1116,15 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
                               get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
+                              table_trash ? "_trash" : "",
                               current_credentials.uuid,
                               get->trash,
+                              table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               current_credentials.uuid,

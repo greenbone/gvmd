@@ -37,6 +37,7 @@
 #define USER_MAY(resource)                                            \
   "SELECT count(*) > 0 FROM permissions"                              \
   " WHERE resource = " resource                                       \
+  " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)             \
   " AND ((subject_type = 'user'"                                      \
   "       AND subject"                                                \
   "           = (SELECT id FROM users"                                \
