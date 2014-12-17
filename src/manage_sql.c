@@ -50834,9 +50834,6 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   free (current_credentials.uuid);
   current_credentials.uuid = current_uuid;
 
-  // FIX owner  this should delete the users recursively
-  sql ("UPDATE users SET owner = NULL where owner = %llu;", user);
-
   sql ("DELETE FROM agents WHERE owner = %llu;", user);
   sql ("DELETE FROM agents_trash WHERE owner = %llu;", user);
 
@@ -50884,6 +50881,30 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
   sql ("DELETE FROM notes WHERE owner = %llu;", user);
   sql ("DELETE FROM notes_trash WHERE owner = %llu;", user);
 
+  /* Make permissions global if they are owned by the user and are related
+   * to users/groups/roles that are owned by the user. */
+  sql ("UPDATE permissions SET owner = NULL"
+       " WHERE owner = %llu"
+       " AND ((subject_type = 'user' AND subject IN (SELECT id FROM users WHERE owner = %llu))"
+       "      OR (subject_type = 'group' AND subject IN (SELECT id FROM groups WHERE owner = %llu))"
+       "      OR (subject_type = 'role' AND subject IN (SELECT id FROM roles WHERE owner = %llu))"
+       "      OR (resource_type = 'user' AND resource IN (SELECT id FROM users WHERE owner = %llu))"
+       "      OR (resource_type = 'group' AND resource IN (SELECT id FROM groups WHERE owner = %llu))"
+       "      OR (resource_type = 'role' AND resource IN (SELECT id FROM roles WHERE owner = %llu)));",
+       user,
+       user,
+       user,
+       user,
+       user,
+       user,
+       user);
+
+  /* Make users, roles and groups global if they are owned by the user. */
+  sql ("UPDATE users SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE roles SET owner = NULL WHERE owner = %llu;", user);
+  sql ("UPDATE groups SET owner = NULL WHERE owner = %llu;", user);
+
+  /* Remove all other permissions owned by the user or given on the user. */
   sql ("DELETE FROM permissions"
        " WHERE owner = %llu"
        " OR subject_type = 'user' AND subject = %llu"

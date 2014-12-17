@@ -1,5 +1,11 @@
 2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_user): Make users/groups/roles global if they
+	are owned by the user being deleted.  Also make permissions global if
+	they are related to these users/groups/roles.
+
+2014-12-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (user_owns_uuid, user_owns_trash_uuid)
 	(user_has_access_uuid, where_owned): Quote args for SQL.
 
