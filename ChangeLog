@@ -1,5 +1,14 @@
 2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r21225.
+
+	* src/manage_acl.h (USER_MAY): Add missing subject_location test.
+
+	* src/manage_acl.c (where_owned): Add subject_location tests for the
+	permission part of the query too.
+
+2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r20215.
 
 	* src/manage_sql.c (user_can_everything)

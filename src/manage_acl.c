@@ -641,10 +641,14 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                WHERE users.uuid = '%s'))"
                               "  %s"
                               "  OR (%ss.subject_type = 'user'"
+                              "      AND %ss.subject_location"
+                              "          = " G_STRINGIFY (LOCATION_TABLE)
                               "      AND %ss.subject"
                               "          = (SELECT ROWID FROM users"
                               "             WHERE users.uuid = '%s'))"
                               "  OR (%ss.subject_type = 'group'"
+                              "      AND %ss.subject_location"
+                              "          = " G_STRINGIFY (LOCATION_TABLE)
                               "      AND %ss.subject"
                               "          IN (SELECT DISTINCT `group`"
                               "              FROM group_users"
@@ -653,6 +657,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                            WHERE users.uuid"
                               "                                  = '%s')))"
                               "  OR (%ss.subject_type = 'role'"
+                              "      AND %ss.subject_location"
+                              "          = " G_STRINGIFY (LOCATION_TABLE)
                               "      AND %ss.subject"
                               "          IN (SELECT DISTINCT role"
                               "              FROM role_users"
@@ -666,10 +672,13 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               admin ? "OR (permissions.resource = 0)" : "",
                               type,
                               type,
+                              type,
                               current_credentials.uuid,
                               type,
                               type,
+                              type,
                               current_credentials.uuid,
+                              type,
                               type,
                               type,
                               current_credentials.uuid,
