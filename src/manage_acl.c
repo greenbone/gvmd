@@ -93,6 +93,8 @@ user_can_everything (const char *user_id)
   return sql_int (0, 0,
                   "SELECT count(*) > 0 FROM permissions"
                   " WHERE resource = 0"
+                  " AND subject_location"
+                  "     = " G_STRINGIFY (LOCATION_TABLE)
                   " AND ((subject_type = 'user'"
                   "       AND subject"
                   "           = (SELECT ROWID FROM users"
@@ -349,6 +351,7 @@ user_has_access_uuid (const char *type, const char *uuid,
                      " WHERE (resource_uuid = '%s'"
                      /* Users may view any permissions that affect them. */
                      "        OR uuid = '%s')"
+                     " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
                      " AND ((subject_type = 'user'"
                      "       AND subject"
                      "           = (SELECT ROWID FROM users"
@@ -393,6 +396,7 @@ user_has_access_uuid (const char *type, const char *uuid,
   ret = sql_int (0, 0,
                  "SELECT count(*) FROM permissions"
                  " WHERE resource_uuid = '%s'"
+                 " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
                  " AND ((subject_type = 'user'"
                  "       AND subject"
                  "           = (SELECT ROWID FROM users"
@@ -510,6 +514,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "  WHERE resource = %ss%s.ROWID"
                               "  AND resource_type = '%s'"
                               "  AND resource_location = %i"
+                              "  AND subject_location"
+                              "      = " G_STRINGIFY (LOCATION_TABLE)
                               "  AND ((subject_type = 'user'"
                               "        AND subject"
                               "            = (SELECT ROWID FROM users"
@@ -547,6 +553,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 " (SELECT ROWID FROM permissions"
                                 "  WHERE resource = reports%s.task"
                                 "  AND resource_type = 'task'"
+                                "  AND subject_location"
+                                "      = " G_STRINGIFY (LOCATION_TABLE)
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
                                 "            = (SELECT ROWID FROM users"

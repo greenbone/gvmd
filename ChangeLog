@@ -1,3 +1,12 @@
+2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r20215.
+
+	* src/manage_sql.c (user_can_everything)
+	(user_has_access_uuid, where_owned): Add missing subject_location tests.
+	Without these tests, permissions in the trashcan can randomly affect the
+	rights that are assiged to users.
+
 2014-12-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21118.
