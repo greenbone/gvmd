@@ -1028,7 +1028,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               /* Or, for admins, it's a global permission. */
                               "  %s"
                               /* Or the permission applies to the user. */
-                              "  OR (%i = 1" /* Skip for trash. */
+                              "  OR (%i = 0" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'user'"
                               "           AND permissions%s.subject_location"
                               "               = " G_STRINGIFY (LOCATION_TABLE)
@@ -1036,7 +1036,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "               = (SELECT id FROM users"
                               "                  WHERE users.uuid = '%s')))"
                               /* Or the permission applies to the user's group. */
-                              "  OR (%i = 1" /* Skip for trash. */
+                              "  OR (%i = 0" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'group'"
                               "           AND permissions%s.subject_location"
                               "               = " G_STRINGIFY (LOCATION_TABLE)
@@ -1048,7 +1048,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                                     WHERE users.uuid"
                               "                                           = '%s'))))"
                               /* Or the permission applies to the user's role. */
-                              "  OR (%i = 1" /* Skip for trash. */
+                              "  OR (%i = 0" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'role'"
                               "           AND permissions%s.subject_location"
                               "               = " G_STRINGIFY (LOCATION_TABLE)
