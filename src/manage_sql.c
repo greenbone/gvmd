@@ -20526,10 +20526,9 @@ filtered_host_count (const char *levels, const char *search_phrase,
        = g_strdup_printf (" (SELECT report FROM report_hosts"
                           "  WHERE report_hosts.host = distinct_host"
                           "  AND end_time IS NOT NULL"
-                          "  AND (SELECT owner FROM reports"
-                          "       WHERE id = report)"
-                          "      = (SELECT id FROM users"
-                          "         WHERE users.uuid = '%s')"
+                          "  AND report_hosts.report"
+                          "      IN (SELECT reports.id FROM reports"
+                          "          WHERE user_owns ('task', reports.task))"
                           "  AND (SELECT reports.scan_run_status = %u"
                           "       FROM reports"
                           "       WHERE reports.id = report)"
@@ -20545,7 +20544,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                           "       AND task_preferences.name = 'in_assets')"
                           "      = 'yes'"
                           "  ORDER BY id DESC LIMIT 1)",
-                          current_credentials.uuid,
                           TASK_STATUS_DONE);
 
       if (search_phrase && strlen (search_phrase))
@@ -20619,10 +20617,9 @@ filtered_host_count (const char *levels, const char *search_phrase,
       retn = sql_int ("SELECT count(*) FROM"
                       " (SELECT host"
                       "  FROM report_hosts"
-                      "  WHERE (SELECT reports.owner FROM reports"
-                      "         WHERE reports.id = report_hosts.report)"
-                      "        = (SELECT id FROM users"
-                      "           WHERE users.uuid = '%s')"
+                      "  WHERE report_hosts.report"
+                      "        IN (SELECT reports.id FROM reports"
+                      "            WHERE user_owns ('task', reports.task))"
                       "  AND (SELECT tasks.hidden FROM tasks, reports"
                       "       WHERE reports.task = tasks.id"
                       "       AND reports.id = report_hosts.report)"
@@ -20639,7 +20636,6 @@ filtered_host_count (const char *levels, const char *search_phrase,
                       "   AND source_type = 'nvt'"
                       "   AND value LIKE '%%%s%%')"
                       "  ORDER BY inet (host);",
-                      current_credentials.uuid,
                       quoted_search_phrase,
                       quoted_search_phrase);
       g_free (quoted_search_phrase);
@@ -20648,16 +20644,14 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
   return sql_int ("SELECT count(*) FROM"
                   " (SELECT DISTINCT host FROM report_hosts"
-                  "  WHERE (SELECT reports.owner FROM reports"
-                  "         WHERE reports.id = report_hosts.report)"
-                  "        = (SELECT id FROM users"
-                  "           WHERE users.uuid = '%s')"
+                  "  WHERE report_hosts.report"
+                  "        IN (SELECT reports.id FROM reports"
+                  "            WHERE user_owns ('task', reports.task))"
                   "  AND (SELECT tasks.hidden FROM tasks, reports"
                   "       WHERE reports.task = tasks.id"
                   "       AND reports.id = report_hosts.report)"
                   "      = 0"
-                  "  AND report_hosts.end_time IS NOT NULL);",
-                  current_credentials.uuid);
+                  "  AND report_hosts.end_time IS NOT NULL);");
 }
 
 /**
