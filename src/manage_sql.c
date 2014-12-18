@@ -17421,10 +17421,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
        = g_strdup_printf (" (SELECT report FROM report_hosts"
                           "  WHERE report_hosts.host = distinct_host"
                           "  AND end_time IS NOT NULL"
-                          "  AND (SELECT owner FROM reports"
-                          "       WHERE id = report)"
-                          "      = (SELECT id FROM users"
-                          "         WHERE users.uuid = '%s')"
+                          "  AND report_hosts.report"
+                          "      IN (SELECT reports.id FROM reports"
+                          "          WHERE user_owns ('task', reports.task))"
                           "  AND (SELECT reports.scan_run_status = %u"
                           "       FROM reports"
                           "       WHERE reports.id = report)"
@@ -17440,7 +17439,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                           "       AND task_preferences.name = 'in_assets')"
                           "      = 'yes'"
                           "  ORDER BY id DESC LIMIT 1)",
-                          current_credentials.uuid,
                           TASK_STATUS_DONE);
 
       if (search_phrase && strlen (search_phrase))
@@ -17522,10 +17520,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       init_iterator (iterator,
                      "SELECT host"
                      " FROM report_hosts"
-                     " WHERE (SELECT reports.owner FROM reports"
-                     "        WHERE reports.id = report_hosts.report)"
-                     "       = (SELECT id FROM users"
-                     "          WHERE users.uuid = '%s')"
+                     " AND report_hosts.report"
+                     "     IN (SELECT reports.id FROM reports"
+                     "         WHERE user_owns ('task', reports.task))"
                      " AND (SELECT tasks.hidden FROM tasks, reports"
                      "      WHERE reports.task = tasks.id"
                      "      AND reports.id = report_hosts.report)"
@@ -17550,7 +17547,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                      "  AND value LIKE '%%%s%%')"
                      " ORDER BY inet (host)"
                      " LIMIT %s OFFSET %i;",
-                     current_credentials.uuid,
                      quoted_search_phrase,
                      quoted_search_phrase,
                      sql_select_limit (max_results),
@@ -17560,10 +17556,9 @@ init_asset_iterator (iterator_t* iterator, int first_result,
   else
     init_iterator (iterator,
                    "SELECT DISTINCT host, inet (host) FROM report_hosts"
-                   " WHERE (SELECT reports.owner FROM reports"
-                   "        WHERE reports.id = report_hosts.report)"
-                   "       = (SELECT id FROM users"
-                   "          WHERE users.uuid = '%s')"
+                   " AND report_hosts.report"
+                   "     IN (SELECT reports.id FROM reports"
+                   "         WHERE user_owns ('task', reports.task))"
                    " AND (SELECT tasks.hidden FROM tasks, reports"
                    "      WHERE reports.task = tasks.id"
                    "      AND reports.id = report_hosts.report)"
@@ -17578,7 +17573,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                    " AND report_hosts.end_time IS NOT NULL"
                    " ORDER BY inet (host)"
                    " LIMIT %s OFFSET %i;",
-                   current_credentials.uuid,
                    sql_select_limit (max_results),
                    first_result);
 }
@@ -20367,10 +20361,10 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
   quoted_host = sql_quote (host);
   switch (sql_int64 (report_host,
                      "SELECT id FROM report_hosts WHERE host = '%s'"
-                     " AND (SELECT reports.owner FROM reports"
-                     "      WHERE reports.id = report_hosts.report)"
-                     "     = (SELECT id FROM users"
-                     "        WHERE users.uuid = '%s')"
+                     " AND user_owns ('task',"
+                     "                (SELECT reports.task FROM reports"
+                     "                 WHERE reports.id"
+                     "                       = report_hosts.report))"
                      " AND (SELECT tasks.hidden FROM tasks, reports"
                      "      WHERE reports.task = tasks.id"
                      "      AND reports.id = report_hosts.report)"
@@ -20385,7 +20379,6 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      " AND report_hosts.end_time IS NOT NULL"
                      " ORDER BY id DESC LIMIT 1 OFFSET %i;",
                      quoted_host,
-                     current_credentials.uuid,
                      position - 1))
     {
       case 0:
@@ -38586,13 +38579,12 @@ lookup_report_format (const char* name, report_format_t* report_format)
 
   assert (current_credentials.uuid);
 
-  quoted_name = sql_quote (name);
-  if (user_owns ("report_format", "name", quoted_name) == 0)
+  if (user_owns_name ("report_format", name) == 0)
     {
-      g_free (quoted_name);
       *report_format = 0;
       return FALSE;
     }
+  quoted_name = sql_quote (name);
   switch (sql_int64 (report_format,
                      "SELECT id FROM report_formats"
                      " WHERE name = '%s'"

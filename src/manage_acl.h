@@ -91,7 +91,10 @@ int
 user_is_observer (const char *);
 
 int
-user_owns (const char *, const char *, const char *);
+user_owns_name (const char *, const char *);
+
+int
+user_owns (const char *, resource_t, int);
 
 int
 user_is_owner (const char *, const char *);

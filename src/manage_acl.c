@@ -374,8 +374,10 @@ user_is_user (const char *uuid)
 
 /**
  * @brief Super clause.
+ *
+ * @param[in]  format  Value format specifier.
  */
-#define SUPER_CLAUSE                                                      \
+#define SUPER_CLAUSE(format)                                              \
   "                name = 'Super'"                                        \
   /*                    Super on everyone. */                             \
   "                AND ((resource = 0)"                                   \
@@ -383,7 +385,7 @@ user_is_user (const char *uuid)
   "                     OR ((resource_type = 'user')"                     \
   "                         AND (resource = (SELECT %ss%s.owner"          \
   "                                          FROM %ss%s"                  \
-  "                                          WHERE %s = '%s')))"          \
+  "                                          WHERE %s = " format ")))"    \
   /*                    Super on other_user's role. */                    \
   "                     OR ((resource_type = 'role')"                     \
   "                         AND (resource"                                \
@@ -393,7 +395,7 @@ user_is_user (const char *uuid)
   "                                        = (SELECT %ss%s.owner"         \
   "                                           FROM %ss%s"                 \
   "                                           WHERE %s"                   \
-  "                                                 = '%s'))))"           \
+  "                                                 = " format "))))"     \
   /*                    Super on other_user's group. */                   \
   "                     OR ((resource_type = 'group')"                    \
   "                         AND (resource"                                \
@@ -402,7 +404,7 @@ user_is_user (const char *uuid)
   "                                  WHERE \"user\""                      \
   "                                        = (SELECT %ss%s.owner"         \
   "                                           FROM %ss%s"                 \
-  "                                           WHERE %s = '%s')))))"       \
+  "                                           WHERE %s = " format ")))))" \
   "                AND subject_location = " G_STRINGIFY (LOCATION_TABLE)  \
   "                AND ((subject_type = 'user'"                           \
   "                      AND subject"                                     \
@@ -434,6 +436,7 @@ user_is_user (const char *uuid)
  * @param[in]  field    Field to compare.  Typically "uuid".
  * @param[in]  value    Expected value of field.
  * @param[in]  user_id  UUID of user.
+ * @param[in]  trash    Whether to search trash.
  */
 #define SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
   type,                                                       \
@@ -475,7 +478,7 @@ user_has_super_on (const char *type, const char *field, const char *value,
   gchar *quoted_value;
   quoted_value = sql_quote (value);
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " SUPER_CLAUSE ");",
+               "               WHERE " SUPER_CLAUSE ("'%s'") ");",
                SUPER_CLAUSE_ARGS (type, field, quoted_value,
                                   current_credentials.uuid, trash)))
     {
@@ -487,20 +490,42 @@ user_has_super_on (const char *type, const char *field, const char *value,
 }
 
 /**
+ * @brief Test whether a user has Super permission on a resource.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  field     Field to compare with resource.
+ * @param[in]  resource  Resource.
+ * @param[in]  trash     Whether resource is in trash.
+ *
+ * @return 1 if user has Super, else 0.
+ */
+int
+user_has_super_on_resource (const char *type, const char *field,
+                            resource_t resource, int trash)
+{
+  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
+               "               WHERE " SUPER_CLAUSE ("%llu") ");",
+               SUPER_CLAUSE_ARGS (type, field, resource,
+                                  current_credentials.uuid, trash)))
+    return 1;
+  return 0;
+}
+
+/**
  * @brief Test whether a user effectively owns a resource.
  *
  * A Super permissions can give a user effective ownership of another
  * user's resource.
  *
- * @param[in]  type      Type of resource, for example "report_format".
- * @param[in]  field     Field to compare with value.
- * @param[in]  value     Identifier value of resource.
+ * @param[in]  type  Type of resource, for example "report_format".
+ * @param[in]  name  Name of resource.
  *
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns (const char *type, const char *field, const char *value)
+user_owns_name (const char *type, const char *value)
 {
+  gchar *quoted_value;
   int ret;
 
   assert (current_credentials.uuid);
@@ -514,17 +539,18 @@ user_owns (const char *type, const char *field, const char *value)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (user_has_super_on (type, field, value, 0))
+  if (user_has_super_on (type, "name", value, 0))
     return 1;
 
+  quoted_value = sql_quote (value);
   ret = sql_int ("SELECT count(*) FROM %ss"
-                 " WHERE %s = '%s'"
+                 " WHERE name = '%s'"
                  " AND ((owner IS NULL) OR (owner ="
                  " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
                  type,
-                 field,
-                 value,
+                 quoted_value,
                  current_credentials.uuid);
+  g_free (quoted_value);
 
   return ret;
 }
@@ -612,6 +638,61 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
                      : (trash ? " AND hidden = 2" : " AND hidden < 2")),
                    current_credentials.uuid);
   g_free (quoted_uuid);
+
+  return ret;
+}
+
+/**
+ * @brief Test whether a user effectively owns a resource.
+ *
+ * A Super permissions can give a user effective ownership of another
+ * user's resource.
+ *
+ * @param[in]  type      Type of resource, for example "task".
+ * @param[in]  resource  Resource.
+ * @param[in]  trash     Whether the resource is in the trash.
+ *
+ * @return 1 if user owns resource, else 0.
+ */
+int
+user_owns (const char *type, resource_t resource, int trash)
+{
+  int ret;
+
+  assert (current_credentials.uuid);
+
+  if ((strcmp (type, "nvt") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "cpe") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0))
+    return 1;
+
+  if (user_has_super_on_resource (type, "id", resource, trash))
+    return 1;
+
+  if (strcmp (type, "result") == 0)
+    ret = sql_int ("SELECT count(*) FROM results, reports"
+                   " WHERE results.id = %llu"
+                   " AND results.report = reports.id"
+                   " AND ((reports.owner IS NULL) OR (reports.owner ="
+                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   resource,
+                   current_credentials.uuid);
+  else
+    ret = sql_int ("SELECT count(*) FROM %ss%s"
+                   " WHERE id = %llu"
+                   "%s"
+                   " AND ((owner IS NULL) OR (owner ="
+                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   type,
+                   (strcmp (type, "task") && trash) ? "_trash" : "",
+                   resource,
+                   (strcmp (type, "task")
+                     ? ""
+                     : (trash ? " AND hidden = 2" : " AND hidden < 2")),
+                   current_credentials.uuid);
 
   return ret;
 }

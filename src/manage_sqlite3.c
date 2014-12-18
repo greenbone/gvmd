@@ -57,6 +57,9 @@ int
 user_can_everything (const char *);
 
 int
+user_owns (const char *, resource_t, int);
+
+int
 resource_name (const char *, const char *, int, gchar **);
 
 int
@@ -1495,6 +1498,41 @@ sql_user_can_everything (sqlite3_context *context, int argc,
 }
 
 /**
+ * @brief Check if a user owns or effectively owns a resource.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_user_owns (sqlite3_context *context, int argc,
+               sqlite3_value** argv)
+{
+  const unsigned char *type;
+  resource_t resource;
+
+  assert (argc == 2);
+
+  type = sqlite3_value_text (argv[0]);
+  if (type == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get type argument", -1);
+      return;
+    }
+
+  resource = sqlite3_value_int64 (argv[1]);
+  if (resource == 0)
+    {
+      sqlite3_result_int (context, 0);
+      return;
+    }
+
+  sqlite3_result_int (context, user_owns ((char *) type, resource, 0));
+}
+
+/**
  * @brief Create functions.
  *
  * @return 0 success, -1 error.
@@ -1975,6 +2013,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to create user_can_everything", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "user_owns",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_user_owns,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create user_owns", __FUNCTION__);
       return -1;
     }
 

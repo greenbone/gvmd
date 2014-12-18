@@ -1,5 +1,26 @@
 2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Account for Super permissions in asset reports.
+
+	* src/manage_acl.c (SUPER_CLAUSE): Add format arg for value SQL.
+	(SUPER_CLAUSE_ARGS): Add missing doc.
+	(user_has_super_on): Add SUPER_CLAUSE format.
+	(user_has_super_on_resource): New function.
+	(user_owns_name): New function.  Was user_owns.
+	(user_owns): Convert to a version of user_owns_uuid that takes the
+	resource instead of the UUID.
+
+	* src/manage_acl.h: Update headers accordingly.
+
+	* src/manage_sql.c (init_asset_iterator, host_nthlast_report_host): Use
+	user_owns for ownership, so that Super checks are done.
+	(lookup_report_format): Update for name change.
+
+	* src/manage_sqlite3.c (sql_user_owns): New function.
+	(manage_create_sql_functions): Add user_owns.
+
+2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): Correct trash condition.
 
 2014-12-17  Matthew Mundell <matthew.mundell@greenbone.net>
