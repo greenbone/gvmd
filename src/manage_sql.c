@@ -51132,7 +51132,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
         }
 
       // FIX owned by any user
-      if (resource_with_name_exists (new_name, "user", 0))
+      if (resource_with_name_exists (new_name, "user", user))
         {
           sql ("ROLLBACK;");
           return 8;

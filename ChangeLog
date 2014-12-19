@@ -1,5 +1,10 @@
 2014-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_user): Exclude user being modified from name
+	check.
+
+2014-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add NEW_NAME to OMP MODIFY_USER, to allow changing of user names.
 
 	* src/manage_sql.c (modify_user): Add new_name argument.  Change name if
