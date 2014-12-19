@@ -3802,6 +3802,7 @@ typedef struct
   int ifaces_allow;
   gboolean modify_password;
   gchar *name;
+  gchar *new_name;
   gchar *password;
   array_t *roles;         ///< IDs of roles.
   array_t *sources;
@@ -3817,6 +3818,7 @@ modify_user_data_reset (modify_user_data_t * data)
 {
   array_free (data->groups);
   g_free (data->name);
+  g_free (data->new_name);
   g_free (data->user_id);
   g_free (data->password);
   g_free (data->hosts);
@@ -5381,6 +5383,7 @@ typedef enum
   CLIENT_MODIFY_USER_HOSTS,
   CLIENT_MODIFY_USER_IFACES,
   CLIENT_MODIFY_USER_NAME,
+  CLIENT_MODIFY_USER_NEW_NAME,
   CLIENT_MODIFY_USER_PASSWORD,
   CLIENT_MODIFY_USER_ROLE,
   CLIENT_MODIFY_USER_SOURCES,
@@ -8418,6 +8421,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("NAME", element_name) == 0)
           set_client_state (CLIENT_MODIFY_USER_NAME);
+        else if (strcasecmp ("NEW_NAME", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_USER_NEW_NAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           {
             const gchar *attribute;
@@ -24733,6 +24738,7 @@ create_task_fail:
               switch (modify_user
                       (modify_user_data->user_id,
                        &modify_user_data->name,
+                       modify_user_data->new_name,
                        ((modify_user_data->modify_password
                          && modify_user_data->password)
                          ? modify_user_data->password
@@ -24804,6 +24810,18 @@ create_task_fail:
                                         "Error in host specification"));
                     log_event_fail ("user", "User", NULL, "modified");
                     break;
+                  case 7:
+                    SEND_TO_CLIENT_OR_FAIL
+                     (XML_ERROR_SYNTAX ("modify_user",
+                                        "Error in user name"));
+                    log_event_fail ("user", "User", NULL, "modified");
+                    break;
+                  case 8:
+                    SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                            ("modify_user",
+                                             "User with name exists already"));
+                    log_event_fail ("user", "User", NULL, "modified");
+                    break;
                   case 99:
                     SEND_TO_CLIENT_OR_FAIL
                      (XML_ERROR_SYNTAX ("modify_user",
@@ -24841,6 +24859,7 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_USER, HOSTS);
       CLOSE (CLIENT_MODIFY_USER, IFACES);
       CLOSE (CLIENT_MODIFY_USER, NAME);
+      CLOSE (CLIENT_MODIFY_USER, NEW_NAME);
       CLOSE (CLIENT_MODIFY_USER, PASSWORD);
       CLOSE (CLIENT_MODIFY_USER, ROLE);
       case CLIENT_MODIFY_USER_SOURCES:
@@ -25931,6 +25950,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_USER_NAME,
               &modify_user_data->name);
+
+      APPEND (CLIENT_MODIFY_USER_NEW_NAME,
+              &modify_user_data->new_name);
 
       APPEND (CLIENT_MODIFY_USER_PASSWORD,
               &modify_user_data->password);

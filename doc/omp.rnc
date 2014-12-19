@@ -112,8 +112,7 @@ command
     | modify_task
     | modify_user
     | restore
-    | resume_or_start_task
-    | resume_stopped_task
+    | resume_task
     | run_wizard
     | start_task
     | stop_task
@@ -228,8 +227,7 @@ response
     | modify_task_response
     | modify_user_response
     | restore_response
-    | resume_or_start_task_response
-    | resume_stopped_task_response
+    | resume_task_response
     | run_wizard_response
     | start_task_response
     | stop_task_response
@@ -2183,8 +2181,7 @@ commands
            | modify_task
            | modify_user
            | restore
-           | resume_or_start_task
-           | resume_stopped_task
+           | resume_task
            | run_wizard
            | start_task
            | stop_task
@@ -3985,7 +3982,7 @@ empty_trashcan
 
 ## Command get_agents
 ##
-## Get all agents.
+## Get one or many agents.
 
 get_agents
  = element get_agents
@@ -4005,7 +4002,7 @@ get_agents
 
 ## Command get_configs
 ##
-## Get all configs.
+## Get one or many configs.
 
 get_configs
  = element get_configs
@@ -4048,7 +4045,7 @@ get_aggregates
 
 ## Command get_alerts
 ##
-## Get all alerts.
+## Get one or many alerts.
 
 get_alerts
  = element get_alerts
@@ -4067,7 +4064,7 @@ get_alerts
 
 ## Command get_filters
 ##
-## Get all filters.
+## Get one or many filters.
 
 get_filters
  = element get_filters
@@ -4086,7 +4083,7 @@ get_filters
 
 ## Command get_groups
 ##
-## Get all groups.
+## Get one or many groups.
 
 get_groups
  = element get_groups
@@ -4124,7 +4121,7 @@ get_info
 
 ## Command get_lsc_credentials
 ##
-## Get all LSC credentials.
+## Get one or many LSC credentials.
 
 get_lsc_credentials
  = element get_lsc_credentials
@@ -4144,7 +4141,7 @@ get_lsc_credentials
 
 ## Command get_notes
 ##
-## Get all notes.
+## Get one or many notes.
 
 get_notes
  = element get_notes
@@ -4163,7 +4160,7 @@ get_notes
 
 ## Command get_nvts
 ##
-## Get all NVTs.
+## Get one or many NVTs.
 
 get_nvts
  = element get_nvts
@@ -4207,7 +4204,7 @@ get_nvt_feed_version
 
 ## Command get_overrides
 ##
-## Get all overrides.
+## Get one or many overrides.
 
 get_overrides
  = element get_overrides
@@ -4226,7 +4223,7 @@ get_overrides
 
 ## Command get_permissions
 ##
-## Get all permissions.
+## Get one or many permissions.
 
 get_permissions
  = element get_permissions
@@ -4245,7 +4242,7 @@ get_permissions
 
 ## Command get_port_lists
 ##
-## Get all port lists.
+## Get one or many port lists.
 
 get_port_lists
  = element get_port_lists
@@ -4266,7 +4263,7 @@ get_port_lists
 
 ## Command get_preferences
 ##
-## Get all preferences.
+## Get one or many preferences.
 
 get_preferences
  = element get_preferences
@@ -4280,7 +4277,7 @@ get_preferences
 
 ## Command get_reports
 ##
-## Get all reports.
+## Get one or many reports.
 
 get_reports
  = element get_reports
@@ -4347,7 +4344,7 @@ get_reports
 
 ## Command get_report_formats
 ##
-## Get all report formats.
+## Get one or many report formats.
 
 get_report_formats
  = element get_report_formats
@@ -4399,7 +4396,7 @@ get_results
 
 ## Command get_roles
 ##
-## Get all roles.
+## Get one or many roles.
 
 get_roles
  = element get_roles
@@ -4416,7 +4413,7 @@ get_roles
 
 ## Command get_scanners
 ##
-## Get all scanners.
+## Get one or many scanners.
 
 get_scanners
  = element get_scanners
@@ -4435,7 +4432,7 @@ get_scanners
 
 ## Command get_schedules
 ##
-## Get all schedules.
+## Get one or many schedules.
 
 get_schedules
  = element get_schedules
@@ -4454,7 +4451,7 @@ get_schedules
 
 ## Command get_settings
 ##
-## Get all settings.
+## Get one or many settings.
 
 get_settings
  = element get_settings
@@ -4473,7 +4470,7 @@ get_settings
 
 ## Command get_slaves
 ##
-## Get all slaves.
+## Get one or many slaves.
 
 get_slaves
  = element get_slaves
@@ -4492,7 +4489,7 @@ get_slaves
 
 ## Command get_system_reports
 ##
-## Get all system reports.
+## Get one or many system reports.
 
 get_system_reports
  = element get_system_reports
@@ -4509,7 +4506,7 @@ get_system_reports
 
 ## Command get_tags
 ##
-## Get all tags.
+## Get one or many tags.
 
 get_tags
  = element get_tags
@@ -4528,7 +4525,7 @@ get_tags
 
 ## Command get_targets
 ##
-## Get all targets.
+## Get one or many targets.
 
 get_targets
  = element get_targets
@@ -4547,7 +4544,7 @@ get_targets
 
 ## Command get_tasks
 ##
-## Get all tasks.
+## Get one or many tasks.
 
 get_tasks
  = element get_tasks
@@ -4568,7 +4565,7 @@ get_tasks
 
 ## Command get_users
 ##
-## Get all users.
+## Get one or many users.
 
 get_users
  = element get_users
@@ -5895,7 +5892,10 @@ modify_task_file
 modify_user
  = element modify_user
      {
-       modify_user_name
+       # ID of the user to be modified. Overrides NAME element.
+       attribute id { uuid }
+       & modify_user_name
+       & modify_user_new_name
        & modify_user_password?
        & modify_user_role*
        & modify_user_hosts?
@@ -5905,6 +5905,13 @@ modify_user
 # The name of the user to be modified.
 modify_user_name
  = element name
+     {
+       text
+     }
+
+# The new name for the user.
+modify_user_new_name
+ = element new_name
      {
        text
      }
@@ -5947,22 +5954,12 @@ restore
        attribute id { uuid }
      }
 
-## Command resume_or_start_task
+## Command resume_task
 ##
-## Resume task if stopped, else start task.
+## Resume a task.
 
-resume_or_start_task
- = element resume_or_start_task
-     {
-       attribute task_id { uuid }
-     }
-
-## Command resume_stopped_task
-##
-## Resume a stopped task.
-
-resume_stopped_task
- = element resume_stopped_task
+resume_task
+ = element resume_task
      {
        attribute task_id { uuid }
      }
@@ -6236,8 +6233,7 @@ commands_response
            | modify_task_response
            | modify_user_response
            | restore_response
-           | resume_or_start_task_response
-           | resume_stopped_task_response
+           | resume_task_response
            | run_wizard_response
            | start_task_response
            | stop_task_response
@@ -16263,19 +16259,10 @@ restore_response
        & attribute status_text { text }
      }
 
-## Response to resume_or_start_task
+## Response to resume_task
 
-resume_or_start_task_response
- = element resume_or_start_task_response
-     {
-       attribute status { status }
-       & attribute status_text { text }
-     }
-
-## Response to resume_stopped_task
-
-resume_stopped_task_response
- = element resume_stopped_task_response
+resume_task_response
+ = element resume_task_response
      {
        attribute status { status }
        & attribute status_text { text }

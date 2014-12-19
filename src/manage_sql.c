@@ -50995,6 +50995,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  * @param[in]  user_id      The UUID of the user.  Overrides name.
  * @param[in]  name         The name of the user.  If NULL then set to name
  *                          when return is 3 or 4.
+ * @param[in]  new_name     New name for the user.  NULL to leave as is.
  * @param[in]  password     The password of the user.  NULL to leave as is.
  * @param[in]  hosts        The host the user is allowed/forbidden to scan.
  *                          NULL to leave as is.
@@ -51013,18 +51014,20 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
  * @return 0 if the user has been added successfully, 1 failed to find group,
  *         2 failed to find user, 3 success and user gained admin, 4 success
  *         and user lost admin, 5 failed to find role, 6 syntax error in hosts,
- *         99 permission denied, -1 on error, -2 for an unknown role, -3 if
- *         wrong number of methods.
+ *         7 syntax error in new name, 99 permission denied, -1 on error,
+ *         -2 for an unknown role, -3 if wrong number of methods.
  */
 int
-modify_user (const gchar * user_id, gchar **name, const gchar * password,
-             const gchar * hosts, int hosts_allow, const gchar *ifaces,
-             int ifaces_allow, const array_t * allowed_methods, array_t *groups,
+modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
+             const gchar * password, const gchar * hosts, int hosts_allow,
+             const gchar *ifaces, int ifaces_allow,
+             const array_t * allowed_methods, array_t *groups,
              gchar **group_id_return, array_t *roles, gchar **role_id_return,
              gchar **r_errdesc)
 {
   char *errstr;
   gchar *hash, *quoted_hosts, *quoted_ifaces, *quoted_method, *clean, *uuid;
+  gchar *quoted_new_name;
   user_t user;
   int max, was_admin, is_admin;
 
@@ -51118,6 +51121,27 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
     }
   manage_set_max_hosts (max);
 
+  /* Check new name. */
+
+  if (new_name)
+    {
+      if (validate_username (new_name) != 0)
+        {
+          sql ("ROLLBACK");
+          return 7;
+        }
+
+      // FIX owned by any user
+      if (resource_with_name_exists (new_name, "user", 0))
+        {
+          sql ("ROLLBACK;");
+          return 8;
+        }
+      quoted_new_name = sql_quote (new_name);
+    }
+  else
+    quoted_new_name = NULL;
+
   /* Get the password hashes. */
 
   if (password)
@@ -51138,13 +51162,17 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
                               ? g_ptr_array_index (allowed_methods, 0)
                               : "");
   sql ("UPDATE users"
-       " SET hosts = '%s',"
+       " SET name = %s%s%s,"
+       "     hosts = '%s',"
        "     hosts_allow = '%i',"
        "     ifaces = '%s',"
        "     ifaces_allow = %i,"
        "     method = %s%s%s,"
        "     modification_time = m_now ()"
        " WHERE id = %llu;",
+       quoted_new_name ? "'" : "",
+       quoted_new_name ? quoted_new_name : "name",
+       quoted_new_name ? "'" : "",
        quoted_hosts,
        hosts_allow,
        quoted_ifaces,
@@ -51153,6 +51181,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar * password,
        allowed_methods ? quoted_method : "method",
        allowed_methods ? "'" : "",
        user);
+  g_free (quoted_new_name);
   g_free (quoted_hosts);
   g_free (quoted_ifaces);
   g_free (quoted_method);

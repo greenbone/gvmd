@@ -20648,7 +20648,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </p>
     </description>
     <pattern>
+      <attrib>
+        <name>id</name>
+        <summary>ID of the user to be modified.  Overrides NAME element</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
       <e>name</e>
+      <e>new_name</e>
       <o><e>password</e></o>
       <any><e>role</e></any>
       <o><e>hosts</e></o>
@@ -20657,6 +20664,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>name</name>
       <summary>The name of the user to be modified</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>new_name</name>
+      <summary>The new name for the user</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
