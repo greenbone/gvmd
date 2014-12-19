@@ -1,3 +1,8 @@
+2014-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (modify_user): Prevent users from modifying their own
+	names.
+
 2014-12-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (NOTE_ITERATOR_FILTER_COLUMNS): Add column "active".

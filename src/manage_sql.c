@@ -51133,6 +51133,12 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           return 7;
         }
 
+      if (strcmp (uuid, current_credentials.uuid) == 0)
+        {
+          sql ("ROLLBACK;");
+          return 99;
+        }
+
       // FIX owned by any user
       if (resource_with_name_exists (new_name, "user", user))
         {
