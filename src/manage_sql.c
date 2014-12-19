@@ -34943,15 +34943,16 @@ modify_note (note_t note, const char *active, const char* text,
  */
 #define NOTE_ITERATOR_FILTER_COLUMNS                                          \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "name", "nvt", "text", "nvt_id",         \
-   "task_name", "task_id", "hosts", "port", "result", "severity", NULL }
+   "task_name", "task_id", "hosts", "port", "active", "result", "severity",   \
+   NULL }
 
 /**
  * @brief Note iterator columns.
  */
 #define NOTE_ITERATOR_COLUMNS                                              \
  {                                                                         \
-   { "notes.id", NULL },                                                   \
-   { "notes.uuid", NULL },                                                 \
+   { "notes.id", "id" },                                                   \
+   { "notes.uuid", "uuid" },                                               \
    { " (SELECT name FROM nvts WHERE oid = notes.nvt)", "name" },           \
    { "CAST ('' AS TEXT)", NULL },                                          \
    { "iso_time (notes.creation_time)", NULL },                             \
@@ -34962,19 +34963,19 @@ modify_note (note_t note, const char *active, const char* text,
    { "owner", NULL },                                                      \
    /* Columns specific to notes. */                                        \
    { "notes.nvt", "oid" },                                                 \
-   { "notes.text", NULL },                                                 \
-   { "notes.hosts", NULL },                                                \
-   { "notes.port", NULL },                                                 \
+   { "notes.text", "text" },                                               \
+   { "notes.hosts", "hosts" },                                             \
+   { "notes.port", "port" },                                               \
    { "severity_to_level (notes.severity, 1)", "threat" },                  \
    { "notes.task", NULL },                                                 \
-   { "notes.result", NULL },                                               \
+   { "notes.result", "result" },                                           \
    { "notes.end_time", NULL },                                             \
-   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())", NULL },       \
+   { "(notes.end_time = 0) OR (notes.end_time >= m_now ())", "active" },   \
    { "(SELECT name FROM nvts WHERE oid = notes.nvt)", "nvt" },             \
    { "notes.nvt", "nvt_id" },                                              \
    { "(SELECT uuid FROM tasks WHERE id = notes.task)", "task_id" },        \
    { "(SELECT name FROM tasks WHERE id = notes.task)", "task_name" },      \
-   { "notes.severity", NULL },                                             \
+   { "notes.severity", "severity" },                                       \
    { "(SELECT name FROM users WHERE users.id = notes.owner)", "_owner" },  \
    { NULL, NULL }                                                          \
  }
@@ -34984,8 +34985,8 @@ modify_note (note_t note, const char *active, const char* text,
  */
 #define NOTE_ITERATOR_TRASH_COLUMNS                                              \
  {                                                                               \
-   { "notes_trash.id", NULL },                                                   \
-   { "notes_trash.uuid", NULL },                                                 \
+   { "notes_trash.id", "id" },                                                   \
+   { "notes_trash.uuid", "uuid" },                                               \
    { "CAST ('' AS TEXT)", NULL },                                                \
    { "CAST ('' AS TEXT)", NULL },                                                \
    { "iso_time (notes_trash.creation_time)", NULL },                             \
@@ -34996,19 +34997,20 @@ modify_note (note_t note, const char *active, const char* text,
    { "owner", NULL },                                                            \
    /* Columns specific to notes_trash. */                                        \
    { "notes_trash.nvt", "oid" },                                                 \
-   { "notes_trash.text", NULL },                                                 \
-   { "notes_trash.hosts", NULL },                                                \
-   { "notes_trash.port", NULL },                                                 \
+   { "notes_trash.text", "text" },                                               \
+   { "notes_trash.hosts", "hosts" },                                             \
+   { "notes_trash.port", "port" },                                               \
    { "severity_to_level (notes_trash.severity, 1)", "threat" },                  \
    { "notes_trash.task", NULL },                                                 \
-   { "notes_trash.result", NULL },                                               \
+   { "notes_trash.result", "result" },                                           \
    { "notes_trash.end_time", NULL },                                             \
-   { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())", NULL }, \
+   { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())",         \
+     "active" },                                                                 \
    { "(SELECT name FROM nvts WHERE oid = notes_trash.nvt)", "nvt" },             \
    { "notes_trash.nvt", "nvt_id" },                                              \
    { "(SELECT uuid FROM tasks WHERE id = notes_trash.task)", "task_id" },        \
    { "(SELECT name FROM tasks WHERE id = notes_trash.task)", "task_name" },      \
-   { "notes_trash.severity", NULL },                                             \
+   { "notes_trash.severity", "severity" },                                       \
    { NULL, NULL }                                                                \
  }
 
@@ -35943,8 +35945,8 @@ modify_override (override_t override, const char *active, const char* text,
  */
 #define OVERRIDE_ITERATOR_COLUMNS                                           \
  {                                                                          \
-   { "overrides.id", NULL },                                                \
-   { "overrides.uuid", NULL },                                              \
+   { "overrides.id", "id" },                                                \
+   { "overrides.uuid", "uuid" },                                            \
    { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "name" },         \
    { "CAST ('' AS TEXT)", NULL },                                           \
    { "iso_time (overrides.creation_time)", NULL },                          \
@@ -35988,8 +35990,8 @@ modify_override (override_t override, const char *active, const char* text,
  */
 #define OVERRIDE_ITERATOR_TRASH_COLUMNS                                     \
  {                                                                          \
-   { "overrides_trash.id", NULL },                                          \
-   { "overrides_trash.uuid", NULL },                                        \
+   { "overrides_trash.id", "id" },                                          \
+   { "overrides_trash.uuid", "uuid" },                                      \
    { "CAST ('' AS TEXT)", NULL },                                           \
    { "CAST ('' AS TEXT)", NULL },                                           \
    { "iso_time (overrides_trash.creation_time)", NULL },                    \

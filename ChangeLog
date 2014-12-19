@@ -1,3 +1,11 @@
+2014-12-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (NOTE_ITERATOR_FILTER_COLUMNS): Add column "active".
+	(NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS): Add filter column
+	names id, uuid, text, hosts, port, results, active and severity.
+	(OVERRIDE_ITERATOR_COLUMNS, OVERRIDE_ITERATOR_TRASH_COLUMNS): Add
+	filter column names id and uuid.
+
 2014-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_user): Exclude user being modified from name
