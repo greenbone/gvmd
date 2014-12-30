@@ -1,3 +1,8 @@
+2014-12-30  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_report_errors_iterator): Use UNION ALL for
+	UNION as it doesn't remove dpulicates and provides better performance.
+
 2014-12-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (modify_user): Prevent users from modifying their own

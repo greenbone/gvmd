@@ -17149,7 +17149,7 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    " WHERE results.type = 'Error Message'"
                    "  AND results.nvt = nvts.oid"
                    "  AND results.report = %llu"
-                   " UNION SELECT results.host, results.port, results.nvt,"
+                   " UNION ALL SELECT results.host, results.port, results.nvt,"
                    "  results.description, '', '',"
                    "  results.nvt_version, results.severity"
                    "  FROM results"
