@@ -2483,16 +2483,18 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *name, *severity;
+      const char *type, *name, *severity, *host;
       char *desc = NULL, *nvt_id = NULL;
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
       name = entity_attribute (r_entity, "name");
       severity = entity_attribute (r_entity, "severity");
+      host = entity_attribute (r_entity, "host");
       assert (name);
       assert (type);
       assert (severity);
+      assert (host);
       if (g_str_has_prefix (name, "oval:"))
         nvt_id = ovaldef_uuid (name, defs_file);
       else
@@ -2502,7 +2504,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           if (g_str_has_prefix (nvt_id, "oval:"))
             severity = ovaldef_severity (nvt_id);
         }
-      result = make_osp_result (task, target, nvt_id, type, desc, severity);
+      result = make_osp_result (task, host, nvt_id, type, desc, severity);
       report_add_result (report, result);
       g_free (nvt_id);
       g_free (desc);
