@@ -1,3 +1,12 @@
+2014-12-31  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (modify_task_check_config_target): Remove function.
+
+	* src/manage.h: Remove prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): Don't limit OSP tasks to
+	single-host targets when creating or modifying them.
+
 2014-12-30  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_report_errors_iterator): Use UNION ALL for

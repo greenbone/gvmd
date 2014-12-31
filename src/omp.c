@@ -21585,22 +21585,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
-          /* Check target in OSP case. */
-          if (config_type (config) >= 1)
-            {
-              int count;
-              char *hosts = target_hosts (target);
-
-              count = manage_count_hosts (hosts, NULL);
-              g_free (hosts);
-              if (count != 1)
-                {
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "Multi-host target with OSP scanner."));
-                  goto create_task_fail;
-                }
-            }
           set_task_config (create_task_data->task, config);
           set_task_slave (create_task_data->task, slave);
           set_task_target (create_task_data->task, target);
@@ -24288,12 +24272,6 @@ create_task_fail:
                         modify_task_data->scanner_id))
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task", "Config and Scanner types mismatch."));
-            else if (!modify_task_check_config_target
-                       (task, modify_task_data->config_id,
-                        modify_task_data->target_id))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task",
-                                  "Multi-host target with OSP scanner"));
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)

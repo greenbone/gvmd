@@ -28345,49 +28345,6 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 }
 
 /**
- * @brief Check target matches config type. In case of OSP config, multi-host
- *        targets are not allowed.
- *
- * @param[in]  task         Task.
- * @param[in]  config_id    ID of config. "0" to use task's config.
- * @param[in]  target_id    ID of target. "0" to use task's target.
- *
- * @return 1 if allowed, 0 otherwise.
- */
-int
-modify_task_check_config_target (task_t task, const char *config_id,
-                                 const char *target_id)
-{
-  config_t config = 0;
-  target_t target = 0;
-  int count;
-  char *hosts;
-
-  if (config_id == NULL)
-    config_id = "0";
-  if (target_id == NULL)
-    target_id = "0";
-
-  if (!strcmp (config_id, "0") && !strcmp (target_id, "0"))
-    return 1;
-
-  if (strcmp (config_id, "0"))
-    find_config_with_permission (config_id, &config, "get_configs");
-  else
-    config = task_config (task);
-
-  if (config_type (config) == 0)
-    return 1;
-
-  find_target_with_permission (target_id, &target, "get_targets");
-  hosts = target_hosts (target);
-  count = manage_count_hosts (hosts, NULL);
-  g_free (hosts);
-
-  return count == 1 ? 1 : 0;
-}
-
-/**
  * @brief Create a config from an existing config.
  *
  * @param[in]  name        Name of new config and NVT selector.
