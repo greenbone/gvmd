@@ -2594,22 +2594,8 @@ fork_osp_scan_handler (task_t task, report_t report)
       report_xml = NULL;
       progress = osp_get_scan (connection, report_id, &report_xml);
       osp_connection_close (connection);
-      assert (progress <= 100 && progress >= -1);
-      if (progress == -1)
-        {
-          result_t result;
-
-          g_warning ("Scan %s stopped by the scanner", report_id);
-          result = make_result (task, "", "", NULL,
-                                threat_message_type ("Error"),
-                                "Scan stopped by the scanner.");
-          report_add_result (report, result);
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          set_report_scan_run_status (report, TASK_STATUS_STOPPED);
-          rc = 1;
-          break;
-        }
-      else if (progress == 100)
+      assert (progress <= 100 && progress >= 0);
+      if (progress == 100)
         {
           /* Parse the report XML. */
           parse_osp_report (task, report, report_xml);
@@ -2620,6 +2606,9 @@ fork_osp_scan_handler (task_t task, report_t report)
           rc = 0;
           break;
         }
+      else
+        set_report_slave_progress (report, progress);
+
       g_free (report_xml);
       sleep (10);
     }

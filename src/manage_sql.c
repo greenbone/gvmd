@@ -21972,7 +21972,7 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
 {
   target_t target;
   char *hosts, *exclude_hosts;
-  int maximum_hosts;
+  int maximum_hosts, progress;
 
   if (report == 0)
     {
@@ -21981,11 +21981,12 @@ report_progress (report_t report, task_t task, gchar **hosts_xml)
       return -1;
     }
 
-  if (report_slave_task_uuid (report))
+  /* Handles both slave and OSP cases. */
+  if ((progress = report_slave_progress (report)))
     {
       if (hosts_xml)
         *hosts_xml = g_strdup ("");
-      return report_slave_progress (report);
+      return progress;
     }
 
   target = task_target (task);
