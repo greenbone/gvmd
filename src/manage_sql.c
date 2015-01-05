@@ -17520,7 +17520,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
       init_iterator (iterator,
                      "SELECT host"
                      " FROM report_hosts"
-                     " AND report_hosts.report"
+                     " WHERE report_hosts.report"
                      "     IN (SELECT reports.id FROM reports"
                      "         WHERE user_owns ('task', reports.task))"
                      " AND (SELECT tasks.hidden FROM tasks, reports"
@@ -17556,7 +17556,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
   else
     init_iterator (iterator,
                    "SELECT DISTINCT host, inet (host) FROM report_hosts"
-                   " AND report_hosts.report"
+                   " WHERE report_hosts.report"
                    "     IN (SELECT reports.id FROM reports"
                    "         WHERE user_owns ('task', reports.task))"
                    " AND (SELECT tasks.hidden FROM tasks, reports"

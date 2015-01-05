@@ -1,5 +1,10 @@
 2014-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (init_asset_iterator): Fix sql statements by using
+	WHERE instead correctly.
+
+2014-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (fork_osp_scan_handler): Handle and set received progress
 	value accordingly.
 
