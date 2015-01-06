@@ -1,3 +1,15 @@
+2015-01-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	OMP RESUME_OR_START_TASK was removed.  Hence increase database version
+	to 136.  Add database migration from version 135 to 136.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 136.
+
+	* src/manage_migrators.c (migrate_135_to_136): New function.
+	(database_migrators): Add migrate_135_to_136.
+
+	* doc/db.png: Update for version change.
+
 2014-01-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_asset_iterator): Fix sql statements by using
@@ -345,7 +357,12 @@
 	as the first consolidation step to have only a single
 	RESUME function.
 	This includes the name of the permission, hence increase
-	database version to 140 and aadjust permissions in the migrator.
+	database version to 140 and adjust permissions in the migrator.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 140.
+
+	* src/manage_migrators.c (migrate_139_to_140): New.
+	(database_migrators): Add migrate_139_to_140.
 
 	* src/manage_sql.c (omp_commands): Rename RESUME_STOPPED_TASK
 	to RESUME_TASK.
@@ -363,11 +380,6 @@
 	(resume_stopped_task): Rename to resume_task and adjusted names.
 
 	* src/manage.h: Adjust proto accordingly.
-
-	* src/manage_migrators.c (migrate_139_to_140): New.
-	(database_migrators): Add migrate_139_to_140.
-
-	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 140.
 
 	* src/schema_formats/XML/OMP.xml.in: Renamed RESUME_STOP_TASK
 	to RESUME_TASK and document this as a protocol change.

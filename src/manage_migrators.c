@@ -9858,6 +9858,40 @@ migrate_140_to_141 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 141 to version 142.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_141_to_142 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 141. */
+
+  if (manage_db_version () != 141)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* OMP command RESUME_OR_START_TASK was removed. */
+
+  sql ("DELETE FROM permissions WHERE name = 'resume_or_start_task';");
+
+  sql ("DELETE FROM permissions_trash WHERE name = 'resume_or_start_task';");
+
+  /* Set the database version to 142. */
+
+  set_db_version (142);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
 
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
@@ -10011,6 +10045,7 @@ static migrator_t database_migrators[]
     {139, migrate_138_to_139},
     {140, migrate_139_to_140},
     {141, migrate_140_to_141},
+    {142, migrate_141_to_142},
     /* End marker. */
     {-1, NULL}};
 
