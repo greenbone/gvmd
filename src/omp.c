@@ -14847,34 +14847,72 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             g_free (content_type);
 
             if (get_reports_data->alert_id == NULL)
-              /* Send the standard elements.  Should match send_get_common. */
-              buffer_xml_append_printf
-               (prefix,
-                "<owner><name>%s</name></owner>"
-                "<name>%s</name>"
-                "<comment>%s</comment>"
-                "<creation_time>%s</creation_time>"
-                "<modification_time>"
-                "%s"
-                "</modification_time>"
-                "<writable>0</writable>"
-                "<in_use>0</in_use>",
-                get_iterator_owner_name (&reports)
-                ? get_iterator_owner_name (&reports)
-                : "",
-                get_iterator_name (&reports)
-                ? get_iterator_name (&reports)
-                : "",
-                get_iterator_comment (&reports)
-                ? get_iterator_comment (&reports)
-                : "",
-                get_iterator_creation_time (&reports)
-                ? get_iterator_creation_time (&reports)
-                : "",
-                get_iterator_modification_time (&reports)
-                ? get_iterator_modification_time (&reports)
-                : "");
+              {
+                task_t task;
 
+                /* Send the standard elements.  Should match send_get_common. */
+                buffer_xml_append_printf
+                  (prefix,
+                   "<owner><name>%s</name></owner>"
+                   "<name>%s</name>"
+                   "<comment>%s</comment>"
+                   "<creation_time>%s</creation_time>"
+                   "<modification_time>"
+                   "%s"
+                   "</modification_time>"
+                   "<writable>0</writable>"
+                   "<in_use>0</in_use>",
+                   get_iterator_owner_name (&reports)
+                    ? get_iterator_owner_name (&reports)
+                    : "",
+                   get_iterator_name (&reports)
+                    ? get_iterator_name (&reports)
+                    : "",
+                   get_iterator_comment (&reports)
+                    ? get_iterator_comment (&reports)
+                    : "",
+                   get_iterator_creation_time (&reports)
+                    ? get_iterator_creation_time (&reports)
+                    : "",
+                   get_iterator_modification_time (&reports)
+                    ? get_iterator_modification_time (&reports)
+                    : "");
+                /* Send short task and report format info */
+                report_task (report, &task);
+                if (task)
+                  {
+                    gchar *report_task_uuid, *report_task_name;
+                    task_uuid (task, &report_task_uuid);
+                    report_task_name = task_name (task);
+
+                    buffer_xml_append_printf
+                      (prefix,
+                       "<task id=\"%s\">"
+                       "<name>%s</name>"
+                       "</task>",
+                       report_task_uuid,
+                       report_task_name);
+
+                    g_free (report_task_uuid);
+                    g_free (report_task_name);
+                  }
+
+                 if (get_reports_data->format_id)
+                   {
+                     gchar *format_name = NULL;
+                     format_name = report_format_name (report_format);
+
+                     buffer_xml_append_printf
+                       (prefix,
+                        "<report_format id=\"%s\">"
+                        "<name>%s</name>"
+                        "</report_format>",
+                        get_reports_data->format_id,
+                        format_name ? format_name : "");
+                     // g_free (report_format_name);
+                   }
+
+              }
             /* If there's just one report then cleanup the iterator early.  This
              * closes the iterator transaction, allowing manage_schedule to lock
              * the db during generation of large reports. */

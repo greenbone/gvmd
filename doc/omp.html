@@ -2437,6 +2437,36 @@ result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>task</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The task the report belongs to.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>report_format</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The report format used.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the report format.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>report</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -3090,6 +3120,8 @@ result_overrides
        &amp; report_modification_time
        &amp; report_writable
        &amp; report_in_use
+       &amp; report_task
+       &amp; report_report_format
        &amp; report_report
      }
 
@@ -3139,6 +3171,32 @@ report_writable
  = element writable
      {
        boolean
+     }
+
+report_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; report_task_name
+     }
+
+report_task_name
+ = element name
+     {
+       name
+     }
+
+report_report_format
+ = element report_format
+     {
+       attribute id { uuid }
+       &amp; report_report_format_name
+     }
+
+report_report_format_name
+ = element name
+     {
+       name
      }
 
 report_report
@@ -7281,6 +7339,8 @@ create_report_report
        &amp; report_modification_time
        &amp; report_writable
        &amp; report_in_use
+       &amp; report_task
+       &amp; report_report_format
        &amp; report_report
      }
 
@@ -20938,6 +20998,8 @@ get_reports_response_report
        &amp; report_modification_time
        &amp; report_writable
        &amp; report_in_use
+       &amp; report_task
+       &amp; report_report_format
        &amp; report_report
      }
 

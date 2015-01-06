@@ -887,6 +887,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>modification_time</e>
       <e>writable</e>
       <e>in_use</e>
+      <e>task</e>
+      <e>report_format</e>
       <e>report</e>
     </pattern>
     <ele>
@@ -930,6 +932,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>writable</name>
       <summary>Whether the report is writable</summary>
       <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>The task the report belongs to</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the task</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>report_format</name>
+      <summary>The report format used</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the report format</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
     </ele>
     <ele>
       <name>report</name>

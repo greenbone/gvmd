@@ -7865,6 +7865,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
       case ALERT_METHOD_EMAIL:
         {
           char *to_address;
+          char *format_name;
+          format_name = NULL;
 
           to_address = alert_data (alert, "method", "to_address");
 
@@ -7890,7 +7892,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   gchar *event_desc, *condition_desc, *report_content;
                   gchar *note, *note_2;
-                  char *format_uuid, *format_name;
+                  char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
 
@@ -7999,7 +8001,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                      max_content_length),
                                           report_content,
                                           note_2 ? note_2 : "");
-                  free (format_name);
                   g_free (note);
                   g_free (note_2);
                   g_free (report_content);
@@ -8009,7 +8010,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               else if (notice && strcmp (notice, "2") == 0)
                 {
                   gchar *event_desc, *condition_desc, *report_content, *note;
-                  char *format_uuid, *format_name;
+                  char *format_uuid;
                   report_format_t report_format = 0;
                   gsize content_length;
 
@@ -8111,7 +8112,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           condition_desc,
                                           format_name,
                                           note ? note : "");
-                  free (format_name);
                   g_free (note);
                   g_free (event_desc);
                   g_free (condition_desc);
@@ -8121,6 +8121,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   gchar *event_desc, *generic_desc, *condition_desc;
 
                   /* Simple notice message. */
+                  format_name = NULL;
                   event_desc = event_description (event, event_data, name);
                   generic_desc = event_description (event, event_data, NULL);
                   condition_desc = alert_condition_description (condition,
@@ -8137,7 +8138,6 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                   g_free (condition_desc);
                 }
               free (filt_id);
-              free (name);
               free (notice);
 
               gchar *fname_format, *file_name;
@@ -8172,12 +8172,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 = openvas_export_file_name (fname_format,
                                             current_credentials.username,
                                             "report", report_id,
-                                            creation_time, modification_time);
-
+                                            creation_time, modification_time,
+                                            name, format_name);
               ret = email (to_address, from_address, subject, body, base64,
                            type, file_name ? file_name : "openvas-report",
                            extension);
 
+              free (name);
+              free (format_name);
               g_free (base64);
               free (to_address);
               free (from_address);

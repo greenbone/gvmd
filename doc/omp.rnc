@@ -1074,6 +1074,8 @@ report
        & report_modification_time
        & report_writable
        & report_in_use
+       & report_task
+       & report_report_format
        & report_report
      }
 
@@ -1131,6 +1133,36 @@ report_writable
  = element writable
      {
        boolean
+     }
+
+# The task the report belongs to.
+report_task
+ = element task
+     {
+       attribute id { uuid }
+       & report_task_name
+     }
+
+# The name of the task.
+report_task_name
+ = element name
+     {
+       name
+     }
+
+# The report format used.
+report_report_format
+ = element report_format
+     {
+       attribute id { uuid }
+       & report_report_format_name
+     }
+
+# The name of the report format.
+report_report_format_name
+ = element name
+     {
+       name
      }
 
 report_report
@@ -2966,6 +2998,8 @@ create_report_report
        & report_modification_time
        & report_writable
        & report_in_use
+       & report_task
+       & report_report_format
        & report_report
      }
 
@@ -11714,6 +11748,8 @@ get_reports_response_report
        & report_modification_time
        & report_writable
        & report_in_use
+       & report_task
+       & report_report_format
        & report_report
      }
 

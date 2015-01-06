@@ -1,3 +1,16 @@
+2015-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_REPORTS
+	add short task and report format info to outer report element.
+
+	* src/manage_sql.c (escalate_2): Use task and report format name when
+	creating file name for email attachments.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add new elements task
+	and report_format.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2015-01-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (valid_omp_command): Remove special case now that
