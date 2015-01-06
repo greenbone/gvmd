@@ -1,5 +1,17 @@
 2015-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/report_formats/HTML/HTML.xsl (note, override): Hide inactive
+	notes / overrides. Use end_time instead of modification_time in
+	"Active until:" part.
+
+	* src/report_formats/LaTeX/latex.xsl (notes, overrides): Hide inactive
+	notes / overrides.
+	
+	* src/report_formats/TXT/TXT.xsl (note, override): Hide inactive
+	notes / overrides.
+
+2015-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_REPORTS
 	add short task and report format info to outer report element.
 

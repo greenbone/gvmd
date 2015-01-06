@@ -956,11 +956,11 @@ advice given in each description, in order to rectify the issue.
   <!-- Text of a note. -->
   <xsl:template name="notes">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:if test="count(notes/note) &gt; 0">
+    <xsl:if test="count(notes/note [not (active='0')]) &gt; 0">
       <xsl:call-template name="latex-hline"/>
       <xsl:call-template name="latex-newline"/>
     </xsl:if>
-    <xsl:for-each select="notes/note">
+    <xsl:for-each select="notes/note [not (active='0')]">
       <xsl:call-template name="latex-newline"/>
       <xsl:text>\rowcolor{openvas_user_note}{\textbf{Note}</xsl:text>
       <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
@@ -995,11 +995,11 @@ advice given in each description, in order to rectify the issue.
   <xsl:template name="overrides">
     <xsl:param name="delta">0</xsl:param>
     <xsl:if test="openvas:report()/filters/apply_overrides/text()='1'">
-      <xsl:if test="count(overrides/override) &gt; 0">
+      <xsl:if test="count(overrides/override [not (active='0')]) &gt; 0">
         <xsl:call-template name="latex-hline"/>
         <xsl:call-template name="latex-newline"/>
       </xsl:if>
-      <xsl:for-each select="overrides/override">
+      <xsl:for-each select="overrides/override [not (active='0')]">
         <xsl:call-template name="latex-newline"/>
         <xsl:text>\rowcolor{openvas_user_override}{\textbf{Override from </xsl:text>
         <xsl:choose>

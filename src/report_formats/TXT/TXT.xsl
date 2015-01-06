@@ -233,76 +233,86 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="note">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:text>Note</xsl:text>
-    <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
-    <xsl:text>:</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="wrap">
-      <xsl:with-param name="string" select="text"/>
-    </xsl:call-template>
     <xsl:choose>
-      <xsl:when test="active='0'">
-      </xsl:when>
-      <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-        <xsl:text>Note active until: </xsl:text>
+      <xsl:when test="active='0'"/>
+      <xsl:otherwise>
+        <xsl:text>Note</xsl:text>
+        <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+        <xsl:text>:</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string" select="text"/>
+        </xsl:call-template>
+        <xsl:choose>
+          <xsl:when test="active='0'">
+          </xsl:when>
+          <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+            <xsl:text>Note active until: </xsl:text>
+            <xsl:call-template name="format-date">
+              <xsl:with-param name="date" select="end_time"/>
+            </xsl:call-template>
+            <xsl:text>.</xsl:text>
+            <xsl:call-template name="newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>Note last modified: </xsl:text>
         <xsl:call-template name="format-date">
-          <xsl:with-param name="date" select="end_time"/>
+          <xsl:with-param name="date" select="modification_time"/>
         </xsl:call-template>
         <xsl:text>.</xsl:text>
         <xsl:call-template name="newline"/>
-      </xsl:when>
-      <xsl:otherwise>
+        <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:text>Note last modified: </xsl:text>
-    <xsl:call-template name="format-date">
-      <xsl:with-param name="date" select="modification_time"/>
-    </xsl:call-template>
-    <xsl:text>.</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
   </xsl:template>
 
   <xsl:template match="override">
     <xsl:param name="delta">0</xsl:param>
-    <xsl:text>Override from </xsl:text>
     <xsl:choose>
-      <xsl:when test="string-length(threat) = 0">
-        <xsl:text>Any</xsl:text>
-      </xsl:when>
+      <xsl:when test="active='0'"/>
       <xsl:otherwise>
-        <xsl:value-of select="threat"/>
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:text> to </xsl:text>
-    <xsl:value-of select="new_threat"/>
-    <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
-    <xsl:text>:</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="wrap">
-      <xsl:with-param name="string" select="text"/>
-    </xsl:call-template>
-    <xsl:choose>
-      <xsl:when test="active='0'">
-      </xsl:when>
-      <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-        <xsl:text>Override active until: </xsl:text>
+        <xsl:text>Override from </xsl:text>
+        <xsl:choose>
+          <xsl:when test="string-length(threat) = 0">
+            <xsl:text>Any</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="threat"/>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text> to </xsl:text>
+        <xsl:value-of select="new_threat"/>
+        <xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if>
+        <xsl:text>:</xsl:text>
+        <xsl:call-template name="newline"/>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string" select="text"/>
+        </xsl:call-template>
+        <xsl:choose>
+          <xsl:when test="active='0'">
+          </xsl:when>
+          <xsl:when test="active='1' and string-length (end_time) &gt; 0">
+            <xsl:text>Override active until: </xsl:text>
+            <xsl:call-template name="format-date">
+              <xsl:with-param name="date" select="end_time"/>
+            </xsl:call-template>
+            <xsl:text>.</xsl:text>
+            <xsl:call-template name="newline"/>
+          </xsl:when>
+          <xsl:otherwise>
+          </xsl:otherwise>
+        </xsl:choose>
+        <xsl:text>Override last modified: </xsl:text>
         <xsl:call-template name="format-date">
-          <xsl:with-param name="date" select="end_time"/>
+          <xsl:with-param name="date" select="modification_time"/>
         </xsl:call-template>
         <xsl:text>.</xsl:text>
         <xsl:call-template name="newline"/>
-      </xsl:when>
-      <xsl:otherwise>
+        <xsl:call-template name="newline"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:text>Override last modified: </xsl:text>
-    <xsl:call-template name="format-date">
-      <xsl:with-param name="date" select="modification_time"/>
-    </xsl:call-template>
-    <xsl:text>.</xsl:text>
-    <xsl:call-template name="newline"/>
-    <xsl:call-template name="newline"/>
   </xsl:template>
 
   <xsl:template name="prognostic-description">

@@ -294,75 +294,81 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="note">
     <xsl:param name="delta">0</xsl:param>
-    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
-      <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
-      <pre>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="text"/>
-        </xsl:call-template>
-      </pre>
-      <xsl:choose>
-        <xsl:when test="active='0'">
-        </xsl:when>
-        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          <xsl:text>Active until: </xsl:text>
+    <xsl:choose>
+      <xsl:when test="active='0'"/>
+      <xsl:otherwise>
+        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+          <b>Note</b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
+          <pre>
+            <xsl:call-template name="wrap">
+              <xsl:with-param name="string" select="text"/>
+            </xsl:call-template>
+          </pre>
+          <xsl:choose>
+            <xsl:when test="string-length (end_time) &gt; 0">
+              <xsl:text>Active until: </xsl:text>
+              <xsl:call-template name="date">
+                <xsl:with-param name="time" select="end_time"/>
+              </xsl:call-template>
+              <xsl:text>.</xsl:text>
+              <br/>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text>Last modified: </xsl:text>
           <xsl:call-template name="date">
             <xsl:with-param name="time" select="modification_time"/>
           </xsl:call-template>
           <xsl:text>.</xsl:text>
           <br/>
-        </xsl:when>
-        <xsl:otherwise>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>Last modified: </xsl:text>
-      <xsl:call-template name="date">
-        <xsl:with-param name="time" select="modification_time"/>
-      </xsl:call-template>
-      <xsl:text>.</xsl:text>
-      <br/>
-    </div>
+        </div>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="override">
     <xsl:param name="delta">0</xsl:param>
-    <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
-      <b>
-        Override from
-        <xsl:choose>
-          <xsl:when test="string-length(threat) = 0">
-            Any
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:value-of select="threat"/>
-          </xsl:otherwise>
-        </xsl:choose>
-        to <xsl:value-of select="new_threat"/></b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
-      <pre>
-        <xsl:call-template name="wrap">
-          <xsl:with-param name="string" select="text"/>
-        </xsl:call-template>
-      </pre>
-      <xsl:choose>
-        <xsl:when test="active='0'">
-        </xsl:when>
-        <xsl:when test="active='1' and string-length (end_time) &gt; 0">
-          <xsl:text>Active until: </xsl:text>
+    <xsl:choose>
+      <xsl:when test="active='0'"/>
+      <xsl:otherwise>
+        <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px; background-color: #ffff90;">
+          <b>
+            Override from
+            <xsl:choose>
+              <xsl:when test="string-length(threat) = 0">
+                Any
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:value-of select="threat"/>
+              </xsl:otherwise>
+            </xsl:choose>
+            to <xsl:value-of select="new_threat"/></b><xsl:if test="$delta and $delta &gt; 0"> (Result <xsl:value-of select="$delta"/>)</xsl:if><br/>
+          <pre>
+            <xsl:call-template name="wrap">
+              <xsl:with-param name="string" select="text"/>
+            </xsl:call-template>
+          </pre>
+          <xsl:choose>
+            <xsl:when test="string-length (end_time) &gt; 0">
+              <xsl:text>Active until: </xsl:text>
+              <xsl:call-template name="date">
+                <xsl:with-param name="time" select="end_time"/>
+              </xsl:call-template>
+              <xsl:text>.</xsl:text>
+              <br/>
+            </xsl:when>
+            <xsl:otherwise>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text>Last modified: </xsl:text>
           <xsl:call-template name="date">
-            <xsl:with-param name="time" select="end_time"/>
+            <xsl:with-param name="time" select="modification_time"/>
           </xsl:call-template>
           <xsl:text>.</xsl:text>
-          <br/>
-        </xsl:when>
-        <xsl:otherwise>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>Last modified: </xsl:text>
-      <xsl:call-template name="date">
-        <xsl:with-param name="time" select="modification_time"/>
-      </xsl:call-template>
-      <xsl:text>.</xsl:text>
-    </div>
+        </div>
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <xsl:template name="ref_cve_list">
