@@ -446,9 +446,6 @@ valid_omp_command (const char* name)
 gchar *
 omp_command_type (const char* name)
 {
-  if (strcmp (name, "resume_task") == 0)
-    return g_strdup ("task");
-
   const char *under;
   under = strchr (name, '_');
   if (under && (strlen (under) > 1))
