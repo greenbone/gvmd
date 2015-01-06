@@ -1,5 +1,9 @@
 2015-01-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (manage_run_wizard): Correct indent.
+
+2015-01-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	OMP RESUME_OR_START_TASK was removed.  Hence increase database version
 	to 136.  Add database migration from version 135 to 136.
 

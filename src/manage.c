@@ -6660,20 +6660,20 @@ manage_run_wizard (const gchar *name,
   /* Select mode */
   if (mode && strcmp (mode, ""))
     {
-    modes = entity->entities;
-    int mode_found = 0;
-    while (mode_found == 0 && (mode_entity = first_entity (modes)))
-      {
-        if (strcasecmp (entity_name (mode_entity), "mode") == 0)
-          {
-            entity_t name_entity;
-            name_entity = entity_child (mode_entity, "name");
+      modes = entity->entities;
+      int mode_found = 0;
+      while (mode_found == 0 && (mode_entity = first_entity (modes)))
+        {
+          if (strcasecmp (entity_name (mode_entity), "mode") == 0)
+            {
+              entity_t name_entity;
+              name_entity = entity_child (mode_entity, "name");
 
-            if (strcmp (entity_text (name_entity), mode) == 0)
-              mode_found = 1;
-          }
-        modes = next_entities (modes);
-      }
+              if (strcmp (entity_text (name_entity), mode) == 0)
+                mode_found = 1;
+            }
+          modes = next_entities (modes);
+        }
 
       if (mode_found == 0)
         {
