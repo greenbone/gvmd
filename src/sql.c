@@ -144,10 +144,14 @@ sqlv (int retry, char* sql, va_list args)
     {
       int ret;
       sql_stmt_t* stmt;
+      va_list args_copy;
 
-      /* Prepare statement. */
-
-      ret = sql_prepare_internal (retry, 1, sql, args, &stmt);
+      /* Prepare statement.
+       * Copy args for this because a va_list can only be used once.
+       */
+      va_copy (args_copy, args);
+      ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
+      va_end (args_copy);
       if (ret == -1)
         g_warning ("%s: sql_prepare_internal failed\n", __FUNCTION__);
       if (ret)
@@ -308,9 +312,14 @@ sql_x_internal (int log, char* sql, va_list args, sql_stmt_t** stmt_return)
 
   while (1)
     {
-      /* Prepare statement. */
+      /* Prepare statement.
+       * Copy args for this because a va_list can only be used once.
+       */
+      va_list args_copy;
+      va_copy (args_copy, args);
+      ret = sql_prepare_internal (1, log, sql, args_copy, stmt_return);
+      va_end (args_copy);
 
-      ret = sql_prepare_internal (1, log, sql, args, stmt_return);
       if (ret)
         {
           g_warning ("%s: sql_prepare failed\n", __FUNCTION__);

@@ -1,3 +1,9 @@
+2015-01-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/sql.c (sqlv, sql_x_internal): Use a copy of the args va_list for
+	the sql_prepare_internal call so the args can be used again in case of
+	a retry. Add comment about va_list not being reusable.
+
 2015-01-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/report_formats/HTML/HTML.xsl (note, override): Hide inactive
