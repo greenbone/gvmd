@@ -283,7 +283,12 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
-            continue;
+            {
+              if (retries < 0)
+                usleep (MIN (-retries * 10000, 5000000));
+              retries--;
+              continue;
+            }
           if (retries--)
             continue;
           g_free (formatted);
@@ -523,6 +528,8 @@ int
 sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                int value_size)
 {
+  int retries;
+  retries = 10;
   while (1)
     {
       int ret;
@@ -531,7 +538,13 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                                value,
                                value_size,
                                SQLITE_TRANSIENT);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_blob failed: %s\n",
                  __FUNCTION__,
@@ -553,11 +566,19 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
 int
 sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 {
+  int retries;
+  retries = 10;
   while (1)
     {
       int ret;
       ret = sqlite3_bind_int64 (stmt->stmt, position, *value);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_int64 failed: %s\n",
                  __FUNCTION__,
@@ -579,11 +600,19 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 int
 sql_bind_double (sql_stmt_t *stmt, int position, double *value)
 {
+  int retries;
+  retries = 10;
   while (1)
     {
       int ret;
       ret = sqlite3_bind_double (stmt->stmt, position, *value);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_double failed: %s\n",
                  __FUNCTION__,
@@ -607,6 +636,8 @@ int
 sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                gsize value_size)
 {
+  int retries;
+  retries = 10;
   while (1)
     {
       int ret;
@@ -615,7 +646,13 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                                value,
                                value_size,
                                SQLITE_TRANSIENT);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_OK) break;
       g_warning ("%s: sqlite3_bind_text failed: %s\n",
                  __FUNCTION__,
@@ -648,12 +685,20 @@ sql_finalize (sql_stmt_t *stmt)
 int
 sql_reset (sql_stmt_t *stmt)
 {
+  int retries;
   sqlite3_clear_bindings (stmt->stmt);
+  retries = 10;
   while (1)
     {
       int ret;
       ret = sqlite3_reset (stmt->stmt);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
       if (ret == SQLITE_ERROR || ret == SQLITE_MISUSE)
         {

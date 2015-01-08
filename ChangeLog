@@ -1,3 +1,9 @@
+2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_sqlite3.c (sql_prepare_internal, sql_bind_blob, sql_bind_int64)
+	(sql_bind_double, sql_bind_text, sql_reset): Sleep before retry, as in
+	sql_exec_internal.
+
 2015-01-08  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* doc/db.png: Set SVN mime-type property correctly.
