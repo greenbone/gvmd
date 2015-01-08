@@ -1,3 +1,11 @@
+2015-01-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (manage_optimize): Add cleanup of duplicate config
+	preferences (cleanup_config_prefs) and removal of superfluous open port
+	results (cleanup_open_ports).
+
+	* src/openvasmd.c (option_entries): Update list of optimize choices.
+
 2014-01-08  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (make_osp_result): Quote the result's name before
