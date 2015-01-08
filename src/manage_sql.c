@@ -52721,23 +52721,23 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       sql ("ANALYZE;");
       printf ("Optimized: analyze.\n");
     }
-  else if (strcasecmp (name, "cleanup_config_prefs") == 0)
+  else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
       int changes;
       sql ("DELETE FROM config_preferences WHERE id NOT IN"
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
       changes = sql_changes();
-      printf ("Optimized: cleanup_config_prefs."
+      printf ("Optimized: cleanup-config-prefs."
               " Duplicate config preferences removed: %d.\n",
               changes);
     }
-  else if (strcasecmp (name, "cleanup_open_ports") == 0)
+  else if (strcasecmp (name, "cleanup-open-ports") == 0)
     {
       int changes;
       sql ("DELETE FROM results WHERE nvt='0';");
       changes = sql_changes();
-      printf ("Optimized: cleanup_open_ports."
+      printf ("Optimized: cleanup-open-ports."
               " Superfluous open port results removed: %d.\n",
               changes);
     }

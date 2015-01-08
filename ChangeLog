@@ -1,5 +1,12 @@
 2015-01-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (manage_optimize): Rename cleanup_config_prefs and
+	cleanup_open_ports to cleanup-config-prefs and cleanup-open-ports.
+
+	* src/openvasmd.c (option_entries): Update list of optimize choices.
+
+2015-01-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_optimize): Add cleanup of duplicate config
 	preferences (cleanup_config_prefs) and removal of superfluous open port
 	results (cleanup_open_ports).
