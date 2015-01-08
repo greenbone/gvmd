@@ -553,7 +553,7 @@ fork_connection_for_schedular (int *client_socket,
          * on this process. */
 
         /** @todo Give the parent time to prepare. */
-        sleep (5);
+        openvas_sleep (5);
 
         *client_socket = sockets[1];
 
@@ -897,7 +897,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
             {
               if (progress)
                 progress ();
-              sleep (1);
+              openvas_sleep (1);
             }
         }
       else if (child_pid == 0)

@@ -27,7 +27,9 @@
 #include "tracef.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
+#include <time.h>
 
 
 /* Headers of internal symbols defined in backend files. */
@@ -46,6 +48,50 @@ sql_explain (const char*, ...);
 
 
 /* Helpers. */
+
+/**
+ * @brief Sleep for some number of microseconds, handling interrupts.
+ *
+ * @param[in] microseconds  Number of microseconds.
+ *
+ * @return 0 success, -1 error (with errno set).
+ */
+int
+openvas_usleep (int microseconds)
+{
+  struct timespec a, b, *requested, *remaining;
+  int ret;
+
+  requested = &a;
+  remaining = &b;
+
+  requested->tv_sec = microseconds / 1000000;
+  requested->tv_nsec = (microseconds % 1000000) * 1000;
+
+  while ((ret = nanosleep (requested, remaining)) && (errno == EINTR))
+    {
+      struct timespec *temp;
+      temp = requested;
+      requested = remaining;
+      remaining = temp;
+    }
+  if (ret)
+    return -1;
+  return 0;
+}
+
+/**
+ * @brief Sleep for some number of seconds, handling interrupts.
+ *
+ * @param[in] seconds  Number of seconds.
+ *
+ * @return 0 success, -1 error (with errno set).
+ */
+int
+openvas_sleep (int seconds)
+{
+  return openvas_usleep (seconds);
+}
 
 /**
  * @brief Quotes a string of a known length to be passed to sql statements.

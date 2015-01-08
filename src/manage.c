@@ -1646,7 +1646,7 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
           set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
           return 3;
         }
-      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
   while (slave_connect (slave, host, port, socket, session));
   return 0;
@@ -2244,7 +2244,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 
       free_entity (get_tasks);
 
-      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
     }
 
   /* Cleanup. */
@@ -2365,7 +2365,7 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
         return -1;
       }
     else
-      sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
 
   while (1)
     {
@@ -2610,7 +2610,7 @@ fork_osp_scan_handler (task_t task, report_t report)
         set_report_slave_progress (report, progress);
 
       g_free (report_xml);
-      sleep (10);
+      openvas_sleep (10);
     }
 
   g_free (host);

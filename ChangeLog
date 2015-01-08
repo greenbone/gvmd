@@ -1,5 +1,26 @@
 2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Sleep via wrapper functions that handle interrupts.
+
+	* src/sql.c (openvas_usleep, openvas_sleep): New functions.  Sleep with
+	nanosleep.
+
+	* src/sql.h: Add headers accordingly.
+
+	* src/manage.c (slave_sleep_connect, slave_setup, run_slave_task)
+	(fork_osp_scan_handler): Use openvas_sleep instead of sleep.
+
+	* src/openvasmd.c (fork_connection_for_schedular, rebuild_nvt_cache): Use
+	openvas_sleep.
+
+	* src/scanner.c (openvas_scanner_is_loading): Use openvas_usleep.
+
+	* src/sql_sqlite.c (sql_prepare_internal, sql_exec_internal)
+	(sql_bind_blob, sql_bind_int64, sql_bind_double, sql_bind_text)
+	(sql_reset): Use openvas_usleep.
+
+2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/sql_sqlite3.c (sql_prepare_internal, sql_bind_blob, sql_bind_int64)
 	(sql_bind_double, sql_bind_text, sql_reset): Sleep before retry, as in
 	sql_exec_internal.
