@@ -177,7 +177,12 @@ sqlv (int retry, char* sql, va_list args)
       if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
         {
           if (retry)
-            continue;
+            {
+              if (retries < 0)
+                usleep (MIN (-retries * 10000, 5000000));
+              retries--;
+              continue;
+            }
           if (retries--)
             continue;
           g_free (formatted);
@@ -222,7 +227,12 @@ sqlv (int retry, char* sql, va_list args)
               if (ret == SQLITE_BUSY || ret == SQLITE_LOCKED)
                 {
                   if (retry)
-                    continue;
+                    {
+                      if (retries < 0)
+                        usleep (MIN (-retries * 10000, 5000000));
+                      retries--;
+                      continue;
+                    }
                   sqlite3_finalize (stmt);
                   return 1;
                 }
@@ -330,10 +340,17 @@ sql_quiet (char* sql, ...)
 
   /* Prepare statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
@@ -409,10 +426,17 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
 
   /* Prepare statement. */
 
+  retries = 10;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       g_free (formatted);
       *stmt_return = stmt;
       if (ret == SQLITE_OK)
@@ -2015,7 +2039,7 @@ sql_user_can_everything (sqlite3_context *context, int argc,
 sqlite3_stmt *
 sql_prepare (const char* sql, ...)
 {
-  int ret;
+  int ret, retries;
   const char* tail;
   sqlite3_stmt* stmt;
   va_list args;
@@ -2027,11 +2051,18 @@ sql_prepare (const char* sql, ...)
 
   tracef ("   sql: %s\n", formatted);
 
+  retries = 10;
   stmt = NULL;
   while (1)
     {
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       g_free (formatted);
       if (ret == SQLITE_OK)
         {
@@ -2080,7 +2111,7 @@ init_prepared_iterator (iterator_t* iterator, sqlite3_stmt* stmt)
 void
 init_iterator (iterator_t* iterator, const char* sql, ...)
 {
-  int ret;
+  int ret, retries;
   const char* tail;
   sqlite3_stmt* stmt;
   va_list args;
@@ -2092,13 +2123,20 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
 
   tracef ("   sql: %s\n", formatted);
 
+  retries = 10;
   iterator->done = FALSE;
   iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
   while (1)
     {
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
-      if (ret == SQLITE_BUSY) continue;
+      if (ret == SQLITE_BUSY)
+        {
+          if (retries < 0)
+            usleep (MIN (-retries * 10000, 5000000));
+          retries--;
+          continue;
+        }
       g_free (formatted);
       iterator->stmt = stmt;
       if (ret == SQLITE_OK)
