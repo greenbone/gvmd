@@ -13956,7 +13956,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
                  const char *type, const char *description,
                  const char *severity)
 {
-  char *nvt_revision = NULL, *quoted_desc, *result_severity;
+  char *nvt_revision = NULL, *quoted_desc, *quoted_nvt, *result_severity;
 
   assert (task);
   assert (type);
@@ -13964,6 +13964,7 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   if (nvt && g_str_has_prefix (nvt, "oval:"))
     nvt_revision = ovaldef_version (nvt);
   quoted_desc = sql_quote (description ?: "");
+  quoted_nvt = sql_quote (nvt ?: "");
   if (!severity || !strcmp (severity, ""))
     {
       if (!strcmp (type, severity_to_type (SEVERITY_ERROR)))
@@ -13978,11 +13979,12 @@ make_osp_result (task_t task, const char *host, const char *nvt,
        "  description, uuid, qod)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
        "         '%s', make_uuid (), 0);",
-       task, host ?: "", nvt ?: "", nvt_revision ?: "", result_severity, type,
+       task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
        quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
+  g_free (quoted_nvt);
 
   return sql_last_insert_id ();
 }
