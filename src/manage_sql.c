@@ -52642,6 +52642,7 @@ int
 manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
 {
   const gchar *db;
+  gchar *success_text;
   int ret;
 
   if (name == NULL)
@@ -52655,6 +52656,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
     return -1;
 
   db = database ? database : sql_default_database ();
+  success_text = NULL;
 
   ret = init_manage_helper (log_config, db, 70000, NULL);
   assert (ret != -4);
@@ -52678,7 +52680,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
             case ENOENT:
               break;
             default:
-              g_warning ("%s: failed to stat database: %s\n",
+              g_warning ("%s: failed to stat database: %s",
                           __FUNCTION__,
                           strerror (errno));
           }
@@ -52701,7 +52703,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
             case ENOENT:
               break;
             default:
-              g_warning ("%s: failed to stat database: %s\n",
+              g_warning ("%s: failed to stat database: %s",
                           __FUNCTION__,
                           strerror (errno));
           }
@@ -52709,17 +52711,19 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
         new_size = state.st_size;
 
       if (old_size && new_size)
-        printf ("Optimized: vacuum. Database file size reduced by %lld MiB"
-                " (%0.1f %%).\n",
-                (old_size - new_size) / (1024 * 1024),
-                (old_size - new_size) * 100.0 / old_size);
+        success_text = g_strdup_printf ("Optimized: vacuum."
+                                        " Database file size reduced by"
+                                        " %lld MiB (%0.1f %%).\n",
+                                        (old_size - new_size) / (1024 * 1024),
+                                        (old_size - new_size)
+                                          * 100.0 / old_size);
       else
-        printf ("Optimized: vacuum.\n");
+        success_text = g_strdup_printf ("Optimized: vacuum.");
     }
   else if (strcasecmp (name, "analyze") == 0)
     {
       sql ("ANALYZE;");
-      printf ("Optimized: analyze.\n");
+      success_text = g_strdup_printf ("Optimized: analyze.");
     }
   else if (strcasecmp (name, "cleanup-config-prefs") == 0)
     {
@@ -52728,18 +52732,20 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
            " (SELECT min(id) FROM config_preferences"
            "  GROUP BY config, type, name, value);");
       changes = sql_changes();
-      printf ("Optimized: cleanup-config-prefs."
-              " Duplicate config preferences removed: %d.\n",
-              changes);
+      success_text = g_strdup_printf ("Optimized: cleanup-config-prefs."
+                                      " Duplicate config preferences removed:"
+                                      " %d.",
+                                      changes);
     }
   else if (strcasecmp (name, "cleanup-open-ports") == 0)
     {
       int changes;
       sql ("DELETE FROM results WHERE nvt='0';");
       changes = sql_changes();
-      printf ("Optimized: cleanup-open-ports."
-              " Superfluous open port results removed: %d.\n",
-              changes);
+      success_text = g_strdup_printf ("Optimized: cleanup-open-ports."
+                                      " Superfluous open port results removed:"
+                                      " %d.",
+                                      changes);
     }
   else if (strcasecmp (name, "cleanup-port-names") == 0)
     {
@@ -52759,14 +52765,22 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
       changes_old_format = sql_changes();
       sql ("COMMIT;");
 
-      printf ("Optimized: cleanup-port-names."
-              " Ports converted from old format: %d, removed IANA port names: %d.\n",
-              changes_old_format, changes_iana);
+      success_text = g_strdup_printf ("Optimized: cleanup-port-names."
+                                      " Ports converted from old format: %d,"
+                                      " removed IANA port names: %d.",
+                                      changes_old_format, changes_iana);
     }
   else
     {
       printf ("Error in optimize name.\n");
       ret = 1;
+    }
+
+  if (success_text)
+    {
+      printf ("%s\n", success_text);
+      g_message ("   %s", success_text);
+      g_free (success_text);
     }
 
   current_credentials.uuid = NULL;

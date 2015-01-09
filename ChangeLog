@@ -1,5 +1,13 @@
 2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (manage_optimize): Log success text in addition to
+	writing it to stdout.
+
+	* src/openvasmd.c (main): Change logging of "Optimizing ..." message
+	from info to message level and also output it in non-verbose mode.
+
+2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_optimize): Add cleanup-port-names to convert
 	ports from the old name format and to remove IANA port names from
 	imported reports.

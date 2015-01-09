@@ -1310,7 +1310,7 @@ main (int argc, char** argv)
 
   if (optimize)
     {
-      infof ("   Optimizing: %s.\n", optimize);
+      g_message ("   Optimizing: %s.\n", optimize);
 
       /* Create the user and then exit. */
       switch (manage_optimize (log_config, database, optimize))
