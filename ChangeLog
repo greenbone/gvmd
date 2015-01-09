@@ -1,3 +1,16 @@
+2015-01-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use unsigned ints for retry variables, to avoid passing negatives to the
+	sleep function.
+
+	* src/sql.c (openvas_usleep, openvas_sleep): Switch arg to unsigned.
+
+	* src/sql.h: Update headers accordingly.
+
+	* src/sql_sqlite3.c (sql_prepare_internal, sql_exec_internal)
+	(sql_bind_blob, sql_bind_int64, sql_bind_double, sql_bind_text)
+	(sql_reset): Use unsigned for retries.
+
 2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (manage_optimize): Rename cleanup-open-ports to

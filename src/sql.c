@@ -57,7 +57,7 @@ sql_explain (const char*, ...);
  * @return 0 success, -1 error (with errno set).
  */
 int
-openvas_usleep (int microseconds)
+openvas_usleep (unsigned int microseconds)
 {
   struct timespec a, b, *requested, *remaining;
   int ret;
@@ -88,7 +88,7 @@ openvas_usleep (int microseconds)
  * @return 0 success, -1 error (with errno set).
  */
 int
-openvas_sleep (int seconds)
+openvas_sleep (unsigned int seconds)
 {
   return openvas_usleep (seconds);
 }

@@ -262,7 +262,8 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
                       sql_stmt_t **stmt)
 {
   const char* tail;
-  int ret, retries;
+  int ret;
+  unsigned int retries;
   gchar* formatted;
   sqlite3_stmt *sqlite_stmt;
 
@@ -273,7 +274,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
   if (log)
     tracef ("   sql: %s\n", formatted);
 
-  retries = 10;
+  retries = 0;
   *stmt = (sql_stmt_t*) g_malloc0 (sizeof (sql_stmt_t));
   sqlite_stmt = NULL;
   while (1)
@@ -284,12 +285,12 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
         {
           if (retry)
             {
-              if (retries < 0)
-                openvas_usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
-          if (retries--)
+          if (retries++ < 10)
             continue;
           g_free (formatted);
           return 1;
@@ -329,9 +330,9 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 int
 sql_exec_internal (int retry, sql_stmt_t *stmt)
 {
-  int retries;
+  unsigned int retries;
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       int ret;
@@ -340,12 +341,12 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
         {
           if (retry)
             {
-              if (retries < 0)
-                openvas_usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
-          if (retries--)
+          if (retries++ < 10)
             continue;
           return -2;
         }
@@ -360,12 +361,12 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                 {
                   if (retry)
                     {
-                      if (retries < 0)
-                        openvas_usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
-                  if (retries--)
+                  if (retries++ < 10)
                     continue;
                   return -2;
                 }
@@ -528,8 +529,8 @@ int
 sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                int value_size)
 {
-  int retries;
-  retries = 10;
+  unsigned int retries;
+  retries = 0;
   while (1)
     {
       int ret;
@@ -540,9 +541,9 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
                                SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            openvas_usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_OK) break;
@@ -566,17 +567,17 @@ sql_bind_blob (sql_stmt_t *stmt, int position, const void *value,
 int
 sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 {
-  int retries;
-  retries = 10;
+  unsigned int retries;
+  retries = 0;
   while (1)
     {
       int ret;
       ret = sqlite3_bind_int64 (stmt->stmt, position, *value);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            openvas_usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_OK) break;
@@ -600,17 +601,17 @@ sql_bind_int64 (sql_stmt_t *stmt, int position, long long int *value)
 int
 sql_bind_double (sql_stmt_t *stmt, int position, double *value)
 {
-  int retries;
-  retries = 10;
+  unsigned int retries;
+  retries = 0;
   while (1)
     {
       int ret;
       ret = sqlite3_bind_double (stmt->stmt, position, *value);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            openvas_usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_OK) break;
@@ -636,8 +637,8 @@ int
 sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                gsize value_size)
 {
-  int retries;
-  retries = 10;
+  unsigned int retries;
+  retries = 0;
   while (1)
     {
       int ret;
@@ -648,9 +649,9 @@ sql_bind_text (sql_stmt_t *stmt, int position, const gchar *value,
                                SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            openvas_usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_OK) break;
@@ -685,18 +686,18 @@ sql_finalize (sql_stmt_t *stmt)
 int
 sql_reset (sql_stmt_t *stmt)
 {
-  int retries;
+  unsigned int retries;
   sqlite3_clear_bindings (stmt->stmt);
-  retries = 10;
+  retries = 0;
   while (1)
     {
       int ret;
       ret = sqlite3_reset (stmt->stmt);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            openvas_usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            openvas_usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
