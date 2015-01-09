@@ -47417,9 +47417,9 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO scanners"
-           " (uuid, owner, name, comment, host, port, type, ca_pub"
+           " (uuid, owner, name, comment, host, port, type, ca_pub,"
            "  key_pub, key_priv, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, host, port, type, ca_pub"
+           " SELECT uuid, owner, name, comment, host, port, type, ca_pub,"
            "        key_pub, key_priv, creation_time, modification_time"
            " FROM scanners_trash WHERE id = %llu;", resource);
 

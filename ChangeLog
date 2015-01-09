@@ -1,3 +1,7 @@
+2014-01-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (manage_restore): Fix sql statements.
+
 2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Sleep via wrapper functions that handle interrupts.
