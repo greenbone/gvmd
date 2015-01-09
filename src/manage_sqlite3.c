@@ -127,6 +127,47 @@ sql_t (sqlite3_context *context, int argc, sqlite3_value** argv)
 }
 
 /**
+ * @brief Get position of a substring like the strpos function in PostgreSQL.
+ *
+ * This is a callback for a scalar SQL function of two arguments.
+ * The SQLite function instr could be used as replacement, but is only
+ *  available in versions >= 3.7.15.
+ *
+ * @param[in]  context  SQL context.
+ * @param[in]  argc     Number of arguments.
+ * @param[in]  argv     Argument array.
+ */
+void
+sql_strpos (sqlite3_context *context, int argc,
+            sqlite3_value** argv)
+{
+  const unsigned char *str, *substr, *substr_in_str;
+
+  assert (argc == 2);
+
+  str = sqlite3_value_text (argv[0]);
+  substr = sqlite3_value_text (argv[1]);
+
+  if (str == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get string argument", -1);
+      return;
+    }
+
+  if (substr == NULL)
+    {
+      sqlite3_result_error (context, "Failed to get substring argument", -1);
+      return;
+    }
+
+  substr_in_str = (const unsigned char *)g_strrstr ((const gchar*)str,
+                                                    (const gchar*)substr);
+
+  sqlite3_result_int (context,
+                      substr_in_str ? substr_in_str - str + 1 : 0);
+}
+
+/**
  * @brief Convert an IP address into a sortable form.
  *
  * This is a callback for a scalar SQL function of one argument.
@@ -1551,6 +1592,20 @@ manage_create_sql_functions ()
       != SQLITE_OK)
     {
       g_warning ("%s: failed to t", __FUNCTION__);
+      return -1;
+    }
+
+  if (sqlite3_create_function (task_db,
+                               "strpos",
+                               2,               /* Number of args. */
+                               SQLITE_UTF8,
+                               NULL,            /* Callback data. */
+                               sql_strpos,
+                               NULL,            /* xStep. */
+                               NULL)            /* xFinal. */
+      != SQLITE_OK)
+    {
+      g_warning ("%s: failed to create strpos", __FUNCTION__);
       return -1;
     }
 

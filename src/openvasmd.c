@@ -1191,7 +1191,7 @@ main (int argc, char** argv)
           G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_NONE,
           &decrypt_all_credentials, NULL, NULL },
         { "new-password", '\0', 0, G_OPTION_ARG_STRING, &new_password, "Modify user's password and exit.", "<password>" },
-        { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs or cleanup-open-ports.", "<name>" },
+        { "optimize", '\0', 0, G_OPTION_ARG_STRING, &optimize, "Run an optimization: vacuum, analyze, cleanup-config-prefs, cleanup-open-ports or cleanup-port-names.", "<name>" },
         { "port", 'p', 0, G_OPTION_ARG_STRING, &manager_port_string, "Use port number <number>.", "<number>" },
         { "port2", '\0', 0, G_OPTION_ARG_STRING, &manager_port_string_2, "Use port number <number> for address 2.", "<number>" },
         { "progress", '\0', 0, G_OPTION_ARG_NONE, &progress, "Display progress during --rebuild and --update.", NULL },

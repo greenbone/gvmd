@@ -1,3 +1,15 @@
+2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (manage_optimize): Add cleanup-port-names to convert
+	ports from the old name format and to remove IANA port names from
+	imported reports.
+
+	* src/manage_sqlite3.c (sql_strpos): New function.
+	(manage_create_sql_functions): Add new SQL function strpos which
+	behaves the same as the function in PostgreSQL with the same name.
+
+	* src/openvasmd.c (option_entries): Update list of optimize choices.
+
 2014-01-09  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (manage_restore): Fix sql statements.

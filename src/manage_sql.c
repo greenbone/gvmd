@@ -52741,6 +52741,28 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
               " Superfluous open port results removed: %d.\n",
               changes);
     }
+  else if (strcasecmp (name, "cleanup-port-names") == 0)
+    {
+      int changes_iana, changes_old_format;
+
+      sql_begin_exclusive ();
+      sql ("UPDATE results"
+           " SET port = substr (port, 1,"
+           "                    strpos (port, ' (IANA:') - 1)"
+           " WHERE port LIKE '% (IANA:%';");
+      changes_iana = sql_changes();
+      sql ("UPDATE results"
+           " SET port = substr (port,"
+           "                    strpos (port ,'(') + 1,"
+           "                    strpos (port, ')') - strpos (port, '(') - 1)"
+           " WHERE port LIKE '%(%)%';");
+      changes_old_format = sql_changes();
+      sql ("COMMIT;");
+
+      printf ("Optimized: cleanup-port-names."
+              " Ports converted from old format: %d, removed IANA port names: %d.\n",
+              changes_old_format, changes_iana);
+    }
   else
     {
       printf ("Error in optimize name.\n");
