@@ -14570,7 +14570,7 @@ cleanup_prognosis_iterator ()
 void
 init_prognosis_iterator (iterator_t *iterator, const char *cpe)
 {
-  int retries;
+  unsigned int retries;
 
   if (prognosis_stmt == NULL)
     prognosis_stmt = sql_prepare ("SELECT cves.name, cves.cvss,"
@@ -14591,16 +14591,16 @@ init_prognosis_iterator (iterator_t *iterator, const char *cpe)
   init_prepared_iterator (iterator, prognosis_stmt);
 
   /* Bind iterator. */
-  retries = 10;
+  retries = 0;
   while (1)
     {
       int ret;
       ret = sqlite3_bind_text (prognosis_stmt, 1, cpe, -1, SQLITE_TRANSIENT);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_OK) break;
@@ -18513,11 +18513,11 @@ report_severity_data (report_t report, int override,
                   "      OR (overrides.end_time >= now ()))",
                   current_credentials.uuid))
     {
-      int retries;
+      unsigned int retries;
 
       /* Prepare quick inner statement. */
 
-      retries = 10;
+      retries = 0;
       select = g_strdup_printf ("SELECT 1 FROM overrides"
                                 " WHERE (overrides.nvt = $nvt)"
                                 " AND ((overrides.owner IS NULL) OR (overrides.owner ="
@@ -18531,9 +18531,9 @@ report_severity_data (report_t report, int override,
           ret = sqlite3_prepare (task_db, select, -1, &stmt, &tail);
           if (ret == SQLITE_BUSY)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
           g_free (select);
@@ -18588,16 +18588,16 @@ report_severity_data (report_t report, int override,
                   current_credentials.uuid,
                   task);
 
-      retries = 10;
+      retries = 0;
       while (1)
         {
           const char* tail;
           ret = sqlite3_prepare (task_db, select, -1, &full_stmt, &tail);
           if (ret == SQLITE_BUSY)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
           g_free (select);
@@ -18660,15 +18660,15 @@ report_severity_data (report_t report, int override,
 
           /* Bind the current result values into the quick statement. */
 
-          retries = 10;
+          retries = 0;
           while (1)
             {
               ret = sqlite3_bind_text (stmt, 1, nvt, -1, SQLITE_TRANSIENT);
               if (ret == SQLITE_BUSY)
                 {
-                  if (retries < 0)
-                    usleep (MIN (-retries * 10000, 5000000));
-                  retries--;
+                  if (retries > 10)
+                    usleep (MIN ((retries - 10) * 10000, 5000000));
+                  retries++;
                   continue;
                 }
               if (ret == SQLITE_OK) break;
@@ -18680,15 +18680,15 @@ report_severity_data (report_t report, int override,
 
           /* Run the quick inner statement to check for overrides. */
 
-          retries = 10;
+          retries = 0;
           while (1)
             {
               ret = sqlite3_step (stmt);
               if (ret == SQLITE_BUSY)
                 {
-                  if (retries < 0)
-                    usleep (MIN (-retries * 10000, 5000000));
-                  retries--;
+                  if (retries > 10)
+                    usleep (MIN ((retries - 10) * 10000, 5000000));
+                  retries++;
                   continue;
                 }
               if (ret == SQLITE_DONE) break;
@@ -18743,15 +18743,15 @@ report_severity_data (report_t report, int override,
 
               /* Bind the current result values into the full statement. */
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   ret = sqlite3_bind_text (full_stmt, 1, nvt, -1, SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_OK) break;
@@ -18761,7 +18761,7 @@ report_severity_data (report_t report, int override,
                   abort ();
                 }
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   result_t result;
@@ -18769,9 +18769,9 @@ report_severity_data (report_t report, int override,
                   ret = sqlite3_bind_int64 (full_stmt, 2, result);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_OK) break;
@@ -18781,7 +18781,7 @@ report_severity_data (report_t report, int override,
                   abort ();
                 }
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   const char *host;
@@ -18790,9 +18790,9 @@ report_severity_data (report_t report, int override,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_OK) break;
@@ -18802,7 +18802,7 @@ report_severity_data (report_t report, int override,
                   abort ();
                 }
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   const char *port;
@@ -18811,9 +18811,9 @@ report_severity_data (report_t report, int override,
                                             SQLITE_TRANSIENT);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_OK) break;
@@ -18823,7 +18823,7 @@ report_severity_data (report_t report, int override,
                   abort ();
                 }
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   double severity;
@@ -18831,9 +18831,9 @@ report_severity_data (report_t report, int override,
                   ret = sqlite3_bind_double (full_stmt, 5, severity);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_OK) break;
@@ -18845,15 +18845,15 @@ report_severity_data (report_t report, int override,
 
               /* Run the full inner statement. */
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   ret = sqlite3_step (full_stmt);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_DONE) break;
@@ -18910,15 +18910,15 @@ report_severity_data (report_t report, int override,
 
               /* Reset the full inner statement. */
 
-              retries = 10;
+              retries = 0;
               while (1)
                 {
                   ret = sqlite3_reset (full_stmt);
                   if (ret == SQLITE_BUSY)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
@@ -18934,15 +18934,15 @@ report_severity_data (report_t report, int override,
 
           /* Reset the quick inner statement. */
 
-          retries = 10;
+          retries = 0;
           while (1)
             {
               ret = sqlite3_reset (stmt);
               if (ret == SQLITE_BUSY)
                 {
-                  if (retries < 0)
-                    usleep (MIN (-retries * 10000, 5000000));
-                  retries--;
+                  if (retries > 10)
+                    usleep (MIN ((retries - 10) * 10000, 5000000));
+                  retries++;
                   continue;
                 }
               if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
@@ -28703,7 +28703,8 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 {
   gint index;
   const char* tail;
-  int ret, retries;
+  int ret;
+  unsigned int retries;
   sqlite3_stmt* stmt;
   gchar* formatted;
 
@@ -28724,15 +28725,15 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
   /* Prepare statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       g_free (formatted);
@@ -28793,7 +28794,7 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
               continue;
             }
 
-          retries = 10;
+          retries = 0;
           while (1)
             {
               assert (family);
@@ -28801,9 +28802,9 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
                                        SQLITE_TRANSIENT);
               if (ret == SQLITE_BUSY)
                 {
-                  if (retries < 0)
-                    usleep (MIN (-retries * 10000, 5000000));
-                  retries--;
+                  if (retries > 10)
+                    usleep (MIN ((retries - 10) * 10000, 5000000));
+                  retries++;
                   continue;
                 }
               if (ret == SQLITE_OK) break;
@@ -28816,15 +28817,15 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
       /* Bind the ID to the "$value" in the SQL statement. */
 
-      retries = 10;
+      retries = 0;
       while (1)
         {
           ret = sqlite3_bind_text (stmt, 1, id, -1, SQLITE_TRANSIENT);
           if (ret == SQLITE_BUSY)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
           if (ret == SQLITE_OK) break;
@@ -28836,15 +28837,15 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
       /* Run the statement. */
 
-      retries = 10;
+      retries = 0;
       while (1)
         {
           ret = sqlite3_step (stmt);
           if (ret == SQLITE_BUSY)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
           if (ret == SQLITE_DONE) break;
@@ -28860,15 +28861,15 @@ clude (const char *nvt_selector, GArray *array, int array_size, int exclude,
 
       /* Reset the statement. */
 
-      retries = 10;
+      retries = 0;
       while (1)
         {
           ret = sqlite3_reset (stmt);
           if (ret == SQLITE_BUSY)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
           if (ret == SQLITE_DONE || ret == SQLITE_OK) break;
@@ -34561,7 +34562,8 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   {
     const char* tail;
-    int ret, retries;
+    int ret;
+    unsigned int retries;
     sqlite3_stmt* stmt;
     gchar* formatted;
     gchar* quoted_filename = sql_quote (installer_filename);
@@ -34627,15 +34629,15 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
     /* Prepare statement. */
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         g_free (formatted);
@@ -34664,7 +34666,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
     /* Bind the packages to the "$values" in the SQL statement. */
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
@@ -34674,9 +34676,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_OK) break;
@@ -34690,7 +34692,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       }
     g_free (installer);
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
@@ -34700,9 +34702,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_OK) break;
@@ -34715,7 +34717,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
       }
     g_free (installer_signature);
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
@@ -34725,9 +34727,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_OK) break;
@@ -34738,7 +34740,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         return -1;
       }
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_bind_text (stmt,
@@ -34748,9 +34750,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_OK) break;
@@ -34761,7 +34763,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
         return -1;
       }
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_bind_blob (stmt,
@@ -34771,9 +34773,9 @@ create_agent (const char* name, const char* comment, const char* installer_64,
                                  SQLITE_TRANSIENT);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_OK) break;
@@ -34786,15 +34788,15 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
     /* Run the statement. */
 
-    retries = 10;
+    retries = 0;
     while (1)
       {
         ret = sqlite3_step (stmt);
         if (ret == SQLITE_BUSY)
           {
-            if (retries < 0)
-              usleep (MIN (-retries * 10000, 5000000));
-            retries--;
+            if (retries > 10)
+              usleep (MIN ((retries - 10) * 10000, 5000000));
+            retries++;
             continue;
           }
         if (ret == SQLITE_DONE) break;

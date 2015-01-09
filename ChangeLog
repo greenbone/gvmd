@@ -1,5 +1,18 @@
 2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r21302.
+
+	Use unsigned ints for retry variables, to avoid passing negatives to the
+	sleep function.
+
+	* src/sql.c (sqlv, sql_quiet, sql_x_internal, sql_prepare)
+	(init_iterator): Use unsigned for retries.
+
+	* src/manage_sql.c (init_prognosis_iterator, report_severity_data, clude)
+	(create_agent): Use unsigned for retries.
+
+2015-01-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r21290.
 
 	* src/sql.c (sqlv, sql_quiet, sql_x_internal, sql_prepare)

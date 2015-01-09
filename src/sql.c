@@ -160,7 +160,8 @@ static int
 sqlv (int retry, char* sql, va_list args)
 {
   const char* tail;
-  int ret, retries;
+  int ret;
+  unsigned int retries;
   sqlite3_stmt* stmt;
   gchar* formatted;
 
@@ -170,7 +171,7 @@ sqlv (int retry, char* sql, va_list args)
 
   /* Prepare statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
@@ -178,12 +179,12 @@ sqlv (int retry, char* sql, va_list args)
         {
           if (retry)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
-          if (retries--)
+          if (retries++ < 10)
             continue;
           g_free (formatted);
           return 1;
@@ -200,7 +201,7 @@ sqlv (int retry, char* sql, va_list args)
 
   /* Run statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_step (stmt);
@@ -208,12 +209,12 @@ sqlv (int retry, char* sql, va_list args)
         {
           if (retry)
             {
-              if (retries < 0)
-                usleep (MIN (-retries * 10000, 5000000));
-              retries--;
+              if (retries > 10)
+                usleep (MIN ((retries - 10) * 10000, 5000000));
+              retries++;
               continue;
             }
-          if (retries--)
+          if (retries++ < 10)
             continue;
           sqlite3_finalize (stmt);
           return 1;
@@ -228,9 +229,9 @@ sqlv (int retry, char* sql, va_list args)
                 {
                   if (retry)
                     {
-                      if (retries < 0)
-                        usleep (MIN (-retries * 10000, 5000000));
-                      retries--;
+                      if (retries > 10)
+                        usleep (MIN ((retries - 10) * 10000, 5000000));
+                      retries++;
                       continue;
                     }
                   sqlite3_finalize (stmt);
@@ -329,7 +330,8 @@ void
 sql_quiet (char* sql, ...)
 {
   const char* tail;
-  int ret, retries;
+  int ret;
+  unsigned int retries;
   sqlite3_stmt* stmt;
   va_list args;
   gchar* formatted;
@@ -340,15 +342,15 @@ sql_quiet (char* sql, ...)
 
   /* Prepare statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       g_free (formatted);
@@ -371,15 +373,15 @@ sql_quiet (char* sql, ...)
 
   /* Run statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_step (stmt);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_DONE) break;
@@ -413,7 +415,8 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
                 char* sql, va_list args, sqlite3_stmt** stmt_return)
 {
   const char* tail;
-  int ret, retries;
+  int ret;
+  unsigned int retries;
   sqlite3_stmt* stmt;
   gchar* formatted;
 
@@ -426,15 +429,15 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
 
   /* Prepare statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_prepare (task_db, (char*) formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       g_free (formatted);
@@ -458,15 +461,15 @@ sql_x_internal (/*@unused@*/ unsigned int col, unsigned int row, int log,
 
   /* Run statement. */
 
-  retries = 10;
+  retries = 0;
   while (1)
     {
       ret = sqlite3_step (stmt);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       if (ret == SQLITE_DONE)
@@ -2051,16 +2054,16 @@ sql_prepare (const char* sql, ...)
 
   tracef ("   sql: %s\n", formatted);
 
-  retries = 10;
+  retries = 0;
   stmt = NULL;
   while (1)
     {
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       g_free (formatted);
@@ -2123,7 +2126,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
 
   tracef ("   sql: %s\n", formatted);
 
-  retries = 10;
+  retries = 0;
   iterator->done = FALSE;
   iterator->prepared = 0;
   iterator->crypt_ctx = NULL;
@@ -2132,9 +2135,9 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
       ret = sqlite3_prepare (task_db, formatted, -1, &stmt, &tail);
       if (ret == SQLITE_BUSY)
         {
-          if (retries < 0)
-            usleep (MIN (-retries * 10000, 5000000));
-          retries--;
+          if (retries > 10)
+            usleep (MIN ((retries - 10) * 10000, 5000000));
+          retries++;
           continue;
         }
       g_free (formatted);
