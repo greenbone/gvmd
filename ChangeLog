@@ -1,5 +1,12 @@
 2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (manage_optimize): Rename cleanup-open-ports to
+	remove-open-port-results.
+
+	* src/openvasmd.c (main): Update optimize choices in option_entries.
+
+2015-01-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_sql.c (manage_optimize): Log success text in addition to
 	writing it to stdout.
 

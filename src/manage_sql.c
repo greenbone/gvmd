@@ -52737,12 +52737,12 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " %d.",
                                       changes);
     }
-  else if (strcasecmp (name, "cleanup-open-ports") == 0)
+  else if (strcasecmp (name, "remove-open-port-results") == 0)
     {
       int changes;
       sql ("DELETE FROM results WHERE nvt='0';");
       changes = sql_changes();
-      success_text = g_strdup_printf ("Optimized: cleanup-open-ports."
+      success_text = g_strdup_printf ("Optimized: remove-open-port-results."
                                       " Superfluous open port results removed:"
                                       " %d.",
                                       changes);
