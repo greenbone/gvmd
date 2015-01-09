@@ -1,5 +1,9 @@
 2015-01-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/sql.c (openvas_sleep): Add conversion to seconds.
+
+2015-01-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Use unsigned ints for retry variables, to avoid passing negatives to the
 	sleep function.
 

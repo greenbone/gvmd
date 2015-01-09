@@ -90,7 +90,7 @@ openvas_usleep (unsigned int microseconds)
 int
 openvas_sleep (unsigned int seconds)
 {
-  return openvas_usleep (seconds);
+  return openvas_usleep (seconds * 1000000);
 }
 
 /**
