@@ -935,6 +935,9 @@ typedef struct
 void
 host_detail_free (host_detail_t *);
 
+void
+insert_report_host_detail (report_t, const char *, const char *, const char *,
+                           const char *, const char *, const char *);
 int
 create_report (array_t*, const char *, const char *, const char *, const char *,
                const char *, array_t*, array_t*, array_t*, char **);

@@ -14752,7 +14752,7 @@ host_detail_free (host_detail_t *detail)
  * @param[in]   name        The detail's name.
  * @param[in]   type        The detail's type.
  */
-static void
+void
 insert_report_host_detail (report_t report, const char *host,
                            const char *s_type, const char *s_name,
                            const char *s_desc, const char *name,

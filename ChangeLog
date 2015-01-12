@@ -1,3 +1,9 @@
+2014-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Adjust to handle host detail results.
+
+	* src/manage.h: Add insert_report_host_detail prototype.
+
 2015-01-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (escalate_2): Find report format with permissions, as

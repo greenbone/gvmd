@@ -2495,6 +2495,13 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       assert (type);
       assert (severity);
       assert (host);
+      if (!strcmp (type, "Host Detail"))
+        {
+          insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",
+                                     name, entity_text (r_entity));
+          results = next_entities (results);
+          continue;
+        }
       if (g_str_has_prefix (name, "oval:"))
         nvt_id = ovaldef_uuid (name, defs_file);
       else
