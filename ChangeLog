@@ -1,3 +1,9 @@
+2014-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (insert_report_host_detail): New function.
+	(create_report, manage_report_host_details): Refactor code to use
+	insert_report_host_detail().
+
 2015-01-12  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.

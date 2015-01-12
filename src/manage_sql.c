@@ -14736,6 +14736,50 @@ host_detail_free (host_detail_t *detail)
 }
 
 /**
+ * @brief Create the current report for a task.
+ *
+ * @param[in]   report      The detail's report.
+ * @param[in]   host        The detail's host.
+ * @param[in]   s_type      The detail's source type.
+ * @param[in]   s_name      The detail's source name.
+ * @param[in]   s_desc      The detail's source description.
+ * @param[in]   name        The detail's name.
+ * @param[in]   type        The detail's type.
+ */
+static void
+insert_report_host_detail (report_t report, const char *host,
+                           const char *s_type, const char *s_name,
+                           const char *s_desc, const char *name,
+                           const char *value)
+{
+  char *quoted_host, *quoted_source_name, *quoted_source_type;
+  char *quoted_source_desc, *quoted_name, *quoted_value;
+
+  quoted_host = sql_quote (host);
+  quoted_source_type = sql_quote (s_type);
+  quoted_source_name = sql_quote (s_name);
+  quoted_source_desc = sql_quote (s_desc);
+  quoted_name = sql_quote (name);
+  quoted_value = sql_quote (value);
+  sql ("INSERT INTO report_host_details"
+       " (report_host, source_type, source_name, source_description,"
+       "  name, value)"
+       " VALUES"
+       " ((SELECT id FROM report_hosts"
+       "   WHERE report = %llu AND host = '%s'),"
+       "  '%s', '%s', '%s', '%s', '%s');",
+       report, quoted_host, quoted_source_type, quoted_source_name,
+       quoted_source_desc, quoted_name, quoted_value);
+
+  g_free (quoted_host);
+  g_free (quoted_source_type);
+  g_free (quoted_source_name);
+  g_free (quoted_source_desc);
+  g_free (quoted_name);
+  g_free (quoted_value);
+}
+
+/**
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
@@ -14954,39 +14998,10 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   index = 0;
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)
-      {
-        gchar *quoted_ip, *quoted_source_type, *quoted_source_name;
-        gchar *quoted_source_desc, *quoted_name, *quoted_value;
-
-        quoted_ip = sql_quote (detail->ip);
-        quoted_source_type = sql_quote (detail->source_type ?: "");
-        quoted_source_name = sql_quote (detail->source_name ?: "");
-        quoted_source_desc = sql_quote (detail->source_desc ?: "");
-        quoted_name = sql_quote (detail->name);
-        quoted_value = sql_quote (detail->value ?: "");
-
-        sql ("INSERT INTO report_host_details"
-             " (report_host, source_type, source_name, source_description,"
-             "  name, value)"
-             " VALUES"
-             " ((SELECT id FROM report_hosts"
-             "   WHERE report = %llu AND host = '%s'),"
-             "  '%s', '%s', '%s', '%s', '%s');",
-             report,
-             quoted_ip,
-             quoted_source_type,
-             quoted_source_name,
-             quoted_source_desc,
-             quoted_name,
-             quoted_value);
-
-        g_free (quoted_ip);
-        g_free (quoted_source_type);
-        g_free (quoted_source_name);
-        g_free (quoted_source_desc);
-        g_free (quoted_name);
-        g_free (quoted_value);
-      }
+      insert_report_host_detail
+       (report, detail->ip, detail->source_type ?: "",
+        detail->source_name ?: "", detail->source_desc ?: "", detail->name,
+        detail->value ?: "");
   sql ("COMMIT;");
 
   current_scanner_task = task;
@@ -47842,8 +47857,6 @@ manage_report_host_details (report_t report, const char *host, entity_t entity)
       if (strcmp (entity_name (detail), "detail") == 0)
         {
           entity_t source, source_type, source_name, source_desc, name, value;
-          gchar *quoted_host, *quoted_source_name, *quoted_source_type;
-          gchar *quoted_source_desc, *quoted_name, *quoted_value;
 
           source = entity_child (detail, "source");
           if (source == NULL)
@@ -47863,28 +47876,9 @@ manage_report_host_details (report_t report, const char *host, entity_t entity)
           value = entity_child (detail, "value");
           if (value == NULL)
             return -1;
-
-          quoted_host = sql_quote (host);
-          quoted_source_type = sql_quote (entity_text (source_type));
-          quoted_source_name = sql_quote (entity_text (source_name));
-          quoted_source_desc = sql_quote (entity_text (source_desc));
-          quoted_name = sql_quote (entity_text (name));
-          quoted_value = sql_quote (entity_text (value));
-          sql ("INSERT INTO report_host_details"
-               " (report_host, source_type, source_name, source_description,"
-               "  name, value)"
-               " VALUES"
-               " ((SELECT id FROM report_hosts"
-               "   WHERE report = %llu AND host = '%s'),"
-               "  '%s', '%s', '%s', '%s', '%s');",
-               report, quoted_host, quoted_source_type, quoted_source_name,
-               quoted_source_desc, quoted_name, quoted_value);
-          g_free (quoted_host);
-          g_free (quoted_source_type);
-          g_free (quoted_source_name);
-          g_free (quoted_source_desc);
-          g_free (quoted_name);
-          g_free (quoted_value);
+          insert_report_host_detail
+           (report, host, entity_text (source_type), entity_text (source_name),
+            entity_text (source_desc), entity_text (name), entity_text (value));
         }
       details = next_entities (details);
     }
