@@ -7924,12 +7924,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                             "method",
                                             "notice_report_format");
                   if (((format_uuid == NULL)
-                       || find_report_format (format_uuid, &report_format)
+                       || find_report_format_with_permission
+                           (format_uuid, &report_format, "get_report_formats")
                        || (report_format == 0))
                       /* Fallback to TXT. */
-                      && (find_report_format
+                      && (find_report_format_with_permission
                            ("a3810a62-1f62-11e1-9219-406186ea4fc5",
-                            &report_format)
+                            &report_format,
+                            "get_report_formats")
                           || (report_format == 0)))
                     {
                       g_free (format_uuid);
@@ -8042,12 +8044,14 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                             "method",
                                             "notice_attach_format");
                   if (((format_uuid == NULL)
-                       || find_report_format (format_uuid, &report_format)
+                       || find_report_format_with_permission
+                           (format_uuid, &report_format, "get_report_formats")
                        || (report_format == 0))
                       /* Fallback to TXT. */
-                      && (find_report_format
+                      && (find_report_format_with_permission
                            ("19f6f1b3-7128-4433-888c-ccc764fe6ed5",
-                            &report_format)
+                            &report_format,
+                            "get_report_formats")
                           || (report_format == 0)))
                     {
                       g_free (format_uuid);
@@ -8367,7 +8371,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                     "verinice_server_report_format");
           if (format_uuid && strlen (format_uuid))
             {
-              if (find_report_format (format_uuid, &report_format)
+              if (find_report_format_with_permission (format_uuid,
+                                                      &report_format,
+                                                      "get_report_formats")
                   || (report_format == 0))
                 {
                   g_warning ("Could not find Verinice RFP '%s'", format_uuid);
