@@ -1,3 +1,7 @@
+2015-01-12  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CHANGES: Fix typo.
+
 2015-01-12  Benoît Allard  <benoit.allard@greenbone.net>
 
 	* CHANGES: Prepare release of openvas-manager 6.0+beta5.

@@ -15,7 +15,7 @@ Timo Pollmeier, Jan-Oliver Wagner, Matthew Mundell, Michael Wiegand and Hani
 Benhabiles.
 
 Main changes since 6.0+beta4:
-* Add settings for default resource selections on the "New Task" andi "New
+* Add settings for default resource selections on the "New Task" and "New
   Target" pages in GSA and get settings in Advanced Task Wizard.
 * LaTeX report format improvement
 * Retry starting of scheduled tasks when the start OMP fails.
