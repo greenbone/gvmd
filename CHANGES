@@ -1,3 +1,46 @@
+openvas-manager 6.0+beta5 (2015-01-12)
+
+This is the fifth beta version of the upcoming 6.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanners and various user clients.
+
+This release improves support for the "Super Admin" permission, introduce
+ownership for users, roles and groups, allow sharing of sensors and task
+between users, adds a `--optimize` command line option, start work on
+consolidation of the different RESUME_* OMP commands as well as fixes various
+smaller issues.
+
+Many thanks to everyone who has contributed to this release:
+Timo Pollmeier, Jan-Oliver Wagner, Matthew Mundell, Michael Wiegand and Hani
+Benhabiles.
+
+Main changes since 6.0+beta4:
+* Add settings for default resource selections on the "New Task" andi "New
+  Target" pages in GSA and get settings in Advanced Task Wizard.
+* LaTeX report format improvement
+* Retry starting of scheduled tasks when the start OMP fails.
+* Add new "Modify Task" wizard.
+* Add RESOURCE/TYPE to CREATE_PERMISSION, so that Super permissions can be
+  created on Roles, Groups and Users.
+* Add RESOURCE/TYPE to MODIFY_PERMISSION, so that editing of Super
+  permissions works.
+* Allow severity to be null in CERT-Bund and DFN-CERT Advisories, CPEs and OVAL
+  definitions if no severity is available from CVEs.
+* Performance improvement for GET_REPORTS.
+* Add solution_type column to NVTs.
+* Enable mixing of the current user's slaves and tasks, with other people's
+  slaves and tasks, when permissions allow it.
+* Add command line option --optimize, with arguments "analyze" and "vacuum".
+* Add indices for NVTs, CVEs and CPEs and change init_aggregate_iterator to use
+  them. Remove unused features from init_aggregate_iterator for	simplicity.
+* Make --role apply to --get-users too.
+* Introduce ownership of users, roles and groups.
+* Major rewrite of the RESUME_* OMP commands.
+* Introduce ownership of permissions.
+* Account for Super permissions in asset reports.
+* Add NEW_NAME to OMP MODIFY_USER, to allow changing of user names.
+
+
 openvas-manager 6.0+beta4 (2014-11-21)
 
 This is the fourth beta version of the upcoming 6.0 release of the OpenVAS
