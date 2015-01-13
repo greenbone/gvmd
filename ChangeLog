@@ -1,3 +1,31 @@
+2015-01-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Fix or clarify documentation of various OMP commands.
+
+	* src/schema_formats/XML/OMP.xml.in (authenticate): Add "Super Admin"
+	as option for role.
+	(create_group, create_role): Mark "users" element as optional. Add
+	response.
+	(create_slave): Mark "password" element as optional.
+	(create_target): Mark elements "ssh_lsc_credential" and "port",
+	"smb_lsc_credential", "esxi_lsc_credential", "alive_tests",
+	"reverse_lookup_only" and "reverse_lookup_unify" as optional.
+	(create_user): Add optional "ifaces" element. Add summary for "allow"
+	attribute of "hosts" element.
+	(delete_port_range, delete_user): Remove attribute "ultimate" as it is
+	not used for any actual trashcan functionality.
+	(help): Add attribute "type" to command. Add attributes "format",
+	"extension" and "content_type" to "schema" element in response.
+	(modify_group, modify_role): Add response.
+	(modify_schedule): Note that missing subelements of "first_time" will
+	default to system time and that a missing "timezone" implies using
+	the user's timezone.
+	(modify_user): Mark "new_name" as optional. Add optional "ifaces"
+	element. Add summary for "allow" attribute of "hosts" element.
+	(resume_task, start_task): Add report_id element and update example.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2014-01-12  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Adjust to handle host detail results.

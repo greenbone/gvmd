@@ -4059,7 +4059,7 @@ report_report_scan_end
           </li>
 <li>
               &lt;<b>role</b>&gt;
-              <div style="margin-left: 15px; display: inline;">("User", "Admin" or "Observer")</div>
+              <div style="margin-left: 15px; display: inline;">("User", "Admin", "Super Admin" or "Observer")</div>
 <div style="margin-left: 15px; display: inline;">The user's role.</div>
 <ul style="list-style: none"></ul>
 </li>
@@ -4108,7 +4108,7 @@ authenticate_credentials_password
      }
 
 authenticate_response_role
- = element role    # type UserAdminObserver
+ = element role    # type UserAdminSuper AdminObserver
      {
      }
 
@@ -6186,12 +6186,27 @@ create_filter_type
 </li>
 <li>
               &lt;<b>users</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
+              ?<div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
-<li style="margin-top: 15px;"><i>Response</i></li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+</ul>
+</li>
 </ul>
 <h4>7.7.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
@@ -6201,7 +6216,7 @@ create_filter_type
        create_group_name
        &amp; create_group_comment?
        &amp; create_group_copy?
-       &amp; create_group_users
+       &amp; create_group_users?
      }
 
 create_group_name
@@ -6231,6 +6246,9 @@ create_group_users
 <i>Response</i><div style="margin-left: 5%"><pre>create_group_response
  = element create_group_response
      {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
      }
 </pre></div>
 </div>
@@ -7534,12 +7552,27 @@ create_report_format_copy
 </li>
 <li>
               &lt;<b>users</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
+              ?<div style="margin-left: 15px; display: inline;">Comma separated list of user names.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
-<li style="margin-top: 15px;"><i>Response</i></li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+</ul>
+</li>
 </ul>
 <h4>7.16.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
@@ -7549,7 +7582,7 @@ create_report_format_copy
        create_role_name
        &amp; create_role_comment?
        &amp; create_role_copy?
-       &amp; create_role_users
+       &amp; create_role_users?
      }
 
 create_role_name
@@ -7579,6 +7612,9 @@ create_role_users
 <i>Response</i><div style="margin-left: 5%"><pre>create_role_response
  = element create_role_response
      {
+       attribute status { status }
+       &amp; attribute status_text { text }
+       &amp; attribute id { uuid }
      }
 </pre></div>
 </div>
@@ -8045,7 +8081,7 @@ create_schedule_timezone
 </li>
 <li>
               &lt;<b>password</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
+              ?<div style="margin-left: 15px; display: inline;">Password for login on the slave Manager.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -8078,7 +8114,7 @@ create_schedule_timezone
        &amp; create_slave_host
        &amp; create_slave_port
        &amp; create_slave_login
-       &amp; create_slave_password
+       &amp; create_slave_password?
      }
 
 create_slave_name
@@ -8345,7 +8381,7 @@ create_tag_active
 </li>
 <li>
               &lt;<b>ssh_lsc_credential</b>&gt;
-              <div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
+              ?<div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
 <ul style="list-style: none">
 <li>
           @<b>id</b>
@@ -8353,14 +8389,14 @@ create_tag_active
           </li>
 <li>
               &lt;<b>port</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
+              ?<div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
 <li>
               &lt;<b>smb_lsc_credential</b>&gt;
-              <div style="margin-left: 15px; display: inline;">SMB login credentials for target.</div>
+              ?<div style="margin-left: 15px; display: inline;">SMB login credentials for target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -8368,7 +8404,7 @@ create_tag_active
 </li>
 <li>
               &lt;<b>esxi_lsc_credential</b>&gt;
-              <div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
+              ?<div style="margin-left: 15px; display: inline;">ESXi credential to use on target.</div>
 <ul style="list-style: none"><li>
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
@@ -8376,17 +8412,17 @@ create_tag_active
 </li>
 <li>
               &lt;<b>alive_tests</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
+              ?<div style="margin-left: 15px; display: inline;">Which alive tests to use.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>reverse_lookup_only</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether to scan only hosts that have names.</div>
+              ?<div style="margin-left: 15px; display: inline;">Whether to scan only hosts that have names.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>reverse_lookup_unify</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether to scan only one IP when multiple IPs have the same name.</div>
+              ?<div style="margin-left: 15px; display: inline;">Whether to scan only one IP when multiple IPs have the same name.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -8430,12 +8466,12 @@ create_tag_active
        &amp; create_target_comment?
        &amp; create_target_copy?
        &amp; create_target_hosts
-       &amp; create_target_ssh_lsc_credential
-       &amp; create_target_smb_lsc_credential
-       &amp; create_target_esxi_lsc_credential
-       &amp; create_target_alive_tests
-       &amp; create_target_reverse_lookup_only
-       &amp; create_target_reverse_lookup_unify
+       &amp; create_target_ssh_lsc_credential?
+       &amp; create_target_smb_lsc_credential?
+       &amp; create_target_esxi_lsc_credential?
+       &amp; create_target_alive_tests?
+       &amp; create_target_reverse_lookup_only?
+       &amp; create_target_reverse_lookup_unify?
        &amp; create_target_port_range?
        &amp; create_target_port_list?
      }
@@ -8475,7 +8511,7 @@ create_target_ssh_lsc_credential
  = element ssh_lsc_credential
      {
        attribute id { uuid }
-       &amp; create_target_ssh_lsc_credential_port
+       &amp; create_target_ssh_lsc_credential_port?
      }
 
 create_target_ssh_lsc_credential_port
@@ -8832,6 +8868,16 @@ create_task_preferences_preference_value
 <ul style="list-style: none"><li>
           @<b>allow</b>
           (<a href="#type_boolean">boolean</a>)
+          If 1, allow only listed, otherwise forbid listed.
+          </li></ul>
+</li>
+<li>
+              &lt;<b>ifaces</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">User access rules: a textual list of ifaces.</div>
+<ul style="list-style: none"><li>
+          @<b>allow</b>
+          (<a href="#type_boolean">boolean</a>)
+          If 1, allow only listed, otherwise forbid listed.
           </li></ul>
 </li>
 <li>
@@ -8874,6 +8920,7 @@ create_task_preferences_preference_value
        create_user_name
        &amp; create_user_copy?
        &amp; create_user_hosts?
+       &amp; create_user_ifaces?
        &amp; create_user_password?
        &amp; create_user_role*
      }
@@ -8892,6 +8939,13 @@ create_user_copy
 
 create_user_hosts
  = element hosts
+     {
+       text
+       &amp; attribute allow { boolean }?
+     }
+
+create_user_ifaces
+ = element ifaces
      {
        text
        &amp; attribute allow { boolean }?
@@ -9681,17 +9735,10 @@ create_user_role
 <h4>7.35.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none">
-<li>
+<i>Command</i><ul style="list-style: none"><li>
           @<b>port_range_id</b>
           (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-          @<b>ultimate</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to remove entirely, or to the trashcan.
-          </li>
-</ul>
+          </li></ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -9712,7 +9759,6 @@ create_user_role
  = element delete_port_range
      {
        attribute port_range_id { uuid }
-       &amp; attribute ultimate { boolean }
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>delete_port_range_response
@@ -10294,11 +10340,6 @@ create_user_role
           The ID of the user to be deleted. Overrides name.
           </li>
 <li>
-          @<b>ultimate</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to remove entirely, or to the trashcan.
-          </li>
-<li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the user to be deleted.</div>
 <ul style="list-style: none"></ul>
@@ -10324,7 +10365,6 @@ create_user_role
  = element delete_user
      {
        attribute user_id { uuid }
-       &amp; attribute ultimate { boolean }
        &amp; delete_user_name
      }
 
@@ -29490,11 +29530,18 @@ get_version_response_version
 <h4>7.80.1 Structure</h4>
 <ul style="list-style: none">
 <li>
-<i>Command</i><ul style="list-style: none"><li>
+<i>Command</i><ul style="list-style: none">
+<li>
           @<b>format</b>
           ("html", "HTML", "rnc", "RNC", "text", "TEXT", "xml" or "XML")
           Required help format.
-          </li></ul>
+          </li>
+<li>
+          @<b>type</b>
+          ("brief" or "")
+          Help type, currently only blank or "brief" for XML format.
+          </li>
+</ul>
 </li>
 <li style="margin-top: 15px;">
 <i>Response</i><ul style="list-style: none">
@@ -29511,6 +29558,21 @@ get_version_response_version
               ?<ul style="list-style: none"><li>
               &lt;<b>protocol</b>&gt;
               <ul style="list-style: none">
+<li>
+          @<b>format</b>
+          (text)
+          The help format.
+          </li>
+<li>
+          @<b>extension</b>
+          (text)
+          The suggested file extension for the help.
+          </li>
+<li>
+          @<b>content_type</b>
+          (text)
+          The MIME content-type of the help.
+          </li>
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The full name of the protocol.</div>
@@ -29579,6 +29641,7 @@ get_version_response_version
  = element help
      {
        attribute format { xsd:token { pattern = "html|HTML|rnc|RNC|text|TEXT|xml|XML" } }?
+       &amp; attribute type { xsd:token { pattern = "brief|" } }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>help_response
@@ -29599,7 +29662,10 @@ help_response_schema
 help_response_schema_protocol
  = element protocol
      {
-       help_response_schema_protocol_name
+       attribute format { text }?
+       &amp; attribute extension { text }?
+       &amp; attribute content_type { text }?
+       &amp; help_response_schema_protocol_name
        &amp; help_response_schema_protocol_abbreviation?
        &amp; help_response_schema_protocol_summary?
        &amp; help_response_schema_protocol_version?
@@ -30768,7 +30834,18 @@ modify_filter_type
 </li>
 </ul>
 </li>
-<li style="margin-top: 15px;"><i>Response</i></li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
 </ul>
 <h4>7.86.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
@@ -30802,6 +30879,8 @@ modify_group_users
 <i>Response</i><div style="margin-left: 5%"><pre>modify_group_response
  = element modify_group_response
      {
+       attribute status { status }
+       &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
@@ -31766,7 +31845,18 @@ modify_report_format_param_value
 </li>
 </ul>
 </li>
-<li style="margin-top: 15px;"><i>Response</i></li>
+<li style="margin-top: 15px;">
+<i>Response</i><ul style="list-style: none">
+<li>
+          @<b>status</b>
+          (<a href="#type_status">status</a>)
+          </li>
+<li>
+          @<b>status_text</b>
+          (text)
+          </li>
+</ul>
+</li>
 </ul>
 <h4>7.94.2 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;">
@@ -31800,6 +31890,8 @@ modify_role_users
 <i>Response</i><div style="margin-left: 5%"><pre>modify_role_response
  = element modify_role_response
      {
+       attribute status { status }
+       &amp; attribute status_text { text }
      }
 </pre></div>
 </div>
@@ -31998,7 +32090,7 @@ modify_scanner_key_priv
 </li>
 <li>
               &lt;<b>first_time</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">First time the task will run.</div>
+              ?<div style="margin-left: 15px; display: inline;">First time the task will run. Missing subelements default to current system time.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>day_of_month</b>&gt;
@@ -32040,7 +32132,7 @@ modify_scanner_key_priv
 </li>
 <li>
               &lt;<b>timezone</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The timezone the schedule will follow.</div>
+              ?<div style="margin-left: 15px; display: inline;">The timezone the schedule will follow. User's timezone is used if omitted.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -32975,7 +33067,7 @@ modify_task_file
 </li>
 <li>
               &lt;<b>new_name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The new name for the user.</div>
+              ?<div style="margin-left: 15px; display: inline;">The new name for the user.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -32997,6 +33089,16 @@ modify_task_file
 <ul style="list-style: none"><li>
           @<b>allow</b>
           (<a href="#type_boolean">boolean</a>)
+          If 1, allow only listed, otherwise forbid listed.
+          </li></ul>
+</li>
+<li>
+              &lt;<b>ifaces</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">User access rules: a textual list of ifaces.</div>
+<ul style="list-style: none"><li>
+          @<b>allow</b>
+          (<a href="#type_boolean">boolean</a>)
+          If 1, allow only listed, otherwise forbid listed.
           </li></ul>
 </li>
 <li>
@@ -33027,10 +33129,11 @@ modify_task_file
      {
        attribute id { uuid }
        &amp; modify_user_name
-       &amp; modify_user_new_name
+       &amp; modify_user_new_name?
        &amp; modify_user_password?
        &amp; modify_user_role*
        &amp; modify_user_hosts?
+       &amp; modify_user_ifaces?
        &amp; modify_user_sources?
      }
 
@@ -33048,6 +33151,13 @@ modify_user_new_name
 
 modify_user_hosts
  = element hosts
+     {
+       text
+       &amp; attribute allow { boolean }?
+     }
+
+modify_user_ifaces
+ = element ifaces
      {
        text
        &amp; attribute allow { boolean }?
@@ -33173,6 +33283,11 @@ modify_user_sources
           @<b>status_text</b>
           (text)
           </li>
+<li>
+              &lt;<b>report_id</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The id of the report.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -33189,6 +33304,13 @@ modify_user_sources
      {
        attribute status { status }
        &amp; attribute status_text { text }
+       &amp; resume_task_response_report_id
+     }
+
+resume_task_response_report_id
+ = element report_id
+     {
+       uuid
      }
 </pre></div>
 </div>
@@ -33197,7 +33319,9 @@ modify_user_sources
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;resume_task_response status="200"
-                       status_text="OK"/&gt;
+                       status_text="OK"&gt;
+   &lt;report_id&gt;330ee785-c2c0-4d4c-ab96-725142c9b789&lt;/report_id&gt;
+ &lt;/resume_task_response&gt;
 </pre></div>
 </div>
 </div>
@@ -33381,6 +33505,11 @@ run_wizard_response_response
           @<b>status_text</b>
           (text)
           </li>
+<li>
+              &lt;<b>report_id</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The id of the report.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -33397,6 +33526,13 @@ run_wizard_response_response
      {
        attribute status { status }
        &amp; attribute status_text { text }
+       &amp; start_task_response_report_id
+     }
+
+start_task_response_report_id
+ = element report_id
+     {
+       uuid
      }
 </pre></div>
 </div>
@@ -33405,7 +33541,9 @@ run_wizard_response_response
 <i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task task_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"/&gt;
 </pre></div>
 <i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;start_task_response status="200"
-                      status_text="OK"/&gt;
+                      status_text="OK"&gt;
+   &lt;report_id&gt;330ee785-c2c0-4d4c-ab96-725142c9b789&lt;/report_id&gt;
+ &lt;/start_task_response&gt;
 </pre></div>
 </div>
 </div>

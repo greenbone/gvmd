@@ -2502,7 +2502,7 @@ create_group
        create_group_name
        & create_group_comment?
        & create_group_copy?
-       & create_group_users
+       & create_group_users?
      }
 
 # A name for the group.
@@ -3054,7 +3054,7 @@ create_role
        create_role_name
        & create_role_comment?
        & create_role_copy?
-       & create_role_users
+       & create_role_users?
      }
 
 # A name for the role.
@@ -3292,7 +3292,7 @@ create_slave
        & create_slave_host
        & create_slave_port
        & create_slave_login
-       & create_slave_password
+       & create_slave_password?
      }
 
 # A name for the slave.
@@ -3421,12 +3421,12 @@ create_target
        & create_target_comment?
        & create_target_copy?
        & create_target_hosts
-       & create_target_ssh_lsc_credential
-       & create_target_smb_lsc_credential
-       & create_target_esxi_lsc_credential
-       & create_target_alive_tests
-       & create_target_reverse_lookup_only
-       & create_target_reverse_lookup_unify
+       & create_target_ssh_lsc_credential?
+       & create_target_smb_lsc_credential?
+       & create_target_esxi_lsc_credential?
+       & create_target_alive_tests?
+       & create_target_reverse_lookup_only?
+       & create_target_reverse_lookup_unify?
        & create_target_port_range?
        & create_target_port_list?
      }
@@ -3472,7 +3472,7 @@ create_target_ssh_lsc_credential
  = element ssh_lsc_credential
      {
        attribute id { uuid }
-       & create_target_ssh_lsc_credential_port
+       & create_target_ssh_lsc_credential_port?
      }
 
 # The port the LSCs will use.
@@ -3665,6 +3665,7 @@ create_user
        create_user_name
        & create_user_copy?
        & create_user_hosts?
+       & create_user_ifaces?
        & create_user_password?
        & create_user_role*
      }
@@ -3688,7 +3689,17 @@ create_user_hosts
  = element hosts
      {
        text
-       & attribute allow { boolean }?
+       & # If 1, allow only listed, otherwise forbid listed.
+       attribute allow { boolean }?
+     }
+
+# User access rules: a textual list of ifaces.
+create_user_ifaces
+ = element ifaces
+     {
+       text
+       & # If 1, allow only listed, otherwise forbid listed.
+       attribute allow { boolean }?
      }
 
 # The password for the user.
@@ -3843,8 +3854,6 @@ delete_port_range
  = element delete_port_range
      {
        attribute port_range_id { uuid }
-       & # Whether to remove entirely, or to the trashcan.
-       attribute ultimate { boolean }
      }
 
 ## Command delete_report_format
@@ -3952,8 +3961,6 @@ delete_user
      {
        # The ID of the user to be deleted. Overrides name.
        attribute user_id { uuid }
-       & # Whether to remove entirely, or to the trashcan.
-       attribute ultimate { boolean }
        & delete_user_name
      }
 
@@ -4633,6 +4640,8 @@ help
      {
        # Required help format.
        attribute format { xsd:token { pattern = "html|HTML|rnc|RNC|text|TEXT|xml|XML" } }?
+       & # Help type, currently only blank or "brief" for XML format.
+       attribute type { xsd:token { pattern = "brief|" } }?
      }
 
 ## Command modify_agent
@@ -5504,7 +5513,7 @@ modify_schedule_name
        name
      }
 
-# First time the task will run.
+# First time the task will run. Missing subelements default to current system time.
 modify_schedule_first_time
  = element first_time
      {
@@ -5545,7 +5554,7 @@ modify_schedule_first_time_year
        text
      }
 
-# The timezone the schedule will follow.
+# The timezone the schedule will follow. User's timezone is used if omitted.
 modify_schedule_timezone
  = element timezone
      {
@@ -5929,10 +5938,11 @@ modify_user
        # ID of the user to be modified. Overrides NAME element.
        attribute id { uuid }
        & modify_user_name
-       & modify_user_new_name
+       & modify_user_new_name?
        & modify_user_password?
        & modify_user_role*
        & modify_user_hosts?
+       & modify_user_ifaces?
        & modify_user_sources?
      }
 
@@ -5955,7 +5965,17 @@ modify_user_hosts
  = element hosts
      {
        text
-       & attribute allow { boolean }?
+       & # If 1, allow only listed, otherwise forbid listed.
+       attribute allow { boolean }?
+     }
+
+# User access rules: a textual list of ifaces.
+modify_user_ifaces
+ = element ifaces
+     {
+       text
+       & # If 1, allow only listed, otherwise forbid listed.
+       attribute allow { boolean }?
      }
 
 # The password for the user.
@@ -6149,7 +6169,7 @@ authenticate_response
 
 # The user's role.
 authenticate_response_role
- = element role    # type UserAdminObserver
+ = element role    # type UserAdminSuper AdminObserver
      {
      }
 
@@ -6322,6 +6342,9 @@ create_filter_response
 create_group_response
  = element create_group_response
      {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
      }
 
 ## Response to create_lsc_credential
@@ -6409,6 +6432,9 @@ create_report_format_response
 create_role_response
  = element create_role_response
      {
+       attribute status { status }
+       & attribute status_text { text }
+       & attribute id { uuid }
      }
 
 ## Response to create_scanner
@@ -15996,7 +16022,13 @@ help_response_schema
 help_response_schema_protocol
  = element protocol
      {
-       help_response_schema_protocol_name
+       # The help format.
+       attribute format { text }?
+       & # The suggested file extension for the help.
+       attribute extension { text }?
+       & # The MIME content-type of the help.
+       attribute content_type { text }?
+       & help_response_schema_protocol_name
        & help_response_schema_protocol_abbreviation?
        & help_response_schema_protocol_summary?
        & help_response_schema_protocol_version?
@@ -16142,6 +16174,8 @@ modify_filter_response
 modify_group_response
  = element modify_group_response
      {
+       attribute status { status }
+       & attribute status_text { text }
      }
 
 ## Response to modify_lsc_credential
@@ -16212,6 +16246,8 @@ modify_report_format_response
 modify_role_response
  = element modify_role_response
      {
+       attribute status { status }
+       & attribute status_text { text }
      }
 
 ## Response to modify_scanner
@@ -16302,6 +16338,14 @@ resume_task_response
      {
        attribute status { status }
        & attribute status_text { text }
+       & resume_task_response_report_id
+     }
+
+# The id of the report.
+resume_task_response_report_id
+ = element report_id
+     {
+       uuid
      }
 
 ## Response to run_wizard
@@ -16328,6 +16372,14 @@ start_task_response
      {
        attribute status { status }
        & attribute status_text { text }
+       & start_task_response_report_id
+     }
+
+# The id of the report.
+start_task_response_report_id
+ = element report_id
+     {
+       uuid
      }
 
 ## Response to stop_task

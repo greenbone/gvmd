@@ -1914,6 +1914,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt>User</alt>
             <alt>Admin</alt>
+            <alt>Super Admin</alt>
             <alt>Observer</alt>
           </alts>
         </type>
@@ -2699,7 +2700,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
-      <e>users</e>
+      <o><e>users</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -2727,6 +2728,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         text
       </pattern>
     </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
     <example>
       <summary>Create a group</summary>
       <request>
@@ -3653,7 +3673,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
-      <e>users</e>
+      <o><e>users</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -3681,6 +3701,25 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         text
       </pattern>
     </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
     <example>
       <summary>Create a role</summary>
       <request>
@@ -3965,7 +4004,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>host</e>
       <e>port</e>
       <e>login</e>
-      <e>password</e>
+      <o><e>password</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -4168,12 +4207,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <e>hosts</e>
-      <e>ssh_lsc_credential</e>
-      <e>smb_lsc_credential</e>
-      <e>esxi_lsc_credential</e>
-      <e>alive_tests</e>
-      <e>reverse_lookup_only</e>
-      <e>reverse_lookup_unify</e>
+      <o><e>ssh_lsc_credential</e></o>
+      <o><e>smb_lsc_credential</e></o>
+      <o><e>esxi_lsc_credential</e></o>
+      <o><e>alive_tests</e></o>
+      <o><e>reverse_lookup_only</e></o>
+      <o><e>reverse_lookup_unify</e></o>
       <o><e>port_range</e></o>
       <o><e>port_list</e></o>
     </pattern>
@@ -4222,7 +4261,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>1</required>
         </attrib>
-        <e>port</e>
+        <o><e>port</e></o>
       </pattern>
       <ele>
         <name>port</name>
@@ -4512,6 +4551,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>name</e>
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
+      <o><e>ifaces</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
     </pattern>
@@ -4533,6 +4573,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <attrib>
           <name>allow</name>
+          <summary>If 1, allow only listed, otherwise forbid listed</summary>
+          <type>boolean</type>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>ifaces</name>
+      <summary>User access rules: a textual list of ifaces</summary>
+      <pattern>
+        <attrib>
+          <name>allow</name>
+          <summary>If 1, allow only listed, otherwise forbid listed</summary>
           <type>boolean</type>
         </attrib>
         text
@@ -5166,12 +5219,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
-        <required>1</required>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -5627,12 +5674,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>user_id</name>
         <summary>The ID of the user to be deleted.  Overrides name</summary>
         <type>uuid</type>
-        <required>1</required>
-      </attrib>
-      <attrib>
-        <name>ultimate</name>
-        <summary>Whether to remove entirely, or to the trashcan</summary>
-        <type>boolean</type>
         <required>1</required>
       </attrib>
       <e>name</e>
@@ -18286,6 +18327,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </alts>
         </type>
       </attrib>
+      <attrib>
+        <name>type</name>
+        <summary>Help type, currently only blank or "brief" for XML format</summary>
+        <type>
+          <alts>
+            <alt>brief</alt>
+            <alt></alt>
+          </alts>
+        </type>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -18308,6 +18359,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>protocol</name>
           <pattern>
+            <attrib>
+              <name>format</name>
+              <summary>The help format</summary>
+              <type>
+                text
+              </type>
+            </attrib>
+            <attrib>
+              <name>extension</name>
+              <summary>The suggested file extension for the help</summary>
+              <type>
+                text
+              </type>
+            </attrib>
+            <attrib>
+              <name>content_type</name>
+              <summary>The MIME content-type of the help</summary>
+              <type>
+                text
+              </type>
+            </attrib>
             <e>name</e>
             <o><e>abbreviation</e></o>
             <o><e>summary</e></o>
@@ -19237,6 +19309,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <summary>Comma separated list of user names</summary>
       <pattern>text</pattern>
     </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
     <example>
       <summary>Modify the name of a group</summary>
       <request>
@@ -19903,6 +19989,20 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>users</e></o>
     </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
     <ele>
       <name>name</name>
       <summary>Name of role</summary>
@@ -20056,7 +20156,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>first_time</name>
-      <summary>First time the task will run</summary>
+      <summary>First time the task will run. Missing subelements default to current system time</summary>
       <pattern>
         <o><e>day_of_month</e></o>
         <o><e>hour</e></o>
@@ -20087,7 +20187,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>timezone</name>
-      <summary>The timezone the schedule will follow</summary>
+      <summary>The timezone the schedule will follow. User's timezone is used if omitted</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -20691,10 +20791,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <required>1</required>
       </attrib>
       <e>name</e>
-      <e>new_name</e>
+      <o><e>new_name</e></o>
       <o><e>password</e></o>
       <any><e>role</e></any>
       <o><e>hosts</e></o>
+      <o><e>ifaces</e></o>
       <o><e>sources</e></o>
     </pattern>
     <ele>
@@ -20716,6 +20817,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <pattern>
         <attrib>
           <name>allow</name>
+          <summary>If 1, allow only listed, otherwise forbid listed</summary>
+          <type>boolean</type>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>ifaces</name>
+      <summary>User access rules: a textual list of ifaces</summary>
+      <pattern>
+        <attrib>
+          <name>allow</name>
+          <summary>If 1, allow only listed, otherwise forbid listed</summary>
           <type>boolean</type>
         </attrib>
         text
@@ -20840,7 +20954,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>report_id</e>
       </pattern>
+      <ele>
+        <name>report_id</name>
+        <summary>The id of the report</summary>
+        <pattern>
+          <t>uuid</t>
+        </pattern>
+      </ele>
     </response>
     <example>
       <summary>Resume a task</summary>
@@ -20849,7 +20971,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </resume_task>
       </request>
       <response>
-        <resume_task_response status="200" status_text="OK"/>
+        <resume_task_response status="200" status_text="OK">
+          <report_id>330ee785-c2c0-4d4c-ab96-725142c9b789</report_id>
+        </resume_task_response>
       </response>
     </example>
   </command>
@@ -20976,7 +21100,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>text</type>
           <required>1</required>
         </attrib>
+        <e>report_id</e>
       </pattern>
+      <ele>
+        <name>report_id</name>
+        <summary>The id of the report</summary>
+        <pattern>
+          <t>uuid</t>
+        </pattern>
+      </ele>
     </response>
     <example>
       <summary>Start a task</summary>
@@ -20985,7 +21117,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </start_task>
       </request>
       <response>
-        <start_task_response status="200" status_text="OK"/>
+        <start_task_response status="200" status_text="OK">
+          <report_id>330ee785-c2c0-4d4c-ab96-725142c9b789</report_id>
+        </start_task_response>
       </response>
     </example>
   </command>
