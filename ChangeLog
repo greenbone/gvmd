@@ -1,3 +1,10 @@
+2015-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (copy_role): Revert final clause in permissions
+	INSERT to use "resource".  r21041 changed the clause to use "owner", but
+	the clause is about limiting the statement to command permissions, not
+	about limiting the statement to global permissions.
+
 2015-01-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Fix or clarify documentation of various OMP commands.
