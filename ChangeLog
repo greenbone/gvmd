@@ -1,5 +1,19 @@
 2015-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	When the report format for an alert is not found in TEST_ALERT and
+	GET_REPORTS, respond with a dedicated error message, instead of just
+	with Internal Error.
+
+	* src/manage_sql.c (escalate_2): Add new return for when report format
+	is not found.
+	(escalate_1, manage_alert): Doc new return.
+	(manage_send_report): Separate alert errors.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_REPORTS and
+	CLIENT_TEST_ALERT handle new alert return values.
+
+2015-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_role): Revert final clause in permissions
 	INSERT to use "resource".  r21041 changed the clause to use "owner", but
 	the clause is about limiting the statement to command permissions, not
