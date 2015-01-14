@@ -2483,17 +2483,19 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   while (results)
     {
       result_t result;
-      const char *type, *name, *severity, *host;
-      char *desc = NULL, *nvt_id = NULL;
+      const char *type, *name, *severity, *host, *test_id;
+      char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
       entity_t r_entity = results->data;
 
       type = entity_attribute (r_entity, "type");
       name = entity_attribute (r_entity, "name");
       severity = entity_attribute (r_entity, "severity");
+      test_id = entity_attribute (r_entity, "test_id");
       host = entity_attribute (r_entity, "host");
       assert (name);
       assert (type);
       assert (severity);
+      assert (test_id);
       assert (host);
       if (!strcmp (type, "Host Detail"))
         {
@@ -2502,19 +2504,22 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
           results = next_entities (results);
           continue;
         }
-      if (g_str_has_prefix (name, "oval:"))
-        nvt_id = ovaldef_uuid (name, defs_file);
+      if (g_str_has_prefix (test_id, "oval:"))
+        {
+          nvt_id = ovaldef_uuid (test_id, defs_file);
+          severity_str = ovaldef_severity (nvt_id);
+        }
       else
         {
           nvt_id = g_strdup (name);
           desc = g_strdup (entity_text (r_entity));
-          if (g_str_has_prefix (nvt_id, "oval:"))
-            severity = ovaldef_severity (nvt_id);
         }
-      result = make_osp_result (task, host, nvt_id, type, desc, severity);
+      result = make_osp_result (task, host, nvt_id, type, desc,
+                                severity_str ?: severity);
       report_add_result (report, result);
       g_free (nvt_id);
       g_free (desc);
+      g_free (severity_str);
       results = next_entities (results);
     }
   sql ("COMMIT;");

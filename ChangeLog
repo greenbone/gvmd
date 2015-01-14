@@ -1,3 +1,8 @@
+2014-01-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Parse the result's test_id and handle
+	values accordingly.
+
 2015-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	When the report format for an alert is not found in TEST_ALERT and
