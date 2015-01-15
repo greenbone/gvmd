@@ -7719,7 +7719,7 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  *                                indexed.
  * @param[in]  max_results        The maximum number of results returned.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -2 failed to find report format.
  */
 static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
@@ -7816,7 +7816,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
-                      return -1;
+                      return -2;
                     }
                   g_free (format_uuid);
 
@@ -7934,7 +7934,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                       free (name);
                       free (to_address);
                       free (from_address);
-                      return -1;
+                      return -2;
                     }
                   g_free (format_uuid);
 
@@ -8107,7 +8107,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
           if (lookup_report_format ("Sourcefire", &report_format)
               || (report_format == 0))
-            return -1;
+            return -2;
 
           if (report == 0)
             switch (sql_int64 (&report, 0, 0,
@@ -8207,7 +8207,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 {
                   g_warning ("Could not find Verinice RFP '%s'", format_uuid);
                   g_free (format_uuid);
-                  return -1;
+                  return -2;
                 }
               g_free (format_uuid);
             }
@@ -8215,7 +8215,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               || (report_format == 0))
             {
               g_warning ("Could not find default verinice RFP");
-              return -1;
+              return -2;
             }
 
           if (report == 0)
@@ -8291,7 +8291,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, -1 error, -2 failed to find report format for alert.
  */
 static int
 escalate_1 (alert_t alert, task_t task, event_t event,
@@ -8326,7 +8326,8 @@ escalate_1 (alert_t alert, task_t task, event_t event,
  * @param[in]  event_data  Event data.
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
- *         99 permission denied, -1 error.
+ *         99 permission denied, -1 error, -2 failed to find report format
+ *         for alert.
  */
 int
 manage_alert (const char *alert_id, const char *task_id, event_t event,
@@ -24629,8 +24630,9 @@ manage_report (report_t report, report_format_t report_format,
  * @param[in]  host_max_results    The host maximum number of results returned.
  * @param[in]  prefix              Text to send to client before the report.
  *
- * @return 0 success, -1 error, 1 failed to find alert, 2 failed to find filter
- *         (before anything sent to client).
+ * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
+ *         during alert, 1 failed to find alert, 2 failed to find filter (before
+ *         anything sent to client).
  */
 int
 manage_send_report (report_t report, report_t delta_report,
@@ -24689,7 +24691,11 @@ manage_send_report (report_t report, report_t delta_report,
                         min_cvss_base, levels, delta_states, apply_overrides,
                         search_phrase, autofp, notes, notes_details, overrides,
                         overrides_details, first_result, max_results);
-      return ret;
+      if (ret == -1)
+        return -3;
+      if (ret)
+        return -2;
+      return 0;
     }
 
   /* Print the report as XML to a file. */
