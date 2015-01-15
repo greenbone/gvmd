@@ -37373,7 +37373,7 @@ verify_scanner (const char *scanner_id, char **version)
       cleanup_iterator (&scanner);
       if (!connection)
         return 2;
-      if (osp_get_scanner_version (connection, version))
+      if (osp_get_version (connection, NULL, version, NULL, NULL, NULL, NULL))
         return 2;
       osp_connection_close (connection);
       return 0;
