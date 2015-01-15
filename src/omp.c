@@ -10507,6 +10507,26 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                         set_client_state (CLIENT_AUTHENTIC);
                         return;
                         break;
+                      case -2:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("get_reports",
+                                            "Failed to find report format for"
+                                            " alert"));
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
+                      case -3:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_INTERNAL_ERROR ("get_reports"));
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
                       default:
                       case -1:
                         SEND_TO_CLIENT_OR_FAIL
@@ -16984,6 +17004,12 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("test_alert"));
+                  break;
+                case -2:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("test_alert",
+                                      "Failed to find report format for"
+                                      " alert"));
                   break;
                 default: /* Programming error. */
                   assert (0);
