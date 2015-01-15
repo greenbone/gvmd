@@ -112,6 +112,7 @@
 #include <sys/wait.h>
 
 #include <openvas/base/nvti.h>
+#include <openvas/base/osp.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/pwpolicy.h>
@@ -15657,6 +15658,34 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       scanner_task_iterator_name (&tasks));
                   cleanup_iterator (&tasks);
                   SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+
+                }
+              if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
+                  && get_scanners_data->get.details)
+                {
+                  char *s_name, *s_version, *d_name, *d_version;
+                  char *p_name, *p_version;
+                  osp_connection_t *connection;
+
+                  connection = osp_connection_new
+                                (scanner_iterator_host (&scanners),
+                                 scanner_iterator_port (&scanners),
+                                 scanner_iterator_ca_pub (&scanners),
+                                 scanner_iterator_key_pub (&scanners),
+                                 scanner_iterator_key_priv (&scanners));
+                  if (connection &&
+                      !osp_get_version
+                        (connection, &s_name, &s_version, &d_name, &d_version,
+                         &p_name, &p_version))
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<info><scanner><name>%s</name><version>%s</version>"
+                        "</scanner><daemon><name>%s</name><version>%s</version>"
+                        "</daemon><protocol><name>%s</name><version>%s"
+                        "</version></protocol></info>", s_name, s_version,
+                        d_name, d_version, p_name, p_version);
+                    }
+                  osp_connection_close (connection);
                 }
               SEND_TO_CLIENT_OR_FAIL ("</scanner>");
             }

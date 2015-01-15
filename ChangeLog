@@ -1,5 +1,12 @@
 2014-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage.h: Add function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_SCANNERS case, send
+	scanner version info when scanner type is OSP.
+
+2014-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (verify_scanner): Adjust function call.
 
 2014-01-14  Hani Benhabiles <hani.benhabiles@greenbone.net>
