@@ -1,5 +1,13 @@
 2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* tools/greenbone-scapdata-sync.in, tools/openvas-scapdata-sync.in
+	(db_migrate_15): Correct index names and column.
+
+	* tools/scap_db_init_pg.sql: Increment version to match SQLite.  Correct
+	column.
+
+2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (get_nvti_xml): Correct typo.
 
 2014-01-15  Hani Benhabiles <hani.benhabiles@greenbone.net>

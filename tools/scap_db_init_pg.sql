@@ -32,7 +32,7 @@ SET search_path TO scap;
 /* Create new tables and indices. */
 
 CREATE TABLE meta (id SERIAL PRIMARY KEY, name text UNIQUE, value text);
-INSERT INTO meta (name, value) VALUES ('database_version', '14');
+INSERT INTO meta (name, value) VALUES ('database_version', '15');
 INSERT INTO meta (name, value) VALUES ('last_update', '0');
 
 CREATE TABLE cves (
@@ -56,7 +56,7 @@ CREATE UNIQUE INDEX cve_idx ON cves (name);
 CREATE INDEX cves_by_creation_time ON cves (creation_time);
 CREATE INDEX cves_by_creation_time_idx ON cves (creation_time);
 CREATE INDEX cves_by_modification_time_idx ON cves (modification_time);
-CREATE INDEX cves_by_cvss ON cves (max_cvss);
+CREATE INDEX cves_by_cvss ON cves (cvss);
 
 CREATE TABLE cpes (
   id SERIAL PRIMARY KEY,

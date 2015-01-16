@@ -608,10 +608,10 @@ db_migrate_15 () {
 
                          CREATE INDEX IF NOT EXISTS cves_by_creation_time_idx
                            ON cves (creation_time);
-                         CREATE INDEX IF NOT EXISTS cpes_by_modification_time_idx
+                         CREATE INDEX IF NOT EXISTS cves_by_modification_time_idx
                            ON cves (modification_time);
-                         CREATE INDEX IF NOT EXISTS cpes_by_cvss
-                           ON cves (max_cvss);
+                         CREATE INDEX IF NOT EXISTS cves_by_cvss
+                           ON cves (cvss);
 
                          UPDATE meta
                            SET value = '15'
