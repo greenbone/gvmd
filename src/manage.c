@@ -5299,7 +5299,7 @@ category_name (int category)
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
  * @param[in]  timeout     Timeout.  Used if details is true.
- * @param[in]  close_tag   Wether to close the NVT tag or not.
+ * @param[in]  close_tag   Whether to close the NVT tag or not.
  *
  * @return A dynamically allocated string containing the XML description.
  */
