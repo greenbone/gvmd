@@ -1,5 +1,10 @@
 2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned): Use "inside" instead of "inner" as
+	alias, becuase "inner" is a keyword.
+
+2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* tools/greenbone-scapdata-sync.in, tools/openvas-scapdata-sync.in
 	(db_migrate_15): Correct index names and column.
 
