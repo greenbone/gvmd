@@ -1,5 +1,11 @@
 2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (manage_create_sql_functions): Add basic "user_owns".
+	(create_tables): Remove contraints from esxi_lsc_credential columns,
+	because they can be 0, like the other credentials columns can.
+
+2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned): Use "inside" instead of "inner" as
 	alias, becuase "inner" is a keyword.
 

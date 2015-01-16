@@ -1031,6 +1031,24 @@ manage_create_sql_functions ()
          "  AND name = 'Everything';"
          "$$ LANGUAGE SQL;");
 
+  sql ("CREATE OR REPLACE FUNCTION user_owns (text, integer)"
+       " RETURNS boolean AS $$"
+       /* Test whether a user owns a resource.
+        *
+        * This must match user_owns in manage_acl.c. */
+       "  SELECT CASE"
+       "         WHEN $1 = 'nvt'"
+       "              OR $1 = 'cve'"
+       "              OR $1 = 'cpe'"
+       "              OR $1 = 'ovaldef'"
+       "              OR $1 = 'cert_bund_adv'"
+       "              OR $1 = 'dfn_cert_adv'"
+       "         THEN true"
+       // FIX rest
+       "         ELSE false"
+       "         END;"
+       "$$ LANGUAGE SQL;");
+
   sql ("CREATE OR REPLACE FUNCTION group_concat_pair (text, text, text)"
        " RETURNS text AS $$"
        "  SELECT CASE"
@@ -1484,8 +1502,8 @@ create_tables ()
        "  alive_test integer,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  esxi_lsc_credential integer REFERENCES lsc_credentials (id)"
-       "    ON DELETE RESTRICT);");
+       "  esxi_lsc_credential integer);"); // REFERENCES lsc_credentials (id)
+                                           // ON DELETE RESTRICT
 
   sql ("CREATE TABLE IF NOT EXISTS targets_trash"
        " (id SERIAL PRIMARY KEY,"
@@ -1507,8 +1525,8 @@ create_tables ()
        "  alive_test integer,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  esxi_lsc_credential integer REFERENCES lsc_credentials (id)"
-       "    ON DELETE RESTRICT,"
+       "  esxi_lsc_credential integer," // REFERENCES lsc_credentials (id)
+                                        // ON DELETE RESTRICT,"
        "  esxi_location integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
