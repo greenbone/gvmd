@@ -1,3 +1,8 @@
+2015-01-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* CMakeLists.txt: Ensure that the generated OMP.xml schema format is
+	ignored when collecting files for the source package.
+
 2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_acl.c (manage_create_sql_functions): Add basic "user_owns".

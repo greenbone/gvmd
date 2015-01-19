@@ -113,6 +113,7 @@ set (CPACK_SOURCE_IGNORE_FILES
 "tools/openvas-certdata-sync$"
 "tools/openvas-portnames-update$"
 "tools/openvas-migrate-to-postgres$"
+"OMP.xml$"
 )
 
 include (CPack)
