@@ -2263,9 +2263,6 @@ modify_schedule (const char*, const char*, const char *, time_t, time_t, time_t,
 /* Report Formats. */
 
 gboolean
-find_report_format (const char*, report_format_t*);
-
-gboolean
 find_report_format_with_permission (const char*, report_format_t*,
                                     const char *);
 
@@ -3082,9 +3079,6 @@ ovaldef_info_iterator_max_cvss (iterator_t*);
 
 const char*
 ovaldef_info_iterator_cve_refs (iterator_t*);
-
-char *
-ovaldef_description (const char *);
 
 char *
 ovaldef_severity (const char *);

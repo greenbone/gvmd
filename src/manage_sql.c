@@ -212,9 +212,6 @@ find_role (const char *, group_t *);
 gboolean
 find_role_with_permission (const char *, role_t *, const char *);
 
-gboolean
-find_user (const char *uuid, user_t *user);
-
 static gboolean
 find_user_by_name (const char *, user_t *);
 
@@ -38479,52 +38476,6 @@ typedef enum
 } report_format_flag_t;
 
 /**
- * @brief Find a report format given a UUID.
- *
- * @param[in]   uuid           UUID of report format.
- * @param[out]  report_format  Report format return, 0 if succesfully failed to
- *                             find report format.
- *
- * @return FALSE on success (including if failed to find report format), TRUE
- *         on error.
- */
-gboolean
-find_report_format (const char* uuid, report_format_t* report_format)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("report_format", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *report_format = 0;
-      return FALSE;
-    }
-  assert (current_credentials.uuid);
-  switch (sql_int64 (report_format,
-                     "SELECT id FROM report_formats WHERE uuid = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.id FROM users"
-                     "  WHERE users.uuid = '%s')));",
-                     quoted_uuid,
-                     current_credentials.uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *report_format = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
  * @brief Find a reportformat for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of report format.
@@ -49708,27 +49659,6 @@ get_ovaldef_short_filename (char* item_id)
 }
 
 /**
- * @brief Get the description for an OVALDEF using an ID.
- *
- * @param[in]  uuid     Oval definition ID.
- *
- * @return The description of the OVAL definition from the SCAP directory.
- *         Freed by g_free.
- */
-char *
-ovaldef_description (const char *id)
-{
-  char *quoted_id, *ret;
-
-  assert (id);
-  quoted_id = sql_quote (id);
-  ret = sql_string ("SELECT description FROM ovaldefs WHERE uuid = '%s';",
-                    quoted_id);
-  g_free (quoted_id);
-  return ret;
-}
-
-/**
  * @brief Get the uuid for an OVALDEF from a name and file name.
  *
  * @param[in]  name     Oval definition name.
@@ -50335,20 +50265,6 @@ find_user_with_permission (const char* uuid, user_t* user,
                            const char *permission)
 {
   return find_resource_with_permission ("user", uuid, user, permission, 0);
-}
-
-/**
- * @brief Find a user given a UUID.
- *
- * @param[in]   uuid    UUID of user.
- * @param[out]  user  User return, 0 if succesfully failed to find user.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-gboolean
-find_user (const char *uuid, user_t *user)
-{
-  return find_resource ("user", uuid, user);
 }
 
 /**
