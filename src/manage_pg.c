@@ -1599,7 +1599,8 @@ create_tables ()
        "  config integer REFERENCES configs (id) ON DELETE RESTRICT,"
        "  type text,"
        "  name text,"
-       "  value text);");
+       "  value text,"
+       "  default_value text);");
 
   sql ("CREATE TABLE IF NOT EXISTS config_preferences_trash"
        " (id SERIAL PRIMARY KEY,"

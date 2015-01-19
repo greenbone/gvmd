@@ -1,4 +1,8 @@
-2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+2015-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Add missing default_value column.
+
+2015-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (manage_create_sql_functions): Flesh out "user_owns".
 
