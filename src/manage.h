@@ -2162,6 +2162,10 @@ char *
 scanner_uuid (scanner_t);
 
 int
+osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
+                               char **, char **);
+
+int
 verify_scanner (const char *, char **);
 
 /* Scheduling. */

@@ -15663,29 +15663,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
                   && get_scanners_data->get.details)
                 {
-                  char *s_name, *s_version, *d_name, *d_version;
-                  char *p_name, *p_version;
-                  osp_connection_t *connection;
+                  char *s_name, *s_ver, *d_name, *d_ver;
+                  char *p_name, *p_ver;
 
-                  connection = osp_connection_new
-                                (scanner_iterator_host (&scanners),
-                                 scanner_iterator_port (&scanners),
-                                 scanner_iterator_ca_pub (&scanners),
-                                 scanner_iterator_key_pub (&scanners),
-                                 scanner_iterator_key_priv (&scanners));
-                  if (connection &&
-                      !osp_get_version
-                        (connection, &s_name, &s_version, &d_name, &d_version,
-                         &p_name, &p_version))
+                  if (!osp_get_version_from_iterator
+                        (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name,
+                         &p_ver))
                     {
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<info><scanner><name>%s</name><version>%s</version>"
                         "</scanner><daemon><name>%s</name><version>%s</version>"
                         "</daemon><protocol><name>%s</name><version>%s"
-                        "</version></protocol></info>", s_name, s_version,
-                        d_name, d_version, p_name, p_version);
+                        "</version></protocol></info>", s_name, s_ver, d_name,
+                        d_ver, p_name, p_ver);
                     }
-                  osp_connection_close (connection);
                 }
               SEND_TO_CLIENT_OR_FAIL ("</scanner>");
             }

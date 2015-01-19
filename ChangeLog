@@ -1,5 +1,15 @@
 2014-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage.h: Add new function prototype.
+
+	* src/manage_sql.c (osp_get_version_from_iterator): New function.
+	(verify_scanner): Use new function.
+
+	* src/omp.c (omp_xml_handle_end_element): Refactor code to use new
+	function.
+
+2014-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (find_report_format, ovaldef_description, find_user):
 	Remove unused functions.
 

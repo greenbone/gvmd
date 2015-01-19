@@ -37334,6 +37334,40 @@ scanner_count (const get_data_t *get)
 }
 
 /**
+ * @brief Get an OSP Scanner's get_version info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  s_name      Scanner name.
+ * @param[out]  s_ver       Scanner version.
+ * @param[out]  d_name      Daemon name.
+ * @param[out]  d_name      Daemon version.
+ * @param[out]  p_name      Protocol name.
+ * @param[out]  p_name      Protocol version.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
+                               char **s_ver, char **d_name, char **d_ver,
+                               char **p_name, char **p_ver)
+{
+  osp_connection_t *connection;
+
+  assert (iterator);
+  connection = osp_connection_new (scanner_iterator_host (iterator),
+                                   scanner_iterator_port (iterator),
+                                   scanner_iterator_ca_pub (iterator),
+                                   scanner_iterator_key_pub (iterator),
+                                   scanner_iterator_key_priv (iterator));
+  if (!connection)
+    return 1;
+  if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
+    return 1;
+  osp_connection_close (connection);
+  return 0;
+}
+
+/**
  * @brief Verify a scanner.
  *
  * @param[in]   scanner_id  Scanner UUID.
@@ -37360,19 +37394,11 @@ verify_scanner (const char *scanner_id, char **version)
   g_free (get.id);
   if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OSP)
     {
-      osp_connection_t *connection;
-
-      connection = osp_connection_new (scanner_iterator_host (&scanner),
-                                       scanner_iterator_port (&scanner),
-                                       scanner_iterator_ca_pub (&scanner),
-                                       scanner_iterator_key_pub (&scanner),
-                                       scanner_iterator_key_priv (&scanner));
+      int ret = osp_get_version_from_iterator (&scanner, NULL, version, NULL,
+                                               NULL, NULL, NULL);
       cleanup_iterator (&scanner);
-      if (!connection)
+      if (ret)
         return 2;
-      if (osp_get_version (connection, NULL, version, NULL, NULL, NULL, NULL))
-        return 2;
-      osp_connection_close (connection);
       return 0;
     }
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVAS)
