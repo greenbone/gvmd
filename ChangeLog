@@ -1,3 +1,7 @@
+2015-01-15  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (manage_create_sql_functions): Flesh out "user_owns".
+
 2014-01-19  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.h: Add new function prototype.

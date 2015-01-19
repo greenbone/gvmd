@@ -597,6 +597,59 @@ manage_create_sql_functions ()
        " END;"
        "$$ LANGUAGE plpgsql;");
 
+  sql ("CREATE OR REPLACE FUNCTION user_owns (arg_type text, arg_id integer)"
+       " RETURNS boolean AS $$"
+       /* Test whether a user owns a resource.
+        *
+        * This must match user_owns in manage_acl.c. */
+       " DECLARE"
+       "   owns boolean;"
+       " BEGIN"
+       "   CASE"
+       "   WHEN arg_type = 'nvt'"
+       "        OR arg_type = 'cve'"
+       "        OR arg_type = 'cpe'"
+       "        OR arg_type = 'ovaldef'"
+       "        OR arg_type = 'cert_bund_adv'"
+       "        OR arg_type = 'dfn_cert_adv'"
+       "   THEN RETURN true;"
+       // FIX WHEN user_has_super_on_resource (arg_type, "id", arg_id, 0))
+       // THEN true
+       "   WHEN arg_type = 'result'"
+       "   THEN CASE"
+       "        WHEN EXISTS (SELECT * FROM results, reports"
+       "                     WHERE results.id = arg_id"
+       "                     AND results.report = reports.id"
+       "                     AND ((reports.owner IS NULL)"
+       "                          OR (reports.owner"
+       "                              = (SELECT id FROM current_credentials))))"
+       "        THEN RETURN true;"
+       "        ELSE RETURN false;"
+       "        END CASE;"
+       "   WHEN arg_type = 'task'"
+       "   THEN CASE"
+       "        WHEN EXISTS (SELECT * FROM tasks"
+       "                     WHERE id = $2"
+       "                     AND hidden < 2"
+       "                     AND ((owner IS NULL)"
+       "                          OR (owner"
+       "                              = (SELECT id FROM current_credentials))))"
+       "        THEN RETURN true;"
+       "        ELSE RETURN false;"
+       "        END CASE;"
+       "   ELSE"
+       "     EXECUTE 'SELECT EXISTS (SELECT * FROM ' || $1 || 's"
+       "                             WHERE id = $2"
+       "                             AND ((owner IS NULL)"
+       "                                  OR (owner"
+       "                                      = (SELECT id FROM current_credentials))))'"
+       "     USING arg_type, arg_id"
+       "     INTO owns;"
+       "     RETURN owns;"
+       "   END CASE;"
+       " END;"
+       "$$ LANGUAGE plpgsql;");
+
   /* Functions in SQL. */
 
   sql ("CREATE OR REPLACE FUNCTION t () RETURNS boolean AS $$"
@@ -1030,24 +1083,6 @@ manage_create_sql_functions ()
          "                                           = $1))))"
          "  AND name = 'Everything';"
          "$$ LANGUAGE SQL;");
-
-  sql ("CREATE OR REPLACE FUNCTION user_owns (text, integer)"
-       " RETURNS boolean AS $$"
-       /* Test whether a user owns a resource.
-        *
-        * This must match user_owns in manage_acl.c. */
-       "  SELECT CASE"
-       "         WHEN $1 = 'nvt'"
-       "              OR $1 = 'cve'"
-       "              OR $1 = 'cpe'"
-       "              OR $1 = 'ovaldef'"
-       "              OR $1 = 'cert_bund_adv'"
-       "              OR $1 = 'dfn_cert_adv'"
-       "         THEN true"
-       // FIX rest
-       "         ELSE false"
-       "         END;"
-       "$$ LANGUAGE SQL;");
 
   sql ("CREATE OR REPLACE FUNCTION group_concat_pair (text, text, text)"
        " RETURNS text AS $$"
