@@ -48017,7 +48017,9 @@ setting_filter (const char *resource)
 const char *
 setting_severity ()
 {
-  return current_credentials.severity_class;
+  if (current_credentials.severity_class)
+    return current_credentials.severity_class;
+  return "nist";
 }
 
 /**

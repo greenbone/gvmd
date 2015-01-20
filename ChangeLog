@@ -1,5 +1,11 @@
 2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (setting_severity): Default to "nist" if the class is
+	NULL, so that SQL functions in init_user_task_iterator work when called
+	before authentication, like during --delete-user.
+
+2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (find_resource_by_name_with_permission): Remove extra
 	old style args from sql_string call.  This was affecting --delete-user
 	and --modify-user.
