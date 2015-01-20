@@ -1,5 +1,11 @@
 2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (find_resource_by_name_with_permission): Remove extra
+	old style args from sql_string call.  This was affecting --delete-user
+	and --modify-user.
+
+2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Add the super case to
 	user_owns, using new SQL function user_has_super_on_resource.
 
