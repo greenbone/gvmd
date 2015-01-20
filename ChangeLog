@@ -1,3 +1,11 @@
+2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21445.
+
+	* src/manage_sql.c (setting_severity): Default to "nist" if the class is
+	NULL, so that SQL functions in init_user_task_iterator work when called
+	before authentication, like during --delete-user.
+
 2015-01-14  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21383.
