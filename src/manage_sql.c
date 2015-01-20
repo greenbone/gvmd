@@ -37368,6 +37368,33 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
 }
 
 /**
+ * @brief Get an OSP Scanner's get_scanner_details info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  desc        Scanner description.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+osp_get_details_from_iterator (iterator_t *iterator, char **desc)
+{
+  osp_connection_t *connection;
+
+  assert (iterator);
+  connection = osp_connection_new (scanner_iterator_host (iterator),
+                                   scanner_iterator_port (iterator),
+                                   scanner_iterator_ca_pub (iterator),
+                                   scanner_iterator_key_pub (iterator),
+                                   scanner_iterator_key_priv (iterator));
+  if (!connection)
+    return 1;
+  if (osp_get_scanner_description (connection, desc))
+    return 1;
+  osp_connection_close (connection);
+  return 0;
+}
+
+/**
  * @brief Verify a scanner.
  *
  * @param[in]   scanner_id  Scanner UUID.

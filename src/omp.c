@@ -15664,18 +15664,27 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   && get_scanners_data->get.details)
                 {
                   char *s_name, *s_ver, *d_name, *d_ver;
-                  char *p_name, *p_ver;
+                  char *p_name, *p_ver, *desc;
 
                   if (!osp_get_version_from_iterator
                         (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name,
-                         &p_ver))
+                         &p_ver)
+                      && !osp_get_details_from_iterator (&scanners, &desc))
                     {
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<info><scanner><name>%s</name><version>%s</version>"
                         "</scanner><daemon><name>%s</name><version>%s</version>"
                         "</daemon><protocol><name>%s</name><version>%s"
-                        "</version></protocol></info>", s_name, s_ver, d_name,
-                        d_ver, p_name, p_ver);
+                        "</version></protocol><description>%s</description>"
+                        "</info>", s_name, s_ver, d_name, d_ver, p_name, p_ver,
+                        desc);
+                      g_free (s_name);
+                      g_free (s_ver);
+                      g_free (d_name);
+                      g_free (d_ver);
+                      g_free (p_name);
+                      g_free (p_ver);
+                      g_free (desc);
                     }
                 }
               SEND_TO_CLIENT_OR_FAIL ("</scanner>");

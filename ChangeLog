@@ -1,3 +1,12 @@
+2014-01-20  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.h: Add new function prototype.
+
+	* src/manage_sql.c (osp_get_details_from_iterator): New function.
+
+	* src/omp.c (omp_xml_handle_end_element): Send the osp scanner
+	description when appropriate, in GET_SCANNERS case.
+
 2015-01-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Add missing default_value column.
