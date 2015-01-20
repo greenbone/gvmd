@@ -1,5 +1,10 @@
 2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_pg.c (manage_create_sql_functions): Add the super case to
+	user_owns, using new SQL function user_has_super_on_resource.
+
+2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (manage_create_sql_functions): Use uuid instead of id
 	of current_credentials, because id is the ID of the row, not the user.
 
