@@ -2445,7 +2445,7 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 {
   entity_t entity, child;
   entities_t results;
-  const char *str, *target;
+  const char *str;
   char *defs_file;
   time_t start_time, end_time;
 
@@ -2470,11 +2470,6 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   end_time = atoi (str);
   set_scan_end_time_epoch (report, end_time);
 
-  /* Add target as report host. */
-  target = entity_attribute (entity, "target");
-  assert (target);
-  manage_report_host_add (report, target, start_time, end_time);
-
   /* Insert results. */
   child = entity_child (entity, "results");
   assert (child);
@@ -2497,6 +2492,9 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
       assert (severity);
       assert (test_id);
       assert (host);
+
+      /* Add report host if it doesn't exist. */
+      manage_report_host_add (report, host, start_time, end_time);
       if (!strcmp (type, "Host Detail"))
         {
           insert_report_host_detail (report, host, "osp", "", "OSP Host Detail",

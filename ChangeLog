@@ -1,3 +1,15 @@
+2014-01-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (parse_osp_report): Adjust to add single hosts values
+	from the report.
+
+	* src/manage_sql.c (check_db_tasks, create_report)
+	(set_scan_host_end_time, set_scan_host_end_time_otp)
+	(set_scan_host_start_time, set_scan_host_start_time_otp): Refactor to
+	call manage_report_host_add().
+	(manage_report_host_add): Add the new report host only if it doesn't
+	exist.
+
 2015-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (send_get_end): Include report in apply_override check, so

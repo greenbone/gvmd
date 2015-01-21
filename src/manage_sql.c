@@ -10109,9 +10109,7 @@ check_db_tasks ()
                task);
           result = sql_last_insert_id ();
           report_add_result (report, result);
-          sql ("INSERT into report_hosts (report, host, start_time, end_time)"
-               " VALUES (%llu, '127.0.0.1', 1251236906, 1251237135)",
-               report);
+          manage_report_host_add (report, "127.0.0.1", 1251236906, 1251237135);
         }
       current_credentials.uuid = NULL;
     }
@@ -14914,19 +14912,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
     if (start->host && start->description)
-      {
-        gchar *quoted_host;
-
-        quoted_host = sql_quote (start->host);
-
-        sql ("INSERT INTO report_hosts (report, host, start_time)"
-             " VALUES (%llu, '%s', %i);",
-             report,
-             quoted_host,
-             parse_iso_time (start->description));
-
-        g_free (quoted_host);
-      }
+      manage_report_host_add (report, host, parse_iso_time (start->description),
+                              0);
 
   index = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
@@ -17802,9 +17789,7 @@ set_scan_host_end_time (report_t report, const char* host,
          " WHERE report = %llu AND host = '%s';",
          parse_iso_time (timestamp), report, quoted_host);
   else
-    sql ("INSERT into report_hosts (report, host, end_time)"
-         " VALUES (%llu, '%s', %i);",
-         report, quoted_host, parse_iso_time (timestamp));
+    manage_report_host_add (report, host, 0, parse_iso_time (timestamp));
   g_free (quoted_host);
 }
 
@@ -17828,9 +17813,7 @@ set_scan_host_end_time_otp (report_t report, const char* host,
          " WHERE report = %llu AND host = '%s';",
          parse_otp_time (timestamp), report, quoted_host);
   else
-    sql ("INSERT into report_hosts (report, host, end_time)"
-         " VALUES (%llu, '%s', %i);",
-         report, quoted_host, parse_otp_time (timestamp));
+    manage_report_host_add (report, host, 0, parse_otp_time (timestamp));
   g_free (quoted_host);
 }
 
@@ -17854,9 +17837,7 @@ set_scan_host_start_time (report_t report, const char* host,
          " WHERE report = %llu AND host = '%s';",
          parse_iso_time (timestamp), report, quoted_host);
   else
-    sql ("INSERT into report_hosts (report, host, start_time)"
-         " VALUES (%llu, '%s', %i);",
-         report, quoted_host, parse_iso_time (timestamp));
+    manage_report_host_add (report, host, parse_iso_time (timestamp), 0);
   g_free (quoted_host);
 }
 
@@ -17880,9 +17861,7 @@ set_scan_host_start_time_otp (report_t report, const char* host,
          " WHERE report = %llu AND host = '%s';",
          parse_otp_time (timestamp), report, quoted_host);
   else
-    sql ("INSERT into report_hosts (report, host, start_time)"
-         " VALUES (%llu, '%s', %i);",
-         report, quoted_host, parse_otp_time (timestamp));
+    manage_report_host_add (report, host, parse_otp_time (timestamp), 0);
   g_free (quoted_host);
 }
 
@@ -47845,9 +47824,11 @@ manage_report_host_add (report_t report, const char *host, time_t start,
   char *quoted_host = sql_quote (host);
 
   sql ("INSERT INTO report_hosts"
-       "  (report, host, start_time, end_time, current_port, max_port)"
-       " VALUES (%llu, '%s', %llu, %llu, 0, 0)", report, quoted_host,
-       start, end);
+       " (report, host, start_time, end_time, current_port, max_port)"
+       " SELECT %llu, '%s', %llu, %llu, 0, 0"
+       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
+       "                   AND host = '%s');", report, quoted_host, start, end,
+       report, quoted_host);
   g_free (quoted_host);
 }
 
