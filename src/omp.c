@@ -6001,7 +6001,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
       gchar *new_filter;
       new_filter = manage_clean_filter (filter ? filter : get->filter);
       g_free (filter);
-      if ((strcmp (type, "task") == 0)
+      if (((strcmp (type, "task") == 0)
+           || (strcmp (type, "report") == 0))
           && (filter_term_value (new_filter, "apply_overrides") == NULL))
         {
           filter = new_filter;
