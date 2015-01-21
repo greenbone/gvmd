@@ -1,3 +1,11 @@
+2015-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21450.
+
+	* src/omp.c (send_get_end): Include report in apply_override check, so
+	that the report list also gets a default apply_overrides term when one
+	is not given.
+
 2015-01-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21445.
