@@ -30477,6 +30477,62 @@ DEF_ACCESS (config_task_iterator_name, 0);
  */
 DEF_ACCESS (config_task_iterator_uuid, 1);
 
+/**
+ * @brief Initialise a config timeout iterator.
+ *
+ * Iterate over all timeout preferences of NVTs that have timeouts.
+ *
+ * @param[in]  iterator   Iterator.
+ * @param[in]  config     Config.
+ */
+void
+init_config_timeout_iterator (iterator_t* iterator, config_t config)
+{
+  init_iterator (iterator,
+                 "SELECT name, substr (name, 9),"
+                 "       (SELECT name FROM nvts"
+                 "        WHERE oid = substr (config_preferences.name, 9)),"
+                 "       value"
+                 " FROM config_preferences"
+                 " WHERE config = %llu"
+                 " AND substr (name, 1, 8) = 'timeout.'"
+                 /* Ensure that the NVT pref comes first, in case an
+                  * error in the GSA added the NVT pref as a Scanner
+                  * pref. */
+                 " ORDER BY type",
+                 config);
+}
+
+/**
+ * @brief Get the NVT OID from a config timeout iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT OID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (config_timeout_iterator_oid, 1);
+
+/**
+ * @brief Get the NVT OID from a config timeout iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT OID, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (config_timeout_iterator_nvt_name, 2);
+
+/**
+ * @brief Get the value from a config timeout iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Timeout value, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (config_timeout_iterator_value, 3);
+
 
 /* NVT's. */
 

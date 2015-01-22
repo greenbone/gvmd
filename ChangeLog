@@ -1,3 +1,19 @@
+2015-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21468.
+
+	Include Timeout NVT preferences in GET_CONFIGS responses, but only if
+	the timeout has been explicitly set by the user.
+
+	* src/omp.c (omp_xml_handle_end_element): Send Timeout preferences in
+	CLIENT_GET_CONFIGS.
+
+	* src/manage_sql.c (init_config_timeout_iterator)
+	(config_timeout_iterator_oid, config_timeout_iterator_nvt_name)
+	(config_timeout_iterator_value): New functions.
+
+	* src/manage.h: Add headers accordingly.
+
 2015-01-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21450.
