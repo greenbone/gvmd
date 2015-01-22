@@ -15664,29 +15664,50 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
                   && get_scanners_data->get.details)
                 {
-                  char *s_name, *s_ver, *d_name, *d_ver;
-                  char *p_name, *p_ver, *desc;
+                  char *s_name = NULL, *s_ver = NULL;
+                  char *d_name = NULL, *d_ver = NULL;
+                  char *p_name = NULL, *p_ver = NULL, *desc = NULL;
+                  GSList *params = NULL, *nodes;
 
                   if (!osp_get_version_from_iterator
                         (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name,
                          &p_ver)
-                      && !osp_get_details_from_iterator (&scanners, &desc))
+                      && !osp_get_details_from_iterator (&scanners, &desc,
+                                                         &params))
                     {
                       SENDF_TO_CLIENT_OR_FAIL
                        ("<info><scanner><name>%s</name><version>%s</version>"
                         "</scanner><daemon><name>%s</name><version>%s</version>"
                         "</daemon><protocol><name>%s</name><version>%s"
-                        "</version></protocol><description>%s</description>"
-                        "</info>", s_name, s_ver, d_name, d_ver, p_name, p_ver,
-                        desc);
-                      g_free (s_name);
-                      g_free (s_ver);
-                      g_free (d_name);
-                      g_free (d_ver);
-                      g_free (p_name);
-                      g_free (p_ver);
-                      g_free (desc);
+                        "</version></protocol><description>%s</description>",
+                        s_name, s_ver, d_name, d_ver, p_name, p_ver, desc);
+
+                      SENDF_TO_CLIENT_OR_FAIL ("<params>");
+                      nodes = params;
+                      while (nodes)
+                        {
+                          osp_param_t *param = nodes->data;
+
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<param><id>%s</id><default>%s</default>"
+                            "<description>%s</description>"
+                            "<type>osp_%s</type></param>", osp_param_id (param),
+                            osp_param_default (param), osp_param_desc (param),
+                            osp_param_type_str (param));
+
+                          osp_param_free (nodes->data);
+                          nodes = nodes->next;
+                        }
+                      SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
                     }
+                   g_free (s_name);
+                   g_free (s_ver);
+                   g_free (d_name);
+                   g_free (d_ver);
+                   g_free (p_name);
+                   g_free (p_ver);
+                   g_free (desc);
+                   g_slist_free (params);
                 }
               SEND_TO_CLIENT_OR_FAIL ("</scanner>");
             }

@@ -2166,7 +2166,7 @@ osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
                                char **, char **);
 
 int
-osp_get_details_from_iterator (iterator_t *, char **);
+osp_get_details_from_iterator (iterator_t *, char **, GSList **);
 
 int
 verify_scanner (const char *, char **);

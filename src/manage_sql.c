@@ -37351,11 +37351,13 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
  *
  * @param[in]   iterator    Scanner object iterator.
  * @param[out]  desc        Scanner description.
+ * @param[out]  params      Scanner parameters.
  *
  * @return 0 success, 1 for failure.
  */
 int
-osp_get_details_from_iterator (iterator_t *iterator, char **desc)
+osp_get_details_from_iterator (iterator_t *iterator, char **desc,
+                               GSList **params)
 {
   osp_connection_t *connection;
 
@@ -37367,7 +37369,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc)
                                    scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
-  if (osp_get_scanner_details (connection, desc, NULL))
+  if (osp_get_scanner_details (connection, desc, params))
     return 1;
   osp_connection_close (connection);
   return 0;

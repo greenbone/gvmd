@@ -1,5 +1,15 @@
 2014-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage_sql.c (osp_get_details_from_iterator): Also get the scanner
+	details.
+
+	* src/manage.h: Adjust function prototype.
+
+	* src/omp.c (omp_xml_handle_end_element): In GET_SCANNERS, send the osp
+	scanner's parameters too.
+
+2014-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (create_report): Adjust function call parameter.
 	(get_scanner_params, osp_get_details_from_iterator): Call
 	osp_get_scanner_details().
