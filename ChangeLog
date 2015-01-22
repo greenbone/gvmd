@@ -1,3 +1,9 @@
+2014-01-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (create_report): Adjust function call parameter.
+	(get_scanner_params, osp_get_details_from_iterator): Call
+	osp_get_scanner_details().
+
 2014-01-21  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (parse_osp_report): Adjust to add single hosts values

@@ -14912,7 +14912,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   while ((start = (create_report_result_t*) g_ptr_array_index (host_starts,
                                                                index++)))
     if (start->host && start->description)
-      manage_report_host_add (report, host, parse_iso_time (start->description),
+      manage_report_host_add (report, start->host,
+                              parse_iso_time (start->description),
                               0);
 
   index = 0;
@@ -28031,7 +28032,7 @@ create_config (const char* proposed_name, const char* comment,
 static GSList *
 get_scanner_params (scanner_t scanner)
 {
-  GSList *list;
+  GSList *list = NULL;
   char *host, *ca_pub, *key_pub, *key_priv;
   int port;
   osp_connection_t *connection;
@@ -28049,7 +28050,7 @@ get_scanner_params (scanner_t scanner)
   if (!connection)
     return NULL;
 
-  list = osp_get_scanner_params (connection);
+  osp_get_scanner_details (connection, NULL, &list);
   osp_connection_close (connection);
   return list;
 }
@@ -37366,7 +37367,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc)
                                    scanner_iterator_key_priv (iterator));
   if (!connection)
     return 1;
-  if (osp_get_scanner_description (connection, desc))
+  if (osp_get_scanner_details (connection, desc, NULL))
     return 1;
   osp_connection_close (connection);
   return 0;
