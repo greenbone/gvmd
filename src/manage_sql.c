@@ -28464,7 +28464,27 @@ config_insert_preferences (config_t config,
         gchar *quoted_value;
 
         if (preference->name == NULL) return -4;
-        if (preference->type)
+        if (strcmp (preference->name, "Timeout") == 0)
+          {
+            gchar *quoted_nvt_oid;
+
+            /* Special Timeout preference. */
+
+            if (preference->nvt_oid == NULL) return -4;
+
+            quoted_nvt_oid = sql_quote (preference->nvt_oid);
+            quoted_value = sql_quote (preference->value);
+
+            sql ("INSERT into config_preferences (config, type, name, value)"
+                 " VALUES (%llu, 'SERVER_PREFS', 'timeout.%s', '%s');",
+                 config,
+                 quoted_nvt_oid,
+                 quoted_value);
+
+            g_free (quoted_nvt_oid);
+            g_free (quoted_value);
+          }
+        else if (preference->type)
           {
             gchar *quoted_type, *quoted_nvt_name, *quoted_preference_name;
 
