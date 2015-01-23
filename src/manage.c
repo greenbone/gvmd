@@ -2232,6 +2232,35 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                                   name))
           goto fail_target;
 
+        /* Send NVT timeout preferences where a timeout has been
+         * specified. */
+        init_config_timeout_iterator (&prefs, config);
+        while (next (&prefs))
+          {
+            const char *timeout;
+
+            timeout = config_timeout_iterator_value (&prefs);
+
+            if (timeout && strlen (timeout)
+                && openvas_server_sendf (session,
+                                         "<preference>"
+                                         "<nvt oid=\"%s\">"
+                                         "<name>%s</name>"
+                                         "</nvt>"
+                                         "<name>Timeout</name>"
+                                         "<type>entry</type>"
+                                         "<value>%s</value>"
+                                         "</preference>",
+                                         config_timeout_iterator_oid (&prefs),
+                                         config_timeout_iterator_nvt_name (&prefs),
+                                         timeout))
+              {
+                cleanup_iterator (&prefs);
+                goto fail_target;
+              }
+          }
+        cleanup_iterator (&prefs);
+
         init_nvt_preference_iterator (&prefs, NULL);
         while (next (&prefs))
           {
