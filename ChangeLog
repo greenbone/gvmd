@@ -1,5 +1,10 @@
 2015-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_setup): Send Timeout prefs, as in GET_CONFIGS
+	response.
+
+2015-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Handle Timeout NVT preferences when importing configs.
 
 	* src/omp.c (config_insert_preferences): Add Timeout case.
