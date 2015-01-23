@@ -1,5 +1,13 @@
 2015-01-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r21469.
+
+	Handle Timeout NVT preferences when importing configs.
+
+	* src/manage_sql.c (config_insert_preferences): Add Timeout case.
+
+2015-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r21468.
 
 	Include Timeout NVT preferences in GET_CONFIGS responses, but only if
