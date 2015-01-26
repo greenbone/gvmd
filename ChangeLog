@@ -1,3 +1,13 @@
+2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add --modify-scanner.
+
+	* src/manage_sql.c (main): Add option.
+
+	* src/manage_sql.c (manage_modify_scanner): New function.
+
+	* src/manage.h: Add header accordingly.
+
 2015-01-19  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Simplify handling of library flags in CMakeLists.txt files, thereby

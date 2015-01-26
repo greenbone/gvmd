@@ -1119,6 +1119,7 @@ main (int argc, char** argv)
   static gchar *delete_user = NULL;
   static gchar *user = NULL;
   static gchar *create_scanner = NULL;
+  static gchar *modify_scanner = NULL;
   static gchar *scanner_host = NULL;
   static gchar *scanner_port = NULL;
   static gchar *scanner_type = NULL;
@@ -1135,6 +1136,7 @@ main (int argc, char** argv)
   static gchar *manager_address_string_2 = NULL;
   static gchar *manager_port_string = NULL;
   static gchar *manager_port_string_2 = NULL;
+  static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
   static gchar *role = NULL;
   static gchar *disable = NULL;
@@ -1157,6 +1159,9 @@ main (int argc, char** argv)
         { "get-users", '\0', 0, G_OPTION_ARG_NONE, &get_users, "List users and exit.", NULL },
         { "create-scanner", '\0', 0, G_OPTION_ARG_STRING, &create_scanner,
           "Create global scanner <scanner> and exit.", "<scanner>" },
+        { "modify-scanner", '\0', 0, G_OPTION_ARG_STRING, &modify_scanner,
+          "Modify scanner <scanner-uuid> and exit.", "<scanner-uuid>" },
+        { "scanner-name", '\0', 0, G_OPTION_ARG_STRING, &scanner_name, "Name for --modify-scanner.", "<name>" },
         { "scanner-host", '\0', 0, G_OPTION_ARG_STRING, &scanner_host,
           "Scanner host for --create-scanner, --rebuild and --update. Default is " OPENVASSD_ADDRESS ".",
           "<scanner-host>" },
@@ -1370,6 +1375,58 @@ main (int argc, char** argv)
       ret = manage_create_scanner (log_config, database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_key_pub,
+                                   scanner_key_priv);
+      g_free (stype);
+      free_log_configuration (log_config);
+      switch (ret)
+        {
+          case 0:
+            return EXIT_SUCCESS;
+          case -2:
+            g_warning ("%s: database is wrong version\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          case -3:
+            g_warning ("%s: database must be initialised"
+                       " (with --update or --rebuild)\n",
+                       __FUNCTION__);
+            return EXIT_FAILURE;
+          case -1:
+            g_warning ("%s: internal error\n", __FUNCTION__);
+            return EXIT_FAILURE;
+          default:
+            return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+
+  if (modify_scanner)
+    {
+      int ret;
+      char *stype;
+
+      if (scanner_type)
+        {
+          scanner_type_t type;
+
+          if (strcasecmp (scanner_type, "OpenVAS") == 0)
+            type = SCANNER_TYPE_OPENVAS;
+          else if (strcasecmp (scanner_type, "OSP") == 0)
+            type = SCANNER_TYPE_OSP;
+          else
+            {
+              g_warning ("Invalid scanner type value.\n");
+              return EXIT_FAILURE;
+            }
+
+          stype = g_strdup_printf ("%u", type);
+        }
+      else
+        stype = NULL;
+
+      /* Modify the scanner and then exit. */
+      ret = manage_modify_scanner (log_config, database, modify_scanner,
+                                   scanner_name, scanner_host, scanner_port,
+                                   stype, scanner_ca_pub, scanner_key_pub,
                                    scanner_key_priv);
       g_free (stype);
       free_log_configuration (log_config);

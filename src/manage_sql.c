@@ -36657,6 +36657,102 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 }
 
 /**
+ * @brief Modify the given scanner.
+ *
+ * @param[in]  log_config       Log configuration.
+ * @param[in]  database         Location of manage database.
+ * @param[in]  name             Name of scanner.
+ * @param[in]  host             Host of scanner.
+ * @param[in]  port             Port of scanner.
+ * @param[in]  type             Type of scanner.
+ * @param[in]  ca_pub_path      CA Public key path.
+ * @param[in]  key_pub_path     Public key path.
+ * @param[in]  key_priv_path    Private key path.
+ *
+ * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
+ *         exists, 3 scanner_id required, 4 invalid value, 99 permission
+ *         denied, -1 error, -2 database is wrong version, -3 database needs
+ *         to be initialised from server.
+ */
+int
+manage_modify_scanner (GSList *log_config, const gchar *database,
+                       const char *scanner_id, const char *name,
+                       const char *host, const char *port,
+                       const char *type, const char *ca_pub_path,
+                       const char *key_pub_path, const char *key_priv_path)
+{
+  const gchar *db;
+  int ret;
+  char *ca_pub, *key_pub, *key_priv;
+  GError *error = NULL;
+
+  if (openvas_auth_init_funcs (manage_user_hash, manage_user_set_role,
+                               manage_user_exists, manage_user_uuid))
+    return -1;
+
+  db = database ? database : sql_default_database ();
+
+  ret = init_manage_helper (log_config, db, 70000, NULL);
+  assert (ret != -4);
+  if (ret)
+    return ret;
+
+  init_manage_process (0, db);
+  current_credentials.uuid = "";
+
+  if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      return -1;
+    }
+  if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      return -1;
+    }
+  if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
+    {
+      g_warning ("%s: %s\n", __FUNCTION__, error->message);
+      g_error_free (error);
+      g_free (ca_pub);
+      g_free (key_pub);
+      return -1;
+    }
+  ret = modify_scanner (scanner_id, name, NULL, host, port, type, ca_pub,
+                        key_pub, key_priv);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  switch (ret)
+    {
+      case 0:
+        printf ("Scanner modified.\n");
+        break;
+      case 2:
+        printf ("Scanner with new name exists already.\n");
+        break;
+      case 3:
+        printf ("Scanner ID required.\n");
+        break;
+      case 4:
+        printf ("Invalid value.\n");
+        break;
+      case 99:
+        printf ("Permission denied.\n");
+        break;
+      default:
+        printf ("Failed to modify scanner.\n");
+        break;
+    }
+  cleanup_manage_process (TRUE);
+
+  return ret;
+}
+
+/**
  * @brief Verify the given scanner.
  *
  * @param[in]  log_config  Log configuration.
