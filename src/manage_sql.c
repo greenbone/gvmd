@@ -48571,9 +48571,11 @@ modify_setting (const gchar *uuid, const gchar *name,
              " ('%s',"
              "  (SELECT id FROM users WHERE uuid = '%s'),"
              "  (SELECT name FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "   WHERE uuid = '%s' AND owner IS NULL"
+             "   LIMIT 1),"
              "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "   WHERE uuid = '%s' AND owner IS NULL"
+             "   LIMIT 1),"
              "  '%s');",
              quoted_uuid,
              current_credentials.uuid,

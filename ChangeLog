@@ -1,5 +1,10 @@
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_setting): Limit subqueries to one row, in
+	case there are multiple entries for a global setting.
+
+2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Allow --modify-scanner options to be omitted, using their existing
 	values when they are.
 
