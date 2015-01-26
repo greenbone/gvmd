@@ -17477,7 +17477,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             "         AND source_type = 'nvt'"
             "         AND value LIKE '%%%s%%'))"
             /* Filter levels. */
-            " AND EXISTS (SELECT results.id, %s AS new_severity"
+            " AND EXISTS (SELECT results.id"
             "             FROM results"
             "             WHERE results.report = %s"
             "             AND results.host = distinct_host"
@@ -17486,7 +17486,6 @@ init_asset_iterator (iterator_t* iterator, int first_result,
             quoted_search_phrase,
             last_report_sql,
             quoted_search_phrase,
-            new_severity_sql,
             last_report_sql,
             levels_sql ? levels_sql->str : "",
             sql_select_limit (max_results),
@@ -17502,13 +17501,12 @@ init_asset_iterator (iterator_t* iterator, int first_result,
           "       FROM report_hosts"
           "       ORDER BY inet (host))"
           "      AS distinct_host_subquery"
-          " WHERE EXISTS (SELECT results.id, %s AS new_severity"
+          " WHERE EXISTS (SELECT results.id"
           "               FROM results"
           "               WHERE results.report = %s"
           "               AND results.host = distinct_host"
           "               %s)"
           " LIMIT %s OFFSET %i;",
-          new_severity_sql,
           last_report_sql,
           levels_sql ? levels_sql->str : "",
           sql_select_limit (max_results),

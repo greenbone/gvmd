@@ -1,5 +1,10 @@
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_asset_iterator): Remove unused new_severity
+	columns.
+
+2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_xml): Remove stray SVN markers.
 
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
