@@ -23770,9 +23770,9 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
  *                            NULL.
-+ * @param[in] delta_states       Delta states.  Allows caller to specify the
-+ *                               value for the delta_states param in the filter
-+ *                               string.
+ * @param[in] delta_states       Delta states.  Allows caller to specify the
+ *                               value for the delta_states param in the filter
+ *                               string.
  * @param[in]  apply_overrides    Whether to apply overrides.
  * @param[in]  search_phrase      Phrase that results must include.  All results
  *                                if NULL or "".
