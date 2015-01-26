@@ -1,3 +1,13 @@
+2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21483.
+
+	* src/manage_sql.c (nvt_selector_family_count): Use a single statement
+	for the static case, so that the DISTINCT can apply across both
+	selections.  This catches the case where the config contains NVT
+	selectors that are made redundant by family selections, like in the
+	Greenbone Web Application XML.
+
 2015-01-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21473.
