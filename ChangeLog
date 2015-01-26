@@ -1,5 +1,14 @@
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Allow --modify-scanner options to be omitted, using their existing
+	values when they are.
+
+	* src/manage_sql.c (manage_modify_scanner): Allow the path args to be
+	NULL.
+	(modify_scanner): If an argument is NULL then use the existing value.
+
+2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add --modify-scanner.
 
 	* src/manage_sql.c (main): Add option.

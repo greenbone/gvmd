@@ -36700,27 +36700,42 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
   init_manage_process (0, db);
   current_credentials.uuid = "";
 
-  if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
+  if (ca_pub_path)
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
-      g_error_free (error);
-      return -1;
+      if (g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error) == 0)
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          return -1;
+        }
     }
-  if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
+  else
+    ca_pub = NULL;
+  if (key_pub_path)
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
-      g_error_free (error);
-      g_free (ca_pub);
-      return -1;
+      if (g_file_get_contents (key_pub_path, &key_pub, NULL, &error) == 0)
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          g_free (ca_pub);
+          return -1;
+        }
     }
-  if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
+  else
+    key_pub = NULL;
+  if (key_priv_path)
     {
-      g_warning ("%s: %s\n", __FUNCTION__, error->message);
-      g_error_free (error);
-      g_free (ca_pub);
-      g_free (key_pub);
-      return -1;
+      if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
+        {
+          g_warning ("%s: %s\n", __FUNCTION__, error->message);
+          g_error_free (error);
+          g_free (ca_pub);
+          g_free (key_pub);
+          return -1;
+        }
     }
+  else
+    key_priv = NULL;
   ret = modify_scanner (scanner_id, name, NULL, host, port, type, ca_pub,
                         key_pub, key_priv);
   g_free (ca_pub);
@@ -36963,26 +36978,39 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                 const char *host, const char *port, const char *type,
                 const char *ca_pub, const char *key_pub, const char *key_priv)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_host;
+  gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
   scanner_t scanner = 0;
   int iport, itype;
+
+  assert (current_credentials.uuid);
 
   if (scanner_id == NULL)
     return 3;
 
-  if (!host || !port || !type)
-    return 4;
-  iport = atoi (port);
-  itype = atoi (type);
-  if (iport <= 0 || iport > 65535)
-    return 4;
-  if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
-    return 4;
-  if (openvas_get_host_type (host) == -1)
-    return 4;
-  sql_begin_immediate ();
+  if (port)
+    {
+      iport = atoi (port);
+      if (iport <= 0 || iport > 65535)
+        return 4;
+    }
+  else
+    /* Keep compiler quiet. */
+    iport = 0;
 
-  assert (current_credentials.uuid);
+  if (type)
+    {
+      itype = atoi (type);
+      if (itype <= SCANNER_TYPE_NONE || itype >= SCANNER_TYPE_MAX)
+        return 4;
+    }
+  else
+    /* Keep compiler quiet. */
+    itype = 0;
+
+  if (host && (openvas_get_host_type (host) == -1))
+    return 4;
+
+  sql_begin_immediate ();
 
   if (user_may ("modify_scanner") == 0)
     {
@@ -37011,12 +37039,27 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         }
     }
 
-  quoted_name = sql_quote (name ?: "");
+  quoted_name = name ? sql_quote (name) : NULL;
   quoted_comment = sql_quote (comment ?: "");
-  quoted_host = sql_quote (host);
-  sql ("UPDATE scanners SET name = '%s', comment = '%s', host = '%s',"
-       " port = %d, type = %d, modification_time = m_now () WHERE id = %llu;",
-       quoted_name, quoted_comment, quoted_host, iport, itype, scanner);
+  quoted_host = host ? sql_quote (host) : NULL;
+  new_port = port ? g_strdup_printf ("%d", iport) : g_strdup ("port");
+  new_type = type ? g_strdup_printf ("%d", itype) : g_strdup ("type");
+  sql ("UPDATE scanners SET name = %s%s%s, comment = %s%s%s, host = %s%s%s,"
+       " port = %s, type = %s, modification_time = m_now () WHERE id = %llu;",
+       quoted_name ? "'" : "",
+       quoted_name ? quoted_name : "name",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_host ? "'" : "",
+       quoted_host ? quoted_host : "host",
+       quoted_host ? "'" : "",
+       new_port,
+       new_type,
+       scanner);
+  g_free (new_type);
+  g_free (new_port);
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
