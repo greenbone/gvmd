@@ -206,108 +206,44 @@ if (BACKEND STREQUAL SQLITE3)
 else (BACKEND STREQUAL SQLITE3)
   message (STATUS "Looking for PostgreSQL...")
   find_package (PostgreSQL REQUIRED)
-  message (STATUS "PostgreSQL_INCLUDE_DIRS: ${PostgreSQL_INCLUDE_DIRS}")
-  message (STATUS "PostgreSQL_LIBRARIES: ${PostgreSQL_LIBRARIES}")
-  message (STATUS "PostgreSQL_VERSION_STRING: ${PostgreSQL_VERSION_STRING}")
   if (NOT PostgreSQL_FOUND)
-    message (FATAL_ERROR "The PostgreSQL library is required.")
+    message (SEND_ERROR "The PostgreSQL library is required.")
+  else (NOT PostgreSQL_FOUND)
+    find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
+
+    execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
+                     OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
+                     OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif (NOT PostgreSQL_FOUND)
-  message (STATUS "Looking for PostgreSQL... ${PostgreSQL_VERSION_STRING}")
-  set (POSTGRESQL_LDFLAGS ${PostgreSQL_LIBRARIES})
-  string (REGEX REPLACE "^([^;]*);.*" "\\1"
-          FIRST_INCLUDE_DIR "${PostgreSQL_INCLUDE_DIRS}")
-  set (POSTGRESQL_CFLAGS ${FIRST_INCLUDE_DIR})
-  unset (FIRST_INCLUDE_DIR)
-  message (STATUS "PostgreSQL_CFLAGS: ${POSTGRESQL_CFLAGS}")
-
-  find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
-
-  execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
-	OUTPUT_VARIABLE POSTGRESQL_SERVER_CFLAGS
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (BACKEND STREQUAL SQLITE3)
-
-message (STATUS "Looking for pcap...")
-find_library (PCAP pcap)
-message (STATUS "Looking for pcap... ${PCAP}")
-if (NOT PCAP)
-  message (FATAL_ERROR "The pcap library is required.")
-endif (NOT PCAP)
 
 message (STATUS "Looking for libgcrypt...")
 find_library (LIBGCRYPT gcrypt)
-message (STATUS "Looking for libgcrypt... ${LIBGCRYPT}")
 if (NOT LIBGCRYPT)
-  message (FATAL_ERROR "The libgcrypt library is required.")
+  message (SEND_ERROR "The libgcrypt library is required.")
+else (NOT LIBGCRYPT)
+  message (STATUS "Looking for libgcrypt... ${LIBGCRYPT}")
+  execute_process (COMMAND libgcrypt-config --cflags
+    OUTPUT_VARIABLE GCRYPT_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process (COMMAND libgcrypt-config --libs
+    OUTPUT_VARIABLE GCRYPT_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT LIBGCRYPT)
 
 message (STATUS "Looking for gpgme...")
 find_library (GPGME gpgme)
-message (STATUS "Looking for gpgme... ${GPGME}")
 if (NOT GPGME)
-  message (FATAL_ERROR "The gpgme library is required.")
+  message (SEND_ERROR "The gpgme library is required.")
+else (NOT GPGME)
+  message (STATUS "Looking for gpgme... ${GPGME}")
+  execute_process (COMMAND gpgme-config --cflags
+    OUTPUT_VARIABLE GPGME_CFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process (COMMAND gpgme-config --libs
+    OUTPUT_VARIABLE GPGME_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif (NOT GPGME)
-
-execute_process (COMMAND pkg-config --cflags glib-2.0
-  OUTPUT_VARIABLE GLIB_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs glib-2.0
-  OUTPUT_VARIABLE GLIB_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND pkg-config --cflags libopenvas_omp
-  OUTPUT_VARIABLE OPENVAS_OMP_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs libopenvas_omp
-  OUTPUT_VARIABLE OPENVAS_OMP_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND pkg-config --cflags libopenvas_misc
-  OUTPUT_VARIABLE OPENVAS_MISC_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs libopenvas_misc
-  OUTPUT_VARIABLE OPENVAS_MISC_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND pkg-config --cflags libopenvas_base
-  OUTPUT_VARIABLE OPENVAS_BASE_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs libopenvas_base
-  OUTPUT_VARIABLE OPENVAS_BASE_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND pkg-config --cflags gnutls
-  OUTPUT_VARIABLE GNUTLS_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND pkg-config --libs gnutls
-  OUTPUT_VARIABLE GNUTLS_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND gpgme-config --cflags
-  OUTPUT_VARIABLE GPGME_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND gpgme-config --libs
-  OUTPUT_VARIABLE GPGME_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-execute_process (COMMAND libgcrypt-config --cflags
-  OUTPUT_VARIABLE GCRYPT_CFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process (COMMAND libgcrypt-config --libs
-  OUTPUT_VARIABLE GCRYPT_LDFLAGS
-  OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-if (BACKEND STREQUAL SQLITE3)
-  execute_process (COMMAND pkg-config --cflags sqlite3
-    OUTPUT_VARIABLE SQLITE3_CFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process (COMMAND pkg-config --libs sqlite3
-    OUTPUT_VARIABLE SQLITE3_LDFLAGS
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif (BACKEND STREQUAL SQLITE3)
-
-set (OPENVAS_CFLAGS "${OPENVAS_OMP_CFLAGS} ${OPENVAS_BASE_CFLAGS} ${OPENVAS_MISC_CFLAGS}")
-set (OPENVAS_LDFLAGS "${OPENVAS_OMP_LDFLAGS} ${OPENVAS_BASE_LDFLAGS} ${OPENVAS_MISC_LDFLAGS}")
 
 ## Version
 

@@ -26,7 +26,7 @@
 ## Libraries
 
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
-set_target_properties (ovas-mngr-comm PROPERTIES COMPILE_FLAGS "${GLIB_CFLAGS}")
+include_directories (${LIBOPENVAS_OMP_INCLUDE_DIRS} ${LIBOPENVAS_MISC_INCLUDE_DIRS} ${LIBOPENVAS_BASE_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 
 if (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
@@ -35,8 +35,7 @@ else (BACKEND STREQUAL SQLITE3)
 
   add_library (manage-pg-server SHARED
                manage_pg_server.c manage_utils.c)
-  set_target_properties (manage-pg-server PROPERTIES COMPILE_FLAGS
-						 "-I${POSTGRESQL_SERVER_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
+  include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
 endif (BACKEND STREQUAL SQLITE3)
 
 add_library (manage STATIC
@@ -50,25 +49,22 @@ add_library (manage STATIC
              manage_sql.c manage_migrators.c scanner.c
 			 ${BACKEND_FILES}
              lsc_user.c lsc_crypt.c)
-set_target_properties (manage PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 if (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m "${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+  target_link_libraries (manage m ${SQLITE3_LDFLAGS} ${GLIB_LDFLAGS} ${LIBOPENVAS_OMP_LDFLAGS} ${LIBOPENVAS_MISC_LDFLAGS} ${LIBOPENVAS_BASE_LDFLAGS})
 else (BACKEND STREQUAL SQLITE3)
-  target_link_libraries (manage m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
-  target_link_libraries (manage-pg-server m ${POSTGRESQL_LDFLAGS} "${GLIB_LDFLAGS} ${OPENVAS_LDFLAGS}")
+  target_link_libraries (manage m ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${LIBOPENVAS_OMP_LDFLAGS} ${LIBOPENVAS_MISC_LDFLAGS} ${LIBOPENVAS_BASE_LDFLAGS})
+  target_link_libraries (manage-pg-server m ${PostgreSQL_LIBRARIES} ${GLIB_LDFLAGS} ${LIBOPENVAS_OMP_LDFLAGS} ${LIBOPENVAS_MISC_LDFLAGS} ${LIBOPENVAS_BASE_LDFLAGS})
 endif (BACKEND STREQUAL SQLITE3)
 
 add_library (omp STATIC omp.c)
-set_target_properties (omp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 add_library (otp STATIC otp.c)
-set_target_properties (otp PROPERTIES COMPILE_FLAGS "${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
 
 ## Program
 
 add_executable (openvasmd openvasmd.c ompd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage "${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS}")
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS})
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 
@@ -147,14 +143,6 @@ endif (OPENVAS_NVT_DIR)
 if (SBINDIR)
   add_definitions (-DSBINDIR=\\\"${SBINDIR}\\\")
 endif (SBINDIR)
-
-if (BACKEND STREQUAL SQLITE3)
-  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "${SQLITE3_CFLAGS} ${GNUTLS_CFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-else (BACKEND STREQUAL SQLITE3)
-  set_target_properties (openvasmd PROPERTIES COMPILE_FLAGS
-						 "-I${POSTGRESQL_CFLAGS} ${GNUTLS_CFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_CFLAGS} ${OPENVAS_CFLAGS} ${GLIB_CFLAGS}")
-endif (BACKEND STREQUAL SQLITE3)
 
 ## Install
 

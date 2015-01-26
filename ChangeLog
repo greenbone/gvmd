@@ -1,3 +1,22 @@
+2015-01-19  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Simplify handling of library flags in CMakeLists.txt files, thereby
+	removing the need for clumsy workarounds.
+
+	* CMakeLists.txt: Simplify detection of PostgreSQL library and the
+	associated flags. Use information retrieved by find_package directly
+	instead of processing and casting to other variables. Change variable
+	name for server include directory location for consistency. Make
+	missing required libraries cause a SEND_ERROR instead of a FATAL_ERROR
+	for consistency. Consequently, only gather flags if library is
+	present. Remove redundant queries of library flags which were
+	already retrieved by CMake. Remove unnecessary aggregation of flags.
+	Remove check for libpcap as openvas-manager as it is not required.
+
+	* src/CMakeLists.txt: Set include directories with include_directories
+	instead of target properties. Remove quotes in target_link_libraries
+	so that CMake lists get expanded correctly.
+
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (nvt_selector_family_count): Use a single statement
