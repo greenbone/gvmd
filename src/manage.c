@@ -2570,6 +2570,68 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 }
 
 /**
+ * @brief Handle an ongoing OSP scan, until success or failure.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   report      The scan report.
+ * @param[in]   report_id   The scan report uuid.
+ *
+ * @return 0 if success, -1 if failure.
+ */
+static int
+handle_osp_scan (task_t task, report_t report, const char *report_id)
+{
+  char *host, *ca_pub, *key_pub, *key_priv;
+  int rc, port;
+  scanner_t scanner;
+
+  scanner = task_scanner (task);
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  while (1)
+    {
+      int progress;
+      osp_connection_t *connection;
+      char *report_xml = NULL;
+
+      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+      if (!connection)
+        {
+          g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
+          rc = 1;
+          break;
+        }
+
+      progress = osp_get_scan (connection, report_id, &report_xml);
+      osp_connection_close (connection);
+      assert (progress <= 100 && progress >= 0);
+      if (progress == 100)
+        {
+          /* Parse the report XML. */
+          parse_osp_report (task, report, report_xml);
+          g_free (report_xml);
+          delete_osp_scan (report_id, host, port, ca_pub, key_pub, key_priv);
+          rc = 0;
+          break;
+        }
+      else
+        set_report_slave_progress (report, progress);
+
+      g_free (report_xml);
+      openvas_sleep (10);
+    }
+
+  g_free (host);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  return rc;
+}
+
+/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
  * @param[in]   task        The task.
@@ -2581,10 +2643,8 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 static int
 fork_osp_scan_handler (task_t task, report_t report)
 {
-  char *report_xml, *report_id, title[128];
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int rc, port;
-  scanner_t scanner;
+  char *report_id, title[128];
+  int rc;
 
   assert (task);
   assert (report);
@@ -2609,52 +2669,16 @@ fork_osp_scan_handler (task_t task, report_t report)
   snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
   proctitle_set (title);
 
-  scanner = task_scanner (task);
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  while (1)
+  rc = handle_osp_scan (task, report, report_id);
+  if (rc == 0)
     {
-      int progress;
-      osp_connection_t *connection;
-
-      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
-      if (!connection)
-        {
-          g_warning ("Couldn't connect to OSP scanner on %s:%d\n", host, port);
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          rc = 1;
-          break;
-        }
-
-      report_xml = NULL;
-      progress = osp_get_scan (connection, report_id, &report_xml);
-      osp_connection_close (connection);
-      assert (progress <= 100 && progress >= 0);
-      if (progress == 100)
-        {
-          /* Parse the report XML. */
-          parse_osp_report (task, report, report_xml);
-          g_free (report_xml);
-          set_task_run_status (task, TASK_STATUS_DONE);
-          set_report_scan_run_status (report, TASK_STATUS_DONE);
-          delete_osp_scan (report_id, host, port, ca_pub, key_pub, key_priv);
-          rc = 0;
-          break;
-        }
-      else
-        set_report_slave_progress (report, progress);
-
-      g_free (report_xml);
-      openvas_sleep (10);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (report, TASK_STATUS_DONE);
     }
-
-  g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
+  else if (rc == 1)
+    set_task_run_status (task, TASK_STATUS_STOPPED);
+  else
+    abort ();
   g_free (report_id);
   exit (rc);
 }
@@ -2710,6 +2734,40 @@ get_osp_task_options (task_t task, target_t target)
 }
 
 /**
+ * @brief Launch an OSP task.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ * @param[in]   target      The target.
+ * @param[out]  scan_id     The new scan uuid.
+ *
+ * @return 0 success, -1 if scanner is down.
+ */
+static int
+launch_osp_task (task_t task, target_t target, GHashTable *options,
+                 char **scan_id)
+{
+  osp_connection_t *connection;
+  char *target_str;
+
+  connection = osp_scanner_connect (task_scanner (task));
+  if (!connection)
+    return -1;
+
+  target_str = target_hosts (target);
+  /* Setting to REQUESTED as the connection to the OSP scanner was already
+   * successful and the transfer of a big definitions file may keep the task
+   * status as new for too long.
+   */
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  *scan_id = osp_start_scan (connection, target_str, options);
+
+  osp_connection_close (connection);
+  g_free (target_str);
+  return 0;
+}
+
+/**
  * @brief Start a task on an OSP scanner.
  *
  * @param[in]   task_id    The task ID.
@@ -2720,38 +2778,22 @@ get_osp_task_options (task_t task, target_t target)
 int
 run_osp_task (task_t task, char **report_id)
 {
-  char *target_str;
   target_t target;
   GHashTable *options;
-  osp_connection_t *connection;
   report_t report;
 
-  connection = osp_scanner_connect (task_scanner (task));
-  if (!connection)
-    return -5;
   target = task_target (task);
   options = get_osp_task_options (task, target);
   if (!options)
-    {
-      osp_connection_close (connection);
-      return -1;
-    }
-  target_str = target_hosts (target);
-  /* Setting to REQUESTED as the connection to the OSP scanner was already
-   * successful and the transfer of a big definitions file may keep the task
-   * status as new for too long.
-   */
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
-  *report_id = osp_start_scan (connection, target_str, options);
-  osp_connection_close (connection);
-  g_free (target_str);
+    return -1;
   g_hash_table_destroy (options);
+  if (launch_osp_task (task, target, options, report_id))
+    return -5;
   if (*report_id == NULL)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
       return -1;
     }
-
   report = make_report (task, *report_id, TASK_STATUS_RUNNING);
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
