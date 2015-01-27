@@ -8475,7 +8475,7 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      NULL,    /* Delta states. */
                      1,       /* Apply overrides. */
                      NULL,    /* Search phrase. */
-                     1,       /* Auto FP. */
+                     0,       /* Auto FP. */
                      1,       /* Notes. */
                      1,       /* Notes details. */
                      1,       /* Overrides. */
