@@ -487,7 +487,9 @@ omp_command_takes_resource (const char* name)
 /* General helpers. */
 
 /**
- * @brief Look if a resource
+ * @brief Check if a resource with a certain name exists already.
+ *
+ * Conflicting resource can be global or owned by the current user.
  *
  * @param[in]   name      Name of resource to check for.
  * @param[in]   type      Type of resource.
@@ -506,18 +508,57 @@ resource_with_name_exists (const char *name, const char *type,
   quoted_name = sql_quote (name);
   quoted_type = sql_quote (type);
   if (resource)
-    ret = sql_int ("SELECT COUNT(*) FROM %ss WHERE name = '%s'"
-                   " AND id != %llu AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE"
-                   "  users.uuid = '%s')));",
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE name = '%s'"
+                   " AND id != %llu"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.id FROM users"
+                   "                   WHERE users.uuid = '%s')));",
                    quoted_type, quoted_name, resource,
                    current_credentials.uuid);
   else
-    ret = sql_int ("SELECT COUNT(*) FROM %ss WHERE name = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE"
-                   "  users.uuid = '%s')));",
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE name = '%s'"
+                   " AND ((owner IS NULL)"
+                   "      OR (owner = (SELECT users.id FROM users"
+                   "                   WHERE users.uuid = '%s')));",
                    quoted_type, quoted_name, current_credentials.uuid);
+
+  g_free (quoted_name);
+  g_free (quoted_type);
+  return !!ret;
+}
+
+/**
+ * @brief Check if a resource with a certain name exists already.
+ *
+ * Conflicting resource can be owned by anybody.
+ *
+ * @param[in]   name      Name of resource to check for.
+ * @param[in]   type      Type of resource.
+ * @param[in]   resource  Resource to ignore, 0 otherwise.
+ */
+static gboolean
+resource_with_name_exists_global (const char *name, const char *type,
+                                  resource_t resource)
+{
+  int ret;
+  char *quoted_name, *quoted_type;
+
+  assert (type);
+  if (!name)
+    return 0;
+  quoted_name = sql_quote (name);
+  quoted_type = sql_quote (type);
+  if (resource)
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE name = '%s'"
+                   " AND id != %llu;",
+                   quoted_type, quoted_name, resource);
+  else
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE name = '%s';",
+                   quoted_type, quoted_name);
 
   g_free (quoted_name);
   g_free (quoted_type);
@@ -50639,7 +50680,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   /* Check if user exists already. */
 
-  if (resource_with_name_exists (name, "user", 0))
+  if (resource_with_name_exists_global (name, "user", 0))
     {
       sql ("ROLLBACK;");
       g_free (generated);
@@ -51272,8 +51313,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
           return 99;
         }
 
-      // FIX owned by any user
-      if (resource_with_name_exists (new_name, "user", user))
+      if (resource_with_name_exists_global (new_name, "user", user))
         {
           sql ("ROLLBACK;");
           return 8;

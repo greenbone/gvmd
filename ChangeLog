@@ -1,5 +1,13 @@
 2015-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (resource_with_name_exists): Finish doc.  Neaten SQL.
+	(resource_with_name_exists_global): New function.
+	(create_user): Extend the check for existing users to users owned by
+	anybody, now that users have owners.  This prevents two users from
+	having the same name.
+
+2015-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (escalate_1): Change Auto FP default to 0.
 
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
