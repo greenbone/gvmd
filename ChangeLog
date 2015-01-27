@@ -1,3 +1,15 @@
+2015-01-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r21100 by Matthew Mundell.
+
+	Add option --optimize, with arguments "analyze" and "vacuum".
+
+	* src/omp.c (manage_optimize): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/openvasmd.c (main): Add --optimize.
+
 2015-01-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21483.
