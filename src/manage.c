@@ -67,7 +67,6 @@
 
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
-#include <openvas/base/osp.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
@@ -2671,23 +2670,13 @@ fork_osp_scan_handler (task_t task, report_t report)
 int
 run_osp_task (task_t task, char **report_id)
 {
-  char *host, *target_str, *ca_pub, *key_pub, *key_priv;
-  int port, ret;
+  char *target_str;
   target_t target;
   GHashTable *options;
   osp_connection_t *connection;
-  scanner_t scanner;
   report_t report;
 
-  scanner = task_scanner (task);
-  assert (scanner);
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
-  g_free (host);
+  connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
     return -5;
   options = task_scanner_options (task);
@@ -2755,8 +2744,7 @@ run_osp_task (task_t task, char **report_id)
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
   /* Fork OSP scan handler. */
-  ret = fork_osp_scan_handler (task, report);
-  if (ret)
+  if (fork_osp_scan_handler (task, report))
     {
       g_warning ("Couldn't fork OSP scan handler.\n");
       return -1;

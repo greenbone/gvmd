@@ -62,7 +62,6 @@
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_hosts.h>
-#include <openvas/base/osp.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
 #include <openvas/misc/openvas_ssh_login.h>
@@ -28092,20 +28091,9 @@ static GSList *
 get_scanner_params (scanner_t scanner)
 {
   GSList *list = NULL;
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int port;
   osp_connection_t *connection;
 
-  assert (scanner);
-  host = scanner_host (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  port = scanner_port (scanner);
-  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
+  connection = osp_scanner_connect (scanner);
   if (!connection)
     return NULL;
 
@@ -37563,6 +37551,35 @@ scanner_count (const get_data_t *get)
 
   return count ("scanner", get, columns, trash_columns, extra_columns,
                   0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Create a new connection to an OSP scanner.
+ *
+ * @param[in]   scanner     Scanner.
+ *
+ * @return New connection if success, NULL otherwise.
+ */
+osp_connection_t *
+osp_scanner_connect (scanner_t scanner)
+{
+  int port;
+  osp_connection_t *connection;
+  char *host, *ca_pub, *key_pub, *key_priv;
+
+  assert (scanner);
+  host = scanner_host (scanner);
+  port = scanner_port (scanner);
+  ca_pub = scanner_ca_pub (scanner);
+  key_pub = scanner_key_pub (scanner);
+  key_priv = scanner_key_priv (scanner);
+  connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
+
+  g_free (host);
+  g_free (ca_pub);
+  g_free (key_pub);
+  g_free (key_priv);
+  return connection;
 }
 
 /**

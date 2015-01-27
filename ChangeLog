@@ -1,3 +1,12 @@
+2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (osp_scanner_connect): New function.
+	(get_scanner_params): Refactor code, call new function.
+
+	* src/manage.h: Add function prototype.
+
+	* src/manage.c (run_osp_task): Refactor code, call new function.
+
 2015-01-27  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (resource_with_name_exists): Finish doc.  Neaten SQL.

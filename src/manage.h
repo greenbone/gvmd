@@ -38,6 +38,7 @@
 #include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
 #include <openvas/base/openvas_networking.h>
+#include <openvas/base/osp.h>
 
 /**
  * @brief Name value pair.
@@ -2185,6 +2186,9 @@ osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
 
 int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
+
+osp_connection_t *
+osp_scanner_connect (scanner_t);
 
 int
 verify_scanner (const char *, char **);
