@@ -2660,6 +2660,56 @@ fork_osp_scan_handler (task_t task, report_t report)
 }
 
 /**
+ * @brief Get an OSP Task's scan options.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ *
+ * @return OSP Task options, NULL if failure.
+ */
+static GHashTable *
+get_osp_task_options (task_t task, target_t target)
+{
+  char *ssh_port;
+  const char *user, *pass;
+  iterator_t iter;
+  lsc_credential_t cred;
+  GHashTable *options = task_scanner_options (task);
+
+  if (!options)
+    return NULL;
+
+  cred = target_ssh_lsc_credential (target);
+  if (cred)
+    {
+      ssh_port = target_ssh_port (target);
+      g_hash_table_insert (options, g_strdup ("port"), ssh_port);
+
+      init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
+      if (!next (&iter))
+        {
+          g_warning ("%s: LSC Credential not found.", __FUNCTION__);
+          g_hash_table_destroy (options);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      if (lsc_credential_iterator_private_key (&iter))
+        {
+          g_warning ("%s: LSC Credential not a user/pass pair.", __FUNCTION__);
+          g_hash_table_destroy (options);
+          cleanup_iterator (&iter);
+          return NULL;
+        }
+      user = lsc_credential_iterator_login (&iter);
+      pass = lsc_credential_iterator_password (&iter);
+      g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
+      g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
+      cleanup_iterator (&iter);
+    }
+  return options;
+}
+
+/**
  * @brief Start a task on an OSP scanner.
  *
  * @param[in]   task_id    The task ID.
@@ -2679,47 +2729,9 @@ run_osp_task (task_t task, char **report_id)
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
     return -5;
-  options = task_scanner_options (task);
   target = task_target (task);
-  if (options)
-    {
-      char *ssh_port;
-      const char *user, *pass;
-      iterator_t iter;
-      lsc_credential_t cred;
-
-      cred = target_ssh_lsc_credential (target);
-      if (cred)
-        {
-          ssh_port = target_ssh_port (target);
-          g_hash_table_insert (options, g_strdup ("port"), ssh_port);
-
-          init_user_lsc_credential_iterator (&iter, cred, 0, 1, NULL);
-          if (!next (&iter))
-            {
-              g_warning ("%s: LSC Credential not found.", __FUNCTION__);
-              osp_connection_close (connection);
-              g_hash_table_destroy (options);
-              cleanup_iterator (&iter);
-              return -1;
-            }
-          if (lsc_credential_iterator_private_key (&iter))
-            {
-              g_warning ("%s: LSC Credential not a user/pass pair.",
-                         __FUNCTION__);
-              osp_connection_close (connection);
-              g_hash_table_destroy (options);
-              cleanup_iterator (&iter);
-              return -1;
-            }
-          user = lsc_credential_iterator_login (&iter);
-          pass = lsc_credential_iterator_password (&iter);
-          g_hash_table_insert (options, g_strdup ("username"), g_strdup (user));
-          g_hash_table_insert (options, g_strdup ("password"), g_strdup (pass));
-          cleanup_iterator (&iter);
-        }
-    }
-  else
+  options = get_osp_task_options (task, target);
+  if (!options)
     {
       osp_connection_close (connection);
       return -1;

@@ -6,6 +6,11 @@
 
 2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/manage.c (get_osp_task_options): New function.
+	(run_osp_task): Refactor function to use get_osp_task_options().
+
+2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage_sql.c (osp_scanner_connect): New function.
 	(get_scanner_params): Refactor code, call new function.
 
