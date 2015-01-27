@@ -76,6 +76,9 @@ The program usage message follows.
                                   Create a key to encrypt credentials.
       --encrypt-all-credentials   (Re-)Encrypt all credentials.
       --new-password=<password>   Modify user's password and exit.
+      --optimize=<name>           Run an optimization: vacuum, analyze,
+                                  cleanup-config-prefs, remove-open-port-results
+                                  or cleanup-port-names.
       -p, --port=<number>         Use port number <number>.
       --port2=<number>            Use port number <number> for address 2.
       --progress                  Display progress during --rebuild and --update.

@@ -1,3 +1,9 @@
+2015-01-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* README: Add option --optimize to usage message.
+
+	* INSTALL: Add new section "Optimizing the database".
+
 2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (osp_scanner_connect): New function.

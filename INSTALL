@@ -143,6 +143,39 @@ administrators via clients like the Greenbone Security Assistant (GSA).
 Also, the new user can change her password via GSA.
 
 
+Optimizing the database
+-----------------------
+OpenVAS Manager offers the command line option --optimize=<name> to run various
+ optimization of the database. The currently supported values for <name> are:
+
+vacuum
+  This option can reduce the file size by freeing some unused storage
+  space in the database.
+  For more information see the documentation for the VACUUM command of the
+  database back-end you are using.
+
+analyze
+  This option updates various internal statistics of the database used to
+  optimize queries.
+  For more information see the documentation for the ANALYZE command of the
+  database back-end you are using.
+
+cleanup-config-prefs
+  This option removes duplicate preferences from Scan Configs.
+
+remove-open-port-results
+  This option removes results which were used in older versions of OpenVAS to
+  indicate an open port. Since open ports are now part of the host details
+  these results are now obsolete in most cases.
+
+cleanup-port-names
+  This cleans up the ports of results as stored in the database by removing
+  parts that do not conform to the format <port>/<protocol>.
+  For example the application name will be removed from a port using the old
+  format "telnet (23/tcp)", reducing it to the new format "23/tcp".
+  This makes filtering results and delta reports more consistent.
+
+
 Import/Update IANA Services Names
 ---------------------------------
 
