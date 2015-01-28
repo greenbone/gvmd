@@ -1,3 +1,16 @@
+2014-01-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (launch_osp_task): Don't take options argument. Get the
+	task options in function.
+	(fork_osp_scan_handler): Move function down. Adjust for
+	launch_osp_task() changes.
+	(run_osp_task): Set task as requested. Adjust fork_osp_scan_handler()
+	call.
+	(run_task): adjust run_osp_task() call.
+
+	* src/omp.c (omp_xml_handle_end_element): In START_TASK, fix use of
+	uninitialized variable in OSP task case.
+
 2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (handle_osp_scan, launch_osp_task): New functions.

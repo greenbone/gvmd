@@ -2632,58 +2632,6 @@ handle_osp_scan (task_t task, report_t report, const char *report_id)
 }
 
 /**
- * @brief Fork a child to handle an OSP scan's fetching and inserting.
- *
- * @param[in]   task        The task.
- * @param[in]   report      The report.
- *
- * @return Parent returns with 0 if success, -1 if failure. Child process
- *         doesn't return and simply exits.
- */
-static int
-fork_osp_scan_handler (task_t task, report_t report)
-{
-  char *report_id, title[128];
-  int rc;
-
-  assert (task);
-  assert (report);
-  switch (fork ())
-    {
-      case 0:
-        break;
-      case -1:
-        set_task_run_status (task, TASK_STATUS_STOPPED);
-        set_report_scan_run_status (report, TASK_STATUS_STOPPED);
-        return -1;
-      default:
-        return 0;
-    }
-
-  /* Child: Re-open DB after fork and periodically check scan progress.
-   * If progress == 100%: Parse the report results and other info then exit(0).
-   * Else, exit(1) in error cases like connection to scanner failure.
-   */
-  reinit_manage_process ();
-  report_id = report_uuid (report);
-  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
-  proctitle_set (title);
-
-  rc = handle_osp_scan (task, report, report_id);
-  if (rc == 0)
-    {
-      set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (report, TASK_STATUS_DONE);
-    }
-  else if (rc == 1)
-    set_task_run_status (task, TASK_STATUS_STOPPED);
-  else
-    abort ();
-  g_free (report_id);
-  exit (rc);
-}
-
-/**
  * @brief Get an OSP Task's scan options.
  *
  * @param[in]   task        The task.
@@ -2738,67 +2686,114 @@ get_osp_task_options (task_t task, target_t target)
  *
  * @param[in]   task        The task.
  * @param[in]   target      The target.
- * @param[in]   target      The target.
  * @param[out]  scan_id     The new scan uuid.
  *
  * @return 0 success, -1 if scanner is down.
  */
 static int
-launch_osp_task (task_t task, target_t target, GHashTable *options,
-                 char **scan_id)
+launch_osp_task (task_t task, target_t target, char **scan_id)
 {
   osp_connection_t *connection;
   char *target_str;
+  GHashTable *options;
 
+  options = get_osp_task_options (task, target);
+  if (!options)
+    return -1;
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
-    return -1;
-
+    {
+      g_hash_table_destroy (options);
+      return -1;
+    }
   target_str = target_hosts (target);
-  /* Setting to REQUESTED as the connection to the OSP scanner was already
-   * successful and the transfer of a big definitions file may keep the task
-   * status as new for too long.
-   */
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
   *scan_id = osp_start_scan (connection, target_str, options);
 
+  g_hash_table_destroy (options);
   osp_connection_close (connection);
   g_free (target_str);
   return 0;
 }
 
 /**
+ * @brief Fork a child to handle an OSP scan's fetching and inserting.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_osp_scan_handler (task_t task, target_t target)
+{
+  char *report_id, title[128];
+  int rc;
+  report_t report;
+
+  assert (task);
+  assert (target);
+  switch (fork ())
+    {
+      case 0:
+        break;
+      case -1:
+        set_task_run_status (task, TASK_STATUS_STOPPED);
+        return -1;
+      default:
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  if (launch_osp_task (task, target, &report_id) || !report_id)
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      exit (-1);
+    }
+  report = make_report (task, report_id, TASK_STATUS_RUNNING);
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+
+  report_id = report_uuid (report);
+  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
+  proctitle_set (title);
+
+  rc = handle_osp_scan (task, report, report_id);
+  if (rc == 0)
+    {
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (report, TASK_STATUS_DONE);
+    }
+  else if (rc == 1)
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (report, TASK_STATUS_STOPPED);
+    }
+  else
+    abort ();
+  g_free (report_id);
+  exit (rc);
+}
+
+/**
  * @brief Start a task on an OSP scanner.
  *
  * @param[in]   task_id    The task ID.
- * @param[out]  report_id  The report ID.
  *
- * @return 0 success, -1 error, -5 scanner is down.
+ * @return 0 success, -1 error.
  */
 int
-run_osp_task (task_t task, char **report_id)
+run_osp_task (task_t task)
 {
   target_t target;
-  GHashTable *options;
-  report_t report;
 
   target = task_target (task);
-  options = get_osp_task_options (task, target);
-  if (!options)
-    return -1;
-  g_hash_table_destroy (options);
-  if (launch_osp_task (task, target, options, report_id))
-    return -5;
-  if (*report_id == NULL)
-    {
-      set_task_run_status (task, TASK_STATUS_STOPPED);
-      return -1;
-    }
-  report = make_report (task, *report_id, TASK_STATUS_RUNNING);
-  set_task_run_status (task, TASK_STATUS_RUNNING);
-
   /* Fork OSP scan handler. */
-  if (fork_osp_scan_handler (task, report))
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  if (fork_osp_scan_handler (task, target))
     {
       g_warning ("Couldn't fork OSP scan handler.\n");
       return -1;
@@ -2884,7 +2879,7 @@ run_task (const char *task_id, char **report_id, int from,
   scanner = task_scanner (task);
   assert (scanner);
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
-    return run_osp_task  (task, report_id);
+    return run_osp_task  (task);
 
   slave = task_slave (task);
   if (slave)

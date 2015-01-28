@@ -25444,7 +25444,8 @@ create_task_fail:
               abort (); /** @todo Respond with error or something. */
             else
               {
-                char *report_id;
+                char *report_id = NULL;
+
                 switch (start_task (start_task_data->task_id, &report_id))
                   {
                     case 0:
@@ -25458,8 +25459,8 @@ create_task_fail:
                                 "\">"
                                 "<report_id>%s</report_id>"
                                 "</start_task_response>",
-                                report_id);
-                        free (report_id);
+                                report_id ?: "0");
+                        g_free (report_id);
                         if (send_to_client (msg,
                                             write_to_client,
                                             write_to_client_data))
