@@ -12351,12 +12351,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_alert_task_iterator (&tasks,
                                             get_iterator_resource (&alerts), 0);
                   while (next (&tasks))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<task id=\"%s\">"
-                      "<name>%s</name>"
-                      "</task>",
-                      alert_task_iterator_uuid (&tasks),
-                      alert_task_iterator_name (&tasks));
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<task id=\"%s\">"
+                        "<name>%s</name>",
+                        alert_task_iterator_uuid (&tasks),
+                        alert_task_iterator_name (&tasks));
+
+                      if (alert_task_iterator_readable (&tasks))
+                        SEND_TO_CLIENT_OR_FAIL ("</task>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</task>");
+                    }
                   cleanup_iterator (&tasks);
                   SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                 }
@@ -17501,12 +17508,29 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               init_task_alert_iterator (&alerts, index, 0);
               while (next (&alerts))
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<alert id=\"%s\">"
-                  "<name>%s</name>"
-                  "</alert>",
-                  task_alert_iterator_uuid (&alerts),
-                  task_alert_iterator_name (&alerts));
+                {
+                  alert_t found;
+
+                  if (find_alert_with_permission (task_alert_iterator_uuid
+                                                   (&alerts),
+                                                  &found,
+                                                  "get_alerts"))
+                    abort ();
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<alert id=\"%s\">"
+                    "<name>%s</name>",
+                    task_alert_iterator_uuid (&alerts),
+                    task_alert_iterator_name (&alerts));
+
+                  if (found)
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("</alert>");
+                  else
+                    SENDF_TO_CLIENT_OR_FAIL
+                     ("<permissions/>"
+                      "</alert>");
+                }
               cleanup_iterator (&alerts);
 
               if (get_tasks_data->get.details)
@@ -21520,7 +21544,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                      index);
               if (strcmp (alert_id, "0") == 0)
                 continue;
-              if (find_alert (alert_id, &alert))
+              if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   goto create_task_fail;

@@ -6762,7 +6762,15 @@ alert_data (alert_t alert, const char *type, const char *name)
 void
 init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
 {
-  assert (current_credentials.uuid);
+  gchar *owned_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  owned_clause = where_owned ("alert", &get, 0, "any", 0, permissions);
+  array_free (permissions);
 
   if (event)
     init_iterator (iterator,
@@ -6770,21 +6778,21 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.task = %llu AND event = %i"
                    " AND task_alerts.alert = alerts.id"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND %s;",
                    task,
                    event,
-                   current_credentials.uuid);
+                   owned_clause);
   else
     init_iterator (iterator,
                    "SELECT alerts.id, alerts.uuid, alerts.name"
                    " FROM alerts, task_alerts"
                    " WHERE task_alerts.task = %llu"
                    " AND task_alerts.alert = alerts.id"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND %s;",
                    task,
-                   current_credentials.uuid);
+                   owned_clause);
+
+  g_free (owned_clause);
 }
 
 /**
@@ -8743,20 +8751,29 @@ void
 init_alert_task_iterator (iterator_t* iterator, alert_t alert,
                               int ascending)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
   assert (alert);
-  assert (current_credentials.uuid);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT tasks.name, tasks.uuid FROM tasks, task_alerts"
+                 "SELECT tasks.name, tasks.uuid, %s FROM tasks, task_alerts"
                  " WHERE tasks.id = task_alerts.task"
                  " AND task_alerts.alert = %llu"
                  " AND hidden = 0"
-                 " AND ((tasks.owner IS NULL) OR (tasks.owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY tasks.name %s;",
+                 available,
                  alert,
-                 current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
+
+  g_free (available);
 }
 
 /**
@@ -8789,6 +8806,20 @@ alert_task_iterator_uuid (iterator_t* iterator)
   if (iterator->done) return NULL;
   ret = iterator_string (iterator, 1);
   return ret;
+}
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+alert_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
 }
 
 
@@ -13415,7 +13446,7 @@ set_task_alerts (task_t task, array_t *alerts, gchar **alert_id_return)
       if (strcmp (alert_id, "0") == 0)
         continue;
 
-      if (find_alert (alert_id, &alert))
+      if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
         {
           sql ("ROLLBACK;");
           return -1;
@@ -24362,7 +24393,7 @@ manage_send_report (report_t report, report_t delta_report,
       alert_condition_t condition;
       alert_method_t method;
 
-      if (find_alert (alert_id, &alert))
+      if (find_alert_with_permission (alert_id, &alert, "get_alerts"))
         return -1;
 
       if (alert == 0)

@@ -1,4 +1,24 @@
-2014-01-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current users alerts and tasks, with other people's
+	alerts and tasks, when permissions allow it.
+
+	* src/manage_sql.c (init_task_alert_iterator): Get alerts owned by other
+	users too.
+	(init_alert_task_iterator): Add column indicating whether the alert is
+	readable.  Remove owner constraint on task.
+	(alert_task_iterator_readable): New function.
+	(set_task_alerts, manage_send_report): Find with permissions, to
+	include alerts owned by other users.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	TASK in GET_ALERTS when task is not readable.  Same for alert in
+	GET_TASKS when alert is not readable.  In CLIENT_CREATE_TASK find the
+	alert with permission, in it is owned by another user.
+
+2015-01-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (launch_osp_task): Don't take options argument. Get the
 	task options in function.
@@ -11,7 +31,7 @@
 	* src/omp.c (omp_xml_handle_end_element): In START_TASK, fix use of
 	uninitialized variable in OSP task case.
 
-2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (handle_osp_scan, launch_osp_task): New functions.
 	(run_osp_task): Adjust function to call launch_osp_task()  accordingly.
@@ -23,12 +43,12 @@
 
 	* INSTALL: Add new section "Optimizing the database".
 
-2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (get_osp_task_options): New function.
 	(run_osp_task): Refactor function to use get_osp_task_options().
 
-2014-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
+2015-01-27  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (osp_scanner_connect): New function.
 	(get_scanner_params): Refactor code, call new function.

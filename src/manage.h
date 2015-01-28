@@ -350,6 +350,9 @@ alert_uuid (alert_t);
 gboolean
 find_alert (const char*, alert_t*);
 
+gboolean
+find_alert_with_permission (const char *, alert_t *, const char *);
+
 int
 manage_alert (const char *, const char *, event_t, const void*);
 
@@ -430,6 +433,9 @@ alert_task_iterator_name (iterator_t*);
 
 const char*
 alert_task_iterator_uuid (iterator_t*);
+
+int
+alert_task_iterator_readable (iterator_t*);
 
 void
 init_task_alert_iterator (iterator_t*, task_t, event_t event);
