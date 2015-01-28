@@ -3413,10 +3413,4 @@ valid_db_resource_type (const char*);
 gboolean
 manage_migrate_needs_timezone (GSList *, const gchar *);
 
-
-/* Optimize. */
-
-int
-manage_optimize (GSList *, const gchar *, const gchar *);
-
 #endif /* not OPENVAS_MANAGER_MANAGE_H */

@@ -1,3 +1,8 @@
+2015-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Revert backport of r21100 because subsequent fixes for "analyze" and
+	"vacuum" arguments of --optimize cannot be applied.
+
 2015-01-27  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r21100 by Matthew Mundell.
