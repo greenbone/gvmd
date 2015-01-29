@@ -1,5 +1,17 @@
 2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Preparing the openvas-manager 5.0.8 release.
+
+	* CHANGES: Updated.
+
+	* CMakeLists.txt: Raise minimum required version of openvas-libraries
+	to 7.0.7.
+
+	* INSTALL: Update version requirements to match change to
+	CMakeLists.txt.
+
+2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r21274 by Timo Pollmeier.
 
 	* src/report_formats/HTML/HTML.xsl (note, override): Hide inactive

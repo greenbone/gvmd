@@ -1,3 +1,41 @@
+openvas-manager 5.0.8 (2015-01-29)
+
+This is the eighth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release raises the minimum required version of OpenVAS Libraries to 7.0.7.
+It contains improvements which should increased performance and mitigate
+contention issues, along with a number of smaller fixes and improvements. It
+also adds support for mixing slaves and tasks of multiple users when
+permissions allow it.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes since 5.0.7:
+* The required minimum OpenVAS Libraries version has increased to 7.0.7.
+* Caching of severity settings has been improved, leading to performance gains
+  for certain SQL operations like retrieving reports.
+* Enable mixing of the current user's slaves and tasks, with other people's
+  slaves and tasks, when permissions allow it.
+* Manager now supports sleeping before retrying SQL connections, which should
+  further mitigate contention issues.
+* An issue which caused segmentation faults in the "--delete-user" command has
+  been fixed.
+* An issue with adding new families to scan configs has been addressed.
+* The handling of Timeout NVT preferences in scan configs has been improved.
+* An issue with NVT counting in scan configs has been fixed.
+* An issue which could cause rights of users to be affected by permissions in
+  the trashcan has been fixed.
+* An issue which caused text of inactive notes and overrides to show up in some
+  RFPs has been fixed.
+* The default value for the "autofp" setting used for alerts has been changed
+  to 0 for consistency with other views.
+* Handling of missing RFPs for alerts has been improved.
+
+
 openvas-manager 5.0.7 (2014-11-28)
 
 This is the seventh maintenance release of the openvas-manager 5.0 module for
