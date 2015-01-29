@@ -1,5 +1,19 @@
 2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	Backport r21274 by Timo Pollmeier.
+
+	* src/report_formats/HTML/HTML.xsl (note, override): Hide inactive
+	notes / overrides. Use end_time instead of modification_time in
+	"Active until:" part.
+
+	* src/report_formats/LaTeX/latex.xsl (notes, overrides): Hide inactive
+	notes / overrides.
+	
+	* src/report_formats/TXT/TXT.xsl (note, override): Hide inactive
+	notes / overrides.
+
+2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	Backport r21498 by Matthew Mundell.
 
 	* src/manage_sql.c (escalate_1): Change Auto FP default to 0.
