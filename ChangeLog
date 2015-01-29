@@ -1,3 +1,9 @@
+2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r21498 by Matthew Mundell.
+
+	* src/manage_sql.c (escalate_1): Change Auto FP default to 0.
+
 2015-01-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Revert backport of r21100 because subsequent fixes for "analyze" and
