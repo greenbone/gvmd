@@ -2210,6 +2210,9 @@ current_offset (const char *);
 gboolean
 find_schedule (const char*, schedule_t*);
 
+gboolean
+find_schedule_with_permission (const char*, schedule_t*, const char*);
+
 int
 create_schedule (const char*, const char *, time_t, time_t, time_t,
                  time_t, const char*, schedule_t *);
@@ -2276,6 +2279,9 @@ int
 trash_schedule_writable (schedule_t);
 
 int
+trash_schedule_readable (schedule_t);
+
+int
 schedule_writable (schedule_t);
 
 int
@@ -2289,6 +2295,9 @@ schedule_task_iterator_uuid (iterator_t *);
 
 const char*
 schedule_task_iterator_name (iterator_t *);
+
+int
+schedule_task_iterator_readable (iterator_t*);
 
 int
 modify_schedule (const char*, const char*, const char *, time_t, time_t, time_t,

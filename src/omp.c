@@ -15947,11 +15947,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                    get_iterator_resource
                                                     (&schedules));
                       while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                 "<name>%s</name>"
-                                                 "</task>",
-                                                 schedule_task_iterator_uuid (&tasks),
-                                                 schedule_task_iterator_name (&tasks));
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                   "<name>%s</name>",
+                                                   schedule_task_iterator_uuid (&tasks),
+                                                   schedule_task_iterator_name (&tasks));
+                          if (schedule_task_iterator_readable (&tasks))
+                            SEND_TO_CLIENT_OR_FAIL ("</task>");
+                          else
+                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                    "</task>");
+                        }
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
@@ -17058,6 +17064,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2, infos_2, warnings_2;
               int false_positives, task_scanner_type, slave_available;
+              int schedule_available;
               double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
@@ -17352,12 +17359,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_slave_uuid = g_strdup ("");
                   task_slave_name = g_strdup ("");
                 }
+              schedule_available = 1;
               schedule = task_schedule (index);
               if (schedule)
                 {
-                  task_schedule_uuid = schedule_uuid (schedule);
-                  task_schedule_name = schedule_name (schedule);
                   schedule_in_trash = task_schedule_in_trash (index);
+                  if (schedule_in_trash)
+                    {
+                      task_schedule_uuid = schedule_uuid (schedule);
+                      task_schedule_name = schedule_name (schedule);
+                      schedule_available = trash_schedule_readable (slave);
+                    }
+                  else
+                    {
+                      schedule_t found;
+                      task_schedule_uuid = schedule_uuid (schedule);
+                      task_schedule_name = schedule_name (schedule);
+                      if (find_schedule_with_permission (task_schedule_uuid,
+                                                         &found,
+                                                         "get_schedules"))
+                        abort ();
+                      schedule_available = (found > 0);
+                    }
                 }
               else
                 {
@@ -17410,6 +17433,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<name>%s</name>"
                            "<next_time>%s</next_time>"
                            "<trash>%i</trash>"
+                           "%s"
                            "</schedule>"
                            "%s%s%s%s",
                            get_tasks_data->get.trash
@@ -17443,6 +17467,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              ? "over"
                              : iso_time (&next_time)),
                            schedule_in_trash,
+                           schedule_available ? "" : "<permissions/>",
                            current_report,
                            first_report,
                            last_report,
@@ -21570,7 +21595,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (create_task_data->schedule_id)
             {
               schedule_t schedule;
-              if (find_schedule (create_task_data->schedule_id, &schedule))
+              if (find_schedule_with_permission (create_task_data->schedule_id,
+                                                 &schedule,
+                                                 "get_schedules"))
                 {
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
                   goto create_task_fail;
@@ -24667,9 +24694,10 @@ create_task_fail:
                       {
                         set_task_schedule (task, 0);
                       }
-                    else if ((fail = find_schedule
+                    else if ((fail = find_schedule_with_permission
                                       (modify_task_data->schedule_id,
-                                       &schedule)))
+                                       &schedule,
+                                       "get_schedules")))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
                     else if (schedule == 0)

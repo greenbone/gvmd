@@ -38075,6 +38075,31 @@ trash_schedule_writable (schedule_t schedule)
 }
 
 /**
+ * @brief Return whether a trashcan schedule is readable.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_schedule_readable (schedule_t schedule)
+{
+  char *uuid;
+  schedule_t found;
+
+  if (schedule == 0)
+    return 0;
+  uuid = schedule_uuid (schedule);
+  if (find_trash ("schedule", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
+}
+
+/**
  * @brief Return the UUID of a schedule.
  *
  * @param[in]  schedule  Schedule.
@@ -38308,6 +38333,7 @@ init_task_schedule_iterator (iterator_t* iterator)
   ret = sql_begin_exclusive_giveup ();
   if (ret)
     return ret;
+  /* TODO Limit to schedules that task owner has access to. */
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
                  " schedules.id, tasks.schedule_next_time,"
@@ -38610,16 +38636,25 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 void
 init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
   assert (current_credentials.uuid);
 
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
   init_iterator (iterator,
-                 "SELECT id, uuid, name FROM tasks"
+                 "SELECT id, uuid, name, %s FROM tasks"
                  " WHERE schedule = %llu AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name ASC;",
+                 available,
                  schedule,
                  current_credentials.uuid);
+  g_free (available);
 }
 
 /**
@@ -38641,6 +38676,20 @@ DEF_ACCESS (schedule_task_iterator_uuid, 1);
  *         cleanup_iterator.
  */
 DEF_ACCESS (schedule_task_iterator_name, 2);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+schedule_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 3);
+}
 
 /**
  * @brief Modify a schedule.

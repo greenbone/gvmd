@@ -1,3 +1,22 @@
+2015-01-30  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current users schedules and tasks, with other
+	people's schedules and tasks, when permissions allow it.
+
+	* src/manage_sql.c (trash_schedule_readable): New function.
+	(init_task_schedule_iterator): Add TODO.
+	(init_schedule_task_iterator): Add column indicating whether the
+	schedule is readable.  Remove owner constraint on task.
+	(schedule_task_iterator_readable): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	TASK in GET_SCHEDULES when task is not readable.  Same for schedule in
+	GET_TASKS when schedule is not readable.  In CLIENT_CREATE_TASK and
+	CLIENT_MODIFY_TASK find the schedule with permission, in case it is
+	owned by another user.
+
 2015-01-28  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable mixing of the current users alerts and tasks, with other people's
@@ -16,7 +35,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
 	TASK in GET_ALERTS when task is not readable.  Same for alert in
 	GET_TASKS when alert is not readable.  In CLIENT_CREATE_TASK find the
-	alert with permission, in it is owned by another user.
+	alert with permission, in case it is owned by another user.
 
 2015-01-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
