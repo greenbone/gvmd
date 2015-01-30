@@ -561,6 +561,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>nvt</e>
       <e>threat</e>
       <e>severity</e>
+      <e>qod</e>
       <o><e>original_threat</e></o>
       <o><e>original_severity</e></o>
       <e>description</e>
@@ -757,6 +758,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>severity</name>
       <pattern><t>severity</t></pattern>
+    </ele>
+    <ele>
+      <name>qod</name>
+      <summary>The quality of detection (QoD) percentage of the result</summary>
+      <pattern><t>integer</t></pattern>
     </ele>
     <ele>
       <name>original_threat</name>

@@ -1151,6 +1151,9 @@ const char*
 result_iterator_level (iterator_t*);
 
 const char*
+result_iterator_qod (iterator_t*);
+
+const char*
 result_iterator_date (iterator_t*);
 
 

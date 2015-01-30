@@ -1937,6 +1937,11 @@ result_overrides_override_orphan
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) percentage of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>original_threat</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Original threat when overridden.</div>
 <ul style="list-style: none"></ul>
@@ -2037,6 +2042,7 @@ result_overrides_override_orphan
        &amp; result_nvt
        &amp; result_threat
        &amp; result_severity
+       &amp; result_qod
        &amp; result_original_threat?
        &amp; result_original_severity?
        &amp; result_description
@@ -2229,6 +2235,12 @@ result_severity
        severity
      }
 
+result_qod
+ = element qod
+     {
+       integer
+     }
+
 result_original_threat
  = element original_threat
      {
@@ -2273,6 +2285,7 @@ result_delta_result
        &amp; result_nvt
        &amp; result_threat
        &amp; result_severity
+       &amp; result_qod
        &amp; result_original_threat?
        &amp; result_original_severity?
        &amp; result_description
@@ -2347,6 +2360,7 @@ result_detection_result
        &amp; result_nvt
        &amp; result_threat
        &amp; result_severity
+       &amp; result_qod
        &amp; result_original_threat?
        &amp; result_original_severity?
        &amp; result_description
@@ -3878,6 +3892,7 @@ report_report_results_result
        &amp; result_nvt
        &amp; result_threat
        &amp; result_severity
+       &amp; result_qod
        &amp; result_original_threat?
        &amp; result_original_severity?
        &amp; result_description

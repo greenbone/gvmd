@@ -10937,6 +10937,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *descr = result_iterator_descr (results);
   const char *name, *owner_name, *comment, *creation_time, *modification_time;
   gchar *nl_descr = descr ? convert_to_newlines (descr) : NULL;
+  const char *qod = result_iterator_qod (results);
   result_t result = result_iterator_result (results);
   char *uuid;
   char *detect_ref, *detect_cpe, *detect_loc, *detect_oid, *detect_name;
@@ -11070,10 +11071,12 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     "<scan_nvt_version>%s</scan_nvt_version>"
     "<threat>%s</threat>"
     "<severity>%.1f</severity>"
+    "<qod>%s</qod>"
     "<description>%s</description>",
     result_iterator_scan_nvt_version (results),
     result_iterator_level (results),
     result_iterator_severity_double (results),
+    qod ? qod : "",
     descr ? nl_descr : "");
 
   if (include_overrides)

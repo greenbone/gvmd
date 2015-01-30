@@ -683,6 +683,7 @@ result
        & result_nvt
        & result_threat
        & result_severity
+       & result_qod
        & result_original_threat?
        & result_original_severity?
        & result_description
@@ -902,6 +903,13 @@ result_severity
        severity
      }
 
+# The quality of detection (QoD) percentage of the result.
+result_qod
+ = element qod
+     {
+       integer
+     }
+
 # Original threat when overridden.
 result_original_threat
  = element original_threat
@@ -951,6 +959,7 @@ result_delta_result
        & result_nvt
        & result_threat
        & result_severity
+       & result_qod
        & result_original_threat?
        & result_original_severity?
        & result_description
@@ -1032,6 +1041,7 @@ result_detection_result
        & result_nvt
        & result_threat
        & result_severity
+       & result_qod
        & result_original_threat?
        & result_original_severity?
        & result_description
@@ -1923,6 +1933,7 @@ report_report_results_result
        & result_nvt
        & result_threat
        & result_severity
+       & result_qod
        & result_original_threat?
        & result_original_severity?
        & result_description

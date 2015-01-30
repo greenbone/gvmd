@@ -2707,7 +2707,8 @@ filter_clause (const char* type, const char* filter,
                 }
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
-                       || (strcmp (keyword->string, "published") == 0))
+                       || (strcmp (keyword->string, "published") == 0)
+                       || (strcmp (keyword->string, "qod") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2808,7 +2809,8 @@ filter_clause (const char* type, const char* filter,
                 }
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
-                       || (strcmp (keyword->string, "published") == 0))
+                       || (strcmp (keyword->string, "published") == 0)
+                       || (strcmp (keyword->string, "qod") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -16102,7 +16104,7 @@ where_search_phrase (const char* search_phrase, int exact)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", NULL }
+    "solution_type", "qod", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -16157,10 +16159,11 @@ where_search_phrase (const char* search_phrase, int exact)
     { "(SELECT uuid FROM reports WHERE id = report)", "report_id" },          \
     { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
       "solution_type" },                                                      \
+    { "CASE qod WHEN -1 THEN NULL ELSE qod END", "qod" },                     \
     { NULL, NULL }                                                            \
   }
 
-#define RESULT_ITERATOR_COLUMN_COUNT 28
+#define RESULT_ITERATOR_COLUMN_COUNT 29
 
 #define RESULT_ITERATOR_COLUMNS_ARRAY                 \
       {                                               \
@@ -16442,6 +16445,30 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                                      auto_type_sql,
                                      new_severity_sql,
                                      auto_type_sql);
+      else if (strcmp (sort_field, "qod") == 0)
+        order_sql = g_strdup_printf (" ORDER BY"
+                                     " qod %s,"
+                                     " vulnerability,"
+                                     " order_port (port),"
+                                     " inet (host),"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN CAST (%s AS REAL)"
+                                     "  ELSE " G_STRINGIFY (SEVERITY_FP)
+                                     "  END)"
+                                     " DESC,"
+                                     " (CASE WHEN %s IS NULL"
+                                     "  THEN %s"
+                                     "  ELSE %s"
+                                     "  END)"
+                                     " DESC,"
+                                     " nvt,"
+                                     " description",
+                                     ascending ? "ASC" : "DESC",
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql,
+                                     new_severity_sql,
+                                     auto_type_sql);
       else
         order_sql = g_strdup_printf (" ORDER BY "
                                      " (CASE WHEN %s IS NULL"
@@ -16502,7 +16529,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " (SELECT uuid FROM reports"
                              "  WHERE id = results.report) AS report_id,"
                              " (SELECT solution_type FROM nvts"
-                             "  WHERE oid = nvt) AS solution_type"
+                             "  WHERE oid = nvt) AS solution_type,"
+                             " (CASE qod WHEN -1 THEN NULL ELSE qod END)"
                              " FROM results"
                              " WHERE results.report = %llu"
                              "%s"
@@ -17038,6 +17066,16 @@ result_iterator_level (iterator_t *iterator)
   ret = severity_to_level (severity, 0);
   return ret ? ret : "";
 }
+
+/**
+ * @brief Get the qod from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The qod of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Initialise a host iterator.

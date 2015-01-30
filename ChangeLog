@@ -1,3 +1,21 @@
+2015-01-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Add cases for "qod" to sort by the
+	numeric value of this column.
+	(RESULT_ITERATOR_FILTER_COLUMNS, RESULT_ITERATOR_COLUMNS): Add "qod".
+	(RESULT_ITERATOR_COLUMN_COUNT): Increase.
+	(init_result_iterator): Add cases for "qod" to sort it by
+	numeric value.
+	(result_iterator_qod): New function.
+
+	* src/manage.h (result_iterator_qod): New function prototype.
+
+	* src/omp.c (buffer_results_xml): Add new qod element to results.
+
+	* src/schema_formats/XML/OMP.xml.in (result): Add qod element.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2015-01-30  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable mixing of the current users schedules and tasks, with other
