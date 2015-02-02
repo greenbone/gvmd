@@ -1,3 +1,13 @@
+2015-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21541.
+
+	* src/manage_sql.c (where_search_phrase): Warn about relation to
+	report_counts_match.
+	(report_counts_match): Use the same conditions that are used in the
+	result iterator.  This was causing errors in the filtered counts in
+	reports when certain filter terms were given.
+
 2015-01-29  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
@@ -26,7 +36,7 @@
 
 	* src/report_formats/LaTeX/latex.xsl (notes, overrides): Hide inactive
 	notes / overrides.
-	
+
 	* src/report_formats/TXT/TXT.xsl (note, override): Hide inactive
 	notes / overrides.
 
