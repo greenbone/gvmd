@@ -756,7 +756,7 @@ sql_column_int (sql_stmt_t *stmt, int position)
   switch (PQftype (stmt->result, position))
     {
       case 16:  /* BOOLOID */
-        return strcmp (cell, "f");
+        return strcmp (cell, "f") ? 1 : 0;
 
       default:
         return atoi (cell);
@@ -786,7 +786,7 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
   switch (PQftype (stmt->result, position))
     {
       case 16:  /* BOOLOID */
-        return strcmp (cell, "f");
+        return strcmp (cell, "f") ? 1 : 0;
 
       default:
         return atol (cell);

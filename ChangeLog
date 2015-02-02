@@ -1,3 +1,8 @@
+2015-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/sql_pg.c (sql_column_int, sql_column_int64): Add condition so that
+	booleans are always 1 or 0.
+
 2015-02-02  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (make_osp_result): Don't set the result's QOD to 0.
