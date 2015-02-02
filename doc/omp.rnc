@@ -3432,6 +3432,7 @@ create_target
        & create_target_comment?
        & create_target_copy?
        & create_target_hosts
+       & create_target_exclude_hosts?
        & create_target_ssh_lsc_credential?
        & create_target_smb_lsc_credential?
        & create_target_esxi_lsc_credential?
@@ -3474,6 +3475,13 @@ create_target_copy
 # A textual list of hosts, which may be empty.
 create_target_hosts
  = element hosts
+     {
+       text
+     }
+
+# A list of hosts to exclude.
+create_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }
@@ -3555,6 +3563,7 @@ create_task
        & create_task_alterable?
        & create_task_config
        & create_task_target
+       & create_task_hosts_ordering?
        & create_task_scanner
        & create_task_alert*
        & create_task_schedule?
@@ -3603,6 +3612,13 @@ create_task_target
  = element target
      {
        attribute id { uuid }
+     }
+
+# The order hosts are scanned in.
+create_task_hosts_ordering
+ = element hosts_ordering
+     {
+       text
      }
 
 # The scanner to use for scanning the target.
@@ -4069,9 +4085,10 @@ get_configs
        attribute trash { boolean }?
        & # Whether to get config families, preferences, nvt selectors and tasks.
        attribute details { boolean }?
-       & attribute export { boolean }?
-       & attribute families { boolean }?
-       & attribute preferences { boolean }?
+       & # Whether to include the families if no details are requested.
+       attribute families { boolean }?
+       & # Whether to include the preferences if no details are requested.
+       attribute preferences { boolean }?
        & # Whether to get tasks using this config.
        attribute tasks { boolean }?
      }
@@ -4288,8 +4305,6 @@ get_permissions
        attribute filt_id { uuid }?
        & # Whether to get the trashcan permissions instead.
        attribute trash { boolean }?
-       & # ID of resource to restrict permission to.
-       attribute resource_id { uuid }?
      }
 
 ## Command get_port_lists
@@ -4442,6 +4457,8 @@ get_results
        attribute override_details { boolean }?
        & # Whether to override result threat levels.
        attribute apply_overrides { boolean }?
+       & # Whether to trust vendor security updates. 1 full match, 2 partial.
+       attribute autofp { xsd:token { pattern = "0|1|2" } }?
        & # Whether to include additional details of the results.
        attribute details { boolean }?
      }
@@ -4611,8 +4628,6 @@ get_tasks
        attribute trash { boolean }?
        & # Whether to include full task details.
        attribute details { boolean }?
-       & # Whether to override result threat levels.
-       attribute apply_overrides { boolean }?
      }
 
 ## Command get_users
@@ -4628,8 +4643,6 @@ get_users
        attribute filter { uuid }?
        & # ID of filter to use to filter query.
        attribute filt_id { uuid }?
-       & # Whether to get the trashcan users instead.
-       attribute trash { boolean }?
      }
 
 ## Command get_version
@@ -5697,6 +5710,8 @@ modify_target
        & modify_target_comment?
        & modify_target_name?
        & modify_target_hosts?
+       & modify_target_hosts_ordering?
+       & modify_target_exclude_hosts?
        & modify_target_ssh_lsc_credential?
        & modify_target_smb_lsc_credential?
        & modify_target_esxi_lsc_credential?
@@ -5723,6 +5738,20 @@ modify_target_name
 # Target hosts.
 modify_target_hosts
  = element hosts
+     {
+       text
+     }
+
+# The order hosts are scanned in.
+modify_target_hosts_ordering
+ = element hosts_ordering
+     {
+       text
+     }
+
+# A list of hosts to exclude.
+modify_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }
@@ -7295,6 +7324,7 @@ get_configs_response_config
        & get_configs_response_config_modification_time
        & get_configs_response_config_family_count
        & get_configs_response_config_nvt_count
+       & get_configs_response_config_type
        & get_configs_response_config_max_nvt_count
        & get_configs_response_config_known_nvt_count
        & get_configs_response_config_in_use
@@ -7304,6 +7334,7 @@ get_configs_response_config
        & get_configs_response_config_tasks
        & get_configs_response_config_families?
        & get_configs_response_config_preferences?
+       & get_configs_response_config_nvt_selectors?
      }
 
 # Owner of the config.
@@ -7376,6 +7407,13 @@ get_configs_response_config_nvt_count_growing
  = element growing
      {
        boolean
+     }
+
+# The type the config..
+get_configs_response_config_type
+ = element type
+     {
+       text
      }
 
 # Total number of NVTs in the families selected by the config.
@@ -7517,6 +7555,13 @@ get_configs_response_config_families_family_name
        name
      }
 
+# The type of the config. 0 = OpenVAS scanner, 1 = OSP Scanner.
+get_configs_response_config_families_family_type
+ = element type
+     {
+       integer
+     }
+
 # The number of NVTs selected in the family.
 get_configs_response_config_families_family_nvt_count
  = element nvt_count
@@ -7552,6 +7597,8 @@ get_configs_response_config_preferences_preference
        & get_configs_response_config_preferences_preference_name
        & get_configs_response_config_preferences_preference_type
        & get_configs_response_config_preferences_preference_value
+       & get_configs_response_config_preferences_preference_default
+       & get_configs_response_config_preferences_preference_alt*
      }
 
 # NVT to which preference applies.
@@ -7586,6 +7633,65 @@ get_configs_response_config_preferences_preference_type
 # The value of the preference.
 get_configs_response_config_preferences_preference_value
  = element value
+     {
+       text
+     }
+
+# The default value of the preference.
+get_configs_response_config_preferences_preference_default
+ = element default
+     {
+       text
+     }
+
+# An alternate value for the preference.
+get_configs_response_config_preferences_preference_alt
+ = element alt
+     {
+       text
+     }
+
+# All NVT selectors of the config.
+get_configs_response_config_nvt_selectors
+ = element nvt_selectors
+     {
+       get_configs_response_config_nvt_selectors_nvt_selector*
+     }
+
+# An NVT selector.
+get_configs_response_config_nvt_selectors_nvt_selector
+ = element nvt_selector
+     {
+       get_configs_response_config_nvt_selectors_nvt_selector_name
+       & get_configs_response_config_nvt_selectors_nvt_selector_include
+       & get_configs_response_config_nvt_selectors_nvt_selector_type
+       & get_configs_response_config_nvt_selectors_nvt_selector_family_or_nvt
+     }
+
+# Name of the selector.
+get_configs_response_config_nvt_selectors_nvt_selector_name
+ = element name
+     {
+       text
+     }
+
+# Whether the selector is an include selector.
+get_configs_response_config_nvt_selectors_nvt_selector_include
+ = element include
+     {
+       boolean
+     }
+
+# Selector type: 0 = all, 1 = family, 2 = NVT.
+get_configs_response_config_nvt_selectors_nvt_selector_type
+ = element type
+     {
+       integer
+     }
+
+# Name of the family or OID of the NVT.
+get_configs_response_config_nvt_selectors_nvt_selector_family_or_nvt
+ = element family_or_nvt
      {
        text
      }
@@ -7991,6 +8097,10 @@ get_alerts_response
        attribute status { status }
        & attribute status_text { text }
        & get_alerts_response_alert*
+       & get_alerts_response_filters
+       & get_alerts_response_sort
+       & get_alerts_response_alerts
+       & get_alerts_response_alert_count
      }
 
 get_alerts_response_alert
@@ -8224,6 +8334,117 @@ get_alerts_response_alert_filter_trash
  = element trash
      {
        boolean
+     }
+
+get_alerts_response_filters
+ = element filters
+     {
+       # UUID of filter if any, else 0.
+       attribute id { uuid }
+       & get_alerts_response_filters_term
+       & get_alerts_response_filters_name?
+       & get_alerts_response_filters_keywords
+     }
+
+# Filter term.
+get_alerts_response_filters_term
+ = element term
+     {
+       text
+     }
+
+# Filter name, if applicable.
+get_alerts_response_filters_name
+ = element name
+     {
+       text
+     }
+
+# Filter broken down into keywords.
+get_alerts_response_filters_keywords
+ = element keywords
+     {
+       get_alerts_response_filters_keywords_keyword*
+     }
+
+get_alerts_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_alerts_response_filters_keywords_keyword_column
+       & get_alerts_response_filters_keywords_keyword_relation
+       & get_alerts_response_filters_keywords_keyword_value
+     }
+
+# Column prefix.
+get_alerts_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+# Relation operator.
+get_alerts_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+# The filter text.
+get_alerts_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_alerts_response_sort
+ = element sort
+     {
+       text
+       & get_alerts_response_sort_field
+     }
+
+get_alerts_response_sort_field
+ = element field
+     {
+       get_alerts_response_sort_field_order
+     }
+
+get_alerts_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_alerts_response_alerts
+ = element alerts
+     {
+       # First alert.
+       attribute start { integer }
+       & # Maximum number of alerts.
+       attribute max { integer }
+     }
+
+get_alerts_response_alert_count
+ = element alert_count
+     {
+       get_alerts_response_alert_count_filtered
+       & get_alerts_response_alert_count_page
+     }
+
+# Number of alerts after filtering.
+get_alerts_response_alert_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+# Number of alerts on current page.
+get_alerts_response_alert_count_page
+ = element page
+     {
+       integer
      }
 
 ## Response to get_filters
@@ -8825,13 +9046,13 @@ get_info_response_info
        & get_info_response_info_permissions
        & get_info_response_info_user_tags
        & get_info_response_info_update_time
-       & get_info_response_info_cert_bund_adv?
-       & get_info_response_info_cpe?
-       & get_info_response_info_cve?
-       & get_info_response_info_dfn_cert_adv?
-       & get_info_response_info_ovaldef?
-       & get_info_response_info_nvt?
-       & get_info_response_info_allinfo?
+       & ( get_info_response_info_cert_bund_adv
+           | get_info_response_info_cpe
+           | get_info_response_info_cve
+           | get_info_response_info_dfn_cert_adv
+           | get_info_response_info_ovaldef
+           | get_info_response_info_nvt
+           | get_info_response_info_allinfo )
      }
 
 # Owner of the info.
@@ -9005,7 +9226,6 @@ get_info_response_info_cpe
        & get_info_response_info_cpe_max_cvss
        & get_info_response_info_cpe_cve_refs
        & get_info_response_info_cpe_status
-       & get_info_response_info_cpe_deprecated_by?
        & get_info_response_info_cpe_cves?
        & get_info_response_info_cpe_raw_data?
      }
@@ -9045,18 +9265,11 @@ get_info_response_info_cpe_status
        text
      }
 
-# NVD id of the deprecating CPE.
-get_info_response_info_cpe_deprecated_by
- = element deprecated_by
-     {
-       integer
-     }
-
 # CVEs referring to this CPE. Only when details were requested.
 get_info_response_info_cpe_cves
  = element cves
      {
-       get_info_response_info_cpe_cves_cve?
+       get_info_response_info_cpe_cves_cve*
      }
 
 # CVE referring to this CPE.
@@ -9084,13 +9297,13 @@ get_info_response_info_nvt
 get_info_response_info_cve
  = element cve
      {
-       get_info_response_info_cve_cvss?
-       & get_info_response_info_cve_vector?
-       & get_info_response_info_cve_complexity?
-       & get_info_response_info_cve_authentication?
-       & get_info_response_info_cve_confidentiality_impact?
-       & get_info_response_info_cve_integrity_impact?
-       & get_info_response_info_cve_availability_impact?
+       get_info_response_info_cve_cvss
+       & get_info_response_info_cve_vector
+       & get_info_response_info_cve_complexity
+       & get_info_response_info_cve_authentication
+       & get_info_response_info_cve_confidentiality_impact
+       & get_info_response_info_cve_integrity_impact
+       & get_info_response_info_cve_availability_impact
        & get_info_response_info_cve_description
        & get_info_response_info_cve_products
        & get_info_response_info_cve_nvts?
@@ -9165,7 +9378,7 @@ get_info_response_info_cve_products
 get_info_response_info_cve_nvts
  = element nvts
      {
-       get_info_response_info_cve_nvts_nvt?
+       get_info_response_info_cve_nvts_nvt*
      }
 
 # NVT referring to this CPE.
@@ -9215,7 +9428,7 @@ get_info_response_info_cve_cert_cert_ref_title
        text
      }
 
-# A warning message, e.g. when the database is not.
+# A warning message, e.g. when the database is unavailable.
 get_info_response_info_cve_cert_warning
  = element warning
      {
@@ -9528,8 +9741,8 @@ get_lsc_credentials_response_lsc_credential
        & get_lsc_credentials_response_lsc_credential_user_tags
        & get_lsc_credentials_response_lsc_credential_type
        & get_lsc_credentials_response_lsc_credential_targets
-       & get_lsc_credentials_response_lsc_credential_public_key?
-       & get_lsc_credentials_response_lsc_credential_package?
+       & ( get_lsc_credentials_response_lsc_credential_public_key
+           | get_lsc_credentials_response_lsc_credential_package )
      }
 
 # Owner of the LSC credential.
@@ -9942,50 +10155,25 @@ get_notes_response_note_count_page
 get_notes_response_note
  = element note
      {
-       get_notes_response_note_nvt
-       & get_notes_response_note_text
-       & get_notes_response_note_orphan
+       attribute id { uuid }
        & get_notes_response_note_permissions
+       & get_notes_response_note_owner
+       & get_notes_response_note_nvt
+       & get_notes_response_note_text
+       & get_notes_response_note_creation_time
+       & get_notes_response_note_modification_time
+       & get_notes_response_note_writable
+       & get_notes_response_note_in_use
+       & get_notes_response_note_active
+       & get_notes_response_note_orphan
        & get_notes_response_note_user_tags
-       & ( get_notes_response_note_owner
-           & get_notes_response_note_creation_time
-           & get_notes_response_note_modification_time
-           & get_notes_response_note_hosts
+       & ( get_notes_response_note_hosts
            & get_notes_response_note_port
            & get_notes_response_note_severity
            & get_notes_response_note_threat
            & get_notes_response_note_task
-           & get_notes_response_note_active
            & get_notes_response_note_end_time?
            & get_notes_response_note_result? )?
-     }
-
-get_notes_response_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_notes_response_note_nvt_name
-     }
-
-get_notes_response_note_nvt_name
- = element name
-     {
-       name
-     }
-
-# The text of the note.
-get_notes_response_note_text
- = element text
-     {
-       text
-       & attribute excerpt { boolean }
-     }
-
-# Whether the note is an orphan.
-get_notes_response_note_orphan
- = element orphan
-     {
-       boolean
      }
 
 # Permissions that the current user has on the note.
@@ -10006,6 +10194,82 @@ get_notes_response_note_permissions_permission_name
  = element name
      {
        name
+     }
+
+# Owner of the note.
+get_notes_response_note_owner
+ = element owner
+     {
+       get_notes_response_note_owner_name
+     }
+
+# The name of the owner.
+get_notes_response_note_owner_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# Date and time the note was created.
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the note was last modified.
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_notes_response_note_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_notes_response_note_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the note is active.
+get_notes_response_note_active
+ = element active
+     {
+       boolean
+     }
+
+# The text of the note.
+get_notes_response_note_text
+ = element text
+     {
+       text
+       & # Whether the content is an excerpt of the full text.
+       attribute excerpt { boolean }
+     }
+
+# Whether the note is an orphan.
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
      }
 
 # Info on tags attached to the note.
@@ -10053,34 +10317,6 @@ get_notes_response_note_user_tags_tag_comment
  = element comment
      {
        text
-     }
-
-# Owner of the note.
-get_notes_response_note_owner
- = element owner
-     {
-       get_notes_response_note_owner_name
-     }
-
-# The name of the owner.
-get_notes_response_note_owner_name
- = element name
-     {
-       name
-     }
-
-# Date and time the note was created.
-get_notes_response_note_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-# Date and time the note was last modified.
-get_notes_response_note_modification_time
- = element modification_time
-     {
-       iso_time
      }
 
 # A textual list of hosts.
@@ -10685,12 +10921,15 @@ get_overrides_response_override_count_page
 get_overrides_response_override
  = element override
      {
-       get_overrides_response_override_nvt
+       attribute id { uuid }
+       & get_overrides_response_override_permissions
        & get_overrides_response_override_owner
+       & get_overrides_response_override_nvt
        & get_overrides_response_override_creation_time
        & get_overrides_response_override_modification_time
        & get_overrides_response_override_writable
        & get_overrides_response_override_in_use
+       & get_overrides_response_override_active
        & get_overrides_response_override_text
        & get_overrides_response_override_threat
        & get_overrides_response_override_severity
@@ -10702,9 +10941,41 @@ get_overrides_response_override
        & ( get_overrides_response_override_hosts
            & get_overrides_response_override_port
            & get_overrides_response_override_task
-           & get_overrides_response_override_active
            & get_overrides_response_override_end_time?
            & get_overrides_response_override_result? )?
+     }
+
+# Permissions that the current user has on the note.
+get_overrides_response_override_permissions
+ = element permissions
+     {
+       get_overrides_response_override_permissions_permission*
+     }
+
+get_overrides_response_override_permissions_permission
+ = element permission
+     {
+       get_overrides_response_override_permissions_permission_name
+     }
+
+# The name of the permission.
+get_overrides_response_override_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Owner of the override.
+get_overrides_response_override_owner
+ = element owner
+     {
+       get_overrides_response_override_owner_name
+     }
+
+get_overrides_response_override_owner_name
+ = element name
+     {
+       name
      }
 
 get_overrides_response_override_nvt
@@ -10715,28 +10986,6 @@ get_overrides_response_override_nvt
      }
 
 get_overrides_response_override_nvt_name
- = element name
-     {
-       name
-     }
-
-# The text of the override.
-get_overrides_response_override_text
- = element text
-     {
-       text
-       & attribute excerpt { boolean }
-     }
-
-# Owner of the override.
-get_overrides_response_override_owner
- = element owner
-     {
-       get_overrides_response_override_owner_name
-     }
-
-# The name of the owner.
-get_overrides_response_override_owner_name
  = element name
      {
        name
@@ -10766,6 +11015,22 @@ get_overrides_response_override_in_use
  = element in_use
      {
        boolean
+     }
+
+# Whether the override is currently active.
+get_overrides_response_override_active
+ = element active
+     {
+       boolean
+     }
+
+# The text of the override.
+get_overrides_response_override_text
+ = element text
+     {
+       text
+       & # Whether the contents is an excerpt of the full text.
+       attribute excerpt { boolean }
      }
 
 # Threat level to which override applies, derived from severity.
@@ -10801,26 +11066,6 @@ get_overrides_response_override_orphan
  = element orphan
      {
        boolean
-     }
-
-# Permissions that the current user has on the override.
-get_overrides_response_override_permissions
- = element permissions
-     {
-       get_overrides_response_override_permissions_permission*
-     }
-
-get_overrides_response_override_permissions_permission
- = element permission
-     {
-       get_overrides_response_override_permissions_permission_name
-     }
-
-# The name of the permission.
-get_overrides_response_override_permissions_permission_name
- = element name
-     {
-       name
      }
 
 # Info on tags attached to the override.
@@ -11361,8 +11606,8 @@ get_port_lists_response_port_list
        & get_port_lists_response_port_list_permissions
        & get_port_lists_response_port_list_user_tags
        & get_port_lists_response_port_list_port_count
-       & ( get_port_lists_response_port_list_port_ranges
-           & get_port_lists_response_port_list_targets )?
+       & get_port_lists_response_port_list_port_ranges?
+       & get_port_lists_response_port_list_targets?
      }
 
 # Owner of the port list.
@@ -11704,10 +11949,11 @@ get_preferences_response
 get_preferences_response_preference
  = element preference
      {
-       get_preferences_response_preference_nvt?
+       get_preferences_response_preference_nvt
        & get_preferences_response_preference_name
-       & get_preferences_response_preference_type?
+       & get_preferences_response_preference_type
        & get_preferences_response_preference_value
+       & get_preferences_response_preference_alt*
        & get_preferences_response_preference_default
      }
 
@@ -11743,6 +11989,13 @@ get_preferences_response_preference_type
 # The value of the preference.
 get_preferences_response_preference_value
  = element value
+     {
+       text
+     }
+
+# An alternate value of the preference.
+get_preferences_response_preference_alt
+ = element alt
      {
        text
      }
@@ -11933,11 +12186,11 @@ get_report_formats_response_report_format
        & get_report_formats_response_report_format_description
        & get_report_formats_response_report_format_global
        & get_report_formats_response_report_format_predefined
-       & get_report_formats_response_report_format_alerts
-       & ( ( get_report_formats_response_report_format_file*
-           & get_report_formats_response_report_format_signature )
-           | ( get_report_formats_response_report_format_trust
-           & get_report_formats_response_report_format_active ) )
+       & get_report_formats_response_report_format_alerts?
+       & ( get_report_formats_response_report_format_file*
+           & get_report_formats_response_report_format_signature )?
+       & get_report_formats_response_report_format_trust
+       & get_report_formats_response_report_format_active
        & get_report_formats_response_report_format_param*
      }
 
@@ -13373,7 +13626,7 @@ get_schedules_response_schedule
        & get_schedules_response_schedule_simple_period
        & get_schedules_response_schedule_duration
        & get_schedules_response_schedule_simple_duration
-       & ( get_schedules_response_schedule_tasks )?
+       & get_schedules_response_schedule_tasks?
      }
 
 # Owner of the schedule.
@@ -14129,7 +14382,7 @@ get_system_reports_response_system_report_report
  = element report
      {
        text # RNC limitation: base64
-       & attribute format { "png" }
+       & attribute format { xsd:token { pattern = "png|txt" } }
        & attribute duration { integer }
      }
 
@@ -14153,9 +14406,10 @@ get_tags_response_tag
      {
        # uuid of the tag (omitted when using names_only).
        attribute id { uuid }?
-       & get_tags_response_tag_owner
        & get_tags_response_tag_name
-       & ( get_tags_response_tag_comment
+       & ( get_tags_response_tag_permissions
+           & get_tags_response_tag_owner
+           & get_tags_response_tag_comment
            & get_tags_response_tag_creation_time
            & get_tags_response_tag_modification_time
            & get_tags_response_tag_writable
@@ -14164,6 +14418,26 @@ get_tags_response_tag
            & get_tags_response_tag_value
            & get_tags_response_tag_active
            & get_tags_response_tag_orphan )?
+     }
+
+# Permissions that the current user has on the tag.
+get_tags_response_tag_permissions
+ = element permissions
+     {
+       get_tags_response_tag_permissions_permission*
+     }
+
+get_tags_response_tag_permissions_permission
+ = element permission
+     {
+       get_tags_response_tag_permissions_permission_name
+     }
+
+# The name of the permission.
+get_tags_response_tag_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 # Owner of the tag.
@@ -14414,6 +14688,7 @@ get_targets_response_target
        & get_targets_response_target_permissions
        & get_targets_response_target_user_tags
        & get_targets_response_target_hosts
+       & get_targets_response_target_exclude_hosts
        & get_targets_response_target_max_hosts
        & get_targets_response_target_ssh_lsc_credential
        & get_targets_response_target_smb_lsc_credential
@@ -14472,6 +14747,13 @@ get_targets_response_target_modification_time
 # A list of hosts.
 get_targets_response_target_hosts
  = element hosts
+     {
+       text
+     }
+
+# A list of hosts to exclude.
+get_targets_response_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }
@@ -14859,6 +15141,7 @@ get_tasks_response_task
        & get_tasks_response_task_alterable
        & get_tasks_response_task_config
        & get_tasks_response_task_target
+       & get_tasks_response_task_hosts_ordering
        & get_tasks_response_task_scanner
        & get_tasks_response_task_alert
        & get_tasks_response_task_observers
@@ -15079,12 +15362,20 @@ get_tasks_response_task_target_trash
        boolean
      }
 
+# The order hosts are scanned in.
+get_tasks_response_task_hosts_ordering
+ = element hosts_ordering
+     {
+       text
+     }
+
 # The scanner used to scan the target.
 get_tasks_response_task_scanner
  = element scanner
      {
        attribute id { uuid }
        & get_tasks_response_task_scanner_name
+       & get_tasks_response_task_scanner_type
      }
 
 # The name of the scanner.
@@ -15260,6 +15551,7 @@ get_tasks_response_task_first_report_report
      {
        attribute id { uuid }
        & get_tasks_response_task_first_report_report_timestamp
+       & get_tasks_response_task_first_report_report_scan_end
        & get_tasks_response_task_first_report_report_result_count
        & get_tasks_response_task_first_report_report_severity
      }
@@ -15270,11 +15562,18 @@ get_tasks_response_task_first_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_first_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 # Result counts for this report.
 get_tasks_response_task_first_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_first_report_report_result_count_debug
+       & get_tasks_response_task_first_report_report_result_count_false_positive
        & get_tasks_response_task_first_report_report_result_count_log
        & get_tasks_response_task_first_report_report_result_count_info
        & get_tasks_response_task_first_report_report_result_count_warning
@@ -15283,6 +15582,12 @@ get_tasks_response_task_first_report_report_result_count
 
 get_tasks_response_task_first_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -15329,6 +15634,7 @@ get_tasks_response_task_last_report_report
      {
        attribute id { uuid }
        & get_tasks_response_task_last_report_report_timestamp
+       & get_tasks_response_task_last_report_report_scan_end
        & get_tasks_response_task_last_report_report_result_count
        & get_tasks_response_task_last_report_report_severity
      }
@@ -15339,11 +15645,18 @@ get_tasks_response_task_last_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_last_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 # Result counts for this report.
 get_tasks_response_task_last_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_last_report_report_result_count_debug
+       & get_tasks_response_task_last_report_report_result_count_false_positive
        & get_tasks_response_task_last_report_report_result_count_log
        & get_tasks_response_task_last_report_report_result_count_info
        & get_tasks_response_task_last_report_report_result_count_warning
@@ -15352,6 +15665,12 @@ get_tasks_response_task_last_report_report_result_count
 
 get_tasks_response_task_last_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -15398,6 +15717,7 @@ get_tasks_response_task_second_last_report_report
      {
        attribute id { uuid }
        & get_tasks_response_task_second_last_report_report_timestamp
+       & get_tasks_response_task_second_last_report_report_scan_end
        & get_tasks_response_task_second_last_report_report_result_count
        & get_tasks_response_task_second_last_report_report_severity
      }
@@ -15408,11 +15728,18 @@ get_tasks_response_task_second_last_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_second_last_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 # Result counts for this report.
 get_tasks_response_task_second_last_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_second_last_report_report_result_count_debug
+       & get_tasks_response_task_second_last_report_report_result_count_false_positive
        & get_tasks_response_task_second_last_report_report_result_count_log
        & get_tasks_response_task_second_last_report_report_result_count_info
        & get_tasks_response_task_second_last_report_report_result_count_warning
@@ -15421,6 +15748,12 @@ get_tasks_response_task_second_last_report_report_result_count
 
 get_tasks_response_task_second_last_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -15467,6 +15800,7 @@ get_tasks_response_task_reports_report
      {
        attribute id { uuid }
        & get_tasks_response_task_reports_report_timestamp
+       & get_tasks_response_task_reports_report_scan_end
        & get_tasks_response_task_reports_report_scan_run_status
        & get_tasks_response_task_reports_report_result_count
        & get_tasks_response_task_reports_report_severity
@@ -15474,6 +15808,12 @@ get_tasks_response_task_reports_report
 
 get_tasks_response_task_reports_report_timestamp
  = element timestamp
+     {
+       iso_time
+     }
+
+get_tasks_response_task_reports_report_scan_end
+ = element scan_end
      {
        iso_time
      }
@@ -15490,6 +15830,7 @@ get_tasks_response_task_reports_report_result_count
  = element result_count
      {
        get_tasks_response_task_reports_report_result_count_debug
+       & get_tasks_response_task_reports_report_result_count_false_positive
        & get_tasks_response_task_reports_report_result_count_log
        & get_tasks_response_task_reports_report_result_count_info
        & get_tasks_response_task_reports_report_result_count_warning
@@ -15498,6 +15839,12 @@ get_tasks_response_task_reports_report_result_count
 
 get_tasks_response_task_reports_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -15707,6 +16054,7 @@ get_users_response_user
        & get_users_response_user_role*
        & get_users_response_user_groups
        & get_users_response_user_hosts
+       & get_users_response_user_ifaces
        & get_users_response_user_permissions
        & get_users_response_user_user_tags
        & get_users_response_user_sources
@@ -15807,6 +16155,15 @@ get_users_response_user_groups_group_name
 # Host access rule for the user.
 get_users_response_user_hosts
  = element hosts
+     {
+       text
+       & # 0 forbidden, 1 allowed, 2 all allowed, 3 custom.
+       attribute allow { xsd:token { pattern = "0|1|2|3" } }
+     }
+
+# Iface access rule for the user.
+get_users_response_user_ifaces
+ = element ifaces
      {
        text
        & # 0 forbidden, 1 allowed, 2 all allowed, 3 custom.

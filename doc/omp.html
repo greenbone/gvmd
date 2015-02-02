@@ -8395,6 +8395,11 @@ create_tag_active
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>exclude_hosts</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A list of hosts to exclude.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SSH login credentials for target.</div>
 <ul style="list-style: none">
@@ -8481,6 +8486,7 @@ create_tag_active
        &amp; create_target_comment?
        &amp; create_target_copy?
        &amp; create_target_hosts
+       &amp; create_target_exclude_hosts?
        &amp; create_target_ssh_lsc_credential?
        &amp; create_target_smb_lsc_credential?
        &amp; create_target_esxi_lsc_credential?
@@ -8518,6 +8524,12 @@ create_target_copy
 
 create_target_hosts
  = element hosts
+     {
+       text
+     }
+
+create_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }
@@ -8648,6 +8660,11 @@ create_target_port_list
           </li></ul>
 </li>
 <li>
+              &lt;<b>hosts_ordering</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The order hosts are scanned in.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scanner</b>&gt;
               <div style="margin-left: 15px; display: inline;">The scanner to use for scanning the target.</div>
 <ul style="list-style: none"><li>
@@ -8731,6 +8748,7 @@ create_target_port_list
        &amp; create_task_alterable?
        &amp; create_task_config
        &amp; create_task_target
+       &amp; create_task_hosts_ordering?
        &amp; create_task_scanner
        &amp; create_task_alert*
        &amp; create_task_schedule?
@@ -8773,6 +8791,12 @@ create_task_target
  = element target
      {
        attribute id { uuid }
+     }
+
+create_task_hosts_ordering
+ = element hosts_ordering
+     {
+       text
      }
 
 create_task_scanner
@@ -11730,16 +11754,14 @@ get_agents_response_agent_count_page
           Whether to get config families, preferences, nvt selectors and tasks.
           </li>
 <li>
-          @<b>export</b>
-          (<a href="#type_boolean">boolean</a>)
-          </li>
-<li>
           @<b>families</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether to include the families if no details are requested.
           </li>
 <li>
           @<b>preferences</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether to include the preferences if no details are requested.
           </li>
 <li>
           @<b>tasks</b>
@@ -11811,6 +11833,11 @@ get_agents_response_agent_count_page
               <div style="margin-left: 15px; display: inline;">Whether new NVTs are automatically added to the config.</div>
 <ul style="list-style: none"></ul>
 </li></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The type the config..</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>max_nvt_count</b>&gt;
@@ -11964,6 +11991,46 @@ get_agents_response_agent_count_page
               <div style="margin-left: 15px; display: inline;">The value of the preference.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>default</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The default value of the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>alt</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An alternate value for the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>nvt_selectors</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">All NVT selectors of the config.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>nvt_selector</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An NVT selector.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the selector.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>include</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the selector is an include selector.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Selector type: 0 = all, 1 = family, 2 = NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>family_or_nvt</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the family or OID of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -12066,7 +12133,6 @@ get_agents_response_agent_count_page
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
-       &amp; attribute export { boolean }?
        &amp; attribute families { boolean }?
        &amp; attribute preferences { boolean }?
        &amp; attribute tasks { boolean }?
@@ -12095,6 +12161,7 @@ get_configs_response_config
        &amp; get_configs_response_config_modification_time
        &amp; get_configs_response_config_family_count
        &amp; get_configs_response_config_nvt_count
+       &amp; get_configs_response_config_type
        &amp; get_configs_response_config_max_nvt_count
        &amp; get_configs_response_config_known_nvt_count
        &amp; get_configs_response_config_in_use
@@ -12104,6 +12171,7 @@ get_configs_response_config
        &amp; get_configs_response_config_tasks
        &amp; get_configs_response_config_families?
        &amp; get_configs_response_config_preferences?
+       &amp; get_configs_response_config_nvt_selectors?
      }
 
 get_configs_response_config_owner
@@ -12166,6 +12234,12 @@ get_configs_response_config_nvt_count_growing
  = element growing
      {
        boolean
+     }
+
+get_configs_response_config_type
+ = element type
+     {
+       text
      }
 
 get_configs_response_config_max_nvt_count
@@ -12290,6 +12364,12 @@ get_configs_response_config_families_family_name
        name
      }
 
+get_configs_response_config_families_family_type
+ = element type
+     {
+       integer
+     }
+
 get_configs_response_config_families_family_nvt_count
  = element nvt_count
      {
@@ -12321,6 +12401,8 @@ get_configs_response_config_preferences_preference
        &amp; get_configs_response_config_preferences_preference_name
        &amp; get_configs_response_config_preferences_preference_type
        &amp; get_configs_response_config_preferences_preference_value
+       &amp; get_configs_response_config_preferences_preference_default
+       &amp; get_configs_response_config_preferences_preference_alt*
      }
 
 get_configs_response_config_preferences_preference_nvt
@@ -12350,6 +12432,57 @@ get_configs_response_config_preferences_preference_type
 
 get_configs_response_config_preferences_preference_value
  = element value
+     {
+       text
+     }
+
+get_configs_response_config_preferences_preference_default
+ = element default
+     {
+       text
+     }
+
+get_configs_response_config_preferences_preference_alt
+ = element alt
+     {
+       text
+     }
+
+get_configs_response_config_nvt_selectors
+ = element nvt_selectors
+     {
+       get_configs_response_config_nvt_selectors_nvt_selector*
+     }
+
+get_configs_response_config_nvt_selectors_nvt_selector
+ = element nvt_selector
+     {
+       get_configs_response_config_nvt_selectors_nvt_selector_name
+       &amp; get_configs_response_config_nvt_selectors_nvt_selector_include
+       &amp; get_configs_response_config_nvt_selectors_nvt_selector_type
+       &amp; get_configs_response_config_nvt_selectors_nvt_selector_family_or_nvt
+     }
+
+get_configs_response_config_nvt_selectors_nvt_selector_name
+ = element name
+     {
+       text
+     }
+
+get_configs_response_config_nvt_selectors_nvt_selector_include
+ = element include
+     {
+       boolean
+     }
+
+get_configs_response_config_nvt_selectors_nvt_selector_type
+ = element type
+     {
+       integer
+     }
+
+get_configs_response_config_nvt_selectors_nvt_selector_family_or_nvt
+ = element family_or_nvt
      {
        text
      }
@@ -13253,6 +13386,90 @@ get_aggregates_response_filters_keywords_keyword_value
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>filters</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of filter if any, else 0.
+          </li>
+<li>
+              &lt;<b>term</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter term.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>name</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Filter name, if applicable.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>keywords</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Filter broken down into keywords.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>keyword</b>&gt;
+              *<ul style="list-style: none">
+<li>
+              &lt;<b>column</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Column prefix.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>relation</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Relation operator.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The filter text.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>sort</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>field</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>order</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>alerts</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>start</b>
+          (<a href="#type_integer">integer</a>)
+          First alert.
+          </li>
+<li>
+          @<b>max</b>
+          (<a href="#type_integer">integer</a>)
+          Maximum number of alerts.
+          </li>
+</ul>
+</li>
+<li>
+              &lt;<b>alert_count</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>filtered</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of alerts after filtering.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>page</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of alerts on current page.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -13274,6 +13491,10 @@ get_aggregates_response_filters_keywords_keyword_value
        attribute status { status }
        &amp; attribute status_text { text }
        &amp; get_alerts_response_alert*
+       &amp; get_alerts_response_filters
+       &amp; get_alerts_response_sort
+       &amp; get_alerts_response_alerts
+       &amp; get_alerts_response_alert_count
      }
 
 get_alerts_response_alert
@@ -13479,6 +13700,106 @@ get_alerts_response_alert_filter_trash
  = element trash
      {
        boolean
+     }
+
+get_alerts_response_filters
+ = element filters
+     {
+       attribute id { uuid }
+       &amp; get_alerts_response_filters_term
+       &amp; get_alerts_response_filters_name?
+       &amp; get_alerts_response_filters_keywords
+     }
+
+get_alerts_response_filters_term
+ = element term
+     {
+       text
+     }
+
+get_alerts_response_filters_name
+ = element name
+     {
+       text
+     }
+
+get_alerts_response_filters_keywords
+ = element keywords
+     {
+       get_alerts_response_filters_keywords_keyword*
+     }
+
+get_alerts_response_filters_keywords_keyword
+ = element keyword
+     {
+       get_alerts_response_filters_keywords_keyword_column
+       &amp; get_alerts_response_filters_keywords_keyword_relation
+       &amp; get_alerts_response_filters_keywords_keyword_value
+     }
+
+get_alerts_response_filters_keywords_keyword_column
+ = element column
+     {
+       text
+     }
+
+get_alerts_response_filters_keywords_keyword_relation
+ = element relation
+     {
+       
+        ERROR
+      
+     }
+
+get_alerts_response_filters_keywords_keyword_value
+ = element value
+     {
+       text
+     }
+
+get_alerts_response_sort
+ = element sort
+     {
+       text
+       &amp; get_alerts_response_sort_field
+     }
+
+get_alerts_response_sort_field
+ = element field
+     {
+       get_alerts_response_sort_field_order
+     }
+
+get_alerts_response_sort_field_order
+ = element order
+     {
+       xsd:token { pattern = "ascending|descending" }
+     }
+
+get_alerts_response_alerts
+ = element alerts
+     {
+       attribute start { integer }
+       &amp; attribute max { integer }
+     }
+
+get_alerts_response_alert_count
+ = element alert_count
+     {
+       get_alerts_response_alert_count_filtered
+       &amp; get_alerts_response_alert_count_page
+     }
+
+get_alerts_response_alert_count_filtered
+ = element filtered
+     {
+       integer
+     }
+
+get_alerts_response_alert_count_page
+ = element page
+     {
+       integer
      }
 </pre></div>
 </div>
@@ -14857,8 +15178,10 @@ get_groups_response_group_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
               &lt;<b>cert_bund_adv</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An CERT-Bund advisory info element.</div>
+              <div style="margin-left: 15px; display: inline;">An CERT-Bund advisory info element.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>title</b>&gt;
@@ -14889,7 +15212,7 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>cpe</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A CPE info element.</div>
+              <div style="margin-left: 15px; display: inline;">A CPE info element.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>nvd_id</b>&gt;
@@ -14917,16 +15240,11 @@ get_groups_response_group_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>deprecated_by</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">NVD id of the deprecating CPE.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>cves</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">CVEs referring to this CPE. Only when details were requested.</div>
 <ul style="list-style: none"><li>
               &lt;<b>cve</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVE referring to this CPE.</div>
+              *<div style="margin-left: 15px; display: inline;">CVE referring to this CPE.</div>
 <ul style="list-style: none"></ul>
 </li></ul>
 </li>
@@ -14939,41 +15257,41 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>cve</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A CVE info element.</div>
+              <div style="margin-left: 15px; display: inline;">A CVE info element.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>cvss</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Base Score.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Base Score.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>vector</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Access Vector metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Access Vector metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>complexity</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Attack Complexity metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Attack Complexity metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>authentication</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Authentication metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Authentication metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>confidentiality_impact</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Confidentiality impact metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Confidentiality impact metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>integrity_impact</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Integrity impact metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Integrity impact metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>availability_impact</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVSS Availability impact metric.</div>
+              <div style="margin-left: 15px; display: inline;">CVSS Availability impact metric.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -14991,7 +15309,7 @@ get_groups_response_group_count_page
               ?<div style="margin-left: 15px; display: inline;">NVTs addressing this CVE. Only when details were requested.</div>
 <ul style="list-style: none"><li>
               &lt;<b>nvt</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">NVT referring to this CPE.</div>
+              *<div style="margin-left: 15px; display: inline;">NVT referring to this CPE.</div>
 <ul style="list-style: none">
 <li>
           @<b>oid</b>
@@ -15032,7 +15350,7 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>warning</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A warning message, e.g. when the database is not.</div>
+              ?<div style="margin-left: 15px; display: inline;">A warning message, e.g. when the database is unavailable.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -15046,7 +15364,7 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>dfn_cert_adv</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An DFN-CERT advisory info element.</div>
+              <div style="margin-left: 15px; display: inline;">An DFN-CERT advisory info element.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>title</b>&gt;
@@ -15077,7 +15395,7 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>ovaldef</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">An OVAL definition info element.</div>
+              <div style="margin-left: 15px; display: inline;">An OVAL definition info element.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>version</b>&gt;
@@ -15133,12 +15451,12 @@ get_groups_response_group_count_page
 </li>
 <li>
               &lt;<b>nvt</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A NVT info element.</div>
+              <div style="margin-left: 15px; display: inline;">A NVT info element.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>allinfo</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.</div>
+              <div style="margin-left: 15px; display: inline;">A SecInfo entry. Could be CPE, CVE, NVT, OVALDEF or DFN-CERT Advisory.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>type</b>&gt;
@@ -15154,6 +15472,8 @@ get_groups_response_group_count_page
               &lt;<b>severity</b>&gt;
               <div style="margin-left: 15px; display: inline;">Severity rating (CVSS score) of the entry.</div>
 <ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -15275,13 +15595,13 @@ get_info_response_info
        &amp; get_info_response_info_permissions
        &amp; get_info_response_info_user_tags
        &amp; get_info_response_info_update_time
-       &amp; get_info_response_info_cert_bund_adv?
-       &amp; get_info_response_info_cpe?
-       &amp; get_info_response_info_cve?
-       &amp; get_info_response_info_dfn_cert_adv?
-       &amp; get_info_response_info_ovaldef?
-       &amp; get_info_response_info_nvt?
-       &amp; get_info_response_info_allinfo?
+       &amp; ( get_info_response_info_cert_bund_adv
+           | get_info_response_info_cpe
+           | get_info_response_info_cve
+           | get_info_response_info_dfn_cert_adv
+           | get_info_response_info_ovaldef
+           | get_info_response_info_nvt
+           | get_info_response_info_allinfo )
      }
 
 get_info_response_info_owner
@@ -15432,7 +15752,6 @@ get_info_response_info_cpe
        &amp; get_info_response_info_cpe_max_cvss
        &amp; get_info_response_info_cpe_cve_refs
        &amp; get_info_response_info_cpe_status
-       &amp; get_info_response_info_cpe_deprecated_by?
        &amp; get_info_response_info_cpe_cves?
        &amp; get_info_response_info_cpe_raw_data?
      }
@@ -15467,16 +15786,10 @@ get_info_response_info_cpe_status
        text
      }
 
-get_info_response_info_cpe_deprecated_by
- = element deprecated_by
-     {
-       integer
-     }
-
 get_info_response_info_cpe_cves
  = element cves
      {
-       get_info_response_info_cpe_cves_cve?
+       get_info_response_info_cpe_cves_cve*
      }
 
 get_info_response_info_cpe_cves_cve
@@ -15500,13 +15813,13 @@ get_info_response_info_nvt
 get_info_response_info_cve
  = element cve
      {
-       get_info_response_info_cve_cvss?
-       &amp; get_info_response_info_cve_vector?
-       &amp; get_info_response_info_cve_complexity?
-       &amp; get_info_response_info_cve_authentication?
-       &amp; get_info_response_info_cve_confidentiality_impact?
-       &amp; get_info_response_info_cve_integrity_impact?
-       &amp; get_info_response_info_cve_availability_impact?
+       get_info_response_info_cve_cvss
+       &amp; get_info_response_info_cve_vector
+       &amp; get_info_response_info_cve_complexity
+       &amp; get_info_response_info_cve_authentication
+       &amp; get_info_response_info_cve_confidentiality_impact
+       &amp; get_info_response_info_cve_integrity_impact
+       &amp; get_info_response_info_cve_availability_impact
        &amp; get_info_response_info_cve_description
        &amp; get_info_response_info_cve_products
        &amp; get_info_response_info_cve_nvts?
@@ -15571,7 +15884,7 @@ get_info_response_info_cve_products
 get_info_response_info_cve_nvts
  = element nvts
      {
-       get_info_response_info_cve_nvts_nvt?
+       get_info_response_info_cve_nvts_nvt*
      }
 
 get_info_response_info_cve_nvts_nvt
@@ -16197,15 +16510,19 @@ get_info_response_details
 </li></ul>
 </li>
 <li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
               &lt;<b>public_key</b>&gt;
-              ?<ul style="list-style: none"></ul>
+              <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>package</b>&gt;
-              ?<ul style="list-style: none"><li>
+              <ul style="list-style: none"><li>
           @<b>format</b>
           ("rpm", "deb" or "exe")
           </li></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -16337,8 +16654,8 @@ get_lsc_credentials_response_lsc_credential
        &amp; get_lsc_credentials_response_lsc_credential_user_tags
        &amp; get_lsc_credentials_response_lsc_credential_type
        &amp; get_lsc_credentials_response_lsc_credential_targets
-       &amp; get_lsc_credentials_response_lsc_credential_public_key?
-       &amp; get_lsc_credentials_response_lsc_credential_package?
+       &amp; ( get_lsc_credentials_response_lsc_credential_public_key
+           | get_lsc_credentials_response_lsc_credential_package )
      }
 
 get_lsc_credentials_response_lsc_credential_owner
@@ -16748,6 +17065,31 @@ get_lsc_credentials_response_lsc_credential_count_page
               &lt;<b>note</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>nvt</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -16766,24 +17108,36 @@ get_lsc_credentials_response_lsc_credential_count_page
 <ul style="list-style: none"><li>
           @<b>excerpt</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether the content is an excerpt of the full text.
           </li></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the note was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the note was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the note is active.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
 <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
 </li>
 <li>
               &lt;<b>user_tags</b>&gt;
@@ -16825,25 +17179,6 @@ get_lsc_credentials_response_lsc_credential_count_page
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the note was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the note was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
 <ul style="list-style: none"></ul>
@@ -16870,11 +17205,6 @@ get_lsc_credentials_response_lsc_credential_count_page
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           </li></ul>
-</li>
-<li>
-              &lt;<b>active</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the note is active.</div>
-<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>end_time</b>&gt;
@@ -17162,48 +17492,25 @@ get_notes_response_note_count_page
 get_notes_response_note
  = element note
      {
-       get_notes_response_note_nvt
-       &amp; get_notes_response_note_text
-       &amp; get_notes_response_note_orphan
+       attribute id { uuid }
        &amp; get_notes_response_note_permissions
+       &amp; get_notes_response_note_owner
+       &amp; get_notes_response_note_nvt
+       &amp; get_notes_response_note_text
+       &amp; get_notes_response_note_creation_time
+       &amp; get_notes_response_note_modification_time
+       &amp; get_notes_response_note_writable
+       &amp; get_notes_response_note_in_use
+       &amp; get_notes_response_note_active
+       &amp; get_notes_response_note_orphan
        &amp; get_notes_response_note_user_tags
-       &amp; ( get_notes_response_note_owner
-           &amp; get_notes_response_note_creation_time
-           &amp; get_notes_response_note_modification_time
-           &amp; get_notes_response_note_hosts
+       &amp; ( get_notes_response_note_hosts
            &amp; get_notes_response_note_port
            &amp; get_notes_response_note_severity
            &amp; get_notes_response_note_threat
            &amp; get_notes_response_note_task
-           &amp; get_notes_response_note_active
            &amp; get_notes_response_note_end_time?
            &amp; get_notes_response_note_result? )?
-     }
-
-get_notes_response_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_notes_response_note_nvt_name
-     }
-
-get_notes_response_note_nvt_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_notes_response_note_orphan
- = element orphan
-     {
-       boolean
      }
 
 get_notes_response_note_permissions
@@ -17222,6 +17529,74 @@ get_notes_response_note_permissions_permission_name
  = element name
      {
        name
+     }
+
+get_notes_response_note_owner
+ = element owner
+     {
+       get_notes_response_note_owner_name
+     }
+
+get_notes_response_note_owner_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; get_notes_response_note_nvt_name
+     }
+
+get_notes_response_note_nvt_name
+ = element name
+     {
+       name
+     }
+
+get_notes_response_note_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+get_notes_response_note_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+get_notes_response_note_writable
+ = element writable
+     {
+       boolean
+     }
+
+get_notes_response_note_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+get_notes_response_note_active
+ = element active
+     {
+       boolean
+     }
+
+get_notes_response_note_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
+     }
+
+get_notes_response_note_orphan
+ = element orphan
+     {
+       boolean
      }
 
 get_notes_response_note_user_tags
@@ -17262,30 +17637,6 @@ get_notes_response_note_user_tags_tag_comment
  = element comment
      {
        text
-     }
-
-get_notes_response_note_owner
- = element owner
-     {
-       get_notes_response_note_owner_name
-     }
-
-get_notes_response_note_owner_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_notes_response_note_modification_time
- = element modification_time
-     {
-       iso_time
      }
 
 get_notes_response_note_hosts
@@ -18381,6 +18732,30 @@ get_nvt_feed_version_response_version
               &lt;<b>override</b>&gt;
               *<ul style="list-style: none">
 <li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the override.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>nvt</b>&gt;
               <ul style="list-style: none">
 <li>
@@ -18392,15 +18767,6 @@ get_nvt_feed_version_response_version
               <ul style="list-style: none"></ul>
 </li>
 </ul>
-</li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the override.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
 </li>
 <li>
               &lt;<b>creation_time</b>&gt;
@@ -18421,11 +18787,17 @@ get_nvt_feed_version_response_version
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the override is currently active.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>text</b>&gt;
               <div style="margin-left: 15px; display: inline;">The text of the override.</div>
 <ul style="list-style: none"><li>
           @<b>excerpt</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether the contents is an excerpt of the full text.
           </li></ul>
 </li>
 <li>
@@ -18455,7 +18827,7 @@ get_nvt_feed_version_response_version
 </li>
 <li>
               &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the override.</div>
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
 <ul style="list-style: none"><li>
               &lt;<b>permission</b>&gt;
               *<ul style="list-style: none"><li>
@@ -18521,11 +18893,6 @@ get_nvt_feed_version_response_version
           @<b>id</b>
           (<a href="#type_uuid">uuid</a>)
           </li></ul>
-</li>
-<li>
-              &lt;<b>active</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the override is active.</div>
-<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>end_time</b>&gt;
@@ -18813,12 +19180,15 @@ get_overrides_response_override_count_page
 get_overrides_response_override
  = element override
      {
-       get_overrides_response_override_nvt
+       attribute id { uuid }
+       &amp; get_overrides_response_override_permissions
        &amp; get_overrides_response_override_owner
+       &amp; get_overrides_response_override_nvt
        &amp; get_overrides_response_override_creation_time
        &amp; get_overrides_response_override_modification_time
        &amp; get_overrides_response_override_writable
        &amp; get_overrides_response_override_in_use
+       &amp; get_overrides_response_override_active
        &amp; get_overrides_response_override_text
        &amp; get_overrides_response_override_threat
        &amp; get_overrides_response_override_severity
@@ -18830,9 +19200,38 @@ get_overrides_response_override
        &amp; ( get_overrides_response_override_hosts
            &amp; get_overrides_response_override_port
            &amp; get_overrides_response_override_task
-           &amp; get_overrides_response_override_active
            &amp; get_overrides_response_override_end_time?
            &amp; get_overrides_response_override_result? )?
+     }
+
+get_overrides_response_override_permissions
+ = element permissions
+     {
+       get_overrides_response_override_permissions_permission*
+     }
+
+get_overrides_response_override_permissions_permission
+ = element permission
+     {
+       get_overrides_response_override_permissions_permission_name
+     }
+
+get_overrides_response_override_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+get_overrides_response_override_owner
+ = element owner
+     {
+       get_overrides_response_override_owner_name
+     }
+
+get_overrides_response_override_owner_name
+ = element name
+     {
+       name
      }
 
 get_overrides_response_override_nvt
@@ -18843,25 +19242,6 @@ get_overrides_response_override_nvt
      }
 
 get_overrides_response_override_nvt_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_overrides_response_override_owner
- = element owner
-     {
-       get_overrides_response_override_owner_name
-     }
-
-get_overrides_response_override_owner_name
  = element name
      {
        name
@@ -18889,6 +19269,19 @@ get_overrides_response_override_in_use
  = element in_use
      {
        boolean
+     }
+
+get_overrides_response_override_active
+ = element active
+     {
+       boolean
+     }
+
+get_overrides_response_override_text
+ = element text
+     {
+       text
+       &amp; attribute excerpt { boolean }
      }
 
 get_overrides_response_override_threat
@@ -18919,24 +19312,6 @@ get_overrides_response_override_orphan
  = element orphan
      {
        boolean
-     }
-
-get_overrides_response_override_permissions
- = element permissions
-     {
-       get_overrides_response_override_permissions_permission*
-     }
-
-get_overrides_response_override_permissions_permission
- = element permission
-     {
-       get_overrides_response_override_permissions_permission_name
-     }
-
-get_overrides_response_override_permissions_permission_name
- = element name
-     {
-       name
      }
 
 get_overrides_response_override_user_tags
@@ -19188,11 +19563,6 @@ get_overrides_response_override_result_description
           @<b>trash</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to get the trashcan permissions instead.
-          </li>
-<li>
-          @<b>resource_id</b>
-          (<a href="#type_uuid">uuid</a>)
-          ID of resource to restrict permission to.
           </li>
 </ul>
 </li>
@@ -19454,7 +19824,6 @@ get_overrides_response_override_result_description
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
-       &amp; attribute resource_id { uuid }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_permissions_response
@@ -19976,10 +20345,8 @@ get_permissions_response_permission_count_page
 </ul>
 </li>
 <li>
-<i>The group</i><b>?</b><ul style="list-style: none">
-<li>
               &lt;<b>port_ranges</b>&gt;
-              <ul style="list-style: none"><li>
+              ?<ul style="list-style: none"><li>
               &lt;<b>port_range</b>&gt;
               *<ul style="list-style: none">
 <li>
@@ -20011,7 +20378,7 @@ get_permissions_response_permission_count_page
 </li>
 <li>
               &lt;<b>targets</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The targets using the port list.</div>
+              ?<div style="margin-left: 15px; display: inline;">The targets using the port list.</div>
 <ul style="list-style: none"><li>
               &lt;<b>target</b>&gt;
               *<ul style="list-style: none">
@@ -20026,8 +20393,6 @@ get_permissions_response_permission_count_page
 </li>
 </ul>
 </li></ul>
-</li>
-</ul>
 </li>
 </ul>
 </li>
@@ -20157,8 +20522,8 @@ get_port_lists_response_port_list
        &amp; get_port_lists_response_port_list_permissions
        &amp; get_port_lists_response_port_list_user_tags
        &amp; get_port_lists_response_port_list_port_count
-       &amp; ( get_port_lists_response_port_list_port_ranges
-           &amp; get_port_lists_response_port_list_targets )?
+       &amp; get_port_lists_response_port_list_port_ranges?
+       &amp; get_port_lists_response_port_list_targets?
      }
 
 get_port_lists_response_port_list_owner
@@ -20545,7 +20910,7 @@ get_port_lists_response_port_list_count_page
               *<ul style="list-style: none">
 <li>
               &lt;<b>nvt</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">NVT to which preference applies.</div>
+              <div style="margin-left: 15px; display: inline;">NVT to which preference applies.</div>
 <ul style="list-style: none">
 <li>
           @<b>oid</b>
@@ -20565,12 +20930,17 @@ get_port_lists_response_port_list_count_page
 </li>
 <li>
               &lt;<b>type</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">The type of preference.</div>
+              <div style="margin-left: 15px; display: inline;">The type of preference.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>value</b>&gt;
               <div style="margin-left: 15px; display: inline;">The value of the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>alt</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An alternate value of the preference.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -20604,10 +20974,11 @@ get_port_lists_response_port_list_count_page
 get_preferences_response_preference
  = element preference
      {
-       get_preferences_response_preference_nvt?
+       get_preferences_response_preference_nvt
        &amp; get_preferences_response_preference_name
-       &amp; get_preferences_response_preference_type?
+       &amp; get_preferences_response_preference_type
        &amp; get_preferences_response_preference_value
+       &amp; get_preferences_response_preference_alt*
        &amp; get_preferences_response_preference_default
      }
 
@@ -20638,6 +21009,12 @@ get_preferences_response_preference_type
 
 get_preferences_response_preference_value
  = element value
+     {
+       text
+     }
+
+get_preferences_response_preference_alt
+ = element alt
      {
        text
      }
@@ -21464,7 +21841,7 @@ get_reports_response_report_count_page
 </li>
 <li>
               &lt;<b>alerts</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Alerts using the report format.</div>
+              ?<div style="margin-left: 15px; display: inline;">Alerts using the report format.</div>
 <ul style="list-style: none"><li>
               &lt;<b>alert</b>&gt;
               *<ul style="list-style: none">
@@ -21482,9 +21859,7 @@ get_reports_response_report_count_page
 </li></ul>
 </li>
 <li>
-<i>One of</i><b></b><ul style="list-style: none">
-<li>
-<i>The group</i><b></b><ul style="list-style: none">
+<i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>file</b>&gt;
               *<div style="margin-left: 15px; display: inline;">One of the files used to generate the report.</div>
@@ -21500,8 +21875,6 @@ get_reports_response_report_count_page
 </li>
 </ul>
 </li>
-<li>
-<i>The group</i><b></b><ul style="list-style: none">
 <li>
               &lt;<b>trust</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether signature verification succeeded.</div>
@@ -21521,10 +21894,6 @@ get_reports_response_report_count_page
               &lt;<b>active</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the report format is active.</div>
 <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
 </li>
 <li>
               &lt;<b>param</b>&gt;
@@ -21704,11 +22073,11 @@ get_report_formats_response_report_format
        &amp; get_report_formats_response_report_format_description
        &amp; get_report_formats_response_report_format_global
        &amp; get_report_formats_response_report_format_predefined
-       &amp; get_report_formats_response_report_format_alerts
-       &amp; ( ( get_report_formats_response_report_format_file*
-           &amp; get_report_formats_response_report_format_signature )
-           | ( get_report_formats_response_report_format_trust
-           &amp; get_report_formats_response_report_format_active ) )
+       &amp; get_report_formats_response_report_format_alerts?
+       &amp; ( get_report_formats_response_report_format_file*
+           &amp; get_report_formats_response_report_format_signature )?
+       &amp; get_report_formats_response_report_format_trust
+       &amp; get_report_formats_response_report_format_active
        &amp; get_report_formats_response_report_format_param*
      }
 
@@ -22199,6 +22568,11 @@ get_report_formats_response_report_format_count_page
           Whether to override result threat levels.
           </li>
 <li>
+          @<b>autofp</b>
+          ("0", "1" or "2")
+          Whether to trust vendor security updates. 1 full match, 2 partial.
+          </li>
+<li>
           @<b>details</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include additional details of the results.
@@ -22530,6 +22904,7 @@ get_report_formats_response_report_format_count_page
        &amp; attribute overrides { boolean }?
        &amp; attribute override_details { boolean }?
        &amp; attribute apply_overrides { boolean }?
+       &amp; attribute autofp { xsd:token { pattern = "0|1|2" } }?
        &amp; attribute details { boolean }?
      }
 </pre></div>
@@ -24367,9 +24742,8 @@ get_scanners_response_scanner_count_page
 </li></ul>
 </li>
 <li>
-<i>The group</i><b>?</b><ul style="list-style: none"><li>
               &lt;<b>tasks</b>&gt;
-              <ul style="list-style: none"><li>
+              ?<ul style="list-style: none"><li>
               &lt;<b>task</b>&gt;
               *<ul style="list-style: none">
 <li>
@@ -24382,7 +24756,6 @@ get_scanners_response_scanner_count_page
 <ul style="list-style: none"></ul>
 </li>
 </ul>
-</li></ul>
 </li></ul>
 </li>
 </ul>
@@ -24520,7 +24893,7 @@ get_schedules_response_schedule
        &amp; get_schedules_response_schedule_simple_period
        &amp; get_schedules_response_schedule_duration
        &amp; get_schedules_response_schedule_simple_duration
-       &amp; ( get_schedules_response_schedule_tasks )?
+       &amp; get_schedules_response_schedule_tasks?
      }
 
 get_schedules_response_schedule_owner
@@ -25716,7 +26089,7 @@ get_slaves_response_slave_count_page
               ?<ul style="list-style: none">
 <li>
           @<b>format</b>
-          (<a href="#type_%22png%22">"png"</a>)
+          ("png" or "txt")
           </li>
 <li>
           @<b>duration</b>
@@ -25772,7 +26145,7 @@ get_system_reports_response_system_report_report
  = element report
      {
        text # RNC limitation: base64
-       &amp; attribute format { "png" }
+       &amp; attribute format { xsd:token { pattern = "png|txt" } }
        &amp; attribute duration { integer }
      }
 </pre></div>
@@ -25876,6 +26249,25 @@ get_system_reports_response_system_report_report
           uuid of the tag (omitted when using names_only).
           </li>
 <li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the tag.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>owner</b>&gt;
               <div style="margin-left: 15px; display: inline;">Owner of the tag.</div>
 <ul style="list-style: none"><li>
@@ -25884,13 +26276,6 @@ get_system_reports_response_system_report_report
 <ul style="list-style: none"></ul>
 </li></ul>
 </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-<i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>comment</b>&gt;
               <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
@@ -26076,9 +26461,10 @@ get_tags_response_tag
  = element tag
      {
        attribute id { uuid }?
-       &amp; get_tags_response_tag_owner
        &amp; get_tags_response_tag_name
-       &amp; ( get_tags_response_tag_comment
+       &amp; ( get_tags_response_tag_permissions
+           &amp; get_tags_response_tag_owner
+           &amp; get_tags_response_tag_comment
            &amp; get_tags_response_tag_creation_time
            &amp; get_tags_response_tag_modification_time
            &amp; get_tags_response_tag_writable
@@ -26087,6 +26473,24 @@ get_tags_response_tag
            &amp; get_tags_response_tag_value
            &amp; get_tags_response_tag_active
            &amp; get_tags_response_tag_orphan )?
+     }
+
+get_tags_response_tag_permissions
+ = element permissions
+     {
+       get_tags_response_tag_permissions_permission*
+     }
+
+get_tags_response_tag_permissions_permission
+ = element permission
+     {
+       get_tags_response_tag_permissions_permission_name
+     }
+
+get_tags_response_tag_permissions_permission_name
+ = element name
+     {
+       name
      }
 
 get_tags_response_tag_owner
@@ -26460,6 +26864,11 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>exclude_hosts</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A list of hosts to exclude.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>max_hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">The maximum number of hosts defined by the target.</div>
 <ul style="list-style: none"></ul>
@@ -26722,6 +27131,7 @@ get_targets_response_target
        &amp; get_targets_response_target_permissions
        &amp; get_targets_response_target_user_tags
        &amp; get_targets_response_target_hosts
+       &amp; get_targets_response_target_exclude_hosts
        &amp; get_targets_response_target_max_hosts
        &amp; get_targets_response_target_ssh_lsc_credential
        &amp; get_targets_response_target_smb_lsc_credential
@@ -26773,6 +27183,12 @@ get_targets_response_target_modification_time
 
 get_targets_response_target_hosts
  = element hosts
+     {
+       text
+     }
+
+get_targets_response_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }
@@ -27197,11 +27613,6 @@ get_targets_response_target_count_page
           (<a href="#type_boolean">boolean</a>)
           Whether to include full task details.
           </li>
-<li>
-          @<b>apply_overrides</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to override result threat levels.
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -27376,6 +27787,11 @@ get_targets_response_target_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>hosts_ordering</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The order hosts are scanned in.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scanner</b>&gt;
               <div style="margin-left: 15px; display: inline;">The scanner used to scan the target.</div>
 <ul style="list-style: none">
@@ -27386,6 +27802,11 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the scanner.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Type of the scanner.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -27529,11 +27950,19 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scan_end</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result_count</b>&gt;
               <div style="margin-left: 15px; display: inline;">Result counts for this report.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>debug</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>false_positive</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27576,11 +28005,19 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scan_end</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result_count</b>&gt;
               <div style="margin-left: 15px; display: inline;">Result counts for this report.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>debug</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>false_positive</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27623,11 +28060,19 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scan_end</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>result_count</b>&gt;
               <div style="margin-left: 15px; display: inline;">Result counts for this report.</div>
 <ul style="list-style: none">
 <li>
               &lt;<b>debug</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>false_positive</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27670,6 +28115,10 @@ get_targets_response_target_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>scan_end</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scan_run_status</b>&gt;
               <div style="margin-left: 15px; display: inline;">Run status of task scan.</div>
 <ul style="list-style: none"></ul>
@@ -27680,6 +28129,10 @@ get_targets_response_target_count_page
 <ul style="list-style: none">
 <li>
               &lt;<b>debug</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>false_positive</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27829,7 +28282,6 @@ get_targets_response_target_count_page
        &amp; attribute filt_id { uuid }?
        &amp; attribute trash { boolean }?
        &amp; attribute details { boolean }?
-       &amp; attribute apply_overrides { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_tasks_response
@@ -27869,6 +28321,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_alterable
        &amp; get_tasks_response_task_config
        &amp; get_tasks_response_task_target
+       &amp; get_tasks_response_task_hosts_ordering
        &amp; get_tasks_response_task_scanner
        &amp; get_tasks_response_task_alert
        &amp; get_tasks_response_task_observers
@@ -28062,11 +28515,18 @@ get_tasks_response_task_target_trash
        boolean
      }
 
+get_tasks_response_task_hosts_ordering
+ = element hosts_ordering
+     {
+       text
+     }
+
 get_tasks_response_task_scanner
  = element scanner
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_scanner_name
+       &amp; get_tasks_response_task_scanner_type
      }
 
 get_tasks_response_task_scanner_name
@@ -28224,6 +28684,7 @@ get_tasks_response_task_first_report_report
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_first_report_report_timestamp
+       &amp; get_tasks_response_task_first_report_report_scan_end
        &amp; get_tasks_response_task_first_report_report_result_count
        &amp; get_tasks_response_task_first_report_report_severity
      }
@@ -28234,10 +28695,17 @@ get_tasks_response_task_first_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_first_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 get_tasks_response_task_first_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_first_report_report_result_count_debug
+       &amp; get_tasks_response_task_first_report_report_result_count_false_positive
        &amp; get_tasks_response_task_first_report_report_result_count_log
        &amp; get_tasks_response_task_first_report_report_result_count_info
        &amp; get_tasks_response_task_first_report_report_result_count_warning
@@ -28246,6 +28714,12 @@ get_tasks_response_task_first_report_report_result_count
 
 get_tasks_response_task_first_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_first_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -28291,6 +28765,7 @@ get_tasks_response_task_last_report_report
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_last_report_report_timestamp
+       &amp; get_tasks_response_task_last_report_report_scan_end
        &amp; get_tasks_response_task_last_report_report_result_count
        &amp; get_tasks_response_task_last_report_report_severity
      }
@@ -28301,10 +28776,17 @@ get_tasks_response_task_last_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_last_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 get_tasks_response_task_last_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_last_report_report_result_count_debug
+       &amp; get_tasks_response_task_last_report_report_result_count_false_positive
        &amp; get_tasks_response_task_last_report_report_result_count_log
        &amp; get_tasks_response_task_last_report_report_result_count_info
        &amp; get_tasks_response_task_last_report_report_result_count_warning
@@ -28313,6 +28795,12 @@ get_tasks_response_task_last_report_report_result_count
 
 get_tasks_response_task_last_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_last_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -28358,6 +28846,7 @@ get_tasks_response_task_second_last_report_report
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_second_last_report_report_timestamp
+       &amp; get_tasks_response_task_second_last_report_report_scan_end
        &amp; get_tasks_response_task_second_last_report_report_result_count
        &amp; get_tasks_response_task_second_last_report_report_severity
      }
@@ -28368,10 +28857,17 @@ get_tasks_response_task_second_last_report_report_timestamp
        iso_time
      }
 
+get_tasks_response_task_second_last_report_report_scan_end
+ = element scan_end
+     {
+       iso_time
+     }
+
 get_tasks_response_task_second_last_report_report_result_count
  = element result_count
      {
        get_tasks_response_task_second_last_report_report_result_count_debug
+       &amp; get_tasks_response_task_second_last_report_report_result_count_false_positive
        &amp; get_tasks_response_task_second_last_report_report_result_count_log
        &amp; get_tasks_response_task_second_last_report_report_result_count_info
        &amp; get_tasks_response_task_second_last_report_report_result_count_warning
@@ -28380,6 +28876,12 @@ get_tasks_response_task_second_last_report_report_result_count
 
 get_tasks_response_task_second_last_report_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_second_last_report_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -28425,6 +28927,7 @@ get_tasks_response_task_reports_report
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_reports_report_timestamp
+       &amp; get_tasks_response_task_reports_report_scan_end
        &amp; get_tasks_response_task_reports_report_scan_run_status
        &amp; get_tasks_response_task_reports_report_result_count
        &amp; get_tasks_response_task_reports_report_severity
@@ -28432,6 +28935,12 @@ get_tasks_response_task_reports_report
 
 get_tasks_response_task_reports_report_timestamp
  = element timestamp
+     {
+       iso_time
+     }
+
+get_tasks_response_task_reports_report_scan_end
+ = element scan_end
      {
        iso_time
      }
@@ -28446,6 +28955,7 @@ get_tasks_response_task_reports_report_result_count
  = element result_count
      {
        get_tasks_response_task_reports_report_result_count_debug
+       &amp; get_tasks_response_task_reports_report_result_count_false_positive
        &amp; get_tasks_response_task_reports_report_result_count_log
        &amp; get_tasks_response_task_reports_report_result_count_info
        &amp; get_tasks_response_task_reports_report_result_count_warning
@@ -28454,6 +28964,12 @@ get_tasks_response_task_reports_report_result_count
 
 get_tasks_response_task_reports_report_result_count_debug
  = element debug
+     {
+       integer
+     }
+
+get_tasks_response_task_reports_report_result_count_false_positive
+ = element false_positive
      {
        integer
      }
@@ -28910,11 +29426,6 @@ get_tasks_response_task_count_page
           (<a href="#type_uuid">uuid</a>)
           ID of filter to use to filter query.
           </li>
-<li>
-          @<b>trash</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether to get the trashcan users instead.
-          </li>
 </ul>
 </li>
 <li style="margin-top: 15px;">
@@ -29010,6 +29521,15 @@ get_tasks_response_task_count_page
 <li>
               &lt;<b>hosts</b>&gt;
               <div style="margin-left: 15px; display: inline;">Host access rule for the user.</div>
+<ul style="list-style: none"><li>
+          @<b>allow</b>
+          ("0", "1", "2" or "3")
+          0 forbidden, 1 allowed, 2 all allowed, 3 custom.
+          </li></ul>
+</li>
+<li>
+              &lt;<b>ifaces</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Iface access rule for the user.</div>
 <ul style="list-style: none"><li>
           @<b>allow</b>
           ("0", "1", "2" or "3")
@@ -29168,7 +29688,6 @@ get_tasks_response_task_count_page
        attribute user_id { uuid }?
        &amp; attribute filter { uuid }?
        &amp; attribute filt_id { uuid }?
-       &amp; attribute trash { boolean }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_users_response
@@ -29197,6 +29716,7 @@ get_users_response_user
        &amp; get_users_response_user_role*
        &amp; get_users_response_user_groups
        &amp; get_users_response_user_hosts
+       &amp; get_users_response_user_ifaces
        &amp; get_users_response_user_permissions
        &amp; get_users_response_user_user_tags
        &amp; get_users_response_user_sources
@@ -29284,6 +29804,13 @@ get_users_response_user_groups_group_name
 
 get_users_response_user_hosts
  = element hosts
+     {
+       text
+       &amp; attribute allow { xsd:token { pattern = "0|1|2|3" } }
+     }
+
+get_users_response_user_ifaces
+ = element ifaces
      {
        text
        &amp; attribute allow { xsd:token { pattern = "0|1|2|3" } }
@@ -32537,6 +33064,16 @@ modify_slave_password
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>hosts_ordering</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">The order hosts are scanned in.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>exclude_hosts</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A list of hosts to exclude.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>ssh_lsc_credential</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">SSH credential to use on target.</div>
 <ul style="list-style: none"><li>
@@ -32607,6 +33144,8 @@ modify_slave_password
        &amp; modify_target_comment?
        &amp; modify_target_name?
        &amp; modify_target_hosts?
+       &amp; modify_target_hosts_ordering?
+       &amp; modify_target_exclude_hosts?
        &amp; modify_target_ssh_lsc_credential?
        &amp; modify_target_smb_lsc_credential?
        &amp; modify_target_esxi_lsc_credential?
@@ -32630,6 +33169,18 @@ modify_target_name
 
 modify_target_hosts
  = element hosts
+     {
+       text
+     }
+
+modify_target_hosts_ordering
+ = element hosts_ordering
+     {
+       text
+     }
+
+modify_target_exclude_hosts
+ = element exclude_hosts
      {
        text
      }

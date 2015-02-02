@@ -4213,6 +4213,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <e>hosts</e>
+      <o><e>exclude_hosts</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -4254,6 +4255,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>hosts</name>
       <summary>A textual list of hosts, which may be empty</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>exclude_hosts</name>
+      <summary>A list of hosts to exclude</summary>
       <pattern>
         text
       </pattern>
@@ -4383,6 +4391,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>alterable</e></o>
       <e>config</e>
       <e>target</e>
+      <o><e>hosts_ordering</e></o>
       <e>scanner</e>
       <any><e>alert</e></any>
       <o><e>schedule</e></o>
@@ -4435,6 +4444,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>hosts_ordering</name>
+      <summary>The order hosts are scanned in</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>scanner</name>
@@ -6610,15 +6624,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>boolean</type>
       </attrib>
       <attrib>
-        <name>export</name>
-        <type>boolean</type>
-      </attrib>
-      <attrib>
         <name>families</name>
+        <summary>Whether to include the families if no details are requested</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
         <name>preferences</name>
+        <summary>Whether to include the preferences if no details are requested</summary>
         <type>boolean</type>
       </attrib>
       <attrib>
@@ -6660,6 +6672,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>modification_time</e>
           <e>family_count</e>
           <e>nvt_count</e>
+          <e>type</e>
           <e>max_nvt_count</e>
           <e>known_nvt_count</e>
           <e>in_use</e>
@@ -6669,6 +6682,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>tasks</e>
           <o><e>families</e></o>
           <o><e>preferences</e></o>
+          <o><e>nvt_selectors</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -6732,6 +6746,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type the config.</summary>
+          <pattern>
+            text
+          </pattern>
         </ele>
         <ele>
           <name>max_nvt_count</name>
@@ -6866,6 +6887,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>name</t></pattern>
             </ele>
             <ele>
+              <name>type</name>
+              <summary>The type of the config. 0 = OpenVAS scanner, 1 = OSP Scanner</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
               <name>nvt_count</name>
               <summary>The number of NVTs selected in the family</summary>
               <pattern><t>integer</t></pattern>
@@ -6897,6 +6923,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>name</e>
               <e>type</e>
               <e>value</e>
+              <e>default</e>
+              <any><e>alt</e></any>
             </pattern>
             <ele>
               <name>nvt</name>
@@ -6928,6 +6956,57 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <ele>
               <name>value</name>
               <summary>The value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default</name>
+              <summary>The default value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>alt</name>
+              <summary>An alternate value for the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt_selectors</name>
+          <summary>All NVT selectors of the config</summary>
+          <pattern>
+            <any><e>nvt_selector</e></any>
+          </pattern>
+          <ele>
+            <name>nvt_selector</name>
+            <summary>An NVT selector</summary>
+            <pattern>
+              <e>name</e>
+              <e>include</e>
+              <e>type</e>
+              <e>family_or_nvt</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>include</name>
+              <summary>Whether the selector is an include selector</summary>
+              <pattern>
+                <t>boolean</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>Selector type: 0 = all, 1 = family, 2 = NVT</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>family_or_nvt</name>
+              <summary>Name of the family or OID of the NVT</summary>
               <pattern>text</pattern>
             </ele>
           </ele>
@@ -7478,6 +7557,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <required>1</required>
         </attrib>
         <any><e>alert</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>alerts</e>
+        <e>alert_count</e>
       </pattern>
       <ele>
         <name>alert</name>
@@ -7700,6 +7783,124 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the filter is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <t>
+                <alts>
+                  <alt>ascending</alt>
+                  <alt>descending</alt>
+                </alts>
+              </t>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>alerts</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First alert</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of alerts</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>alert_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of alerts after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of alerts on current page</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
       </ele>
     </response>
@@ -8568,13 +8769,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>update_time</e>
-          <o><e>cert_bund_adv</e></o>
-          <o><e>cpe</e></o>
-          <o><e>cve</e></o>
-          <o><e>dfn_cert_adv</e></o>
-          <o><e>ovaldef</e></o>
-          <o><e>nvt</e></o>
-          <o><e>allinfo</e></o>
+          <or>
+            <e>cert_bund_adv</e>
+            <e>cpe</e>
+            <e>cve</e>
+            <e>dfn_cert_adv</e>
+            <e>ovaldef</e>
+            <e>nvt</e>
+            <e>allinfo</e>
+          </or>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8729,7 +8932,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>max_cvss</e>
             <e>cve_refs</e>
             <e>status</e>
-            <o><e>deprecated_by</e></o>
             <o><e>cves</e></o>
             <o><e>raw_data</e></o>
           </pattern>
@@ -8770,17 +8972,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </pattern>
           </ele>
           <ele>
-            <name>deprecated_by</name>
-            <summary>NVD id of the deprecating CPE</summary>
-            <pattern>
-              <t>integer</t>
-            </pattern>
-          </ele>
-          <ele>
             <name>cves</name>
             <summary>CVEs referring to this CPE. Only when details were requested</summary>
             <pattern>
-              <o><e>cve</e></o>
+              <any><e>cve</e></any>
             </pattern>
             <ele>
               <name>cve</name>
@@ -8808,13 +9003,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>cve</name>
           <pattern>
-            <o><e>cvss</e></o>
-            <o><e>vector</e></o>
-            <o><e>complexity</e></o>
-            <o><e>authentication</e></o>
-            <o><e>confidentiality_impact</e></o>
-            <o><e>integrity_impact</e></o>
-            <o><e>availability_impact</e></o>
+            <e>cvss</e>
+            <e>vector</e>
+            <e>complexity</e>
+            <e>authentication</e>
+            <e>confidentiality_impact</e>
+            <e>integrity_impact</e>
+            <e>availability_impact</e>
             <e>description</e>
             <e>products</e>
             <o><e>nvts</e></o>
@@ -8889,7 +9084,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <name>nvts</name>
             <summary>NVTs addressing this CVE. Only when details were requested</summary>
             <pattern>
-              <o><e>nvt</e></o>
+              <any><e>nvt</e></any>
             </pattern>
             <ele>
               <name>nvt</name>
@@ -8946,7 +9141,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </ele>
             <ele>
               <name>warning</name>
-              <summary>A warning message, e.g. when the database is not</summary>
+              <summary>A warning message, e.g. when the database is unavailable</summary>
               <pattern>
                 text
               </pattern>
@@ -9487,8 +9682,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>user_tags</e>
           <e>type</e>
           <e>targets</e>
-          <o><e>public_key</e></o>
-          <o><e>package</e></o>
+          <or>
+            <e>public_key</e>
+            <e>package</e>
+          </or>
         </pattern>
         <ele>
           <name>owner</name>
@@ -10060,60 +10257,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>note</name>
         <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>permissions</e>
+          <e>owner</e>
           <e>nvt</e>
           <e>text</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>active</e>
           <e>orphan</e>
-          <e>permissions</e>
           <e>user_tags</e>
           <o>
             <g>
-              <e>owner</e>
-              <e>creation_time</e>
-              <e>modification_time</e>
               <e>hosts</e>
               <e>port</e>
               <e>severity</e>
               <e>threat</e>
               <e>task</e>
-              <e>active</e>
               <o><e>end_time</e></o>
               <o><e>result</e></o>
             </g>
           </o>
         </pattern>
-        <ele>
-          <name>nvt</name>
-          <pattern>
-            <attrib>
-              <name>oid</name>
-              <type>oid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>text</name>
-          <summary>The text of the note</summary>
-          <pattern>
-            <attrib>
-              <name>excerpt</name>
-              <name>Whether the contents is an excerpt of the full text</name>
-              <type>boolean</type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>orphan</name>
-          <summary>Whether the note is an orphan</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
         <ele>
           <name>permissions</name>
           <summary>Permissions that the current user has on the note</summary>
@@ -10131,6 +10302,74 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>name</t></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the note</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>nvt</name>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the note was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the note was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the note is active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>text</name>
+          <summary>The text of the note</summary>
+          <pattern>
+            <attrib>
+              <name>excerpt</name>
+              <summary>Whether the content is an excerpt of the full text</summary>
+              <type>boolean</type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>orphan</name>
+          <summary>Whether the note is an orphan</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -10177,28 +10416,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern>text</pattern>
             </ele>
           </ele>
-        </ele>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the note</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the note was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the note was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -11118,12 +11335,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>override</name>
         <pattern>
-          <e>nvt</e>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>permissions</e>
           <e>owner</e>
+          <e>nvt</e>
           <e>creation_time</e>
           <e>modification_time</e>
           <e>writable</e>
           <e>in_use</e>
+          <e>active</e>
           <e>text</e>
           <e>threat</e>
           <e>severity</e>
@@ -11137,12 +11361,40 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>hosts</e>
               <e>port</e>
               <e>task</e>
-              <e>active</e>
               <o><e>end_time</e></o>
               <o><e>result</e></o>
             </g>
           </o>
         </pattern>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions that the current user has on the note</summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the override</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
         <ele>
           <name>nvt</name>
           <pattern>
@@ -11155,31 +11407,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>text</name>
-          <summary>The text of the override</summary>
-          <pattern>
-            <attrib>
-              <name>excerpt</name>
-              <name>Whether the contents is an excerpt of the full text</name>
-              <type>boolean</type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the override</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
             <pattern><t>name</t></pattern>
           </ele>
         </ele>
@@ -11200,6 +11427,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>in_use</name>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the override is currently active</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>text</name>
+          <summary>The text of the override</summary>
+          <pattern>
+            <attrib>
+              <name>excerpt</name>
+              <summary>Whether the contents is an excerpt of the full text</summary>
+              <type>boolean</type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
         </ele>
         <ele>
           <name>threat</name>
@@ -11235,26 +11480,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>orphan</name>
           <summary>Whether the override is an orphan</summary>
           <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>
-            Permissions that the current user has on the override
-          </summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -11509,11 +11734,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>trash</name>
         <summary>Whether to get the trashcan permissions instead</summary>
         <type>boolean</type>
-      </attrib>
-      <attrib>
-        <name>resource_id</name>
-        <summary>ID of resource to restrict permission to</summary>
-        <type>uuid</type>
       </attrib>
     </pattern>
     <response>
@@ -11974,12 +12194,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>port_count</e>
-          <o>
-            <g>
-              <e>port_ranges</e>
-              <e>targets</e>
-            </g>
-          </o>
+          <o><e>port_ranges</e></o>
+          <o><e>targets</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -12384,10 +12600,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>preference</name>
         <pattern>
-          <o><e>nvt</e></o>
+          <e>nvt</e>
           <e>name</e>
-          <o><e>type</e></o>
+          <e>type</e>
           <e>value</e>
+          <any><e>alt</e></any>
           <e>default</e>
         </pattern>
         <ele>
@@ -12420,6 +12637,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>value</name>
           <summary>The value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>alt</name>
+          <summary>An alternate value of the preference</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -13052,17 +13274,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>description</e>
           <e>global</e>
           <e>predefined</e>
-          <e>alerts</e>
-          <or>
+          <o><e>alerts</e></o>
+          <o>
             <g>
               <any><e>file</e></any>
               <e>signature</e>
             </g>
-            <g>
-              <e>trust</e>
-              <e>active</e>
-            </g>
-          </or>
+          </o>
+          <e>trust</e>
+          <e>active</e>
           <any><e>param</e></any>
         </pattern>
         <ele>
@@ -13579,6 +13799,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>apply_overrides</name>
         <summary>Whether to override result threat levels</summary>
         <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>autofp</name>
+        <summary>
+          Whether to trust vendor security updates.  1 full match, 2 partial
+        </summary>
+        <type>
+          <alts>
+            <alt>0</alt>
+            <alt>1</alt>
+            <alt>2</alt>
+          </alts>
+        </type>
       </attrib>
       <attrib>
         <name>details</name>
@@ -14940,9 +15173,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>duration</e>
           <e>simple_duration</e>
           <o>
-            <g>
-              <e>tasks</e>
-            </g>
+            <e>tasks</e>
           </o>
         </pattern>
         <ele>
@@ -15875,7 +16106,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <pattern>
             <attrib>
               <name>format</name>
-              <type>"png"</type>
+              <type>
+                <alts>
+                  <alt>png</alt>
+                  <alt>txt</alt>
+                </alts>
+              </type>
               <required>1</required>
             </attrib>
             <attrib>
@@ -15993,10 +16229,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>uuid of the tag (omitted when using names_only)</summary>
             <type>uuid</type>
           </attrib>
-          <e>owner</e>
           <e>name</e>
           <o>
             <g>
+              <e>permissions</e>
+              <e>owner</e>
               <e>comment</e>
               <e>creation_time</e>
               <e>modification_time</e>
@@ -16009,6 +16246,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </g>
           </o>
         </pattern>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the tag
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
         <ele>
           <name>owner</name>
           <summary>Owner of the tag</summary>
@@ -16313,6 +16570,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>permissions</e>
           <e>user_tags</e>
           <e>hosts</e>
+          <e>exclude_hosts</e>
           <e>max_hosts</e>
           <e>ssh_lsc_credential</e>
           <e>smb_lsc_credential</e>
@@ -16360,6 +16618,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>hosts</name>
           <summary>A list of hosts</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>exclude_hosts</name>
+          <summary>A list of hosts to exclude</summary>
           <pattern>
             text
           </pattern>
@@ -16829,11 +17094,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>Whether to include full task details</summary>
         <type>boolean</type>
       </attrib>
-      <attrib>
-        <name>apply_overrides</name>
-        <summary>Whether to override result threat levels</summary>
-        <type>boolean</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -16882,6 +17142,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>alterable</e>
           <e>config</e>
           <e>target</e>
+          <e>hosts_ordering</e>
           <e>scanner</e>
           <e>alert</e>
           <e>observers</e>
@@ -17081,6 +17342,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </ele>
         </ele>
         <ele>
+          <name>hosts_ordering</name>
+          <summary>The order hosts are scanned in</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>scanner</name>
           <summary>The scanner used to scan the target</summary>
           <pattern>
@@ -17090,6 +17356,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <e>type</e>
           </pattern>
           <ele>
             <name>name</name>
@@ -17266,6 +17533,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>timestamp</e>
+              <e>scan_end</e>
               <e>result_count</e>
               <e>severity</e>
             </pattern>
@@ -17274,10 +17542,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
+              <name>scan_end</name>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
               <name>result_count</name>
               <summary>Result counts for this report</summary>
               <pattern>
                 <e>debug</e>
+                <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
@@ -17285,6 +17558,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </pattern>
               <ele>
                 <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
               </ele>
               <ele>
@@ -17325,6 +17602,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>timestamp</e>
+              <e>scan_end</e>
               <e>result_count</e>
               <e>severity</e>
             </pattern>
@@ -17333,10 +17611,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
+              <name>scan_end</name>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
               <name>result_count</name>
               <summary>Result counts for this report</summary>
               <pattern>
                 <e>debug</e>
+                <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
@@ -17344,6 +17627,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </pattern>
               <ele>
                 <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
               </ele>
               <ele>
@@ -17384,6 +17671,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>timestamp</e>
+              <e>scan_end</e>
               <e>result_count</e>
               <e>severity</e>
             </pattern>
@@ -17392,10 +17680,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
+              <name>scan_end</name>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
               <name>result_count</name>
               <summary>Result counts for this report</summary>
               <pattern>
                 <e>debug</e>
+                <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
@@ -17403,6 +17696,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </pattern>
               <ele>
                 <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
               </ele>
               <ele>
@@ -17443,12 +17740,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>timestamp</e>
+              <e>scan_end</e>
               <e>scan_run_status</e>
               <e>result_count</e>
               <e>severity</e>
             </pattern>
             <ele>
               <name>timestamp</name>
+              <pattern><t>iso_time</t></pattern>
+            </ele>
+            <ele>
+              <name>scan_end</name>
               <pattern><t>iso_time</t></pattern>
             </ele>
             <ele>
@@ -17461,6 +17763,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>Result counts for this report</summary>
               <pattern>
                 <e>debug</e>
+                <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
                 <e>warning</e>
@@ -17468,6 +17771,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               </pattern>
               <ele>
                 <name>debug</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>false_positive</name>
                 <pattern><t>integer</t></pattern>
               </ele>
               <ele>
@@ -17916,11 +18223,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>ID of filter to use to filter query</summary>
         <type>uuid</type>
       </attrib>
-      <attrib>
-        <name>trash</name>
-        <summary>Whether to get the trashcan users instead</summary>
-        <type>boolean</type>
-      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -17959,6 +18261,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <any><e>role</e></any>
           <e>groups</e>
           <e>hosts</e>
+          <e>ifaces</e>
           <e>permissions</e>
           <e>user_tags</e>
           <e>sources</e>
@@ -18048,6 +18351,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>hosts</name>
           <summary>Host access rule for the user</summary>
+          <pattern>
+            <attrib>
+              <name>allow</name>
+              <summary>0 forbidden, 1 allowed, 2 all allowed, 3 custom</summary>
+              <type>
+                <alts>
+                  <alt>0</alt>
+                  <alt>1</alt>
+                  <alt>2</alt>
+                  <alt>3</alt>
+                </alts>
+              </type>
+              <required>1</required>
+            </attrib>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>ifaces</name>
+          <summary>Iface access rule for the user</summary>
           <pattern>
             <attrib>
               <name>allow</name>
@@ -20420,6 +20743,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>hosts</e></o>
+      <o><e>hosts_ordering</e></o>
+      <o><e>exclude_hosts</e></o>
       <o><e>ssh_lsc_credential</e></o>
       <o><e>smb_lsc_credential</e></o>
       <o><e>esxi_lsc_credential</e></o>
@@ -20442,6 +20767,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <name>hosts</name>
       <summary>Target hosts</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>hosts_ordering</name>
+      <summary>The order hosts are scanned in</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>exclude_hosts</name>
+      <summary>A list of hosts to exclude</summary>
+      <pattern>
+        text
+      </pattern>
     </ele>
     <ele>
       <name>ssh_lsc_credential</name>

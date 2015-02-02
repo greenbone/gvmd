@@ -1,3 +1,58 @@
+2015-02-02  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Fix or clarify documentation of various OMP commands, mostly
+	GET_... ones.
+
+	* src/schema_formats/XML/OMP.xml.in (create_target): Add element
+	"exclude_hosts".
+	(create_task): Add element "hosts_ordering".
+	(get_configs): Remove unused attribute "export". Add summary of
+	attributes "families" and "preferences". Add response elements "type"
+	and "nvt_selectors". Add subelements "default" and "alt" to
+	"preference" elements.
+	(get_alerts): Add elements "filters", "sort", "alerts" and
+	"alert_count" to response.
+	(get_info): Make type-specific response elements like "cert_bund_adv",
+	"cpe", etc. an "or" selection. Remove "deprecated_by" element of CPEs
+	that is not actually in response. Mark cve elements in CPEs as "any"
+	instead of optional. Add CVSS-related elements of CVEs to the pattern.
+	Mark nvt element in CVEs as "any" instead of optional. Fix summary of
+	"warning" element.
+	(get_lsc_credentials): Make elements "public_key" and "package" an "or"
+	selection.
+	(get_notes): Add "id" attribute to note in response. Move element
+	"permission" and make "owner", "creation_time", "modification_time",
+	"writable", "in_use", "active" non-optional. Add summary of "excerpt"
+	attribute in "text" element.
+	(get_overrides): Add "id" attribute to override in response and add
+	elements "permissions", "owner". Move element "active" outside optional
+	group. Add summary of "excerpt" attribute in "text" element. Move nvt
+	element.
+	(get_permissions): Remove unused attribute "resource_id".
+	(get_port_lists): Ungroup elements "port_ranges" and "targets".
+	(get_preferences): Mark subelements "nvt" and "type" of "preference"
+	as non-optional and add subelement "alt".
+	(get_report_formats): Mark "alerts" as optional. Change group of "file"
+	and "signature" as optional instead of "or". Ungroup elements "trust"
+	and "active".
+	(get_results): Add attribute "autofp".
+	(get_schedules): Do not mark "tasks" as group.
+	(get_system_reports): Make type of "format" subelement of "report"
+	a selection between "png" and "txt".
+	(get_tags): Move "owner" to the optional group and add "permissions"
+	element.
+	(get_targets): Add exlude_hosts.
+	(get_tasks): Remove unused attribute "apply_overrides". Add "type"
+	subelement to pattern of "scanner" response element. Add response
+	element "hosts_ordering". Add subelement "scan_end" to "report" and
+	the three "..._report" response subelements as well as "false_positive"
+	to their "result_count".
+	(get_users): Remove unused attribute "trash". Add response element
+	"ifaces".
+	(modify_target): Add hosts_ordering and exclude_hosts elements.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2015-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/sql_pg.c (sql_column_int, sql_column_int64): Add condition so that
