@@ -16051,6 +16051,7 @@ where_search_phrase (const char* search_phrase, int exact)
       if (strlen (search_phrase) == 0)
         return NULL;
 
+      /* Changing these SQL terms may require a change in report_counts_match. */
       quoted_search_phrase = sql_quote (search_phrase);
       phrase_sql = g_string_new ("");
       if (exact)
@@ -18324,14 +18325,25 @@ report_counts_match (iterator_t *results, const char *search_phrase,
   if (autofp && (report_counts_autofp_match (results, autofp) == 0))
     return 0;
 
+  /* This must match the conditions in the SQL in where_search_phrase. */
   if (search_phrase && search_phrase_exact)
     {
-      if ((strcmp (iterator_string (results, 5), search_phrase)
-           == 0)
-          || (strcmp (iterator_string (results, 4), search_phrase)
-              == 0)
-          || (strcmp (iterator_string (results, 1), search_phrase)
-              == 0))
+      if (/* Port. */
+          (strcmp (iterator_string (results, 4), search_phrase) == 0)
+          /* Host. */
+          || (strcmp (iterator_string (results, 3), search_phrase) == 0)
+          /* NVT OID. */
+          || (strcmp (iterator_string (results, 1), search_phrase) == 0)
+          /* Description. */
+          || (strcmp (iterator_string (results, 5), search_phrase) == 0)
+          /* NVT Tag or CVE. */
+          || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
+                      "               WHERE oid = %s"
+                      "               AND (tag LIKE '%%%%=%s|%%%%'"
+                      "                    OR cve LIKE '%%%%%s%%%%'))",
+                      iterator_string (results, 1),
+                      search_phrase,
+                      search_phrase))
         {
           if (min_cvss_base && iterator_int (results, 1))
             {
@@ -18353,9 +18365,22 @@ report_counts_match (iterator_t *results, const char *search_phrase,
     }
   else if (search_phrase)
     {
-      if (strcasestr (iterator_string (results, 5), search_phrase)
-          || strcasestr (iterator_string (results, 4), search_phrase)
-          || strcasestr (iterator_string (results, 1), search_phrase))
+      if (/* Port. */
+          (strcmp (iterator_string (results, 4), search_phrase) == 0)
+          /* Host. */
+          || (strcmp (iterator_string (results, 3), search_phrase) == 0)
+          /* NVT OID. */
+          || (strcmp (iterator_string (results, 1), search_phrase) == 0)
+          /* Description. */
+          || (strcmp (iterator_string (results, 5), search_phrase) == 0)
+          /* NVT Tag or CVE. */
+          || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
+                      "               WHERE oid = '%s'"
+                      "               AND (tag LIKE '%%%%=%s|%%%%'"
+                      "                    OR cve LIKE '%%%%%s%%%%'))",
+                      iterator_string (results, 1),
+                      search_phrase,
+                      search_phrase))
         {
           if (min_cvss_base && iterator_int (results, 1))
             {
