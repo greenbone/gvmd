@@ -38368,10 +38368,21 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
+  gchar *owned_clause;
+  get_data_t get;
+  array_t *permissions;
+
   ret = sql_begin_exclusive_giveup ();
   if (ret)
     return ret;
-  /* TODO Limit to schedules that task owner has access to. */
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  owned_clause = where_owned_user ("", "tasks.owner", "schedule", &get, 1,
+                                   "any", 0, permissions);
+  array_free (permissions);
+
   init_iterator (iterator,
                  "SELECT tasks.id, tasks.uuid,"
                  " schedules.id, tasks.schedule_next_time,"
@@ -38383,7 +38394,11 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
-                 " AND tasks.owner = users.id;");
+                 " AND tasks.owner = users.id"
+                 " AND %s;",
+                 owned_clause);
+
+  g_free (owned_clause);
   return 0;
 }
 

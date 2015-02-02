@@ -1,3 +1,18 @@
+2015-02-02  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	When scheduling only consider the schedule if the task owner has
+	permission to access the schedule.
+
+	* src/manage_acl.c (where_owned_user): New function.  Was where_owned.
+	Add user args.
+	(where_owned): Call through to where_owned_user.
+
+	* src/manage_acl.h: Add header accordingly.
+
+	* src/manage_sql.c (init_task_schedule_iterator): Add owned clause, so
+	that schedules are only included if the user has permission to access
+	them.
+
 2015-01-30  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (filter_clause): Add cases for "qod" to sort by the

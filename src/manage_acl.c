@@ -916,11 +916,14 @@ user_has_access_uuid (const char *type, const char *uuid,
 }
 
 /**
- * @brief Generate the ownership part of an SQL WHERE clause.
+ * @brief Generate the ownership part of an SQL WHERE clause for a given user.
  *
+ * @param[in]  user_id         UUID of user.  "" can be used to rely on
+ *                             user_sql alone, except when type is "permission".
+ * @param[in]  user_sql        SQL to get user.
  * @param[in]  type            Type of resource.
  * @param[in]  get             GET data.
- * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  owned           Only get items accessible by the given user.
  * @param[in]  owner_filter    Owner filter keyword.
  * @param[in]  resource        Resource.
  * @param[in]  permissions     Permissions.
@@ -928,9 +931,9 @@ user_has_access_uuid (const char *type, const char *uuid,
  * @return Newly allocated owned clause.
  */
 gchar *
-where_owned (const char *type, const get_data_t *get, int owned,
-             const gchar *owner_filter, resource_t resource,
-             array_t *permissions)
+where_owned_user (const char *user_id, const char *user_sql, const char *type,
+                  const get_data_t *get, int owned, const gchar *owner_filter,
+                  resource_t resource, array_t *permissions)
 {
   gchar *owned_clause;
 
@@ -965,7 +968,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
 
       /* Check on index is because default is owner and global, for backward
        * compatibility. */
-      if (current_credentials.uuid && index)
+      if (user_id && index)
         {
           gchar *clause;
           clause
@@ -978,34 +981,27 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "      = " G_STRINGIFY (LOCATION_TABLE)
                               "  AND ((subject_type = 'user'"
                               "        AND subject"
-                              "            = (SELECT id FROM users"
-                              "               WHERE users.uuid = '%s'))"
+                              "            = (%s))"
                               "       OR (subject_type = 'group'"
                               "           AND subject"
                               "               IN (SELECT DISTINCT \"group\""
                               "                   FROM group_users"
                               "                   WHERE \"user\""
-                              "                         = (SELECT id"
-                              "                            FROM users"
-                              "                            WHERE users.uuid"
-                              "                                  = '%s')))"
+                              "                         = (%s)))"
                               "       OR (subject_type = 'role'"
                               "           AND subject"
                               "               IN (SELECT DISTINCT role"
                               "                   FROM role_users"
                               "                   WHERE \"user\""
-                              "                         = (SELECT id"
-                              "                            FROM users"
-                              "                            WHERE users.uuid"
-                              "                                  = '%s'))))"
+                              "                         = (%s))))"
                               "  AND (%s))",
                               type,
                               get->trash && strcmp (type, "task") ? "_trash" : "",
                               type,
                               get->trash ? LOCATION_TRASH : LOCATION_TABLE,
-                              current_credentials.uuid,
-                              current_credentials.uuid,
-                              current_credentials.uuid,
+                              user_sql,
+                              user_sql,
+                              user_sql,
                               permission_or->str);
 
           if (strcmp (type, "report") == 0)
@@ -1019,32 +1015,25 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 "      = " G_STRINGIFY (LOCATION_TABLE)
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
-                                "            = (SELECT id FROM users"
-                                "               WHERE users.uuid = '%s'))"
+                                "            = (%s))"
                                 "       OR (subject_type = 'group'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT \"group\""
                                 "                   FROM group_users"
                                 "                   WHERE \"user\""
-                                "                         = (SELECT id"
-                                "                            FROM users"
-                                "                            WHERE users.uuid"
-                                "                                  = '%s')))"
+                                "                         = (%s)))"
                                 "       OR (subject_type = 'role'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT role"
                                 "                   FROM role_users"
                                 "                   WHERE \"user\""
-                                "                         = (SELECT id"
-                                "                            FROM users"
-                                "                            WHERE users.uuid"
-                                "                                  = '%s'))))"
+                                "                         = (%s))))"
                                 "  AND (%s))",
                                 clause,
                                 get->trash ? "_trash" : "",
-                                current_credentials.uuid,
-                                current_credentials.uuid,
-                                current_credentials.uuid,
+                                user_sql,
+                                user_sql,
+                                user_sql,
                                 permission_or->str);
           else if (strcmp (type, "result") == 0)
             permission_clause
@@ -1057,32 +1046,25 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 "      = " G_STRINGIFY (LOCATION_TABLE)
                                 "  AND ((subject_type = 'user'"
                                 "        AND subject"
-                                "            = (SELECT id FROM users"
-                                "               WHERE users.uuid = '%s'))"
+                                "            = (%s))"
                                 "       OR (subject_type = 'group'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT \"group\""
                                 "                   FROM group_users"
                                 "                   WHERE \"user\""
-                                "                         = (SELECT id"
-                                "                            FROM users"
-                                "                            WHERE users.uuid"
-                                "                                  = '%s')))"
+                                "                         = (%s)))"
                                 "       OR (subject_type = 'role'"
                                 "           AND subject"
                                 "               IN (SELECT DISTINCT role"
                                 "                   FROM role_users"
                                 "                   WHERE \"user\""
-                                "                         = (SELECT id"
-                                "                            FROM users"
-                                "                            WHERE users.uuid"
-                                "                                  = '%s'))))"
+                                "                         = (%s))))"
                                 "  AND (%s))",
                                 clause,
                                 get->trash ? "_trash" : "",
-                                current_credentials.uuid,
-                                current_credentials.uuid,
-                                current_credentials.uuid,
+                                user_sql,
+                                user_sql,
+                                user_sql,
                                 permission_or->str);
           else
             permission_clause = clause;
@@ -1093,19 +1075,19 @@ where_owned (const char *type, const get_data_t *get, int owned,
       g_string_free (permission_or, TRUE);
 
       table_trash = get->trash && strcasecmp (type, "task");
-      if (resource || (current_credentials.uuid == NULL))
+      if (resource || (user_id == NULL))
         owned_clause
          = g_strdup (" (t ())");
       else if (strcmp (type, "permission") == 0)
         {
           int admin;
-          admin = user_can_everything (current_credentials.uuid);
+          assert (strcmp (user_id, ""));
+          admin = user_can_everything (user_id);
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
           owned_clause
            = g_strdup_printf (/* Either the user is the owner. */
-                              " ((permissions%s.owner = (SELECT id FROM users"
-                              "                WHERE users.uuid = '%s'))"
+                              " ((permissions%s.owner = (%s))"
                               /* Or, for admins, it's a global permission. */
                               "  %s"
                               /* Or the permission applies to the user. */
@@ -1114,8 +1096,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "           AND permissions%s.subject_location"
                               "               = " G_STRINGIFY (LOCATION_TABLE)
                               "           AND permissions%s.subject"
-                              "               = (SELECT id FROM users"
-                              "                  WHERE users.uuid = '%s')))"
+                              "               = (%s)))"
                               /* Or the permission applies to the user's group. */
                               "  OR (%i = 0" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'group'"
@@ -1124,10 +1105,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "           AND permissions%s.subject"
                               "               IN (SELECT DISTINCT \"group\""
                               "                   FROM group_users"
-                              "                   WHERE \"user\" = (SELECT id"
-                              "                                     FROM users"
-                              "                                     WHERE users.uuid"
-                              "                                           = '%s'))))"
+                              "                   WHERE \"user\" = (%s))))"
                               /* Or the permission applies to the user's role. */
                               "  OR (%i = 0" /* Skip for trash. */
                               "      AND (permissions%s.subject_type = 'role'"
@@ -1136,10 +1114,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "           AND permissions%s.subject"
                               "               IN (SELECT DISTINCT role"
                               "                   FROM role_users"
-                              "                   WHERE \"user\" = (SELECT id"
-                              "                                     FROM users"
-                              "                                     WHERE users.uuid"
-                              "                                           = '%s'))))"
+                              "                   WHERE \"user\" = (%s))))"
                               /* Or the user has super permission. */
                               "  OR EXISTS (SELECT * FROM permissions AS inside"
                               "             WHERE name = 'Super'"
@@ -1166,29 +1141,22 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               "                 = " G_STRINGIFY (LOCATION_TABLE)
                               "             AND ((inside.subject_type = 'user'"
                               "                   AND inside.subject"
-                              "                       = (SELECT id FROM users"
-                              "                          WHERE users.uuid = '%s'))"
+                              "                       = (%s))"
                               "                  OR (inside.subject_type = 'group'"
                               "                      AND inside.subject"
                               "                          IN (SELECT DISTINCT \"group\""
                               "                              FROM group_users"
                               "                              WHERE \"user\""
-                              "                                    = (SELECT id"
-                              "                                       FROM users"
-                              "                                       WHERE users.uuid"
-                              "                                             = '%s')))"
+                              "                                    = (%s)))"
                               "                  OR (inside.subject_type = 'role'"
                               "                      AND inside.subject"
                               "                          IN (SELECT DISTINCT role"
                               "                              FROM role_users"
                               "                              WHERE \"user\""
-                              "                                    = (SELECT id"
-                              "                                       FROM users"
-                              "                                       WHERE users.uuid"
-                              "                                             = '%s')))))"
+                              "                                    = (%s)))))"
                               "  %s)",
                               get->trash ? "_trash" : "",
-                              current_credentials.uuid,
+                              user_sql,
                               admin
                                ? (get->trash
                                    ? "OR (permissions_trash.owner IS NULL)"
@@ -1198,23 +1166,23 @@ where_owned (const char *type, const get_data_t *get, int owned,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
-                              current_credentials.uuid,
+                              user_sql,
                               get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
-                              current_credentials.uuid,
+                              user_sql,
                               get->trash,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
-                              current_credentials.uuid,
+                              user_sql,
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
                               table_trash ? "_trash" : "",
-                              current_credentials.uuid,
-                              current_credentials.uuid,
-                              current_credentials.uuid,
+                              user_sql,
+                              user_sql,
+                              user_sql,
                               permission_clause ? permission_clause : "");
         }
       else
@@ -1223,8 +1191,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             " ((%ss%s.owner IS NULL)"
                             /* Or the user is the owner. */
                             "  OR (%ss%s.owner"
-                            "      = (SELECT id FROM users"
-                            "         WHERE users.uuid = '%s'))"
+                            "      = (%s))"
                             /* Or the user has super permission. */
                             "  OR EXISTS (SELECT * FROM permissions"
                             "             WHERE name = 'Super'"
@@ -1251,41 +1218,34 @@ where_owned (const char *type, const get_data_t *get, int owned,
                             "                 = " G_STRINGIFY (LOCATION_TABLE)
                             "             AND ((subject_type = 'user'"
                             "                   AND subject"
-                            "                       = (SELECT id FROM users"
-                            "                          WHERE users.uuid = '%s'))"
+                            "                       = (%s))"
                             "                  OR (subject_type = 'group'"
                             "                      AND subject"
                             "                          IN (SELECT DISTINCT \"group\""
                             "                              FROM group_users"
                             "                              WHERE \"user\""
-                            "                                    = (SELECT id"
-                            "                                       FROM users"
-                            "                                       WHERE users.uuid"
-                            "                                             = '%s')))"
+                            "                                    = (%s)))"
                             "                  OR (subject_type = 'role'"
                             "                      AND subject"
                             "                          IN (SELECT DISTINCT role"
                             "                              FROM role_users"
                             "                              WHERE \"user\""
-                            "                                    = (SELECT id"
-                            "                                       FROM users"
-                            "                                       WHERE users.uuid"
-                            "                                             = '%s')))))"
+                            "                                    = (%s)))))"
                             "  %s)",
                             type,
                             table_trash ? "_trash" : "",
                             type,
                             table_trash ? "_trash" : "",
-                            current_credentials.uuid,
+                            user_sql,
                             type,
                             table_trash ? "_trash" : "",
                             type,
                             table_trash ? "_trash" : "",
                             type,
                             table_trash ? "_trash" : "",
-                            current_credentials.uuid,
-                            current_credentials.uuid,
-                            current_credentials.uuid,
+                            user_sql,
+                            user_sql,
+                            user_sql,
                             permission_clause ? permission_clause : "");
 
       if (get->trash && (strcasecmp (type, "task") == 0))
@@ -1305,19 +1265,17 @@ where_owned (const char *type, const get_data_t *get, int owned,
         {
           gchar *quoted;
           quoted = sql_quote (owner_filter);
-          filter_owned_clause = g_strdup_printf ("(owner = (SELECT id FROM users"
-                                                 "          WHERE name = '%s')"
+          filter_owned_clause = g_strdup_printf ("(owner = (%s)"
                                                  " AND %s)",
                                                  quoted,
                                                  owned_clause);
           g_free (quoted);
         }
       else
-        filter_owned_clause = g_strdup_printf ("((owner = (SELECT id FROM users"
-                                               "           WHERE uuid = '%s')"
+        filter_owned_clause = g_strdup_printf ("((owner = (%s)"
                                                "  OR owner IS NULL)"
                                                " AND %s)",
-                                               current_credentials.uuid,
+                                               user_sql,
                                                owned_clause);
 
       g_free (owned_clause);
@@ -1327,4 +1285,33 @@ where_owned (const char *type, const get_data_t *get, int owned,
    owned_clause = g_strdup (" t ()");
 
   return owned_clause;
+}
+
+/**
+ * @brief Generate the ownership part of an SQL WHERE clause.
+ *
+ * @param[in]  type            Type of resource.
+ * @param[in]  get             GET data.
+ * @param[in]  owned           Only get items owned by the current user.
+ * @param[in]  owner_filter    Owner filter keyword.
+ * @param[in]  resource        Resource.
+ * @param[in]  permissions     Permissions.
+ *
+ * @return Newly allocated owned clause.
+ */
+gchar *
+where_owned (const char *type, const get_data_t *get, int owned,
+             const gchar *owner_filter, resource_t resource,
+             array_t *permissions)
+{
+  gchar *ret, *user_sql;
+  if (current_credentials.uuid)
+    user_sql = g_strdup_printf ("SELECT id FROM users WHERE users.uuid = '%s'",
+                                current_credentials.uuid);
+  else
+    user_sql = NULL;
+  ret = where_owned_user (current_credentials.uuid, user_sql, type, get, owned,
+                          owner_filter, resource, permissions);
+  g_free (user_sql);
+  return ret;
 }
