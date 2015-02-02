@@ -14050,9 +14050,9 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     result_severity = g_strdup (severity);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid, qod)"
+       "  description, uuid)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
-       "         '%s', make_uuid (), 0);",
+       "         '%s', make_uuid ());",
        task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
        quoted_desc);
   g_free (result_severity);
