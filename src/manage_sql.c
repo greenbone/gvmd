@@ -3960,8 +3960,13 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
   g_free (command);
 
-  if (find_resource (type, resource_id, &resource))
-    return -1;
+  command = g_strdup_printf ("get_%s", type);
+  if (find_resource_with_permission (type, resource_id, &resource, command, 0))
+    {
+      g_free (command);
+      return -1;
+    }
+  g_free (command);
 
   if (resource == 0)
     return 2;

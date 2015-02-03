@@ -1,5 +1,10 @@
 2015-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_resource_lock): Find with permission, to enable
+	cloning of other users' resources.
+
+2015-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_report_internal): Leave the task alterable
 	when deleting the last report of an alterable task.
 
