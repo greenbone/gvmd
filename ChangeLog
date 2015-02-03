@@ -1,5 +1,11 @@
 2015-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_report_format): Build the source dir according
+	to the report format owner, because the report format may not be owned
+	by the current user.
+
+2015-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_resource_lock): Find with permission, to enable
 	cloning of other users' resources.
 

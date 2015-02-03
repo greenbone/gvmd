@@ -39685,13 +39685,16 @@ copy_report_format (const char* name, const char* source_uuid,
                                    NULL);
   else
     {
-      assert (current_credentials.uuid);
+      gchar *owner_uuid;
+      owner_uuid = report_format_owner_uuid (old);
+      assert (owner_uuid);
       source_dir = g_build_filename (OPENVAS_STATE_DIR,
                                      "openvasmd",
                                      "report_formats",
-                                     current_credentials.uuid,
+                                     owner_uuid,
                                      source_uuid,
                                      NULL);
+      g_free (owner_uuid);
     }
 
   /* Check that the source directory exists. */
