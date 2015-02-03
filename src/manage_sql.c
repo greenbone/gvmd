@@ -19327,13 +19327,6 @@ delete_report_internal (report_t report)
         break;
     }
 
-  if ((sql_int ("SELECT count (*) FROM reports WHERE task = %llu",
-                task)
-       == 0)
-      && sql_int ("SELECT alterable FROM tasks WHERE id = %llu",
-                  task))
-    sql ("UPDATE tasks SET alterable = 0 WHERE id = %llu;", task);
-
   return 0;
 }
 
