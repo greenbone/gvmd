@@ -1,3 +1,40 @@
+2015-02-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Results with no QoD information are assigned a default value of 75,
+	which is also applied to existing results.  Hence increase database
+	version to 143.  Add database migration from version 142 to 143.
+	Add support for more values of the qod_type NVT tag.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 143.
+
+	* src/manage_migrators.c (migrate_142_to_143): New function.
+	(database_migrators): Add migrate_142_to_143.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_sql.c (check_db_tasks, make_osp_result): Set qod of the
+	result to the new default value.
+	(make_result): Set qod of the result to the new default if the qod_type
+	NVT tag is missing or its value cannot be interpreted. Recognize more
+	values of the qod_type tag: exploit, remote_vul, remote_app, package,
+	registry, remote_active, remote_banner, executable_version,
+	remote_analysis, remote_probe and executable_version_unreliable.
+	(create_report): Set qod of results if available or using new default.
+
+	* src/manage.h (QOD_DEFAULT): New #define.
+	(create_report_result_t): Add qod field.
+
+	* src/omp.c (create_report_data_t): Add result_qod field.
+	(create_report_data_reset): Free qod of results.
+	(client_state_t): Add CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD.
+	(omp_xml_handle_start_element): Add case for QOD in
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT.
+	(omp_xml_handle_end_element): Copy qod field to result in the case of
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT. Add case for
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD.
+	(omp_xml_handle_text): Get text of QOD element in case
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD.
+
 2015-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_ssh_credential_uuid, slave_smb_credential_uuid)

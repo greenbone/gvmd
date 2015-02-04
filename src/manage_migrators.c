@@ -9893,6 +9893,41 @@ migrate_141_to_142 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 142 to version 143.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_142_to_143 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 142. */
+
+  if (manage_db_version () != 142)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Set QoD of results to default value for various cases where
+   *  no QoD was specified during the creation of the result. */
+
+  sql ("UPDATE results SET qod = " G_STRINGIFY (QOD_DEFAULT)
+       " WHERE (qod IS NULL) OR (qod <= 0);");
+
+  /* Set the database version to 143. */
+
+  set_db_version (143);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10046,6 +10081,7 @@ static migrator_t database_migrators[]
     {140, migrate_139_to_140},
     {141, migrate_140_to_141},
     {142, migrate_141_to_142},
+    {143, migrate_142_to_143},
     /* End marker. */
     {-1, NULL}};
 

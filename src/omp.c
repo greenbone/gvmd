@@ -1300,6 +1300,7 @@ typedef struct
   char *result_host;              ///< Host for current result.
   char *result_nvt_oid;           ///< OID of NVT for current result.
   char *result_port;              ///< Port for current result.
+  char *result_qod;               ///< QoD of current result.
   char *result_scan_nvt_version;  ///< Version of NVT used in scan.
   char *result_severity;          ///< Severity score for current result.
   char *result_threat;            ///< Message type for current result.
@@ -1355,6 +1356,7 @@ create_report_data_reset (create_report_data_t *data)
               free (result->description);
               free (result->nvt_oid);
               free (result->port);
+              free (result->qod);
               free (result->scan_nvt_version);
               free (result->severity);
             }
@@ -5054,6 +5056,7 @@ typedef enum
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_ORIGINAL_THREAT,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_OVERRIDES,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
+  CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
   CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_THREAT,
@@ -9182,6 +9185,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT);
+        else if (strcasecmp ("QOD", element_name) == 0)
+          set_client_state (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD);
         else if (strcasecmp ("SCAN_NVT_VERSION", element_name) == 0)
           set_client_state
            (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SCAN_NVT_VERSION);
@@ -20101,6 +20106,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           result->scan_nvt_version
             = create_report_data->result_scan_nvt_version;
           result->port = create_report_data->result_port;
+          result->qod = create_report_data->result_qod;
           result->severity = create_report_data->result_severity;
           result->threat = create_report_data->result_threat;
 
@@ -20110,6 +20116,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           create_report_data->result_host = NULL;
           create_report_data->result_nvt_oid = NULL;
           create_report_data->result_port = NULL;
+          create_report_data->result_qod = NULL;
           create_report_data->result_scan_nvt_version = NULL;
           create_report_data->result_severity = NULL;
           create_report_data->result_threat = NULL;
@@ -20132,6 +20139,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OVERRIDES);
       CLOSE_READ_OVER (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, OWNER);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, PORT);
+      CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, QOD);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SCAN_NVT_VERSION);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, SEVERITY);
       CLOSE (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT, THREAT);
@@ -26441,6 +26449,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_PORT,
               &create_report_data->result_port);
+
+      APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD,
+              &create_report_data->result_qod);
 
       APPEND (CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_SEVERITY,
               &create_report_data->result_severity);

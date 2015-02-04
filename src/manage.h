@@ -889,6 +889,11 @@ result_detection_reference (result_t, char **, char **, char **, char **,
 /** @todo How is this documented? */
 #define OVAS_MANAGE_REPORT_ID_LENGTH UUID_LEN_STR
 
+/**
+ * @brief Default quality of detection percentage.
+ */
+#define QOD_DEFAULT 75
+
 void
 reports_clear_count_cache (int);
 
@@ -922,6 +927,7 @@ typedef struct
   char *nvt_oid;           ///< OID of NVT.
   char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.
+  char *qod;               ///< QoD (quality of detection).
   char *severity;          ///< Severity score.
   char *threat;            ///< Threat.
 } create_report_result_t;

@@ -10183,7 +10183,7 @@ check_db_tasks ()
                " '127.0.0.1', 'telnet (23/tcp)',"
                " '1.3.6.1.4.1.25623.1.0.10330', 'Security Note', 2.0,"
                " 'A telnet server seems to be running on this port',"
-               " -1);",
+               " '" G_STRINGIFY (QOD_DEFAULT) "');",
                task);
           result = sql_last_insert_id ();
           report_add_result (report, result);
@@ -14055,11 +14055,11 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     result_severity = g_strdup (severity);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid)"
+       "  qod, description, uuid)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
-       "         '%s', make_uuid ());",
+       "         '%s', '%s', make_uuid ());",
        task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
-       quoted_desc);
+       G_STRINGIFY (QOD_DEFAULT), quoted_desc);
   g_free (result_severity);
   g_free (nvt_revision);
   g_free (quoted_desc);
@@ -14104,13 +14104,35 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
         {
           gchar *value;
           value = tag_value (nvti_tag (nvti), "qod_type");
-          if (strcmp (value, "remote_banner_unreliable") == 0)
+          if (strcmp (value, "exploit") == 0)
+            qod = 100;
+          else if  (strcmp (value, "remote_vul") == 0)
+            qod = 99;
+          else if (strcmp (value, "remote_app") == 0)
+            qod = 98;
+          else if (strcmp (value, "package") == 0)
+            qod = 97;
+          else if (strcmp (value, "registry") == 0)
+            qod = 97;
+          else if (strcmp (value, "remote_active") == 0)
+            qod = 95;
+          else if (strcmp (value, "remote_banner") == 0)
+            qod = 80;
+          else if (strcmp (value, "executable_version") == 0)
+            qod = 80;
+          else if (strcmp (value, "remote_analysis") == 0)
+            qod = 70;
+          else if (strcmp (value, "remote_probe") == 0)
+            qod = 50;
+          else if (strcmp (value, "remote_banner_unreliable") == 0)
+            qod = 30;
+          else if (strcmp (value, "executable_version_unreliable") == 0)
             qod = 30;
           else
-            qod = -1;
+            qod = QOD_DEFAULT;
         }
       else
-        qod = -1;
+        qod = QOD_DEFAULT;
 
       if (strcasecmp (type, "Alarm") == 0)
         {
@@ -15000,6 +15022,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
+      gchar *quoted_qod;
 
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_port = sql_quote (result->port ? result->port : "");
@@ -15011,13 +15034,17 @@ create_report (array_t *results, const char *task_id, const char *task_name,
                                        ? result->scan_nvt_version
                                        : "");
       quoted_severity =  sql_quote (result->severity ? result->severity : "");
+      if (result->qod && strcmp (result->qod, "") && strcmp (result->qod, "0"))
+        quoted_qod = sql_quote (result->qod);
+      else
+        quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
 
       sql ("INSERT INTO results"
            " (uuid, owner, date, task, host, port, nvt, type, description,"
            "  nvt_version, severity, qod)"
            " VALUES"
            " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
-           "  '%s', '%s', -1);",
+           "  '%s', '%s', '%s');",
            owner,
            task,
            quoted_host,
@@ -15028,7 +15055,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
             : "Log Message",
            quoted_description,
            quoted_scan_nvt_version,
-           quoted_severity);
+           quoted_severity,
+           quoted_qod);
 
       g_free (quoted_host);
       g_free (quoted_port);
@@ -15036,6 +15064,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_description);
       g_free (quoted_scan_nvt_version);
       g_free (quoted_severity);
+      g_free (quoted_qod);
 
       report_add_result (report, sql_last_insert_id ());
     }
