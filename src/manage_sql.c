@@ -19554,7 +19554,7 @@ trim_partial_report (report_t report)
        "  WHERE results.report = %llu"
        "  AND report_hosts.report = %llu"
        "  AND results.host = report_hosts.host"
-       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
+       "  AND report_hosts.end_time is NULL);",
        report,
        report);
 
@@ -19563,12 +19563,12 @@ trim_partial_report (report_t report)
   sql ("DELETE FROM report_host_details WHERE report_host IN"
        " (SELECT report_hosts.id FROM report_hosts"
        "  WHERE report_hosts.report = %llu"
-       "  AND (report_hosts.end_time is NULL OR report_hosts.end_time = ''));",
+       "  AND report_hosts.end_time is NULL);",
        report);
 
   sql ("DELETE FROM report_hosts"
        " WHERE report = %llu"
-       " AND (end_time is NULL OR end_time = '');",
+       " AND end_time is NULL;",
        report);
 
   /* Clear and rebuild counts cache */

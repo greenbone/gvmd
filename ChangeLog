@@ -1,3 +1,8 @@
+2015-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (trim_partial_report): Remove report_hosts end_time
+	'' checks, because end_time is now an integer.  For Postgres.
+
 2015-02-03  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (copy_report_format): Build the source dir according
