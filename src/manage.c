@@ -1730,6 +1730,60 @@ update_end_times (entity_t report, int add_host_details)
 }
 
 /**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_ssh_credential_uuid = NULL;
+
+/**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_smb_credential_uuid = NULL;
+
+/**
+ * @brief Slave target UUID.
+ */
+gchar *slave_target_uuid = NULL;
+
+/**
+ * @brief Slave config UUID.
+ */
+gchar *slave_config_uuid = NULL;
+
+/**
+ * @brief Slave task UUID.
+ */
+gchar *slave_task_uuid = NULL;
+
+/**
+ * @brief Slave report UUID.
+ */
+gchar *slave_report_uuid = NULL;
+
+/**
+ * @brief Slave session.
+ */
+gnutls_session_t *slave_session = NULL;
+
+/**
+ * @brief Slave socket.
+ */
+int *slave_socket = NULL;
+
+/**
+ * @brief Cleanup slave.  Callback for atexit.
+ */
+static void
+cleanup_slave ()
+{
+  if (slave_session && slave_socket)
+    {
+      if (slave_task_uuid)
+        omp_stop_task (slave_session, slave_task_uuid);
+      openvas_server_close (*slave_socket, *slave_session);
+    }
+}
+
+/**
  * @brief Setup a task on a slave.
  *
  * @param[in]   slave       Slave.
@@ -1755,11 +1809,21 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 {
   int ret, next_result;
   iterator_t credentials, targets;
-  gchar *slave_ssh_credential_uuid = NULL, *slave_smb_credential_uuid = NULL;
-  gchar *slave_target_uuid, *slave_config_uuid;
-  gchar *slave_task_uuid, *slave_report_uuid;
 
   omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
+
+  slave_session = session;
+  slave_socket = socket;
+
+  /* Register a cleanup callback to stop the slave task if the process is
+   * killed, for example by a reboot.  On restart Manager will set the task
+   * status to Stopped, which will match the slave. */
+  if (atexit (&cleanup_slave))
+    {
+      g_critical ("%s: failed to register `atexit' slave_cleanup function\n",
+                  __FUNCTION__);
+      goto fail;
+    }
 
   if (last_stopped_report)
     {
@@ -2287,12 +2351,20 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
  succeed_stopped:
   free (slave_task_uuid);
+  slave_task_uuid = NULL;
   free (slave_report_uuid);
+  slave_report_uuid = NULL;
   free (slave_config_uuid);
+  slave_config_uuid = NULL;
   free (slave_target_uuid);
+  slave_target_uuid = NULL;
   free (slave_smb_credential_uuid);
+  slave_smb_credential_uuid = NULL;
   free (slave_ssh_credential_uuid);
+  slave_ssh_credential_uuid = NULL;
   openvas_server_close (*socket, *session);
+  slave_session = NULL;
+  slave_socket = NULL;
   return 0;
 
  fail_stop_task:
@@ -2316,10 +2388,14 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   free (slave_ssh_credential_uuid);
  fail:
   openvas_server_close (*socket, *session);
+  slave_session = NULL;
+  slave_socket = NULL;
   return 1;
 
  giveup:
   openvas_server_close (*socket, *session);
+  slave_session = NULL;
+  slave_socket = NULL;
   return 3;
 }
 

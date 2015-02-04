@@ -1,5 +1,14 @@
 2015-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (slave_ssh_credential_uuid, slave_smb_credential_uuid)
+	(slave_target_uuid, slave_config_uuid, slave_task_uuid)
+	(slave_report_uuid, slave_session, slave_socket): New variables.
+	(cleanup_slave): New function.
+	(slave_setup): Use new variables.  Register cleanup_slave as atexit
+	function, so that the slave task is stopped if Manager is terminated.
+
+2015-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trim_partial_report): Remove report_hosts end_time
 	'' checks, because end_time is now an integer.  For Postgres.
 
