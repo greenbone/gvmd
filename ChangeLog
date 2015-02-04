@@ -1,5 +1,49 @@
 2015-02-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Allow filtering results of GET_REPORTS using new filter keyword
+	or command attribute "min_qod".
+
+	* src/manage_sql.c (manage_report_filter_controls): Add new output
+	parameter min_qod.
+	(escalate_2): Add new parameter min_qod.
+	(escalate_1): Add new min_qod parameter of escalate_2.
+	(task_upload_progress): Add new parameter of report_scan_result_count.
+	(where_qod): New function.
+	(RESULT_ITERATOR_COLUMNS): Simplify qod column by getting it directly
+	without extra checks.
+	(init_result_iterator): Add new parameter min_qod and filter results
+	according to it. Simplify qod SQL in report if case. Add qod column
+	to result case.
+	(report_scan_result_count, report_counts_match, report_severity_data)
+	(report_counts_id_filt): Add new parameter min_qod.
+	(report_counts_id): Add new parameter for report_counts_id_filt.
+	(report_filter_term, print_report_port_xml): Add new parameter min_qod.
+	(print_report_xml): Add parameter given_min_qod. Filter results by
+	minimum QoD if min_qod filter keyword or parameter is given. Print
+	min_qod to the filters element.
+	(manage_report, manage_send_report): Add new parameter min_qod.
+
+	* src/manage.h (report_scan_result_count, init_result_iterator)
+	(manage_report, manage_send_report, manage_report_filter_controls): Add
+	parameter.
+
+	* src/omp.c (get_reports_data_t, get_reports_data_reset): Add new field
+	min_qod.
+	(omp_xml_handle_start_element): In GET_REPORTS case, get min_qod
+	attribute.
+	(buffer_notes_xml, buffer_overrides_xml): Add NULL value for min_qod
+	parameter to init_result_iterator call.
+	(omp_xml_handle_end_element): In GET_REPORTS case, add min_qod
+	parameter to function calls.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add min_qod element to
+	filters subelement.
+	(get_reports): Add min_qod command attribute.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2015-02-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Results with no QoD information are assigned a default value of 75,
 	which is also applied to existing results.  Hence increase database
 	version to 143.  Add database migration from version 142 to 143.

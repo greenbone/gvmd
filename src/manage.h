@@ -1000,7 +1000,7 @@ report_slave_task_uuid (report_t);
 
 int
 report_scan_result_count (report_t, const char*, const char*, int, const char*,
-                          int, int, int*);
+                          const char*, int, int, int*);
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
@@ -1085,7 +1085,7 @@ init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int);
 void
 init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
                       const char *, const char *, int, const char *, int,
-                      const char *, int);
+                      const char *, const char *, int);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1192,15 +1192,15 @@ report_progress (report_t, task_t, gchar **);
 
 gchar *
 manage_report (report_t, report_format_t, const char *, int, const char*, int,
-               const char *, const char *, const char *, int, const char *,
-               int, int, int, int, int, int, int, const char *, gsize *,
-               gchar **, gchar **, const char *);
+               const char *, const char *, const char *, const char *, int,
+               const char *, int, int, int, int, int, int, int, const char *,
+               gsize *, gchar **, gchar **, const char *);
 
 int
 manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     int, const char*, int, const char *, const char *,
-                    const char *, int, const char *, int, int, int, int, int,
-                    int, int, int, int,
+                    const char *, const char *, int, const char *,
+                    int, int, int, int, int, int, int, int, int,
                     gboolean (*) (const char *,
                                   int (*) (const char*, void*),
                                   void*),
@@ -1230,7 +1230,8 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               int *, int *, int *, int *, int *, gchar **);
+                               gchar **, int *, int *, int *, int *, int *,
+                               gchar **);
 
 gchar *
 manage_clean_filter (const gchar *);

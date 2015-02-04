@@ -1330,6 +1330,7 @@ report_report_filters
        & report_report_filters_apply_overrides
        & report_report_filters_result_hosts_only
        & report_report_filters_min_cvss_base
+       & report_report_filters_min_qod
        & report_report_filters_autofp
        & report_report_filters_show_closed_cves
        & report_report_filters_filter*
@@ -1382,6 +1383,13 @@ report_report_filters_result_hosts_only
 # Minimum CVSS base if in effect, else empty string.
 report_report_filters_min_cvss_base
  = element min_cvss_base
+     {
+       text
+     }
+
+# Minimum QoD if in effect, else empty string.
+report_report_filters_min_qod
+ = element min_qod
      {
        text
      }
@@ -4373,6 +4381,8 @@ get_reports
        attribute search_phrase { text }?
        & # Minimum CVSS base of results in report.
        attribute min_cvss_base { integer }?
+       & # Minimum QoD of results in report.
+       attribute min_qod { integer }?
        & # Whether to include notes in the report.
        attribute notes { boolean }?
        & # If notes are included, whether to include note details.

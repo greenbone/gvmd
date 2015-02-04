@@ -2054,6 +2054,8 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  result_hosts_only  Whether to show only hosts with results.
  * @param[out]  min_cvss_base      Minimum CVSS base of included results.  All
  *                                 results if NULL.
+ * @param[out]  min_qod        Minimum QoD base of included results.  All
+ *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
  *                             to include in count (for example, "hmlgd" for
  *                             High, Medium, Low, loG and Debug).  All levels if
@@ -2074,6 +2076,7 @@ void
 manage_report_filter_controls (const gchar *filter, int *first, int *max,
                                gchar **sort_field, int *sort_order,
                                int *result_hosts_only, gchar **min_cvss_base,
+                               gchar **min_qod,
                                gchar **levels, gchar **delta_states,
                                gchar **search_phrase, int *search_phrase_exact,
                                int *autofp, int *notes, int *overrides,
@@ -2276,6 +2279,16 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *min_cvss_base = NULL;
       else
         *min_cvss_base = string;
+    }
+
+  if (min_qod)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
+                              "min_qod",
+                              &string))
+        *min_qod = NULL;
+      else
+        *min_qod = string;
     }
 
   if (zone)
@@ -7870,6 +7883,8 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
  *                                results if NULL.
+ * @param[in]  min_qod        Minimum QoD of included results.  All
+ *                            results if NULL.
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
@@ -7899,6 +7914,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
             /* Report filtering. */
             int sort_order, const char* sort_field,
             int result_hosts_only, const char *min_cvss_base,
+            const char *min_qod,
             const char *levels, const char *delta_states, int apply_overrides,
             const char *search_phrase, int autofp, int notes, int notes_details,
             int overrides, int overrides_details, int first_result,
@@ -8000,8 +8016,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   filt_id,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
-                                                  min_cvss_base, levels,
-                                                  delta_states, apply_overrides,
+                                                  min_cvss_base, min_qod,
+                                                  levels, delta_states,
+                                                  apply_overrides,
                                                   search_phrase, autofp,
                                                   notes, notes_details,
                                                   overrides,
@@ -8120,8 +8137,9 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                                   filt_id,
                                                   sort_order, sort_field,
                                                   result_hosts_only,
-                                                  min_cvss_base, levels,
-                                                  delta_states, apply_overrides,
+                                                  min_cvss_base, min_qod,
+                                                  levels, delta_states,
+                                                  apply_overrides,
                                                   search_phrase, autofp,
                                                   notes, notes_details,
                                                   overrides, overrides_details,
@@ -8352,7 +8370,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           filt_id,
                                           sort_order, sort_field,
                                           result_hosts_only,
-                                          min_cvss_base, levels,
+                                          min_cvss_base, min_qod, levels,
                                           delta_states, apply_overrides,
                                           search_phrase, autofp,
                                           notes, notes_details, overrides,
@@ -8464,7 +8482,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                                           filt_id,
                                           sort_order, sort_field,
                                           result_hosts_only,
-                                          min_cvss_base, levels,
+                                          min_cvss_base, min_qod, levels,
                                           delta_states, apply_overrides,
                                           search_phrase, autofp,
                                           notes, notes_details, overrides,
@@ -8526,6 +8544,7 @@ escalate_1 (alert_t alert, task_t task, event_t event,
                      NULL,    /* Sort field. */
                      0,       /* Result hosts only. */
                      NULL,    /* Min CVSS base. */
+                     NULL,    /* Min QoD. */
                      NULL,    /* Levels. */
                      NULL,    /* Delta states. */
                      1,       /* Apply overrides. */
@@ -13235,7 +13254,8 @@ task_upload_progress (task_t task)
   if (report)
     {
       int count;
-      if (report_scan_result_count (report, NULL, NULL, 0, NULL, 0, 0, &count))
+      if (report_scan_result_count (report, NULL, NULL, 0, NULL, NULL,
+                                    0, 0, &count))
         return -1;
       return sql_int ("SELECT"
                       " max (min (((%i * 100) / upload_result_count), 100), -1)"
@@ -16066,6 +16086,29 @@ where_cvss_base (const char* min_cvss_base)
 }
 
 /**
+ * @brief Return SQL WHERE for restricting a SELECT to a minimum QoD.
+ *
+ * @param[in]  min_cvss_base  Minimum value for QoD.
+ *
+ * @return WHERE clause if one is required, else NULL.
+ */
+static gchar* where_qod (const char* min_qod)
+{
+  gchar *qod_sql;
+  if (min_qod)
+    {
+      gchar *quoted_qod = sql_quote (min_qod);
+      qod_sql = g_strdup_printf (" AND (qod >= CAST ('%s' AS INTEGER))",
+                                 quoted_qod);
+      g_free (quoted_qod);
+    }
+  else
+    qod_sql = NULL;
+
+  return qod_sql;
+}
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
  *
  * @param[in]  search_phrase  Phrase that results must include.  All results if
@@ -16194,7 +16237,7 @@ where_search_phrase (const char* search_phrase, int exact)
     { "(SELECT uuid FROM reports WHERE id = report)", "report_id" },          \
     { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
       "solution_type" },                                                      \
-    { "CASE qod WHEN -1 THEN NULL ELSE qod END", "qod" },                     \
+    { "qod", NULL },                                                          \
     { NULL, NULL }                                                            \
   }
 
@@ -16313,6 +16356,7 @@ result_count (const get_data_t *get,
  *                            NULL or "".
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  min_cvss_base  Minimum value for CVSS.  All results if NULL.
+ * @param[in]  min_qod        Minimum value for QoD.  All results if NULL.
  * @param[in]  override       Whether to override the threat and CVSS.
  */
 void
@@ -16321,12 +16365,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                       int ascending, const char* sort_field, const char* levels,
                       int autofp, const char* search_phrase,
                       int search_phrase_exact, const char* min_cvss_base,
-                      int override)
+                      const char* min_qod, int override)
 {
   int dynamic_severity = setting_dynamic_severity_int (); // TODO: Add parameter
 
   GString *levels_sql, *phrase_sql, *cvss_sql;
-  gchar *severity_sql, *order_sql, *sql;
+  gchar *severity_sql, *qod_sql, *order_sql, *sql;
 
   assert ((report && result) == 0);
 
@@ -16354,6 +16398,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
 
       phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
       cvss_sql = where_cvss_base (min_cvss_base);
+      qod_sql = where_qod (min_qod);
 
       new_severity_sql
         = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
@@ -16565,9 +16610,10 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              "  WHERE id = results.report) AS report_id,"
                              " (SELECT solution_type FROM nvts"
                              "  WHERE oid = nvt) AS solution_type,"
-                             " (CASE qod WHEN -1 THEN NULL ELSE qod END)"
+                             " qod"
                              " FROM results"
                              " WHERE results.report = %llu"
+                             "%s"
                              "%s"
                              "%s"
                              "%s"
@@ -16582,6 +16628,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              levels_sql ? levels_sql->str : "",
                              phrase_sql ? phrase_sql->str : "",
                              cvss_sql ? cvss_sql->str : "",
+                             qod_sql ? qod_sql : "",
                              order_sql,
                              sql_select_limit (max_results),
                              first_result > 0 ? first_result : 0);
@@ -16589,6 +16636,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       if (levels_sql) g_string_free (levels_sql, TRUE);
       if (phrase_sql) g_string_free (phrase_sql, TRUE);
       if (cvss_sql) g_string_free (cvss_sql, TRUE);
+      g_free (qod_sql);
       g_free (auto_type_sql);
       g_free (new_severity_sql);
       g_free (order_sql);
@@ -16656,6 +16704,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              "  WHERE id = results.report) AS report_id,"
                              " (SELECT solution_type FROM nvts"
                              "  WHERE oid = nvt) AS solution_type"
+                             " qod"
                              " FROM results"
                              " WHERE id = %llu;",
                              severity_sql,
@@ -18157,6 +18206,8 @@ column_auto_type (report_t report, int autofp)
  * @param[in]   search_phrase  Phrase that results must include.  All results if
  *                             NULL or "".
  * @param[in]   search_phrase_exact  Whether search phrase is exact.
+ * @param[in]   min_cvss_base  Minimum QoD of included results.  All
+ *                             results if NULL.
  * @param[in]   min_cvss_base  Minimum CVSS base of included results.  All
  *                             results if NULL.
  * @param[in]   override       Whether to override threats.
@@ -18168,14 +18219,16 @@ column_auto_type (report_t report, int autofp)
 int
 report_scan_result_count (report_t report, const char* levels,
                           const char* search_phrase, int search_phrase_exact,
-                          const char* min_cvss_base, int override, int autofp,
-                          int* count)
+                          const char* min_cvss_base, const char* min_qod,
+                          int override, int autofp, int* count)
 {
   GString *levels_sql, *phrase_sql, *cvss_sql;
+  gchar *qod_sql;
   gchar *new_severity_sql = NULL;
 
   phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
   cvss_sql = where_cvss_base (min_cvss_base);
+  qod_sql = where_qod (min_qod);
 
   if (report_counts_cache_exists (report, override)
       && autofp == 0 && min_cvss_base == NULL && search_phrase == NULL)
@@ -18255,16 +18308,18 @@ report_scan_result_count (report_t report, const char* levels,
                     " WHERE results.report = %llu"
                     " AND (CAST (%s AS REAL)"
                     "       >= " G_STRINGIFY (SEVERITY_FP) ")"
-                    "%s%s%s;",
+                    "%s%s%s%s;",
                     report,
                     new_severity_sql ? new_severity_sql : "severity",
                     levels_sql ? levels_sql->str : "",
                     phrase_sql ? phrase_sql->str : "",
-                    cvss_sql ? cvss_sql->str : "");
+                    cvss_sql ? cvss_sql->str : "",
+                    qod_sql ? qod_sql : "");
 
   if (levels_sql) g_string_free (levels_sql, TRUE);
   if (phrase_sql) g_string_free (phrase_sql, TRUE);
   if (cvss_sql) g_string_free (cvss_sql, TRUE);
+  g_free (qod_sql);
   g_free (new_severity_sql);
 
   return 0;
@@ -18347,6 +18402,7 @@ report_counts_autofp_match (iterator_t *results, int autofp)
  * @param[in]  search_phrase  Search phrase.
  * @param[in]  search_phrase_exact  Whether search phrase is exact.
  * @param[in]  min_cvss_base  Minimum CVSS base.
+ * @param[in]  min_cvss_base  Minimum QoD.
  * @param[in]  autofp         Whether to apply the auto FP filter.
  *
  * @return 1 if match, 0 otherwise.
@@ -18354,10 +18410,20 @@ report_counts_autofp_match (iterator_t *results, int autofp)
 static int
 report_counts_match (iterator_t *results, const char *search_phrase,
                      int search_phrase_exact, const char *min_cvss_base,
-                     int autofp)
+                     const char* min_qod, int autofp)
 {
   if (autofp && (report_counts_autofp_match (results, autofp) == 0))
     return 0;
+
+  if (min_qod)
+    {
+      int min_qod_int;
+      if (sscanf (min_qod, "%d", &min_qod_int) != 1)
+        min_qod_int = -1;
+
+      if (iterator_int (results, 8) < min_qod_int)
+        return 0;
+    }
 
   /* This must match the conditions in the SQL in where_search_phrase. */
   if (search_phrase && search_phrase_exact)
@@ -18533,6 +18599,8 @@ report_severity_data_prepare_full (task_t task)
  * @param[in]  host       Host to which to limit the count.  NULL to allow all.
  * @param[in]  min_cvss_base  Minimum CVSS base of filtered results.  All
  *                            results if NULL.
+ * @param[in]  min_qod    Minimum QoD of filtered results.  All
+ *                        results if NULL.
  * @param[in]  search_phrase  Phrase that filtered results must include.  All results
  *                            if NULL or "".
  * @param[in]  search_phrase_exact     Whether search phrase is exact.
@@ -18543,6 +18611,7 @@ report_severity_data_prepare_full (task_t task)
 void
 report_severity_data (report_t report, int override,
                       const char *host, const char *min_cvss_base,
+                      const char *min_qod,
                       const char *search_phrase, int search_phrase_exact,
                       int autofp, severity_data_t* severity_data,
                       severity_data_t* filtered_severity_data)
@@ -18594,7 +18663,7 @@ report_severity_data (report_t report, int override,
       init_iterator (&results,
                       "SELECT results.id, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
-                      " results.report, %s"
+                      " results.report, %s, qod"
                       " FROM results"
                       " WHERE"
                       "%s%s%s"
@@ -18665,12 +18734,12 @@ report_severity_data (report_t report, int override,
                     {
                       if (report_counts_match (&results, search_phrase,
                                                 search_phrase_exact,
-                                                min_cvss_base, autofp))
+                                                min_cvss_base, min_qod, autofp))
                         severity_data_add (filtered_severity_data,
                                            new_severity);
                       else if (report_counts_match (&results, search_phrase,
                                                     search_phrase_exact,
-                                                    min_cvss_base, 0))
+                                                    min_cvss_base, min_qod, 0))
                         severity_data_add (filtered_severity_data,
                                            SEVERITY_FP);
                     }
@@ -18770,12 +18839,12 @@ report_severity_data (report_t report, int override,
                     {
                       if (report_counts_match (&results, search_phrase,
                                                 search_phrase_exact,
-                                                min_cvss_base, autofp))
+                                                min_cvss_base, min_qod, autofp))
                         severity_data_add (filtered_severity_data,
                                            new_severity);
                       else if (report_counts_match (&results, search_phrase,
                                                     search_phrase_exact,
-                                                    min_cvss_base, 0))
+                                                    min_cvss_base, min_qod, 0))
                         severity_data_add (filtered_severity_data,
                                            SEVERITY_FP);
                     }
@@ -18862,12 +18931,12 @@ report_severity_data (report_t report, int override,
                 {
                   if (report_counts_match (&results, search_phrase,
                                             search_phrase_exact,
-                                            min_cvss_base, autofp))
+                                            min_cvss_base, min_qod, autofp))
                     severity_data_add (filtered_severity_data,
                                        new_severity);
                   else if (report_counts_match (&results, search_phrase,
                                                 search_phrase_exact,
-                                                min_cvss_base, 0))
+                                                min_cvss_base, min_qod, 0))
                     severity_data_add (filtered_severity_data,
                                        SEVERITY_FP);
                 }
@@ -19084,6 +19153,8 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
  * @param[in]   host               Host to which to limit the count.  NULL to allow all.
  * @param[in]   min_cvss_base      Minimum CVSS base of filtered results.  All
  *                                 results if NULL.
+ * @param[in]   min_qod            Minimum QoD of filtered results.  All
+ *                                 results if NULL.
  * @param[in]   search_phrase      Phrase that filtered results must include.
  *                                 All results if NULL or "".
  * @param[in]   search_phrase_exact  Whether search phrase is exact.
@@ -19103,8 +19174,9 @@ static int
 report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
                        int* logs, int* warnings, int* false_positives,
                        double* severity, int override, const char *host,
-                       const char *min_cvss_base, const char *search_phrase,
-                       int search_phrase_exact, int autofp,
+                       const char *min_cvss_base, const char *min_qod,
+                       const char *search_phrase, int search_phrase_exact,
+                       int autofp,
                        int* filtered_debugs, int* filtered_holes,
                        int* filtered_infos, int* filtered_logs,
                        int* filtered_warnings, int* filtered_false_positives,
@@ -19142,7 +19214,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
     min_cvss_base = NULL;
 
   if (cache_exists && autofp == 0 && host == NULL && min_cvss_base == NULL
-      && search_phrase == NULL)
+      && min_qod == NULL && search_phrase == NULL)
     {
       /* Get unfiltered counts from cache. */
       report_counts_from_cache (report, override, &severity_data);
@@ -19153,11 +19225,11 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
     {
       /* Recalculate. */
       if (filtered_requested)
-        report_severity_data (report, override, host, min_cvss_base,
+        report_severity_data (report, override, host, min_cvss_base, min_qod,
                               search_phrase, search_phrase_exact,
                               autofp, &severity_data, &filtered_severity_data);
       else
-        report_severity_data (report, override, host, min_cvss_base,
+        report_severity_data (report, override, host, min_cvss_base, min_qod,
                               search_phrase, search_phrase_exact,
                               autofp, &severity_data, NULL);
     }
@@ -19209,8 +19281,8 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
 {
   return report_counts_id_filt (report, debugs, holes, infos, logs, warnings,
                                 false_positives, severity, override, host,
-                                NULL, NULL, 0, autofp, NULL, NULL, NULL, NULL,
-                                NULL, NULL, NULL);
+                                NULL, NULL, NULL, 0, autofp, NULL, NULL, NULL,
+                                NULL, NULL, NULL, NULL);
 
 }
 
@@ -20858,6 +20930,8 @@ free_buffer (array_t *buffer)
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
  *                                results if NULL.
+ * @param[in]  min_qod        Minimum QoD of included results.  All
+ *                            results if NULL.
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
@@ -20880,7 +20954,7 @@ free_buffer (array_t *buffer)
 static gchar *
 report_filter_term (int sort_order, const char* sort_field,
                     int result_hosts_only,
-                    const char *min_cvss_base,
+                    const char *min_cvss_base, const char *min_qod,
                     const char *levels, const char *delta_states,
                     const char *search_phrase, int search_phrase_exact,
                     int autofp, int notes, int overrides,
@@ -20890,6 +20964,7 @@ report_filter_term (int sort_order, const char* sort_field,
                           "%s%s=%s"
                           " result_hosts_only=%i"
                           " min_cvss_base=%s"
+                          " min_qod=%s"
                           " levels=%s"
                           " autofp=%i"
                           " notes=%i"
@@ -20909,6 +20984,7 @@ report_filter_term (int sort_order, const char* sort_field,
                           sort_field ? sort_field : "id",
                           result_hosts_only,
                           min_cvss_base ? min_cvss_base : "",
+                          min_qod ? min_qod : "",
                           levels ? levels : "hmlgd",
                           autofp,
                           notes,
@@ -21465,6 +21541,8 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
  * @param[in]  search_phrase_exact    Whether search phrase is exact.
  * @param[in]  min_cvss_base    Minimum CVSS base of included results. All
  *                              results if NULL.
+ * @param[in]  min_qod          Minimum QoD of included results. All
+ *                              results if NULL.
  * @param[in]  apply_overrides    Whether to apply overrides.
  *
  * @return 0 on success, -1 error.
@@ -21474,7 +21552,8 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
                        int max_results, int sort_order, const char *sort_field,
                        const char *levels, int autofp,
                        const char *search_phrase, int search_phrase_exact,
-                       const char *min_cvss_base, int apply_overrides)
+                       const char *min_cvss_base, const char *min_qod,
+                       int apply_overrides)
 {
   iterator_t results;
   gchar *last_port, *last_host;
@@ -21494,6 +21573,7 @@ print_report_port_xml (report_t report, FILE *out, int first_result,
     search_phrase,
     search_phrase_exact,
     min_cvss_base,
+    min_qod,
     apply_overrides);
 
   /* Buffer the results, removing duplicates. */
@@ -22305,6 +22385,8 @@ tz_revert (gchar *zone, char *tz)
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  given_min_cvss_base  Minimum CVSS base of included results.  All
  *                                  results if NULL.
+ * @param[in]  given_min_qod  Minimum QoD of included results.  All results
+ *                            if NULL.
  * @param[in]  report_format  Format of report that will be created from XML.
  * @param[in]  given_levels   String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
@@ -22346,7 +22428,8 @@ static int
 print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   const get_data_t *get,
                   int sort_order, const char *given_sort_field, int result_hosts_only,
-                  const char *given_min_cvss_base, report_format_t report_format,
+                  const char *given_min_cvss_base, const char *given_min_qod,
+                  report_format_t report_format,
                   const char *given_levels, const char *given_delta_states,
                   int given_apply_overrides, const char *given_search_phrase,
                   int autofp, int notes, int notes_details, int overrides,
@@ -22357,7 +22440,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                   int ignore_pagination, const char *given_zone)
 {
   FILE *out;
-  gchar *clean, *term, *sort_field, *levels, *search_phrase, *min_cvss_base;
+  gchar *clean, *term, *sort_field, *levels, *search_phrase;
+  gchar *min_cvss_base, *min_qod;
   gchar *delta_states, *timestamp;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
   int result_count, filtered_result_count, run_status;
@@ -22426,7 +22510,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_cvss_base, &levels, &delta_states,
+                                     &min_cvss_base, &min_qod, &levels,
+                                     &delta_states,
                                      &search_phrase, &search_phrase_exact,
                                      &autofp, &notes, &overrides,
                                      &apply_overrides, &zone);
@@ -22438,13 +22523,14 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       search_phrase = g_strdup (given_search_phrase);
       search_phrase_exact = 0;
       min_cvss_base = g_strdup (given_min_cvss_base);
+      min_qod = g_strdup (given_min_qod);
       delta_states = g_strdup (given_delta_states);
       apply_overrides = given_apply_overrides;
       zone = given_zone ? g_strdup (given_zone) : NULL;
 
       /* Build the filter term from the old style GET attributes. */
       term = report_filter_term (sort_order, sort_field, result_hosts_only,
-                                 min_cvss_base, levels, delta_states,
+                                 min_cvss_base, min_qod, levels, delta_states,
                                  search_phrase, search_phrase_exact, autofp,
                                  notes, overrides, first_result, max_results,
                                  zone);
@@ -22460,6 +22546,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (levels);
       g_free (search_phrase);
       g_free (min_cvss_base);
+      g_free (min_qod);
       g_free (delta_states);
       return -1;
     }
@@ -22528,6 +22615,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
           g_free (levels);
           g_free (search_phrase);
           g_free (min_cvss_base);
+          g_free (min_qod);
           g_free (delta_states);
           tz_revert (zone, tz);
           return -1;
@@ -22568,7 +22656,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       if (delta == 0)
         {
-          report_scan_result_count (report, NULL, NULL, 0, NULL,
+          report_scan_result_count (report, NULL, NULL, 0, NULL, NULL,
                                     apply_overrides, autofp,
                                     &result_count);
         }
@@ -22577,6 +22665,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                 search_phrase,
                                 search_phrase_exact,
                                 min_cvss_base,
+                                min_qod,
                                 apply_overrides,
                                 autofp,
                                 &filtered_result_count);
@@ -22602,6 +22691,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     "<apply_overrides>%i</apply_overrides>"
     "<result_hosts_only>%i</result_hosts_only>"
     "<min_cvss_base>%s</min_cvss_base>"
+    "<min_qod>%s</min_qod>"
     "<timezone>%s</timezone>",
     sort_field ? sort_field : "type",
     sort_order ? "ascending" : "descending",
@@ -22615,6 +22705,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     apply_overrides ? 1 : 0,
     result_hosts_only ? 1 : 0,
     min_cvss_base ? min_cvss_base : "",
+    min_qod ? min_qod : "",
     zone ? zone : "");
 
   g_free (term);
@@ -22856,6 +22947,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (levels);
       g_free (search_phrase);
       g_free (min_cvss_base);
+      g_free (min_qod);
       g_free (delta_states);
 
       tz_revert (zone, tz);
@@ -22892,6 +22984,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
       g_free (levels);
       g_free (search_phrase);
       g_free (min_cvss_base);
+      g_free (min_qod);
       g_free (delta_states);
 
       tz_revert (zone, tz);
@@ -22962,7 +23055,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                                  ignore_pagination ? -1 : max_results,
                                  sort_order, sort_field, levels, autofp,
                                  search_phrase, search_phrase_exact,
-                                 min_cvss_base, apply_overrides))
+                                 min_cvss_base, min_qod, apply_overrides))
         {
           tz_revert (zone, tz);
           return -1;
@@ -22973,10 +23066,10 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
 
   report_counts_id_filt (report, &debugs, &holes, &infos, &logs,
                          &warnings, &false_positives, &severity,
-                         apply_overrides, NULL, min_cvss_base, search_phrase,
-                         search_phrase_exact, autofp, &f_debugs, &f_holes,
-                         &f_infos, &f_logs, &f_warnings, &f_false_positives,
-                         &f_severity);
+                         apply_overrides, NULL, min_cvss_base, min_qod,
+                         search_phrase, search_phrase_exact, autofp,
+                         &f_debugs, &f_holes, &f_infos, &f_logs, &f_warnings,
+                         &f_false_positives, &f_severity);
 
   /* Results. */
 
@@ -22992,6 +23085,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             search_phrase,
                             search_phrase_exact,
                             min_cvss_base,
+                            min_qod,
                             apply_overrides);
 
       init_result_iterator (&delta_results, delta, 0,
@@ -23004,6 +23098,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                             search_phrase,
                             search_phrase_exact,
                             min_cvss_base,
+                            min_qod,
                             apply_overrides);
     }
   else if (get->details)
@@ -23017,6 +23112,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
                           search_phrase,
                           search_phrase_exact,
                           min_cvss_base,
+                          min_qod,
                           apply_overrides);
 
   if (get->details)
@@ -23262,6 +23358,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (min_qod);
               g_free (delta_states);
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
@@ -23564,6 +23661,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
               g_free (levels);
               g_free (search_phrase);
               g_free (min_cvss_base);
+              g_free (min_qod);
               g_free (delta_states);
               cleanup_iterator (&results);
               cleanup_iterator (&delta_results);
@@ -23901,6 +23999,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
   g_free (levels);
   g_free (search_phrase);
   g_free (min_cvss_base);
+  g_free (min_qod);
   g_free (delta_states);
 
   if (fclose (out))
@@ -23924,6 +24023,8 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
  * @param[in]  sort_field         Field to sort on, or NULL for "type".
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
+ *                                results if NULL.
+ * @param[in]  min_qod            Minimum QoD of included results.  All
  *                                results if NULL.
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
@@ -23956,7 +24057,8 @@ gchar *
 manage_report (report_t report, report_format_t report_format,
                const char *filt_id, int sort_order,
                const char* sort_field, int result_hosts_only,
-               const char *min_cvss_base, const char *levels,
+               const char *min_cvss_base, const char *min_qod,
+               const char *levels,
                const char *delta_states, int apply_overrides,
                const char *search_phrase, int autofp,
                int notes, int notes_details, int overrides,
@@ -23995,7 +24097,8 @@ manage_report (report_t report, report_format_t report_format,
   get.details = 1;
   ret = print_report_xml (report, 0, task, xml_file, &get,
                           sort_order, sort_field,
-                          result_hosts_only, min_cvss_base, report_format,
+                          result_hosts_only, min_cvss_base, min_qod,
+                          report_format,
                           levels, delta_states, apply_overrides, search_phrase,
                           autofp, notes, notes_details, overrides,
                           overrides_details, first_result, max_results, type,
@@ -24395,6 +24498,8 @@ manage_report (report_t report, report_format_t report_format,
  * @param[in]  result_hosts_only  Whether to show only hosts with results.
  * @param[in]  min_cvss_base      Minimum CVSS base of included results.  All
  *                                results if NULL.
+ * @param[in]  min_qod        Minimum QoD of included results.  All
+ *                            results if NULL.
  * @param[in]  levels         String describing threat levels (message types)
  *                            to include in count (for example, "hmlgd" for
  *                            High, Medium, Low, loG and Debug).  All levels if
@@ -24446,6 +24551,7 @@ manage_send_report (report_t report, report_t delta_report,
                     report_format_t report_format, const get_data_t *get,
                     int sort_order, const char* sort_field,
                     int result_hosts_only, const char *min_cvss_base,
+                    const char *min_qod,
                     const char *levels, const char *delta_states,
                     int apply_overrides, const char *search_phrase,
                     int autofp, int notes, int notes_details, int overrides,
@@ -24496,8 +24602,9 @@ manage_send_report (report_t report, report_t delta_report,
                         (void*) TASK_STATUS_DONE, method, condition,
                         /* Report filtering. */
                         sort_order, sort_field, result_hosts_only,
-                        min_cvss_base, levels, delta_states, apply_overrides,
-                        search_phrase, autofp, notes, notes_details, overrides,
+                        min_cvss_base, min_qod, levels, delta_states,
+                        apply_overrides, search_phrase, autofp,
+                        notes, notes_details, overrides,
                         overrides_details, first_result, max_results,
                         zone);
       if (ret == -1)
@@ -24521,7 +24628,7 @@ manage_send_report (report_t report, report_t delta_report,
 
   xml_file = g_strdup_printf ("%s/report.xml", xml_dir);
   ret = print_report_xml (report, delta_report, task, xml_file, get, sort_order,
-                          sort_field, result_hosts_only, min_cvss_base,
+                          sort_field, result_hosts_only, min_cvss_base, min_qod,
                           report_format, levels, delta_states, apply_overrides,
                           search_phrase, autofp, notes, notes_details,
                           overrides, overrides_details, first_result,

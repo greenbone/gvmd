@@ -2612,6 +2612,11 @@ result_overrides
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>min_qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Minimum QoD if in effect, else empty string.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>autofp</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether to trust vendor security updates. 1 full match, 2 partial.</div>
 <ul style="list-style: none"></ul>
@@ -3353,6 +3358,7 @@ report_report_filters
        &amp; report_report_filters_apply_overrides
        &amp; report_report_filters_result_hosts_only
        &amp; report_report_filters_min_cvss_base
+       &amp; report_report_filters_min_qod
        &amp; report_report_filters_autofp
        &amp; report_report_filters_show_closed_cves
        &amp; report_report_filters_filter*
@@ -3398,6 +3404,12 @@ report_report_filters_result_hosts_only
 
 report_report_filters_min_cvss_base
  = element min_cvss_base
+     {
+       text
+     }
+
+report_report_filters_min_qod
+ = element min_qod
      {
        text
      }
@@ -21172,6 +21184,11 @@ get_preferences_response_preference_default
           Minimum CVSS base of results in report.
           </li>
 <li>
+          @<b>min_qod</b>
+          (<a href="#type_integer">integer</a>)
+          Minimum QoD of results in report.
+          </li>
+<li>
           @<b>notes</b>
           (<a href="#type_boolean">boolean</a>)
           Whether to include notes in the report.
@@ -21383,6 +21400,7 @@ get_preferences_response_preference_default
        &amp; attribute levels { levels }?
        &amp; attribute search_phrase { text }?
        &amp; attribute min_cvss_base { integer }?
+       &amp; attribute min_qod { integer }?
        &amp; attribute notes { boolean }?
        &amp; attribute note_details { boolean }?
        &amp; attribute overrides { boolean }?

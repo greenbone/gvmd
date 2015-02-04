@@ -2683,6 +2683,7 @@ typedef struct
   char *search_phrase;   ///< Search phrase result filter.
   char *host_search_phrase;  ///< Search phrase result filter.
   char *min_cvss_base;   ///< Minimum CVSS base filter.
+  char *min_qod;         ///< Minimum QoD filter.
   int autofp;            ///< Boolean.  Whether to apply auto FP filter.
   int notes;             ///< Boolean.  Whether to include associated notes.
   int notes_details;     ///< Boolean.  Whether to include details of above.
@@ -2717,6 +2718,7 @@ get_reports_data_reset (get_reports_data_t *data)
   free (data->search_phrase);
   free (data->host_search_phrase);
   free (data->min_cvss_base);
+  free (data->min_qod);
   free (data->type);
   free (data->host);
   free (data->pos);
@@ -7153,6 +7155,10 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               "min_cvss_base",
                               &get_reports_data->min_cvss_base);
 
+            append_attribute (attribute_names, attribute_values,
+                              "min_qod",
+                              &get_reports_data->min_qod);
+
             if (find_attribute (attribute_names, attribute_values,
                                 "result_hosts_only", &attribute))
               get_reports_data->result_hosts_only = strcmp (attribute, "0");
@@ -10206,7 +10212,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
 
               init_result_iterator (&results, 0,
                                     note_iterator_result (notes),
-                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL, 0);
+                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL,
+                                    NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -10459,7 +10466,8 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
 
               init_result_iterator (&results, 0,
                                     override_iterator_result (overrides),
-                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL, 0);
+                                    0, 1, 1, NULL, NULL, 1, NULL, 0, NULL,
+                                    NULL, 0);
               while (next (&results))
                 buffer_results_xml (buffer,
                                     &results,
@@ -14619,6 +14627,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,
                                       NULL,
+                                      NULL,
                                       get_reports_data->levels,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
@@ -14707,6 +14716,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,
                                       get_reports_data->min_cvss_base,
+                                      get_reports_data->min_qod,
                                       get_reports_data->levels,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
@@ -14969,6 +14979,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->sort_field,
                                       get_reports_data->result_hosts_only,
                                       get_reports_data->min_cvss_base,
+                                      get_reports_data->min_qod,
                                       get_reports_data->levels,
                                       get_reports_data->delta_states,
                                       get_reports_data->apply_overrides,
