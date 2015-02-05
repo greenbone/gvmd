@@ -1,3 +1,11 @@
+2015-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21568.
+
+	* src/manage.c (manage_schedule): Use the correct case for parent and
+	child, otherwise the parent aborts when it runs SQL because the
+	fork_connection function closes the SQL connection for the child.
+
 2015-02-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21559.

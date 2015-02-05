@@ -4743,11 +4743,12 @@ manage_schedule (int (*fork_connection) (int *,
       switch (fork_connection (&socket, &session, &credentials, owner_uuid))
         {
           case 0:
-            /* Parent.  Continue to next task. */
-            g_free (task_uuid);
-            g_free (owner);
-            g_free (owner_uuid);
-            continue;
+            /* Child.  Break, stop task, exit. */
+            while (stops)
+              {
+                g_free (stops->data);
+                stops = g_slist_delete_link (stops, stops);
+              }
             break;
 
           case -1:
@@ -4765,12 +4766,11 @@ manage_schedule (int (*fork_connection) (int *,
             break;
 
           default:
-            /* Child.  Break, stop task, exit. */
-            while (stops)
-              {
-                g_free (stops->data);
-                stops = g_slist_delete_link (stops, stops);
-              }
+            /* Parent.  Continue to next task. */
+            g_free (task_uuid);
+            g_free (owner);
+            g_free (owner_uuid);
+            continue;
             break;
         }
 
