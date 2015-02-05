@@ -317,6 +317,10 @@ const char *task_schedule_iterator_timezone (iterator_t *);
 
 time_t task_schedule_iterator_initial_offset (iterator_t *);
 
+int set_task_schedule_uuid (const gchar*, schedule_t);
+
+void clear_duration_schedules ();
+
 void reinit_manage_process ();
 
 void manage_update_nvti_cache ();

@@ -4607,7 +4607,24 @@ manage_schedule (int (*fork_connection) (int *,
                 switch (WEXITSTATUS (status))
                   {
                     case EXIT_SUCCESS:
-                      /* Child succeeded. */
+                      {
+                        schedule_t schedule;
+
+                        /* Child succeeded. */
+
+                        schedule = task_schedule_uuid (task_uuid);
+                        /* If it was a once-off schedule without a duration,
+                         * remove it from the task.  If it has a duration it
+                         * will be removed below, after the duration. */
+                        if (schedule
+                            && schedule_period (schedule) == 0
+                            && schedule_duration (schedule) == 0
+                            /* Check next time too, in case the user changed
+                             * the schedule after this task was added to the
+                             * "starts" list. */
+                            && task_schedule_next_time (task_uuid) == 0)
+                          set_task_schedule_uuid (task_uuid, 0);
+                      }
                       g_free (task_uuid);
                       exit (EXIT_SUCCESS);
 
@@ -4741,6 +4758,8 @@ manage_schedule (int (*fork_connection) (int *,
       openvas_server_free (socket, session, credentials);
       exit (EXIT_SUCCESS);
    }
+
+  clear_duration_schedules ();
 
   return 0;
 }

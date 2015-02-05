@@ -1,5 +1,19 @@
 2015-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove once-off schedules from tasks after the tasks have been scheduled.
+
+	* src/manage.c (manage_schedule): Remove schedules after START_TASK
+	succeeds.  Remove expired duration schedules at the end.
+
+	* src/manage_sql.c (set_task_schedule): Correct doc.
+	(set_task_schedule_uuid, task_schedule_uuid, task_schedule_next_time)
+	(clear_duration_schedules, schedule_period, schedule_duration): New
+	functions.
+
+	* src/manage_sql.h, src/manage.h: Add headers accordingly.
+
+2015-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Use the correct case for parent and
 	child, otherwise the parent aborts when it runs SQL because the
 	fork_connection function closes the SQL connection for the child.

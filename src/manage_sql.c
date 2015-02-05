@@ -13585,7 +13585,7 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
  * @param[in]  task      Task.
  * @param[in]  schedule  Schedule.
  *
- * @return 0 success, -1 error, -5 Scanner down.
+ * @return 0 success, -1 error.
  */
 int
 set_task_schedule (task_t task, schedule_t schedule)
@@ -13600,6 +13600,35 @@ set_task_schedule (task_t task, schedule_t schedule)
        " modification_time = m_now ()"
        " WHERE id = %llu;",
        schedule, schedule, task);
+
+  return 0;
+}
+
+/**
+ * @brief Set the schedule of a task.
+ *
+ * @param[in]  task_id   Task UUID.
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+set_task_schedule_uuid (const gchar *task_id, schedule_t schedule)
+{
+  gchar *quoted_task_id;
+
+  quoted_task_id = sql_quote (task_id);
+  sql ("UPDATE tasks"
+       " SET schedule = %llu,"
+       " schedule_next_time = (SELECT next_time (first_time,"
+       "                                         period,"
+       "                                         period_months)"
+       "                       FROM schedules"
+       "                       WHERE id = %llu),"
+       " modification_time = m_now ()"
+       " WHERE uuid = '%s';",
+       schedule, schedule, quoted_task_id);
+  g_free (quoted_task_id);
 
   return 0;
 }
@@ -13651,6 +13680,39 @@ task_schedule (task_t task)
       default:       /* Programming error. */
         assert (0);
       case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return the schedule of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Schedule.
+ */
+schedule_t
+task_schedule_uuid (const gchar *task_id)
+{
+  schedule_t schedule;
+  gchar *quoted_task_id;
+
+  quoted_task_id = sql_quote (task_id);
+  schedule = 0;
+  switch (sql_int64 (&schedule,
+                     "SELECT schedule FROM tasks WHERE uuid = '%s';",
+                     quoted_task_id))
+    {
+      case 0:
+        g_free (quoted_task_id);
+        return schedule;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_task_id);
         return 0;
         break;
     }
@@ -13710,6 +13772,25 @@ task_schedule_next_time_tz (task_t task)
                                  next_time);
   cleanup_iterator (&schedules);
   return next_time;
+}
+
+/**
+ * @brief Set the next time a scheduled task will be due.
+ *
+ * @param[in]  task_id  Task UUID.
+ */
+time_t
+task_schedule_next_time (const gchar *task_id)
+{
+  gchar *quoted_task_id;
+  time_t ret;
+
+  quoted_task_id = sql_quote (task_id);
+  ret = (time_t) sql_int ("SELECT schedule_next_time FROM tasks"
+                          " WHERE uuid = '%s';",
+                          quoted_task_id);
+  g_free (quoted_task_id);
+  return ret;
 }
 
 /**
@@ -13990,6 +14071,30 @@ set_task_observers (task_t task, const gchar *observers)
   g_strfreev (split);
   sql ("COMMIT;");
   return 0;
+}
+
+/**
+ * @brief Clear once-off schedules from tasks where the duration has passed.
+ *
+ * @return FALSE on success (including if failed to find result), TRUE on error.
+ */
+void
+clear_duration_schedules ()
+{
+  sql ("UPDATE tasks"
+       " SET schedule = 0,"
+       " schedule_next_time = 0,"
+       " modification_time = m_now ()"
+       " WHERE schedule > 0"
+       " AND (SELECT period FROM schedules WHERE schedules.id = schedule) = 0"
+       " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
+       " AND (SELECT first_time + duration FROM schedules"
+       "      WHERE schedules.id = schedule)"
+       "     < m_now ()"
+       " AND run_status != %i"
+       " AND run_status != %i;",
+       TASK_STATUS_RUNNING,
+       TASK_STATUS_REQUESTED);
 }
 
 
@@ -36765,6 +36870,7 @@ DEF_ACCESS (override_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 14);
  */
 DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 
+
 /* Scanners */
 
 /**
@@ -37933,6 +38039,7 @@ verify_scanner (const char *scanner_id, char **version)
   return -1;
 }
 
+
 /* Schedules. */
 
 /**
@@ -38325,6 +38432,34 @@ schedule_name (schedule_t schedule)
 {
   return sql_string ("SELECT name FROM schedules WHERE id = %llu;",
                      schedule);
+}
+
+/**
+ * @brief Return the period of a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Period in seconds.
+ */
+int
+schedule_period (schedule_t schedule)
+{
+  return sql_int ("SELECT period FROM schedules WHERE id = %llu;",
+                  schedule);
+}
+
+/**
+ * @brief Return the period of a schedule.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return Period in seconds.
+ */
+int
+schedule_duration (schedule_t schedule)
+{
+  return sql_int ("SELECT duration FROM schedules WHERE id = %llu;",
+                  schedule);
 }
 
 /**

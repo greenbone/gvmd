@@ -639,8 +639,14 @@ task_threat_level (task_t, int);
 schedule_t
 task_schedule (task_t);
 
+schedule_t
+task_schedule_uuid (const gchar *);
+
 int
 task_schedule_in_trash (task_t);
+
+time_t
+task_schedule_next_time (const gchar *);
 
 int
 task_schedule_next_time_tz (task_t);
@@ -2254,6 +2260,12 @@ schedule_uuid (schedule_t);
 
 char *
 schedule_name (schedule_t);
+
+int
+schedule_duration (schedule_t);
+
+int
+schedule_period (schedule_t);
 
 int
 init_schedule_iterator (iterator_t*, const get_data_t *);
