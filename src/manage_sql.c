@@ -32580,7 +32580,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
                        const char* given_password, const char* key_private,
                        lsc_credential_t *lsc_credential)
 {
-  gchar *quoted_name, *public_key, *private_key;
+  gchar *quoted_name, *private_key;
   int i;
   GRand *rand;
   gchar password[PASSWORD_LENGTH];
@@ -32761,13 +32761,12 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
   password[PASSWORD_LENGTH - 1] = '\0';
   g_rand_free (rand);
 
-  if (lsc_user_keys_create (password, &public_key, &private_key))
+  if (lsc_user_keys_create (password, &private_key))
     {
       g_free (quoted_name);
       sql ("ROLLBACK;");
       return -1;
     }
-  g_free (public_key);
 
   {
     lsc_crypt_ctx_t crypt_ctx;
@@ -33464,6 +33463,8 @@ lsc_credential_iterator_rpm (iterator_t *iterator)
   private_key = lsc_credential_iterator_private_key (iterator);
   pass = lsc_credential_iterator_password (iterator);
   public_key = openvas_ssh_public_from_private (private_key, pass);
+  if (!public_key)
+    return NULL;
   login = lsc_credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {
@@ -33499,6 +33500,8 @@ lsc_credential_iterator_deb (iterator_t *iterator)
   private_key = lsc_credential_iterator_private_key (iterator);
   pass = lsc_credential_iterator_password (iterator);
   public_key = openvas_ssh_public_from_private (private_key, pass);
+  if (!public_key)
+    return NULL;
   login = lsc_credential_iterator_login (iterator);
   if (lsc_user_rpm_recreate (login, public_key, &rpm, &rpm_size))
     {

@@ -1,3 +1,17 @@
+2015-02-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/lsc_user.c (create_ssh_key): New function.
+	(ssh_privkey_create, ssh_pubkey_create): Remove functions.
+	(lsc_user_keys_create): Remove useless public_key argument, adjust
+	function to use create_ssh_key() accordingly to create a private key.
+
+	* src/lsc_user.h: Adjust function header.
+
+	* src/manage_sql.c (create_lsc_credential): Adjust
+	lsc_user_keys_create() function call.
+	(lsc_credential_iterator_rpm, lsc_credential_iterator_deb): Check
+	openvas_ssh_public_from_private() return value.
+
 2015-02-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Allow filtering results of GET_REPORTS using new filter keyword

@@ -86,114 +86,10 @@ check_is_file (const char *name)
 /* Key creation. */
 
 /**
- * @brief Create a private key for local checks.
+ * @brief Create an ssh key for local security checks.
  *
  * Forks and creates a key for local checks by calling
- * "openssl pkcs8 -topk8 -v2 des3 -in filepath -passin pass:passphrase -out
- *          filepath.p8 -passout pass:passphrase"
- * Directories within privkey_file will be created if they do not exist.
- *
- * @param[in]  pubkey_file      Path to file of public key (a .pub will be
- *                              stripped).
- * @param[in]  privkey_file     Name of private key file to be created.
- * @param[in]  passphrase_pub   The passphrase for the public key.
- * @param[in]  passphrase_priv  Passhprase for the private key.
- *
- * @return 0 if successful, -1 otherwise.
- */
-static int
-ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
-                    const char *passphrase_pub, const char *passphrase_priv)
-{
-  gchar *astdout = NULL;
-  gchar *astderr = NULL;
-  GError *err = NULL;
-  gint exit_status;
-  gchar *dir = NULL;
-  gchar *pubkey_stripped = NULL;
-  gchar *command;
-
-  /* Sanity-check essential parameters. */
-  if (!passphrase_pub || !passphrase_priv)
-    {
-      g_debug ("%s: parameter error", __FUNCTION__);
-      return -1;
-    }
-
-  /* Sanity check files. */
-  if (g_file_test (pubkey_file, G_FILE_TEST_EXISTS) == FALSE)
-    {
-      g_debug ("%s: failed to find public key %s", __FUNCTION__, pubkey_file);
-      return -1;
-    }
-  if (g_file_test (privkey_file, G_FILE_TEST_EXISTS))
-    {
-      g_debug ("%s: file already exists.", __FUNCTION__);
-      return -1;
-    }
-  dir = g_path_get_dirname (privkey_file);
-  if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
-    {
-      g_debug ("%s: failed to access dir folder %s", __FUNCTION__, dir);
-      g_free (dir);
-      return -1;
-    }
-  g_free (dir);
-
-  /* Strip ".pub" off public key filename, if any. */
-
-  if (g_str_has_suffix (pubkey_file, ".pub") == TRUE)
-    {
-      pubkey_stripped = g_malloc (strlen (pubkey_file) - strlen (".pub") + 1);
-      g_strlcpy (pubkey_stripped,
-                 pubkey_file,
-                 strlen (pubkey_file) - strlen (".pub") + 1);
-    }
-  else
-    pubkey_stripped = g_strdup (pubkey_file);
-
-  /* Spawn openssl. */
-
-  command =
-    g_strconcat ("openssl pkcs8 -topk8 -v2 des3"
-                 " -in ", pubkey_stripped,
-                 " -passin pass:\"", passphrase_pub, "\"",
-                 " -out ", privkey_file,
-                 " -passout pass:\"", passphrase_priv, "\"",
-                 NULL);
-  g_debug ("command: openssl pkcs8 -topk8 -v2 des3"
-           " -in %s -passin pass:\"********\" -out %s"
-           " -passout pass:\"********\"",
-           pubkey_stripped,
-           privkey_file);
-  g_free (pubkey_stripped);
-
-  if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
-                                  &err)
-       == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
-    {
-      g_debug ("%s: openssl failed with %d", __FUNCTION__, exit_status);
-      g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
-      g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
-      g_free (command);
-      g_free (astdout);
-      g_free (astderr);
-      return -1;
-    }
-
-  g_free (command);
-  g_free (astdout);
-  g_free (astderr);
-  return 0;
-}
-
-/**
- * @brief Create a public key.
- *
- * Forks and creates a key for local checks by calling
- * "ssh-keygen -t rsa -f filepath -C comment -P passhprase -q".
+ * 'ssh-keygen -t rsa -f filepath -C "comment" -P "passhprase"'.
  * A directory will be created if it does not exist.
  *
  * @param[in]  comment     Comment to use.
@@ -203,16 +99,14 @@ ssh_privkey_create (const char *pubkey_file, const char *privkey_file,
  * @return 0 if successful, -1 otherwise.
  */
 static int
-ssh_pubkey_create (const char *comment,
-                   const char *passphrase,
-                   const char *filepath)
+create_ssh_key (const char *comment, const char *passphrase,
+                const char *privpath)
 {
   gchar *astdout = NULL;
   gchar *astderr = NULL;
   GError *err = NULL;
   gint exit_status = 0;
   gchar *dir;
-  gchar *file_pubstripped;
   char *command;
 
   /* Sanity-check essential parameters. */
@@ -230,7 +124,7 @@ ssh_pubkey_create (const char *comment,
 
   /* Sanity check files. */
 
-  dir = g_path_get_dirname (filepath);
+  dir = g_path_get_dirname (privpath);
   if (g_mkdir_with_parents (dir, 0755 /* "rwxr-xr-x" */ ))
     {
       g_debug ("%s: failed to access %s", __FUNCTION__, dir);
@@ -239,29 +133,11 @@ ssh_pubkey_create (const char *comment,
     }
   g_free (dir);
 
-  /* Strip ".pub" off filename, if any. */
-
-  if (g_str_has_suffix (filepath, ".pub") == TRUE)
-    {
-      file_pubstripped = g_malloc (strlen (filepath) - strlen (".pub") + 1);
-      g_strlcpy (file_pubstripped,
-                 filepath,
-                 strlen (filepath) - strlen (".pub") + 1);
-    }
-  else
-    file_pubstripped = g_strdup (filepath);
-
   /* Spawn ssh-keygen. */
-
-  command = g_strconcat ("ssh-keygen -t rsa"
-                         " -f ", file_pubstripped,
-                         " -C \"", comment, "\""
-                         " -P \"", passphrase, "\"",
-                         NULL);
+  command = g_strconcat ("ssh-keygen -t rsa -f ", privpath, " -C \"", comment,
+                         "\" -P \"", passphrase, "\"", NULL);
   g_debug ("command: ssh-keygen -t rsa -f %s -C \"%s\" -P \"********\"",
-           file_pubstripped,
-           comment);
-  g_free (file_pubstripped);
+           privpath, comment);
 
   if ((g_spawn_command_line_sync (command, &astdout, &astderr, &exit_status,
                                   &err)
@@ -271,16 +147,14 @@ ssh_pubkey_create (const char *comment,
     {
       if (err)
         {
-          g_debug ("%s: failed to create public key: %s\n",
+          g_debug ("%s: failed to create private key: %s\n",
                    __FUNCTION__, err->message);
           g_error_free (err);
         }
       else
-        g_debug ("%s: failed to create public key\n", __FUNCTION__);
+        g_debug ("%s: failed to create private key\n", __FUNCTION__);
       g_debug ("%s: key-gen failed with %d (WIF %i, WEX %i).\n",
-               __FUNCTION__,
-               exit_status,
-               WIFEXITED (exit_status),
+               __FUNCTION__, exit_status, WIFEXITED (exit_status),
                WEXITSTATUS (exit_status));
       g_debug ("%s: stdout: %s", __FUNCTION__, astdout);
       g_debug ("%s: stderr: %s", __FUNCTION__, astderr);
@@ -299,20 +173,18 @@ ssh_pubkey_create (const char *comment,
  * @brief Create local security check (LSC) keys.
  *
  * @param[in]   password     Password.
- * @param[out]  public_key   Public key.
  * @param[out]  private_key  Private key.
  *
  * @return 0 success, -1 error.
  */
 int
 lsc_user_keys_create (const gchar *password,
-                      gchar **public_key,
                       gchar **private_key)
 {
   GError *error;
   gsize length;
-  char key_dir[] = "/tmp/key_XXXXXX";
-  gchar *public_key_path, *private_key_path;
+  char key_dir[] = "/tmp/openvas_key_XXXXXX";
+  gchar *key_path = NULL;
   int ret = -1;
 
   /* Make a directory for the keys. */
@@ -320,57 +192,23 @@ lsc_user_keys_create (const gchar *password,
   if (mkdtemp (key_dir) == NULL)
     return -1;
 
-  /* Create public key. */
-
-  public_key_path = g_build_filename (key_dir, "key.pub", NULL);
-  if (ssh_pubkey_create ("Key generated by OpenVAS Manager",
-                         password,
-                         public_key_path))
-    {
-      g_free (public_key_path);
-      goto rm_key_exit;
-    }
-
   /* Create private key. */
-
-  private_key_path = g_build_filename (key_dir, "key.priv", NULL);
-  if (ssh_privkey_create (public_key_path,
-                          private_key_path,
-                          password,
-                          password))
+  key_path = g_build_filename (key_dir, "key", NULL);
+  if (create_ssh_key ("Key generated by OpenVAS Manager", password, key_path))
     goto free_exit;
 
-  /* Read the keys into memory. */
-
   error = NULL;
-  g_file_get_contents (public_key_path, public_key, &length, &error);
+  g_file_get_contents (key_path, private_key, &length, &error);
   if (error)
     {
       g_error_free (error);
       goto free_exit;
     }
-
-  error = NULL;
-  g_file_get_contents (private_key_path, private_key, &length, &error);
-  if (error)
-    {
-      g_error_free (error);
-      goto free_exit;
-    }
-
-  /* Return. */
-
   ret = 0;
-
  free_exit:
 
-  g_free (public_key_path);
-  g_free (private_key_path);
-
- rm_key_exit:
-
+  g_free (key_path);
   openvas_file_remove_recurse (key_dir);
-
   return ret;
 }
 
