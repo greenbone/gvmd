@@ -2721,7 +2721,13 @@ filter_clause (const char* type, const char* filter,
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
                        || (strcmp (keyword->string, "published") == 0)
-                       || (strcmp (keyword->string, "qod") == 0))
+                       || (strcmp (keyword->string, "qod") == 0)
+                       || (strcmp (keyword->string, "cves") == 0)
+                       || (strcmp (keyword->string, "high") == 0)
+                       || (strcmp (keyword->string, "medium") == 0)
+                       || (strcmp (keyword->string, "low") == 0)
+                       || (strcmp (keyword->string, "log") == 0)
+                       || (strcmp (keyword->string, "false_positive") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2729,6 +2735,19 @@ filter_clause (const char* type, const char* filter,
                   assert (column);
                   g_string_append_printf (order,
                                           " ORDER BY %s ASC",
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "ips") == 0)
+                       || (strcmp (keyword->string, "total") == 0)
+                       || (strcmp (keyword->string, "tcp") == 0)
+                       || (strcmp (keyword->string, "udp") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY CAST (%s AS INTEGER) ASC",
                                           column);
                 }
               else if ((strcmp (type, "note")
@@ -2823,7 +2842,13 @@ filter_clause (const char* type, const char* filter,
               else if ((strcmp (keyword->string, "created") == 0)
                        || (strcmp (keyword->string, "modified") == 0)
                        || (strcmp (keyword->string, "published") == 0)
-                       || (strcmp (keyword->string, "qod") == 0))
+                       || (strcmp (keyword->string, "qod") == 0)
+                       || (strcmp (keyword->string, "cves") == 0)
+                       || (strcmp (keyword->string, "high") == 0)
+                       || (strcmp (keyword->string, "medium") == 0)
+                       || (strcmp (keyword->string, "low") == 0)
+                       || (strcmp (keyword->string, "log") == 0)
+                       || (strcmp (keyword->string, "false_positive") == 0))
                 {
                   gchar *column;
                   column = columns_select_column (select_columns,
@@ -2831,6 +2856,19 @@ filter_clause (const char* type, const char* filter,
                   assert (column);
                   g_string_append_printf (order,
                                           " ORDER BY %s DESC",
+                                          column);
+                }
+              else if ((strcmp (keyword->string, "ips") == 0)
+                       || (strcmp (keyword->string, "total") == 0)
+                       || (strcmp (keyword->string, "tcp") == 0)
+                       || (strcmp (keyword->string, "udp") == 0))
+                {
+                  gchar *column;
+                  column = columns_select_column (select_columns,
+                                                  keyword->string);
+                  assert (column);
+                  g_string_append_printf (order,
+                                          " ORDER BY CAST (%s AS INTEGER) DESC",
                                           column);
                 }
               else if ((strcmp (type, "note")

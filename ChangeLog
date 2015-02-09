@@ -1,3 +1,9 @@
+2015-02-09  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (filter_clause): Ensure various filter columns are
+	sorted using their numeric values: cves, high, medium, low, log,
+	false_positive, ips, total, tcp, udp.
+
 2015-02-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add columns qod and qod_type to NVTs and qod_type to Results.  Hence
