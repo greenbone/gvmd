@@ -1,3 +1,8 @@
+2015-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_setup): Also specify the SSH port when creating the
+	target.
+
 2015-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Remove once-off schedules from tasks after the tasks have been scheduled.
