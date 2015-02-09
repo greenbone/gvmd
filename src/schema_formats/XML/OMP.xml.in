@@ -761,8 +761,21 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>qod</name>
-      <summary>The quality of detection (QoD) percentage of the result</summary>
-      <pattern><t>integer</t></pattern>
+      <summary>The quality of detection (QoD) of the result</summary>
+      <pattern>
+        <e>value</e>
+        <e>type</e>
+      </pattern>
+      <ele>
+        <name>value</name>
+        <summary>The numeric QoD value</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The QoD type</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>original_threat</name>
@@ -10488,6 +10501,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>nvt</e>
             <e>severity</e>
             <e>threat</e>
+            <e>qod</e>
             <e>description</e>
           </pattern>
           <ele>
@@ -10546,6 +10560,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>
               <t>threat</t>
             </pattern>
+          </ele>
+          <ele>
+            <name>qod</name>
+            <summary>The quality of detection (QoD) of the result</summary>
+            <pattern>
+              <e>value</e>
+              <e>type</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <summary>The numeric QoD value</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The QoD type</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
           <ele>
             <name>description</name>
@@ -10746,6 +10778,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>version</e>
               <e>cvss_base</e>
               <e>risk_factor</e>
+              <e>qod</e>
               <e>cve_id</e>
               <e>cert_refs</e>
               <e>bugtraq_id</e>
@@ -10865,6 +10898,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>risk_factor</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>qod</name>
+          <summary>The quality of detection (QoD) of the NVT</summary>
+          <pattern>
+            <e>value</e>
+            <e>type</e>
+          </pattern>
+          <ele>
+            <name>value</name>
+            <summary>The numeric QoD value</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The QoD type</summary>
+            <pattern>text</pattern>
+          </ele>
         </ele>
         <ele>
           <name>cve_id</name>
@@ -11584,6 +11635,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>nvt</e>
             <e>threat</e>
             <e>severity</e>
+            <e>qod</e>
             <e>description</e>
           </pattern>
           <ele>
@@ -11642,6 +11694,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <pattern>
               <t>severity</t>
             </pattern>
+          </ele>
+          <ele>
+            <name>qod</name>
+            <summary>The quality of detection (QoD) of the result</summary>
+            <pattern>
+              <e>value</e>
+              <e>type</e>
+            </pattern>
+            <ele>
+              <name>value</name>
+              <summary>The numeric QoD value</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>The QoD type</summary>
+              <pattern>text</pattern>
+            </ele>
           </ele>
           <ele>
             <name>description</name>
@@ -13872,6 +13942,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>scan_nvt_version</e>
           <e>threat</e>
           <e>severity</e>
+          <e>qod</e>
           <e>description</e>
           <o><e>original_severity</e></o>
           <o><e>notes</e></o>
@@ -14102,6 +14173,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <name>severity</name>
           <summary>Severity score of the result, with overrides if applicable</summary>
           <pattern><t>severity</t></pattern>
+        </ele>
+        <ele>
+          <name>qod</name>
+          <summary>The quality of detection (QoD) of the NVT</summary>
+          <pattern>
+            <e>value</e>
+            <e>type</e>
+          </pattern>
+          <ele>
+            <name>value</name>
+            <summary>The numeric QoD value</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>type</name>
+            <summary>The QoD type</summary>
+            <pattern>text</pattern>
+          </ele>
         </ele>
         <ele>
           <name>description</name>

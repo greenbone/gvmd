@@ -14180,9 +14180,9 @@ make_osp_result (task_t task, const char *host, const char *nvt,
     result_severity = g_strdup (severity);
   sql ("INSERT into results"
        " (task, host, port, nvt, nvt_version, severity, type,"
-       "  qod, description, uuid)"
+       "  qod, qod_type, description, uuid)"
        " VALUES (%llu, '%s', '', '%s', '%s', '%s', '%s',"
-       "         '%s', '%s', make_uuid ());",
+       "         '%s', '', '%s', make_uuid ());",
        task, host ?: "", quoted_nvt, nvt_revision ?: "", result_severity, type,
        G_STRINGIFY (QOD_DEFAULT), quoted_desc);
   g_free (result_severity);
@@ -14191,6 +14191,45 @@ make_osp_result (task_t task, const char *host, const char *nvt,
   g_free (quoted_nvt);
 
   return sql_last_insert_id ();
+}
+
+/**
+ * @brief Get QoD percentage for a qod_type string.
+ *
+ * @param[in]  qod_type   The QoD type string.
+ *
+ * @return A QoD percentage value, QOD_DEFAULT if string is NULL or unknown.
+ */
+int qod_from_type (const char *qod_type)
+{
+  if (qod_type == NULL)
+    return QOD_DEFAULT;
+  else if (strcmp (qod_type, "exploit") == 0)
+    return 100;
+  else if  (strcmp (qod_type, "remote_vul") == 0)
+    return 99;
+  else if (strcmp (qod_type, "remote_app") == 0)
+    return 98;
+  else if (strcmp (qod_type, "package") == 0)
+    return 97;
+  else if (strcmp (qod_type, "registry") == 0)
+    return 97;
+  else if (strcmp (qod_type, "remote_active") == 0)
+    return 95;
+  else if (strcmp (qod_type, "remote_banner") == 0)
+    return 80;
+  else if (strcmp (qod_type, "executable_version") == 0)
+    return 80;
+  else if (strcmp (qod_type, "remote_analysis") == 0)
+    return 70;
+  else if (strcmp (qod_type, "remote_probe") == 0)
+    return 50;
+  else if (strcmp (qod_type, "remote_banner_unreliable") == 0)
+    return 30;
+  else if (strcmp (qod_type, "executable_version_unreliable") == 0)
+    return 30;
+  else
+    return QOD_DEFAULT;
 }
 
 /**
@@ -14211,7 +14250,7 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 {
   result_t result;
   gchar *nvt_revision, *severity;
-  gchar *quoted_descr;
+  gchar *quoted_descr, *quoted_qod_type;
   int qod;
   nvt_t nvt_id = 0;
 
@@ -14227,37 +14266,23 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
       nvti = nvtis_lookup (nvti_cache, nvt);
       if (nvti)
         {
-          gchar *value;
-          value = tag_value (nvti_tag (nvti), "qod_type");
-          if (strcmp (value, "exploit") == 0)
-            qod = 100;
-          else if  (strcmp (value, "remote_vul") == 0)
-            qod = 99;
-          else if (strcmp (value, "remote_app") == 0)
-            qod = 98;
-          else if (strcmp (value, "package") == 0)
-            qod = 97;
-          else if (strcmp (value, "registry") == 0)
-            qod = 97;
-          else if (strcmp (value, "remote_active") == 0)
-            qod = 95;
-          else if (strcmp (value, "remote_banner") == 0)
-            qod = 80;
-          else if (strcmp (value, "executable_version") == 0)
-            qod = 80;
-          else if (strcmp (value, "remote_analysis") == 0)
-            qod = 70;
-          else if (strcmp (value, "remote_probe") == 0)
-            qod = 50;
-          else if (strcmp (value, "remote_banner_unreliable") == 0)
-            qod = 30;
-          else if (strcmp (value, "executable_version_unreliable") == 0)
-            qod = 30;
-          else
-            qod = QOD_DEFAULT;
+          gchar *qod_str, *qod_type;
+          qod_str = tag_value (nvti_tag (nvti), "qod");
+          qod_type = tag_value (nvti_tag (nvti), "qod_type");
+
+          if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
+            qod = qod_from_type (qod_type);
+
+          quoted_qod_type = sql_quote (qod_type);
+
+          g_free (qod_str);
+          g_free (qod_type);
         }
       else
-        qod = QOD_DEFAULT;
+        {
+          qod = QOD_DEFAULT;
+          quoted_qod_type = g_strdup ("");
+        }
 
       if (strcasecmp (type, "Alarm") == 0)
         {
@@ -14282,7 +14307,8 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
     }
   else
     {
-      qod = -1;
+      qod = QOD_DEFAULT;
+      quoted_qod_type = g_strdup ("");
       if (strcasecmp (type, "Log Message") == 0)
         severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
       else if (strcasecmp (type, "Debug Message") == 0)
@@ -14309,14 +14335,15 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
   quoted_descr = sql_quote (description ?: "");
   sql ("INSERT into results"
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
-       "  description, uuid, qod)"
+       "  description, uuid, qod, qod_type)"
        " VALUES"
        " (NULL, m_now (), %llu, '%s', '%s', '%s', '%s', '%s', '%s',"
-       "  '%s', make_uuid (), %i);",
+       "  '%s', make_uuid (), %i, '%s');",
        task, host ?: "", port ?: "", nvt ?: "", nvt_revision, severity, type,
-       quoted_descr, qod);
+       quoted_descr, qod, quoted_qod_type);
 
   g_free (quoted_descr);
+  g_free (quoted_qod_type);
   g_free (nvt_revision);
   g_free (severity);
   result = sql_last_insert_id ();
@@ -15147,7 +15174,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
     {
       gchar *quoted_host, *quoted_port, *quoted_nvt_oid;
       gchar *quoted_description, *quoted_scan_nvt_version, *quoted_severity;
-      gchar *quoted_qod;
+      gchar *quoted_qod, *quoted_qod_type;
 
       quoted_host = sql_quote (result->host ? result->host : "");
       quoted_port = sql_quote (result->port ? result->port : "");
@@ -15163,13 +15190,13 @@ create_report (array_t *results, const char *task_id, const char *task_name,
         quoted_qod = sql_quote (result->qod);
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
-
+      quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
       sql ("INSERT INTO results"
            " (uuid, owner, date, task, host, port, nvt, type, description,"
-           "  nvt_version, severity, qod)"
+           "  nvt_version, severity, qod, qod_type)"
            " VALUES"
            " (make_uuid (), %llu, m_now (), %llu, '%s', '%s', '%s', '%s', '%s',"
-           "  '%s', '%s', '%s');",
+           "  '%s', '%s', '%s', '%s');",
            owner,
            task,
            quoted_host,
@@ -15181,7 +15208,8 @@ create_report (array_t *results, const char *task_id, const char *task_name,
            quoted_description,
            quoted_scan_nvt_version,
            quoted_severity,
-           quoted_qod);
+           quoted_qod,
+           quoted_qod_type);
 
       g_free (quoted_host);
       g_free (quoted_port);
@@ -15190,6 +15218,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
       g_free (quoted_scan_nvt_version);
       g_free (quoted_severity);
       g_free (quoted_qod);
+      g_free (quoted_qod_type);
 
       report_add_result (report, sql_last_insert_id ());
     }
@@ -16287,7 +16316,7 @@ where_search_phrase (const char* search_phrase, int exact)
     "type", "original_type", "auto_type",                                     \
     "description", "task", "report", "cvss_base", "nvt_version",              \
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
-    "solution_type", "qod", NULL }
+    "solution_type", "qod", "qod_type", NULL }
 
 /**
  * @brief Result iterator columns.
@@ -16343,10 +16372,11 @@ where_search_phrase (const char* search_phrase, int exact)
     { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
       "solution_type" },                                                      \
     { "qod", NULL },                                                          \
+    { "qod_type", NULL },                                                     \
     { NULL, NULL }                                                            \
   }
 
-#define RESULT_ITERATOR_COLUMN_COUNT 29
+#define RESULT_ITERATOR_COLUMN_COUNT 30
 
 #define RESULT_ITERATOR_COLUMNS_ARRAY                 \
       {                                               \
@@ -16715,7 +16745,8 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              "  WHERE id = results.report) AS report_id,"
                              " (SELECT solution_type FROM nvts"
                              "  WHERE oid = nvt) AS solution_type,"
-                             " qod"
+                             " qod,"
+                             " qod_type"
                              " FROM results"
                              " WHERE results.report = %llu"
                              "%s"
@@ -16808,8 +16839,9 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                              " (SELECT uuid FROM reports"
                              "  WHERE id = results.report) AS report_id,"
                              " (SELECT solution_type FROM nvts"
-                             "  WHERE oid = nvt) AS solution_type"
-                             " qod"
+                             "  WHERE oid = nvt) AS solution_type,"
+                             " qod,"
+                             " qod_type"
                              " FROM results"
                              " WHERE id = %llu;",
                              severity_sql,
@@ -17265,6 +17297,16 @@ result_iterator_level (iterator_t *iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (result_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 17);
+
+/**
+ * @brief Get the qod_type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The qod type of the result.  Caller must only use before calling
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (result_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Initialise a host iterator.
@@ -30132,13 +30174,14 @@ find_nvt (const char* oid, nvt_t* nvt)
 nvt_t
 make_nvt_from_nvti (const nvti_t *nvti, int remove)
 {
+  gchar *qod_str, *qod_type;
   /** @todo Freeing string literals. */
   gchar *quoted_version, *quoted_name, *quoted_summary;
   gchar *quoted_copyright, *quoted_cve, *quoted_bid, *quoted_xref, *quoted_tag;
-  gchar *quoted_cvss_base, *quoted_family, *value;
+  gchar *quoted_cvss_base, *quoted_qod_type, *quoted_family, *value;
   gchar *quoted_solution_type;
 
-  int creation_time, modification_time;
+  int creation_time, modification_time, qod;
 
   if (remove)
     {
@@ -30213,6 +30256,18 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   quoted_cvss_base = sql_quote (nvti_cvss_base (nvti)
                                  ? nvti_cvss_base (nvti)
                                  : "");
+
+  qod_str = tag_value (nvti_tag (nvti), "qod");
+  qod_type = tag_value (nvti_tag (nvti), "qod_type");
+
+  if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
+    qod = qod_from_type (qod_type);
+
+  quoted_qod_type = sql_quote (qod_type ? qod_type : "");
+
+  g_free (qod_str);
+  g_free (qod_type);
+
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
   value = tag_value (nvti_tag (nvti), "creation_date");
@@ -30269,13 +30324,15 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   sql ("DELETE FROM nvts WHERE oid = '%s';", nvti_oid (nvti));
   sql ("INSERT into nvts (oid, version, name, summary, copyright,"
        " cve, bid, xref, tag, category, family, cvss_base,"
-       " creation_time, modification_time, uuid, solution_type)"
+       " creation_time, modification_time, uuid, solution_type,"
+       " qod, qod_type)"
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s');",
+       " '%s', %i, '%s', '%s', %i, %i, '%s', '%s', %d, '%s');",
        nvti_oid (nvti), quoted_version, quoted_name, quoted_summary,
        quoted_copyright, quoted_cve, quoted_bid, quoted_xref, quoted_tag,
        nvti_category (nvti), quoted_family, quoted_cvss_base, creation_time,
-       modification_time, nvti_oid (nvti), quoted_solution_type);
+       modification_time, nvti_oid (nvti), quoted_solution_type,
+       qod, quoted_qod_type);
 
   if (remove)
     sql ("COMMIT;");
@@ -30291,6 +30348,7 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
   g_free (quoted_cvss_base);
   g_free (quoted_family);
   g_free (quoted_solution_type);
+  g_free (quoted_qod_type);
 
   return sql_last_insert_id ();
 }
@@ -30300,8 +30358,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "version", "summary", "cve", "bid", "xref", \
-   "family", "cvss_base", "severity", "cvss", "script_tags",                \
-   "solution_type", NULL }
+   "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
+   "qod_type", "solution_type", NULL }
 
 /**
  * @brief NVT iterator columns.
@@ -30325,6 +30383,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "qod", NULL },                                                         \
+   { "qod_type", NULL },                                                    \
    { "solution_type" , NULL },                                              \
    { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
@@ -30352,6 +30412,8 @@ make_nvt_from_nvti (const nvti_t *nvti, int remove)
    { "cvss_base", NULL },                                                   \
    { "cvss_base", "severity" },                                             \
    { "cvss_base", "cvss" },                                                 \
+   { "qod", NULL },                                                         \
+   { "qod_type", NULL },                                                    \
    { "solution_type" , NULL },                                              \
    { "tag", "script_tags" },                                                \
    { NULL, NULL }                                                           \
@@ -30689,6 +30751,26 @@ DEF_ACCESS (nvt_iterator_family, GET_ITERATOR_COLUMN_COUNT + 10);
 DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
 
 /**
+ * @brief Get the qod from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return QoD, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_qod, GET_ITERATOR_COLUMN_COUNT + 14);
+
+/**
+ * @brief Get the qod_type from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return QoD type, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (nvt_iterator_qod_type, GET_ITERATOR_COLUMN_COUNT + 15);
+
+/**
  * @brief Get the solution_type from an NVT iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -30696,7 +30778,7 @@ DEF_ACCESS (nvt_iterator_cvss_base, GET_ITERATOR_COLUMN_COUNT + 11);
  * @return Solution type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 12);
+DEF_ACCESS (nvt_iterator_solution_type, GET_ITERATOR_COLUMN_COUNT + 16);
 
 /**
  * @brief Get the number of NVTs in one or all families.

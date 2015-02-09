@@ -420,6 +420,7 @@ CREATE TABLE results
   nvt_version text,
   severity real,
   qod integer,
+  qod_type text,
   owner integer REFERENCES users (id) ON DELETE RESTRICT,
   date date);
 
@@ -558,7 +559,9 @@ CREATE TABLE nvts
   cvss_base text,
   creation_time date,
   modification_time date,
-  solution_type text);
+  solution_type text,
+  qod integer,
+  qod_type text);
 
 CREATE TABLE nvt_cves
  (id SERIAL PRIMARY KEY,

@@ -9928,6 +9928,67 @@ migrate_142_to_143 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 143 to version 144.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_143_to_144 ()
+{
+  iterator_t nvts;
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 143. */
+
+  if (manage_db_version () != 143)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Add new QoD columns */
+  sql ("ALTER TABLE nvts ADD COLUMN qod INTEGER;");
+  sql ("ALTER TABLE nvts ADD COLUMN qod_type TEXT;");
+  sql ("ALTER TABLE results ADD COLUMN qod_type TEXT;");
+
+  /* Set default values */
+  sql ("UPDATE nvts SET qod=%d, qod_type='';", QOD_DEFAULT);
+  sql ("UPDATE results SET qod_type='';");
+  /* Assign QoD values from NVT tags */
+  init_iterator (&nvts, "SELECT id, tag FROM nvts WHERE tag LIKE '%%|qod%%';");
+  while (next (&nvts))
+    {
+      gchar *qod_str, *qod_type, *quoted_qod_type;
+      int qod;
+
+      qod_str = tag_value (iterator_string (&nvts, 1), "qod");
+      qod_type = tag_value (iterator_string (&nvts, 1), "qod_type");
+      quoted_qod_type = sql_quote (qod_type);
+
+      if (qod_str == NULL || sscanf (qod_str, "%d", &qod) != 1)
+        qod = qod_from_type (qod_type);
+
+      sql ("UPDATE nvts SET qod=%d, qod_type='%s' WHERE id=%llu;",
+           qod, quoted_qod_type, iterator_int64 (&nvts, 0));
+
+      g_free (qod_str);
+      g_free (qod_type);
+      g_free (quoted_qod_type);
+    }
+  cleanup_iterator (&nvts);
+
+  /* Set the database version to 144. */
+
+  set_db_version (144);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10082,6 +10143,7 @@ static migrator_t database_migrators[]
     {141, migrate_140_to_141},
     {142, migrate_141_to_142},
     {143, migrate_142_to_143},
+    {144, migrate_143_to_144},
     /* End marker. */
     {-1, NULL}};
 

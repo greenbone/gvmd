@@ -903,11 +903,26 @@ result_severity
        severity
      }
 
-# The quality of detection (QoD) percentage of the result.
+# The quality of detection (QoD) of the result.
 result_qod
  = element qod
      {
+       result_qod_value
+       & result_qod_type
+     }
+
+# The numeric QoD value.
+result_qod_value
+ = element value
+     {
        integer
+     }
+
+# The QoD type.
+result_qod_type
+ = element type
+     {
+       text
      }
 
 # Original threat when overridden.
@@ -10388,6 +10403,7 @@ get_notes_response_note_result
        & get_notes_response_note_result_nvt
        & get_notes_response_note_result_severity
        & get_notes_response_note_result_threat
+       & get_notes_response_note_result_qod
        & get_notes_response_note_result_description
      }
 
@@ -10458,6 +10474,28 @@ get_notes_response_note_result_threat
        threat
      }
 
+# The quality of detection (QoD) of the result.
+get_notes_response_note_result_qod
+ = element qod
+     {
+       get_notes_response_note_result_qod_value
+       & get_notes_response_note_result_qod_type
+     }
+
+# The numeric QoD value.
+get_notes_response_note_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+get_notes_response_note_result_qod_type
+ = element type
+     {
+       text
+     }
+
 get_notes_response_note_result_description
  = element description
      {
@@ -10491,6 +10529,7 @@ get_nvts_response_nvt
            & get_nvts_response_nvt_version
            & get_nvts_response_nvt_cvss_base
            & get_nvts_response_nvt_risk_factor
+           & get_nvts_response_nvt_qod
            & get_nvts_response_nvt_cve_id
            & get_nvts_response_nvt_cert_refs
            & get_nvts_response_nvt_bugtraq_id
@@ -10631,6 +10670,28 @@ get_nvts_response_nvt_cvss_base
 
 get_nvts_response_nvt_risk_factor
  = element risk_factor
+     {
+       text
+     }
+
+# The quality of detection (QoD) of the NVT.
+get_nvts_response_nvt_qod
+ = element qod
+     {
+       get_nvts_response_nvt_qod_value
+       & get_nvts_response_nvt_qod_type
+     }
+
+# The numeric QoD value.
+get_nvts_response_nvt_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+get_nvts_response_nvt_qod_type
+ = element type
      {
        text
      }
@@ -11170,6 +11231,7 @@ get_overrides_response_override_result
        & get_overrides_response_override_result_nvt
        & get_overrides_response_override_result_threat
        & get_overrides_response_override_result_severity
+       & get_overrides_response_override_result_qod
        & get_overrides_response_override_result_description
      }
 
@@ -11238,6 +11300,28 @@ get_overrides_response_override_result_severity
  = element severity
      {
        severity
+     }
+
+# The quality of detection (QoD) of the result.
+get_overrides_response_override_result_qod
+ = element qod
+     {
+       get_overrides_response_override_result_qod_value
+       & get_overrides_response_override_result_qod_type
+     }
+
+# The numeric QoD value.
+get_overrides_response_override_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+get_overrides_response_override_result_qod_type
+ = element type
+     {
+       text
      }
 
 get_overrides_response_override_result_description
@@ -12625,6 +12709,7 @@ get_results_response_result
        & get_results_response_result_scan_nvt_version
        & get_results_response_result_threat
        & get_results_response_result_severity
+       & get_results_response_result_qod
        & get_results_response_result_description
        & get_results_response_result_original_severity?
        & get_results_response_result_notes?
@@ -12868,6 +12953,27 @@ get_results_response_result_severity
  = element severity
      {
        severity
+     }
+
+# The quality of detection (QoD) of the NVT.
+get_results_response_result_qod
+ = element qod
+     {
+       get_results_response_result_qod_value
+     }
+
+# The numeric QoD value.
+get_results_response_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+get_results_response_result_qod_type
+ = element type
+     {
+       text
      }
 
 # Description of the result.

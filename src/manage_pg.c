@@ -1863,6 +1863,7 @@ create_tables ()
        "  nvt_version text,"
        "  severity real,"
        "  qod integer,"
+       "  qod_type text,"
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  date integer);");
 
@@ -1972,7 +1973,9 @@ create_tables ()
        "  cvss_base text,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  solution_type text);");
+       "  solution_type text,"
+       "  qod integer,"
+       "  qod_type text);");
 
   sql ("CREATE TABLE IF NOT EXISTS nvt_cves"
        " (id SERIAL PRIMARY KEY,"

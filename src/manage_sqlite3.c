@@ -2193,7 +2193,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS nvts"
        " (id INTEGER PRIMARY KEY, uuid, oid, version, name, comment, summary,"
        "  copyright, cve, bid, xref, tag, category INTEGER, family, cvss_base,"
-       "  creation_time, modification_time, solution_type TEXT);");
+       "  creation_time, modification_time, solution_type TEXT, qod INTEGER,"
+       "  qod_type TEXT);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_oid"
        " ON nvts (oid);");
   sql ("CREATE INDEX IF NOT EXISTS nvts_by_name"
@@ -2291,7 +2292,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL,"
-       "  qod INTEGER, owner INTEGER, date INTEGER)");
+       "  qod INTEGER, qod_type TEXT, owner INTEGER, date INTEGER)");
   sql ("CREATE INDEX IF NOT EXISTS results_by_host"
        " ON results (host);");
   sql ("CREATE INDEX IF NOT EXISTS results_by_report_host"

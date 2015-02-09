@@ -915,6 +915,9 @@ find_report_with_permission (const char *, report_t *, const char *);
 report_t
 make_report (task_t, const char *, task_status_t);
 
+int
+qod_from_type (const char *);
+
 result_t
 make_result (task_t, const char*, const char*, const char*,
              const char*, const char*);
@@ -934,6 +937,7 @@ typedef struct
   char *scan_nvt_version;  ///< Version of NVT used at scan time.
   char *port;              ///< Port.
   char *qod;               ///< QoD (quality of detection).
+  char *qod_type;          ///< QoD type.
   char *severity;          ///< Severity score.
   char *threat;            ///< Threat.
 } create_report_result_t;
@@ -1164,6 +1168,9 @@ result_iterator_level (iterator_t*);
 
 const char*
 result_iterator_qod (iterator_t*);
+
+const char*
+result_iterator_qod_type (iterator_t*);
 
 const char*
 result_iterator_date (iterator_t*);
@@ -1621,6 +1628,12 @@ nvt_iterator_family (iterator_t*);
 
 const char*
 nvt_iterator_cvss_base (iterator_t*);
+
+const char*
+nvt_iterator_qod (iterator_t*);
+
+const char*
+nvt_iterator_qod_type ( iterator_t *iterator );
 
 const char*
 nvt_iterator_solution_type (iterator_t*);

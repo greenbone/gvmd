@@ -1,3 +1,81 @@
+2015-02-06  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add columns qod and qod_type to NVTs and qod_type to Results.  Hence
+	increase database version to 144.  Add database migration from version
+	143 to 144.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 144.
+
+	* src/manage_migrators.c (migrate_143_to_144): New function.
+	(database_migrators): Add migrate_143_to_144.
+
+	* doc/db_postgres.sql: Add column qod to table nvts and add column
+	qod_type to tables nvts and results.
+
+	* doc/db.png: Update for version change.
+
+	* src/manage_pg.c (create_tables): Add column qod to table nvts and
+	add column qod_type to tables nvts and results.
+
+	* src/manage_sql.c (make_osp_result): Add empty qod_type to result.
+	(qod_from_type): New function.
+	(make_result): Try to get QoD and QoD type from the NVT tags and set
+	them in the result. Map "qod_type" to a "qod" number using
+	qod_from_type if there is no "qod" tag.
+	(create_report): Copy qod_type from results.
+	(RESULT_ITERATOR_FILTER_COLUMNS, RESULT_ITERATOR_COLUMNS): Add column
+	"qod_type".
+	(RESULT_ITERATOR_COLUMN_COUNT): Increase.
+	(init_result_iterator): Add missing comma in query for result case.
+	Add qod_type column.
+	(result_iterator_qod_type): New function.
+	(make_nvt_from_nvti): Try to get qod and qod_type from tags and add
+	them to the table row, using the qod_from_type fallback if needed.
+	(NVT_INFO_ITERATOR_FILTER_COLUMNS, NVT_ITERATOR_COLUMNS)
+	(NVT_ITERATOR_COLUMNS_NVTS): Add columns "qod" and "qod_type".
+	(nvt_iterator_qod, nvt_iterator_qod_type): New functions.
+	(nvt_iterator_solution_type): Adjust/fix column index.
+
+	* src/manage_sqlite3.c (create_tables): Add column qod to table nvts
+	and add column qod_type to tables nvts and results.
+
+	* src/manage.c (get_nvti_xml): Add "qod" element with subelements
+	"value" and "type".
+
+	* src/manage.h (qod_from_type): New function prototype.
+	(create_report_result_t): Add qod_type field.
+	(result_iterator_qod_type, nvt_iterator_qod, nvt_iterator_qod_type):
+	New function prototypes.
+
+	* src/omp.c (create_report_data_t): Add field result_qod_type.
+	(create_report_data_reset): Free qod_type of results.
+	(client_state_t): Add CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_TYPE
+	and CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_VALUE.
+	(omp_xml_handle_start_element): Add case
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD to handle new TYPE and
+	VALUE subelements of QOD in results.
+	(buffer_results_xml): Move QoD percentage to a "value"
+	subelement of "qod" and add "type" subelement for consistency with the
+	"qod" element in NVTs.
+	(omp_xml_handle_end_element): In case
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT copy result_qod_type to result.
+	Add cases for CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_TYPE and
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_VALUE.
+	(omp_xml_handle_text): Add case for
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_TYPE and change
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD to
+	CLIENT_CREATE_REPORT_RR_RESULTS_RESULT_QOD_VALUE.
+
+	* src/schema_formats/XML/OMP.xml.in (result): Add "qod" element to
+	the "nvt" element. Add new value and type subelements to "qod" element
+	and update summary.
+	(get_notes): Add "qod" element to "result" in the response.
+	(get_nvts): Add "qod" element to the "nvt" element in the response.
+	(get_overrides, get_results): Add "qod" element to "result" in the
+	response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2015-02-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (slave_setup): Also specify the SSH port when creating the

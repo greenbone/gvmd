@@ -5572,6 +5572,10 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              "<family>%s</family>"
                              "<version>%s</version>"
                              "<cvss_base>%s</cvss_base>"
+                             "<qod>"
+                             "<value>%s</value>"
+                             "<type>%s</type>"
+                             "</qod>"
                              "<cve_id>%s</cve_id>"
                              "<bugtraq_id>%s</bugtraq_id>"
                              "<cert_refs>%s</cert_refs>"
@@ -5596,6 +5600,8 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
                              nvt_iterator_cvss_base (nvts)
                               ? nvt_iterator_cvss_base (nvts)
                               : "",
+                             nvt_iterator_qod (nvts),
+                             nvt_iterator_qod_type (nvts),
                              nvt_iterator_cve (nvts),
                              nvt_iterator_bid (nvts),
                              cert_refs_str->str,

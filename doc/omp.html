@@ -1938,8 +1938,19 @@ result_overrides_override_orphan
 </li>
 <li>
               &lt;<b>qod</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) percentage of the result.</div>
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>original_threat</b>&gt;
@@ -2238,7 +2249,20 @@ result_severity
 result_qod
  = element qod
      {
+       result_qod_value
+       &amp; result_qod_type
+     }
+
+result_qod_value
+ = element value
+     {
        integer
+     }
+
+result_qod_type
+ = element type
+     {
+       text
      }
 
 result_original_threat
@@ -17279,6 +17303,22 @@ get_lsc_credentials_response_lsc_credential_count_page
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -17702,6 +17742,7 @@ get_notes_response_note_result
        &amp; get_notes_response_note_result_nvt
        &amp; get_notes_response_note_result_severity
        &amp; get_notes_response_note_result_threat
+       &amp; get_notes_response_note_result_qod
        &amp; get_notes_response_note_result_description
      }
 
@@ -17768,6 +17809,25 @@ get_notes_response_note_result_threat
  = element threat
      {
        threat
+     }
+
+get_notes_response_note_result_qod
+ = element qod
+     {
+       get_notes_response_note_result_qod_value
+       &amp; get_notes_response_note_result_qod_type
+     }
+
+get_notes_response_note_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+get_notes_response_note_result_qod_type
+ = element type
+     {
+       text
      }
 
 get_notes_response_note_result_description
@@ -18047,6 +18107,22 @@ get_notes_response_note_result_description
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the NVT.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>cve_id</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -18179,6 +18255,7 @@ get_nvts_response_nvt
            &amp; get_nvts_response_nvt_version
            &amp; get_nvts_response_nvt_cvss_base
            &amp; get_nvts_response_nvt_risk_factor
+           &amp; get_nvts_response_nvt_qod
            &amp; get_nvts_response_nvt_cve_id
            &amp; get_nvts_response_nvt_cert_refs
            &amp; get_nvts_response_nvt_bugtraq_id
@@ -18309,6 +18386,25 @@ get_nvts_response_nvt_cvss_base
 
 get_nvts_response_nvt_risk_factor
  = element risk_factor
+     {
+       text
+     }
+
+get_nvts_response_nvt_qod
+ = element qod
+     {
+       get_nvts_response_nvt_qod_value
+       &amp; get_nvts_response_nvt_qod_type
+     }
+
+get_nvts_response_nvt_qod_value
+ = element value
+     {
+       integer
+     }
+
+get_nvts_response_nvt_qod_type
+ = element type
      {
        text
      }
@@ -18967,6 +19063,22 @@ get_nvt_feed_version_response_version
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               <ul style="list-style: none"></ul>
 </li>
@@ -19405,6 +19517,7 @@ get_overrides_response_override_result
        &amp; get_overrides_response_override_result_nvt
        &amp; get_overrides_response_override_result_threat
        &amp; get_overrides_response_override_result_severity
+       &amp; get_overrides_response_override_result_qod
        &amp; get_overrides_response_override_result_description
      }
 
@@ -19471,6 +19584,25 @@ get_overrides_response_override_result_severity
  = element severity
      {
        severity
+     }
+
+get_overrides_response_override_result_qod
+ = element qod
+     {
+       get_overrides_response_override_result_qod_value
+       &amp; get_overrides_response_override_result_qod_type
+     }
+
+get_overrides_response_override_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+get_overrides_response_override_result_qod_type
+ = element type
+     {
+       text
      }
 
 get_overrides_response_override_result_description
@@ -22800,6 +22932,15 @@ get_report_formats_response_report_format_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the NVT.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
               &lt;<b>description</b>&gt;
               <div style="margin-left: 15px; display: inline;">Description of the result.</div>
 <ul style="list-style: none"></ul>
@@ -22956,6 +23097,7 @@ get_results_response_result
        &amp; get_results_response_result_scan_nvt_version
        &amp; get_results_response_result_threat
        &amp; get_results_response_result_severity
+       &amp; get_results_response_result_qod
        &amp; get_results_response_result_description
        &amp; get_results_response_result_original_severity?
        &amp; get_results_response_result_notes?
@@ -23166,6 +23308,24 @@ get_results_response_result_severity
  = element severity
      {
        severity
+     }
+
+get_results_response_result_qod
+ = element qod
+     {
+       get_results_response_result_qod_value
+     }
+
+get_results_response_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+get_results_response_result_qod_type
+ = element type
+     {
+       text
      }
 
 get_results_response_result_description
