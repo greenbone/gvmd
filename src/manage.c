@@ -2233,9 +2233,10 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       init_user_target_iterator (&targets, target);
       if (next (&targets))
         {
-          const char *hosts;
+          const char *hosts, *port;
           gchar *hosts_copy, *port_range;
           omp_create_target_opts_t opts;
+          int ssh_port;
 
           hosts = target_iterator_hosts (&targets);
           if (hosts == NULL)
@@ -2244,6 +2245,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               goto fail_credential;
             }
 
+          port = target_iterator_ssh_port (&targets);
+          if (port == NULL)
+            ssh_port = 0;
+          else
+            ssh_port = atoi (port);
+
           hosts_copy = g_strdup (hosts);
           port_range = target_port_range (target_iterator_target (&targets));
           cleanup_iterator (&targets);
@@ -2251,6 +2258,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts = omp_create_target_opts_defaults;
           opts.hosts = hosts_copy;
           opts.ssh_credential_id = slave_ssh_credential_uuid;
+          opts.ssh_credential_port = ssh_port;
           opts.smb_credential_id = slave_smb_credential_uuid;
           opts.port_range = port_range;
           opts.name = name;

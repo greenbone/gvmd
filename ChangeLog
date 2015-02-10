@@ -1,3 +1,10 @@
+2015-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r21583.
+
+	* src/manage.c (slave_setup): Also specify the SSH port when creating the
+	target.
+
 2015-02-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21568.
