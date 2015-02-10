@@ -1740,6 +1740,11 @@ gchar *slave_ssh_credential_uuid = NULL;
 gchar *slave_smb_credential_uuid = NULL;
 
 /**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_esxi_credential_uuid = NULL;
+
+/**
  * @brief Slave target UUID.
  */
 gchar *slave_target_uuid = NULL;
@@ -1805,6 +1810,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
              const char *name, const char *host, int port, task_t task,
              target_t target, lsc_credential_t target_ssh_credential,
              lsc_credential_t target_smb_credential,
+             lsc_credential_t target_esxi_credential,
              report_t last_stopped_report)
 {
   int ret, next_result;
@@ -1953,11 +1959,55 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             }
         }
 
+      if (target_esxi_credential)
+        {
+          init_user_lsc_credential_iterator (&credentials,
+                                             target_esxi_credential, 0,
+                                             1, NULL);
+          if (next (&credentials))
+            {
+              const char *user, *password;
+              gchar *user_copy, *password_copy, *esxi_name;
+              omp_create_lsc_credential_opts_t opts;
+
+              user = lsc_credential_iterator_login (&credentials);
+              password = lsc_credential_iterator_password (&credentials);
+
+              if (user == NULL || password == NULL)
+                {
+                  cleanup_iterator (&credentials);
+                  goto fail_ssh_credential;
+                }
+
+              user_copy = g_strdup (user);
+              password_copy = g_strdup (password);
+              cleanup_iterator (&credentials);
+
+              opts = omp_create_lsc_credential_opts_defaults;
+              esxi_name = g_strdup_printf ("%sesxi", name);
+              opts.name = esxi_name;
+              opts.login = user_copy;
+              opts.passphrase = password_copy;
+              opts.comment = "Slave ESXi credential created by Master";
+
+              ret = omp_create_lsc_credential_ext (session, opts,
+                                                   &slave_esxi_credential_uuid);
+              g_free (esxi_name);
+              g_free (user_copy);
+              g_free (password_copy);
+              if (ret)
+                goto fail_smb_credential;
+            }
+        }
+
       tracef ("   %s: slave SSH credential uuid: %s\n", __FUNCTION__,
               slave_ssh_credential_uuid);
 
       tracef ("   %s: slave SMB credential uuid: %s\n", __FUNCTION__,
               slave_smb_credential_uuid);
+
+      tracef ("   %s: slave ESXi credential uuid: %s\n", __FUNCTION__,
+              slave_esxi_credential_uuid);
 
       /* Create the target on the slave. */
 
@@ -1981,7 +2031,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if (hosts == NULL)
             {
               cleanup_iterator (&targets);
-              goto fail_smb_credential;
+              goto fail_esxi_credential;
             }
 
           port = target_iterator_ssh_port (&targets);
@@ -2003,6 +2053,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           opts.ssh_credential_id = slave_ssh_credential_uuid;
           opts.ssh_credential_port = ssh_port;
           opts.smb_credential_id = slave_smb_credential_uuid;
+          opts.esxi_credential_id = slave_esxi_credential_uuid;
           opts.port_range = port_range;
           opts.name = name;
           opts.comment = "Slave target created by Master";
@@ -2017,12 +2068,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           g_free (alive_tests_copy);
           g_free (port_range);
           if (ret)
-            goto fail_smb_credential;
+            goto fail_esxi_credential;
         }
       else
         {
           cleanup_iterator (&targets);
-          goto fail_smb_credential;
+          goto fail_esxi_credential;
         }
 
       tracef ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
@@ -2382,6 +2433,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
   omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
+  omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
  succeed_stopped:
   free (slave_task_uuid);
   slave_task_uuid = NULL;
@@ -2391,6 +2443,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   slave_config_uuid = NULL;
   free (slave_target_uuid);
   slave_target_uuid = NULL;
+  free (slave_esxi_credential_uuid);
+  slave_esxi_credential_uuid = NULL;
   free (slave_smb_credential_uuid);
   slave_smb_credential_uuid = NULL;
   free (slave_ssh_credential_uuid);
@@ -2413,6 +2467,9 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  fail_target:
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
+ fail_esxi_credential:
+  omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
+  free (slave_esxi_credential_uuid);
  fail_smb_credential:
   omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
   free (slave_smb_credential_uuid);
@@ -2446,6 +2503,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
 static int
 run_slave_task (task_t task, target_t target, lsc_credential_t
                 target_ssh_credential, lsc_credential_t target_smb_credential,
+                lsc_credential_t target_esxi_credential,
                 report_t last_stopped_report)
 {
   slave_t slave;
@@ -2508,7 +2566,7 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
     {
       ret = slave_setup (slave, &session, &socket, name, host, port, task,
                          target, target_ssh_credential, target_smb_credential,
-                         last_stopped_report);
+                         target_esxi_credential, last_stopped_report);
       if (ret == 1)
         {
           ret = slave_sleep_connect (slave, host, port, task, &socket, &session);
@@ -3159,7 +3217,7 @@ run_task (const char *task_id, char **report_id, int from,
   if (slave)
     {
       if (run_slave_task (task, target, ssh_credential, smb_credential,
-                          last_stopped_report))
+                          esxi_credential, last_stopped_report))
         {
           free (hosts);
           set_task_run_status (task, run_status);
