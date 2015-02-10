@@ -14238,7 +14238,8 @@ make_osp_result (task_t task, const char *host, const char *nvt,
  *
  * @return A QoD percentage value, QOD_DEFAULT if string is NULL or unknown.
  */
-int qod_from_type (const char *qod_type)
+int
+qod_from_type (const char *qod_type)
 {
   if (qod_type == NULL)
     return QOD_DEFAULT;
@@ -16264,10 +16265,11 @@ where_cvss_base (const char* min_cvss_base)
  *
  * @return WHERE clause if one is required, else NULL.
  */
-static gchar* where_qod (const char* min_qod)
+static gchar*
+where_qod (const char* min_qod)
 {
   gchar *qod_sql;
-  if (min_qod)
+  if (min_qod && strlen (min_qod))
     {
       gchar *quoted_qod = sql_quote (min_qod);
       qod_sql = g_strdup_printf (" AND (qod >= CAST ('%s' AS INTEGER))",
