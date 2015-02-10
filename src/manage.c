@@ -1874,7 +1874,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           if (next (&credentials))
             {
               const char *user, *password, *private_key;
-              gchar *user_copy, *password_copy;
+              gchar *user_copy, *password_copy, *private_key_copy;
+              omp_create_lsc_credential_opts_t opts;
 
               user = lsc_credential_iterator_login (&credentials);
               password = lsc_credential_iterator_password (&credentials);
@@ -1887,24 +1888,25 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
                   goto fail;
                 }
 
-              if (private_key)
-                ret = omp_create_lsc_credential_key
-                       (session, name, user, password, private_key,
-                        "Slave SSH credential created by Master",
-                        &slave_ssh_credential_uuid);
-              else
-                {
-                  user_copy = g_strdup (user);
-                  password_copy = g_strdup (password);
-                  cleanup_iterator (&credentials);
+              user_copy = g_strdup (user);
+              password_copy = g_strdup (password);
+              private_key_copy = g_strdup (private_key);
+              cleanup_iterator (&credentials);
 
-                  ret = omp_create_lsc_credential
-                         (session, name, user_copy, password_copy,
-                          "Slave SSH credential created by Master",
-                          &slave_ssh_credential_uuid);
-                  g_free (user_copy);
-                  g_free (password_copy);
-                }
+              opts = omp_create_lsc_credential_opts_defaults;
+              opts.name = name;
+              opts.login = user_copy;
+              opts.passphrase = password_copy;
+              if (private_key_copy)
+                opts.private_key = private_key_copy;
+              opts.comment = "Slave SSH credential created by Master";
+
+              ret = omp_create_lsc_credential_ext (session, opts,
+                                                   &slave_ssh_credential_uuid);
+              g_free (user_copy);
+              g_free (password_copy);
+              g_free (private_key_copy);
+
               if (ret)
                 goto fail;
             }
@@ -1919,6 +1921,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             {
               const char *user, *password;
               gchar *user_copy, *password_copy, *smb_name;
+              omp_create_lsc_credential_opts_t opts;
 
               user = lsc_credential_iterator_login (&credentials);
               password = lsc_credential_iterator_password (&credentials);
@@ -1933,11 +1936,15 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
               password_copy = g_strdup (password);
               cleanup_iterator (&credentials);
 
+              opts = omp_create_lsc_credential_opts_defaults;
               smb_name = g_strdup_printf ("%ssmb", name);
-              ret = omp_create_lsc_credential
-                     (session, smb_name, user_copy, password_copy,
-                      "Slave SMB credential created by Master",
-                      &slave_smb_credential_uuid);
+              opts.name = smb_name;
+              opts.login = user_copy;
+              opts.passphrase = password_copy;
+              opts.comment = "Slave SMB credential created by Master";
+
+              ret = omp_create_lsc_credential_ext (session, opts,
+                                                   &slave_smb_credential_uuid);
               g_free (smb_name);
               g_free (user_copy);
               g_free (password_copy);
