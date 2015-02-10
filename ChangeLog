@@ -1,3 +1,9 @@
+2015-02-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage.c (slave_setup): Add options exclude_hosts, alive_test,
+	reverse_lookup_only and reverse_lookup_unify when creating target.
+	Rename fail_credential label to fail_smb_credential.
+
 2015-02-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (qod_from_type): Neaten formatting.

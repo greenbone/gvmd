@@ -1964,16 +1964,24 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       init_user_target_iterator (&targets, target);
       if (next (&targets))
         {
-          const char *hosts, *port;
-          gchar *hosts_copy, *port_range;
+          const char *hosts, *port, *exclude_hosts, *alive_tests;
+          const char *reverse_lookup_only, *reverse_lookup_unify;
+          gchar *hosts_copy, *exclude_hosts_copy;
+          gchar *alive_tests_copy, *port_range;
           omp_create_target_opts_t opts;
           int ssh_port;
 
           hosts = target_iterator_hosts (&targets);
+          exclude_hosts = target_iterator_exclude_hosts (&targets);
+          alive_tests = target_iterator_alive_tests (&targets);
+          reverse_lookup_only
+            = target_iterator_reverse_lookup_only (&targets);
+          reverse_lookup_unify
+            = target_iterator_reverse_lookup_unify (&targets);
           if (hosts == NULL)
             {
               cleanup_iterator (&targets);
-              goto fail_credential;
+              goto fail_smb_credential;
             }
 
           port = target_iterator_ssh_port (&targets);
@@ -1983,28 +1991,38 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
             ssh_port = atoi (port);
 
           hosts_copy = g_strdup (hosts);
+          exclude_hosts_copy = g_strdup (exclude_hosts);
+          alive_tests_copy = g_strdup (alive_tests);
           port_range = target_port_range (get_iterator_resource (&targets));
           cleanup_iterator (&targets);
 
           opts = omp_create_target_opts_defaults;
           opts.hosts = hosts_copy;
+          opts.exclude_hosts = exclude_hosts_copy;
+          opts.alive_tests = alive_tests_copy;
           opts.ssh_credential_id = slave_ssh_credential_uuid;
           opts.ssh_credential_port = ssh_port;
           opts.smb_credential_id = slave_smb_credential_uuid;
           opts.port_range = port_range;
           opts.name = name;
           opts.comment = "Slave target created by Master";
+          opts.reverse_lookup_only
+            = reverse_lookup_only ? atoi (reverse_lookup_only) : 0;
+          opts.reverse_lookup_unify
+            = reverse_lookup_unify ? atoi (reverse_lookup_unify) : 0;
 
           ret = omp_create_target_ext (session, opts, &slave_target_uuid);
           g_free (hosts_copy);
+          g_free (exclude_hosts_copy);
+          g_free (alive_tests_copy);
           g_free (port_range);
           if (ret)
-            goto fail_credential;
+            goto fail_smb_credential;
         }
       else
         {
           cleanup_iterator (&targets);
-          goto fail_credential;
+          goto fail_smb_credential;
         }
 
       tracef ("   %s: slave target uuid: %s\n", __FUNCTION__, slave_target_uuid);
@@ -2395,7 +2413,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  fail_target:
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
- fail_credential:
+ fail_smb_credential:
   omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
   free (slave_smb_credential_uuid);
  fail_ssh_credential:
