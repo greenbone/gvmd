@@ -3590,6 +3590,7 @@ create_task
        & create_task_scanner
        & create_task_alert*
        & create_task_schedule?
+       & create_task_schedule_periods?
        & create_task_slave?
        & create_task_observers?
        & create_task_preferences?
@@ -3663,6 +3664,13 @@ create_task_schedule
  = element schedule
      {
        attribute id { uuid }
+     }
+
+# A limit to the number of times the task will be scheduled, or 0 for no limit.
+create_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 # Slave that the task will run on.
@@ -5904,6 +5912,7 @@ modify_task
            | modify_task_observers
            | modify_task_preferences
            | modify_task_schedule
+           | modify_task_schedule_periods
            | modify_task_scanner
            | modify_task_slave
            | modify_task_file )
@@ -5968,6 +5977,13 @@ modify_task_schedule
  = element schedule
      {
        attribute id { uuid }
+     }
+
+# A limit to the number of times the task will be scheduled, or 0 for no limit.
+modify_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 # Task scanner.
@@ -12960,6 +12976,7 @@ get_results_response_result_qod
  = element qod
      {
        get_results_response_result_qod_value
+       & get_results_response_result_qod_type
      }
 
 # The numeric QoD value.
@@ -15262,6 +15279,7 @@ get_tasks_response_task
        & get_tasks_response_task_alert
        & get_tasks_response_task_observers
        & get_tasks_response_task_schedule
+       & get_tasks_response_task_schedule_periods
        & get_tasks_response_task_slave
        & get_tasks_response_task_report_count
        & get_tasks_response_task_trend
@@ -15591,6 +15609,13 @@ get_tasks_response_task_schedule_trash
  = element trash
      {
        boolean
+     }
+
+# A limit to the number of times the task will be scheduled, or 0 for no limit.
+get_tasks_response_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 # The slave that the task will run on.

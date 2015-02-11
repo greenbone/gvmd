@@ -4416,6 +4416,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>scanner</e>
       <any><e>alert</e></any>
       <o><e>schedule</e></o>
+      <o><e>schedule_periods</e></o>
       <o><e>slave</e></o>
       <o><e>observers</e></o>
       <o><e>preferences</e></o>
@@ -4502,6 +4503,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>schedule_periods</name>
+      <summary>
+        A limit to the number of times the task will be scheduled, or 0 for no limit
+      </summary>
+      <pattern>
+        <t>integer</t>
       </pattern>
     </ele>
     <ele>
@@ -17249,6 +17259,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>alert</e>
           <e>observers</e>
           <e>schedule</e>
+          <e>schedule_periods</e>
           <e>slave</e>
           <e>report_count</e>
           <e>trend</e>
@@ -17559,6 +17570,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the schedule is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+        </ele>
+        <ele>
+          <name>schedule_periods</name>
+          <summary>
+            A limit to the number of times the task will be scheduled, or 0 for no limit
+          </summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
         </ele>
         <ele>
           <name>slave</name>
@@ -21082,6 +21102,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>observers</e>
         <e>preferences</e>
         <e>schedule</e>
+        <e>schedule_periods</e>
         <e>scanner</e>
         <e>slave</e>
         <e>file</e>
@@ -21146,6 +21167,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <type>uuid</type>
           <required>1</required>
         </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>schedule_periods</name>
+      <summary>
+        A limit to the number of times the task will be scheduled, or 0 for no limit
+      </summary>
+      <pattern>
+        <t>integer</t>
       </pattern>
     </ele>
     <ele>

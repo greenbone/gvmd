@@ -8725,6 +8725,11 @@ create_target_port_list
           </li></ul>
 </li>
 <li>
+              &lt;<b>schedule_periods</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">A limit to the number of times the task will be scheduled, or 0 for no limit.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>slave</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Slave that the task will run on.</div>
 <ul style="list-style: none"><li>
@@ -8788,6 +8793,7 @@ create_target_port_list
        &amp; create_task_scanner
        &amp; create_task_alert*
        &amp; create_task_schedule?
+       &amp; create_task_schedule_periods?
        &amp; create_task_slave?
        &amp; create_task_observers?
        &amp; create_task_preferences?
@@ -8851,6 +8857,12 @@ create_task_schedule
  = element schedule
      {
        attribute id { uuid }
+     }
+
+create_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 create_task_slave
@@ -22934,11 +22946,18 @@ get_report_formats_response_report_format_count_page
 <li>
               &lt;<b>qod</b>&gt;
               <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the NVT.</div>
-<ul style="list-style: none"><li>
+<ul style="list-style: none">
+<li>
               &lt;<b>value</b>&gt;
               <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
 <ul style="list-style: none"></ul>
-</li></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>description</b>&gt;
@@ -23314,6 +23333,7 @@ get_results_response_result_qod
  = element qod
      {
        get_results_response_result_qod_value
+       &amp; get_results_response_result_qod_type
      }
 
 get_results_response_result_qod_value
@@ -28066,6 +28086,11 @@ get_targets_response_target_count_page
 </ul>
 </li>
 <li>
+              &lt;<b>schedule_periods</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A limit to the number of times the task will be scheduled, or 0 for no limit.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>slave</b>&gt;
               <div style="margin-left: 15px; display: inline;">The slave that the task will run on.</div>
 <ul style="list-style: none">
@@ -28504,6 +28529,7 @@ get_tasks_response_task
        &amp; get_tasks_response_task_alert
        &amp; get_tasks_response_task_observers
        &amp; get_tasks_response_task_schedule
+       &amp; get_tasks_response_task_schedule_periods
        &amp; get_tasks_response_task_slave
        &amp; get_tasks_response_task_report_count
        &amp; get_tasks_response_task_trend
@@ -28791,6 +28817,12 @@ get_tasks_response_task_schedule_trash
  = element trash
      {
        boolean
+     }
+
+get_tasks_response_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 get_tasks_response_task_slave
@@ -33629,6 +33661,11 @@ modify_tag_active
           </li></ul>
 </li>
 <li>
+              &lt;<b>schedule_periods</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A limit to the number of times the task will be scheduled, or 0 for no limit.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>scanner</b>&gt;
               <div style="margin-left: 15px; display: inline;">Task scanner.</div>
 <ul style="list-style: none"><li>
@@ -33687,6 +33724,7 @@ modify_tag_active
            | modify_task_observers
            | modify_task_preferences
            | modify_task_schedule
+           | modify_task_schedule_periods
            | modify_task_scanner
            | modify_task_slave
            | modify_task_file )
@@ -33745,6 +33783,12 @@ modify_task_schedule
  = element schedule
      {
        attribute id { uuid }
+     }
+
+modify_task_schedule_periods
+ = element schedule_periods
+     {
+       integer
      }
 
 modify_task_scanner

@@ -1,5 +1,16 @@
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/schema_formats/XML/OMP.xml.in (get_tasks, create_task)
+	(modify_task): Add SCHEDULE_PERIODS.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+	* doc/db_postgres.sql (tasks): Add schedule_periods.
+
+	* doc/db.png: Update from source.
+
+2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (create_task_data_t, create_task_data_reset)
 	(client_state_t): Add schedule_periods entry.
 	(omp_xml_handle_start_element, omp_xml_handle_end_element)

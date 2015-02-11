@@ -376,6 +376,7 @@ CREATE TABLE tasks
   config integer REFERENCES configs (id) ON DELETE RESTRICT,
   target integer REFERENCES targets (id) ON DELETE RESTRICT,
   schedule integer REFERENCES schedules (id) ON DELETE RESTRICT,
+  schedule_periods integer,
   schedule_next_time date,
   slave integer REFERENCES slaves (id) ON DELETE RESTRICT,
   scanner integer REFERENCES scanners (id) ON DELETE RESTRICT,
