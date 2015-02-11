@@ -1,5 +1,9 @@
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* CMakeLists.txt: Remove Jessie hack added in last commit.
+
+2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add the option to limit the number of times a task runs with a periodic
 	schedule.  When the limit is reached the schedule is removed from the
 	task.  Hence increase database version to 145.  Add database migration

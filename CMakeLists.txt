@@ -35,9 +35,6 @@ endif (POLICY CMP0005)
 
 include (FindPkgConfig)
 
-# FIX On Jessie FindPostgreSQL looks for pg_type.h but it's in a weird place.
-set (PostgreSQL_ADDITIONAL_SEARCH_PATHS "/usr/include/postgresql/9.4/server")
-
 if (NOT CMAKE_BUILD_TYPE)
   set (CMAKE_BUILD_TYPE Debug)
 endif (NOT CMAKE_BUILD_TYPE)
