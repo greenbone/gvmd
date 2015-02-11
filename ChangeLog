@@ -1,5 +1,12 @@
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (create_task_data_t, create_task_data_reset)
+	(client_state_t): Add schedule_periods entry.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add SCHEDULE_PERIODS to CREATE_TASK.
+
+2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* CMakeLists.txt: Remove Jessie hack added in last commit.
 
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>

@@ -1688,6 +1688,7 @@ typedef struct
   name_value_t *preference;  ///< Current preference.
   array_t *preferences; ///< Preferences.
   char *schedule_id;    ///< ID of task schedule.
+  char *schedule_periods; ///< Number of periods the schedule must run for.
   char *slave_id;       ///< ID of task slave.
   char *target_id;      ///< ID of task target.
   task_t task;          ///< ID of new task.
@@ -1725,6 +1726,7 @@ create_task_data_reset (create_task_data_t *data)
     }
   array_free (data->preferences);
   free (data->schedule_id);
+  free (data->schedule_periods);
   free (data->slave_id);
   free (data->target_id);
 
@@ -5155,6 +5157,7 @@ typedef enum
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_CREATE_TASK_SCHEDULE,
+  CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
   CLIENT_CREATE_TASK_SLAVE,
   CLIENT_CREATE_TASK_TARGET,
   CLIENT_CREATE_USER,
@@ -9573,6 +9576,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &create_task_data->schedule_id);
             set_client_state (CLIENT_CREATE_TASK_SCHEDULE);
           }
+        else if (strcasecmp ("SCHEDULE_PERIODS", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_SCHEDULE_PERIODS);
         else if (strcasecmp ("SLAVE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -21641,6 +21646,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           if (create_task_data->schedule_id)
             {
               schedule_t schedule;
+              int periods;
+
+              periods = create_task_data->schedule_periods
+                         ? atoi (create_task_data->schedule_periods)
+                         : 0;
               if (find_schedule_with_permission (create_task_data->schedule_id,
                                                  &schedule,
                                                  "get_schedules"))
@@ -21673,7 +21683,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                * this case the client would then need something like
                * set_task_schedule_uuid.
                */
-              set_task_schedule (create_task_data->task, schedule, 0);
+              set_task_schedule (create_task_data->task, schedule, periods);
             }
 
           /* Set any observers. */
@@ -21856,6 +21866,7 @@ create_task_fail:
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
+      CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
       CLOSE (CLIENT_CREATE_TASK, SLAVE);
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
@@ -26770,6 +26781,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE,
               &create_task_data->preference->value);
+
+      APPEND (CLIENT_CREATE_TASK_SCHEDULE_PERIODS,
+              &create_task_data->schedule_periods);
 
 
       APPEND (CLIENT_CREATE_USER_COPY,
