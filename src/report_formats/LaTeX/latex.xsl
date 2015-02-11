@@ -1189,11 +1189,16 @@ advice given in each description, in order to rectify the issue.
           </xsl:call-template>
         </xsl:if>
 
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+        <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
           \hline
           <xsl:call-template name="latex-newline"/>
           <xsl:text>\textbf{Solution}</xsl:text>
           <xsl:call-template name="latex-newline"/>
+          <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+            \textbf{Solution type:}
+            <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+            <xsl:call-template name="latex-newline"/>
+          </xsl:if>
           <xsl:call-template name="structured-text">
             <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
           </xsl:call-template>

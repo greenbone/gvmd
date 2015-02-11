@@ -609,9 +609,14 @@ CIS</value>
               <xsl:call-template name="newline"/>
             </xsl:if>
 
-            <xsl:if test="openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+            <xsl:if test="(openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (openvas:get-nvt-tag (nvt/tags, 'solution_type') != '')">
               <xsl:text>Solution:</xsl:text>
               <xsl:call-template name="newline"/>
+              <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+                <xsl:text>Solution type: </xsl:text>
+                <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/>
+                <xsl:call-template name="newline"/>
+              </xsl:if>
               <xsl:value-of name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
               <xsl:call-template name="newline"/>
               <xsl:call-template name="newline"/>

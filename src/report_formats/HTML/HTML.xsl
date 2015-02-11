@@ -628,9 +628,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </div>
         </xsl:if>
 
-        <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A'">
+        <xsl:if test="(string-length (openvas:get-nvt-tag (nvt/tags, 'solution')) &gt; 0 and openvas:get-nvt-tag (nvt/tags, 'solution') != 'N/A') or (string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0)">
           <div style="padding:4px; margin:3px; margin-bottom:0px; margin-top:0px; border: 1px solid #CCCCCC; border-top: 0px;">
           <b>Solution</b>
+            <xsl:if test="string-length (openvas:get-nvt-tag (nvt/tags, 'solution_type')) &gt; 0">
+              <p><b>Solution type: </b> <xsl:value-of select="openvas:get-nvt-tag (nvt/tags, 'solution_type')"/></p>
+            </xsl:if>
             <xsl:call-template name="structured-text">
               <xsl:with-param name="string" select="openvas:get-nvt-tag (nvt/tags, 'solution')"/>
             </xsl:call-template>

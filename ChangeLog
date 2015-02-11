@@ -1,3 +1,27 @@
+2015-02-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add Solution type to report formats that include the Solution of
+	results.
+
+	* src/report_formats/CSV_Results/CSV_Results.xsl (result, /report): Add
+	Solution type column.
+
+	* src/report_formats/HTML/HTML.xsl (result [issue]): Add Solution type
+	subsection to Solution section.
+
+	* src/report_formats/LaTeX/latex.xsl (result-details-host-port-threat):
+	Add Solution type subsection to Solution section.
+
+	* src/report_formats/NBE/NBE.xsl (result): Add Solution type subsection
+	to Solution section.
+
+	* src/report_formats/TXT/TXT.xsl (result [issue]): Add Solution type
+	subsection to Solution section.
+
+	* src/report_formats/Verinice_ISM/Verinice_ISM.xsl
+	(vulnerability_details): Add Solution type subsection to Solution
+	section.
+
 2015-02-11  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post-release version bump.
