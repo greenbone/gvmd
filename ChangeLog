@@ -1,3 +1,9 @@
+2015-02-11  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Preparing the openvas-manager 6.0+beta6 release.
+
+	* CHANGES: Updated.
+
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/schema_formats/XML/OMP.xml.in (get_tasks, create_task)

@@ -1,3 +1,55 @@
+openvas-manager 6.0+beta6 (2015-02-11)
+
+This is the sixth beta version of the upcoming 6.0 release of the OpenVAS
+Manager. It is the central management service between the actual security
+scanners and various user clients.
+
+This release improves support for OSP scanner and introduces support for
+Quality of Detection (QoD) information. It also adds support for once-off
+schedules, for limiting the number of times a task runs with a periodic
+schedule and for more resource mixing between users. It also contains a number
+of bug fixes and various other improvements.
+
+Many thanks to everyone who has contributed to this release:
+Hani Benhabiles, Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes since 6.0+beta5:
+* Support for OSP host details has been added.
+* Support for modifying an existing scanner has been added.
+* Support for Once-off schedules has been added.
+* Support for limiting the number of times a task runs with a periodic schedule
+  has been added.
+* Enable mixing of the current user's alerts, schedules and tasks, with other
+  people's alerts, schedules and tasks, when permissions allow it.
+* Support for Quality of Detection (QoD) information has been introduced.
+* A segmentation fault which occurred when deleting users using the
+  "--delete-user" parameter has been fixed.
+* An issue which caused individual NVT timeout values to not be transferred
+  to slaves has been fixed.
+* An issue with NVT counting in scan configs has been fixed.
+* Incorrect column name in the SCAP database have been fixed.
+* An issue with result counting when using certain filters has been fixed.
+* An issue which prevented the Super Admin from cloning certain objects has been
+  fixed.
+* An issue with running scheduled tasks with durations has been fixed.
+* Tasks on slaves are now stopped when the controlling master is terminated.
+* Alterable task now stay alterable even when their last report has been
+  removed.
+* The default value for the "autofp" setting used for alerts has been changed
+  to 0 for consistency with other views.
+* Report lists now ensure that a apply_overrides value is set.
+* Sorting of numerical values has been improved.
+* Handling of missing report format plugins for alerts has been made more
+  consistent.
+* Library checks during package configuration have been improved and are now
+  more comprehensive and consistent.
+* OSP support has been improved.
+* PostgreSQL support has been improved.
+* The OMP documentation has been updated.
+* Documentation of database optimization has been improved.
+* Code cleanups.
+
+
 openvas-manager 6.0+beta5 (2015-01-12)
 
 This is the fifth beta version of the upcoming 6.0 release of the OpenVAS
