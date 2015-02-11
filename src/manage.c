@@ -4873,9 +4873,8 @@ manage_schedule (int (*fork_connection) (int *,
       exit (EXIT_SUCCESS);
    }
 
-  /* TODO Also do these when the task finishes. */
-  clear_duration_schedules ();
-  update_duration_schedule_periods ();
+  clear_duration_schedules (0);
+  update_duration_schedule_periods (0);
 
   return 0;
 }

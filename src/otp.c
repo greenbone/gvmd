@@ -1580,6 +1580,8 @@ process_otp_scanner_input (void (*progress) ())
                             set_task_run_status (current_scanner_task,
                                                  TASK_STATUS_DONE);
                         }
+                      clear_duration_schedules (current_scanner_task);
+                      update_duration_schedule_periods (current_scanner_task);
                       current_report = (report_t) 0;
                       current_scanner_task = (task_t) 0;
                     }

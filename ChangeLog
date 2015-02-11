@@ -1,3 +1,19 @@
+2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Also clear schedules when the scan ends, as this can be an earlier
+	opportunity than the end of the duration.
+
+	* src/manage.c (manage_schedule): Pass "all tasks" flag to duration
+	functions.
+
+	* src/manage_sql.c (clear_duration_schedules)
+	(update_duration_schedule_periods): Add task arg.  Skip duration
+	expiration check when task is given.
+
+	* src/manage.c (process_otp_scanner_input): When the task exits clear
+	the schedule if the task had a once off schedule or a limited periodic
+	run, as well as a duration.
+
 2015-02-11  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add Solution type to report formats that include the Solution of

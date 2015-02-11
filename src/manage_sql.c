@@ -14193,55 +14193,92 @@ set_task_observers (task_t task, const gchar *observers)
 /**
  * @brief Clear once-off schedules from tasks where the duration has passed.
  *
- * @return FALSE on success (including if failed to find result), TRUE on error.
+ * @param[in]  task  Task.  0 for all.
  */
 void
-clear_duration_schedules ()
+clear_duration_schedules (task_t task)
 {
+  gchar *task_element;
+  const gchar *duration_expired_element;
+
+  if (task)
+    task_element = g_strdup_printf (" AND id = %llu", task);
+  else
+    task_element = g_strdup ("");
+
+  duration_expired_element
+   = " AND (SELECT first_time + duration FROM schedules"
+     "      WHERE schedules.id = schedule)"
+     "     < m_now ()";
+
   sql ("UPDATE tasks"
        " SET schedule = 0,"
        " schedule_next_time = 0,"
        " schedule_periods = 0,"
        " modification_time = m_now ()"
        " WHERE schedule > 0"
+       "%s"
        " AND (SELECT period FROM schedules WHERE schedules.id = schedule) = 0"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
-       " AND (SELECT first_time + duration FROM schedules"
-       "      WHERE schedules.id = schedule)"
-       "     < m_now ()"
+       "%s"
        " AND run_status != %i"
        " AND run_status != %i;",
+       task_element,
+       task ? "" : duration_expired_element,
        TASK_STATUS_RUNNING,
        TASK_STATUS_REQUESTED);
+
+  g_free (task_element);
 }
 
 /**
  * @brief Update tasks with limited run schedules which have durations.
  *
- * @return FALSE on success (including if failed to find result), TRUE on error.
+ * If a task is given, assume that the task has finished.  Otherwise only
+ * update the task if more time than the duration has passed the start time.
+ *
+ * @param[in]  task  Task.  0 for all.
  */
 void
-update_duration_schedule_periods ()
+update_duration_schedule_periods (task_t task)
 {
+  gchar *task_element;
+  const gchar *duration_expired_element;
+
+  if (task)
+    task_element = g_strdup_printf (" AND id = %llu", task);
+  else
+    task_element = g_strdup ("");
+
+  duration_expired_element
+   = /* The task has started, so assume that the start time was the last
+      * most recent start of the period. */
+     " AND (SELECT first_time"
+     "             + (((m_now () - first_time) / period) * period)"
+     "             + duration"
+     "      FROM schedules"
+     "      WHERE schedules.id = schedule)"
+     "     < m_now ()";
+
   sql ("UPDATE tasks"
        " SET schedule = 0,"
        " schedule_next_time = 0,"
+       " schedule_periods = 0,"
        " modification_time = m_now ()"
        " WHERE schedule > 0"
+       "%s"
        " AND schedule_periods = 1"
        " AND (SELECT period FROM schedules WHERE schedules.id = schedule) > 0"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        " AND schedule_next_time = 0"  /* Set as flag when starting task. */
-       /* The task has started, so assume that the start time was the last
-        * most recent start of the period. */
-       " AND (SELECT (((m_now () - first_time) / period) * period) + duration"
-       "      FROM schedules"
-       "      WHERE schedules.id = schedule)"
-       "     < m_now ()"
+       "%s"
        " AND run_status != %i"
        " AND run_status != %i;",
+       task_element,
+       task ? "" : duration_expired_element,
        TASK_STATUS_RUNNING,
        TASK_STATUS_REQUESTED);
+  g_free (task_element);
 }
 
 
