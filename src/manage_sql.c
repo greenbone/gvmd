@@ -13622,14 +13622,16 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
  *
  * @param[in]  task      Task.
  * @param[in]  schedule  Schedule.
+ * @param[in]  periods   Number of schedule periods.
  *
  * @return 0 success, -1 error.
  */
 int
-set_task_schedule (task_t task, schedule_t schedule)
+set_task_schedule (task_t task, schedule_t schedule, int periods)
 {
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
+       " schedule_periods = %i,"
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
        "                                         period_months)"
@@ -13637,7 +13639,7 @@ set_task_schedule (task_t task, schedule_t schedule)
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE id = %llu;",
-       schedule, schedule, task);
+       schedule, periods, schedule, task);
 
   return 0;
 }
@@ -13647,17 +13649,19 @@ set_task_schedule (task_t task, schedule_t schedule)
  *
  * @param[in]  task_id   Task UUID.
  * @param[in]  schedule  Schedule.
+ * @param[in]  periods   Number of schedule periods.
  *
  * @return 0 success, -1 error.
  */
 int
-set_task_schedule_uuid (const gchar *task_id, schedule_t schedule)
+set_task_schedule_uuid (const gchar *task_id, schedule_t schedule, int periods)
 {
   gchar *quoted_task_id;
 
   quoted_task_id = sql_quote (task_id);
   sql ("UPDATE tasks"
        " SET schedule = %llu,"
+       " schedule_periods = %i,"
        " schedule_next_time = (SELECT next_time (first_time,"
        "                                         period,"
        "                                         period_months)"
@@ -13665,7 +13669,32 @@ set_task_schedule_uuid (const gchar *task_id, schedule_t schedule)
        "                       WHERE id = %llu),"
        " modification_time = m_now ()"
        " WHERE uuid = '%s';",
-       schedule, schedule, quoted_task_id);
+       schedule, periods, schedule, quoted_task_id);
+  g_free (quoted_task_id);
+
+  return 0;
+}
+
+/**
+ * @brief Set the schedule periods of a task.
+ *
+ * The task modification time stays the same.
+ *
+ * @param[in]  task_id   Task UUID.
+ * @param[in]  periods   Schedule periods.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+set_task_schedule_periods (const gchar *task_id, int periods)
+{
+  gchar *quoted_task_id;
+
+  quoted_task_id = sql_quote (task_id);
+  sql ("UPDATE tasks"
+       " SET schedule_periods = %i"
+       " WHERE uuid = '%s';",
+       periods, quoted_task_id);
   g_free (quoted_task_id);
 
   return 0;
@@ -13773,6 +13802,39 @@ task_schedule_in_trash (task_t task)
 }
 
 /**
+ * @brief Get the number of times the period schedule should run on the task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Number of times.
+ */
+int
+task_schedule_periods (task_t task)
+{
+  return sql_int ("SELECT schedule_periods FROM tasks WHERE id = %llu;", task);
+}
+
+/**
+ * @brief Set the next time a scheduled task will be due.
+ *
+ * @param[in]  task_id  Task UUID.
+ *
+ * @return Task schedule periods.
+ */
+int
+task_schedule_periods_uuid (const gchar *task_id)
+{
+  gchar *quoted_task_id;
+  int ret;
+
+  quoted_task_id = sql_quote (task_id);
+  ret = sql_int ("SELECT schedule_periods FROM tasks WHERE uuid = '%s';",
+                 quoted_task_id);
+  g_free (quoted_task_id);
+  return ret;
+}
+
+/**
  * @brief Get next time a scheduled task will run, following schedule timezone.
  *
  * @param[in]  task  Task.
@@ -13842,6 +13904,23 @@ set_task_schedule_next_time (task_t task, time_t time)
 {
   sql ("UPDATE tasks SET schedule_next_time = %i WHERE id = %llu;",
        time, task);
+}
+
+/**
+ * @brief Set the next time a scheduled task will be due.
+ *
+ * @param[in]  task_id  Task UUID.
+ * @param[in]  time     New next time.
+ */
+void
+set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
+{
+  gchar *quoted_task_id;
+
+  quoted_task_id = sql_quote (task_id);
+  sql ("UPDATE tasks SET schedule_next_time = %i WHERE uuid = '%s';",
+       time, quoted_task_id);
+  g_free (quoted_task_id);
 }
 
 /**
@@ -14122,11 +14201,41 @@ clear_duration_schedules ()
   sql ("UPDATE tasks"
        " SET schedule = 0,"
        " schedule_next_time = 0,"
+       " schedule_periods = 0,"
        " modification_time = m_now ()"
        " WHERE schedule > 0"
        " AND (SELECT period FROM schedules WHERE schedules.id = schedule) = 0"
        " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
        " AND (SELECT first_time + duration FROM schedules"
+       "      WHERE schedules.id = schedule)"
+       "     < m_now ()"
+       " AND run_status != %i"
+       " AND run_status != %i;",
+       TASK_STATUS_RUNNING,
+       TASK_STATUS_REQUESTED);
+}
+
+/**
+ * @brief Update tasks with limited run schedules which have durations.
+ *
+ * @return FALSE on success (including if failed to find result), TRUE on error.
+ */
+void
+update_duration_schedule_periods ()
+{
+  sql ("UPDATE tasks"
+       " SET schedule = 0,"
+       " schedule_next_time = 0,"
+       " modification_time = m_now ()"
+       " WHERE schedule > 0"
+       " AND schedule_periods = 1"
+       " AND (SELECT period FROM schedules WHERE schedules.id = schedule) > 0"
+       " AND (SELECT duration FROM schedules WHERE schedules.id = schedule) > 0"
+       " AND schedule_next_time = 0"  /* Set as flag when starting task. */
+       /* The task has started, so assume that the start time was the last
+        * most recent start of the period. */
+       " AND (SELECT (((m_now () - first_time) / period) * period) + duration"
+       "      FROM schedules"
        "      WHERE schedules.id = schedule)"
        "     < m_now ()"
        " AND run_status != %i"

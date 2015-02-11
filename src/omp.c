@@ -3666,6 +3666,7 @@ typedef struct
   name_value_t *preference;  ///< Current preference.
   array_t *preferences;   ///< Preferences.
   char *schedule_id;   ///< ID of new schedule for task.
+  char *schedule_periods; ///< Number of periods the schedule must run for.
   char *slave_id;      ///< ID of new slave for task.
   char *target_id;     ///< ID of new target for task.
   char *task_id;       ///< ID of task to modify.
@@ -3707,6 +3708,7 @@ modify_task_data_reset (modify_task_data_t *data)
     }
   array_free (data->preferences);
   free (data->schedule_id);
+  free (data->schedule_periods);
   free (data->slave_id);
   free (data->target_id);
   free (data->task_id);
@@ -5383,6 +5385,7 @@ typedef enum
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_VALUE,
   CLIENT_MODIFY_TASK_SCHEDULE,
+  CLIENT_MODIFY_TASK_SCHEDULE_PERIODS,
   CLIENT_MODIFY_TASK_SLAVE,
   CLIENT_MODIFY_TASK_TARGET,
   CLIENT_MODIFY_TASK_HOSTS_ORDERING,
@@ -8348,6 +8351,8 @@ omp_xml_handle_start_element (/*@unused@*/ GMarkupParseContext* context,
                               &modify_task_data->schedule_id);
             set_client_state (CLIENT_MODIFY_TASK_SCHEDULE);
           }
+        else if (strcasecmp ("SCHEDULE_PERIODS", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_SCHEDULE_PERIODS);
         else if (strcasecmp ("SLAVE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -17467,6 +17472,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<trash>%i</trash>"
                            "%s"
                            "</schedule>"
+                           "<schedule_periods>%i</schedule_periods>"
                            "%s%s%s%s",
                            get_tasks_data->get.trash
                             ? 0
@@ -17500,6 +17506,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                              : iso_time (&next_time)),
                            schedule_in_trash,
                            schedule_available ? "" : "<permissions/>",
+                           task_schedule_periods (index),
                            current_report,
                            first_report,
                            last_report,
@@ -21666,7 +21673,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                * this case the client would then need something like
                * set_task_schedule_uuid.
                */
-              set_task_schedule (create_task_data->task, schedule);
+              set_task_schedule (create_task_data->task, schedule, 0);
             }
 
           /* Set any observers. */
@@ -24728,10 +24735,15 @@ create_task_fail:
                 if (fail == 0 && modify_task_data->schedule_id)
                   {
                     schedule_t schedule = 0;
+                    int periods;
+
+                    periods = modify_task_data->schedule_periods
+                               ? atoi (modify_task_data->schedule_periods)
+                               : 0;
 
                     if (strcmp (modify_task_data->schedule_id, "0") == 0)
                       {
-                        set_task_schedule (task, 0);
+                        set_task_schedule (task, 0, 0);
                       }
                     else if ((fail = find_schedule_with_permission
                                       (modify_task_data->schedule_id,
@@ -24753,13 +24765,19 @@ create_task_fail:
                           }
                         fail = 1;
                       }
-                    else if (set_task_schedule (task, schedule))
+                    else if (set_task_schedule (task, schedule, periods))
                       {
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("modify_task"));
                         fail = 1;
                       }
                   }
+                else if (fail == 0
+                         && modify_task_data->schedule_periods
+                         && strlen (modify_task_data->schedule_periods))
+                  set_task_schedule_periods
+                   (modify_task_data->task_id,
+                    atoi (modify_task_data->schedule_periods));
 
                 if (fail == 0 && modify_task_data->slave_id)
                   {
@@ -24900,6 +24918,7 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_TASK, OBSERVERS);
       CLOSE (CLIENT_MODIFY_TASK, PREFERENCES);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
+      CLOSE (CLIENT_MODIFY_TASK, SCHEDULE_PERIODS);
       CLOSE (CLIENT_MODIFY_TASK, SLAVE);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
       CLOSE (CLIENT_MODIFY_TASK, FILE);
@@ -26143,6 +26162,9 @@ omp_xml_handle_text (/*@unused@*/ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TASK_FILE,
               &modify_task_data->file);
+
+      APPEND (CLIENT_MODIFY_TASK_SCHEDULE_PERIODS,
+              &modify_task_data->schedule_periods);
 
 
       APPEND (CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,

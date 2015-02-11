@@ -618,7 +618,7 @@ int
 set_task_groups (task_t, array_t*, gchar**);
 
 int
-set_task_schedule (task_t, schedule_t);
+set_task_schedule (task_t, schedule_t, int);
 
 unsigned int
 task_report_count (task_t);
@@ -635,6 +635,12 @@ task_trend (task_t, int);
 
 const char *
 task_threat_level (task_t, int);
+
+int
+task_schedule_periods (task_t);
+
+int
+task_schedule_periods_uuid (const gchar *);
 
 schedule_t
 task_schedule (task_t);

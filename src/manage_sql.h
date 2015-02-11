@@ -271,6 +271,10 @@ const char *task_file_iterator_content (iterator_t *);
 
 void set_task_schedule_next_time (task_t, time_t);
 
+void set_task_schedule_next_time_uuid (const gchar *, time_t);
+
+int set_task_schedule_periods (const gchar *, int);
+
 void init_otp_pref_iterator (iterator_t *, config_t, const char *);
 const char *otp_pref_iterator_name (iterator_t *);
 const char *otp_pref_iterator_value (iterator_t *);
@@ -317,9 +321,11 @@ const char *task_schedule_iterator_timezone (iterator_t *);
 
 time_t task_schedule_iterator_initial_offset (iterator_t *);
 
-int set_task_schedule_uuid (const gchar*, schedule_t);
+int set_task_schedule_uuid (const gchar*, schedule_t, int);
 
 void clear_duration_schedules ();
+
+void update_duration_schedule_periods ();
 
 void reinit_manage_process ();
 

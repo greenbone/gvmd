@@ -1791,6 +1791,7 @@ create_tables ()
        "  target integer," // REFERENCES targets (id) ON DELETE RESTRICT,"
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
+       "  schedule_periods integer,"
        "  slave integer," // REFERENCES slaves (id) ON DELETE RESTRICT,"
        "  scanner integer," // REFERENCES scanner (id) ON DELETE RESTRICT,"
        "  config_location integer,"

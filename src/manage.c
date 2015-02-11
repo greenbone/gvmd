@@ -4700,13 +4700,11 @@ manage_schedule (int (*fork_connection) (int *,
                     case EXIT_SUCCESS:
                       {
                         schedule_t schedule;
+                        int periods;
 
                         /* Child succeeded. */
 
                         schedule = task_schedule_uuid (task_uuid);
-                        /* If it was a once-off schedule without a duration,
-                         * remove it from the task.  If it has a duration it
-                         * will be removed below, after the duration. */
                         if (schedule
                             && schedule_period (schedule) == 0
                             && schedule_duration (schedule) == 0
@@ -4714,7 +4712,32 @@ manage_schedule (int (*fork_connection) (int *,
                              * the schedule after this task was added to the
                              * "starts" list. */
                             && task_schedule_next_time (task_uuid) == 0)
-                          set_task_schedule_uuid (task_uuid, 0);
+                          /* A once-off schedule without a duration, remove
+                           * it from the task.  If it has a duration it
+                           * will be removed below, after the duration. */
+                          set_task_schedule_uuid (task_uuid, 0, 0);
+                        else if ((periods = task_schedule_periods_uuid
+                                             (task_uuid)))
+                          {
+                            /* A task restricted to a certain number of
+                            * scheduled runs. */
+                            if (periods > 1)
+                              {
+                                set_task_schedule_periods (task_uuid,
+                                                           periods - 1);
+                              }
+                            else if (periods == 1
+                                     && schedule_duration (schedule) == 0)
+                              {
+                                /* Last run of a task restricted to a certain
+                                 * number of scheduled runs. */
+                                set_task_schedule_uuid (task_uuid, 0, 0);
+                              }
+                            else if (periods == 1)
+                              /* Flag that the task has started, for
+                               * update_duration_schedule_periods. */
+                              set_task_schedule_next_time_uuid (task_uuid, 0);
+                          }
                       }
                       g_free (task_uuid);
                       exit (EXIT_SUCCESS);
@@ -4850,7 +4873,9 @@ manage_schedule (int (*fork_connection) (int *,
       exit (EXIT_SUCCESS);
    }
 
+  /* TODO Also do these when the task finishes. */
   clear_duration_schedules ();
+  update_duration_schedule_periods ();
 
   return 0;
 }

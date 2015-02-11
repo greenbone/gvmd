@@ -1,3 +1,40 @@
+2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add the option to limit the number of times a task runs with a periodic
+	schedule.  When the limit is reached the schedule is removed from the
+	task.  Hence increase database version to 145.  Add database migration
+	from version 144 to 145.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 145.
+
+	* src/manage_migrators.c (migrate_144_to_145): New function.
+	(database_migrators): Add migrate_144_to_145.
+
+	* src/manage_pg.c, src/manage_sqlite3.c (create_tables): Add
+	schedule_periods to tasks.
+
+	* src/manage.c (manage_schedule): When starting a limited period task,
+	decrement the scheduled periods if there are more runs and remove the
+	period if this is the last run.  After stopping tasks update the
+	scheduled period counts of tasks that have durations.
+
+	* doc/db.png: Update for version change.
+
+	* src/omp.c (modify_task_data_t, modify_task_data_reset)
+	(client_state_t): Add schedule_periods entry.
+	(omp_xml_handle_start_element, omp_xml_handle_end_element)
+	(omp_xml_handle_text): Add SCHEDULE_PERIODS to MODIFY_TASK and
+	GET_TASKS.
+
+	* src/manage_sql.c (set_task_schedule, set_task_schedule_uuid): Add
+	periods arg.
+	(set_task_schedule_periods, task_schedule_periods)
+	(task_schedule_periods_uuid, set_task_schedule_next_time_uuid)
+	(update_duration_schedule_periods): New functions.
+	(clear_duration_schedules): Clear task schedule_periods too.
+
+	* src/manage.h, src/manage_sql.h: Update headers accordingly.
+
 2015-02-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_esxi_credential_uuid): New variable.

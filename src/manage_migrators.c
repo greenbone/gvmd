@@ -9989,6 +9989,39 @@ migrate_143_to_144 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 144 to version 145.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_144_to_145 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 144. */
+
+  if (manage_db_version () != 144)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* Tasks got a new column schedule_periods. */
+  sql ("ALTER TABLE tasks ADD COLUMN schedule_periods INTEGER;");
+  sql ("UPDATE tasks SET schedule_periods=0;");
+
+  /* Set the database version to 145. */
+
+  set_db_version (145);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10144,6 +10177,7 @@ static migrator_t database_migrators[]
     {142, migrate_141_to_142},
     {143, migrate_142_to_143},
     {144, migrate_143_to_144},
+    {145, migrate_144_to_145},
     /* End marker. */
     {-1, NULL}};
 

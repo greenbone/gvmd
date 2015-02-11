@@ -2376,10 +2376,10 @@ create_tables ()
        /* TODO Remove column time, no longer used. */
        "  time, comment, run_status INTEGER, start_time, end_time,"
        "  config INTEGER, target INTEGER, schedule INTEGER, schedule_next_time,"
-       "  slave INTEGER, config_location INTEGER, target_location INTEGER,"
-       "  schedule_location INTEGER, slave_location INTEGER,"
-       "  upload_result_count INTEGER, hosts_ordering, scanner, alterable,"
-       "  creation_time, modification_time);");
+       "  schedule_periods INTEGER, slave INTEGER, config_location INTEGER,"
+       "  target_location INTEGER, schedule_location INTEGER,"
+       "  slave_location INTEGER, upload_result_count INTEGER, hosts_ordering,"
+       "  scanner, alterable, creation_time, modification_time);");
   /* Field password contains the hash. */
   /* Field hosts_allow: 0 deny, 1 allow. */
   /* Field ifaces_allow: 0 deny, 1 allow. */
