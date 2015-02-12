@@ -1,3 +1,9 @@
+2015-02-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (task_severity): Add plus sign to the subquery
+	"SELECT id FROM reports ..." so SQLite can better optimize the final
+	results query.
+
 2015-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (update_end_times): Skip setting the times if the strings
