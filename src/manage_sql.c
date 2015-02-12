@@ -25950,10 +25950,10 @@ request_delete_task_uuid (const char *task_id, int ultimate)
       tags_set_orphans ("task", task, LOCATION_TRASH);
 
       sql ("DELETE FROM results WHERE task = %llu;", task);
-      sql ("DELETE FROM tasks WHERE id = %llu;", task);
       sql ("DELETE FROM task_alerts WHERE task = %llu;", task);
       sql ("DELETE FROM task_files WHERE task = %llu;", task);
       sql ("DELETE FROM task_preferences WHERE task = %llu;", task);
+      sql ("DELETE FROM tasks WHERE id = %llu;", task);
       sql ("COMMIT;");
       return 0;
     }

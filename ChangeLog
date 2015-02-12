@@ -1,3 +1,8 @@
+2015-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (request_delete_task_uuid): Remove task last, because
+	Postgres checks the references.
+
 2015-02-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Also clear schedules when the scan ends, as this can be an earlier
