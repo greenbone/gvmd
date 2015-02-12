@@ -1,5 +1,11 @@
 2015-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (update_end_times): Skip setting the times if the strings
+	are empty or only contain space, otherwise the time parser logs a
+	warning.
+
+2015-02-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (request_delete_task_uuid): Remove task last, because
 	Postgres checks the references.
 

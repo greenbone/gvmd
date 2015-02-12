@@ -1672,6 +1672,11 @@ update_end_times (entity_t report, int add_host_details)
     {
       if (strcmp (entity_name (end), "scan_end") == 0)
         {
+          char *text;
+          text = entity_text (end);
+          while (*text && isspace (*text)) text++;
+          if (*text == '\0')
+            break;
           set_task_end_time (current_scanner_task,
                              g_strdup (entity_text (end)));
           set_scan_end_time (current_report, entity_text (end));
@@ -1688,6 +1693,7 @@ update_end_times (entity_t report, int add_host_details)
       if (strcmp (entity_name (end), "host_end") == 0)
         {
           entity_t host;
+          char *text;
 
           /* Set the end time this way first, in case the slave is
            * very old. */
@@ -1696,14 +1702,18 @@ update_end_times (entity_t report, int add_host_details)
           if (host == NULL)
             return -1;
 
-          set_scan_host_end_time (current_report,
-                                  entity_text (host),
-                                  entity_text (end));
+          text = entity_text (end);
+          while (*text && isspace (*text)) text++;
+          if (*text != '\0')
+            set_scan_host_end_time (current_report,
+                                    entity_text (host),
+                                    entity_text (end));
         }
 
       if (strcmp (entity_name (end), "host") == 0)
         {
           entity_t ip, time;
+          char *text;
 
           ip = entity_child (end, "ip");
           if (ip == NULL)
@@ -1713,9 +1723,12 @@ update_end_times (entity_t report, int add_host_details)
           if (time == NULL)
             return -1;
 
-          set_scan_host_end_time (current_report,
-                                  entity_text (ip),
-                                  entity_text (time));
+          text = entity_text (time);
+          while (*text && isspace (*text)) text++;
+          if (*text != '\0')
+            set_scan_host_end_time (current_report,
+                                    entity_text (ip),
+                                    entity_text (time));
           if (add_host_details
               && manage_report_host_details (current_report,
                                              entity_text (ip),
