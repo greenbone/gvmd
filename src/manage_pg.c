@@ -2268,6 +2268,10 @@ create_tables ()
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
 
+  sql ("SELECT create_index ('report_counts_by_report_and_override',"
+       "                     'report_counts', 'report, override');");
+
+
 #if 0
   /* TODO The value column can be bigger than 8191, the maximum size that
    *      Postgres can handle.  For example, this can happen for "ports".
