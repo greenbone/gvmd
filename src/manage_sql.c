@@ -15749,7 +15749,7 @@ report_add_result (report_t report, result_t result)
          report, current_credentials.uuid, ov_severity);
 
   sql ("UPDATE report_counts"
-       " SET end_time = (SELECT coalesce(min(overrides.end_time), -1)"
+       " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
        "                 FROM overrides, results"
        "                 WHERE overrides.nvt = results.nvt"
        "                 AND results.report = %llu"
