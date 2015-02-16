@@ -1,3 +1,12 @@
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (manage_schedule): Remove the check that ensures that a
+	periodic task is started within a short interval at the scheduled start
+	time.  This check was meant to prevent the task from starting long after
+	the scheduled start time but I do not see a real problem with this
+	happening, and the check could cause the run to be missed entirely when
+	the machine is heavily loaded.
+
 2015-02-13  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_add_result): Set end_time of report_counts
