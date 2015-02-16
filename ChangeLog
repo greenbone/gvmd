@@ -1,5 +1,21 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Reduce size of termination signal handlers.  Move logging out of SIGHUP
+	handler.  Use volatile for global variable used in handler.
+
+	* src/openvasmd.c (termination_signal): New variable.
+	(sighup_update_nvt_cache): Add volatile, as the variable may change
+	asynchronously.
+	(handle_sigterm, handle_sighup): Remove.  No longer used.
+	(handle_termination_signal): New function.
+	(handle_sighup_update): Remove logging.
+	(update_or_rebuild_nvt_cache, main): Use handle_termination_signal for
+	termination signals.
+	(serve_and_schedule): Check termination flag set by termination signals.
+	Add logging removed from handle_sighup_update.
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (parse_tags): Get CVSS base from cvss_base_vector instead
 	of cvss_base.
 

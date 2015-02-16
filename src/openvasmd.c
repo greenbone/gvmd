@@ -251,9 +251,14 @@ static gchar *database = NULL;
 int is_parent = 1;
 
 /**
+ * @brief Flag for signal handlers.
+ */
+volatile int termination_signal = 0;
+
+/**
  * @brief Flag for SIGHUP handler.
  */
-int sighup_update_nvt_cache = 0;
+volatile int sighup_update_nvt_cache = 0;
 
 /**
  * @brief The address of the Scanner.
@@ -655,31 +660,14 @@ handle_sigabrt (int signal)
 }
 
 /**
- * @brief Handle a SIGTERM signal.
+ * @brief Handle a termination signal.
  *
  * @param[in]  signal  The signal that caused this function to run.
  */
 void
-handle_sigterm (int signal)
+handle_termination_signal (int signal)
 {
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-         sys_siglist[signal]);
-  cleanup_manage_process (TRUE);
-  exit (EXIT_SUCCESS);
-}
-
-/**
- * @brief Handle a SIGHUP signal by exiting.
- *
- * @param[in]  signal  The signal that caused this function to run.
- */
-void
-handle_sighup (int signal)
-{
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-         sys_siglist[signal]);
-  cleanup_manage_process (TRUE);
-  exit (EXIT_SUCCESS);
+  termination_signal = signal;
 }
 
 /**
@@ -691,23 +679,7 @@ void
 handle_sighup_update (int signal)
 {
   /* Queue the update of the NVT cache. */
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-         sys_siglist[signal]);
   sighup_update_nvt_cache = 1;
-}
-
-/**
- * @brief Handle a SIGINT signal.
- *
- * @param[in]  signal  The signal that caused this function to run.
- */
-void
-handle_sigint (/*@unused@*/ int signal)
-{
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-         sys_siglist[signal]);
-  cleanup_manage_process (TRUE);
-  exit (EXIT_SUCCESS);
 }
 
 /**
@@ -829,14 +801,13 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
   /* Register the signal handlers. */
 
   /** @todo Use sigaction. */
-  /* Warning from RATS heeded (signals now use small, separate handlers)
-   * hence annotations. */
-  if (signal (SIGTERM, handle_sigterm) == SIG_ERR    /* RATS: ignore */
-      || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
-      || signal (SIGINT, handle_sigint) == SIG_ERR   /* RATS: ignore */
-      || signal (SIGHUP, handle_sighup) == SIG_ERR   /* RATS: ignore */
-      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)       /* RATS: ignore */
+  if (signal (SIGTERM, handle_termination_signal) == SIG_ERR
+      || signal (SIGABRT, handle_sigabrt) == SIG_ERR
+      || signal (SIGINT, handle_termination_signal) == SIG_ERR
+      || signal (SIGHUP, handle_termination_signal) == SIG_ERR
+      || signal (SIGQUIT, handle_termination_signal) == SIG_ERR
+      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)
     {
       g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
       exit (EXIT_FAILURE);
@@ -995,8 +966,20 @@ serve_and_schedule ()
 
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
+          if (termination_signal)
+            {
+              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                     sys_siglist[termination_signal]);
+              cleanup_manage_process (TRUE);
+              /* Raise signal again, to exit with the correct return value. */
+              signal (termination_signal, SIG_DFL);
+              raise (termination_signal);
+            }
+
           if (sighup_update_nvt_cache)
             {
+              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                     sys_siglist[SIGHUP]);
               sighup_update_nvt_cache = 0;
               fork_update_nvt_cache ();
             }
@@ -1046,6 +1029,16 @@ serve_and_schedule ()
       if (manage_schedule (fork_connection_for_schedular, scheduling_enabled)
           < 0)
         exit (EXIT_FAILURE);
+
+      if (termination_signal)
+        {
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                 sys_siglist[termination_signal]);
+          cleanup_manage_process (TRUE);
+          /* Raise signal again, to exit with the correct return value. */
+          signal (termination_signal, SIG_DFL);
+          raise (termination_signal);
+        }
 
       if (sighup_update_nvt_cache)
         {
@@ -2000,14 +1993,13 @@ main (int argc, char** argv)
 
   /* Register the signal handlers. */
 
-  /* Warning from RATS heeded (signals now use small, separate handlers)
-   * hence annotations. */
-  if (signal (SIGTERM, handle_sigterm) == SIG_ERR   /* RATS: ignore */
-      || signal (SIGABRT, handle_sigabrt) == SIG_ERR /* RATS: ignore */
-      || signal (SIGINT, handle_sigint) == SIG_ERR  /* RATS: ignore */
-      || signal (SIGHUP, handle_sighup_update) == SIG_ERR  /* RATS: ignore */
-      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR /* RATS: ignore */
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)      /* RATS: ignore */
+  if (signal (SIGTERM, handle_termination_signal) == SIG_ERR
+      || signal (SIGABRT, handle_sigabrt) == SIG_ERR
+      || signal (SIGINT, handle_termination_signal) == SIG_ERR
+      || signal (SIGHUP, handle_sighup_update) == SIG_ERR
+      || signal (SIGQUIT, handle_termination_signal) == SIG_ERR
+      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR
+      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)
     {
       g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
       exit (EXIT_FAILURE);
