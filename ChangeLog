@@ -1,5 +1,10 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (parse_tags): Get CVSS base from cvss_base_vector instead
+	of cvss_base.
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (manage_schedule): Remove the check that ensures that a
 	periodic task is started within a short interval at the scheduled start
 	time.  This check was meant to prevent the task from starting long after

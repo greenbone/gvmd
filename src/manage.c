@@ -65,6 +65,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <openvas/base/cvss.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/omp/omp.h>
@@ -5176,10 +5177,14 @@ parse_tags (const char *scanner_tags, gchar **tags, gchar **cvss_base,
 
   while (*point)
     {
-      if (strncmp (*point, "cvss_base=", strlen ("cvss_base=")) == 0)
+      if (strncmp (*point, "cvss_base_vector=", strlen ("cvss_base_vector="))
+          == 0)
         {
           if (*cvss_base == NULL)
-            *cvss_base = g_strdup (*point + strlen ("cvss_base="));
+            *cvss_base = g_strdup_printf ("%.1f",
+                                          get_cvss_score_from_base_metrics
+                                           (*point
+                                            + strlen ("cvss_base_vector=")));
         }
       else if (strncmp (*point, "risk_factor=", strlen ("risk_factor=")) == 0)
         {
