@@ -1,5 +1,11 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (serve_and_schedule): Move the signal flag checks out
+	of the SCHEDULE_PERIOD check, because the signal flags must be checked
+	when the select is interrupted by a signal (when it returns EINTR).
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Reduce size of termination signal handlers.  Move logging out of SIGHUP
 	handler.  Use volatile for global variable used in handler.
 

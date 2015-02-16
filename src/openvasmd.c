@@ -964,26 +964,26 @@ serve_and_schedule ()
       else
         nfds = manager_socket_2 + 1;
 
+      if (termination_signal)
+        {
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                 sys_siglist[termination_signal]);
+          cleanup_manage_process (TRUE);
+          /* Raise signal again, to exit with the correct return value. */
+          signal (termination_signal, SIG_DFL);
+          raise (termination_signal);
+        }
+
+      if (sighup_update_nvt_cache)
+        {
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
+                 sys_siglist[SIGHUP]);
+          sighup_update_nvt_cache = 0;
+          fork_update_nvt_cache ();
+        }
+
       if ((time (NULL) - last_schedule_time) > SCHEDULE_PERIOD)
         {
-          if (termination_signal)
-            {
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                     sys_siglist[termination_signal]);
-              cleanup_manage_process (TRUE);
-              /* Raise signal again, to exit with the correct return value. */
-              signal (termination_signal, SIG_DFL);
-              raise (termination_signal);
-            }
-
-          if (sighup_update_nvt_cache)
-            {
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
-                     sys_siglist[SIGHUP]);
-              sighup_update_nvt_cache = 0;
-              fork_update_nvt_cache ();
-            }
-
           if (manage_schedule (fork_connection_for_schedular,
                                scheduling_enabled)
               < 0)
