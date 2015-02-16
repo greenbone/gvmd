@@ -385,11 +385,14 @@ accept_and_maybe_fork (int server_socket)
         /* Child. */
         {
           int ret;
+          struct sigaction action;
 
           is_parent = 0;
 
-          /* RATS: ignore, this is SIG_DFL damnit. */
-          if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+          memset (&action, '\0', sizeof (action));
+          sigemptyset (&action.sa_mask);
+          action.sa_handler = SIG_DFL;
+          if (sigaction (SIGCHLD, &action, NULL) == -1)
             {
               g_critical ("%s: failed to set client SIGCHLD handler: %s\n",
                           __FUNCTION__,
@@ -454,6 +457,7 @@ fork_connection_for_schedular (int *client_socket,
 {
   int pid, parent_client_socket, ret;
   int sockets[2];
+  struct sigaction action;
 
   /* Fork a child to use as schedular client and server. */
 
@@ -503,8 +507,10 @@ fork_connection_for_schedular (int *client_socket,
 
         parent_client_socket = sockets[0];
 
-        /* RATS: ignore, this is SIG_DFL damnit. */
-        if (signal (SIGCHLD, SIG_DFL) == SIG_ERR)
+        memset (&action, '\0', sizeof (action));
+        sigemptyset (&action.sa_mask);
+        action.sa_handler = SIG_DFL;
+        if (sigaction (SIGCHLD, &action, NULL) == -1)
           {
             g_critical ("%s: failed to set client SIGCHLD handler: %s\n",
                         __FUNCTION__,
@@ -618,6 +624,34 @@ cleanup ()
   if (is_parent == 1) pidfile_remove ("openvasmd");
 }
 
+/**
+ * @brief Setup signal handler.
+ *
+ * Exit on failure.
+ *
+ * @param[in]  signal   Signal.
+ * @param[in]  handler  Handler.
+ * @param[in]  block    Whether to block all other signals during handler.
+ */
+void
+setup_signal_handler (int signal, void (*handler) (int), int block)
+{
+  struct sigaction action;
+
+  memset (&action, '\0', sizeof (action));
+  if (block)
+    sigfillset (&action.sa_mask);
+  else
+    sigemptyset (&action.sa_mask);
+  action.sa_handler = handler;
+  if (sigaction (signal, &action, NULL) == -1)
+    {
+      g_critical ("%s: failed to register %s handler\n",
+                  __FUNCTION__, sys_siglist[signal]);
+      exit (EXIT_FAILURE);
+    }
+}
+
 #ifndef NDEBUG
 #include <execinfo.h>
 #define BA_SIZE 100
@@ -657,7 +691,7 @@ handle_sigabrt (int given_signal)
   manage_cleanup_process_error (given_signal);
   cleanup ();
   /* Raise signal again, to exit with the correct return value. */
-  signal (given_signal, SIG_DFL);
+  setup_signal_handler (given_signal, SIG_DFL, 0);
   raise (given_signal);
 }
 
@@ -695,7 +729,7 @@ handle_sigsegv (/*@unused@*/ int given_signal)
   manage_cleanup_process_error (given_signal);
   cleanup ();
   /* Raise signal again, to exit with the correct return value. */
-  signal (given_signal, SIG_DFL);
+  setup_signal_handler (given_signal, SIG_DFL, 0);
   raise (given_signal);
 }
 
@@ -738,34 +772,6 @@ void
 handle_sigabrt_simple (int signal)
 {
   exit (EXIT_FAILURE);
-}
-
-
-/**
- * @brief Setup signal handler.
- *
- * Exit on failure.
- *
- * @param[in]  signal   Signal.
- * @param[in]  handler  Handler.
- * @param[in]  block    Whether to block all other signals during handler.
- */
-void
-setup_signal_handler (int signal, void (*handler) (int), int block)
-{
-  struct sigaction action;
-
-  memset (&action, '\0', sizeof (action));
-  if (block)
-    sigfillset (&action.sa_mask);
-  else
-    sigemptyset (&action.sa_mask);
-  action.sa_handler = handler;
-  if (sigaction (signal, &action, NULL) == -1)
-    {
-      g_critical ("%s: failed to register SIGSEGV handler\n", __FUNCTION__);
-      exit (EXIT_FAILURE);
-    }
 }
 
 /**
@@ -880,7 +886,7 @@ rebuild_nvt_cache_retry (int update_or_rebuild, int register_cleanup,
   infof ("%s: Reloading NVT cache\n", __FUNCTION__);
 
   /* Don't ignore SIGCHLD, in order to wait for child process. */
-  signal (SIGCHLD, SIG_DFL);
+  setup_signal_handler (SIGCHLD, SIG_DFL, 0);
   while (1)
     {
       pid_t child_pid = fork ();
@@ -997,7 +1003,7 @@ serve_and_schedule ()
                  sys_siglist[termination_signal]);
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
-          signal (termination_signal, SIG_DFL);
+          setup_signal_handler (termination_signal, SIG_DFL, 0);
           raise (termination_signal);
         }
 
@@ -1063,7 +1069,7 @@ serve_and_schedule ()
                  sys_siglist[termination_signal]);
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
-          signal (termination_signal, SIG_DFL);
+          setup_signal_handler (termination_signal, SIG_DFL, 0);
           raise (termination_signal);
         }
 
@@ -1259,12 +1265,7 @@ main (int argc, char** argv)
 
   /* Setup initial signal handlers. */
 
-  if (signal (SIGABRT, handle_sigabrt_simple) == SIG_ERR)
-    {
-      g_critical ("%s: failed to register initial signal handler\n",
-                  __FUNCTION__);
-      return EXIT_FAILURE;
-    }
+  setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
   /* Switch to UTC for scheduling. */
 

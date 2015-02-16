@@ -1,5 +1,12 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (accept_and_maybe_fork, handle_sigabrt)
+	(handle_sigsegv, rebuild_nvt_cache_retry, serve_and_schedule, mail): Use
+	setup_signal_handler instead of signal, for consistency.
+	(setup_signal_handler): Move up in file.
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (setup_signal_handler): New function.
 	(update_or_rebuild_nvt_cache, main): Use setup_signal_handler to
 	register handler.  Block all signal during SIGSEGV and SIGABRT handlers.
