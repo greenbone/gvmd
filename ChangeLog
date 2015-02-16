@@ -1,5 +1,11 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (setup_signal_handler): New function.
+	(update_or_rebuild_nvt_cache, main): Use setup_signal_handler to
+	register handler.  Block all signal during SIGSEGV and SIGABRT handlers.
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (handle_sigabrt, handle_sigsegv): Remove g_critical,
 	do full cleanup, raise signal again so that exit value is correct.
 	(serve_and_schedule): Do full cleanup in termination signal handling.

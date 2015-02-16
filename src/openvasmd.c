@@ -740,6 +740,34 @@ handle_sigabrt_simple (int signal)
   exit (EXIT_FAILURE);
 }
 
+
+/**
+ * @brief Setup signal handler.
+ *
+ * Exit on failure.
+ *
+ * @param[in]  signal   Signal.
+ * @param[in]  handler  Handler.
+ * @param[in]  block    Whether to block all other signals during handler.
+ */
+void
+setup_signal_handler (int signal, void (*handler) (int), int block)
+{
+  struct sigaction action;
+
+  memset (&action, '\0', sizeof (action));
+  if (block)
+    sigfillset (&action.sa_mask);
+  else
+    sigemptyset (&action.sa_mask);
+  action.sa_handler = handler;
+  if (sigaction (signal, &action, NULL) == -1)
+    {
+      g_critical ("%s: failed to register SIGSEGV handler\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+}
+
 /**
  * @brief Updates or rebuilds the NVT Cache and exits or returns exit code.
  *
@@ -804,18 +832,13 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
 
   /* Register the signal handlers. */
 
-  /** @todo Use sigaction. */
-  if (signal (SIGTERM, handle_termination_signal) == SIG_ERR
-      || signal (SIGABRT, handle_sigabrt) == SIG_ERR
-      || signal (SIGINT, handle_termination_signal) == SIG_ERR
-      || signal (SIGHUP, handle_termination_signal) == SIG_ERR
-      || signal (SIGQUIT, handle_termination_signal) == SIG_ERR
-      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)
-    {
-      g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
-      exit (EXIT_FAILURE);
-    }
+  setup_signal_handler (SIGTERM, handle_termination_signal, 0);
+  setup_signal_handler (SIGABRT, handle_sigabrt, 1);
+  setup_signal_handler (SIGINT, handle_termination_signal, 0);
+  setup_signal_handler (SIGHUP, handle_termination_signal, 0);
+  setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
+  setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
+  setup_signal_handler (SIGCHLD, SIG_IGN, 0);
 
   /* Call the OMP client serving function with a special client socket
    * value.  This invokes a scanner-only manager loop which will
@@ -1997,17 +2020,13 @@ main (int argc, char** argv)
 
   /* Register the signal handlers. */
 
-  if (signal (SIGTERM, handle_termination_signal) == SIG_ERR
-      || signal (SIGABRT, handle_sigabrt) == SIG_ERR
-      || signal (SIGINT, handle_termination_signal) == SIG_ERR
-      || signal (SIGHUP, handle_sighup_update) == SIG_ERR
-      || signal (SIGQUIT, handle_termination_signal) == SIG_ERR
-      || signal (SIGSEGV, handle_sigsegv) == SIG_ERR
-      || signal (SIGCHLD, SIG_IGN) == SIG_ERR)
-    {
-      g_critical ("%s: failed to register signal handler\n", __FUNCTION__);
-      exit (EXIT_FAILURE);
-    }
+  setup_signal_handler (SIGTERM, handle_termination_signal, 0);
+  setup_signal_handler (SIGABRT, handle_sigabrt, 1);
+  setup_signal_handler (SIGINT, handle_termination_signal, 0);
+  setup_signal_handler (SIGHUP, handle_sighup_update, 0);
+  setup_signal_handler (SIGQUIT, handle_termination_signal, 0);
+  setup_signal_handler (SIGSEGV, handle_sigsegv, 1);
+  setup_signal_handler (SIGCHLD, SIG_IGN, 0);
 
   /* Setup security. */
 
