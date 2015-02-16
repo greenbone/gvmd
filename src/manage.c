@@ -4494,16 +4494,6 @@ manage_schedule (int (*fork_connection) (int *,
             /* Ensure that the task starts within the duration if it has one. */
             if (duration && (((now - first) % period) > duration))
               continue;
-
-            /* Ensure that the task is scheduled within a short interval after
-             * the start of the period.
-             *
-             * A periodic task that becomes due while the previous instantiation
-             * of the task is still running will be runnable as soon as the
-             * previous instantiation completes.  This could be any time, so
-             * skip the task and let is start again at the proper time. */
-            if (((now - first) % period) > (3 * 60))
-              continue;
           }
         else if (period_months)
           {
@@ -4527,17 +4517,6 @@ manage_schedule (int (*fork_connection) (int *,
             if (duration
                 && ((now - add_months (first, months_between (first, now)))
                     > duration))
-              continue;
-
-            /* Ensure that the task is scheduled within a short interval after
-             * the start of the period.
-             *
-             * A periodic task that becomes due while the previous instantiation
-             * of the task is still running will be runnable as soon as the
-             * previous instantiation completes.  This could be any time, so
-             * skip the task and let is start again at the proper time. */
-            if ((now - add_months (first, months_between (first, now)))
-                > (3 * 60))
               continue;
           }
         else
