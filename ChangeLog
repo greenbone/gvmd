@@ -1,5 +1,11 @@
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (handle_sigabrt, handle_sigsegv): Remove g_critical,
+	do full cleanup, raise signal again so that exit value is correct.
+	(serve_and_schedule): Do full cleanup in termination signal handling.
+
+2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (serve_and_schedule): Move the signal flag checks out
 	of the SCHEDULE_PERIOD check, because the signal flags must be checked
 	when the select is interrupted by a signal (when it returns EINTR).

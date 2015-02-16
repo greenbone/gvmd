@@ -626,10 +626,10 @@ cleanup ()
 /**
  * @brief Handle a SIGABRT signal.
  *
- * @param[in]  signal  The signal that caused this function to run.
+ * @param[in]  given_signal  The signal that caused this function to run.
  */
 void
-handle_sigabrt (int signal)
+handle_sigabrt (int given_signal)
 {
   static int in_sigabrt = 0;
 
@@ -654,9 +654,11 @@ handle_sigabrt (int signal)
   free (frames_text);
 #endif
 
-  manage_cleanup_process_error (signal);
-  g_critical ("%s: abort\n", __FUNCTION__);
-  exit (EXIT_FAILURE);
+  manage_cleanup_process_error (given_signal);
+  cleanup ();
+  /* Raise signal again, to exit with the correct return value. */
+  signal (given_signal, SIG_DFL);
+  raise (given_signal);
 }
 
 /**
@@ -685,14 +687,16 @@ handle_sighup_update (int signal)
 /**
  * @brief Handle a SIGSEGV signal.
  *
- * @param[in]  signal  The signal that caused this function to run.
+ * @param[in]  given_signal  The signal that caused this function to run.
  */
 void
-handle_sigsegv (/*@unused@*/ int signal)
+handle_sigsegv (/*@unused@*/ int given_signal)
 {
-  manage_cleanup_process_error (signal);
-  g_critical ("%s: segmentation fault\n", __FUNCTION__);
-  exit (EXIT_FAILURE);
+  manage_cleanup_process_error (given_signal);
+  cleanup ();
+  /* Raise signal again, to exit with the correct return value. */
+  signal (given_signal, SIG_DFL);
+  raise (given_signal);
 }
 
 
@@ -968,7 +972,7 @@ serve_and_schedule ()
         {
           g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
                  sys_siglist[termination_signal]);
-          cleanup_manage_process (TRUE);
+          cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           signal (termination_signal, SIG_DFL);
           raise (termination_signal);
@@ -1034,7 +1038,7 @@ serve_and_schedule ()
         {
           g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Received %s signal.\n",
                  sys_siglist[termination_signal]);
-          cleanup_manage_process (TRUE);
+          cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           signal (termination_signal, SIG_DFL);
           raise (termination_signal);
