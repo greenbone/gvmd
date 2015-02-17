@@ -18564,7 +18564,10 @@ report_scan_result_count (report_t report, const char* levels,
   qod_sql = where_qod (min_qod);
 
   if (report_counts_cache_exists (report, override)
-      && autofp == 0 && min_cvss_base == NULL && search_phrase == NULL)
+      && autofp == 0
+      && (min_cvss_base == NULL || strcmp (min_cvss_base, "") == 0)
+      && (search_phrase == NULL || strcmp (search_phrase, "") == 0)
+      && (min_qod == NULL || strcmp (min_qod, "") == 0))
     {
       *count = sql_int ("SELECT sum (count)"
                         " FROM report_counts"

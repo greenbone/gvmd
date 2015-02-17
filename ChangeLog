@@ -1,3 +1,9 @@
+2015-02-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_scan_result_count): Use cached count
+	if min_cvss_base and search_phrase are empty strings, not only if
+	they are NULL. Also check min_qod before using cached count.
+
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (accept_and_maybe_fork, handle_sigabrt)
