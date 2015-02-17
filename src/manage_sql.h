@@ -323,9 +323,9 @@ time_t task_schedule_iterator_initial_offset (iterator_t *);
 
 int set_task_schedule_uuid (const gchar*, schedule_t, int);
 
-void clear_duration_schedules ();
+void clear_duration_schedules (task_t);
 
-void update_duration_schedule_periods ();
+void update_duration_schedule_periods (task_t);
 
 void reinit_manage_process ();
 
