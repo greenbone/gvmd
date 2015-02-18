@@ -1017,22 +1017,51 @@ update_sec_db () {
     if [ $filedate -gt $DB_LASTUPDATE ]
     then
       echo "[i] Updating CPEs"
-      reset_sql_tries
-      until [ "$try_sql" -eq 0 ]
-      do
-        exec 4>&1
-        exit_codes=$(
-          (
-            set_interrupt_trap
-            (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
-            (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
-            (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
-            (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
-          ) 3>&1 >&4
-        )
-        exec 4>&-
-        test_exit_codes "Update of CPEs failed"
-      done
+
+      filesize=`stat -c "%s" "$CPEBASE"`
+      if [ "0" -ne "$SPLIT_PART_SIZE" ] && [ "$filesize" -gt $(($SPLIT_PART_SIZE * 1024))  ]
+      then
+        echo "[i] File is larger than ${SPLIT_PART_SIZE}k. Splitting into multiple parts"
+        "$SCAP_RES_DIR/xml_split" "$CPEBASE" -M "$SPLIT_PART_SIZE" -o "$SYNC_TMP_DIR"
+        cpefile_nodir=${CPEBASE##*/}
+        for cpepart in `find "$SYNC_TMP_DIR" -path "$SYNC_TMP_DIR/${cpefile_nodir%%.xml}.*.xml" 2> /dev/null | sort`
+        do
+          echo "[i] Updating part $cpepart"
+          reset_sql_tries
+          until [ "$try_sql" -eq 0 ]
+          do
+            exec 4>&1
+            exit_codes=$(
+              (
+                set_interrupt_trap
+                (sed 's/&/&amp;/g' $cpepart || echo "sed:$?" >&3 ) | \
+                (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
+                (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
+                (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
+              ) 3>&1 >&4
+            )
+            exec 4>&-
+            test_exit_codes "Update of CPEs failed"
+          done
+        done
+      else
+        reset_sql_tries
+        until [ "$try_sql" -eq 0 ]
+        do
+          exec 4>&1
+          exit_codes=$(
+            (
+              set_interrupt_trap
+              (sed 's/&/&amp;/g' $CPEBASE || echo "sed:$?" >&3 ) | \
+              (xsltproc --stringparam refdate $CVE_REFDATE $SCAP_RES_DIR/cpe_youngerthan.xsl - || echo "xsltproc:$?" >&3) | \
+              (xsltproc $SCAP_RES_DIR/cpe_update.xsl - || echo "xsltproc:$?" >&3) | \
+              (sql | sed '/^\s*$/d' || echo "sqlite3:$?" >&3) \
+            ) 3>&1 >&4
+          )
+          exec 4>&-
+          test_exit_codes "Update of CPEs failed"
+        done
+      fi
       updated_cpes=1
     else
       echo "[i] Skipping CPEs, file is older than last revision"
