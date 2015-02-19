@@ -18210,7 +18210,9 @@ report_scan_result_count (report_t report, const char* levels,
   cvss_sql = where_cvss_base (min_cvss_base);
 
   if (report_counts_cache_exists (report, override)
-      && autofp == 0 && min_cvss_base == NULL && search_phrase == NULL)
+      && autofp == 0
+      && (min_cvss_base == NULL || strcmp (min_cvss_base, "") == 0)
+      && (search_phrase == NULL || strcmp (search_phrase, "") == 0))
     {
       *count = sql_int (0, 0,
                         "SELECT sum (count)"
