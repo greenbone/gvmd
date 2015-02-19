@@ -10771,24 +10771,26 @@ check_db_versions (int nvt_cache_mode)
               return -2;
             }
           g_free (database_version);
+
+          /* Check that the database was initialised from the scanner.
+           *
+           * This can also fail after a migration, for example if the database
+           * was created before NVT preferences were cached in the database.
+           */
+
+          if (sql_int64 (&count,
+                         "SELECT count(*) FROM %s.meta"
+                         " WHERE name = 'nvts_feed_version'"
+                         " OR name = 'nvt_preferences_enabled';",
+                         sql_schema ())
+              || count < 2)
+            g_warning ("database must be initialised from scanner"
+                       " (with --update or --rebuild)");
         }
       else
         /* Assume database is missing. */
-        return -3;
-
-      /* Check that the database was initialised from the scanner.
-       *
-       * This can also fail after a migration, for example if the database
-       * was created before NVT preferences were cached in the database.
-       */
-
-      if (sql_int64 (&count,
-                     "SELECT count(*) FROM %s.meta"
-                     " WHERE name = 'nvts_feed_version'"
-                     " OR name = 'nvt_preferences_enabled';",
-                     sql_schema ())
-          || count < 2)
-        return -3;
+        g_warning ("database must be initialised from scanner"
+                   " (with --update or --rebuild)");
     }
 
   /* Check SCAP database version. */

@@ -1,5 +1,14 @@
 2015-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Remove the requirement that a --rebuild/update must run successfully
+	before the Manager will start.  If the database is not present simply
+	do the Manager-side database init and start with an empty db.
+
+	* src/manage_sql.c (check_db_versions): Warn and continue if the
+	database needs a --rebuild, instead of returning.
+
+2015-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned_user): Add back owner filter selection
 	accidentally removed in r21535.
 
