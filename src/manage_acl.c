@@ -1265,7 +1265,9 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
         {
           gchar *quoted;
           quoted = sql_quote (owner_filter);
-          filter_owned_clause = g_strdup_printf ("(owner = (%s)"
+          filter_owned_clause = g_strdup_printf ("(owner = (SELECT id"
+                                                 "          FROM users"
+                                                 "          WHERE name = '%s')"
                                                  " AND %s)",
                                                  quoted,
                                                  owned_clause);

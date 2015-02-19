@@ -1,3 +1,8 @@
+2015-02-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_acl.c (where_owned_user): Add back owner filter selection
+	accidentally removed in r21535.
+
 2015-02-18  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/greenbone-scapdata-sync.in (VERSION): Increase to 20150218.
