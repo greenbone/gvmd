@@ -4358,6 +4358,8 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
        "  severity, count, override, end_time INTEGER);");
+  sql ("CREATE INDEX IF NOT EXISTS report_counts_by_report_and_override"
+       " ON report_counts (report, override);");
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id INTEGER PRIMARY KEY, uuid, task INTEGER, host, port, nvt,"
        "  type, description, report, nvt_version, severity REAL)");

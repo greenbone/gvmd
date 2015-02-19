@@ -1,3 +1,12 @@
+2015-02-19  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r21643.
+	Change in src/manage_sqlite3.c is applied to src/manage_sql.c instead.
+	The change in src/manage_pg.c does not apply.
+
+	* src/manage_sql.c (create_tables): Create new index
+	report_counts_by_report_and_override.
+
 2015-02-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r21655.
