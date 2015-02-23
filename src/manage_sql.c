@@ -11292,6 +11292,24 @@ check_db_report_formats ()
     return -1;
 
   if (sql_int ("SELECT count(*) FROM report_formats"
+               " WHERE uuid = '5057e5cc-b825-11e4-9d0e-28d24461215b';")
+      == 0)
+    {
+      report_format_t report_format;
+      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
+           " VALUES ('5057e5cc-b825-11e4-9d0e-28d24461215b', NULL, 'Anonymous XML',"
+           " 'Anonymous version of the raw XML report',"
+           " 'Complete scan report in OpenVAS Manager XML format.\n',"
+           " 'xml', 'text/xml', '', %i, %i, 1, m_now (), m_now ());",
+           TRUST_YES,
+           time (NULL));
+      report_format = sql_last_insert_id ();
+      report_format_verify (report_format);
+    }
+
+  if (sql_int ("SELECT count(*) FROM report_formats"
                " WHERE uuid = '910200ca-dc05-11e1-954f-406186ea4fc5';")
       == 0)
     {
@@ -41221,7 +41239,8 @@ trash_report_format_global (report_format_t report_format)
 int
 report_format_predefined (report_format_t report_format)
 {
-  return sql_int ("SELECT uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
+  return sql_int ("SELECT uuid = '5057e5cc-b825-11e4-9d0e-28d24461215b'"
+                  " OR uuid = '910200ca-dc05-11e1-954f-406186ea4fc5'"
                   " OR uuid = '5ceff8ba-1f62-11e1-ab9f-406186ea4fc5'"
                   " OR uuid = 'c1645568-627a-11e3-a660-406186ea4fc5'"
                   " OR uuid = '9087b18c-626c-11e3-8892-406186ea4fc5'"

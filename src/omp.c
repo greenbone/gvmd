@@ -14663,10 +14663,14 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       get_reports_data->first_result,
                                       get_reports_data->max_results,
                                       get_reports_data->ignore_pagination,
-                                      /* Special case the XML report, bah. */
+                                      /* Special case the XML reports, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                      && strcmp
+                                          (get_reports_data->format_id,
+                                           "5057e5cc-b825-11e4"
+                                           "-9d0e-28d24461215b"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
@@ -14755,7 +14759,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                      && strcmp
+                                          (get_reports_data->format_id,
+                                           "5057e5cc-b825-11e4"
+                                           "-9d0e-28d24461215b"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,
@@ -15018,7 +15026,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                       /* Special case the XML report, bah. */
                                       strcmp
                                        (get_reports_data->format_id,
-                                        "a994b278-1f62-11e1-96ac-406186ea4fc5"),
+                                        "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                      && strcmp
+                                          (get_reports_data->format_id,
+                                           "5057e5cc-b825-11e4"
+                                           "-9d0e-28d24461215b"),
                                       send_to_client,
                                       write_to_client,
                                       write_to_client_data,

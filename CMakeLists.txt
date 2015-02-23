@@ -284,6 +284,11 @@ install (FILES ${CMAKE_BINARY_DIR}/src/openvasmd_log.conf
                ${CMAKE_SOURCE_DIR}/src/pwpolicy.conf
          DESTINATION ${OPENVAS_SYSCONF_DIR})
 
+install (FILES src/report_formats/Anonymous_XML/generate
+               src/report_formats/Anonymous_XML/Anonymous_XML.xsl
+         DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/5057e5cc-b825-11e4-9d0e-28d24461215b
+         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 install (FILES src/report_formats/ARF/generate
                src/report_formats/ARF/ARF.xsl
          DESTINATION ${OPENVAS_DATA_DIR}/openvasmd/global_report_formats/910200ca-dc05-11e1-954f-406186ea4fc5/

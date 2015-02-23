@@ -1,3 +1,20 @@
+2015-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add report format Anonymous XML.
+
+	* CMakeLists.txt: Install predefined Anonymous XML.
+
+	* src/manage_sql.c (check_db_report_formats): Ensure Anonymous XML
+	exists.
+	(report_format_predefined): Add Anonymous XML.
+
+	* src/omp.c (omp_xml_handle_end_element): Add Anonymous XML to special
+	cases.
+
+	* src/report_formats/Anonymous_XML/,
+	src/report_formats/Anonymous_XML/Anonymous_XML.xsl,
+	src/report_formats/Anonymous_XML/generate: New directory and files.
+
 2015-02-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage.c (slave_setup): Set task preferences/options alterable,
