@@ -12973,6 +12973,51 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               break;
             }
 
+          get = &get_info_data->get;
+          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
+            {
+              char *user_filter;
+              gchar *name;
+
+              if (strcmp (get_info_data->type, "cpe") == 0)
+                name = g_strdup ("CPE");
+              else if (strcmp (get_info_data->type, "cve") == 0)
+                name = g_strdup ("CVE");
+              else if (strcmp (get_info_data->type, "ovaldef") == 0)
+                name = g_strdup ("OVAL");
+              else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
+                name = g_strdup ("CERT-Bund");
+              else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
+                name = g_strdup ("DFN-CERT");
+              else if (strcmp (get_info_data->type, "nvt") == 0)
+                name = g_strdup ("NVT");
+              else if (strcmp (get_info_data->type, "allinfo") == 0)
+                name = g_strdup ("All SecInfo");
+              else
+                {
+                  if (send_find_error_to_client ("get_info",
+                                                 "type",
+                                                 get_info_data->type,
+                                                 write_to_client,
+                                                 write_to_client_data))
+                    {
+                      error_send_to_client (error);
+                    }
+                  return;
+                }
+
+              user_filter = setting_filter (name);
+              g_free (name);
+
+              if (user_filter && strlen (user_filter))
+                {
+                  get->filt_id = user_filter;
+                  get->filter = filter_term (user_filter);
+                }
+              else
+                get->filt_id = g_strdup("0");
+            }
+
           /* Set type specific functions */
           if (g_strcmp0 ("cpe", get_info_data->type) == 0)
             {
@@ -13062,51 +13107,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   error_send_to_client (error);
                 }
               return;
-            }
-
-          get = &get_info_data->get;
-          if (get->filt_id && strcmp (get->filt_id, "-2") == 0)
-            {
-              char *user_filter;
-              gchar *name;
-
-              if (strcmp (get_info_data->type, "cpe") == 0)
-                name = g_strdup ("CPE");
-              else if (strcmp (get_info_data->type, "cve") == 0)
-                name = g_strdup ("CVE");
-              else if (strcmp (get_info_data->type, "ovaldef") == 0)
-                name = g_strdup ("OVAL");
-              else if (strcmp (get_info_data->type, "cert_bund_adv") == 0)
-                name = g_strdup ("CERT-Bund");
-              else if (strcmp (get_info_data->type, "dfn_cert_adv") == 0)
-                name = g_strdup ("DFN-CERT");
-              else if (strcmp (get_info_data->type, "nvt") == 0)
-                name = g_strdup ("NVT");
-              else if (strcmp (get_info_data->type, "allinfo") == 0)
-                name = g_strdup ("All SecInfo");
-              else
-                {
-                  if (send_find_error_to_client ("get_info",
-                                                 "type",
-                                                 get_info_data->type,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                    }
-                  return;
-                }
-
-              user_filter = setting_filter (name);
-              g_free (name);
-
-              if (user_filter && strlen (user_filter))
-                {
-                  get->filt_id = user_filter;
-                  get->filter = filter_term (user_filter);
-                }
-              else
-                get->filt_id = g_strdup("0");
             }
 
           ret = init_info_iterator (&info, &get_info_data->get, get_info_data->name);

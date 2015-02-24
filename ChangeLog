@@ -1,5 +1,11 @@
 2015-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Setup the filter before
+	setting up the type specific functions, so that the filter is
+	initialised for the NVT case.
+
+2015-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl (host/detail): Skip
 	more elements.
 
