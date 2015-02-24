@@ -1490,6 +1490,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <alts>
             <alt>scan</alt>
             <alt>assets</alt>
+            <alt>prognostic</alt>
           </alts>
         </type>
       </attrib>
@@ -1519,7 +1520,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>name</name>
-      <summary>Empty compatibility placeholder</summary>
+      <summary>Creation time as compatibility placeholder</summary>
       <pattern></pattern>
     </ele>
     <ele>
@@ -1595,16 +1596,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <alts>
               <alt>scan</alt>
               <alt>assets</alt>
+              <alt>prognostic</alt>
             </alts>
           </type>
         </attrib>
         <e>omp</e>
         <e>report_format</e>
+        <e>sort</e>
+        <e>filters</e>
+        <e>severity_class</e>
         <o><e>delta</e></o>
         <o>
           <g>
-            <e>sort</e>
-            <e>filters</e>
             <e>timezone</e>
             <e>timezone_abbrev</e>
             <e>permissions</e>
@@ -1612,19 +1615,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>scan_run_status</e>
             <e>result_count</e>
             <e>severity</e>
-            <e>severity_class</e>
             <o><e>host_count</e></o>
             <e>task</e>
             <e>scan</e>
             <e>ports</e>
             <e>results</e>
-            <o><e>hosts</e></o>
+            <e>hosts</e>
+            <e>closed_cves</e>
+            <e>vulns</e>
+            <e>os</e>
+            <e>apps</e>
+            <e>ssl_certs</e>
             <any><e>host</e></any>
             <e>timestamp</e>
             <e>scan_start</e>
             <any><e>host_start</e></any>
             <any><e>host_end</e></any>
             <e>scan_end</e>
+            <e>errors</e>
           </g>
         </o>
       </pattern>
@@ -1757,7 +1765,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>min_cvss_base</e>
           <e>min_qod</e>
           <e>autofp</e>
-          <e>show_closed_cves</e>
           <any><e>filter</e></any>
           <o><e>host</e></o>
           <o><e>delta</e></o>
@@ -1826,13 +1833,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             Whether to trust vendor security updates.  1 full match, 2 partial
           </summary>
           <pattern>xsd:token { pattern = "0|1|2" }</pattern>
-        </ele>
-        <ele>
-          <name>show_closed_cves</name>
-          <summary>
-            Whether to include the Closed CVEs host detail in the report
-          </summary>
-          <type>boolean</type>
         </ele>
         <ele>
           <name>filter</name>
@@ -2215,6 +2215,23 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <summary>The name of the task</summary>
           <pattern><t>name</t></pattern>
         </ele>
+        <ele>
+          <name>target</name>
+          <summary>The target of the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <summary>The UUID of the target</summary>
+            </attrib>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <type>boolean</type>
+          </ele>
+        </ele>
       </ele>
       <ele>
         <name>scan</name>
@@ -2347,26 +2364,90 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>hosts</name>
         <description>
           <p>
-            Analogous to the results element, but for hosts.  However to keep
-            backward compatibility the host elements are siblings of this
-            element, instead of children.
+            Analogous to the results element, but for hosts, in the "assets"
+            report.  However to keep backward compatibility the host elements
+            are siblings of this element, instead of children.
           </p>
           <p>
-            This is only present in the "assets" report.
+            Contains only the count outside the "assets" report.
           </p>
         </description>
         <pattern>
-          <attrib>
-            <name>start</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
-          <attrib>
-            <name>max</name>
-            <type>integer</type>
-            <required>1</required>
-          </attrib>
+          <or>
+            <g>
+              <attrib>
+                <name>start</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+              <attrib>
+                <name>max</name>
+                <type>integer</type>
+                <required>1</required>
+              </attrib>
+            </g>
+            <e>count</e>
+          </or>
         </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Number of hosts</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>closed_cves</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of closed CVEs</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>vulns</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of Vulnerabilities</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>os</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of operating systems</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>apps</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of Applications</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>ssl_certs</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of SSL certificates</summary>
+        </ele>
       </ele>
       <ele>
         <name>host</name>
@@ -2473,6 +2554,76 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>scan_end</name>
         <summary>End time of scan</summary>
         <pattern><t>iso_time</t></pattern>
+      </ele>
+      <ele>
+        <name>errors</name>
+        <pattern>
+          <e>count</e>
+          <any><e>error</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of error messages</summary>
+        </ele>
+        <ele>
+          <name>error</name>
+          <summary>An error message</summary>
+          <pattern>
+            <e>host</e>
+            <e>port</e>
+            <e>description</e>
+            <e>nvt</e>
+            <e>scan_nvt_version</e>
+            <e>severity</e>
+          </pattern>
+          <ele>
+            <name>host</name>
+            <summary>The host of the error message</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>port</name>
+            <summary>The port of the error message</summary>
+            <pattern><t>port</t></pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>The description of the error message</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <summary>The NVT that generated the error message</summary>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>cvss_base</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>cvss_base</name>
+              <summary>The base CVSS score of the NVT</summary>
+              <pattern><t>severity</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>scan_nvt_version</name>
+            <summary>The NVT version that generated the error</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>The severity score of the error message</summary>
+            <pattern><t>severity</t></pattern>
+          </ele>
+        </ele>
       </ele>
     </ele>
   </element>
@@ -12852,6 +13003,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>text</type>
       </attrib>
       <attrib>
+        <name>apply_overrides</name>
+        <summary>Whether to apply overrides to the results</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
         <name>levels</name>
         <summary>Which threat levels to include in the report</summary>
         <type>levels</type>
@@ -12949,12 +13105,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <summary>
           Whether to trust vendor security updates.  1 full match, 2 partial
         </summary>
-        <pattern>xsd:token { pattern = "0|1|2" }</pattern>
+        <type>
+          <alts>
+            <alt>0</alt>
+            <alt>1</alt>
+            <alt>2</alt>
+          </alts>
+        </type>
       </attrib>
       <attrib>
-        <name>show_closed_cves</name>
+        <name>result_hosts_only</name>
         <summary>
-          Whether to include the Closed CVEs host detail in the report
+          Whether to include only hosts with results
         </summary>
         <type>boolean</type>
       </attrib>
@@ -13168,7 +13330,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <result_hosts_only>1</result_hosts_only>
                 <min_cvss_base></min_cvss_base>
                 <autofp>0</autofp>
-                <show_closed_cves>0</show_closed_cves>
+                <result_hosts_only>1</result_hosts_only>
                 <filter>High</filter>
                 <filter>Medium</filter>
                 <filter>Low</filter>
@@ -13179,6 +13341,24 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <count>0</count>
               </user_tags>
               <scan_run_status>Done</scan_run_status>
+              <hosts>
+                <count>1</count>
+              </hosts>
+              <closed_cves>
+                <count>0</count>
+              </closed_cves>
+              <vulns>
+                <count>3</count>
+              </vulns>
+              <os>
+                <count>1</count>
+              </os>
+              <apps>
+                <count>2</count>
+              </apps>
+              <ssl_certs>
+                <count>0</count>
+              </ssl_certs>
               <result_count>
                 <full>10</full>
                 <filtered>10</filtered>
@@ -13206,6 +13386,14 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
               </task>
+              <scan>
+                <task>
+                </task>
+              </scan>
+              <timestamp>2010-02-02T19:11:21+00:00</timestamp>
+              <scan_start>2010-02-02T19:11:21+00:00</scan_start>
+              <timezone>UTC</timezone>
+              <timezone_abbrev>UTC</timezone_abbrev>
               <ports start="1" max="-1">
                 <port>
                   general/tcp
@@ -13236,10 +13424,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 </result>
                 <truncated>...</truncated>
               </results>
-              <scan_start>Mon Feb  1 19:11:21 2010</scan_start>
-              <host_start>Mon Feb  1 19:11:21 2010<host>127.0.1.1</host></host_start>
-              <host_end>Mon Feb  1 19:11:52 2010<host>127.0.1.1</host></host_end>
-              <scan_end>Mon Feb  1 19:11:52 2010</scan_end>
+              <host_start>2010-02-02T19:11:21+00:00<host>127.0.1.1</host></host_start>
+              <host_end>2010-02-02T19:11:52+00:00<host>127.0.1.1</host></host_end>
+              <scan_end>2010-02-02T19:11:52+00:00</scan_end>
+              <errors>
+                <count>0</count>
+              </errors>
             </report>
           </report>
         </get_reports_response>

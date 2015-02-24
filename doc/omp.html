@@ -3508,7 +3508,7 @@ result_overrides_override
           </li>
 <li>
           @<b>type</b>
-          ("scan" or "assets")
+          ("scan", "assets" or "prognostic")
           </li>
 <li>
               &lt;<b>owner</b>&gt;
@@ -3521,7 +3521,7 @@ result_overrides_override
 </li>
 <li>
               &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Empty compatibility placeholder.</div>
+              <div style="margin-left: 15px; display: inline;">Creation time as compatibility placeholder.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -3588,7 +3588,7 @@ result_overrides_override
           </li>
 <li>
           @<b>type</b>
-          ("scan" or "assets")
+          ("scan", "assets" or "prognostic")
           </li>
 <li>
               &lt;<b>omp</b>&gt;
@@ -3618,41 +3618,6 @@ result_overrides_override
 </ul>
 </li></ul>
 </li>
-<li>
-              &lt;<b>delta</b>&gt;
-              ?<ul style="list-style: none"><li>
-              &lt;<b>report</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Second report, for delta reports.</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>scan_run_status</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Run status of task scan at time of report.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>timestamp</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The time the scan was requested.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>scan_start</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>scan_end</b>&gt;
-              <div style="margin-left: 15px; display: inline;">End time of scan.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li></ul>
-</li>
-<li>
-<i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>sort</b>&gt;
               <div style="margin-left: 15px; display: inline;">Result sorting information.</div>
@@ -3721,12 +3686,6 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>show_closed_cves</b>&gt;
-              <div style="margin-left: 15px; display: inline;">(<a href="#element_boolean">boolean</a>)</div>
-<div style="margin-left: 15px; display: inline;">Whether to include the Closed CVEs host detail in the report.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>filter</b>&gt;
               *<div style="margin-left: 15px; display: inline;">Level filter.</div>
 <ul style="list-style: none"></ul>
@@ -3767,6 +3726,77 @@ result_overrides_override
 </li>
 </ul>
 </li>
+<li>
+              &lt;<b>severity_class</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Short severity class name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>full_name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Full severity class name.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity_range</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Severity range.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of severity range.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>min</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Minimum CVSS value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>max</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Maximum CVSS value.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>delta</b>&gt;
+              ?<ul style="list-style: none"><li>
+              &lt;<b>report</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Second report, for delta reports.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>scan_run_status</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Run status of task scan at time of report.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>timestamp</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The time the scan was requested.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scan_start</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Start time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>scan_end</b>&gt;
+              <div style="margin-left: 15px; display: inline;">End time of scan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
 <li>
               &lt;<b>timezone</b>&gt;
               <div style="margin-left: 15px; display: inline;">Name of timezone used for dates.</div>
@@ -3943,42 +3973,6 @@ result_overrides_override
 </ul>
 </li>
 <li>
-              &lt;<b>severity_class</b>&gt;
-              <ul style="list-style: none">
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Short severity class name.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>full_name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Full severity class name.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>severity_range</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Severity range.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of severity range.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>min</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Minimum CVSS value.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>max</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Maximum CVSS value.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
               &lt;<b>host_count</b>&gt;
               ?<div style="margin-left: 15px; display: inline;">Counts of hosts in the results.</div>
 <ul style="list-style: none">
@@ -4007,8 +4001,21 @@ result_overrides_override
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<a href="#element_"><b>target</b></a>&gt;
-              <div style="margin-left: 15px; display: inline;">.</div>
+              &lt;<b>target</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The target of the task.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          The UUID of the target.
+          </li>
+<li>
+              &lt;<b>trash</b>&gt;
+              <div style="margin-left: 15px; display: inline;">(<a href="#element_boolean">boolean</a>)</div>
+<div style="margin-left: 15px; display: inline;">Whether the target is in the trashcan.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 </ul>
 </li>
@@ -4117,7 +4124,10 @@ result_overrides_override
 </li>
 <li>
               &lt;<b>hosts</b>&gt;
-              ?<ul style="list-style: none">
+              <ul style="list-style: none"><li>
+<i>One of</i><b></b><ul style="list-style: none">
+<li>
+<i>The group</i><b></b><ul style="list-style: none">
 <li>
           @<b>start</b>
           (<a href="#type_integer">integer</a>)
@@ -4127,6 +4137,59 @@ result_overrides_override
           (<a href="#type_integer">integer</a>)
           </li>
 </ul>
+</li>
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>closed_cves</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of closed CVEs.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>vulns</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of Vulnerabilities.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>os</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of operating systems.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>apps</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of Applications.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>ssl_certs</b>&gt;
+              <div style="margin-left: 15px; display: inline;">.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of SSL certificates.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>host</b>&gt;
@@ -4216,6 +4279,67 @@ result_overrides_override
               <div style="margin-left: 15px; display: inline;">End time of scan.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>errors</b>&gt;
+              <ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The number of error messages.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>error</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An error message.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>host</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The host of the error message.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The port of the error message.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The description of the error message.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>nvt</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The NVT that generated the error message.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          ()
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cvss_base</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The base CVSS score of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>scan_nvt_version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The NVT version that generated the error.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The severity score of the error message.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -4230,7 +4354,7 @@ result_overrides_override
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
-       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; report_owner
        &amp; report_name
        &amp; report_comment
@@ -4321,32 +4445,38 @@ report_report
  = element report
      {
        attribute id { uuid }
-       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; report_report_omp
        &amp; report_report_report_format
+       &amp; report_report_sort
+       &amp; report_report_filters
+       &amp; report_report_severity_class
        &amp; report_report_delta?
-       &amp; ( report_report_sort
-           &amp; report_report_filters
-           &amp; report_report_timezone
+       &amp; ( report_report_timezone
            &amp; report_report_timezone_abbrev
            &amp; report_report_permissions
            &amp; report_report_user_tags
            &amp; report_report_scan_run_status
            &amp; report_report_result_count
            &amp; report_report_severity
-           &amp; report_report_severity_class
            &amp; report_report_host_count?
            &amp; report_report_task
            &amp; report_report_scan
            &amp; report_report_ports
            &amp; report_report_results
-           &amp; report_report_hosts?
+           &amp; report_report_hosts
+           &amp; report_report_closed_cves
+           &amp; report_report_vulns
+           &amp; report_report_os
+           &amp; report_report_apps
+           &amp; report_report_ssl_certs
            &amp; report_report_host*
            &amp; report_report_timestamp
            &amp; report_report_scan_start
            &amp; report_report_host_start*
            &amp; report_report_host_end*
-           &amp; report_report_scan_end )?
+           &amp; report_report_scan_end
+           &amp; report_report_errors )?
      }
 
 report_report_omp
@@ -4459,7 +4589,6 @@ report_report_filters
        &amp; report_report_filters_min_cvss_base
        &amp; report_report_filters_min_qod
        &amp; report_report_filters_autofp
-       &amp; report_report_filters_show_closed_cves
        &amp; report_report_filters_filter*
        &amp; report_report_filters_host?
        &amp; report_report_filters_delta?
@@ -4517,11 +4646,6 @@ report_report_filters_autofp
  = element autofp
      {
        xsd:token { pattern = "0|1|2" }
-     }
-
-report_report_filters_show_closed_cves
- = element show_closed_cves    # type boolean
-     {
      }
 
 report_report_filters_filter
@@ -4863,13 +4987,25 @@ report_report_task
      {
        attribute id { uuid }
        &amp; report_report_task_name
-       &amp; target
+       &amp; report_report_task_target
      }
 
 report_report_task_name
  = element name
      {
        name
+     }
+
+report_report_task_target
+ = element target
+     {
+       attribute id { uuid }?
+       &amp; report_report_task_target_trash
+     }
+
+report_report_task_target_trash
+ = element trash    # type boolean
+     {
      }
 
 report_report_scan
@@ -5019,8 +5155,69 @@ report_report_results_result
 report_report_hosts
  = element hosts
      {
-       attribute start { integer }
-       &amp; attribute max { integer }
+       ( ( attribute start { integer }
+           &amp; attribute max { integer } )
+           | report_report_hosts_count )
+     }
+
+report_report_hosts_count
+ = element count
+     {
+     }
+
+report_report_closed_cves
+ = element closed_cves
+     {
+       report_report_closed_cves_count
+     }
+
+report_report_closed_cves_count
+ = element count
+     {
+     }
+
+report_report_vulns
+ = element vulns
+     {
+       report_report_vulns_count
+     }
+
+report_report_vulns_count
+ = element count
+     {
+     }
+
+report_report_os
+ = element os
+     {
+       report_report_os_count
+     }
+
+report_report_os_count
+ = element count
+     {
+     }
+
+report_report_apps
+ = element apps
+     {
+       report_report_apps_count
+     }
+
+report_report_apps_count
+ = element count
+     {
+     }
+
+report_report_ssl_certs
+ = element ssl_certs
+     {
+       report_report_ssl_certs_count
+     }
+
+report_report_ssl_certs_count
+ = element count
+     {
      }
 
 report_report_host
@@ -5138,6 +5335,79 @@ report_report_scan_end
  = element scan_end
      {
        iso_time
+     }
+
+report_report_errors
+ = element errors
+     {
+       report_report_errors_count
+       &amp; report_report_errors_error*
+     }
+
+report_report_errors_count
+ = element count
+     {
+     }
+
+report_report_errors_error
+ = element error
+     {
+       report_report_errors_error_host
+       &amp; report_report_errors_error_port
+       &amp; report_report_errors_error_description
+       &amp; report_report_errors_error_nvt
+       &amp; report_report_errors_error_scan_nvt_version
+       &amp; report_report_errors_error_severity
+     }
+
+report_report_errors_error_host
+ = element host
+     {
+       text
+     }
+
+report_report_errors_error_port
+ = element port
+     {
+       port
+     }
+
+report_report_errors_error_description
+ = element description
+     {
+       text
+     }
+
+report_report_errors_error_nvt
+ = element nvt
+     {
+       attribute oid {  }
+       &amp; report_report_errors_error_nvt_name
+       &amp; report_report_errors_error_nvt_cvss_base
+     }
+
+report_report_errors_error_nvt_name
+ = element name
+     {
+       text
+     }
+
+report_report_errors_error_nvt_cvss_base
+ = element cvss_base
+     {
+       severity
+     }
+
+report_report_errors_error_scan_nvt_version
+ = element scan_nvt_version
+     {
+       text
+     }
+
+report_report_errors_error_severity
+ = element severity
+     {
+       severity
      }
 </pre></div></div>
 </div>
@@ -8477,7 +8747,7 @@ create_report_report
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
-       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; report_owner
        &amp; report_name
        &amp; report_comment
@@ -21363,6 +21633,11 @@ get_preferences_response_preference_default
           (text)
           </li>
 <li>
+          @<b>apply_overrides</b>
+          (<a href="#type_boolean">boolean</a>)
+          Whether to apply overrides to the results.
+          </li>
+<li>
           @<b>levels</b>
           (<a href="#type_levels">levels</a>)
           Which threat levels to include in the report.
@@ -21449,13 +21724,13 @@ get_preferences_response_preference_default
           </li>
 <li>
           @<b>autofp</b>
-          ()
+          ("0", "1" or "2")
           Whether to trust vendor security updates. 1 full match, 2 partial.
           </li>
 <li>
-          @<b>show_closed_cves</b>
+          @<b>result_hosts_only</b>
           (<a href="#type_boolean">boolean</a>)
-          Whether to include the Closed CVEs host detail in the report.
+          Whether to include only hosts with results.
           </li>
 <li>
           @<b>ignore_pagination</b>
@@ -21591,6 +21866,7 @@ get_preferences_response_preference_default
        &amp; attribute max_results { integer }?
        &amp; attribute sort_order { sort_order }?
        &amp; attribute sort_field { text }?
+       &amp; attribute apply_overrides { boolean }?
        &amp; attribute levels { levels }?
        &amp; attribute search_phrase { text }?
        &amp; attribute min_cvss_base { integer }?
@@ -21608,8 +21884,8 @@ get_preferences_response_preference_default
        &amp; attribute pos { integer }?
        &amp; attribute delta_report_id { uuid }?
        &amp; attribute delta_states {  }?
-       &amp; attribute autofp {  }?
-       &amp; attribute show_closed_cves { boolean }?
+       &amp; attribute autofp { xsd:token { pattern = "0|1|2" } }?
+       &amp; attribute result_hosts_only { boolean }?
        &amp; attribute ignore_pagination { boolean }?
        &amp; attribute timezone { text }?
      }
@@ -21634,7 +21910,7 @@ get_reports_response_report
        &amp; attribute format_id { uuid }
        &amp; attribute extension { text }
        &amp; attribute content_type { text }
-       &amp; attribute type { xsd:token { pattern = "scan|assets" } }?
+       &amp; attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        &amp; report_owner
        &amp; report_name
        &amp; report_comment
@@ -21792,7 +22068,7 @@ get_reports_response_report_count_page
          &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
          &lt;min_cvss_base/&gt;
          &lt;autofp&gt;0&lt;/autofp&gt;
-         &lt;show_closed_cves&gt;0&lt;/show_closed_cves&gt;
+         &lt;result_hosts_only&gt;1&lt;/result_hosts_only&gt;
          &lt;filter&gt;High&lt;/filter&gt;
          &lt;filter&gt;Medium&lt;/filter&gt;
          &lt;filter&gt;Low&lt;/filter&gt;
@@ -21803,6 +22079,24 @@ get_reports_response_report_count_page
          &lt;count&gt;0&lt;/count&gt;
        &lt;/user_tags&gt;
        &lt;scan_run_status&gt;Done&lt;/scan_run_status&gt;
+       &lt;hosts&gt;
+         &lt;count&gt;1&lt;/count&gt;
+       &lt;/hosts&gt;
+       &lt;closed_cves&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/closed_cves&gt;
+       &lt;vulns&gt;
+         &lt;count&gt;3&lt;/count&gt;
+       &lt;/vulns&gt;
+       &lt;os&gt;
+         &lt;count&gt;1&lt;/count&gt;
+       &lt;/os&gt;
+       &lt;apps&gt;
+         &lt;count&gt;2&lt;/count&gt;
+       &lt;/apps&gt;
+       &lt;ssl_certs&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/ssl_certs&gt;
        &lt;result_count&gt;
          &lt;full&gt;10&lt;/full&gt;
          &lt;filtered&gt;10&lt;/filtered&gt;
@@ -21830,6 +22124,13 @@ get_reports_response_report_count_page
        &lt;task id="13bb418a-4220-4575-b35b-ec398bff7417"&gt;
          &lt;name&gt;dik mm&lt;/name&gt;
        &lt;/task&gt;
+       &lt;scan&gt;
+         &lt;task/&gt;
+       &lt;/scan&gt;
+       &lt;timestamp&gt;2010-02-02T19:11:21+00:00&lt;/timestamp&gt;
+       &lt;scan_start&gt;2010-02-02T19:11:21+00:00&lt;/scan_start&gt;
+       &lt;timezone&gt;UTC&lt;/timezone&gt;
+       &lt;timezone_abbrev&gt;UTC&lt;/timezone_abbrev&gt;
        &lt;ports start="1"
               max="-1"&gt;
          &lt;port&gt;
@@ -21863,16 +22164,18 @@ get_reports_response_report_count_page
          &lt;/result&gt;
          ...
        &lt;/results&gt;
-       &lt;scan_start&gt;Mon Feb 1 19:11:21 2010&lt;/scan_start&gt;
        &lt;host_start&gt;
-         Mon Feb 1 19:11:21 2010
+         2010-02-02T19:11:21+00:00
          &lt;host&gt;127.0.1.1&lt;/host&gt;
        &lt;/host_start&gt;
        &lt;host_end&gt;
-         Mon Feb 1 19:11:52 2010
+         2010-02-02T19:11:52+00:00
          &lt;host&gt;127.0.1.1&lt;/host&gt;
        &lt;/host_end&gt;
-       &lt;scan_end&gt;Mon Feb 1 19:11:52 2010&lt;/scan_end&gt;
+       &lt;scan_end&gt;2010-02-02T19:11:52+00:00&lt;/scan_end&gt;
+       &lt;errors&gt;
+         &lt;count&gt;0&lt;/count&gt;
+       &lt;/errors&gt;
      &lt;/report&gt;
    &lt;/report&gt;
  &lt;/get_reports_response&gt;

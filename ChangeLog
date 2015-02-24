@@ -1,5 +1,23 @@
 2015-02-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Update OMP documentation of GET_REPORT and the report element.
+
+	* src/schema_formats/XML/OMP.xml.in (report): Add choice "prognostic"
+	to type attrib in both command and response.  Change description of
+	"name" as it contains the creation time.  Move "sort", "filters",
+	"severity_class" outside the optional group.  Make "hosts" non-optional
+	and make it either attributes or a count element, adjust description.
+	Add elements "closed_cves", "vulns", "os", "apps", "ssl_certs" and
+	"errors".  Remove unused "show_closed_cves".  Add summary and
+	subelements of target in task subelement.
+	(get_reports): Add command attributes apply_overrides and
+	result_hosts_only.  Change pattern in autofp to an alts type.  Update
+	example response.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
+2015-02-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* ChangeLog: Add missing line for doc/omp.html, doc/omp.rnc in entry
 	of previous change in OMP doc for notes / overrides (SVN r21701).
 

@@ -1776,7 +1776,7 @@ report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
-       & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & report_owner
        & report_name
        & report_comment
@@ -1803,7 +1803,7 @@ report_owner_name
        name
      }
 
-# Empty compatibility placeholder.
+# Creation time as compatibility placeholder.
 report_name
  = element name
      {
@@ -1879,32 +1879,38 @@ report_report
  = element report
      {
        attribute id { uuid }
-       & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & report_report_omp
        & report_report_report_format
+       & report_report_sort
+       & report_report_filters
+       & report_report_severity_class
        & report_report_delta?
-       & ( report_report_sort
-           & report_report_filters
-           & report_report_timezone
+       & ( report_report_timezone
            & report_report_timezone_abbrev
            & report_report_permissions
            & report_report_user_tags
            & report_report_scan_run_status
            & report_report_result_count
            & report_report_severity
-           & report_report_severity_class
            & report_report_host_count?
            & report_report_task
            & report_report_scan
            & report_report_ports
            & report_report_results
-           & report_report_hosts?
+           & report_report_hosts
+           & report_report_closed_cves
+           & report_report_vulns
+           & report_report_os
+           & report_report_apps
+           & report_report_ssl_certs
            & report_report_host*
            & report_report_timestamp
            & report_report_scan_start
            & report_report_host_start*
            & report_report_host_end*
-           & report_report_scan_end )?
+           & report_report_scan_end
+           & report_report_errors )?
      }
 
 # Information of the OMP server.
@@ -2032,7 +2038,6 @@ report_report_filters
        & report_report_filters_min_cvss_base
        & report_report_filters_min_qod
        & report_report_filters_autofp
-       & report_report_filters_show_closed_cves
        & report_report_filters_filter*
        & report_report_filters_host?
        & report_report_filters_delta?
@@ -2099,12 +2104,6 @@ report_report_filters_autofp
  = element autofp
      {
        xsd:token { pattern = "0|1|2" }
-     }
-
-# Whether to include the Closed CVEs host detail in the report.
-report_report_filters_show_closed_cves
- = element show_closed_cves    # type boolean
-     {
      }
 
 # Level filter.
@@ -2494,7 +2493,7 @@ report_report_task
      {
        attribute id { uuid }
        & report_report_task_name
-       & target
+       & report_report_task_target
      }
 
 # The name of the task.
@@ -2502,6 +2501,21 @@ report_report_task_name
  = element name
      {
        name
+     }
+
+# The target of the task.
+report_report_task_target
+ = element target
+     {
+       # The UUID of the target.
+       attribute id { uuid }?
+       & report_report_task_target_trash
+     }
+
+# Whether the target is in the trashcan.
+report_report_task_target_trash
+ = element trash    # type boolean
+     {
      }
 
 # Info from scan time.
@@ -2657,8 +2671,80 @@ report_report_results_result
 report_report_hosts
  = element hosts
      {
-       attribute start { integer }
-       & attribute max { integer }
+       ( ( attribute start { integer }
+           & attribute max { integer } )
+           | report_report_hosts_count )
+     }
+
+# Number of hosts.
+report_report_hosts_count
+ = element count
+     {
+     }
+
+# .
+report_report_closed_cves
+ = element closed_cves
+     {
+       report_report_closed_cves_count
+     }
+
+# The number of closed CVEs.
+report_report_closed_cves_count
+ = element count
+     {
+     }
+
+# .
+report_report_vulns
+ = element vulns
+     {
+       report_report_vulns_count
+     }
+
+# The number of Vulnerabilities.
+report_report_vulns_count
+ = element count
+     {
+     }
+
+# .
+report_report_os
+ = element os
+     {
+       report_report_os_count
+     }
+
+# The number of operating systems.
+report_report_os_count
+ = element count
+     {
+     }
+
+# .
+report_report_apps
+ = element apps
+     {
+       report_report_apps_count
+     }
+
+# The number of Applications.
+report_report_apps_count
+ = element count
+     {
+     }
+
+# .
+report_report_ssl_certs
+ = element ssl_certs
+     {
+       report_report_ssl_certs_count
+     }
+
+# The number of SSL certificates.
+report_report_ssl_certs_count
+ = element count
+     {
      }
 
 report_report_host
@@ -2791,6 +2877,89 @@ report_report_scan_end
  = element scan_end
      {
        iso_time
+     }
+
+report_report_errors
+ = element errors
+     {
+       report_report_errors_count
+       & report_report_errors_error*
+     }
+
+# The number of error messages.
+report_report_errors_count
+ = element count
+     {
+     }
+
+# An error message.
+report_report_errors_error
+ = element error
+     {
+       report_report_errors_error_host
+       & report_report_errors_error_port
+       & report_report_errors_error_description
+       & report_report_errors_error_nvt
+       & report_report_errors_error_scan_nvt_version
+       & report_report_errors_error_severity
+     }
+
+# The host of the error message.
+report_report_errors_error_host
+ = element host
+     {
+       text
+     }
+
+# The port of the error message.
+report_report_errors_error_port
+ = element port
+     {
+       port
+     }
+
+# The description of the error message.
+report_report_errors_error_description
+ = element description
+     {
+       text
+     }
+
+# The NVT that generated the error message.
+report_report_errors_error_nvt
+ = element nvt
+     {
+       attribute oid {  }
+       & report_report_errors_error_nvt_name
+       & report_report_errors_error_nvt_cvss_base
+     }
+
+# The name of the NVT.
+report_report_errors_error_nvt_name
+ = element name
+     {
+       text
+     }
+
+# The base CVSS score of the NVT.
+report_report_errors_error_nvt_cvss_base
+ = element cvss_base
+     {
+       severity
+     }
+
+# The NVT version that generated the error.
+report_report_errors_error_scan_nvt_version
+ = element scan_nvt_version
+     {
+       text
+     }
+
+# The severity score of the error message.
+report_report_errors_error_severity
+ = element severity
+     {
+       severity
      }
 
 ### Commands
@@ -3711,7 +3880,7 @@ create_report_report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
-       & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & report_owner
        & report_name
        & report_comment
@@ -5085,6 +5254,8 @@ get_reports
        attribute max_results { integer }?
        & attribute sort_order { sort_order }?
        & attribute sort_field { text }?
+       & # Whether to apply overrides to the results.
+       attribute apply_overrides { boolean }?
        & # Which threat levels to include in the report.
        attribute levels { levels }?
        & # A string that all results in the report must contain.
@@ -5120,9 +5291,9 @@ get_reports
        & # Letters for results to include: c)hanged, g)one, n)ew, s)ame.
        attribute delta_states {  }?
        & # Whether to trust vendor security updates. 1 full match, 2 partial.
-       attribute autofp {  }?
-       & # Whether to include the Closed CVEs host detail in the report.
-       attribute show_closed_cves { boolean }?
+       attribute autofp { xsd:token { pattern = "0|1|2" } }?
+       & # Whether to include only hosts with results.
+       attribute result_hosts_only { boolean }?
        & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
        attribute ignore_pagination { boolean }?
        & # The timezone to use for dates in the report.
@@ -12212,7 +12383,7 @@ get_reports_response_report
        & attribute format_id { uuid }
        & attribute extension { text }
        & attribute content_type { text }
-       & attribute type { xsd:token { pattern = "scan|assets" } }?
+       & attribute type { xsd:token { pattern = "scan|assets|prognostic" } }?
        & report_owner
        & report_name
        & report_comment
