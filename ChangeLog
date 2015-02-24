@@ -1,3 +1,22 @@
+2015-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Add GET_INFO support for the info_id attribute for NVTs.  When a single
+	NVT is requested with GET_INFO then send the NVT preferences too.  These
+	changes allow GSA to use GET_INFO for NVTs like it does for the other
+	SecInfo types, instead of having to use GET_NVTS.
+
+	* src/manage.c (get_nvti_xml): Add args for preferences flag and config.
+	Append preferences if flag given.
+	(manage_read_info): If name is NULL then find by ID.  Update
+	get_nvti_xml call, in order to include preferences.
+
+	* src/manage.h: Update header accordingly.
+
+	* src/omp.c (send_nvt): Add args for preferences flag and config.  Send
+	through to get_nvti_xml.
+	(omp_xml_handle_end_element): In CLIENT_GET_INFO also skip the "all"
+	case when an ID is given.  Let send_nvts send the preferences.
+
 2015-02-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Move the definitions of notes and overrides in the OMP doc to

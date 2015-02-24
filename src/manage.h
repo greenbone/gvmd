@@ -1737,7 +1737,7 @@ int
 nvt_preference_count (const char *);
 
 gchar*
-get_nvti_xml (iterator_t*, int, int, const char*, int);
+get_nvti_xml (iterator_t*, int, int, int, const char*, config_t, int);
 
 char*
 task_preference_value (task_t, const char *);

@@ -5587,14 +5587,17 @@ category_name (int category)
  * @param[in]  nvts        The NVT.
  * @param[in]  details     If true, detailed XML, else simple XML.
  * @param[in]  pref_count  Preference count.  Used if details is true.
+ * @param[in]  preferences If true, included preferences.
  * @param[in]  timeout     Timeout.  Used if details is true.
+ * @param[in]  config      Config, used if preferences is true.
  * @param[in]  close_tag   Whether to close the NVT tag or not.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvti_xml (iterator_t *nvts, int details, int pref_count,
-              const char *timeout, int close_tag)
+              int preferences, const char *timeout, config_t config,
+              int close_tag)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5603,7 +5606,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
   gchar* name_text = g_markup_escape_text (name, strlen (name));
   if (details)
     {
-      GString *cert_refs_str, *tags_str;
+      GString *cert_refs_str, *tags_str, *buffer;
       iterator_t cert_refs_iterator, tags;
       gchar *tag_name_esc, *tag_value_esc, *tag_comment_esc;
 
@@ -5641,7 +5644,7 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
         }
       else
         {
-          g_string_append(cert_refs_str, "<warning>database not available</warning>");
+          g_string_append (cert_refs_str, "<warning>database not available</warning>");
         }
 
       tags_str = g_string_new ("");
@@ -5682,56 +5685,57 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
         }
       cleanup_iterator (&tags);
 
-      msg = g_strdup_printf ("<nvt"
-                             " oid=\"%s\">"
-                             "<name>%s</name>"
-                             "<creation_time>%s</creation_time>"
-                             "<modification_time>%s</modification_time>"
-                             "<user_tags>%s</user_tags>"
-                             "<category>%s</category>"
-                             "<copyright>%s</copyright>"
-                             "<summary>%s</summary>"
-                             "<family>%s</family>"
-                             "<version>%s</version>"
-                             "<cvss_base>%s</cvss_base>"
-                             "<qod>"
-                             "<value>%s</value>"
-                             "<type>%s</type>"
-                             "</qod>"
-                             "<cve_id>%s</cve_id>"
-                             "<bugtraq_id>%s</bugtraq_id>"
-                             "<cert_refs>%s</cert_refs>"
-                             "<xrefs>%s</xrefs>"
-                             "<tags>%s</tags>"
-                             "<preference_count>%i</preference_count>"
-                             "<timeout>%s</timeout>%s",
-                             oid,
-                             name_text,
-                             get_iterator_creation_time (nvts)
-                              ? get_iterator_creation_time (nvts)
-                              : "",
-                             get_iterator_modification_time (nvts)
-                              ? get_iterator_modification_time (nvts)
-                              : "",
-                             tags_str->str,
-                             category_name (nvt_iterator_category (nvts)),
-                             copyright_text,
-                             summary_text,
-                             family_text,
-                             version_text,
-                             nvt_iterator_cvss_base (nvts)
-                              ? nvt_iterator_cvss_base (nvts)
-                              : "",
-                             nvt_iterator_qod (nvts),
-                             nvt_iterator_qod_type (nvts),
-                             nvt_iterator_cve (nvts),
-                             nvt_iterator_bid (nvts),
-                             cert_refs_str->str,
-                             xref_text,
-                             tag_text,
-                             pref_count,
-                             timeout ? timeout : "",
-                             close_tag ? "</nvt>" : "");
+      buffer = g_string_new ("");
+
+      g_string_append_printf (buffer,
+                              "<nvt oid=\"%s\">"
+                              "<name>%s</name>"
+                              "<creation_time>%s</creation_time>"
+                              "<modification_time>%s</modification_time>"
+                              "<user_tags>%s</user_tags>"
+                              "<category>%s</category>"
+                              "<copyright>%s</copyright>"
+                              "<summary>%s</summary>"
+                              "<family>%s</family>"
+                              "<version>%s</version>"
+                              "<cvss_base>%s</cvss_base>"
+                              "<qod>"
+                              "<value>%s</value>"
+                              "<type>%s</type>"
+                              "</qod>"
+                              "<cve_id>%s</cve_id>"
+                              "<bugtraq_id>%s</bugtraq_id>"
+                              "<cert_refs>%s</cert_refs>"
+                              "<xrefs>%s</xrefs>"
+                              "<tags>%s</tags>"
+                              "<preference_count>%i</preference_count>"
+                              "<timeout>%s</timeout>",
+                              oid,
+                              name_text,
+                              get_iterator_creation_time (nvts)
+                               ? get_iterator_creation_time (nvts)
+                               : "",
+                              get_iterator_modification_time (nvts)
+                               ? get_iterator_modification_time (nvts)
+                               : "",
+                              tags_str->str,
+                              category_name (nvt_iterator_category (nvts)),
+                              copyright_text,
+                              summary_text,
+                              family_text,
+                              version_text,
+                              nvt_iterator_cvss_base (nvts)
+                               ? nvt_iterator_cvss_base (nvts)
+                               : "",
+                              nvt_iterator_qod (nvts),
+                              nvt_iterator_qod_type (nvts),
+                              nvt_iterator_cve (nvts),
+                              nvt_iterator_bid (nvts),
+                              cert_refs_str->str,
+                              xref_text,
+                              tag_text,
+                              pref_count,
+                              timeout ? timeout : "");
       g_free (copyright_text);
       g_free (summary_text);
       g_free (family_text);
@@ -5741,6 +5745,28 @@ get_nvti_xml (iterator_t *nvts, int details, int pref_count,
       g_string_free(cert_refs_str, 1);
       g_string_free(tags_str, 1);
 
+      if (preferences)
+        {
+          iterator_t prefs;
+          const char *nvt_name = nvt_iterator_name (nvts);
+
+          /* Send the preferences for the NVT. */
+
+          xml_string_append (buffer,
+                             "<preferences>"
+                             "<timeout>%s</timeout>",
+                             timeout ? timeout : "");
+
+          init_nvt_preference_iterator (&prefs, nvt_name);
+          while (next (&prefs))
+            buffer_config_preference_xml (buffer, &prefs, config, 1);
+          cleanup_iterator (&prefs);
+
+          xml_string_append (buffer, "</preferences>");
+        }
+
+      xml_string_append (buffer, close_tag ? "</nvt>" : "");
+      msg = g_string_free (buffer, FALSE);
     }
   else
     msg = g_strdup_printf
@@ -5844,12 +5870,18 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
       iterator_t nvts;
       nvt_t nvt;
 
-      if (!find_nvt (name, &nvt) && nvt)
+      if (!find_nvt (name ? name : uid, &nvt) && nvt)
         {
           init_nvt_iterator (&nvts, nvt, 0, NULL, NULL, 0, NULL);
 
           if (next (&nvts))
-            *result = get_nvti_xml (&nvts, 1, 0, NULL, 1);
+            *result = get_nvti_xml (&nvts,
+                                    1,    /* Include details. */
+                                    0,    /* Preference count. */
+                                    1,    /* Include preferences. */
+                                    NULL, /* Timeout. */
+                                    0,    /* Config. */
+                                    1);   /* Close tag. */
 
           cleanup_iterator (&nvts);
         }
