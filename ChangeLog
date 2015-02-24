@@ -1,3 +1,8 @@
+2015-02-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl (host/detail): Skip
+	more elements.
+
 2015-02-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Update OMP documentation of GET_REPORT and the report element.

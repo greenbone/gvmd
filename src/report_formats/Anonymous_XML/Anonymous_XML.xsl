@@ -75,6 +75,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="host/detail[name = 'traceroute']" >
+  </xsl:template>
+
+  <xsl:template match="host/detail[name = 'MAC']" >
+  </xsl:template>
+
+  <xsl:template match="host/detail[substring (name, 1, 4) = 'MAC-']" >
+  </xsl:template>
+
+  <xsl:template match="host/detail[substring (name, 1, 8) = 'DNS-via-']" >
+  </xsl:template>
+
   <xsl:template match="node()|@*" >
     <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
