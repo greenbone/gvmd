@@ -1780,6 +1780,11 @@ result_overrides_override_orphan
           (<a href="#type_uuid">uuid</a>)
           </li>
 <li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the result.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>owner</b>&gt;
               <div style="margin-left: 15px; display: inline;">Owner of the result.</div>
 <ul style="list-style: none"><li>
@@ -1897,11 +1902,6 @@ result_overrides_override_orphan
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>risk_factor</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
               &lt;<b>cve</b>&gt;
               <div style="margin-left: 15px; display: inline;">CVE associated with the NVT.</div>
 <ul style="list-style: none"></ul>
@@ -1918,8 +1918,23 @@ result_overrides_override_orphan
 </li>
 <li>
               &lt;<b>cert</b>&gt;
-              <div style="margin-left: 15px; display: inline;">List of CERT advisories associated with the NVT.</div>
-<ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>cert_ref</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (text)
+          ID of the advisory.
+          </li>
+<li>
+          @<b>type</b>
+          (text)
+          Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+          </li>
+</ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>xref</b>&gt;
@@ -1927,6 +1942,11 @@ result_overrides_override_orphan
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>scan_nvt_version</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Version of the NVT used in the scan.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>threat</b>&gt;
@@ -2020,9 +2040,33 @@ result_overrides_override_orphan
               <div style="margin-left: 15px; display: inline;">Detection details.</div>
 <ul style="list-style: none"><li>
               &lt;<b>result</b>&gt;
-              <div style="margin-left: 15px; display: inline;">(<a href="#element_result">result</a>)</div>
-<div style="margin-left: 15px; display: inline;">Detection result.</div>
+              <div style="margin-left: 15px; display: inline;">Detection result.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the detection result.
+          </li>
+<li>
+              &lt;<b>details</b>&gt;
+              <ul style="list-style: none"><li>
+              &lt;<b>detail</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">A detail associated with the detection result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the detail.</div>
 <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The value of the detail.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
+</li>
+</ul>
 </li></ul>
 </li>
 <li>
@@ -2041,6 +2085,7 @@ result_overrides_override_orphan
  = element result
      {
        attribute id { uuid }
+       &amp; result_name
        &amp; result_owner
        &amp; result_comment
        &amp; result_creation_time
@@ -2051,6 +2096,7 @@ result_overrides_override_orphan
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
+       &amp; result_scan_nvt_version
        &amp; result_threat
        &amp; result_severity
        &amp; result_qod
@@ -2062,6 +2108,12 @@ result_overrides_override_orphan
        &amp; result_detection
        &amp; result_notes?
        &amp; result_overrides?
+     }
+
+result_name
+ = element name
+     {
+       text
      }
 
 result_owner
@@ -2172,7 +2224,6 @@ result_nvt
        &amp; result_nvt_name
        &amp; result_nvt_family
        &amp; result_nvt_cvss_base
-       &amp; result_nvt_risk_factor
        &amp; result_nvt_cve
        &amp; result_nvt_bid
        &amp; result_nvt_tags
@@ -2198,12 +2249,6 @@ result_nvt_cvss_base
        integer
      }
 
-result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
 result_nvt_cve
  = element cve
      {
@@ -2225,11 +2270,24 @@ result_nvt_tags
 result_nvt_cert
  = element cert
      {
-       text
+       result_nvt_cert_cert_ref*
+     }
+
+result_nvt_cert_cert_ref
+ = element cert_ref
+     {
+       attribute id { text }?
+       &amp; attribute type { text }?
      }
 
 result_nvt_xref
  = element xref
+     {
+       text
+     }
+
+result_scan_nvt_version
+ = element scan_nvt_version
      {
        text
      }
@@ -2297,6 +2355,7 @@ result_delta_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_name
        &amp; result_owner
        &amp; result_comment
        &amp; result_creation_time
@@ -2307,6 +2366,7 @@ result_delta_result
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
+       &amp; result_scan_nvt_version
        &amp; result_threat
        &amp; result_severity
        &amp; result_qod
@@ -2369,30 +2429,35 @@ result_detection
      }
 
 result_detection_result
- = element result    # type result
+ = element result
      {
        attribute id { uuid }
-       &amp; result_owner
-       &amp; result_comment
-       &amp; result_creation_time
-       &amp; result_modification_time
-       &amp; result_user_tags?
-       &amp; result_report?
-       &amp; result_task?
-       &amp; result_host
-       &amp; result_port
-       &amp; result_nvt
-       &amp; result_threat
-       &amp; result_severity
-       &amp; result_qod
-       &amp; result_original_threat?
-       &amp; result_original_severity?
-       &amp; result_description
-       &amp; result_delta?
-       &amp; result_details
-       &amp; result_detection
-       &amp; result_notes?
-       &amp; result_overrides?
+       &amp; result_detection_result_details
+     }
+
+result_detection_result_details
+ = element details
+     {
+       result_detection_result_details_detail*
+     }
+
+result_detection_result_details_detail
+ = element detail
+     {
+       result_detection_result_details_detail_name
+       &amp; result_detection_result_details_detail_value
+     }
+
+result_detection_result_details_detail_name
+ = element name
+     {
+       text
+     }
+
+result_detection_result_details_detail_value
+ = element value
+     {
+       text
      }
 
 result_notes
@@ -3916,6 +3981,7 @@ report_report_results_result
  = element result    # type result
      {
        attribute id { uuid }
+       &amp; result_name
        &amp; result_owner
        &amp; result_comment
        &amp; result_creation_time
@@ -3926,6 +3992,7 @@ report_report_results_result
        &amp; result_host
        &amp; result_port
        &amp; result_nvt
+       &amp; result_scan_nvt_version
        &amp; result_threat
        &amp; result_severity
        &amp; result_qod
@@ -22753,233 +22820,8 @@ get_report_formats_response_report_format_count_page
           </li>
 <li>
               &lt;<b>result</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the result.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_result">result</a>)</div>
 <ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The comment on the result.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the result was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the result was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the result.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>user_tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Info on tags attached to the agent.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>tag</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the tag.
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>report</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Report the result belongs to (only when details were requested).</div>
-<ul style="list-style: none"><li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the report the result belongs to.
-          </li></ul>
-</li>
-<li>
-              &lt;<b>task</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Task the result applies to (only when details were requested).</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the task the result applies to.
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the task the result applies to.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <div style="margin-left: 15px; display: inline;">NVT to which result applies.</div>
-<ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cvss_base</b>&gt;
-              <div style="margin-left: 15px; display: inline;">CVSS base value associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Risk factor associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cve</b>&gt;
-              <div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>bid</b>&gt;
-              <div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Tags associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cert</b>&gt;
-              <div style="margin-left: 15px; display: inline;">List of CERT advisories referencing this NVT via CVEs.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>cert_ref</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">A CERT advisory reference.</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (text)
-          ID of the advisory.
-          </li>
-<li>
-          @<b>type</b>
-          (text)
-          Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
-          </li>
-</ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>xref</b>&gt;
-              <div style="margin-left: 15px; display: inline;">References associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>scan_nvt_version</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Version of the NVT used in the scan.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>severity</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Severity score of the result, with overrides if applicable.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>qod</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the NVT.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>description</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Description of the result.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>original_severity</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Severity score of the result without overrides.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>notes</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>overrides</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
 </li>
 <li>
               &lt;<b>filters</b>&gt;
@@ -23099,277 +22941,32 @@ get_report_formats_response_report_format_count_page
      }
 
 get_results_response_result
- = element result
+ = element result    # type result
      {
        attribute id { uuid }
-       &amp; get_results_response_result_owner
-       &amp; get_results_response_result_comment
-       &amp; get_results_response_result_creation_time
-       &amp; get_results_response_result_modification_time
-       &amp; get_results_response_result_permissions
-       &amp; get_results_response_result_user_tags
-       &amp; get_results_response_result_report?
-       &amp; get_results_response_result_task?
-       &amp; get_results_response_result_host
-       &amp; get_results_response_result_port
-       &amp; get_results_response_result_nvt
-       &amp; get_results_response_result_scan_nvt_version
-       &amp; get_results_response_result_threat
-       &amp; get_results_response_result_severity
-       &amp; get_results_response_result_qod
-       &amp; get_results_response_result_description
-       &amp; get_results_response_result_original_severity?
-       &amp; get_results_response_result_notes?
-       &amp; get_results_response_result_overrides?
-     }
-
-get_results_response_result_owner
- = element owner
-     {
-       get_results_response_result_owner_name
-     }
-
-get_results_response_result_owner_name
- = element name
-     {
-       name
-     }
-
-get_results_response_result_comment
- = element comment
-     {
-       text
-     }
-
-get_results_response_result_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_results_response_result_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_results_response_result_permissions
- = element permissions
-     {
-       get_results_response_result_permissions_permission*
-     }
-
-get_results_response_result_permissions_permission
- = element permission
-     {
-       get_results_response_result_permissions_permission_name
-     }
-
-get_results_response_result_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-get_results_response_result_user_tags
- = element user_tags
-     {
-       get_results_response_result_user_tags_count
-       &amp; get_results_response_result_user_tags_tag*
-     }
-
-get_results_response_result_user_tags_count
- = element count
-     {
-       integer
-     }
-
-get_results_response_result_user_tags_tag
- = element tag
-     {
-       attribute id { uuid }
-       &amp; get_results_response_result_user_tags_tag_name
-       &amp; get_results_response_result_user_tags_tag_value
-       &amp; get_results_response_result_user_tags_tag_comment
-     }
-
-get_results_response_result_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-get_results_response_result_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-get_results_response_result_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-get_results_response_result_report
- = element report
-     {
-       attribute id { uuid }
-     }
-
-get_results_response_result_task
- = element task
-     {
-       attribute id { uuid }
-       &amp; get_results_response_result_task_name
-     }
-
-get_results_response_result_task_name
- = element name
-     {
-       text
-     }
-
-get_results_response_result_host
- = element host
-     {
-       text
-     }
-
-get_results_response_result_port
- = element port
-     {
-       text
-     }
-
-get_results_response_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_results_response_result_nvt_name
-       &amp; get_results_response_result_nvt_cvss_base
-       &amp; get_results_response_result_nvt_risk_factor
-       &amp; get_results_response_result_nvt_cve
-       &amp; get_results_response_result_nvt_bid
-       &amp; get_results_response_result_nvt_tags
-       &amp; get_results_response_result_nvt_cert
-       &amp; get_results_response_result_nvt_xref
-     }
-
-get_results_response_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_results_response_result_nvt_cvss_base
- = element cvss_base
-     {
-       integer
-     }
-
-get_results_response_result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
-get_results_response_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-get_results_response_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-get_results_response_result_nvt_tags
- = element tags
-     {
-       text
-     }
-
-get_results_response_result_nvt_cert
- = element cert
-     {
-       get_results_response_result_nvt_cert_cert_ref*
-     }
-
-get_results_response_result_nvt_cert_cert_ref
- = element cert_ref
-     {
-       attribute id { text }?
-       &amp; attribute type { text }?
-     }
-
-get_results_response_result_nvt_xref
- = element xref
-     {
-       text
-     }
-
-get_results_response_result_scan_nvt_version
- = element scan_nvt_version
-     {
-       text
-     }
-
-get_results_response_result_threat
- = element threat
-     {
-       threat
-     }
-
-get_results_response_result_severity
- = element severity
-     {
-       severity
-     }
-
-get_results_response_result_qod
- = element qod
-     {
-       get_results_response_result_qod_value
-       &amp; get_results_response_result_qod_type
-     }
-
-get_results_response_result_qod_value
- = element value
-     {
-       integer
-     }
-
-get_results_response_result_qod_type
- = element type
-     {
-       text
-     }
-
-get_results_response_result_description
- = element description
-     {
-       text
-     }
-
-get_results_response_result_original_severity
- = element original_severity
-     {
-       severity
-     }
-
-get_results_response_result_notes
- = element notes    # type result_notes
-     {
-       result_notes_note*
-     }
-
-get_results_response_result_overrides
- = element overrides    # type result_overrides
-     {
-       result_overrides_override*
+       &amp; result_name
+       &amp; result_owner
+       &amp; result_comment
+       &amp; result_creation_time
+       &amp; result_modification_time
+       &amp; result_user_tags?
+       &amp; result_report?
+       &amp; result_task?
+       &amp; result_host
+       &amp; result_port
+       &amp; result_nvt
+       &amp; result_scan_nvt_version
+       &amp; result_threat
+       &amp; result_severity
+       &amp; result_qod
+       &amp; result_original_threat?
+       &amp; result_original_severity?
+       &amp; result_description
+       &amp; result_delta?
+       &amp; result_details
+       &amp; result_detection
+       &amp; result_notes?
+       &amp; result_overrides?
      }
 
 get_results_response_filters

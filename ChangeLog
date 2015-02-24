@@ -1,3 +1,14 @@
+2015-02-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/schema_formats/XML/OMP.xml.in (result): Add elements "name" and
+	"scan_nvt_version". Remove element "risk_factor" that is not part of
+	actual results. Add actual structure of "cert" subelements in "nvt" and
+	of "result" subelements in "detection".
+	(get_results): Use "result" type for the result response elements
+	instead of duplicating the definition.
+
+	* doc/omp.html, doc/omp.rnc: Update from source.
+
 2015-02-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Add report format Anonymous XML.

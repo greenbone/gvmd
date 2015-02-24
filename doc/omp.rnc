@@ -671,6 +671,7 @@ result
  = element result
      {
        attribute id { uuid }
+       & result_name
        & result_owner
        & result_comment
        & result_creation_time
@@ -681,6 +682,7 @@ result
        & result_host
        & result_port
        & result_nvt
+       & result_scan_nvt_version
        & result_threat
        & result_severity
        & result_qod
@@ -692,6 +694,13 @@ result
        & result_detection
        & result_notes?
        & result_overrides?
+     }
+
+# The name of the result.
+result_name
+ = element name
+     {
+       text
      }
 
 # Owner of the result.
@@ -820,7 +829,6 @@ result_nvt
        & result_nvt_name
        & result_nvt_family
        & result_nvt_cvss_base
-       & result_nvt_risk_factor
        & result_nvt_cve
        & result_nvt_bid
        & result_nvt_tags
@@ -849,13 +857,6 @@ result_nvt_cvss_base
        integer
      }
 
-# Risk factor associated with the NVT.
-result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
 # CVE associated with the NVT.
 result_nvt_cve
  = element cve
@@ -877,16 +878,33 @@ result_nvt_tags
        text
      }
 
-# List of CERT advisories associated with the NVT.
+# List of CERT advisories referencing this NVT via CVEs.
 result_nvt_cert
  = element cert
      {
-       text
+       result_nvt_cert_cert_ref*
+     }
+
+# A CERT advisory reference.
+result_nvt_cert_cert_ref
+ = element cert_ref
+     {
+       # ID of the advisory.
+       attribute id { text }?
+       & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
+       attribute type { text }?
      }
 
 # XREFs associated with the NVT.
 result_nvt_xref
  = element xref
+     {
+       text
+     }
+
+# Version of the NVT used in the scan.
+result_scan_nvt_version
+ = element scan_nvt_version
      {
        text
      }
@@ -962,6 +980,7 @@ result_delta_result
  = element result    # type result
      {
        attribute id { uuid }
+       & result_name
        & result_owner
        & result_comment
        & result_creation_time
@@ -972,6 +991,7 @@ result_delta_result
        & result_host
        & result_port
        & result_nvt
+       & result_scan_nvt_version
        & result_threat
        & result_severity
        & result_qod
@@ -1041,30 +1061,39 @@ result_detection
 
 # Detection result.
 result_detection_result
- = element result    # type result
+ = element result
      {
+       # UUID of the detection result.
        attribute id { uuid }
-       & result_owner
-       & result_comment
-       & result_creation_time
-       & result_modification_time
-       & result_user_tags?
-       & result_report?
-       & result_task?
-       & result_host
-       & result_port
-       & result_nvt
-       & result_threat
-       & result_severity
-       & result_qod
-       & result_original_threat?
-       & result_original_severity?
-       & result_description
-       & result_delta?
-       & result_details
-       & result_detection
-       & result_notes?
-       & result_overrides?
+       & result_detection_result_details
+     }
+
+result_detection_result_details
+ = element details
+     {
+       result_detection_result_details_detail*
+     }
+
+# A detail associated with the detection result.
+result_detection_result_details_detail
+ = element detail
+     {
+       result_detection_result_details_detail_name
+       & result_detection_result_details_detail_value
+     }
+
+# The name of the detail.
+result_detection_result_details_detail_name
+ = element name
+     {
+       text
+     }
+
+# The value of the detail.
+result_detection_result_details_detail_value
+ = element value
+     {
+       text
      }
 
 result_notes
@@ -1944,6 +1973,7 @@ report_report_results_result
  = element result    # type result
      {
        attribute id { uuid }
+       & result_name
        & result_owner
        & result_comment
        & result_creation_time
@@ -1954,6 +1984,7 @@ report_report_results_result
        & result_host
        & result_port
        & result_nvt
+       & result_scan_nvt_version
        & result_threat
        & result_severity
        & result_qod
@@ -12708,315 +12739,32 @@ get_results_response
      }
 
 get_results_response_result
- = element result
+ = element result    # type result
      {
        attribute id { uuid }
-       & get_results_response_result_owner
-       & get_results_response_result_comment
-       & get_results_response_result_creation_time
-       & get_results_response_result_modification_time
-       & get_results_response_result_permissions
-       & get_results_response_result_user_tags
-       & get_results_response_result_report?
-       & get_results_response_result_task?
-       & get_results_response_result_host
-       & get_results_response_result_port
-       & get_results_response_result_nvt
-       & get_results_response_result_scan_nvt_version
-       & get_results_response_result_threat
-       & get_results_response_result_severity
-       & get_results_response_result_qod
-       & get_results_response_result_description
-       & get_results_response_result_original_severity?
-       & get_results_response_result_notes?
-       & get_results_response_result_overrides?
-     }
-
-# Owner of the result.
-get_results_response_result_owner
- = element owner
-     {
-       get_results_response_result_owner_name
-     }
-
-# The name of the owner.
-get_results_response_result_owner_name
- = element name
-     {
-       name
-     }
-
-# The comment on the result.
-get_results_response_result_comment
- = element comment
-     {
-       text
-     }
-
-# Date and time the result was created.
-get_results_response_result_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-# Date and time the result was last modified.
-get_results_response_result_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-# Permissions that the current user has on the result.
-get_results_response_result_permissions
- = element permissions
-     {
-       get_results_response_result_permissions_permission*
-     }
-
-get_results_response_result_permissions_permission
- = element permission
-     {
-       get_results_response_result_permissions_permission_name
-     }
-
-# The name of the permission.
-get_results_response_result_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-# Info on tags attached to the agent.
-get_results_response_result_user_tags
- = element user_tags
-     {
-       get_results_response_result_user_tags_count
-       & get_results_response_result_user_tags_tag*
-     }
-
-# Number of attached tags.
-get_results_response_result_user_tags_count
- = element count
-     {
-       integer
-     }
-
-# Short info on an individual tag (only if details were requested).
-get_results_response_result_user_tags_tag
- = element tag
-     {
-       # UUID of the tag.
-       attribute id { uuid }
-       & get_results_response_result_user_tags_tag_name
-       & get_results_response_result_user_tags_tag_value
-       & get_results_response_result_user_tags_tag_comment
-     }
-
-# Name of the tag (usually namespace:predicate).
-get_results_response_result_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-# Value of the tag.
-get_results_response_result_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-# Comment for the tag.
-get_results_response_result_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-# Report the result belongs to (only when details were requested).
-get_results_response_result_report
- = element report
-     {
-       # UUID of the report the result belongs to.
-       attribute id { uuid }
-     }
-
-# Task the result applies to (only when details were requested).
-get_results_response_result_task
- = element task
-     {
-       # UUID of the task the result applies to.
-       attribute id { uuid }
-       & get_results_response_result_task_name
-     }
-
-# Name of the task the result applies to.
-get_results_response_result_task_name
- = element name
-     {
-       text
-     }
-
-get_results_response_result_host
- = element host
-     {
-       text
-     }
-
-get_results_response_result_port
- = element port
-     {
-       text
-     }
-
-# NVT to which result applies.
-get_results_response_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_results_response_result_nvt_name
-       & get_results_response_result_nvt_cvss_base
-       & get_results_response_result_nvt_risk_factor
-       & get_results_response_result_nvt_cve
-       & get_results_response_result_nvt_bid
-       & get_results_response_result_nvt_tags
-       & get_results_response_result_nvt_cert
-       & get_results_response_result_nvt_xref
-     }
-
-# The name of the NVT.
-get_results_response_result_nvt_name
- = element name
-     {
-       name
-     }
-
-# CVSS base value associated with the NVT.
-get_results_response_result_nvt_cvss_base
- = element cvss_base
-     {
-       integer
-     }
-
-# Risk factor associated with the NVT.
-get_results_response_result_nvt_risk_factor
- = element risk_factor
-     {
-       integer
-     }
-
-# CVE value associated with the NVT.
-get_results_response_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-# BID associated with the NVT.
-get_results_response_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-# Tags associated with the NVT.
-get_results_response_result_nvt_tags
- = element tags
-     {
-       text
-     }
-
-# List of CERT advisories referencing this NVT via CVEs.
-get_results_response_result_nvt_cert
- = element cert
-     {
-       get_results_response_result_nvt_cert_cert_ref*
-     }
-
-# A CERT advisory reference.
-get_results_response_result_nvt_cert_cert_ref
- = element cert_ref
-     {
-       # ID of the advisory.
-       attribute id { text }?
-       & # Type of the advisory (e.g. "DFN-CERT", "CERT-BUND").
-       attribute type { text }?
-     }
-
-# References associated with the NVT.
-get_results_response_result_nvt_xref
- = element xref
-     {
-       text
-     }
-
-# Version of the NVT used in the scan.
-get_results_response_result_scan_nvt_version
- = element scan_nvt_version
-     {
-       text
-     }
-
-get_results_response_result_threat
- = element threat
-     {
-       threat
-     }
-
-# Severity score of the result, with overrides if applicable.
-get_results_response_result_severity
- = element severity
-     {
-       severity
-     }
-
-# The quality of detection (QoD) of the NVT.
-get_results_response_result_qod
- = element qod
-     {
-       get_results_response_result_qod_value
-       & get_results_response_result_qod_type
-     }
-
-# The numeric QoD value.
-get_results_response_result_qod_value
- = element value
-     {
-       integer
-     }
-
-# The QoD type.
-get_results_response_result_qod_type
- = element type
-     {
-       text
-     }
-
-# Description of the result.
-get_results_response_result_description
- = element description
-     {
-       text
-     }
-
-# Severity score of the result without overrides.
-get_results_response_result_original_severity
- = element original_severity
-     {
-       severity
-     }
-
-get_results_response_result_notes
- = element notes    # type result_notes
-     {
-       result_notes_note*
-     }
-
-get_results_response_result_overrides
- = element overrides    # type result_overrides
-     {
-       result_overrides_override*
+       & result_name
+       & result_owner
+       & result_comment
+       & result_creation_time
+       & result_modification_time
+       & result_user_tags?
+       & result_report?
+       & result_task?
+       & result_host
+       & result_port
+       & result_nvt
+       & result_scan_nvt_version
+       & result_threat
+       & result_severity
+       & result_qod
+       & result_original_threat?
+       & result_original_severity?
+       & result_description
+       & result_delta?
+       & result_details
+       & result_detection
+       & result_notes?
+       & result_overrides?
      }
 
 get_results_response_filters

@@ -549,6 +549,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <e>name</e>
       <e>owner</e>
       <e>comment</e>
       <e>creation_time</e>
@@ -559,6 +560,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <e>host</e>
       <e>port</e>
       <e>nvt</e>
+      <e>scan_nvt_version</e>
       <e>threat</e>
       <e>severity</e>
       <e>qod</e>
@@ -571,6 +573,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <o><e>notes</e></o>
       <o><e>overrides</e></o>
     </pattern>
+    <ele>
+      <name>name</name>
+      <summary>The name of the result</summary>
+      <pattern>text</pattern>
+    </ele>
     <ele>
       <name>owner</name>
       <summary>Owner of the result</summary>
@@ -698,7 +705,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <e>name</e>
         <e>family</e>
         <e>cvss_base</e>
-        <e>risk_factor</e>
         <e>cve</e>
         <e>bid</e>
         <e>tags</e>
@@ -721,11 +727,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <pattern><t>integer</t></pattern>
       </ele>
       <ele>
-        <name>risk_factor</name>
-        <summary>Risk factor associated with the NVT</summary>
-        <pattern><t>integer</t></pattern>
-      </ele>
-      <ele>
         <name>cve</name>
         <summary>CVE associated with the NVT</summary>
         <pattern>text</pattern>
@@ -742,14 +743,37 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
       <ele>
         <name>cert</name>
-        <summary>List of CERT advisories associated with the NVT</summary>
-        <pattern>text</pattern>
+        <summary>List of CERT advisories referencing this NVT via CVEs</summary>
+        <pattern>
+          <any><e>cert_ref</e></any>
+        </pattern>
+        <ele>
+          <name>cert_ref</name>
+          <summary>A CERT advisory reference</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the advisory</summary>
+              <type>text</type>
+            </attrib>
+            <attrib>
+              <name>type</name>
+              <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
+              <type>text</type>
+            </attrib>
+          </pattern>
+        </ele>
       </ele>
       <ele>
         <name>xref</name>
         <summary>XREFs associated with the NVT</summary>
         <pattern>text</pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>scan_nvt_version</name>
+      <summary>Version of the NVT used in the scan</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>threat</name>
@@ -853,7 +877,39 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <ele>
         <name>result</name>
         <summary>Detection result</summary>
-        <type>result</type>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the detection result</summary>
+            <required>1</required>
+            <type>uuid</type>
+          </attrib>
+          <e>details</e>
+        </pattern>
+        <ele>
+          <name>details</name>
+          <pattern>
+            <any><e>detail</e></any>
+          </pattern>
+          <ele>
+            <name>detail</name>
+            <summary>A detail associated with the detection result</summary>
+            <pattern>
+              <e>name</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the detail</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The value of the detail</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
       </ele>
     </ele>
     <ele>
@@ -13932,294 +13988,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </pattern>
       <ele>
         <name>result</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>owner</e>
-          <e>comment</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>permissions</e>
-          <e>user_tags</e>
-          <o><e>report</e></o>
-          <o><e>task</e></o>
-          <e>host</e>
-          <e>port</e>
-          <e>nvt</e>
-          <e>scan_nvt_version</e>
-          <e>threat</e>
-          <e>severity</e>
-          <e>qod</e>
-          <e>description</e>
-          <o><e>original_severity</e></o>
-          <o><e>notes</e></o>
-          <o><e>overrides</e></o>
-        </pattern>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the result</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>comment</name>
-          <summary>The comment on the result</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the result was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the result was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>
-            Permissions that the current user has on the result
-          </summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the agent</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>report</name>
-          <summary>
-            Report the result belongs to (only when details were requested)
-          </summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <summary>UUID of the report the result belongs to</summary>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-        <ele>
-          <name>task</name>
-          <summary>
-            Task the result applies to (only when details were requested)
-          </summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <summary>UUID of the task the result applies to</summary>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern>text</pattern>
-            <summary>Name of the task the result applies to</summary>
-          </ele>
-        </ele>
-        <ele>
-          <name>host</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>port</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>nvt</name>
-          <summary>NVT to which result applies</summary>
-          <pattern>
-            <attrib>
-              <name>oid</name>
-              <type>oid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-            <e>cvss_base</e>
-            <e>risk_factor</e>
-            <e>cve</e>
-            <e>bid</e>
-            <e>tags</e>
-            <e>cert</e>
-            <e>xref</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the NVT</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-          <ele>
-            <name>cvss_base</name>
-            <summary>CVSS base value associated with the NVT</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>risk_factor</name>
-            <summary>Risk factor associated with the NVT</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>cve</name>
-            <summary>CVE value associated with the NVT</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>bid</name>
-            <summary>BID associated with the NVT</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tags</name>
-            <summary>Tags associated with the NVT</summary>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>cert</name>
-            <summary>List of CERT advisories referencing this NVT via CVEs</summary>
-            <pattern>
-              <any><e>cert_ref</e></any>
-            </pattern>
-            <ele>
-              <name>cert_ref</name>
-              <summary>A CERT advisory reference</summary>
-              <pattern>
-                <attrib>
-                  <name>id</name>
-                  <summary>ID of the advisory</summary>
-                  <type>text</type>
-                </attrib>
-                <attrib>
-                  <name>type</name>
-                  <summary>Type of the advisory (e.g. "DFN-CERT", "CERT-BUND")</summary>
-                  <type>text</type>
-                </attrib>
-              </pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>xref</name>
-            <summary>References associated with the NVT</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>scan_nvt_version</name>
-          <summary>Version of the NVT used in the scan</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>threat</name>
-          <pattern><t>threat</t></pattern>
-        </ele>
-        <ele>
-          <name>severity</name>
-          <summary>Severity score of the result, with overrides if applicable</summary>
-          <pattern><t>severity</t></pattern>
-        </ele>
-        <ele>
-          <name>qod</name>
-          <summary>The quality of detection (QoD) of the NVT</summary>
-          <pattern>
-            <e>value</e>
-            <e>type</e>
-          </pattern>
-          <ele>
-            <name>value</name>
-            <summary>The numeric QoD value</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>type</name>
-            <summary>The QoD type</summary>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>description</name>
-          <summary>Description of the result</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>original_severity</name>
-          <summary>Severity score of the result without overrides</summary>
-          <pattern><t>severity</t></pattern>
-        </ele>
-        <ele>
-          <name>notes</name>
-          <type>result_notes</type>
-        </ele>
-        <ele>
-          <name>overrides</name>
-          <type>result_overrides</type>
-        </ele>
+        <type>result</type>
       </ele>
       <ele>
         <name>filters</name>
