@@ -148,12 +148,12 @@
 <td id="index"><div style="margin-left: 15px;">Definition of a command in OMP describing HELP command.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#element_result_notes">result_notes</a></td>
-<td id="index"><div style="margin-left: 15px;">Notes on a result.</div></td>
+<td id="index"><a href="#element_note">note</a></td>
+<td id="index"><div style="margin-left: 15px;">A note.</div></td>
 </tr>
 <tr id="index">
-<td id="index"><a href="#element_result_overrides">result_overrides</a></td>
-<td id="index"><div style="margin-left: 15px;">Overrides on a result.</div></td>
+<td id="index"><a href="#element_override">override</a></td>
+<td id="index"><div style="margin-left: 15px;">An override.</div></td>
 </tr>
 <tr id="index">
 <td id="index"><a href="#element_result">result</a></td>
@@ -1563,14 +1563,37 @@ command_definition_ele
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_result_notes">6.9
-        Element <tt>result_notes</tt>
+<div><h3 id="element_note">6.9
+        Element <tt>note</tt>
 </h3></div>
-<p>In short: Notes on a result.</p>
+<p>In short: A note.</p>
 <h4>6.9.1 Structure</h4>
-<ul style="list-style: none"><li><ul style="list-style: none"><li>
-              &lt;<b>note</b>&gt;
-              *<ul style="list-style: none">
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li>
 <li>
               &lt;<b>nvt</b>&gt;
               <ul style="list-style: none">
@@ -1590,66 +1613,517 @@ command_definition_ele
 <ul style="list-style: none"><li>
           @<b>excerpt</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether the content is an excerpt of the full text.
           </li></ul>
+</li>
+<li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the note was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the note was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the note is active.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>orphan</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the note.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
-</li></ul></li></ul>
+</li>
+</ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+              &lt;<b>hosts</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Port to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Severity to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>threat</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>task</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>end_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">End time of the note in case of limit, else empty.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>result</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>host</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>nvt</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cvss_base</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>risk_factor</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cve</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>threat</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul></li></ul>
 <h4>6.9.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result_notes
- = element result_notes
-     {
-       result_notes_note*
-     }
-
-result_notes_note
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>note
  = element note
      {
-       result_notes_note_nvt
-       &amp; result_notes_note_text
-       &amp; result_notes_note_orphan
+       attribute id { uuid }
+       &amp; note_permissions
+       &amp; note_owner
+       &amp; note_nvt
+       &amp; note_text
+       &amp; note_creation_time
+       &amp; note_modification_time
+       &amp; note_writable
+       &amp; note_in_use
+       &amp; note_active
+       &amp; note_orphan
+       &amp; note_user_tags
+       &amp; ( note_hosts
+           &amp; note_port
+           &amp; note_severity
+           &amp; note_threat
+           &amp; note_task
+           &amp; note_end_time?
+           &amp; note_result? )?
      }
 
-result_notes_note_nvt
- = element nvt
+note_permissions
+ = element permissions
      {
-       attribute oid { oid }
-       &amp; result_notes_note_nvt_name
+       note_permissions_permission*
      }
 
-result_notes_note_nvt_name
+note_permissions_permission
+ = element permission
+     {
+       note_permissions_permission_name
+     }
+
+note_permissions_permission_name
  = element name
      {
        name
      }
 
-result_notes_note_text
+note_owner
+ = element owner
+     {
+       note_owner_name
+     }
+
+note_owner_name
+ = element name
+     {
+       name
+     }
+
+note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; note_nvt_name
+     }
+
+note_nvt_name
+ = element name
+     {
+       name
+     }
+
+note_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+note_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+note_writable
+ = element writable
+     {
+       boolean
+     }
+
+note_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+note_active
+ = element active
+     {
+       boolean
+     }
+
+note_text
  = element text
      {
        text
        &amp; attribute excerpt { boolean }
      }
 
-result_notes_note_orphan
+note_orphan
  = element orphan
      {
        boolean
      }
+
+note_user_tags
+ = element user_tags
+     {
+       note_user_tags_count
+       &amp; note_user_tags_tag*
+     }
+
+note_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+note_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; note_user_tags_tag_name
+       &amp; note_user_tags_tag_value
+       &amp; note_user_tags_tag_comment
+     }
+
+note_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+note_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+note_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+note_hosts
+ = element hosts
+     {
+       text
+     }
+
+note_port
+ = element port
+     {
+       text
+     }
+
+note_severity
+ = element severity
+     {
+       severity
+     }
+
+note_threat
+ = element threat
+     {
+       threat
+     }
+
+note_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+note_active
+ = element active
+     {
+       integer
+     }
+
+note_end_time
+ = element end_time
+     {
+       text
+     }
+
+note_result
+ = element result
+     {
+       attribute id { uuid }
+       &amp; note_result_host
+       &amp; note_result_port
+       &amp; note_result_nvt
+       &amp; note_result_severity
+       &amp; note_result_threat
+       &amp; note_result_qod
+       &amp; note_result_description
+     }
+
+note_result_host
+ = element host
+     {
+       text
+     }
+
+note_result_port
+ = element port
+     {
+       text
+     }
+
+note_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; note_result_nvt_name
+       &amp; note_result_nvt_cvss_base
+       &amp; note_result_nvt_risk_factor
+       &amp; note_result_nvt_cve?
+       &amp; note_result_nvt_bid?
+     }
+
+note_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+note_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+note_result_nvt_bid
+ = element bid
+     {
+       integer
+     }
+
+note_result_severity
+ = element severity
+     {
+       severity
+     }
+
+note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+note_result_qod
+ = element qod
+     {
+       note_result_qod_value
+       &amp; note_result_qod_type
+     }
+
+note_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+note_result_qod_type
+ = element type
+     {
+       text
+     }
+
+note_result_description
+ = element description
+     {
+       text
+     }
 </pre></div></div>
 </div>
 <div>
-<div><h3 id="element_result_overrides">6.10
-        Element <tt>result_overrides</tt>
+<div><h3 id="element_override">6.10
+        Element <tt>override</tt>
 </h3></div>
-<p>In short: Overrides on a result.</p>
+<p>In short: An override.</p>
 <h4>6.10.1 Structure</h4>
-<ul style="list-style: none"><li><ul style="list-style: none"><li>
-              &lt;<b>override</b>&gt;
-              *<ul style="list-style: none">
+<ul style="list-style: none"><li><ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>owner</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Owner of the override.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li></ul>
+</li>
 <li>
               &lt;<b>nvt</b>&gt;
               <ul style="list-style: none">
@@ -1664,11 +2138,35 @@ result_notes_note_orphan
 </ul>
 </li>
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the override was created.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Date and time the override was last modified.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>writable</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>in_use</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>active</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Whether the override is currently active.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>text</b>&gt;
               <div style="margin-left: 15px; display: inline;">The text of the override.</div>
 <ul style="list-style: none"><li>
           @<b>excerpt</b>
           (<a href="#type_boolean">boolean</a>)
+          Whether the contents is an excerpt of the full text.
           </li></ul>
 </li>
 <li>
@@ -1683,12 +2181,12 @@ result_notes_note_orphan
 </li>
 <li>
               &lt;<b>new_threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New threat for result, derived from new_severity.</div>
+              <div style="margin-left: 15px; display: inline;">New threat for result.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>new_severity</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New severity.</div>
+              <div style="margin-left: 15px; display: inline;">New severity score for result.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -1696,75 +2194,469 @@ result_notes_note_orphan
               <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>permission</b>&gt;
+              *<ul style="list-style: none"><li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+<ul style="list-style: none"></ul>
+</li></ul>
+</li></ul>
+</li>
+<li>
+              &lt;<b>user_tags</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Info on tags attached to the override.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>count</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>tag</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          UUID of the tag.
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>comment</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
-</li></ul></li></ul>
+</li>
+</ul>
+</li>
+<li>
+<i>The group</i><b>?</b><ul style="list-style: none">
+<li>
+              &lt;<b>hosts</b>&gt;
+              <div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Port to which override applies.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>task</b>&gt;
+              <div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
+<ul style="list-style: none"><li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li></ul>
+</li>
+<li>
+              &lt;<b>end_time</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Override end time in case of limit, else empty.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>result</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>host</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>port</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>nvt</b>&gt;
+              <ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cvss_base</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>risk_factor</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>cve</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>bid</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>threat</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>severity</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>qod</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
+<ul style="list-style: none">
+<li>
+              &lt;<b>value</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>type</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+<li>
+              &lt;<b>description</b>&gt;
+              <ul style="list-style: none"></ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul></li></ul>
 <h4>6.10.2 RNC</h4>
-<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>result_overrides
- = element result_overrides
-     {
-       result_overrides_override*
-     }
-
-result_overrides_override
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><div style="margin-left: 5%"><pre>override
  = element override
      {
-       result_overrides_override_nvt
-       &amp; result_overrides_override_text
-       &amp; result_overrides_override_threat
-       &amp; result_overrides_override_severity
-       &amp; result_overrides_override_new_threat
-       &amp; result_overrides_override_new_severity
-       &amp; result_overrides_override_orphan
+       attribute id { uuid }
+       &amp; override_permissions
+       &amp; override_owner
+       &amp; override_nvt
+       &amp; override_creation_time
+       &amp; override_modification_time
+       &amp; override_writable
+       &amp; override_in_use
+       &amp; override_active
+       &amp; override_text
+       &amp; override_threat
+       &amp; override_severity
+       &amp; override_new_threat
+       &amp; override_new_severity
+       &amp; override_orphan
+       &amp; override_permissions
+       &amp; override_user_tags
+       &amp; ( override_hosts
+           &amp; override_port
+           &amp; override_task
+           &amp; override_end_time?
+           &amp; override_result? )?
      }
 
-result_overrides_override_nvt
- = element nvt
+override_permissions
+ = element permissions
      {
-       attribute oid { oid }
-       &amp; result_overrides_override_nvt_name
+       override_permissions_permission*
      }
 
-result_overrides_override_nvt_name
+override_permissions_permission
+ = element permission
+     {
+       override_permissions_permission_name
+     }
+
+override_permissions_permission_name
  = element name
      {
        name
      }
 
-result_overrides_override_text
+override_owner
+ = element owner
+     {
+       override_owner_name
+     }
+
+override_owner_name
+ = element name
+     {
+       name
+     }
+
+override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; override_nvt_name
+     }
+
+override_nvt_name
+ = element name
+     {
+       name
+     }
+
+override_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+override_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+override_writable
+ = element writable
+     {
+       boolean
+     }
+
+override_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+override_active
+ = element active
+     {
+       boolean
+     }
+
+override_text
  = element text
      {
        text
        &amp; attribute excerpt { boolean }
      }
 
-result_overrides_override_threat
+override_threat
  = element threat
      {
        threat
      }
 
-result_overrides_override_severity
+override_severity
  = element severity
      {
        severity
      }
 
-result_overrides_override_new_threat
+override_new_threat
  = element new_threat
      {
        threat
      }
 
-result_overrides_override_new_severity
+override_new_severity
  = element new_severity
      {
        severity
      }
 
-result_overrides_override_orphan
+override_orphan
  = element orphan
      {
        boolean
+     }
+
+override_user_tags
+ = element user_tags
+     {
+       override_user_tags_count
+       &amp; override_user_tags_tag*
+     }
+
+override_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+override_user_tags_tag
+ = element tag
+     {
+       attribute id { uuid }
+       &amp; override_user_tags_tag_name
+       &amp; override_user_tags_tag_value
+       &amp; override_user_tags_tag_comment
+     }
+
+override_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+override_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+override_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+override_hosts
+ = element hosts
+     {
+       text
+     }
+
+override_port
+ = element port
+     {
+       text
+     }
+
+override_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+override_active
+ = element active
+     {
+       integer
+     }
+
+override_end_time
+ = element end_time
+     {
+       text
+     }
+
+override_result
+ = element result
+     {
+       attribute id { uuid }
+       &amp; override_result_host
+       &amp; override_result_port
+       &amp; override_result_nvt
+       &amp; override_result_threat
+       &amp; override_result_severity
+       &amp; override_result_qod
+       &amp; override_result_description
+     }
+
+override_result_host
+ = element host
+     {
+       text
+     }
+
+override_result_port
+ = element port
+     {
+       text
+     }
+
+override_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       &amp; override_result_nvt_name
+       &amp; override_result_nvt_cvss_base
+       &amp; override_result_nvt_risk_factor
+       &amp; override_result_nvt_cve?
+       &amp; override_result_nvt_bid?
+     }
+
+override_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+override_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+override_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+override_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+override_result_nvt_bid
+ = element bid
+     {
+       integer
+     }
+
+override_result_threat
+ = element threat
+     {
+       threat
+     }
+
+override_result_severity
+ = element severity
+     {
+       severity
+     }
+
+override_result_qod
+ = element qod
+     {
+       override_result_qod_value
+       &amp; override_result_qod_type
+     }
+
+override_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+override_result_qod_type
+ = element type
+     {
+       text
+     }
+
+override_result_description
+ = element description
+     {
+       text
      }
 </pre></div></div>
 </div>
@@ -2005,13 +2897,21 @@ result_overrides_override_orphan
 </li>
 <li>
               &lt;<b>notes</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
+              ?<div style="margin-left: 15px; display: inline;">List of notes on the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>note</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_note">note</a>)</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>overrides</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
+              ?<div style="margin-left: 15px; display: inline;">List of overrides on the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>override</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_override">override</a>)</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li>
 </ul>
 </li>
@@ -2071,13 +2971,21 @@ result_overrides_override_orphan
 </li>
 <li>
               &lt;<b>notes</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_notes">result_notes</a>)</div>
+              ?<div style="margin-left: 15px; display: inline;">List of notes on the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>note</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_note">note</a>)</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li>
 <li>
               &lt;<b>overrides</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">(<a href="#element_result_overrides">result_overrides</a>)</div>
+              ?<div style="margin-left: 15px; display: inline;">List of overrides on the result.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>override</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_override">override</a>)</div>
 <ul style="list-style: none"></ul>
+</li></ul>
 </li>
 </ul></li></ul>
 <h4>6.11.2 RNC</h4>
@@ -2386,15 +3294,66 @@ result_delta_diff
      }
 
 result_delta_notes
- = element notes    # type result_notes
+ = element notes
      {
-       result_notes_note*
+       result_delta_notes_note*
+     }
+
+result_delta_notes_note
+ = element note    # type note
+     {
+       attribute id { uuid }
+       &amp; note_permissions
+       &amp; note_owner
+       &amp; note_nvt
+       &amp; note_text
+       &amp; note_creation_time
+       &amp; note_modification_time
+       &amp; note_writable
+       &amp; note_in_use
+       &amp; note_active
+       &amp; note_orphan
+       &amp; note_user_tags
+       &amp; ( note_hosts
+           &amp; note_port
+           &amp; note_severity
+           &amp; note_threat
+           &amp; note_task
+           &amp; note_end_time?
+           &amp; note_result? )?
      }
 
 result_delta_overrides
- = element overrides    # type result_overrides
+ = element overrides
      {
-       result_overrides_override*
+       result_delta_overrides_override*
+     }
+
+result_delta_overrides_override
+ = element override    # type override
+     {
+       attribute id { uuid }
+       &amp; override_permissions
+       &amp; override_owner
+       &amp; override_nvt
+       &amp; override_creation_time
+       &amp; override_modification_time
+       &amp; override_writable
+       &amp; override_in_use
+       &amp; override_active
+       &amp; override_text
+       &amp; override_threat
+       &amp; override_severity
+       &amp; override_new_threat
+       &amp; override_new_severity
+       &amp; override_orphan
+       &amp; override_permissions
+       &amp; override_user_tags
+       &amp; ( override_hosts
+           &amp; override_port
+           &amp; override_task
+           &amp; override_end_time?
+           &amp; override_result? )?
      }
 
 result_details
@@ -2461,15 +3420,66 @@ result_detection_result_details_detail_value
      }
 
 result_notes
- = element notes    # type result_notes
+ = element notes
      {
        result_notes_note*
      }
 
+result_notes_note
+ = element note    # type note
+     {
+       attribute id { uuid }
+       &amp; note_permissions
+       &amp; note_owner
+       &amp; note_nvt
+       &amp; note_text
+       &amp; note_creation_time
+       &amp; note_modification_time
+       &amp; note_writable
+       &amp; note_in_use
+       &amp; note_active
+       &amp; note_orphan
+       &amp; note_user_tags
+       &amp; ( note_hosts
+           &amp; note_port
+           &amp; note_severity
+           &amp; note_threat
+           &amp; note_task
+           &amp; note_end_time?
+           &amp; note_result? )?
+     }
+
 result_overrides
- = element overrides    # type result_overrides
+ = element overrides
      {
        result_overrides_override*
+     }
+
+result_overrides_override
+ = element override    # type override
+     {
+       attribute id { uuid }
+       &amp; override_permissions
+       &amp; override_owner
+       &amp; override_nvt
+       &amp; override_creation_time
+       &amp; override_modification_time
+       &amp; override_writable
+       &amp; override_in_use
+       &amp; override_active
+       &amp; override_text
+       &amp; override_threat
+       &amp; override_severity
+       &amp; override_new_threat
+       &amp; override_new_severity
+       &amp; override_orphan
+       &amp; override_permissions
+       &amp; override_user_tags
+       &amp; ( override_hosts
+           &amp; override_port
+           &amp; override_task
+           &amp; override_end_time?
+           &amp; override_result? )?
      }
 </pre></div></div>
 </div>
@@ -17178,234 +18188,8 @@ get_lsc_credentials_response_lsc_credential_count_page
           </li>
 <li>
               &lt;<b>note</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_note">note</a>)</div>
 <ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the owner.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>text</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The text of the note.</div>
-<ul style="list-style: none"><li>
-          @<b>excerpt</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether the content is an excerpt of the full text.
-          </li></ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the note was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the note was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>writable</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>in_use</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>active</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the note is active.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>orphan</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the note is an orphan.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>user_tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Info on tags attached to the note.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>tag</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the tag.
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<i>The group</i><b>?</b><ul style="list-style: none">
-<li>
-              &lt;<b>hosts</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Port to which note applies.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>severity</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Severity to which note applies.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Threat level to which note applies.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>task</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Task to which note applies.</div>
-<ul style="list-style: none"><li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li>
-              &lt;<b>end_time</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">End time of the note in case of limit, else empty.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>result</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Result to which note applies.</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cvss_base</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cve</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>bid</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>severity</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>qod</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>description</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
 </li>
 <li>
               &lt;<b>filters</b>&gt;
@@ -17621,298 +18405,27 @@ get_notes_response_note_count_page
      }
 
 get_notes_response_note
- = element note
+ = element note    # type note
      {
        attribute id { uuid }
-       &amp; get_notes_response_note_permissions
-       &amp; get_notes_response_note_owner
-       &amp; get_notes_response_note_nvt
-       &amp; get_notes_response_note_text
-       &amp; get_notes_response_note_creation_time
-       &amp; get_notes_response_note_modification_time
-       &amp; get_notes_response_note_writable
-       &amp; get_notes_response_note_in_use
-       &amp; get_notes_response_note_active
-       &amp; get_notes_response_note_orphan
-       &amp; get_notes_response_note_user_tags
-       &amp; ( get_notes_response_note_hosts
-           &amp; get_notes_response_note_port
-           &amp; get_notes_response_note_severity
-           &amp; get_notes_response_note_threat
-           &amp; get_notes_response_note_task
-           &amp; get_notes_response_note_end_time?
-           &amp; get_notes_response_note_result? )?
-     }
-
-get_notes_response_note_permissions
- = element permissions
-     {
-       get_notes_response_note_permissions_permission*
-     }
-
-get_notes_response_note_permissions_permission
- = element permission
-     {
-       get_notes_response_note_permissions_permission_name
-     }
-
-get_notes_response_note_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_owner
- = element owner
-     {
-       get_notes_response_note_owner_name
-     }
-
-get_notes_response_note_owner_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_notes_response_note_nvt_name
-     }
-
-get_notes_response_note_nvt_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_notes_response_note_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_notes_response_note_writable
- = element writable
-     {
-       boolean
-     }
-
-get_notes_response_note_in_use
- = element in_use
-     {
-       boolean
-     }
-
-get_notes_response_note_active
- = element active
-     {
-       boolean
-     }
-
-get_notes_response_note_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_notes_response_note_orphan
- = element orphan
-     {
-       boolean
-     }
-
-get_notes_response_note_user_tags
- = element user_tags
-     {
-       get_notes_response_note_user_tags_count
-       &amp; get_notes_response_note_user_tags_tag*
-     }
-
-get_notes_response_note_user_tags_count
- = element count
-     {
-       integer
-     }
-
-get_notes_response_note_user_tags_tag
- = element tag
-     {
-       attribute id { uuid }
-       &amp; get_notes_response_note_user_tags_tag_name
-       &amp; get_notes_response_note_user_tags_tag_value
-       &amp; get_notes_response_note_user_tags_tag_comment
-     }
-
-get_notes_response_note_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-get_notes_response_note_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-get_notes_response_note_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-get_notes_response_note_hosts
- = element hosts
-     {
-       text
-     }
-
-get_notes_response_note_port
- = element port
-     {
-       text
-     }
-
-get_notes_response_note_severity
- = element severity
-     {
-       severity
-     }
-
-get_notes_response_note_threat
- = element threat
-     {
-       threat
-     }
-
-get_notes_response_note_task
- = element task
-     {
-       attribute id { uuid }
-     }
-
-get_notes_response_note_active
- = element active
-     {
-       integer
-     }
-
-get_notes_response_note_end_time
- = element end_time
-     {
-       text
-     }
-
-get_notes_response_note_result
- = element result
-     {
-       attribute id { uuid }
-       &amp; get_notes_response_note_result_host
-       &amp; get_notes_response_note_result_port
-       &amp; get_notes_response_note_result_nvt
-       &amp; get_notes_response_note_result_severity
-       &amp; get_notes_response_note_result_threat
-       &amp; get_notes_response_note_result_qod
-       &amp; get_notes_response_note_result_description
-     }
-
-get_notes_response_note_result_host
- = element host
-     {
-       text
-     }
-
-get_notes_response_note_result_port
- = element port
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_notes_response_note_result_nvt_name
-       &amp; get_notes_response_note_result_nvt_cvss_base
-       &amp; get_notes_response_note_result_nvt_risk_factor
-       &amp; get_notes_response_note_result_nvt_cve?
-       &amp; get_notes_response_note_result_nvt_bid?
-     }
-
-get_notes_response_note_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_result_nvt_cvss_base
- = element cvss_base
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt_risk_factor
- = element risk_factor
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-get_notes_response_note_result_severity
- = element severity
-     {
-       severity
-     }
-
-get_notes_response_note_result_threat
- = element threat
-     {
-       threat
-     }
-
-get_notes_response_note_result_qod
- = element qod
-     {
-       get_notes_response_note_result_qod_value
-       &amp; get_notes_response_note_result_qod_type
-     }
-
-get_notes_response_note_result_qod_value
- = element value
-     {
-       integer
-     }
-
-get_notes_response_note_result_qod_type
- = element type
-     {
-       text
-     }
-
-get_notes_response_note_result_description
- = element description
-     {
-       text
+       &amp; note_permissions
+       &amp; note_owner
+       &amp; note_nvt
+       &amp; note_text
+       &amp; note_creation_time
+       &amp; note_modification_time
+       &amp; note_writable
+       &amp; note_in_use
+       &amp; note_active
+       &amp; note_orphan
+       &amp; note_user_tags
+       &amp; ( note_hosts
+           &amp; note_port
+           &amp; note_severity
+           &amp; note_threat
+           &amp; note_task
+           &amp; note_end_time?
+           &amp; note_result? )?
      }
 </pre></div>
 </div>
@@ -18917,255 +19430,8 @@ get_nvt_feed_version_response_version
           </li>
 <li>
               &lt;<b>override</b>&gt;
-              *<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
+              *<div style="margin-left: 15px; display: inline;">(<a href="#element_override">override</a>)</div>
 <ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>owner</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Owner of the override.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>creation_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the override was created.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Date and time the override was last modified.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>writable</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>in_use</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>active</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the override is currently active.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>text</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The text of the override.</div>
-<ul style="list-style: none"><li>
-          @<b>excerpt</b>
-          (<a href="#type_boolean">boolean</a>)
-          Whether the contents is an excerpt of the full text.
-          </li></ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Threat level to which override applies, derived from severity.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>severity</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Severity score to which override applies.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>new_threat</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New threat for result.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>new_severity</b>&gt;
-              <div style="margin-left: 15px; display: inline;">New severity score for result.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>orphan</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Whether the override is an orphan.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the note.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
-              &lt;<b>user_tags</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Info on tags attached to the override.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>count</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Number of attached tags.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>tag</b>&gt;
-              *<div style="margin-left: 15px; display: inline;">Short info on an individual tag (only if details were requested).</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          UUID of the tag.
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Name of the tag (usually namespace:predicate).</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Value of the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>comment</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Comment for the tag.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<i>The group</i><b>?</b><ul style="list-style: none">
-<li>
-              &lt;<b>hosts</b>&gt;
-              <div style="margin-left: 15px; display: inline;">A textual list of hosts.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Port to which override applies.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>task</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Task to which override applies.</div>
-<ul style="list-style: none"><li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li></ul>
-</li>
-<li>
-              &lt;<b>end_time</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Override end time in case of limit, else empty.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>result</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Result to which override applies.</div>
-<ul style="list-style: none">
-<li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
-          </li>
-<li>
-              &lt;<b>host</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>port</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none">
-<li>
-          @<b>oid</b>
-          (<a href="#type_oid">oid</a>)
-          </li>
-<li>
-              &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cvss_base</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>cve</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">CVE value associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>bid</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">BID associated with the NVT.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>threat</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>severity</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>qod</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The quality of detection (QoD) of the result.</div>
-<ul style="list-style: none">
-<li>
-              &lt;<b>value</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The numeric QoD value.</div>
-<ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>type</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The QoD type.</div>
-<ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-<li>
-              &lt;<b>description</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
 </li>
 <li>
               &lt;<b>filters</b>&gt;
@@ -19381,313 +19647,30 @@ get_overrides_response_override_count_page
      }
 
 get_overrides_response_override
- = element override
+ = element override    # type override
      {
        attribute id { uuid }
-       &amp; get_overrides_response_override_permissions
-       &amp; get_overrides_response_override_owner
-       &amp; get_overrides_response_override_nvt
-       &amp; get_overrides_response_override_creation_time
-       &amp; get_overrides_response_override_modification_time
-       &amp; get_overrides_response_override_writable
-       &amp; get_overrides_response_override_in_use
-       &amp; get_overrides_response_override_active
-       &amp; get_overrides_response_override_text
-       &amp; get_overrides_response_override_threat
-       &amp; get_overrides_response_override_severity
-       &amp; get_overrides_response_override_new_threat
-       &amp; get_overrides_response_override_new_severity
-       &amp; get_overrides_response_override_orphan
-       &amp; get_overrides_response_override_permissions
-       &amp; get_overrides_response_override_user_tags
-       &amp; ( get_overrides_response_override_hosts
-           &amp; get_overrides_response_override_port
-           &amp; get_overrides_response_override_task
-           &amp; get_overrides_response_override_end_time?
-           &amp; get_overrides_response_override_result? )?
-     }
-
-get_overrides_response_override_permissions
- = element permissions
-     {
-       get_overrides_response_override_permissions_permission*
-     }
-
-get_overrides_response_override_permissions_permission
- = element permission
-     {
-       get_overrides_response_override_permissions_permission_name
-     }
-
-get_overrides_response_override_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_owner
- = element owner
-     {
-       get_overrides_response_override_owner_name
-     }
-
-get_overrides_response_override_owner_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_overrides_response_override_nvt_name
-     }
-
-get_overrides_response_override_nvt_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-get_overrides_response_override_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_overrides_response_override_writable
- = element writable
-     {
-       boolean
-     }
-
-get_overrides_response_override_in_use
- = element in_use
-     {
-       boolean
-     }
-
-get_overrides_response_override_active
- = element active
-     {
-       boolean
-     }
-
-get_overrides_response_override_text
- = element text
-     {
-       text
-       &amp; attribute excerpt { boolean }
-     }
-
-get_overrides_response_override_threat
- = element threat
-     {
-       threat
-     }
-
-get_overrides_response_override_severity
- = element severity
-     {
-       severity
-     }
-
-get_overrides_response_override_new_threat
- = element new_threat
-     {
-       threat
-     }
-
-get_overrides_response_override_new_severity
- = element new_severity
-     {
-       severity
-     }
-
-get_overrides_response_override_orphan
- = element orphan
-     {
-       boolean
-     }
-
-get_overrides_response_override_user_tags
- = element user_tags
-     {
-       get_overrides_response_override_user_tags_count
-       &amp; get_overrides_response_override_user_tags_tag*
-     }
-
-get_overrides_response_override_user_tags_count
- = element count
-     {
-       integer
-     }
-
-get_overrides_response_override_user_tags_tag
- = element tag
-     {
-       attribute id { uuid }
-       &amp; get_overrides_response_override_user_tags_tag_name
-       &amp; get_overrides_response_override_user_tags_tag_value
-       &amp; get_overrides_response_override_user_tags_tag_comment
-     }
-
-get_overrides_response_override_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-get_overrides_response_override_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-get_overrides_response_override_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-get_overrides_response_override_hosts
- = element hosts
-     {
-       text
-     }
-
-get_overrides_response_override_port
- = element port
-     {
-       text
-     }
-
-get_overrides_response_override_task
- = element task
-     {
-       attribute id { uuid }
-     }
-
-get_overrides_response_override_active
- = element active
-     {
-       integer
-     }
-
-get_overrides_response_override_end_time
- = element end_time
-     {
-       text
-     }
-
-get_overrides_response_override_result
- = element result
-     {
-       attribute id { uuid }
-       &amp; get_overrides_response_override_result_host
-       &amp; get_overrides_response_override_result_port
-       &amp; get_overrides_response_override_result_nvt
-       &amp; get_overrides_response_override_result_threat
-       &amp; get_overrides_response_override_result_severity
-       &amp; get_overrides_response_override_result_qod
-       &amp; get_overrides_response_override_result_description
-     }
-
-get_overrides_response_override_result_host
- = element host
-     {
-       text
-     }
-
-get_overrides_response_override_result_port
- = element port
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       &amp; get_overrides_response_override_result_nvt_name
-       &amp; get_overrides_response_override_result_nvt_cvss_base
-       &amp; get_overrides_response_override_result_nvt_risk_factor
-       &amp; get_overrides_response_override_result_nvt_cve?
-       &amp; get_overrides_response_override_result_nvt_bid?
-     }
-
-get_overrides_response_override_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_result_nvt_cvss_base
- = element cvss_base
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt_risk_factor
- = element risk_factor
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-get_overrides_response_override_result_threat
- = element threat
-     {
-       threat
-     }
-
-get_overrides_response_override_result_severity
- = element severity
-     {
-       severity
-     }
-
-get_overrides_response_override_result_qod
- = element qod
-     {
-       get_overrides_response_override_result_qod_value
-       &amp; get_overrides_response_override_result_qod_type
-     }
-
-get_overrides_response_override_result_qod_value
- = element value
-     {
-       integer
-     }
-
-get_overrides_response_override_result_qod_type
- = element type
-     {
-       text
-     }
-
-get_overrides_response_override_result_description
- = element description
-     {
-       text
+       &amp; override_permissions
+       &amp; override_owner
+       &amp; override_nvt
+       &amp; override_creation_time
+       &amp; override_modification_time
+       &amp; override_writable
+       &amp; override_in_use
+       &amp; override_active
+       &amp; override_text
+       &amp; override_threat
+       &amp; override_severity
+       &amp; override_new_threat
+       &amp; override_new_severity
+       &amp; override_orphan
+       &amp; override_permissions
+       &amp; override_user_tags
+       &amp; ( override_hosts
+           &amp; override_port
+           &amp; override_task
+           &amp; override_end_time?
+           &amp; override_result? )?
      }
 </pre></div>
 </div>

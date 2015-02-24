@@ -539,128 +539,678 @@ command_definition_ele
        & command_definition_example*
      }
 
-## Element Type result_notes
+## Element Type note
 ##
-## Notes on a result.
+## A note.
 
-result_notes
- = element result_notes
-     {
-       result_notes_note*
-     }
-
-result_notes_note
+note
  = element note
      {
-       result_notes_note_nvt
-       & result_notes_note_text
-       & result_notes_note_orphan
+       attribute id { uuid }
+       & note_permissions
+       & note_owner
+       & note_nvt
+       & note_text
+       & note_creation_time
+       & note_modification_time
+       & note_writable
+       & note_in_use
+       & note_active
+       & note_orphan
+       & note_user_tags
+       & ( note_hosts
+           & note_port
+           & note_severity
+           & note_threat
+           & note_task
+           & note_end_time?
+           & note_result? )?
      }
 
-result_notes_note_nvt
- = element nvt
+# Permissions that the current user has on the note.
+note_permissions
+ = element permissions
      {
-       attribute oid { oid }
-       & result_notes_note_nvt_name
+       note_permissions_permission*
      }
 
-result_notes_note_nvt_name
+note_permissions_permission
+ = element permission
+     {
+       note_permissions_permission_name
+     }
+
+# The name of the permission.
+note_permissions_permission_name
  = element name
      {
        name
      }
 
+# Owner of the note.
+note_owner
+ = element owner
+     {
+       note_owner_name
+     }
+
+# The name of the owner.
+note_owner_name
+ = element name
+     {
+       name
+     }
+
+note_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & note_nvt_name
+     }
+
+note_nvt_name
+ = element name
+     {
+       name
+     }
+
+# Date and time the note was created.
+note_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the note was last modified.
+note_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+note_writable
+ = element writable
+     {
+       boolean
+     }
+
+note_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the note is active.
+note_active
+ = element active
+     {
+       boolean
+     }
+
 # The text of the note.
-result_notes_note_text
+note_text
  = element text
      {
        text
-       & attribute excerpt { boolean }
+       & # Whether the content is an excerpt of the full text.
+       attribute excerpt { boolean }
      }
 
 # Whether the note is an orphan.
-result_notes_note_orphan
+note_orphan
  = element orphan
      {
        boolean
      }
 
-## Element Type result_overrides
-##
-## Overrides on a result.
-
-result_overrides
- = element result_overrides
+# Info on tags attached to the note.
+note_user_tags
+ = element user_tags
      {
-       result_overrides_override*
+       note_user_tags_count
+       & note_user_tags_tag*
      }
 
-result_overrides_override
- = element override
+# Number of attached tags.
+note_user_tags_count
+ = element count
      {
-       result_overrides_override_nvt
-       & result_overrides_override_text
-       & result_overrides_override_threat
-       & result_overrides_override_severity
-       & result_overrides_override_new_threat
-       & result_overrides_override_new_severity
-       & result_overrides_override_orphan
+       integer
      }
 
-result_overrides_override_nvt
+# Short info on an individual tag (only if details were requested).
+note_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & note_user_tags_tag_name
+       & note_user_tags_tag_value
+       & note_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+note_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+note_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+note_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+note_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which note applies.
+note_port
+ = element port
+     {
+       text
+     }
+
+# Severity to which note applies.
+note_severity
+ = element severity
+     {
+       severity
+     }
+
+# Threat level to which note applies.
+note_threat
+ = element threat
+     {
+       threat
+     }
+
+# Task to which note applies.
+note_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Whether the note is active.
+note_active
+ = element active
+     {
+       integer
+     }
+
+# End time of the note in case of limit, else empty.
+note_end_time
+ = element end_time
+     {
+       text
+     }
+
+# Result to which note applies.
+note_result
+ = element result
+     {
+       attribute id { uuid }
+       & note_result_host
+       & note_result_port
+       & note_result_nvt
+       & note_result_severity
+       & note_result_threat
+       & note_result_qod
+       & note_result_description
+     }
+
+note_result_host
+ = element host
+     {
+       text
+     }
+
+note_result_port
+ = element port
+     {
+       text
+     }
+
+note_result_nvt
  = element nvt
      {
        attribute oid { oid }
-       & result_overrides_override_nvt_name
+       & note_result_nvt_name
+       & note_result_nvt_cvss_base
+       & note_result_nvt_risk_factor
+       & note_result_nvt_cve?
+       & note_result_nvt_bid?
      }
 
-result_overrides_override_nvt_name
+note_result_nvt_name
  = element name
      {
        name
      }
 
+note_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+note_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+# CVE value associated with the NVT.
+note_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+# BID associated with the NVT.
+note_result_nvt_bid
+ = element bid
+     {
+       integer
+     }
+
+note_result_severity
+ = element severity
+     {
+       severity
+     }
+
+note_result_threat
+ = element threat
+     {
+       threat
+     }
+
+# The quality of detection (QoD) of the result.
+note_result_qod
+ = element qod
+     {
+       note_result_qod_value
+       & note_result_qod_type
+     }
+
+# The numeric QoD value.
+note_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+note_result_qod_type
+ = element type
+     {
+       text
+     }
+
+note_result_description
+ = element description
+     {
+       text
+     }
+
+## Element Type override
+##
+## An override.
+
+override
+ = element override
+     {
+       attribute id { uuid }
+       & override_permissions
+       & override_owner
+       & override_nvt
+       & override_creation_time
+       & override_modification_time
+       & override_writable
+       & override_in_use
+       & override_active
+       & override_text
+       & override_threat
+       & override_severity
+       & override_new_threat
+       & override_new_severity
+       & override_orphan
+       & override_permissions
+       & override_user_tags
+       & ( override_hosts
+           & override_port
+           & override_task
+           & override_end_time?
+           & override_result? )?
+     }
+
+# Permissions that the current user has on the note.
+override_permissions
+ = element permissions
+     {
+       override_permissions_permission*
+     }
+
+override_permissions_permission
+ = element permission
+     {
+       override_permissions_permission_name
+     }
+
+# The name of the permission.
+override_permissions_permission_name
+ = element name
+     {
+       name
+     }
+
+# Owner of the override.
+override_owner
+ = element owner
+     {
+       override_owner_name
+     }
+
+override_owner_name
+ = element name
+     {
+       name
+     }
+
+override_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & override_nvt_name
+     }
+
+override_nvt_name
+ = element name
+     {
+       name
+     }
+
+# Date and time the override was created.
+override_creation_time
+ = element creation_time
+     {
+       iso_time
+     }
+
+# Date and time the override was last modified.
+override_modification_time
+ = element modification_time
+     {
+       iso_time
+     }
+
+override_writable
+ = element writable
+     {
+       boolean
+     }
+
+override_in_use
+ = element in_use
+     {
+       boolean
+     }
+
+# Whether the override is currently active.
+override_active
+ = element active
+     {
+       boolean
+     }
+
 # The text of the override.
-result_overrides_override_text
+override_text
  = element text
      {
        text
-       & attribute excerpt { boolean }
+       & # Whether the contents is an excerpt of the full text.
+       attribute excerpt { boolean }
      }
 
 # Threat level to which override applies, derived from severity.
-result_overrides_override_threat
+override_threat
  = element threat
      {
        threat
      }
 
 # Severity score to which override applies.
-result_overrides_override_severity
+override_severity
  = element severity
      {
        severity
      }
 
-# New threat for result, derived from new_severity.
-result_overrides_override_new_threat
+# New threat for result.
+override_new_threat
  = element new_threat
      {
        threat
      }
 
-# New severity.
-result_overrides_override_new_severity
+# New severity score for result.
+override_new_severity
  = element new_severity
      {
        severity
      }
 
 # Whether the override is an orphan.
-result_overrides_override_orphan
+override_orphan
  = element orphan
      {
        boolean
+     }
+
+# Info on tags attached to the override.
+override_user_tags
+ = element user_tags
+     {
+       override_user_tags_count
+       & override_user_tags_tag*
+     }
+
+# Number of attached tags.
+override_user_tags_count
+ = element count
+     {
+       integer
+     }
+
+# Short info on an individual tag (only if details were requested).
+override_user_tags_tag
+ = element tag
+     {
+       # UUID of the tag.
+       attribute id { uuid }
+       & override_user_tags_tag_name
+       & override_user_tags_tag_value
+       & override_user_tags_tag_comment
+     }
+
+# Name of the tag (usually namespace:predicate).
+override_user_tags_tag_name
+ = element name
+     {
+       text
+     }
+
+# Value of the tag.
+override_user_tags_tag_value
+ = element value
+     {
+       text
+     }
+
+# Comment for the tag.
+override_user_tags_tag_comment
+ = element comment
+     {
+       text
+     }
+
+# A textual list of hosts.
+override_hosts
+ = element hosts
+     {
+       text
+     }
+
+# Port to which override applies.
+override_port
+ = element port
+     {
+       text
+     }
+
+# Task to which override applies.
+override_task
+ = element task
+     {
+       attribute id { uuid }
+     }
+
+# Whether the override is active.
+override_active
+ = element active
+     {
+       integer
+     }
+
+# Override end time in case of limit, else empty.
+override_end_time
+ = element end_time
+     {
+       text
+     }
+
+# Result to which override applies.
+override_result
+ = element result
+     {
+       attribute id { uuid }
+       & override_result_host
+       & override_result_port
+       & override_result_nvt
+       & override_result_threat
+       & override_result_severity
+       & override_result_qod
+       & override_result_description
+     }
+
+override_result_host
+ = element host
+     {
+       text
+     }
+
+override_result_port
+ = element port
+     {
+       text
+     }
+
+override_result_nvt
+ = element nvt
+     {
+       attribute oid { oid }
+       & override_result_nvt_name
+       & override_result_nvt_cvss_base
+       & override_result_nvt_risk_factor
+       & override_result_nvt_cve?
+       & override_result_nvt_bid?
+     }
+
+override_result_nvt_name
+ = element name
+     {
+       name
+     }
+
+override_result_nvt_cvss_base
+ = element cvss_base
+     {
+       text
+     }
+
+override_result_nvt_risk_factor
+ = element risk_factor
+     {
+       text
+     }
+
+# CVE value associated with the NVT.
+override_result_nvt_cve
+ = element cve
+     {
+       text
+     }
+
+# BID associated with the NVT.
+override_result_nvt_bid
+ = element bid
+     {
+       integer
+     }
+
+override_result_threat
+ = element threat
+     {
+       threat
+     }
+
+override_result_severity
+ = element severity
+     {
+       severity
+     }
+
+# The quality of detection (QoD) of the result.
+override_result_qod
+ = element qod
+     {
+       override_result_qod_value
+       & override_result_qod_type
+     }
+
+# The numeric QoD value.
+override_result_qod_value
+ = element value
+     {
+       integer
+     }
+
+# The QoD type.
+override_result_qod_type
+ = element type
+     {
+       text
+     }
+
+override_result_description
+ = element description
+     {
+       text
      }
 
 ## Element Type result
@@ -1011,16 +1561,69 @@ result_delta_diff
      {
      }
 
+# List of notes on the result.
 result_delta_notes
- = element notes    # type result_notes
+ = element notes
      {
-       result_notes_note*
+       result_delta_notes_note*
      }
 
-result_delta_overrides
- = element overrides    # type result_overrides
+result_delta_notes_note
+ = element note    # type note
      {
-       result_overrides_override*
+       attribute id { uuid }
+       & note_permissions
+       & note_owner
+       & note_nvt
+       & note_text
+       & note_creation_time
+       & note_modification_time
+       & note_writable
+       & note_in_use
+       & note_active
+       & note_orphan
+       & note_user_tags
+       & ( note_hosts
+           & note_port
+           & note_severity
+           & note_threat
+           & note_task
+           & note_end_time?
+           & note_result? )?
+     }
+
+# List of overrides on the result.
+result_delta_overrides
+ = element overrides
+     {
+       result_delta_overrides_override*
+     }
+
+result_delta_overrides_override
+ = element override    # type override
+     {
+       attribute id { uuid }
+       & override_permissions
+       & override_owner
+       & override_nvt
+       & override_creation_time
+       & override_modification_time
+       & override_writable
+       & override_in_use
+       & override_active
+       & override_text
+       & override_threat
+       & override_severity
+       & override_new_threat
+       & override_new_severity
+       & override_orphan
+       & override_permissions
+       & override_user_tags
+       & ( override_hosts
+           & override_port
+           & override_task
+           & override_end_time?
+           & override_result? )?
      }
 
 # Any details associated with the result.
@@ -1096,16 +1699,69 @@ result_detection_result_details_detail_value
        text
      }
 
+# List of notes on the result.
 result_notes
- = element notes    # type result_notes
+ = element notes
      {
        result_notes_note*
      }
 
+result_notes_note
+ = element note    # type note
+     {
+       attribute id { uuid }
+       & note_permissions
+       & note_owner
+       & note_nvt
+       & note_text
+       & note_creation_time
+       & note_modification_time
+       & note_writable
+       & note_in_use
+       & note_active
+       & note_orphan
+       & note_user_tags
+       & ( note_hosts
+           & note_port
+           & note_severity
+           & note_threat
+           & note_task
+           & note_end_time?
+           & note_result? )?
+     }
+
+# List of overrides on the result.
 result_overrides
- = element overrides    # type result_overrides
+ = element overrides
      {
        result_overrides_override*
+     }
+
+result_overrides_override
+ = element override    # type override
+     {
+       attribute id { uuid }
+       & override_permissions
+       & override_owner
+       & override_nvt
+       & override_creation_time
+       & override_modification_time
+       & override_writable
+       & override_in_use
+       & override_active
+       & override_text
+       & override_threat
+       & override_severity
+       & override_new_threat
+       & override_new_severity
+       & override_orphan
+       & override_permissions
+       & override_user_tags
+       & ( override_hosts
+           & override_port
+           & override_task
+           & override_end_time?
+           & override_result? )?
      }
 
 ## Element Type report
@@ -10225,328 +10881,27 @@ get_notes_response_note_count_page
      }
 
 get_notes_response_note
- = element note
+ = element note    # type note
      {
        attribute id { uuid }
-       & get_notes_response_note_permissions
-       & get_notes_response_note_owner
-       & get_notes_response_note_nvt
-       & get_notes_response_note_text
-       & get_notes_response_note_creation_time
-       & get_notes_response_note_modification_time
-       & get_notes_response_note_writable
-       & get_notes_response_note_in_use
-       & get_notes_response_note_active
-       & get_notes_response_note_orphan
-       & get_notes_response_note_user_tags
-       & ( get_notes_response_note_hosts
-           & get_notes_response_note_port
-           & get_notes_response_note_severity
-           & get_notes_response_note_threat
-           & get_notes_response_note_task
-           & get_notes_response_note_end_time?
-           & get_notes_response_note_result? )?
-     }
-
-# Permissions that the current user has on the note.
-get_notes_response_note_permissions
- = element permissions
-     {
-       get_notes_response_note_permissions_permission*
-     }
-
-get_notes_response_note_permissions_permission
- = element permission
-     {
-       get_notes_response_note_permissions_permission_name
-     }
-
-# The name of the permission.
-get_notes_response_note_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-# Owner of the note.
-get_notes_response_note_owner
- = element owner
-     {
-       get_notes_response_note_owner_name
-     }
-
-# The name of the owner.
-get_notes_response_note_owner_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_notes_response_note_nvt_name
-     }
-
-get_notes_response_note_nvt_name
- = element name
-     {
-       name
-     }
-
-# Date and time the note was created.
-get_notes_response_note_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-# Date and time the note was last modified.
-get_notes_response_note_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_notes_response_note_writable
- = element writable
-     {
-       boolean
-     }
-
-get_notes_response_note_in_use
- = element in_use
-     {
-       boolean
-     }
-
-# Whether the note is active.
-get_notes_response_note_active
- = element active
-     {
-       boolean
-     }
-
-# The text of the note.
-get_notes_response_note_text
- = element text
-     {
-       text
-       & # Whether the content is an excerpt of the full text.
-       attribute excerpt { boolean }
-     }
-
-# Whether the note is an orphan.
-get_notes_response_note_orphan
- = element orphan
-     {
-       boolean
-     }
-
-# Info on tags attached to the note.
-get_notes_response_note_user_tags
- = element user_tags
-     {
-       get_notes_response_note_user_tags_count
-       & get_notes_response_note_user_tags_tag*
-     }
-
-# Number of attached tags.
-get_notes_response_note_user_tags_count
- = element count
-     {
-       integer
-     }
-
-# Short info on an individual tag (only if details were requested).
-get_notes_response_note_user_tags_tag
- = element tag
-     {
-       # UUID of the tag.
-       attribute id { uuid }
-       & get_notes_response_note_user_tags_tag_name
-       & get_notes_response_note_user_tags_tag_value
-       & get_notes_response_note_user_tags_tag_comment
-     }
-
-# Name of the tag (usually namespace:predicate).
-get_notes_response_note_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-# Value of the tag.
-get_notes_response_note_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-# Comment for the tag.
-get_notes_response_note_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-# A textual list of hosts.
-get_notes_response_note_hosts
- = element hosts
-     {
-       text
-     }
-
-# Port to which note applies.
-get_notes_response_note_port
- = element port
-     {
-       text
-     }
-
-# Severity to which note applies.
-get_notes_response_note_severity
- = element severity
-     {
-       severity
-     }
-
-# Threat level to which note applies.
-get_notes_response_note_threat
- = element threat
-     {
-       threat
-     }
-
-# Task to which note applies.
-get_notes_response_note_task
- = element task
-     {
-       attribute id { uuid }
-     }
-
-# Whether the note is active.
-get_notes_response_note_active
- = element active
-     {
-       integer
-     }
-
-# End time of the note in case of limit, else empty.
-get_notes_response_note_end_time
- = element end_time
-     {
-       text
-     }
-
-# Result to which note applies.
-get_notes_response_note_result
- = element result
-     {
-       attribute id { uuid }
-       & get_notes_response_note_result_host
-       & get_notes_response_note_result_port
-       & get_notes_response_note_result_nvt
-       & get_notes_response_note_result_severity
-       & get_notes_response_note_result_threat
-       & get_notes_response_note_result_qod
-       & get_notes_response_note_result_description
-     }
-
-get_notes_response_note_result_host
- = element host
-     {
-       text
-     }
-
-get_notes_response_note_result_port
- = element port
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_notes_response_note_result_nvt_name
-       & get_notes_response_note_result_nvt_cvss_base
-       & get_notes_response_note_result_nvt_risk_factor
-       & get_notes_response_note_result_nvt_cve?
-       & get_notes_response_note_result_nvt_bid?
-     }
-
-get_notes_response_note_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_notes_response_note_result_nvt_cvss_base
- = element cvss_base
-     {
-       text
-     }
-
-get_notes_response_note_result_nvt_risk_factor
- = element risk_factor
-     {
-       text
-     }
-
-# CVE value associated with the NVT.
-get_notes_response_note_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-# BID associated with the NVT.
-get_notes_response_note_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-get_notes_response_note_result_severity
- = element severity
-     {
-       severity
-     }
-
-get_notes_response_note_result_threat
- = element threat
-     {
-       threat
-     }
-
-# The quality of detection (QoD) of the result.
-get_notes_response_note_result_qod
- = element qod
-     {
-       get_notes_response_note_result_qod_value
-       & get_notes_response_note_result_qod_type
-     }
-
-# The numeric QoD value.
-get_notes_response_note_result_qod_value
- = element value
-     {
-       integer
-     }
-
-# The QoD type.
-get_notes_response_note_result_qod_type
- = element type
-     {
-       text
-     }
-
-get_notes_response_note_result_description
- = element description
-     {
-       text
+       & note_permissions
+       & note_owner
+       & note_nvt
+       & note_text
+       & note_creation_time
+       & note_modification_time
+       & note_writable
+       & note_in_use
+       & note_active
+       & note_orphan
+       & note_user_tags
+       & ( note_hosts
+           & note_port
+           & note_severity
+           & note_threat
+           & note_task
+           & note_end_time?
+           & note_result? )?
      }
 
 ## Response to get_nvts
@@ -11037,344 +11392,30 @@ get_overrides_response_override_count_page
      }
 
 get_overrides_response_override
- = element override
+ = element override    # type override
      {
        attribute id { uuid }
-       & get_overrides_response_override_permissions
-       & get_overrides_response_override_owner
-       & get_overrides_response_override_nvt
-       & get_overrides_response_override_creation_time
-       & get_overrides_response_override_modification_time
-       & get_overrides_response_override_writable
-       & get_overrides_response_override_in_use
-       & get_overrides_response_override_active
-       & get_overrides_response_override_text
-       & get_overrides_response_override_threat
-       & get_overrides_response_override_severity
-       & get_overrides_response_override_new_threat
-       & get_overrides_response_override_new_severity
-       & get_overrides_response_override_orphan
-       & get_overrides_response_override_permissions
-       & get_overrides_response_override_user_tags
-       & ( get_overrides_response_override_hosts
-           & get_overrides_response_override_port
-           & get_overrides_response_override_task
-           & get_overrides_response_override_end_time?
-           & get_overrides_response_override_result? )?
-     }
-
-# Permissions that the current user has on the note.
-get_overrides_response_override_permissions
- = element permissions
-     {
-       get_overrides_response_override_permissions_permission*
-     }
-
-get_overrides_response_override_permissions_permission
- = element permission
-     {
-       get_overrides_response_override_permissions_permission_name
-     }
-
-# The name of the permission.
-get_overrides_response_override_permissions_permission_name
- = element name
-     {
-       name
-     }
-
-# Owner of the override.
-get_overrides_response_override_owner
- = element owner
-     {
-       get_overrides_response_override_owner_name
-     }
-
-get_overrides_response_override_owner_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_overrides_response_override_nvt_name
-     }
-
-get_overrides_response_override_nvt_name
- = element name
-     {
-       name
-     }
-
-# Date and time the override was created.
-get_overrides_response_override_creation_time
- = element creation_time
-     {
-       iso_time
-     }
-
-# Date and time the override was last modified.
-get_overrides_response_override_modification_time
- = element modification_time
-     {
-       iso_time
-     }
-
-get_overrides_response_override_writable
- = element writable
-     {
-       boolean
-     }
-
-get_overrides_response_override_in_use
- = element in_use
-     {
-       boolean
-     }
-
-# Whether the override is currently active.
-get_overrides_response_override_active
- = element active
-     {
-       boolean
-     }
-
-# The text of the override.
-get_overrides_response_override_text
- = element text
-     {
-       text
-       & # Whether the contents is an excerpt of the full text.
-       attribute excerpt { boolean }
-     }
-
-# Threat level to which override applies, derived from severity.
-get_overrides_response_override_threat
- = element threat
-     {
-       threat
-     }
-
-# Severity score to which override applies.
-get_overrides_response_override_severity
- = element severity
-     {
-       severity
-     }
-
-# New threat for result.
-get_overrides_response_override_new_threat
- = element new_threat
-     {
-       threat
-     }
-
-# New severity score for result.
-get_overrides_response_override_new_severity
- = element new_severity
-     {
-       severity
-     }
-
-# Whether the override is an orphan.
-get_overrides_response_override_orphan
- = element orphan
-     {
-       boolean
-     }
-
-# Info on tags attached to the override.
-get_overrides_response_override_user_tags
- = element user_tags
-     {
-       get_overrides_response_override_user_tags_count
-       & get_overrides_response_override_user_tags_tag*
-     }
-
-# Number of attached tags.
-get_overrides_response_override_user_tags_count
- = element count
-     {
-       integer
-     }
-
-# Short info on an individual tag (only if details were requested).
-get_overrides_response_override_user_tags_tag
- = element tag
-     {
-       # UUID of the tag.
-       attribute id { uuid }
-       & get_overrides_response_override_user_tags_tag_name
-       & get_overrides_response_override_user_tags_tag_value
-       & get_overrides_response_override_user_tags_tag_comment
-     }
-
-# Name of the tag (usually namespace:predicate).
-get_overrides_response_override_user_tags_tag_name
- = element name
-     {
-       text
-     }
-
-# Value of the tag.
-get_overrides_response_override_user_tags_tag_value
- = element value
-     {
-       text
-     }
-
-# Comment for the tag.
-get_overrides_response_override_user_tags_tag_comment
- = element comment
-     {
-       text
-     }
-
-# A textual list of hosts.
-get_overrides_response_override_hosts
- = element hosts
-     {
-       text
-     }
-
-# Port to which override applies.
-get_overrides_response_override_port
- = element port
-     {
-       text
-     }
-
-# Task to which override applies.
-get_overrides_response_override_task
- = element task
-     {
-       attribute id { uuid }
-     }
-
-# Whether the override is active.
-get_overrides_response_override_active
- = element active
-     {
-       integer
-     }
-
-# Override end time in case of limit, else empty.
-get_overrides_response_override_end_time
- = element end_time
-     {
-       text
-     }
-
-# Result to which override applies.
-get_overrides_response_override_result
- = element result
-     {
-       attribute id { uuid }
-       & get_overrides_response_override_result_host
-       & get_overrides_response_override_result_port
-       & get_overrides_response_override_result_nvt
-       & get_overrides_response_override_result_threat
-       & get_overrides_response_override_result_severity
-       & get_overrides_response_override_result_qod
-       & get_overrides_response_override_result_description
-     }
-
-get_overrides_response_override_result_host
- = element host
-     {
-       text
-     }
-
-get_overrides_response_override_result_port
- = element port
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt
- = element nvt
-     {
-       attribute oid { oid }
-       & get_overrides_response_override_result_nvt_name
-       & get_overrides_response_override_result_nvt_cvss_base
-       & get_overrides_response_override_result_nvt_risk_factor
-       & get_overrides_response_override_result_nvt_cve?
-       & get_overrides_response_override_result_nvt_bid?
-     }
-
-get_overrides_response_override_result_nvt_name
- = element name
-     {
-       name
-     }
-
-get_overrides_response_override_result_nvt_cvss_base
- = element cvss_base
-     {
-       text
-     }
-
-get_overrides_response_override_result_nvt_risk_factor
- = element risk_factor
-     {
-       text
-     }
-
-# CVE value associated with the NVT.
-get_overrides_response_override_result_nvt_cve
- = element cve
-     {
-       text
-     }
-
-# BID associated with the NVT.
-get_overrides_response_override_result_nvt_bid
- = element bid
-     {
-       integer
-     }
-
-get_overrides_response_override_result_threat
- = element threat
-     {
-       threat
-     }
-
-get_overrides_response_override_result_severity
- = element severity
-     {
-       severity
-     }
-
-# The quality of detection (QoD) of the result.
-get_overrides_response_override_result_qod
- = element qod
-     {
-       get_overrides_response_override_result_qod_value
-       & get_overrides_response_override_result_qod_type
-     }
-
-# The numeric QoD value.
-get_overrides_response_override_result_qod_value
- = element value
-     {
-       integer
-     }
-
-# The QoD type.
-get_overrides_response_override_result_qod_type
- = element type
-     {
-       text
-     }
-
-get_overrides_response_override_result_description
- = element description
-     {
-       text
+       & override_permissions
+       & override_owner
+       & override_nvt
+       & override_creation_time
+       & override_modification_time
+       & override_writable
+       & override_in_use
+       & override_active
+       & override_text
+       & override_threat
+       & override_severity
+       & override_new_threat
+       & override_new_severity
+       & override_orphan
+       & override_permissions
+       & override_user_tags
+       & ( override_hosts
+           & override_port
+           & override_task
+           & override_end_time?
+           & override_result? )?
      }
 
 ## Response to get_permissions

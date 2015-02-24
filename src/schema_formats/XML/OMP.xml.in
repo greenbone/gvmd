@@ -410,70 +410,243 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
   </element>
   <element>
-    <name>result_notes</name>
-    <summary>Notes on a result</summary>
+    <name>note</name>
+    <summary>A note</summary>
     <pattern>
-      <any><e>note</e></any>
+      <attrib>
+        <name>id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>permissions</e>
+      <e>owner</e>
+      <e>nvt</e>
+      <e>text</e>
+      <e>creation_time</e>
+      <e>modification_time</e>
+      <e>writable</e>
+      <e>in_use</e>
+      <e>active</e>
+      <e>orphan</e>
+      <e>user_tags</e>
+      <o>
+        <g>
+          <e>hosts</e>
+          <e>port</e>
+          <e>severity</e>
+          <e>threat</e>
+          <e>task</e>
+          <o><e>end_time</e></o>
+          <o><e>result</e></o>
+        </g>
+      </o>
     </pattern>
     <ele>
-      <name>note</name>
+      <name>permissions</name>
+      <summary>Permissions that the current user has on the note</summary>
       <pattern>
-        <e>nvt</e>
-        <e>text</e>
-        <e>orphan</e>
+        <any><e>permission</e></any>
       </pattern>
       <ele>
-        <name>nvt</name>
+        <name>permission</name>
         <pattern>
-          <attrib>
-            <name>oid</name>
-            <type>oid</type>
-            <required>1</required>
-          </attrib>
           <e>name</e>
         </pattern>
         <ele>
           <name>name</name>
+          <summary>The name of the permission</summary>
           <pattern><t>name</t></pattern>
         </ele>
-      </ele>
-      <ele>
-        <name>text</name>
-        <summary>The text of the note</summary>
-        <pattern>
-          <attrib>
-            <name>excerpt</name>
-            <name>Whether the contents is an excerpt of the full text</name>
-            <type>boolean</type>
-            <required>1</required>
-          </attrib>
-          text
-        </pattern>
-      </ele>
-      <ele>
-        <name>orphan</name>
-        <summary>Whether the note is an orphan</summary>
-        <pattern><t>boolean</t></pattern>
       </ele>
     </ele>
-  </element>
-  <element>
-    <name>result_overrides</name>
-    <summary>Overrides on a result</summary>
-    <pattern>
-      <any><e>override</e></any>
-    </pattern>
     <ele>
-      <name>override</name>
+      <name>owner</name>
+      <summary>Owner of the note</summary>
       <pattern>
-        <e>nvt</e>
-        <e>text</e>
-        <e>threat</e>
-        <e>severity</e>
-        <e>new_threat</e>
-        <e>new_severity</e>
-        <e>orphan</e>
+        <e>name</e>
       </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The name of the owner</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>creation_time</name>
+      <summary>Date and time the note was created</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>modification_time</name>
+      <summary>Date and time the note was last modified</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>writable</name>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>in_use</name>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the note is active</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>text</name>
+      <summary>The text of the note</summary>
+      <pattern>
+        <attrib>
+          <name>excerpt</name>
+          <summary>Whether the content is an excerpt of the full text</summary>
+          <type>boolean</type>
+          <required>1</required>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>orphan</name>
+      <summary>Whether the note is an orphan</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>user_tags</name>
+      <summary>Info on tags attached to the note</summary>
+      <pattern>
+        <e>count</e>
+        <any><e>tag</e></any>
+      </pattern>
+      <ele>
+        <name>count</name>
+        <summary>Number of attached tags</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>tag</name>
+        <summary>
+          Short info on an individual tag
+          (only if details were requested)
+        </summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <summary>UUID of the tag</summary>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>value</e>
+          <e>comment</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of the tag (usually namespace:predicate)</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Value of the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment for the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which note applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>severity</name>
+      <summary>Severity to which note applies</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>Threat level to which note applies</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the note is active</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>end_time</name>
+      <summary>End time of the note in case of limit, else empty</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which note applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>host</e>
+        <e>port</e>
+        <e>nvt</e>
+        <e>severity</e>
+        <e>threat</e>
+        <e>qod</e>
+        <e>description</e>
+      </pattern>
+      <ele>
+        <name>host</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>port</name>
+        <pattern>text</pattern>
+      </ele>
       <ele>
         <name>nvt</name>
         <pattern>
@@ -483,60 +656,396 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <required>1</required>
           </attrib>
           <e>name</e>
+          <e>cvss_base</e>
+          <e>risk_factor</e>
+          <o><e>cve</e></o>
+          <o><e>bid</e></o>
         </pattern>
         <ele>
           <name>name</name>
           <pattern><t>name</t></pattern>
         </ele>
+        <ele>
+          <name>cvss_base</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>risk_factor</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cve</name>
+          <summary>CVE value associated with the NVT</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bid</name>
+          <summary>BID associated with the NVT</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
       </ele>
       <ele>
-        <name>text</name>
-        <summary>The text of the override</summary>
+        <name>severity</name>
         <pattern>
-          <attrib>
-            <name>excerpt</name>
-            <name>Whether the contents is an excerpt of the full text</name>
-            <type>boolean</type>
-            <required>1</required>
-          </attrib>
-          text
+          <t>severity</t>
         </pattern>
       </ele>
       <ele>
         <name>threat</name>
+        <pattern>
+          <t>threat</t>
+        </pattern>
+      </ele>
+      <ele>
+        <name>qod</name>
+        <summary>The quality of detection (QoD) of the result</summary>
+        <pattern>
+          <e>value</e>
+          <e>type</e>
+        </pattern>
+        <ele>
+          <name>value</name>
+          <summary>The numeric QoD value</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The QoD type</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>description</name>
+        <pattern>text</pattern>
+      </ele>
+    </ele>
+  </element>
+  <element>
+    <name>override</name>
+    <summary>An override</summary>
+    <pattern>
+      <attrib>
+        <name>id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>permissions</e>
+      <e>owner</e>
+      <e>nvt</e>
+      <e>creation_time</e>
+      <e>modification_time</e>
+      <e>writable</e>
+      <e>in_use</e>
+      <e>active</e>
+      <e>text</e>
+      <e>threat</e>
+      <e>severity</e>
+      <e>new_threat</e>
+      <e>new_severity</e>
+      <e>orphan</e>
+      <e>permissions</e>
+      <e>user_tags</e>
+      <o>
+        <g>
+          <e>hosts</e>
+          <e>port</e>
+          <e>task</e>
+          <o><e>end_time</e></o>
+          <o><e>result</e></o>
+        </g>
+      </o>
+    </pattern>
+    <ele>
+      <name>permissions</name>
+      <summary>Permissions that the current user has on the note</summary>
+      <pattern>
+        <any><e>permission</e></any>
+      </pattern>
+      <ele>
+        <name>permission</name>
+        <pattern>
+          <e>name</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>The name of the permission</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>owner</name>
+      <summary>Owner of the override</summary>
+      <pattern>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>nvt</name>
+      <pattern>
+        <attrib>
+          <name>oid</name>
+          <type>oid</type>
+          <required>1</required>
+        </attrib>
+        <e>name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <pattern><t>name</t></pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>creation_time</name>
+      <summary>Date and time the override was created</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>modification_time</name>
+      <summary>Date and time the override was last modified</summary>
+      <pattern><t>iso_time</t></pattern>
+    </ele>
+    <ele>
+      <name>writable</name>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>in_use</name>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the override is currently active</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>text</name>
+      <summary>The text of the override</summary>
+      <pattern>
+        <attrib>
+          <name>excerpt</name>
+          <summary>Whether the contents is an excerpt of the full text</summary>
+          <type>boolean</type>
+          <required>1</required>
+        </attrib>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>threat</name>
+      <summary>
+        Threat level to which override applies, derived from severity
+      </summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>severity</name>
+      <summary>Severity score to which override applies</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>new_threat</name>
+      <summary>New threat for result</summary>
+      <pattern>
+        <t>threat</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>new_severity</name>
+      <summary>New severity score for result</summary>
+      <pattern>
+        <t>severity</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>orphan</name>
+      <summary>Whether the override is an orphan</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>user_tags</name>
+      <summary>Info on tags attached to the override</summary>
+      <pattern>
+        <e>count</e>
+        <any><e>tag</e></any>
+      </pattern>
+      <ele>
+        <name>count</name>
+        <summary>Number of attached tags</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>tag</name>
         <summary>
-          Threat level to which override applies, derived from severity
+          Short info on an individual tag
+          (only if details were requested)
         </summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <summary>UUID of the tag</summary>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>value</e>
+          <e>comment</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of the tag (usually namespace:predicate)</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>Value of the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment for the tag</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>hosts</name>
+      <summary>A textual list of hosts</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Port to which override applies</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>task</name>
+      <summary>Task to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>active</name>
+      <summary>Whether the override is active</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>end_time</name>
+      <summary>Override end time in case of limit, else empty</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>result</name>
+      <summary>Result to which override applies</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <e>host</e>
+        <e>port</e>
+        <e>nvt</e>
+        <e>threat</e>
+        <e>severity</e>
+        <e>qod</e>
+        <e>description</e>
+      </pattern>
+      <ele>
+        <name>host</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>port</name>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>nvt</name>
+        <pattern>
+          <attrib>
+            <name>oid</name>
+            <type>oid</type>
+            <required>1</required>
+          </attrib>
+          <e>name</e>
+          <e>cvss_base</e>
+          <e>risk_factor</e>
+          <o><e>cve</e></o>
+          <o><e>bid</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>cvss_base</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>risk_factor</name>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>cve</name>
+          <summary>CVE value associated with the NVT</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bid</name>
+          <summary>BID associated with the NVT</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>threat</name>
         <pattern>
           <t>threat</t>
         </pattern>
       </ele>
       <ele>
         <name>severity</name>
-        <summary>
-          Severity score to which override applies</summary>
         <pattern>
           <t>severity</t>
         </pattern>
       </ele>
       <ele>
-        <name>new_threat</name>
-        <summary>New threat for result, derived from new_severity</summary>
+        <name>qod</name>
+        <summary>The quality of detection (QoD) of the result</summary>
         <pattern>
-          <t>threat</t>
+          <e>value</e>
+          <e>type</e>
         </pattern>
+        <ele>
+          <name>value</name>
+          <summary>The numeric QoD value</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The QoD type</summary>
+          <pattern>text</pattern>
+        </ele>
       </ele>
       <ele>
-        <name>new_severity</name>
-        <summary>New severity</summary>
-        <pattern>
-          <t>severity</t>
-        </pattern>
-      </ele>
-      <ele>
-        <name>orphan</name>
-        <summary>Whether the override is an orphan</summary>
-        <pattern><t>boolean</t></pattern>
+        <name>description</name>
+        <pattern>text</pattern>
       </ele>
     </ele>
   </element>
@@ -838,11 +1347,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
       <ele>
         <name>notes</name>
-        <type>result_notes</type>
+        <summary>List of notes on the result</summary>
+        <pattern>
+          <any><e>note</e></any>
+        </pattern>
+        <ele>
+          <name>note</name>
+          <type>note</type>
+        </ele>
       </ele>
       <ele>
         <name>overrides</name>
-        <type>result_overrides</type>
+        <name>overrides</name>
+        <summary>List of overrides on the result</summary>
+        <pattern>
+          <any><e>override</e></any>
+        </pattern>
+        <ele>
+          <name>override</name>
+          <type>override</type>
+        </ele>
       </ele>
     </ele>
     <ele>
@@ -914,11 +1438,26 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>notes</name>
-      <type>result_notes</type>
+      <summary>List of notes on the result</summary>
+      <pattern>
+        <any><e>note</e></any>
+      </pattern>
+      <ele>
+        <name>note</name>
+        <type>note</type>
+      </ele>
     </ele>
     <ele>
       <name>overrides</name>
-      <type>result_overrides</type>
+      <name>overrides</name>
+      <summary>List of overrides on the result</summary>
+      <pattern>
+        <any><e>override</e></any>
+      </pattern>
+      <ele>
+        <name>override</name>
+        <type>override</type>
+      </ele>
     </ele>
   </element>
   <element>
@@ -10343,313 +10882,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
       <ele>
         <name>note</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>permissions</e>
-          <e>owner</e>
-          <e>nvt</e>
-          <e>text</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>active</e>
-          <e>orphan</e>
-          <e>user_tags</e>
-          <o>
-            <g>
-              <e>hosts</e>
-              <e>port</e>
-              <e>severity</e>
-              <e>threat</e>
-              <e>task</e>
-              <o><e>end_time</e></o>
-              <o><e>result</e></o>
-            </g>
-          </o>
-        </pattern>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions that the current user has on the note</summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the note</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <summary>The name of the owner</summary>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>nvt</name>
-          <pattern>
-            <attrib>
-              <name>oid</name>
-              <type>oid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the note was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the note was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>active</name>
-          <summary>Whether the note is active</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>text</name>
-          <summary>The text of the note</summary>
-          <pattern>
-            <attrib>
-              <name>excerpt</name>
-              <summary>Whether the content is an excerpt of the full text</summary>
-              <type>boolean</type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>orphan</name>
-          <summary>Whether the note is an orphan</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the note</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>hosts</name>
-          <summary>A textual list of hosts</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>port</name>
-          <summary>Port to which note applies</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>severity</name>
-          <summary>Severity to which note applies</summary>
-          <pattern>
-            <t>severity</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>threat</name>
-          <summary>Threat level to which note applies</summary>
-          <pattern>
-            <t>threat</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>task</name>
-          <summary>Task to which note applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-        <ele>
-          <name>active</name>
-          <summary>Whether the note is active</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>end_time</name>
-          <summary>End time of the note in case of limit, else empty</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>result</name>
-          <summary>Result to which note applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>host</e>
-            <e>port</e>
-            <e>nvt</e>
-            <e>severity</e>
-            <e>threat</e>
-            <e>qod</e>
-            <e>description</e>
-          </pattern>
-          <ele>
-            <name>host</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>port</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>nvt</name>
-            <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>cvss_base</e>
-              <e>risk_factor</e>
-              <o><e>cve</e></o>
-              <o><e>bid</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>cvss_base</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>risk_factor</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>cve</name>
-              <summary>CVE value associated with the NVT</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>bid</name>
-              <summary>BID associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>severity</name>
-            <pattern>
-              <t>severity</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>threat</name>
-            <pattern>
-              <t>threat</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>qod</name>
-            <summary>The quality of detection (QoD) of the result</summary>
-            <pattern>
-              <e>value</e>
-              <e>type</e>
-            </pattern>
-            <ele>
-              <name>value</name>
-              <summary>The numeric QoD value</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>The QoD type</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>description</name>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
+        <type>note</type>
       </ele>
     </response>
     <example>
@@ -11459,331 +11692,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       </ele>
       <ele>
         <name>override</name>
-        <pattern>
-          <attrib>
-            <name>id</name>
-            <type>uuid</type>
-            <required>1</required>
-          </attrib>
-          <e>permissions</e>
-          <e>owner</e>
-          <e>nvt</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>writable</e>
-          <e>in_use</e>
-          <e>active</e>
-          <e>text</e>
-          <e>threat</e>
-          <e>severity</e>
-          <e>new_threat</e>
-          <e>new_severity</e>
-          <e>orphan</e>
-          <e>permissions</e>
-          <e>user_tags</e>
-          <o>
-            <g>
-              <e>hosts</e>
-              <e>port</e>
-              <e>task</e>
-              <o><e>end_time</e></o>
-              <o><e>result</e></o>
-            </g>
-          </o>
-        </pattern>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions that the current user has on the note</summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>owner</name>
-          <summary>Owner of the override</summary>
-          <pattern>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>nvt</name>
-          <pattern>
-            <attrib>
-              <name>oid</name>
-              <type>oid</type>
-              <required>1</required>
-            </attrib>
-            <e>name</e>
-          </pattern>
-          <ele>
-            <name>name</name>
-            <pattern><t>name</t></pattern>
-          </ele>
-        </ele>
-        <ele>
-          <name>creation_time</name>
-          <summary>Date and time the override was created</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>modification_time</name>
-          <summary>Date and time the override was last modified</summary>
-          <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>writable</name>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>in_use</name>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>active</name>
-          <summary>Whether the override is currently active</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>text</name>
-          <summary>The text of the override</summary>
-          <pattern>
-            <attrib>
-              <name>excerpt</name>
-              <summary>Whether the contents is an excerpt of the full text</summary>
-              <type>boolean</type>
-              <required>1</required>
-            </attrib>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>threat</name>
-          <summary>
-            Threat level to which override applies, derived from severity
-          </summary>
-          <pattern>
-            <t>threat</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>severity</name>
-          <summary>Severity score to which override applies</summary>
-          <pattern>
-            <t>severity</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>new_threat</name>
-          <summary>New threat for result</summary>
-          <pattern>
-            <t>threat</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>new_severity</name>
-          <summary>New severity score for result</summary>
-          <pattern>
-            <t>severity</t>
-          </pattern>
-        </ele>
-        <ele>
-          <name>orphan</name>
-          <summary>Whether the override is an orphan</summary>
-          <pattern><t>boolean</t></pattern>
-        </ele>
-        <ele>
-          <name>user_tags</name>
-          <summary>Info on tags attached to the override</summary>
-          <pattern>
-            <e>count</e>
-            <any><e>tag</e></any>
-          </pattern>
-          <ele>
-            <name>count</name>
-            <summary>Number of attached tags</summary>
-            <pattern><t>integer</t></pattern>
-          </ele>
-          <ele>
-            <name>tag</name>
-            <summary>
-              Short info on an individual tag
-              (only if details were requested)
-            </summary>
-            <pattern>
-              <attrib>
-                <name>id</name>
-                <type>uuid</type>
-                <summary>UUID of the tag</summary>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>value</e>
-              <e>comment</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>Name of the tag (usually namespace:predicate)</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>value</name>
-              <summary>Value of the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>comment</name>
-              <summary>Comment for the tag</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-        </ele>
-        <ele>
-          <name>hosts</name>
-          <summary>A textual list of hosts</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>port</name>
-          <summary>Port to which override applies</summary>
-          <pattern>
-            text
-          </pattern>
-        </ele>
-        <ele>
-          <name>task</name>
-          <summary>Task to which override applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-          </pattern>
-        </ele>
-        <ele>
-          <name>active</name>
-          <summary>Whether the override is active</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>end_time</name>
-          <summary>Override end time in case of limit, else empty</summary>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>result</name>
-          <summary>Result to which override applies</summary>
-          <pattern>
-            <attrib>
-              <name>id</name>
-              <type>uuid</type>
-              <required>1</required>
-            </attrib>
-            <e>host</e>
-            <e>port</e>
-            <e>nvt</e>
-            <e>threat</e>
-            <e>severity</e>
-            <e>qod</e>
-            <e>description</e>
-          </pattern>
-          <ele>
-            <name>host</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>port</name>
-            <pattern>text</pattern>
-          </ele>
-          <ele>
-            <name>nvt</name>
-            <pattern>
-              <attrib>
-                <name>oid</name>
-                <type>oid</type>
-                <required>1</required>
-              </attrib>
-              <e>name</e>
-              <e>cvss_base</e>
-              <e>risk_factor</e>
-              <o><e>cve</e></o>
-              <o><e>bid</e></o>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <pattern><t>name</t></pattern>
-            </ele>
-            <ele>
-              <name>cvss_base</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>risk_factor</name>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>cve</name>
-              <summary>CVE value associated with the NVT</summary>
-              <pattern>text</pattern>
-            </ele>
-            <ele>
-              <name>bid</name>
-              <summary>BID associated with the NVT</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>threat</name>
-            <pattern>
-              <t>threat</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>severity</name>
-            <pattern>
-              <t>severity</t>
-            </pattern>
-          </ele>
-          <ele>
-            <name>qod</name>
-            <summary>The quality of detection (QoD) of the result</summary>
-            <pattern>
-              <e>value</e>
-              <e>type</e>
-            </pattern>
-            <ele>
-              <name>value</name>
-              <summary>The numeric QoD value</summary>
-              <pattern><t>integer</t></pattern>
-            </ele>
-            <ele>
-              <name>type</name>
-              <summary>The QoD type</summary>
-              <pattern>text</pattern>
-            </ele>
-          </ele>
-          <ele>
-            <name>description</name>
-            <pattern>text</pattern>
-          </ele>
-        </ele>
+        <type>override</type>
       </ele>
     </response>
     <example>
