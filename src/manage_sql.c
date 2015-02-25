@@ -16252,8 +16252,8 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
                                                    (SEVERITY_FP) ")"
                                   "      OR %s = 1)",
                                   auto_type_sql,
-                                  auto_type_sql,
-                                  new_severity_sql);
+                                  new_severity_sql,
+                                  auto_type_sql);
         }
       else
         g_string_append_printf (levels_sql,
@@ -16261,8 +16261,8 @@ where_levels_auto (const char *levels, const char *new_severity_sql,
                                 "    = " G_STRINGIFY
                                           (SEVERITY_FP) "))"
                                 " OR %s = 1)",
-                                auto_type_sql,
-                                new_severity_sql);
+                                new_severity_sql,
+                                auto_type_sql);
       count++;
     }
   else if (count)
