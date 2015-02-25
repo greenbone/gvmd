@@ -11209,25 +11209,22 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>nvt</name>
         <pattern>
           <attrib>
-            <name>id</name>
-            <type>uuid</type>
+            <name>oid</name>
+            <type>oid</type>
             <required>1</required>
           </attrib>
           <e>name</e>
-          <e>creation_time</e>
-          <e>modification_time</e>
-          <e>permissions</e>
           <e>user_tags</e>
           <o>
             <g>
+              <e>creation_time</e>
+              <e>modification_time</e>
               <e>category</e>
               <e>copyright</e>
-              <e>description</e>
               <e>summary</e>
               <e>family</e>
               <e>version</e>
               <e>cvss_base</e>
-              <e>risk_factor</e>
               <e>qod</e>
               <e>cve_id</e>
               <e>cert_refs</e>
@@ -11247,33 +11244,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>category</name>
+          <summary>The category of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>creation_time</name>
+          <summary>The creation time of the NVT</summary>
           <pattern><t>iso_time</t></pattern>
         </ele>
         <ele>
           <name>modification_time</name>
+          <summary>The modification time of the NVT</summary>
           <pattern><t>iso_time</t></pattern>
-        </ele>
-        <ele>
-          <name>permissions</name>
-          <summary>Permissions that the current user has on the nvt</summary>
-          <pattern>
-            <any><e>permission</e></any>
-          </pattern>
-          <ele>
-            <name>permission</name>
-            <pattern>
-              <e>name</e>
-            </pattern>
-            <ele>
-              <name>name</name>
-              <summary>The name of the permission</summary>
-              <pattern><t>name</t></pattern>
-            </ele>
-          </ele>
         </ele>
         <ele>
           <name>user_tags</name>
@@ -11323,30 +11305,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>copyright</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>description</name>
+          <summary>Copyright info of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>summary</name>
+          <summary>Short description of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>family</name>
+          <summary>Name of the family the NVT belongs to</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>version</name>
+          <summary>Version of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>cvss_base</name>
-          <pattern>text</pattern>
-        </ele>
-        <ele>
-          <name>risk_factor</name>
+          <summary>CVSS base score of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11369,10 +11348,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>cve_id</name>
+          <summary>IDs of the CVEs the NVT adresses</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>bugtraq_id</name>
+          <summary>List of Bugtraq IDs of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -11408,22 +11389,27 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>xrefs</name>
+          <summary>List of other references of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>tags</name>
+          <summary>The tags of the NVT, separated by vertical bars</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>preference_count</name>
+          <summary>The number of preferences for the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>timeout</name>
+          <summary>The timeout of the NVT</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>preferences</name>
+          <summary>List of preferences of the NVT</summary>
           <pattern>
             <e>timeout</e>
             <any><e>preference</e></any>
@@ -11431,6 +11417,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           </pattern>
           <ele>
             <name>timeout</name>
+            <summary>The timeout of the NVT</summary>
             <pattern>text</pattern>
           </ele>
           <ele>
@@ -11440,26 +11427,49 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <e>name</e>
               <e>type</e>
               <e>value</e>
+              <any><e>alt</e></any>
               <e>default</e>
             </pattern>
             <ele>
               <name>nvt</name>
-              <pattern><t>oid</t></pattern>
+              <summary>NVT to which preference applies</summary>
+              <pattern>
+                <attrib>
+                  <name>oid</name>
+                  <type>oid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>The name of the NVT</summary>
+                <pattern><t>name</t></pattern>
+              </ele>
             </ele>
             <ele>
               <name>name</name>
+              <summary>The name of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
               <name>type</name>
+              <summary>The type of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
               <name>value</name>
+              <summary>The value of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>alt</name>
+              <summary>An alternate value of the preference</summary>
               <pattern>text</pattern>
             </ele>
             <ele>
               <name>default</name>
+              <summary>The default value of the preference</summary>
               <pattern>text</pattern>
             </ele>
           </ele>
@@ -11483,12 +11493,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             </user_tags>
             <category>Services</category>
             <copyright>GNU GPL v2</copyright>
-            <description>This script attempts to detect which service is running on which port.</description>
             <summary>Find what is listening on which port</summary>
             <family>Service detection</family>
             <version>$Revision: 1852 $</version>
             <cvss_base></cvss_base>
-            <risk_factor>None</risk_factor>
             <cve_id>NOCVE</cve_id>
             <bugtraq_id>NOBID</bugtraq_id>
             <cert_refs/>

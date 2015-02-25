@@ -11090,18 +11090,15 @@ get_nvts_response_nvt
      {
        attribute id { uuid }
        & get_nvts_response_nvt_name
-       & get_nvts_response_nvt_creation_time
-       & get_nvts_response_nvt_modification_time
-       & get_nvts_response_nvt_permissions
        & get_nvts_response_nvt_user_tags
-       & ( get_nvts_response_nvt_category
+       & ( get_nvts_response_nvt_creation_time
+           & get_nvts_response_nvt_modification_time
+           & get_nvts_response_nvt_category
            & get_nvts_response_nvt_copyright
-           & get_nvts_response_nvt_description
            & get_nvts_response_nvt_summary
            & get_nvts_response_nvt_family
            & get_nvts_response_nvt_version
            & get_nvts_response_nvt_cvss_base
-           & get_nvts_response_nvt_risk_factor
            & get_nvts_response_nvt_qod
            & get_nvts_response_nvt_cve_id
            & get_nvts_response_nvt_cert_refs
@@ -11120,42 +11117,25 @@ get_nvts_response_nvt_name
        name
      }
 
+# The category of the NVT.
 get_nvts_response_nvt_category
  = element category
      {
        text
      }
 
+# The creation time of the NVT.
 get_nvts_response_nvt_creation_time
  = element creation_time
      {
        iso_time
      }
 
+# The modification time of the NVT.
 get_nvts_response_nvt_modification_time
  = element modification_time
      {
        iso_time
-     }
-
-# Permissions that the current user has on the nvt.
-get_nvts_response_nvt_permissions
- = element permissions
-     {
-       get_nvts_response_nvt_permissions_permission*
-     }
-
-get_nvts_response_nvt_permissions_permission
- = element permission
-     {
-       get_nvts_response_nvt_permissions_permission_name
-     }
-
-# The name of the permission.
-get_nvts_response_nvt_permissions_permission_name
- = element name
-     {
-       name
      }
 
 # Info on tags attached to the NVT.
@@ -11205,44 +11185,37 @@ get_nvts_response_nvt_user_tags_tag_comment
        text
      }
 
+# Copyright info of the NVT.
 get_nvts_response_nvt_copyright
  = element copyright
      {
        text
      }
 
-get_nvts_response_nvt_description
- = element description
-     {
-       text
-     }
-
+# Short description of the NVT.
 get_nvts_response_nvt_summary
  = element summary
      {
        text
      }
 
+# Name of the family the NVT belongs to.
 get_nvts_response_nvt_family
  = element family
      {
        text
      }
 
+# Version of the NVT.
 get_nvts_response_nvt_version
  = element version
      {
        text
      }
 
+# CVSS base score of the NVT.
 get_nvts_response_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-get_nvts_response_nvt_risk_factor
- = element risk_factor
      {
        text
      }
@@ -11269,12 +11242,14 @@ get_nvts_response_nvt_qod_type
        text
      }
 
+# IDs of the CVEs the NVT adresses.
 get_nvts_response_nvt_cve_id
  = element cve_id
      {
        text
      }
 
+# List of Bugtraq IDs of the NVT.
 get_nvts_response_nvt_bugtraq_id
  = element bugtraq_id
      {
@@ -11306,30 +11281,35 @@ get_nvts_response_nvt_cert_refs_warning
        text
      }
 
+# List of other references of the NVT.
 get_nvts_response_nvt_xrefs
  = element xrefs
      {
        text
      }
 
+# The tags of the NVT, separated by vertical bars.
 get_nvts_response_nvt_tags
  = element tags
      {
        text
      }
 
+# The number of preferences for the NVT.
 get_nvts_response_nvt_preference_count
  = element preference_count
      {
        text
      }
 
+# The timeout of the NVT.
 get_nvts_response_nvt_timeout
  = element timeout
      {
        text
      }
 
+# List of preferences of the NVT.
 get_nvts_response_nvt_preferences
  = element preferences
      {
@@ -11338,6 +11318,7 @@ get_nvts_response_nvt_preferences
        & get_nvts_response_nvt_preferences_preference*
      }
 
+# The timeout of the NVT.
 get_nvts_response_nvt_preferences_timeout
  = element timeout
      {
@@ -11351,33 +11332,54 @@ get_nvts_response_nvt_preferences_preference
        & get_nvts_response_nvt_preferences_preference_name
        & get_nvts_response_nvt_preferences_preference_type
        & get_nvts_response_nvt_preferences_preference_value
+       & get_nvts_response_nvt_preferences_preference_alt*
        & get_nvts_response_nvt_preferences_preference_default
      }
 
+# NVT to which preference applies.
 get_nvts_response_nvt_preferences_preference_nvt
  = element nvt
      {
-       oid
+       attribute oid { oid }
+       & get_nvts_response_nvt_preferences_preference_nvt_name
      }
 
+# The name of the NVT.
+get_nvts_response_nvt_preferences_preference_nvt_name
+ = element name
+     {
+       name
+     }
+
+# The name of the preference.
 get_nvts_response_nvt_preferences_preference_name
  = element name
      {
        text
      }
 
+# The type of the preference.
 get_nvts_response_nvt_preferences_preference_type
  = element type
      {
        text
      }
 
+# The value of the preference.
 get_nvts_response_nvt_preferences_preference_value
  = element value
      {
        text
      }
 
+# An alternate value of the preference.
+get_nvts_response_nvt_preferences_preference_alt
+ = element alt
+     {
+       text
+     }
+
+# The default value of the preference.
 get_nvts_response_nvt_preferences_preference_default
  = element default
      {

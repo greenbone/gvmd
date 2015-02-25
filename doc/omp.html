@@ -18878,26 +18878,6 @@ get_notes_response_note
 <ul style="list-style: none"></ul>
 </li>
 <li>
-              &lt;<b>creation_time</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>modification_time</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>permissions</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Permissions that the current user has on the nvt.</div>
-<ul style="list-style: none"><li>
-              &lt;<b>permission</b>&gt;
-              *<ul style="list-style: none"><li>
-              &lt;<b>name</b>&gt;
-              <div style="margin-left: 15px; display: inline;">The name of the permission.</div>
-<ul style="list-style: none"></ul>
-</li></ul>
-</li></ul>
-</li>
-<li>
               &lt;<b>user_tags</b>&gt;
               <div style="margin-left: 15px; display: inline;">Info on tags attached to the NVT.</div>
 <ul style="list-style: none">
@@ -18937,36 +18917,44 @@ get_notes_response_note
 <li>
 <i>The group</i><b>?</b><ul style="list-style: none">
 <li>
+              &lt;<b>creation_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The creation time of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>modification_time</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The modification time of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>category</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The category of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>copyright</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>description</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Copyright info of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>summary</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Short description of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>family</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Name of the family the NVT belongs to.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>version</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">Version of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>cvss_base</b>&gt;
-              <ul style="list-style: none"></ul>
-</li>
-<li>
-              &lt;<b>risk_factor</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">CVSS base score of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>qod</b>&gt;
@@ -18986,7 +18974,8 @@ get_notes_response_note
 </li>
 <li>
               &lt;<b>cve_id</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">IDs of the CVEs the NVT adresses.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>cert_refs</b>&gt;
@@ -19017,53 +19006,80 @@ get_notes_response_note
 </li>
 <li>
               &lt;<b>bugtraq_id</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">List of Bugtraq IDs of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>xrefs</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">List of other references of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>tags</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The tags of the NVT, separated by vertical bars.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>preference_count</b>&gt;
-              ?<ul style="list-style: none"></ul>
+              ?<div style="margin-left: 15px; display: inline;">The number of preferences for the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>timeout</b>&gt;
-              ?<ul style="list-style: none"></ul>
+              ?<div style="margin-left: 15px; display: inline;">The timeout of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>preferences</b>&gt;
-              ?<ul style="list-style: none">
+              ?<div style="margin-left: 15px; display: inline;">List of preferences of the NVT.</div>
+<ul style="list-style: none">
 <li>
               &lt;<b>timeout</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The timeout of the NVT.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>preference</b>&gt;
               *<ul style="list-style: none">
 <li>
               &lt;<b>nvt</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">NVT to which preference applies.</div>
+<ul style="list-style: none">
+<li>
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the NVT.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
 </li>
 <li>
               &lt;<b>name</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The name of the preference.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>type</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The type of the preference.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>value</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The value of the preference.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>alt</b>&gt;
+              *<div style="margin-left: 15px; display: inline;">An alternate value of the preference.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>default</b>&gt;
-              <ul style="list-style: none"></ul>
+              <div style="margin-left: 15px; display: inline;">The default value of the preference.</div>
+<ul style="list-style: none"></ul>
 </li>
 </ul>
 </li>
@@ -19105,18 +19121,15 @@ get_nvts_response_nvt
      {
        attribute id { uuid }
        &amp; get_nvts_response_nvt_name
-       &amp; get_nvts_response_nvt_creation_time
-       &amp; get_nvts_response_nvt_modification_time
-       &amp; get_nvts_response_nvt_permissions
        &amp; get_nvts_response_nvt_user_tags
-       &amp; ( get_nvts_response_nvt_category
+       &amp; ( get_nvts_response_nvt_creation_time
+           &amp; get_nvts_response_nvt_modification_time
+           &amp; get_nvts_response_nvt_category
            &amp; get_nvts_response_nvt_copyright
-           &amp; get_nvts_response_nvt_description
            &amp; get_nvts_response_nvt_summary
            &amp; get_nvts_response_nvt_family
            &amp; get_nvts_response_nvt_version
            &amp; get_nvts_response_nvt_cvss_base
-           &amp; get_nvts_response_nvt_risk_factor
            &amp; get_nvts_response_nvt_qod
            &amp; get_nvts_response_nvt_cve_id
            &amp; get_nvts_response_nvt_cert_refs
@@ -19150,24 +19163,6 @@ get_nvts_response_nvt_modification_time
  = element modification_time
      {
        iso_time
-     }
-
-get_nvts_response_nvt_permissions
- = element permissions
-     {
-       get_nvts_response_nvt_permissions_permission*
-     }
-
-get_nvts_response_nvt_permissions_permission
- = element permission
-     {
-       get_nvts_response_nvt_permissions_permission_name
-     }
-
-get_nvts_response_nvt_permissions_permission_name
- = element name
-     {
-       name
      }
 
 get_nvts_response_nvt_user_tags
@@ -19216,12 +19211,6 @@ get_nvts_response_nvt_copyright
        text
      }
 
-get_nvts_response_nvt_description
- = element description
-     {
-       text
-     }
-
 get_nvts_response_nvt_summary
  = element summary
      {
@@ -19242,12 +19231,6 @@ get_nvts_response_nvt_version
 
 get_nvts_response_nvt_cvss_base
  = element cvss_base
-     {
-       text
-     }
-
-get_nvts_response_nvt_risk_factor
- = element risk_factor
      {
        text
      }
@@ -19348,13 +19331,21 @@ get_nvts_response_nvt_preferences_preference
        &amp; get_nvts_response_nvt_preferences_preference_name
        &amp; get_nvts_response_nvt_preferences_preference_type
        &amp; get_nvts_response_nvt_preferences_preference_value
+       &amp; get_nvts_response_nvt_preferences_preference_alt*
        &amp; get_nvts_response_nvt_preferences_preference_default
      }
 
 get_nvts_response_nvt_preferences_preference_nvt
  = element nvt
      {
-       oid
+       attribute oid { oid }
+       &amp; get_nvts_response_nvt_preferences_preference_nvt_name
+     }
+
+get_nvts_response_nvt_preferences_preference_nvt_name
+ = element name
+     {
+       name
      }
 
 get_nvts_response_nvt_preferences_preference_name
@@ -19371,6 +19362,12 @@ get_nvts_response_nvt_preferences_preference_type
 
 get_nvts_response_nvt_preferences_preference_value
  = element value
+     {
+       text
+     }
+
+get_nvts_response_nvt_preferences_preference_alt
+ = element alt
      {
        text
      }
@@ -19397,14 +19394,10 @@ get_nvts_response_nvt_preferences_preference_default
      &lt;/user_tags&gt;
      &lt;category&gt;Services&lt;/category&gt;
      &lt;copyright&gt;GNU GPL v2&lt;/copyright&gt;
-     &lt;description&gt;
-       This script attempts to detect which service is running on which port.
-     &lt;/description&gt;
      &lt;summary&gt;Find what is listening on which port&lt;/summary&gt;
      &lt;family&gt;Service detection&lt;/family&gt;
      &lt;version&gt;$Revision: 1852 $&lt;/version&gt;
      &lt;cvss_base/&gt;
-     &lt;risk_factor&gt;None&lt;/risk_factor&gt;
      &lt;cve_id&gt;NOCVE&lt;/cve_id&gt;
      &lt;bugtraq_id&gt;NOBID&lt;/bugtraq_id&gt;
      &lt;cert_refs/&gt;
