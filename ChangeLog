@@ -1,5 +1,14 @@
 2015-02-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl (all-hostnames)
+	(hostnames): Select using for-each, because the results may not be
+	unique using a select attribute when there is whitespace in the host
+	details XML.
+	(openvas:hostname): Add node-set because $hostnames is now a result
+	fragment due to the way it is selected.
+
+2015-02-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_GET_INFO reset the
 	parser properly after find errors and improve the message of the NVT
 	find error.

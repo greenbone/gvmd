@@ -2,11 +2,12 @@
 <xsl:stylesheet
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:exslt="http://exslt.org/common"
     xmlns:str="http://exslt.org/strings"
     xmlns:func="http://exslt.org/functions"
     xmlns:date="http://exslt.org/dates-and-times"
     xmlns:openvas="http://openvas.org"
-    extension-element-prefixes="str date func openvas">
+    extension-element-prefixes="str date func openvas exslt">
   <xsl:output method="xml"
               indent="yes"
               encoding="UTF-8" />
@@ -39,7 +40,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:variable name="hosts" select="//host[not (.=preceding::host) and not (. = '')]"/>
 
-  <xsl:variable name="hostnames" select="//host/detail[name = 'hostname' and not (.=preceding::host) and not (. = '')]/value"/>
+  <xsl:variable name="all-hostnames" select="//host/detail[name = 'hostname' and not (value = '')]"/>
+  <xsl:variable name="hostnames">
+    <xsl:for-each select="$all-hostnames">
+      <xsl:variable name="value" select="value" />
+      <xsl:if test="generate-id() = generate-id($all-hostnames[value = $value][1])">
+        <xsl:copy-of select="value" />
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:variable>
 
   <func:function name="openvas:host">
     <xsl:param name="host"/>
@@ -52,7 +61,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <func:function name="openvas:hostname">
     <xsl:param name="hostname"/>
-    <xsl:for-each select="$hostnames">
+    <xsl:for-each select="exslt:node-set ($hostnames)">
       <xsl:if test=". = $hostname">
         <func:result select="concat ('host', position (), '.example.com')"/>
       </xsl:if>
