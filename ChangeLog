@@ -1,3 +1,7 @@
+2015-02-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	* src/openvasmd.c (main): Updated year to 2015.
+
 2015-02-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/report_formats/Anonymous_XML/Anonymous_XML.xsl (all-hostnames)
