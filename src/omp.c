@@ -13002,8 +13002,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  write_to_client_data))
                     {
                       error_send_to_client (error);
+                      return;
                     }
-                  return;
+                  get_info_data_reset (get_info_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
                 }
 
               user_filter = setting_filter (name);
@@ -13062,14 +13065,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
               else
                 {
-                  if (send_find_error_to_client ("get_info", "name",
-                                                 get_info_data->name,
+                  if (send_find_error_to_client ("get_info",
+                                                 get_info_data->name
+                                                  ? "name"
+                                                  : "ID",
+                                                 get_info_data->name
+                                                  ? get_info_data->name
+                                                  : get_info_data->get.id,
                                                  write_to_client,
                                                  write_to_client_data))
                     {
                       error_send_to_client (error);
+                      return;
                     }
-                  return;
+                  get_info_data_reset (get_info_data);
+                  set_client_state (CLIENT_AUTHENTIC);
+                  break;
                 }
             }
           else if (g_strcmp0 ("ovaldef", get_info_data->type) == 0)
