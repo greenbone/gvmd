@@ -1092,7 +1092,8 @@ report_severity_count (report_t report, int overrides,
   int debugs, false_positives, logs, lows, mediums, highs;
 
   report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
-                    &false_positives, NULL, overrides, NULL, 0);
+                    &false_positives, NULL, overrides, NULL, 0,
+                    G_STRINGIFY (MIN_QOD_DEFAULT)); // TODO: Make a param
 
   if (strcasecmp (level, "Debug") == 0)
     return debugs;

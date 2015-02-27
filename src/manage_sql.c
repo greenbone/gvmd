@@ -15118,10 +15118,13 @@ report_cache_counts (report_t report)
 {
   int debugs, holes, infos, logs, warnings, false_positives;
   double severity;
+  // TODO: Cache for non-default QoD
   report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                    &false_positives, &severity, 0, NULL, 0);
+                    &false_positives, &severity, 0, NULL, 0,
+                    G_STRINGIFY (MIN_QOD_DEFAULT));
   report_counts_id (report, &debugs, &holes, &infos, &logs, &warnings,
-                    &false_positives, &severity, 1, NULL, 0);
+                    &false_positives, &severity, 1, NULL, 0,
+                    G_STRINGIFY (MIN_QOD_DEFAULT));
 }
 
 /**
@@ -15678,6 +15681,7 @@ report_add_result (report_t report, result_t result)
 {
   char *ov_severity_str;
   double severity, ov_severity;
+  int qod;
   rowid_t rowid;
 
   if (report == 0 || result == 0)
@@ -15688,6 +15692,12 @@ report_add_result (report_t report, result_t result)
        "                            FROM reports WHERE id = %llu)"
        " WHERE id = %llu;",
        report, report, result);
+
+  qod = sql_int ("SELECT qod FROM results WHERE id = %llu;",
+                 result);
+
+  if (qod < MIN_QOD_DEFAULT)
+    return;
 
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
@@ -16443,7 +16453,8 @@ where_qod (const char* min_qod)
       g_free (quoted_qod);
     }
   else
-    qod_sql = NULL;
+    qod_sql = g_strdup_printf (" AND (qod >= CAST ('%d' AS INTEGER))",
+                               MIN_QOD_DEFAULT);
 
   return qod_sql;
 }
@@ -18587,7 +18598,9 @@ report_scan_result_count (report_t report, const char* levels,
       && autofp == 0
       && (min_cvss_base == NULL || strcmp (min_cvss_base, "") == 0)
       && (search_phrase == NULL || strcmp (search_phrase, "") == 0)
-      && (min_qod == NULL || strcmp (min_qod, "") == 0))
+      && (min_qod == NULL
+          || strcmp (min_qod, "") == 0
+          || strcmp (min_qod, G_STRINGIFY (MIN_QOD_DEFAULT)) == 0))
     {
       *count = sql_int ("SELECT sum (count)"
                         " FROM report_counts"
@@ -18976,7 +18989,7 @@ report_severity_data (report_t report, int override,
   task_t task;
 
   sql_stmt_t *stmt, *full_stmt;
-  gchar *quoted_host, *severity_sql;
+  gchar *quoted_host, *severity_sql, *qod_sql;
   int ret;
 
   if (override
@@ -19016,6 +19029,8 @@ report_severity_data (report_t report, int override,
       else
         severity_sql = g_strdup ("results.severity");
 
+      qod_sql = where_qod (min_qod);
+
       init_iterator (&results,
                       "SELECT results.id, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
@@ -19023,12 +19038,14 @@ report_severity_data (report_t report, int override,
                       " FROM results"
                       " WHERE"
                       "%s%s%s"
-                      " results.report = %llu;",
+                      " results.report = %llu"
+                      "%s;",
                       severity_sql,
                       host ? " results.host = '" : "",
                       host ? quoted_host : "",
                       host ? "' AND" : "",
-                      report);
+                      report,
+                      qod_sql);
       g_free (severity_sql);
       if (host)
         g_free (quoted_host);
@@ -19333,7 +19350,8 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
     return -1;
   // TODO Check if report was found.
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
-                           false_positives, severity, override, NULL, autofp);
+                           false_positives, severity, override, NULL, autofp,
+                           G_STRINGIFY (MIN_QOD_DEFAULT));
 }
 
 /**
@@ -19569,8 +19587,11 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
 
+  // TODO: Cache different min_qod values
   if (cache_exists && autofp == 0 && host == NULL && min_cvss_base == NULL
-      && min_qod == NULL && search_phrase == NULL)
+      && ((min_qod && strcmp (min_qod, G_STRINGIFY (MIN_QOD_DEFAULT)) == 0)
+          || min_qod == NULL)
+      && search_phrase == NULL)
     {
       /* Get unfiltered counts from cache. */
       report_counts_from_cache (report, override, &severity_data);
@@ -19627,18 +19648,20 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
  * @param[in]   override  Whether to override the threat.
  * @param[in]   host      Host to which to limit the count.  NULL to allow all.
  * @param[in]   autofp    Whether to apply the auto FP filter.
+ * @param[in]   min_qod   Minimum QoD of results to count.
  *
  * @return 0 on success, -1 on error.
  */
 int
 report_counts_id (report_t report, int* debugs, int* holes, int* infos,
                   int* logs, int* warnings, int* false_positives,
-                  double* severity, int override, const char *host, int autofp)
+                  double* severity, int override, const char *host, int autofp,
+                  const char* min_qod)
 {
   return report_counts_id_filt (report, debugs, holes, infos, logs, warnings,
                                 false_positives, severity, override, host,
-                                NULL, NULL, NULL, 0, autofp, NULL, NULL, NULL,
-                                NULL, NULL, NULL, NULL);
+                                NULL, min_qod, NULL, 0, autofp, NULL, NULL,
+                                NULL, NULL, NULL, NULL, NULL);
 
 }
 
@@ -19674,7 +19697,8 @@ report_severity (report_t report, int overrides)
     {
       g_debug ("%s: could not get max from cache", __FUNCTION__);
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
-                        NULL, &severity, overrides, NULL, 0);
+                        NULL, &severity, overrides, NULL, 0,
+                        G_STRINGIFY (MIN_QOD_DEFAULT));
     }
   cleanup_iterator (&iterator);
   return severity;
@@ -21712,7 +21736,8 @@ print_report_assets_xml (FILE *out, const char *host, int first_result, int
 
               report_counts_id (report, NULL, &holes, &infos, &logs,
                                 &warnings, &false_positives, &severity,
-                                apply_overrides, ip, autofp);
+                                apply_overrides, ip, autofp,
+                                G_STRINGIFY (MIN_QOD_DEFAULT));
 
               PRINT (out,
                      "<detail>"
@@ -22350,7 +22375,8 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
 
           report_counts_id (report, NULL, &h_holes, &h_infos, &h_logs,
                             &h_warnings, &h_false_positives, &h_severity, 0,
-                            buffer_host->ip, 0);
+                            buffer_host->ip, 0,
+                            G_STRINGIFY (MIN_QOD_DEFAULT));
 
           PRINT (out,
                  "<detail>"
@@ -23012,7 +23038,7 @@ print_report_xml (report_t report, report_t delta, task_t task, gchar* xml_file,
     {
       if (delta == 0)
         {
-          report_scan_result_count (report, NULL, NULL, 0, NULL, NULL,
+          report_scan_result_count (report, NULL, NULL, 0, NULL, "0",
                                     apply_overrides, autofp,
                                     &result_count);
         }
@@ -25587,7 +25613,8 @@ task_trend (task_t task, int override)
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
-                        &false_positives_a, &severity_a, override, NULL, 0))
+                        &false_positives_a, &severity_a, override, NULL, 0,
+                        G_STRINGIFY (MIN_QOD_DEFAULT))) //TODO: Make a parameter
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -25601,7 +25628,8 @@ task_trend (task_t task, int override)
    * with all five. */
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
                         &warns_b, &false_positives_b, &severity_b, override,
-                        NULL, 0))
+                        NULL, 0, G_STRINGIFY (MIN_QOD_DEFAULT)))
+                        //TODO: Make param
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 

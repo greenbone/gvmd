@@ -968,6 +968,7 @@ manage_create_sql_functions ()
            "         THEN (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
+           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
            "               AND ((CASE"
            "                     WHEN results.type IS NULL"
            "                     THEN 0::real"
@@ -988,6 +989,7 @@ manage_create_sql_functions ()
            "         THEN (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
+           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
            "               AND (" OVERRIDES_SQL ("results.severity")
            "                    BETWEEN level_min_severity ($3, severity_class ())"
            "                            AND level_max_severity"
@@ -996,6 +998,7 @@ manage_create_sql_functions ()
            "         ELSE (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
+           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
            "               AND ((CASE"
            "                     WHEN results.type IS NULL"
            "                     THEN 0::real"

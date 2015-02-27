@@ -906,6 +906,11 @@ result_detection_reference (result_t, char **, char **, char **, char **,
  */
 #define QOD_DEFAULT 75
 
+/**
+ * @brief Default min quality of detection percentage for filters.
+ */
+#define MIN_QOD_DEFAULT 70
+
 void
 reports_clear_count_cache (int);
 
@@ -1024,7 +1029,7 @@ report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
 
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*, int,
-                  const char*, int);
+                  const char*, int, const char*);
 
 char*
 scan_start_time (report_t);

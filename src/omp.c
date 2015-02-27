@@ -17007,9 +17007,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       case CLIENT_GET_TASKS:
         {
           iterator_t tasks;
-          int count, filtered, ret, first, apply_overrides;
+          int count, filtered, ret, first, apply_overrides, min_qod;
           get_data_t * get;
-          gchar *overrides, *filter, *clean_filter;
+          gchar *overrides, *min_qod_str, *filter, *clean_filter;
 
           assert (strcasecmp ("GET_TASKS", element_name) == 0);
 
@@ -17079,13 +17079,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             filter = NULL;
           clean_filter = manage_clean_filter (filter ? filter : get->filter);
           overrides = filter_term_value (clean_filter, "apply_overrides");
+          min_qod_str = filter_term_value (clean_filter, "min_qod");
+          min_qod = min_qod_str ? atoi (min_qod_str) : QOD_DEFAULT;
           g_free (clean_filter);
           apply_overrides = overrides
                              ? strcmp (overrides, "0")
                              : APPLY_OVERRIDES_DEFAULT;
           g_free (overrides);
+          g_free (min_qod_str);
           SENDF_TO_CLIENT_OR_FAIL ("<apply_overrides>%i</apply_overrides>",
                                    apply_overrides);
+
+          min_qod_str = g_strdup_printf ("%d", min_qod);
 
           while (1)
             {

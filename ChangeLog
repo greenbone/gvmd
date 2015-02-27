@@ -1,3 +1,34 @@
+2015-02-26  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Limit results in report results counting and caching functions to
+	a default minimum QoD of 70.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add QoD checks to
+	report_severity_count.
+
+	* src/manage_sqlite3.c (report_severity_count): Add QoD check.
+
+	* src/manage_sql.c (report_cache_counts): Add min_qod parameter to
+	report_counts_id calls.
+	(report_add_result): Check QoD before counting result in cache.
+	(where_qod): Return clause with default minimum QoD if min_qod is NULL
+	or an empty string.
+	(report_scan_result_count): Use cache if min_qod equals the default.
+	(report_severity_data): Add QoD clause to query.
+	(report_counts): Add min_qod parameter to report_counts_id call.
+	(report_counts_id_filt): Use cache if min_qod equals the default.
+	(report_counts_id): Add min_qod parameter.
+	(report_severity, print_report_assets_xml, print_report_prognostic_xml)
+	(print_report_xml, task_trend): Add min_qod parameter to
+	report_counts_id calls.
+
+	* src/manage.h (MIN_QOD_DEFAULT): New #define.
+	(report_counts_id): Add parameter.
+
+	* src/omp.c (omp_xml_handle_end_element): In case CLIENT_GET_TASKS
+	handle min_qod filter keyword or use default min_qod when getting
+	reports.
+
 2015-02-26  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/openvasmd.c (main): Updated year to 2015.
