@@ -1,3 +1,8 @@
+2015-03-02  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c, src/manage.h (find_alert, find_schedule)
+	(task_threat_level): Remove unused functions.
+
 2015-03-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/report_formats/LaTeX/latex.xsl (results-overview): Add support

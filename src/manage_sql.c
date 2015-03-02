@@ -170,9 +170,6 @@ select_config_nvts (config_t, const char*, int, const char*);
 int
 family_count ();
 
-const char*
-task_threat_level (task_t, int);
-
 static int
 report_counts_cache_exists (report_t, int);
 
@@ -5573,45 +5570,6 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
 
 
 /* Events and Alerts. */
-
-/**
- * @brief Find an alert given a UUID.
- *
- * @param[in]   uuid       UUID of alert.
- * @param[out]  alert  Return.  0 if succesfully failed to find alert.
- *
- * @return FALSE on success (including if failed to find alert), TRUE on
- *         error.
- */
-gboolean
-find_alert (const char* uuid, alert_t* alert)
-{
-  gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("alert", quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *alert = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (alert,
-                     "SELECT id FROM alerts WHERE uuid = '%s';",
-                     quoted_uuid))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *alert = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-  g_free (quoted_uuid);
-  return FALSE;
-}
 
 /**
  * @brief Find a alert for a specific permission, given a UUID.
@@ -13718,31 +13676,6 @@ set_task_schedule_periods (const gchar *task_id, int periods)
   g_free (quoted_task_id);
 
   return 0;
-}
-
-/**
- * @brief Return the threat level of a task, taking overrides into account.
- *
- * @param[in]  task       Task.
- * @param[in]  overrides  Whether to apply overrides.
- *
- * @return Threat level of last report on task if there is one, as a static
- *         string, else NULL.
- */
-const char*
-task_threat_level (task_t task, int overrides)
-{
-  char* severity;
-  double severity_dbl;
-  severity = task_severity (task, overrides, 0);
-
-  if (severity == NULL
-      || sscanf (severity, "%lf", &severity_dbl) != 1)
-    return NULL;
-  else
-    return severity_to_level (severity_dbl, 0);
-
-  return NULL;
 }
 
 /**
@@ -38360,20 +38293,6 @@ verify_scanner (const char *scanner_id, char **version)
 
 
 /* Schedules. */
-
-/**
- * @brief Find a schedule given a UUID.
- *
- * @param[in]   uuid      UUID of schedule.
- * @param[out]  schedule  Schedule return, 0 if succesfully failed to find schedule.
- *
- * @return FALSE on success (including if failed to find schedule), TRUE on error.
- */
-gboolean
-find_schedule (const char* uuid, schedule_t* schedule)
-{
-  return find_resource ("schedule", uuid, schedule);
-}
 
 /**
  * @brief Find a schedule for a specific permission, given a UUID.

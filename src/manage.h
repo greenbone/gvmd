@@ -348,9 +348,6 @@ char *
 alert_uuid (alert_t);
 
 gboolean
-find_alert (const char*, alert_t*);
-
-gboolean
 find_alert_with_permission (const char *, alert_t *, const char *);
 
 int
@@ -632,9 +629,6 @@ task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
 
 const char *
 task_trend (task_t, int);
-
-const char *
-task_threat_level (task_t, int);
 
 int
 task_schedule_periods (task_t);
@@ -2246,9 +2240,6 @@ time_offset (const char *, time_t);
 
 long
 current_offset (const char *);
-
-gboolean
-find_schedule (const char*, schedule_t*);
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
