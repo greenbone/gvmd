@@ -375,18 +375,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <xsl:if test="$certcount &gt; 0">
       <xsl:text>CERT: </xsl:text>
       <xsl:for-each select="$certlist/cert_ref">
-        <xsl:choose>
-          <xsl:when test="@type='DFN-CERT'">
-            <xsl:call-template name="wrap">
-              <xsl:with-param name="string" select="@id"/>
-              <xsl:with-param name="width" select="'55'"/>
-            </xsl:call-template>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>?</xsl:text>
-            <xsl:value-of select="./@id"/>
-          </xsl:otherwise>
-        </xsl:choose>
+        <xsl:call-template name="wrap">
+          <xsl:with-param name="string" select="@id"/>
+          <xsl:with-param name="width" select="'55'"/>
+        </xsl:call-template>
         <xsl:if test="position() &lt; $certcount">
           <xsl:text>, </xsl:text>
         </xsl:if>
