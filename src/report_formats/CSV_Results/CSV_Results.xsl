@@ -320,15 +320,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </xsl:for-each>
     <xsl:if test="$certcount &gt; 0">
       <xsl:for-each select="$certlist/cert_ref">
-        <xsl:choose>
-          <xsl:when test="@type='DFN-CERT'">
-            <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:text>?</xsl:text>
-            <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
-          </xsl:otherwise>
-        </xsl:choose>
+        <xsl:value-of select="str:replace (@id, $quote, $two-quotes)"/>
         <xsl:if test="position() &lt; $certcount">
           <xsl:text>, </xsl:text>
         </xsl:if>
