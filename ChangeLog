@@ -1,5 +1,11 @@
 2015-03-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/report_formats/NBE/NBE.xsl (ref_cert_list): Do not expect CERT
+	references to start with "DFN-CERT" now that other CERT references are
+	supported as well.
+
+2015-03-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/report_formats/HTML/HTML.xsl (ref_cert_list): Do not expect CERT
 	references to start with "DFN-CERT" now that other CERT references are
 	supported as well.
