@@ -818,6 +818,148 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   </xsl:template>
 
+  <xsl:template name="auth-success-row">
+    <xsl:variable name="host" select="host"/>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SSH-Success']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SSH</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Success</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SSH-Failure']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SSH</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Failure</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SMB-Success']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SMB</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Success</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SMB-Failure']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>SMB</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Failure</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-ESXi-Success']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>ESXi</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Success</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-ESXi-Failure']">
+      <tr>
+        <td>
+          <xsl:value-of select="$host"/>
+          <xsl:choose>
+            <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+              <xsl:text>)</xsl:text>
+            </xsl:when>
+          </xsl:choose>
+        </td>
+        <td>
+          <xsl:text>ESXi</xsl:text>
+        </td>
+        <td>
+          <xsl:text>Failure</xsl:text>
+        </td>
+        <td>
+          <xsl:value-of select="value/text()"/>
+        </td>
+      </tr>
+    </xsl:for-each>
+  </xsl:template>
+
   <xsl:template match="report">
     <xsl:choose>
       <xsl:when test="@extension='xml'">
@@ -1080,6 +1222,29 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <td><xsl:value-of select="count(results/result[threat/text() = 'False Positive'])"/></td>
       </tr>
     </table>
+
+   <xsl:choose>
+     <xsl:when test="string-length(/report/host/detail[name='Auth-SSH-Success']/value) &gt; 0 or
+       string-length(/report/host/detail[name='Auth-SSH-Failure']/value) &gt; 0 or
+       string-length(/report/host/detail[name='Auth-SMB-Success']/value) &gt; 0 or
+       string-length(/report/host/detail[name='Auth-SMB-Failure']/value) &gt; 0 or
+       string-length(/report/host/detail[name='Auth-ESXi-Success']/value) &gt; 0 or
+       string-length(/report/host/detail[name='Auth-ESXi-Failure']/value) &gt; 0">
+       <h2>Host Authentications</h2>
+       <table>
+         <tr style="background-color: #d5d5d5;">
+           <td>Host</td>
+           <td>Protocol</td>
+           <td>Result</td>
+           <td>Port/User</td>
+         </tr>
+         <xsl:for-each select="host_start">
+           <xsl:sort select="key('host-by-ip', host)/detail[name='hostname']/value/text()"/>
+           <xsl:call-template name="auth-success-row"/>
+         </xsl:for-each>
+       </table>
+      </xsl:when>
+    </xsl:choose>
 
     <h1>Results per Host</h1>
 
