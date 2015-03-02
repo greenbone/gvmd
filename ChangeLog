@@ -1,5 +1,10 @@
 2015-03-02  Michael Wiegand <michael.wiegand@greenbone.net>
 
+	* src/report_formats/LaTeX/latex.xsl (results-overview): Add support
+	for displaying host authentication results in report summary.
+
+2015-03-02  Michael Wiegand <michael.wiegand@greenbone.net>
+
 	* src/report_formats/TXT/TXT.xsl (ref_cert_list): Do not expect CERT
 	references to start with "DFN-CERT" now that other CERT references are
 	supported as well.

@@ -667,6 +667,112 @@ advice given in each description, in order to rectify the issue.
     <xsl:call-template name="latex-hline"/>
   </xsl:template>
 
+  <xsl:template name="auth-success-row">
+    <xsl:variable name="host" select="host"/>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SSH-Success']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SSH</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Success</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SSH-Failure']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SSH</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Failure</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SMB-Success']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SMB</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Success</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-SMB-Failure']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>SMB</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Failure</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-ESXi-Success']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>ESXi</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Success</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+    <xsl:for-each select="/report/host[ip=$host]/detail[name='Auth-ESXi-Failure']">
+      <xsl:value-of select="$host"/>
+      <xsl:choose>
+        <xsl:when test="string-length(/report/host[ip=$host]/detail[name='hostname']/value) &gt; 0">
+          <xsl:text> - </xsl:text>
+          <xsl:call-template name="escape_text">
+            <xsl:with-param name="string" select="/report/host[ip=$host]/detail[name='hostname']/value/text()"/>
+          </xsl:call-template>
+        </xsl:when>
+      </xsl:choose>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>ESXi</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:text>Failure</xsl:text>
+      <xsl:text> &amp; </xsl:text>
+      <xsl:value-of select="value/text()"/>\\ \hline
+    </xsl:for-each>
+  </xsl:template>
+
   <!-- The Results Overview section. -->
   <xsl:template name="results-overview">
     <xsl:call-template name="latex-section">
@@ -800,6 +906,30 @@ advice given in each description, in order to rectify the issue.
         <xsl:value-of select="openvas:report()/result_count/text()"/>
         <xsl:text> results.</xsl:text>
       </xsl:otherwise>
+    </xsl:choose>
+
+    <xsl:choose>
+      <xsl:when test="string-length(/report/host/detail[name='Auth-SSH-Success']/value) &gt; 0 or
+        string-length(/report/host/detail[name='Auth-SSH-Failure']/value) &gt; 0 or
+        string-length(/report/host/detail[name='Auth-SMB-Success']/value) &gt; 0 or
+        string-length(/report/host/detail[name='Auth-SMB-Failure']/value) &gt; 0 or
+        string-length(/report/host/detail[name='Auth-ESXi-Success']/value) &gt; 0 or
+        string-length(/report/host/detail[name='Auth-ESXi-Failure']/value) &gt; 0">
+        <xsl:call-template name="latex-subsection"><xsl:with-param name="subsection_string">Host Authentications</xsl:with-param></xsl:call-template>
+        <xsl:text>\begin{longtable}{|l|l|l|l|}</xsl:text><xsl:call-template name="newline"/>
+        <xsl:call-template name="latex-hline"/>
+        <xsl:call-template name="longtable-continue-block">
+          <xsl:with-param name="number-of-columns">4</xsl:with-param>
+          <xsl:with-param name="header-color">openvas_report</xsl:with-param>
+          <xsl:with-param name="header-text">Host&amp;Protocol&amp;Result&amp;Port/User</xsl:with-param>
+        </xsl:call-template>
+        <xsl:for-each select="host_start">
+          <xsl:sort select="key('host-by-ip', host)/detail[name='hostname']/value/text()"/>
+          <xsl:call-template name="auth-success-row"/>
+        </xsl:for-each>
+        <xsl:call-template name="latex-hline"/>
+        <xsl:text>\end{longtable}</xsl:text><xsl:call-template name="newline"/>
+      </xsl:when>
     </xsl:choose>
   </xsl:template>
 
