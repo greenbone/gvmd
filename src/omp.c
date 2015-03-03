@@ -115,10 +115,10 @@
 #include <openvas/base/osp.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
+#include <openvas/base/openvas_networking.h>
 #include <openvas/base/pwpolicy.h>
 #include <openvas/misc/openvas_auth.h>
 #include <openvas/misc/openvas_logging.h>
-#include <openvas/misc/openvas_ssh_login.h>
 #include <openvas/omp/xml.h>
 
 #ifdef S_SPLINT_S
