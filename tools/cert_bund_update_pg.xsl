@@ -134,13 +134,13 @@ COMMIT;
 
   <xsl:template match="Advisory">
   <xsl:choose>
-  <xsl:when test="floor (date:seconds (Date)) &gt; number($refdate)">
+  <xsl:when test="floor (date:seconds (str:replace (Date, ' ', 'T'))) &gt; number($refdate)">
   SELECT merge_bund_adv
    ('<xsl:value-of select="Ref_Num"/>',
     '<xsl:value-of select="Ref_Num"/>',
     '',
-    <xsl:value-of select="floor (date:seconds (Date))"/>,
-    <xsl:value-of select="floor (date:seconds (Date))"/>,
+    <xsl:value-of select="floor (date:seconds (str:replace (Date, ' ', 'T')))"/>,
+    <xsl:value-of select="floor (date:seconds (str:replace (Date, ' ', 'T')))"/>,
     '<xsl:value-of select="openvas:sql-quote (Title/text())"/>',
     '<xsl:for-each select="Description/Element/TextBlock">
       <xsl:value-of select="openvas:sql-quote (text())"/>

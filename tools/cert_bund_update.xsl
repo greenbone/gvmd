@@ -44,7 +44,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
   <xsl:template match="Advisory">
   <xsl:choose>
-  <xsl:when test="floor (date:seconds (Date)) &gt; number($refdate)">
+  <xsl:when test="floor (date:seconds (str:replace (Date, ' ', 'T'))) &gt; number($refdate)">
   INSERT OR REPLACE INTO cert_bund_advs (
     uuid,
     name,
@@ -58,8 +58,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     "<xsl:value-of select="Ref_Num"/>",
     "<xsl:value-of select="Ref_Num"/>",
     "",
-    <xsl:value-of select="floor (date:seconds (Date))"/>,
-    <xsl:value-of select="floor (date:seconds (Date))"/>,
+    <xsl:value-of select="floor (date:seconds (str:replace (Date, ' ', 'T')))"/>,
+    <xsl:value-of select="floor (date:seconds (str:replace (Date, ' ', 'T')))"/>,
     "<xsl:value-of select="str:replace(Title/text(), '&quot;', '&quot;&quot;')"/>",
     "<xsl:for-each select="Description/Element/TextBlock">
       <xsl:value-of select="str:replace(text(), '&quot;', '&quot;&quot;')"/>
