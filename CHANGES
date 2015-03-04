@@ -1,3 +1,29 @@
+openvas-manager 5.0.9 (2015-03-04)
+
+This is the ninth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release raises the minimum required version of OpenVAS Libraries to 7.0.8.
+It contains performance improvements for result counting and ensures tasks on
+slaves are stopped when the controlling master terminates as well as fixing a
+small number of other issues.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell and Timo Pollmeier.
+
+Main changes since 5.0.8:
+* The required minimum OpenVAS Libraries version has increased to 7.0.8.
+* Performance of report result counting has been improved.
+* An issue with result counting when using certain filters has been fixed.
+* An issue with running scheduled tasks with durations has been fixed.
+* An issue with empty scan end times has been fixed.
+* Tasks on slaves are now stopped when the controlling master is terminated.
+* A check which resulted in scheduled tasks not starting at all if they could
+  not start within a short interval has been removed.
+
+
 openvas-manager 5.0.8 (2015-01-29)
 
 This is the eighth maintenance release of the openvas-manager 5.0 module for
