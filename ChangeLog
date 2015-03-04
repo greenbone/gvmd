@@ -1,3 +1,8 @@
+2015-03-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (buffer_result_notes_xml): Include all notes the user may
+	access.
+
 2015-03-04  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/cert_bund_update.xsl (Advisory): Replace space in "Date"

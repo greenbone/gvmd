@@ -10784,7 +10784,8 @@ buffer_result_notes_xml (GString *buffer, result_t result, task_t task,
       get_data_t get;
       iterator_t notes;
       memset (&get, '\0', sizeof (get));
-      get.filter = "sort-reverse=created";  /* Most recent first. */
+      /* Most recent first. */
+      get.filter = "sort-reverse=created owner=any permission=any";
       init_note_iterator (&notes,
                           &get,
                           0,
