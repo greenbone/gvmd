@@ -6084,7 +6084,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_GET_START(type)                                                 \
   do                                                                         \
     {                                                                        \
-      if (send_get_start (type, write_to_client, write_to_client_data))      \
+      if (send_get_start (type, omp_parser->client_writer,                   \
+                          omp_parser->client_writer_data))                   \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6103,7 +6104,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   do                                                                           \
     {                                                                          \
       if (send_get_common (G_STRINGIFY (type), get, iterator,                  \
-                           write_to_client, write_to_client_data,              \
+                           omp_parser->client_writer,                          \
+                           omp_parser->client_writer_data,                     \
                            (get)->trash                                        \
                             ? trash_ ## type ## _writable                      \
                                (get_iterator_resource                          \
@@ -6136,8 +6138,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
     {                                                                        \
       if (send_get_end (type, get, count, filtered,                          \
                         resource_count (type, get),                          \
-                        write_to_client,                                     \
-                        write_to_client_data))                               \
+                        omp_parser->client_writer,                           \
+                        omp_parser->client_writer_data))                     \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6156,7 +6158,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
 #define SEND_TO_CLIENT_OR_FAIL(msg)                                          \
   do                                                                         \
     {                                                                        \
-      if (send_to_client (msg, write_to_client, write_to_client_data))       \
+      if (send_to_client (msg, omp_parser->client_writer,                    \
+                          omp_parser->client_writer_data))                   \
         {                                                                    \
           error_send_to_client (error);                                      \
           return;                                                            \
@@ -6177,7 +6180,8 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
   do                                                                         \
     {                                                                        \
       gchar* msg = g_markup_printf_escaped (format , ## args);               \
-      if (send_to_client (msg, write_to_client, write_to_client_data))       \
+      if (send_to_client (msg, omp_parser->client_writer,                    \
+                          omp_parser->client_writer_data))                   \
         {                                                                    \
           g_free (msg);                                                      \
           error_send_to_client (error);                                      \
@@ -11424,7 +11428,7 @@ get_next (iterator_t *resources, get_data_t *get, int *first, int *count,
         }                                                                \
       get_ ## type ## s_data_reset (get_ ## type ## s_data);             \
       set_client_state (CLIENT_AUTHENTIC);                               \
-      break;                                                             \
+      return;                                                            \
     }
 
 /**
@@ -11457,6 +11461,151 @@ get_ovaldi_files ()
     }
   cleanup_iterator (&iterator);
   return result;
+}
+
+static void
+handle_get_scanners (omp_parser_t *omp_parser, GError **error)
+{
+  iterator_t scanners;
+  int ret, count, filtered, first;
+
+  INIT_GET (scanner, Scanner);
+  ret = init_scanner_iterator (&scanners, &get_scanners_data->get);
+  switch (ret)
+    {
+      case 0:
+        break;
+      case 1:
+        if (send_find_error_to_client
+             ("get_scanners", "scanners", get_scanners_data->get.id,
+              omp_parser->client_writer, omp_parser->client_writer_data))
+          {
+            error_send_to_client (error);
+            break;
+          }
+        break;
+      case 2:
+        if (send_find_error_to_client
+             ("get_scanners", "filter", get_scanners_data->get.filt_id,
+              omp_parser->client_writer, omp_parser->client_writer_data))
+          {
+            error_send_to_client (error);
+            break;
+          }
+        break;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_scanners"));
+        break;
+    }
+  if (ret)
+    {
+      get_scanners_data_reset (get_scanners_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
+  SEND_GET_START ("scanner");
+  while (1)
+    {
+      ret = get_next (&scanners, &get_scanners_data->get, &first, &count,
+                      init_scanner_iterator);
+      if (ret == 1)
+        break;
+      if (ret == -1)
+        {
+          internal_error_send_to_client (error);
+          break;
+        }
+
+      SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
+      SENDF_TO_CLIENT_OR_FAIL
+       ("<host>%s</host><port>%d</port><type>%d</type>"
+        "<ca_pub>%s</ca_pub><key_pub>%s</key_pub>",
+        scanner_iterator_host (&scanners), scanner_iterator_port (&scanners),
+        scanner_iterator_type (&scanners), scanner_iterator_ca_pub (&scanners),
+        scanner_iterator_key_pub (&scanners));
+      count++;
+      if (get_scanners_data->get.details)
+        {
+          iterator_t tasks;
+
+          SEND_TO_CLIENT_OR_FAIL ("<tasks>");
+          init_scanner_task_iterator (&tasks,
+                                      get_iterator_resource (&scanners));
+          while (next (&tasks))
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<task id=\"%s\"><name>%s</name></task>",
+              scanner_task_iterator_uuid (&tasks),
+              scanner_task_iterator_name (&tasks));
+          cleanup_iterator (&tasks);
+          SEND_TO_CLIENT_OR_FAIL ("</tasks>");
+        }
+      if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
+          && get_scanners_data->get.details)
+        {
+          char *s_name = NULL, *s_ver = NULL;
+          char *d_name = NULL, *d_ver = NULL;
+          char *p_name = NULL, *p_ver = NULL, *desc = NULL;
+          GSList *params = NULL, *nodes;
+
+          if (!osp_get_version_from_iterator
+                (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name, &p_ver)
+              && !osp_get_details_from_iterator (&scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>%s</name><version>%s</version>"
+                "</scanner><daemon><name>%s</name><version>%s</version>"
+                "</daemon><protocol><name>%s</name><version>%s"
+                "</version></protocol><description>%s</description>",
+                s_name, s_ver, d_name, d_ver, p_name, p_ver, desc);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              nodes = params;
+              while (nodes)
+                {
+                  osp_param_t *param = nodes->data;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<param><id>%s</id><default>%s</default>"
+                    "<description>%s</description>"
+                    "<type>osp_%s</type></param>", osp_param_id (param),
+                    osp_param_default (param), osp_param_desc (param),
+                    osp_param_type_str (param));
+
+                  osp_param_free (nodes->data);
+                  nodes = nodes->next;
+                }
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name></name><version/></scanner>"
+              "<daemon><name/><version/></daemon><protocol><name/>"
+              "<version/></protocol><description/><params/></info>");
+          g_free (s_name);
+          g_free (s_ver);
+          g_free (d_name);
+          g_free (d_ver);
+          g_free (p_name);
+          g_free (p_ver);
+          g_free (desc);
+          g_slist_free (params);
+        }
+      else if (get_scanners_data->get.details)
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<info><scanner><name>OpenVAS</name><version/></scanner>"
+            "<daemon><name/><version/></daemon><protocol><name/>"
+            "<version/></protocol><description/><params/></info>");
+        }
+      SEND_TO_CLIENT_OR_FAIL ("</scanner>");
+    }
+  cleanup_iterator (&scanners);
+  filtered = get_scanners_data->get.id
+              ? 1 : scanner_count (&get_scanners_data->get);
+  SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
+  get_scanners_data_reset (get_scanners_data);
+  set_client_state (CLIENT_AUTHENTIC);
 }
 
 /**
@@ -15661,144 +15810,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         }
 
       case CLIENT_GET_SCANNERS:
-        {
-          iterator_t scanners;
-          int ret, count, filtered, first;
-
-          assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
-
-          INIT_GET (scanner, Scanner);
-          ret = init_scanner_iterator (&scanners, &get_scanners_data->get);
-          switch (ret)
-            {
-              case 0:
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("get_scanners", "scanners", get_scanners_data->get.id,
-                      write_to_client, write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case 2:
-                if (send_find_error_to_client
-                     ("get_scanners", "filter", get_scanners_data->get.filt_id,
-                      write_to_client, write_to_client_data))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_scanners"));
-                break;
-            }
-          if (ret)
-            {
-              get_scanners_data_reset (get_scanners_data);
-              set_client_state (CLIENT_AUTHENTIC);
-              break;
-            }
-
-          SEND_GET_START ("scanner");
-          while (1)
-            {
-              ret = get_next (&scanners, &get_scanners_data->get, &first,
-                              &count, init_scanner_iterator);
-              if (ret == 1)
-                break;
-              if (ret == -1)
-                {
-                  internal_error_send_to_client (error);
-                  return;
-                }
-
-              SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<host>%s</host><port>%d</port><type>%d</type>"
-                "<ca_pub>%s</ca_pub><key_pub>%s</key_pub>",
-                scanner_iterator_host (&scanners),
-                scanner_iterator_port (&scanners),
-                scanner_iterator_type (&scanners),
-                scanner_iterator_ca_pub (&scanners),
-                scanner_iterator_key_pub (&scanners));
-              count++;
-              if (get_scanners_data->get.details)
-                {
-                  iterator_t tasks;
-
-                  SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-                  init_scanner_task_iterator (&tasks, get_iterator_resource
-                                                       (&scanners));
-                  while (next (&tasks))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<task id=\"%s\"><name>%s</name></task>",
-                      scanner_task_iterator_uuid (&tasks),
-                      scanner_task_iterator_name (&tasks));
-                  cleanup_iterator (&tasks);
-                  SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-
-                }
-              if (scanner_iterator_type (&scanners) == SCANNER_TYPE_OSP
-                  && get_scanners_data->get.details)
-                {
-                  char *s_name = NULL, *s_ver = NULL;
-                  char *d_name = NULL, *d_ver = NULL;
-                  char *p_name = NULL, *p_ver = NULL, *desc = NULL;
-                  GSList *params = NULL, *nodes;
-
-                  if (!osp_get_version_from_iterator
-                        (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name,
-                         &p_ver)
-                      && !osp_get_details_from_iterator (&scanners, &desc,
-                                                         &params))
-                    {
-                      SENDF_TO_CLIENT_OR_FAIL
-                       ("<info><scanner><name>%s</name><version>%s</version>"
-                        "</scanner><daemon><name>%s</name><version>%s</version>"
-                        "</daemon><protocol><name>%s</name><version>%s"
-                        "</version></protocol><description>%s</description>",
-                        s_name, s_ver, d_name, d_ver, p_name, p_ver, desc);
-
-                      SENDF_TO_CLIENT_OR_FAIL ("<params>");
-                      nodes = params;
-                      while (nodes)
-                        {
-                          osp_param_t *param = nodes->data;
-
-                          SENDF_TO_CLIENT_OR_FAIL
-                           ("<param><id>%s</id><default>%s</default>"
-                            "<description>%s</description>"
-                            "<type>osp_%s</type></param>", osp_param_id (param),
-                            osp_param_default (param), osp_param_desc (param),
-                            osp_param_type_str (param));
-
-                          osp_param_free (nodes->data);
-                          nodes = nodes->next;
-                        }
-                      SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
-                    }
-                   g_free (s_name);
-                   g_free (s_ver);
-                   g_free (d_name);
-                   g_free (d_ver);
-                   g_free (p_name);
-                   g_free (p_ver);
-                   g_free (desc);
-                   g_slist_free (params);
-                }
-              SEND_TO_CLIENT_OR_FAIL ("</scanner>");
-            }
-          cleanup_iterator (&scanners);
-          filtered = get_scanners_data->get.id
-                      ? 1 : scanner_count (&get_scanners_data->get);
-          SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
-          get_scanners_data_reset (get_scanners_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("GET_SCANNERS", element_name) == 0);
+        return handle_get_scanners (omp_parser, error);
 
       case CLIENT_GET_SCHEDULES:
         {

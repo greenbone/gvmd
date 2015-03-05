@@ -1,3 +1,14 @@
+2015-03-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (SEND_GET_START, SEND_GET_COMMON, SEND_GET_END)
+	(SEND_TO_CLIENT_OR_FAIL, SENDF_TO_CLIENT_OR_FAIL): Adjust macros to use
+	omp_parser variable.
+	(INIT_GET): Return, instead of break.
+	(handle_get_scanners): New function, send scanner info for openvas type
+	too.
+	(omp_xml_handle_end_element): Use handle_get_scanners() in
+	CLIENT_GET_SCANNERS case.
+
 2015-03-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_result_notes_xml): Include all notes the user may
