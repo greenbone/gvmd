@@ -1,3 +1,9 @@
+2015-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (manage_report_host_add): Make the time values
+	match their format specifier, otherwise the libc print functions may
+	segfault on 32 bit.
+
 2015-03-05  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (SEND_GET_START, SEND_GET_COMMON, SEND_GET_END)

@@ -48770,10 +48770,11 @@ manage_report_host_add (report_t report, const char *host, time_t start,
 
   sql ("INSERT INTO report_hosts"
        " (report, host, start_time, end_time, current_port, max_port)"
-       " SELECT %llu, '%s', %llu, %llu, 0, 0"
+       " SELECT %llu, '%s', %lld, %lld, 0, 0"
        " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
-       "                   AND host = '%s');", report, quoted_host, start, end,
-       report, quoted_host);
+       "                   AND host = '%s');",
+       report, quoted_host, (long long) start, (long long) end, report,
+       quoted_host);
   g_free (quoted_host);
 }
 
