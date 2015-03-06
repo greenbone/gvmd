@@ -1,3 +1,8 @@
+2015-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/omp.c (buffer_result_overrides_xml): Include all overrides the
+	user may access.
+
 2015-03-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (manage_report_host_add): Make the time values

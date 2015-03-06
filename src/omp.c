@@ -10825,7 +10825,8 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
       get_data_t get;
       iterator_t overrides;
       memset (&get, '\0', sizeof (get));
-      get.filter = "sort-reverse=created";  /* Most recent first. */
+      /* Most recent first. */
+      get.filter = "sort-reverse=created owner=any permission=any";
       init_override_iterator (&overrides,
                               &get,
                               0,
