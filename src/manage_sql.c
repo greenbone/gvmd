@@ -36948,8 +36948,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
       result_clause = g_strdup_printf
                        (" AND (overrides.nvt ="
                         " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                        " (SELECT id FROM users WHERE users.uuid = '%s')))",
+                        " AND %s",
                         nvt,
                         owned_clause);
 

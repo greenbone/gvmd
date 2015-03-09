@@ -1,5 +1,10 @@
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_override_iterator): Remove SQL that is now
+	created by where_owned_for_get.
+
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_acl.c (where_owned_for_get): Use "" when there are no
 	current credentials.  Use correct value for owner check flag.
 
