@@ -14583,6 +14583,9 @@ result_detection_reference (result_t result, char **ref, char **product,
   if (*name == NULL)
     goto detect_cleanup;
 
+  /* Get the result produced by the detection NVT when it detected the
+   * product.  The result port or description must include the product
+   * location in order for this to work. */
   *ref = sql_string ("SELECT uuid"
                      " FROM results"
                      " WHERE report = %s"

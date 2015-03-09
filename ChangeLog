@@ -1,5 +1,10 @@
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (result_detection_reference): Clarify last SQL
+	statement a little.
+
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_override_iterator): Remove SQL that is now
 	created by where_owned_for_get.
 
