@@ -1,5 +1,9 @@
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_result_iterator): Put close on the right line.
+
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Apply all overrides that a user may access when calculating severities.
 	Hence increase database version to 146.  Add database migration from
 	version 145 to 146.

@@ -16697,8 +16697,7 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
                           " AND dynamic = %d"
                           " LIMIT 1)",
                           override,
-                          dynamic_severity
-                         );
+                          dynamic_severity);
 
       switch (autofp)
         {
