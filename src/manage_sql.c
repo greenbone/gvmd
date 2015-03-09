@@ -13912,14 +13912,15 @@ task_severity (task_t task, int overrides, int offset)
 
   if (overrides)
     {
+      gchar *owned_clause;
+
+      owned_clause = where_owned_for_get ("override", NULL);
+
       ov = g_strdup_printf
             ("SELECT overrides.new_severity"
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
-             " AND ((overrides.owner IS NULL)"
-             "      OR (overrides.owner ="
-             "          (SELECT id FROM users"
-             "           WHERE users.uuid = '%s')))"
+             " AND %s"
              " AND ((overrides.end_time = 0)"
              "      OR (overrides.end_time >= m_now ()))"
              " AND (overrides.task = results.task"
@@ -13937,12 +13938,13 @@ task_severity (task_t task, int overrides, int offset)
              " overrides.port DESC, overrides.severity ASC,"
              " overrides.creation_time DESC"
              " LIMIT 1",
-             current_credentials.uuid,
+             owned_clause,
              severity_sql);
 
       new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                           ov, severity_sql);
 
+      g_free (owned_clause);
       g_free (ov);
     }
   else
@@ -15616,6 +15618,7 @@ report_add_result (report_t report, result_t result)
   double severity, ov_severity;
   int qod;
   rowid_t rowid;
+  gchar *owned_clause;
 
   if (report == 0 || result == 0)
     return;
@@ -15653,15 +15656,14 @@ report_add_result (report_t report, result_t result)
          " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, 1, 0);",
          report, current_credentials.uuid, severity);
 
+  owned_clause = where_owned_for_get ("override", NULL);
+
   ov_severity_str
     = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
                   " FROM overrides, results"
                   " WHERE results.id = %llu"
                   " AND overrides.nvt = results.nvt"
-                  " AND ((overrides.owner IS NULL)"
-                  "      OR (overrides.owner ="
-                  "            (SELECT id FROM users"
-                  "             WHERE users.uuid = '%s')))"
+                  " AND %s"
                   " AND ((overrides.end_time = 0)"
                   "      OR (overrides.end_time >= m_now ()))"
                   " AND (overrides.task ="
@@ -15683,9 +15685,11 @@ report_add_result (report_t report, result_t result)
                   " LIMIT 1",
                   severity,
                   result,
-                  current_credentials.uuid,
+                  owned_clause,
                   report,
                   severity);
+
+  g_free (owned_clause);
 
   if (ov_severity_str == NULL
       || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
@@ -17867,18 +17871,15 @@ init_asset_iterator (iterator_t* iterator, int first_result,
 
       if (apply_overrides)
         {
-          gchar *ov;
+          gchar *ov, *owned_clause;
 
-          assert (current_credentials.uuid);
+          owned_clause = where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT id FROM users"
-                 "  WHERE users.uuid = '%s')))"
+                 " AND %s"
                  " AND ((overrides.end_time = 0)"
                  "      OR (overrides.end_time >= m_now ()))"
                  /** @todo Include tasks.hidden and task pref in_assets? */
@@ -17899,8 +17900,10 @@ init_asset_iterator (iterator_t* iterator, int first_result,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
-                 current_credentials.uuid,
+                 owned_clause,
                  severity_sql);
+
+          g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                               ov, severity_sql);
@@ -18549,8 +18552,7 @@ report_scan_result_count (report_t report, const char* levels,
   if (override)
     {
       gchar *severity_sql, *ov, *auto_type_sql;
-
-      assert (current_credentials.uuid);
+      gchar *owned_clause;
 
       auto_type_sql = NULL;
       if (setting_dynamic_severity_int ())
@@ -18563,14 +18565,13 @@ report_scan_result_count (report_t report, const char* levels,
       else
         severity_sql = g_strdup ("results.severity");
 
+      owned_clause = where_owned_for_get ("override", NULL);
+
       ov = g_strdup_printf
             ("SELECT overrides.new_severity"
              " FROM overrides"
              " WHERE overrides.nvt = results.nvt"
-             " AND ((overrides.owner IS NULL)"
-             " OR (overrides.owner ="
-             " (SELECT id FROM users"
-             "  WHERE users.uuid = '%s')))"
+             " AND %s"
              " AND ((overrides.end_time = 0)"
              "      OR (overrides.end_time >= m_now ()))"
              " AND (overrides.task = results.task"
@@ -18588,8 +18589,10 @@ report_scan_result_count (report_t report, const char* levels,
              " overrides.port DESC, overrides.severity ASC,"
              " overrides.creation_time DESC"
              " LIMIT 1",
-             current_credentials.uuid,
+             owned_clause,
              severity_sql);
+
+      g_free (owned_clause);
 
       new_severity_sql = g_strdup_printf ("coalesce ((%s), %s)",
                                           ov,
@@ -18830,16 +18833,16 @@ sql_stmt_t *
 report_severity_data_prepare ()
 {
   sql_stmt_t *stmt;
+  gchar *owned_clause;
 
+  owned_clause = where_owned_for_get ("override", NULL);
   stmt = sql_prepare ("SELECT 1 FROM overrides"
                       " WHERE (overrides.nvt = $1)"
-                      " AND ((overrides.owner IS NULL)"
-                      "      OR (overrides.owner"
-                      "          = (SELECT id FROM users"
-                      "             WHERE users.uuid = '%s')))"
+                      " AND %s"
                       " AND ((overrides.end_time = 0)"
                       "      OR (overrides.end_time >= m_now ()))",
-                      current_credentials.uuid);
+                      owned_clause);
+  g_free (owned_clause);
   if (stmt == NULL)
     {
       g_warning ("%s: sql_prepare stmt failed\n", __FUNCTION__);
@@ -18857,15 +18860,15 @@ sql_stmt_t *
 report_severity_data_prepare_full (task_t task)
 {
   sql_stmt_t *full_stmt;
+  gchar *owned_clause;
+
+  owned_clause = where_owned_for_get ("override", NULL);
   full_stmt = sql_prepare
                ("SELECT severity_to_type (overrides.new_severity),"
                  "       overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = $1" // 1
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT users.id FROM users"
-                 "  WHERE users.uuid = '%s')))"
+                 " AND %s"
                  " AND ((overrides.end_time = 0)"
                  "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task = 0"
@@ -18883,8 +18886,9 @@ report_severity_data_prepare_full (task_t task)
                  " ORDER BY overrides.result DESC, overrides.task DESC,"
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.modification_time DESC;",
-                 current_credentials.uuid,
+                 owned_clause,
                  task);
+  g_free (owned_clause);
   if (full_stmt == NULL)
     {
       g_warning ("%s: sql_prepare full_stmt failed\n", __FUNCTION__);
@@ -18922,19 +18926,18 @@ report_severity_data (report_t report, int override,
   task_t task;
 
   sql_stmt_t *stmt, *full_stmt;
-  gchar *quoted_host, *severity_sql, *qod_sql;
+  gchar *quoted_host, *severity_sql, *qod_sql, *owned_clause;
   int ret;
+
+  owned_clause = where_owned_for_get ("override", NULL);
 
   if (override
       && sql_int ("SELECT count(*)"
                   " FROM overrides"
-                  " WHERE ((overrides.owner IS NULL)"
-                  "        OR (overrides.owner ="
-                  "            (SELECT id FROM users"
-                  "             WHERE users.uuid = '%s')))"
+                  " WHERE %s"
                   " AND ((overrides.end_time = 0)"
                   "      OR (overrides.end_time >= m_now ()))",
-                  current_credentials.uuid))
+                  owned_clause))
     {
       /* Prepare quick inner statement. */
 
@@ -19250,6 +19253,8 @@ report_severity_data (report_t report, int override,
         }
       cleanup_iterator (&results);
     }
+
+  g_free (owned_clause);
 }
 
 /**
@@ -21019,18 +21024,15 @@ filtered_host_count (const char *levels, const char *search_phrase,
 
       if (apply_overrides)
         {
-          gchar *ov;
+          gchar *ov, *owned_clause;
 
-          assert (current_credentials.uuid);
+          owned_clause = where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
                  " FROM overrides"
                  " WHERE overrides.nvt = results.nvt"
-                 " AND ((overrides.owner IS NULL)"
-                 " OR (overrides.owner ="
-                 " (SELECT id FROM users"
-                 "  WHERE users.uuid = '%s')))"
+                 " AND %s"
                  " AND ((overrides.end_time = 0)"
                  "      OR (overrides.end_time >= m_now ()))"
                  " AND (overrides.task ="
@@ -21050,8 +21052,10 @@ filtered_host_count (const char *levels, const char *search_phrase,
                  " overrides.port DESC, overrides.severity ASC,"
                  " overrides.creation_time DESC"
                  " LIMIT 1",
-                 current_credentials.uuid,
+                 owned_clause,
                  severity_sql);
+
+          g_free (owned_clause);
 
           new_severity_sql = g_strdup_printf ("coalesce ((%s),%s)",
                                               ov, severity_sql);
@@ -36791,13 +36795,18 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     }
   else if (nvt)
     {
+      gchar *owned_clause;
+
+      owned_clause = where_owned_for_get ("override", NULL);
+
       result_clause = g_strdup_printf
-                       (" AND (overrides.nvt ="
-                        " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND ((overrides.owner IS NULL) OR (overrides.owner ="
-                        " (SELECT id FROM users WHERE users.uuid = '%s')))",
+                       (" AND (overrides.nvt"
+                        "      = (SELECT oid FROM nvts WHERE nvts.id = %llu))"
+                        " AND %s",
                         nvt,
-                        current_credentials.uuid);
+                        owned_clause);
+
+      g_free (owned_clause);
     }
   else
     result_clause = NULL;
@@ -36933,13 +36942,19 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     }
   else if (nvt)
     {
+      gchar *owned_clause;
+
+      owned_clause = where_owned_for_get ("override", NULL);
+
       result_clause = g_strdup_printf
                        (" AND (overrides.nvt ="
                         " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
                         " AND ((overrides.owner IS NULL) OR (overrides.owner ="
                         " (SELECT id FROM users WHERE users.uuid = '%s')))",
                         nvt,
-                        current_credentials.uuid);
+                        owned_clause);
+
+      g_free (owned_clause);
     }
   else
     result_clause = NULL;

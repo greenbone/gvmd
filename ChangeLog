@@ -1,3 +1,26 @@
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Apply all overrides that a user may access when calculating severities.
+	Hence increase database version to 146.  Add database migration from
+	version 145 to 146.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 146.
+
+	* src/manage_migrators.c (migrate_145_to_146): New function.
+	(database_migrators): Add migrate_145_to_146.
+
+	* src/manage_sqlite3.c (create_tables): Create result_overrides with
+	generated ownership clause that includes overrides owned by other users.
+
+	* src/manage_sql.c (task_severity, report_scan_result_count)
+	(report_severity_data_prepare, report_severity_data_prepare_full): Get
+	overrides with generated ownership clause that includes overrides owned
+	by other users.
+
+	* src/manage_acl.c (where_owned_for_get): New function.
+
+	* src/manage_acl.h: Add header accordingly.
+
 2015-03-06  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (buffer_result_overrides_xml): Include all overrides the

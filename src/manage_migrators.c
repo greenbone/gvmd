@@ -10022,6 +10022,39 @@ migrate_144_to_145 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 145 to version 146.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_145_to_146 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 145. */
+
+  if (manage_db_version () != 145)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The view result_overrides changed. */
+  sql ("DROP VIEW result_overrides;");
+  sql ("DELETE FROM report_counts;");
+
+  /* Set the database version to 146. */
+
+  set_db_version (146);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10178,6 +10211,7 @@ static migrator_t database_migrators[]
     {143, migrate_142_to_143},
     {144, migrate_143_to_144},
     {145, migrate_144_to_145},
+    {146, migrate_145_to_146},
     /* End marker. */
     {-1, NULL}};
 

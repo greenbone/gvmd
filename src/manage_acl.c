@@ -1317,3 +1317,39 @@ where_owned (const char *type, const get_data_t *get, int owned,
   g_free (user_sql);
   return ret;
 }
+
+/**
+ * @brief Generate ownership part of WHERE, for getting a type of resource.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  user_sql  SQL for getting user.  If NULL SQL will be for current
+ *                       user.
+ *
+ * @return Newly allocated owned clause.
+ */
+gchar *
+where_owned_for_get (const char *type, const char *user_sql)
+{
+  gchar *owned_clause;
+  get_data_t get;
+  array_t *permissions;
+  gchar *user_sql_new;
+
+  if (user_sql)
+    user_sql_new = g_strdup (user_sql);
+  else if (current_credentials.uuid)
+    user_sql_new = g_strdup_printf ("SELECT id FROM users WHERE users.uuid = '%s'",
+                                    current_credentials.uuid);
+  else
+    user_sql_new = NULL;
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup_printf ("get_%ss", type));
+  owned_clause = where_owned_user (current_credentials.uuid, user_sql_new,
+                                   type, &get, 0, "any", 0, permissions);
+  array_free (permissions);
+  g_free (user_sql_new);
+
+  return owned_clause;
+}
