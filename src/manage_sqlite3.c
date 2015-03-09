@@ -2407,7 +2407,6 @@ create_tables ()
        " FROM users, results, overrides"
        " WHERE overrides.nvt = results.nvt"
        "   AND (overrides.result = 0 OR overrides.result = results.id)"
-       // FIX pg too
        "   AND %s"
        " AND ((overrides.end_time = 0)"
        "      OR (overrides.end_time >= m_now ()))"

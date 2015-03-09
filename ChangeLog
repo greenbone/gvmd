@@ -1,5 +1,18 @@
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Apply all overrides for Postgres too.
+
+	* src/manage_migrators.c (migrate_145_to_146): Drop
+	result_new_severities too, for Postgres dependencies.
+
+	* src/manage_pg.c (manage_create_sql_functions): Create result_overrides
+	with generated ownership clause that includes overrides owned by other
+	users.
+
+	* src/manage_sqlite3.c (create_tables): Remove note.
+
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Put close on the right line.
 
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>

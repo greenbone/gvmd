@@ -25,6 +25,7 @@
 
 #include "sql.h"
 #include "manage.h"
+#include "manage_acl.h"
 #include "manage_sql.h"
 
 
@@ -1328,6 +1329,8 @@ manage_create_sql_functions ()
 void
 create_tables ()
 {
+  gchar *owned_clause;
+
   sql ("CREATE TABLE IF NOT EXISTS current_credentials"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL);");
@@ -2121,6 +2124,8 @@ create_tables ()
 
   /* Create result views. */
 
+  owned_clause = where_owned_for_get ("override", "users.id");
+
   sql ("CREATE OR REPLACE VIEW result_overrides AS"
        " SELECT users.id AS user,"
        "        results.id as result,"
@@ -2129,8 +2134,8 @@ create_tables ()
        "        overrides.new_severity AS ov_new_severity"
        " FROM users, results, overrides"
        " WHERE overrides.nvt = results.nvt"
-       "   AND (overrides.result = 0 OR overrides.result = results.id)"
-       "   AND (overrides.owner = 0 OR users.id = overrides.owner)"
+       " AND (overrides.result = 0 OR overrides.result = results.id)"
+       " AND %s"
        " AND ((overrides.end_time = 0)"
        "      OR (overrides.end_time >= m_now ()))"
        " AND (overrides.task ="
@@ -2147,7 +2152,10 @@ create_tables ()
        "      OR overrides.port = results.port)"
        " ORDER BY overrides.result DESC, overrides.task DESC,"
        " overrides.port DESC, overrides.severity ASC,"
-       " overrides.creation_time DESC");
+       " overrides.creation_time DESC",
+       owned_clause);
+
+  g_free (owned_clause);
 
   sql ("CREATE OR REPLACE VIEW result_new_severities AS"
        "  SELECT results.id as result, users.id as user, dynamic, override,"
