@@ -1,5 +1,10 @@
 2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_acl.c (where_owned_for_get): Use "" when there are no
+	current credentials.  Use correct value for owner check flag.
+
+2015-03-09  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Apply all overrides for Postgres too.
 
 	* src/manage_migrators.c (migrate_145_to_146): Drop

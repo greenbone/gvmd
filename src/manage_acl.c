@@ -1346,8 +1346,17 @@ where_owned_for_get (const char *type, const char *user_sql)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup_printf ("get_%ss", type));
-  owned_clause = where_owned_user (current_credentials.uuid, user_sql_new,
-                                   type, &get, 0, "any", 0, permissions);
+  owned_clause = where_owned_user (current_credentials.uuid
+                                    ? current_credentials.uuid
+                                    /* Use user_sql_new. */
+                                    : "",
+                                   user_sql_new,
+                                   type,
+                                   &get,
+                                   1,              /* Do owner checks. */
+                                   "any",
+                                   0,              /* Resource. */
+                                   permissions);
   array_free (permissions);
   g_free (user_sql_new);
 
