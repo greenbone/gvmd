@@ -2982,7 +2982,7 @@ fork_osp_scan_handler (task_t task, target_t target)
  *
  * @param[in]   task_id    The task ID.
  *
- * @return 0 success, -1 error.
+ * @return 0 success, 99 permission denied, -1 error.
  */
 int
 run_osp_task (task_t task)
@@ -2990,6 +2990,22 @@ run_osp_task (task_t task)
   target_t target;
 
   target = task_target (task);
+  if (target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
   /* Fork OSP scan handler. */
   set_task_run_status (task, TASK_STATUS_REQUESTED);
   if (fork_osp_scan_handler (task, target))
@@ -3087,6 +3103,7 @@ run_task (const char *task_id, char **report_id, int from,
       slave_t found;
 
       uuid = slave_uuid (slave);
+      // FIX get_slaves  (plural)
       if (find_slave_with_permission (uuid, &found, "get_slave"))
         {
           g_free (uuid);
@@ -3123,7 +3140,26 @@ run_task (const char *task_id, char **report_id, int from,
     }
 
   target = task_target (task);
-  if (target == 0)
+  if (target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
+    }
+  else
     {
       tracef ("   task target is 0.\n");
       set_task_run_status (task, run_status);

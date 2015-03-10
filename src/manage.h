@@ -1263,6 +1263,9 @@ manage_count_hosts (const char *, const char *);
 gboolean
 find_target (const char*, target_t*);
 
+gboolean
+find_target_with_permission (const char *, target_t *, const char *);
+
 int
 create_target (const char*, const char*, const char*, const char*, const char *,
                const char*, lsc_credential_t, const char*, lsc_credential_t,
@@ -1348,6 +1351,9 @@ target_name (target_t);
 
 char*
 trash_target_name (target_t);
+
+int
+trash_target_readable (target_t);
 
 char*
 target_hosts (target_t);

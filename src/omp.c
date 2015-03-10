@@ -17119,11 +17119,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                  get_iterator_resource
                                                   (&targets));
                       while (next (&tasks))
-                        SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
-                                                 "<name>%s</name>"
-                                                 "</task>",
-                                                 target_task_iterator_uuid (&tasks),
-                                                 target_task_iterator_name (&tasks));
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL ("<task id=\"%s\">"
+                                                   "<name>%s</name>",
+                                                   target_task_iterator_uuid (&tasks),
+                                                   target_task_iterator_name (&tasks));
+                          if (alert_task_iterator_readable (&tasks))
+                            SEND_TO_CLIENT_OR_FAIL ("</task>");
+                          else
+                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                    "</task>");
+                        }
                       cleanup_iterator (&tasks);
                       SEND_TO_CLIENT_OR_FAIL ("</tasks>");
                     }
@@ -17254,7 +17260,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int debugs, holes = 0, infos = 0, logs, warnings = 0;
               int holes_2, infos_2, warnings_2;
               int false_positives, task_scanner_type, slave_available;
-              int schedule_available;
+              int schedule_available, target_available;
               double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
@@ -17515,15 +17521,28 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               observers = task_observers (index);
               config_name = task_config_name (index);
               config_uuid = task_config_uuid (index);
+              target_available = 1;
               if (target_in_trash)
                 {
                   task_target_uuid = trash_target_uuid (target);
                   task_target_name = trash_target_name (target);
+                  target_available = trash_target_readable (target);
+                }
+              else if (target)
+                {
+                  target_t found;
+                  task_target_uuid = target_uuid (target);
+                  task_target_name = target_name (target);
+                  if (find_target_with_permission (task_target_uuid,
+                                                   &found,
+                                                   "get_targets"))
+                    abort ();
+                  target_available = (found > 0);
                 }
               else
                 {
-                  task_target_uuid = target_uuid (target);
-                  task_target_name = target_name (target);
+                  task_target_uuid = NULL;
+                  task_target_name = NULL;
                 }
               slave_available = 1;
               if (task_slave_in_trash (index))
@@ -17604,6 +17623,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "<target id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
+                           "%s"
                            "</target>"
                            "<hosts_ordering>%s</hosts_ordering>"
                            "<scanner id='%s'><name>%s</name>"
@@ -17637,6 +17657,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_target_uuid ?: "",
                            task_target_name ?: "",
                            target_in_trash,
+                           target_available ? "" : "<permissions/>",
                            task_iterator_hosts_ordering (&tasks),
                            task_scanner_uuid,
                            task_scanner_name,
@@ -21708,7 +21729,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          if (find_target (create_task_data->target_id, &target))
+          if (find_target_with_permission (create_task_data->target_id,
+                                           &target,
+                                           "get_targets"))
             {
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;
@@ -24616,9 +24639,10 @@ create_task_fail:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX ("modify_task",
                                           "Status must be New to edit Target"));
-                    else if ((fail = find_target
+                    else if ((fail = find_target_with_permission
                                       (modify_task_data->target_id,
-                                       &target)))
+                                       &target,
+                                       "get_targets")))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
                     else if (target == 0)

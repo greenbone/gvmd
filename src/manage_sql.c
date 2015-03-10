@@ -27951,6 +27951,31 @@ trash_target_name (target_t target)
 }
 
 /**
+ * @brief Return whether a trashcan target is readable.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_target_readable (target_t target)
+{
+  char *uuid;
+  target_t found;
+
+  if (target == 0)
+    return 0;
+  uuid = target_uuid (target);
+  if (find_trash ("target", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
+}
+
+/**
  * @brief Return the hosts associated with a target.
  *
  * @param[in]  target  Target.
@@ -28333,17 +28358,27 @@ trash_target_writable (target_t target)
 void
 init_target_task_iterator (iterator_t* iterator, target_t target)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (target);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks"
+                 "SELECT name, uuid, %s FROM tasks"
                  " WHERE target = %llu"
                  " AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name ASC;",
-                 target,
-                 current_credentials.uuid);
+                 available,
+                 target);
+
+  g_free (available);
 }
 
 /**
@@ -28365,6 +28400,20 @@ DEF_ACCESS (target_task_iterator_name, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (target_task_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+target_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 
 /* Configs. */
