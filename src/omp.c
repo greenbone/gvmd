@@ -11777,22 +11777,22 @@ create_scanner_leave:
 static void
 handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
 {
-  if (modify_scanner_data->ca_pub &&
-      check_scanner_cert (modify_scanner_data->ca_pub))
+  if (modify_scanner_data->ca_pub && *modify_scanner_data->ca_pub
+      && check_scanner_cert (modify_scanner_data->ca_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous CA Certificate."));
       goto modify_scanner_leave;
     }
-  if (modify_scanner_data->key_pub &&
-      check_scanner_cert (modify_scanner_data->key_pub))
+  if (modify_scanner_data->key_pub && *modify_scanner_data->key_pub
+      && check_scanner_cert (modify_scanner_data->key_pub))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Certificate."));
       goto modify_scanner_leave;
     }
-  if (modify_scanner_data->key_priv &&
-      check_scanner_private (modify_scanner_data->key_priv))
+  if (modify_scanner_data->key_priv && *modify_scanner_data->key_priv
+      && check_scanner_private (modify_scanner_data->key_priv))
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Private Key."));

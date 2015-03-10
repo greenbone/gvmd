@@ -1,5 +1,10 @@
 2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (handle_modify_scanner): Don't check empty certificates and
+	key values.
+
+2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (handle_modify_scanner): New function, check that provided
 	certifications and private key values are valid.
 	(omp_xml_handle_end_element): In CLIENT_MODIFY_SCANNER, use
