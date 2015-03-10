@@ -16365,9 +16365,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           c_count = 0L;
           while (next (&aggregate))
             {
+              gchar *value_escaped;
+
               if (data_column || group_column == NULL)
                 c_sum += aggregate_iterator_sum (&aggregate);
               c_count += aggregate_iterator_count (&aggregate);
+
+              if (group_column)
+                value_escaped
+                  = g_markup_escape_text (aggregate_iterator_value (&aggregate),
+                                          0);
+              else
+                value_escaped = NULL;
 
               if (group_column && data_column)
                 g_string_append_printf (xml,
@@ -16381,7 +16390,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<sum>%g</sum>"
                                         "<c_sum>%g</c_sum>"
                                         "</group>",
-                                        aggregate_iterator_value (&aggregate),
+                                        value_escaped,
                                         aggregate_iterator_count (&aggregate),
                                         c_count,
                                         aggregate_iterator_min (&aggregate),
@@ -16396,7 +16405,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         "<count>%d</count>"
                                         "<c_count>%ld</c_count>"
                                         "</group>",
-                                        aggregate_iterator_value (&aggregate),
+                                        value_escaped,
                                         aggregate_iterator_count (&aggregate),
                                         c_count);
               else
@@ -16418,6 +16427,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         aggregate_iterator_sum (&aggregate),
                                         c_sum
                                        );
+
+              g_free (value_escaped);
             }
 
           g_string_append (xml, "<column_info>");
