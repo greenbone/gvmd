@@ -1,5 +1,12 @@
 2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (send_find_error_to_client): Take omp parser as argument
+	instead of client writer and client writer data.
+	(handle_get_scanners, handle_create_scanner)
+	(omp_xml_handle_end_element): Adjust calls to send_find_error_to_client.
+
+2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (check_scanner_cert, check_scanner_private): New functions.
 	(handle_create_scanner): New function, check that provided certs and key
 	are valid.
