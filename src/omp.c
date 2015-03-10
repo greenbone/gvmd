@@ -111,6 +111,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <gnutls/x509.h>
+
 #include <openvas/base/nvti.h>
 #include <openvas/base/osp.h>
 #include <openvas/base/openvas_string.h>
@@ -1487,8 +1489,8 @@ typedef struct
   char *host;               ///< Host of new scanner.
   char *port;               ///< Port of new scanner.
   char *type;               ///< Type of new scanner.
-  char *ca_pub;             ///< CA Public key of new scanner.
-  char *key_pub;            ///< Public key of new scanner.
+  char *ca_pub;             ///< CA Certificate of new scanner.
+  char *key_pub;            ///< Certificate of new scanner.
   char *key_priv;           ///< Private key of new scanner.
 } create_scanner_data_t;
 
@@ -3441,8 +3443,8 @@ typedef struct
   char *port;               ///< Port of scanner.
   char *type;               ///< Type of scanner.
   char *scanner_id;         ///< scanner UUID.
-  char *ca_pub;             ///< CA Public key of scanner.
-  char *key_pub;            ///< Public key of scanner.
+  char *ca_pub;             ///< CA Certificate of scanner.
+  char *key_pub;            ///< Certificate of scanner.
   char *key_priv;           ///< Private key of scanner.
 } modify_scanner_data_t;
 
@@ -11606,6 +11608,174 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
               ? 1 : scanner_count (&get_scanners_data->get);
   SEND_GET_END ("scanner", &get_scanners_data->get, count, filtered);
   get_scanners_data_reset (get_scanners_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+static int
+check_scanner_cert (const char *cert_str)
+{
+  gnutls_x509_crt_t crt;
+  gnutls_datum_t data;
+
+  assert (crt);
+  if (gnutls_x509_crt_init (&crt))
+    return 1;
+  data.size = strlen (cert_str);
+  data.data = (void *) g_strdup (cert_str);
+  if (gnutls_x509_crt_import (crt, &data, GNUTLS_X509_FMT_PEM))
+    {
+      gnutls_x509_crt_deinit (crt);
+      g_free (data.data);
+      return 1;
+    }
+  g_free (data.data);
+  gnutls_x509_crt_deinit (crt);
+  return 0;
+}
+
+static int
+check_scanner_private (const char *key_str)
+{
+  gnutls_x509_privkey_t key;
+  gnutls_datum_t data;
+
+  assert (key);
+  if (gnutls_x509_privkey_init (&key))
+    return 1;
+  data.size = strlen (key_str);
+  data.data = (void *) g_strdup (key_str);
+  if (gnutls_x509_privkey_import (key, &data, GNUTLS_X509_FMT_PEM))
+    {
+      gnutls_x509_privkey_deinit (key);
+      g_free (data.data);
+      return 1;
+    }
+  g_free (data.data);
+  gnutls_x509_privkey_deinit (key);
+  return 0;
+}
+
+static void
+handle_create_scanner (omp_parser_t *omp_parser, GError **error)
+{
+  scanner_t new_scanner;
+
+  if (create_scanner_data->copy)
+    switch (copy_scanner (create_scanner_data->name,
+                          create_scanner_data->comment,
+                          create_scanner_data->copy, &new_scanner))
+      {
+        case 0:
+          {
+            char *uuid;
+            uuid = scanner_uuid (new_scanner);
+            SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_scanner"),
+                                     uuid);
+            log_event ("scanner", "scanner", uuid, "created");
+            g_free (uuid);
+            goto create_scanner_leave;
+          }
+        case 1:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("create_scanner", "Scanner name exists already"));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
+          goto create_scanner_leave;
+        case 2:
+          if (send_find_error_to_client ("create_scanner", "scanner",
+                                         create_scanner_data->copy,
+                                         omp_parser->client_writer,
+                                         omp_parser->client_writer_data))
+            {
+              error_send_to_client (error);
+              goto create_scanner_leave;
+            }
+          log_event_fail ("scanner", "Scanner", NULL, "created");
+          goto create_scanner_leave;
+        case 99:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
+          goto create_scanner_leave;
+        case -1:
+        default:
+          SEND_TO_CLIENT_OR_FAIL
+           (XML_INTERNAL_ERROR ("create_scanner"));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
+          goto create_scanner_leave;
+      }
+
+  if (!create_scanner_data->name || !create_scanner_data->host
+      || !create_scanner_data->port || !create_scanner_data->type
+      || !create_scanner_data->ca_pub || !create_scanner_data->key_pub
+      || !create_scanner_data->key_priv || !create_scanner_data->key_priv)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));
+      goto create_scanner_leave;
+    }
+
+  if (check_scanner_cert (create_scanner_data->ca_pub))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous CA Certificate."));
+      goto create_scanner_leave;
+    }
+  if (check_scanner_cert (create_scanner_data->key_pub))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous Certificate."));
+      goto create_scanner_leave;
+    }
+  if (check_scanner_private (create_scanner_data->key_priv))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous Private Key."));
+      goto create_scanner_leave;
+    }
+  switch (create_scanner
+           (create_scanner_data->name, create_scanner_data->comment,
+            create_scanner_data->host, create_scanner_data->port,
+            create_scanner_data->type, &new_scanner,
+            create_scanner_data->ca_pub, create_scanner_data->key_pub,
+            create_scanner_data->key_priv))
+    {
+      case 0:
+        {
+          char *uuid = scanner_uuid (new_scanner);
+          SENDF_TO_CLIENT_OR_FAIL
+           (XML_OK_CREATED_ID ("create_scanner"), uuid);
+          log_event ("scanner", "Scanner", uuid, "created");
+          g_free (uuid);
+          break;
+        }
+      case 1:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner", "Scanner exists already"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner", "Invalid entity value"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_scanner"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      default:
+        assert (0);
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_scanner"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+    }
+
+create_scanner_leave:
+  create_scanner_data_reset (create_scanner_data);
   set_client_state (CLIENT_AUTHENTIC);
 }
 
@@ -20670,139 +20840,8 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ROLE, USERS);
 
       case CLIENT_CREATE_SCANNER:
-        {
-          scanner_t new_scanner;
-
-          assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
-
-          if (create_scanner_data->copy)
-            switch (copy_scanner (create_scanner_data->name,
-                                  create_scanner_data->comment,
-                                  create_scanner_data->copy,
-                                  &new_scanner))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = scanner_uuid (new_scanner);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_scanner"),
-                                             uuid);
-                    log_event ("scanner", "scanner", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_scanner",
-                                      "Scanner name exists already"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_scanner",
-                                                 "scanner",
-                                                 create_scanner_data->copy,
-                                                 write_to_client,
-                                                 write_to_client_data))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_scanner",
-                                      "Permission denied"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_scanner"));
-                  log_event_fail ("scanner", "Scanner", NULL, "created");
-                  break;
-              }
-          else if (create_scanner_data->name == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a NAME entity"));
-          else if (create_scanner_data->host == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a HOST entity"));
-          else if (create_scanner_data->port == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a PORT entity"));
-          else if (create_scanner_data->type == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a TYPE entity"));
-          else if (create_scanner_data->ca_pub == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a CA_PUB entity"));
-          else if (create_scanner_data->key_pub == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a KEY_PUB entity"));
-          else if (create_scanner_data->key_priv == NULL)
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_scanner",
-                                "CREATE_SCANNER requires a KEY_PRIV entity"));
-          else switch (create_scanner (create_scanner_data->name,
-                                       create_scanner_data->comment,
-                                       create_scanner_data->host,
-                                       create_scanner_data->port,
-                                       create_scanner_data->type,
-                                       &new_scanner,
-                                       create_scanner_data->ca_pub,
-                                       create_scanner_data->key_pub,
-                                       create_scanner_data->key_priv))
-            {
-              case 0:
-                {
-                  char *uuid = scanner_uuid (new_scanner);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_scanner"), uuid);
-                  log_event ("scanner", "Scanner", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Scanner exists already"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Invalid entity value"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_scanner",
-                                    "Permission denied"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_scanner"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-              default:
-                assert (0);
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_scanner"));
-                log_event_fail ("scanner", "Scanner", NULL, "created");
-                break;
-            }
-          create_scanner_data_reset (create_scanner_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("CREATE_SCANNER", element_name) == 0);
+        return handle_create_scanner (omp_parser, error);
       CLOSE (CLIENT_CREATE_SCANNER, COMMENT);
       CLOSE (CLIENT_CREATE_SCANNER, COPY);
       CLOSE (CLIENT_CREATE_SCANNER, NAME);

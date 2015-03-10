@@ -1,3 +1,11 @@
+2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (check_scanner_cert, check_scanner_private): New functions.
+	(handle_create_scanner): New function, check that provided certs and key
+	are valid.
+	(omp_xml_handle_end_element): Call handle_create_scanner, in
+	CLIENT_CREATE_SCANNER case.
+
 2015-03-10  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Install xml_split by default since it has proved helpful for low
