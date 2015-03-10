@@ -12,4 +12,4 @@ for instance during scap-update on machines that are low on RAM to reduce the
 amount of necessary RAM to perform the update.
 
 How to enable: In the *scap-data-sync script use a value greater than 0
-for variable "SPLIT_PART_SIZE" and install xml_split to apropriate place.
+for variable "SPLIT_PART_SIZE".
