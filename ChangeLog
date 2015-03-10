@@ -1,5 +1,15 @@
 2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/omp.c (handle_modify_scanner): New function, check that provided
+	certifications and private key values are valid.
+	(omp_xml_handle_end_element): In CLIENT_MODIFY_SCANNER, use
+	handle_modify_scanner() accordingly.
+
+	* src/scanner.c, src/openvasmd.c, src/manage_sql.c: Update scanners
+	related documentation.
+
+2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/omp.c (send_find_error_to_client): Take omp parser as argument
 	instead of client writer and client writer data.
 	(handle_get_scanners, handle_create_scanner)

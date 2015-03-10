@@ -563,10 +563,10 @@ openvas_scanner_set_address (const char *addr, int port)
 }
 
 /**
- * @brief Set the scanner's CA public key, and public/private key pair.
+ * @brief Set the scanner's CA Certificate, and public/private key pair.
  *
- * @param[in]  ca_pub       CA Public key.
- * @param[in]  key_pub      Scanner public key.
+ * @param[in]  ca_pub       CA Certificate.
+ * @param[in]  key_pub      Scanner Certificate.
  * @param[in]  key_priv     Scanner private key.
  */
 void

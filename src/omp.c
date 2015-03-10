@@ -11774,6 +11774,90 @@ create_scanner_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+static void
+handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
+{
+  if (modify_scanner_data->ca_pub &&
+      check_scanner_cert (modify_scanner_data->ca_pub))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous CA Certificate."));
+      goto modify_scanner_leave;
+    }
+  if (modify_scanner_data->key_pub &&
+      check_scanner_cert (modify_scanner_data->key_pub))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Certificate."));
+      goto modify_scanner_leave;
+    }
+  if (modify_scanner_data->key_priv &&
+      check_scanner_private (modify_scanner_data->key_priv))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous Private Key."));
+      goto modify_scanner_leave;
+    }
+  switch (modify_scanner
+           (modify_scanner_data->scanner_id, modify_scanner_data->name,
+            modify_scanner_data->comment, modify_scanner_data->host,
+            modify_scanner_data->port, modify_scanner_data->type,
+            modify_scanner_data->ca_pub, modify_scanner_data->key_pub,
+            modify_scanner_data->key_priv))
+    {
+      case 0:
+        SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
+        log_event ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                   "modified");
+        break;
+      case 1:
+        if (send_find_error_to_client ("modify_scanner", "scanner",
+                                       modify_scanner_data->scanner_id,
+                                       omp_parser))
+          {
+            error_send_to_client (error);
+            return;
+          }
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 2:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "scanner with new name exists already"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 3:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner", "Missing scanner_id"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 4:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner", "Invalid value"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case 99:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner", "Permission denied"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      default:
+      case -1:
+        SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_scanner"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+    }
+modify_scanner_leave:
+  modify_scanner_data_reset (modify_scanner_data);
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
 /**
  * @brief Handle the end of an OMP XML element.
  *
@@ -23551,72 +23635,8 @@ create_task_fail:
       CLOSE (CLIENT_MODIFY_ROLE, USERS);
 
       case CLIENT_MODIFY_SCANNER:
-        {
-          assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
-
-          switch (modify_scanner
-                   (modify_scanner_data->scanner_id, modify_scanner_data->name,
-                    modify_scanner_data->comment, modify_scanner_data->host,
-                    modify_scanner_data->port, modify_scanner_data->type,
-                    modify_scanner_data->ca_pub, modify_scanner_data->key_pub,
-                    modify_scanner_data->key_priv))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
-                log_event ("scanner", "Scanner",
-                           modify_scanner_data->scanner_id, "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client ("modify_scanner", "scanner",
-                                               modify_scanner_data->scanner_id,
-                                               omp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "scanner with new name exists already"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "MODIFY_SCANNER requires a scanner_id"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "MODIFY_SCANNER invalid value"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_scanner",
-                                    "Permission denied"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_scanner"));
-                log_event_fail ("scanner", "Scanner",
-                                modify_scanner_data->scanner_id, "modified");
-                break;
-            }
-
-          modify_scanner_data_reset (modify_scanner_data);
-          set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
+        assert (strcasecmp ("MODIFY_SCANNER", element_name) == 0);
+        return handle_modify_scanner (omp_parser, error);
       CLOSE (CLIENT_MODIFY_SCANNER, TYPE);
       CLOSE (CLIENT_MODIFY_SCANNER, PORT);
       CLOSE (CLIENT_MODIFY_SCANNER, HOST);

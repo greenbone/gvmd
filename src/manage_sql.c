@@ -37150,8 +37150,8 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
  * @param[in]  host             Host of scanner.
  * @param[in]  port             Port of scanner.
  * @param[in]  type             Type of scanner.
- * @param[in]  ca_pub_path      CA Public key path.
- * @param[in]  key_pub_path     Public key path.
+ * @param[in]  ca_pub_path      CA Certificate path.
+ * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
  *
  * @return 0 success, -1 error, -2 database is wrong version, -3 database needs
@@ -37297,8 +37297,8 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
  * @param[in]  host             Host of scanner.
  * @param[in]  port             Port of scanner.
  * @param[in]  type             Type of scanner.
- * @param[in]  ca_pub_path      CA Public key path.
- * @param[in]  key_pub_path     Public key path.
+ * @param[in]  ca_pub_path      CA Certificate path.
+ * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
  *
  * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
@@ -37496,8 +37496,8 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
- * @param[in]   ca_cert     CA public key for scanner.
- * @param[in]   key_pub     Public key for scanner.
+ * @param[in]   ca_cert     CA Certificate for scanner.
+ * @param[in]   key_pub     Certificate for scanner.
  * @param[in]   key_priv    Private key for scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 Invalid value,
@@ -37597,8 +37597,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   host        Host of scanner.
  * @param[in]   port        Port of scanner.
  * @param[in]   type        Type of scanner.
- * @param[in]   ca_cert     CA public key of scanner or NULL.
- * @param[in]   key_pub     Public key of scanner or NULL.
+ * @param[in]   ca_cert     CA Certificate of scanner or NULL.
+ * @param[in]   key_pub     Certificate of scanner or NULL.
  * @param[in]   key_priv    Private key of scanner or NULL.
  *
  * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
@@ -37900,21 +37900,21 @@ scanner_iterator_type (iterator_t* iterator)
 }
 
 /**
- * @brief Get the CA Public key from a scanner iterator.
+ * @brief Get the CA Certificate from a scanner iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return CA Public key, or NULL if iteration is complete. Freed by
+ * @return CA Certificate, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
 DEF_ACCESS (scanner_iterator_ca_pub, GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
- * @brief Get the Scanner Public key from a scanner iterator.
+ * @brief Get the Scanner Certificate from a scanner iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Scanner Public key, or NULL if iteration is complete. Freed by
+ * @return Scanner Certificate, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
 DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 4);
@@ -38102,11 +38102,11 @@ scanner_type (scanner_t scanner)
 }
 
 /**
- * @brief Return the CA public key of a scanner.
+ * @brief Return the CA Certificate of a scanner.
  *
  * @param[in]  scanner  Scanner.
  *
- * @return Newly allocated CA public key.
+ * @return Newly allocated CA Certificate.
  */
 char *
 scanner_ca_pub (scanner_t scanner)
@@ -38115,11 +38115,11 @@ scanner_ca_pub (scanner_t scanner)
 }
 
 /**
- * @brief Return the public key of a scanner.
+ * @brief Return the Certificate of a scanner.
  *
  * @param[in]  scanner  Scanner.
  *
- * @return Newly allocated public key.
+ * @return Newly allocated Certificate.
  */
 char *
 scanner_key_pub (scanner_t scanner)
