@@ -1,5 +1,11 @@
 2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
+	* src/sql.c, src/sql.h, src/sql_pg.c, src/sql_sqlite3.c (sql_explain)
+	(sql_explain_internal): Revert removal, as these are still used for
+	debugging purposes.
+
+2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
 	* src/manage.c (slave_setup): Fix variable used befored initialization
 	compiler warning.
 
