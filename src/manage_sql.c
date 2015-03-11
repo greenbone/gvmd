@@ -3594,6 +3594,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "role") == 0)
+         || (strcasecmp (type, "scanner") == 0)
          || (strcasecmp (type, "schedule") == 0)
          || (strcasecmp (type, "slave") == 0)
          || (strcasecmp (type, "tag") == 0)
@@ -3638,6 +3639,8 @@ type_pretty_name (const char* type)
     return "Result";
   if (strcasecmp (type, "role") == 0)
     return "Role";
+  if (strcasecmp (type, "scanner") == 0)
+    return "Scanner";
   if (strcasecmp (type, "schedule") == 0)
     return "Schedule";
   if (strcasecmp (type, "slave") == 0)
@@ -3695,6 +3698,8 @@ type_db_name (const char* type)
     return "result";
   if (strcasecmp (type, "Role") == 0)
     return "role";
+  if (strcasecmp (type, "Scanner") == 0)
+    return "scanner";
   if (strcasecmp (type, "Schedule") == 0)
     return "schedule";
   if (strcasecmp (type, "Slave") == 0)
