@@ -1,3 +1,17 @@
+2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (slave_setup): Fix variable used befored initialization
+	compiler warning.
+
+	* src/manage_sql.c (find_target), src/sql.c (sql_x_quiet)
+	(sql_string_quiet, sql_explain, src/sql_pg.c (sql_explain_internal),
+	src/sql_sqlite3.c (sql_explain_internal): Remove unused function.
+
+	* src/manage.h, src/sql.h: Remove unused prototypes.
+
+	* src/omp.c (handle_create_scanner): Fix duplicate statement in
+	comparison.
+
 2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable mixing of the current users targets and tasks, with other

@@ -2352,7 +2352,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       if ((strcmp (status, "Running") == 0)
           || (strcmp (status, "Done") == 0))
         {
-          int ret2;
+          int ret2 = 0;
           omp_get_report_opts_t opts;
 
           if (run_status == TASK_STATUS_REQUESTED)

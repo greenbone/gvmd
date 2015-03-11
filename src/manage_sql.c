@@ -26480,20 +26480,6 @@ manage_set_max_hosts (int new_max)
 }
 
 /**
- * @brief Find a target given a UUID.
- *
- * @param[in]   uuid    UUID of target.
- * @param[out]  target  Target return, 0 if succesfully failed to find target.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_target (const char* uuid, target_t* target)
-{
-  return find_resource ("target", uuid, target);
-}
-
-/**
  * @brief Find a target for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of target.

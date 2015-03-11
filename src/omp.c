@@ -11702,7 +11702,7 @@ handle_create_scanner (omp_parser_t *omp_parser, GError **error)
   if (!create_scanner_data->name || !create_scanner_data->host
       || !create_scanner_data->port || !create_scanner_data->type
       || !create_scanner_data->ca_pub || !create_scanner_data->key_pub
-      || !create_scanner_data->key_priv || !create_scanner_data->key_priv)
+      || !create_scanner_data->key_priv)
     {
       SEND_TO_CLIENT_OR_FAIL
        (XML_ERROR_SYNTAX ("create_scanner", "Missing entity"));

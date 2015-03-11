@@ -1261,9 +1261,6 @@ int
 manage_count_hosts (const char *, const char *);
 
 gboolean
-find_target (const char*, target_t*);
-
-gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 
 int

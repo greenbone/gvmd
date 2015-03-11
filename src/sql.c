@@ -40,12 +40,6 @@ sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 int
 sql_exec_internal (int, sql_stmt_t *);
 
-int
-sql_explain_internal (const char*, va_list);
-
-int
-sql_explain (const char*, ...);
-
 
 /* Helpers. */
 
@@ -415,23 +409,6 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 }
 
 /**
- * @brief Get a particular cell from a SQL query.
- *
- * Skip any logging.
- *
- * @param[in]   sql          Format string for SQL query.
- * @param[in]   args         Arguments for format string.
- * @param[out]  stmt_return  Return from statement.
- *
- * @return 0 success, 1 too few rows, -1 error.
- */
-static int
-sql_x_quiet (char* sql, va_list args, sql_stmt_t** stmt_return)
-{
-  return sql_x_internal (0, sql, args, stmt_return);
-}
-
-/**
  * @brief Get the first value from a SQL query, as a double.
  *
  * @warning Aborts on invalid queries.
@@ -533,39 +510,6 @@ sql_string (char* sql, ...)
 }
 
 /**
- * @brief Get the first value from a SQL query, as a string.
- *
- * @param[in]  sql    Format string for SQL query.
- * @param[in]  ...    Arguments for format string.
- *
- * @return Freshly allocated string containing the result, NULL otherwise.
- *         NULL means that either the selected value was NULL or there were
- *         fewer rows in the result than \p row.
- */
-char*
-sql_string_quiet (char* sql, ...)
-{
-  sql_stmt_t* stmt;
-  const char* ret2;
-  char* ret;
-  int sql_x_ret;
-
-  va_list args;
-  va_start (args, sql);
-  sql_x_ret = sql_x_quiet (sql, args, &stmt);
-  va_end (args);
-  if (sql_x_ret)
-    {
-      sql_finalize (stmt);
-      return NULL;
-    }
-  ret2 = sql_column_text (stmt, 0);
-  ret = g_strdup (ret2);
-  sql_finalize (stmt);
-  return ret;
-}
-
-/**
  * @brief Get a particular cell from a SQL query, as an int64.
  *
  * @param[in]  ret    Return value.
@@ -603,26 +547,6 @@ sql_int64 (long long int* ret, char* sql, ...)
   *ret = sql_column_int64 (stmt, 0);
   sql_finalize (stmt);
   return 0;
-}
-
-/**
- * @brief Write debug messages with the query plan for an SQL query to the log.
- *
- * @param[in] sql   Format string for the SQL query.
- * @param[in] ...   Format string arguments.
- *
- * @return 0 success, -1 error.
- */
-int
-sql_explain (const char *sql, ...)
-{
-  int ret;
-  va_list args;
-  va_start (args, sql);
-  ret = sql_explain_internal (sql, args);
-  va_end (args);
-
-  return ret;
 }
 
 

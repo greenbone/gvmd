@@ -131,9 +131,6 @@ sql_int (char *, ...);
 char *
 sql_string (char *, ...);
 
-char *
-sql_string_quiet (char *, ...);
-
 int
 sql_int64 (long long int * ret, char *, ...);
 
