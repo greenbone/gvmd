@@ -4660,9 +4660,9 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
    * This returns "pseudo-UTC" dates which are used by the GSA charts because
    *  the JavaScript Date objects do not support setting the timezone.
    */
-  if (strcmp (group_column, "created") == 0
-              || strcmp (group_column, "modified") == 0
-              || strcmp (group_column, "published") == 0)
+  if (group_column && (strcmp (group_column, "created") == 0
+                       || strcmp (group_column, "modified") == 0
+                       || strcmp (group_column, "published") == 0))
     outer_group_by
       = g_strdup_printf ("GROUP BY CAST (strftime ('%%s',"
                          "               date(%s, 'unixepoch',"

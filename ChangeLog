@@ -1,3 +1,8 @@
+2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage_sql.c (init_aggregator_iterator): Check group_column null
+	pointer dereference.
+
 2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable mixing of the current users configs and tasks, with other
