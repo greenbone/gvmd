@@ -3108,7 +3108,23 @@ run_task (const char *task_id, char **report_id, int from,
     return -1;
 
   scanner = task_scanner (task);
-  assert (scanner);
+  if (scanner)
+    {
+      char *uuid;
+      scanner_t found;
+
+      uuid = scanner_uuid (scanner);
+      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    assert (0);
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task);
 

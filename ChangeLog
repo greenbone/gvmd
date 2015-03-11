@@ -1,3 +1,23 @@
+2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current user's scanners and tasks, with other
+	people's scanners and tasks, when permissions allow it.
+
+	* src/manage.c (run_task): Check if user may access scanner.
+
+	* src/manage_sql.c (init_scanner_task_iterator): Add column indicating
+	whether the scanner is readable.  Remove owner constraint on task.
+	(scanner_task_iterator_readable): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (handle_get_scanners): Send empty PERMISSIONS in TASK when
+	task is not readable
+	(omp_xml_handle_end_element): Same for scanner in
+	GET_TASKS when scanner is not readable.  In CLIENT_CREATE_TASK and
+	CLIENT_MODIFY_TASK find the scanner with permission, in case it is owned
+	by another user.
+
 2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (init_aggregator_iterator): Check group_column null
@@ -5,7 +25,7 @@
 
 2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Enable mixing of the current users configs and tasks, with other
+	Enable mixing of the current user's configs and tasks, with other
 	people's configs and tasks, when permissions allow it.
 
 	* src/manage.c (run_task): Check if user may access config.
@@ -45,7 +65,7 @@
 
 2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Enable mixing of the current users targets and tasks, with other
+	Enable mixing of the current user's targets and tasks, with other
 	people's targets and tasks, when permissions allow it.
 
 	* src/manage.c (run_osp_task, run_task): Check if user may access target.

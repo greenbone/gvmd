@@ -11533,10 +11533,19 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
           init_scanner_task_iterator (&tasks,
                                       get_iterator_resource (&scanners));
           while (next (&tasks))
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<task id=\"%s\"><name>%s</name></task>",
-              scanner_task_iterator_uuid (&tasks),
-              scanner_task_iterator_name (&tasks));
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<task id=\"%s\">"
+                "<name>%s</name>",
+                scanner_task_iterator_uuid (&tasks),
+                scanner_task_iterator_name (&tasks));
+
+              if (schedule_task_iterator_readable (&tasks))
+                SEND_TO_CLIENT_OR_FAIL ("</task>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</task>");
+            }
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
         }
@@ -17267,6 +17276,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               int holes_2, infos_2, warnings_2;
               int false_positives, task_scanner_type, slave_available;
               int schedule_available, target_available, config_available;
+              int scanner_available;
               double severity = 0, severity_2;
               gchar *response;
               iterator_t alerts, groups, roles;
@@ -17615,12 +17625,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   task_schedule_name = (char*) g_strdup ("");
                   schedule_in_trash = 0;
                 }
+              scanner_available = 1;
               scanner = task_scanner (index);
+              // FIX trash case?
               if (scanner)
                 {
+                  schedule_t found;
+
                   task_scanner_uuid = scanner_uuid (scanner);
                   task_scanner_name = scanner_name (scanner);
                   task_scanner_type = scanner_type (scanner);
+
+                  if (find_scanner_with_permission (task_scanner_uuid,
+                                                    &found,
+                                                    "get_scanners"))
+                    abort ();
+                  scanner_available = (found > 0);
                 }
               else
                 {
@@ -17645,8 +17665,11 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            "%s"
                            "</target>"
                            "<hosts_ordering>%s</hosts_ordering>"
-                           "<scanner id='%s'><name>%s</name>"
-                           "<type>%d</type></scanner>"
+                           "<scanner id='%s'>"
+                           "<name>%s</name>"
+                           "<type>%d</type>"
+                           "%s"
+                           "</scanner>"
                            "<slave id=\"%s\">"
                            "<name>%s</name>"
                            "<trash>%i</trash>"
@@ -17682,6 +17705,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                            task_scanner_uuid,
                            task_scanner_name,
                            task_scanner_type,
+                           scanner_available ? "" : "<permissions/>",
                            task_slave_uuid ?: "",
                            task_slave_name ?: "",
                            task_slave_in_trash (index),
@@ -21766,7 +21790,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          if (find_scanner (create_task_data->scanner_id, &scanner))
+          if (find_scanner_with_permission (create_task_data->scanner_id,
+                                            &scanner,
+                                            "get_scanners"))
             {
               SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
               goto create_task_fail;
@@ -24697,8 +24723,10 @@ create_task_fail:
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_ERROR_SYNTAX
                          ("modify_task", "Status must be New to edit Scanner"));
-                    else if ((fail = find_scanner
-                                      (modify_task_data->scanner_id, &scanner)))
+                    else if ((fail = find_scanner_with_permission
+                                      (modify_task_data->scanner_id,
+                                       &scanner,
+                                       "get_scanners")))
                       SEND_TO_CLIENT_OR_FAIL
                        (XML_INTERNAL_ERROR ("modify_task"));
                     else if (scanner == 0)

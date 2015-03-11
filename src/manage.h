@@ -2223,6 +2223,9 @@ scanner_task_iterator_uuid (iterator_t *);
 const char*
 scanner_task_iterator_name (iterator_t *);
 
+int
+scanner_task_iterator_readable (iterator_t *);
+
 char *
 scanner_name (scanner_t);
 

@@ -38012,15 +38012,26 @@ DEF_ACCESS (scanner_iterator_key_priv, GET_ITERATOR_COLUMN_COUNT + 5);
 void
 init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (scanner);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT id, uuid, name FROM tasks"
+                 "SELECT id, uuid, name, %s FROM tasks"
                  " WHERE scanner = %llu AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name ASC;",
-                 scanner, current_credentials.uuid);
+                 available,
+                 scanner);
+
+  g_free (available);
 }
 
 /**
@@ -38040,6 +38051,20 @@ DEF_ACCESS (scanner_task_iterator_uuid, 1);
  * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
  */
 DEF_ACCESS (scanner_task_iterator_name, 2);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+scanner_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 /**
  * @brief Check whether an scanner is in use.
