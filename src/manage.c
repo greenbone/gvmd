@@ -3086,10 +3086,26 @@ run_task (const char *task_id, char **report_id, int from,
     return 3;
 
   config = task_config (task);
-  if (config == 0)
+  if (config)
+    {
+      char *uuid;
+      config_t found;
+
+      if (from > 0 && config_type (config) > 0)
+        return 4;
+
+      uuid = config_uuid (config);
+      if (find_config_with_permission (uuid, &found, "get_configs"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
     return -1;
-  if (from > 0 && config_type (config) > 0)
-    return 4;
 
   scanner = task_scanner (task);
   assert (scanner);

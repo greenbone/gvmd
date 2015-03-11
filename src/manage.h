@@ -772,6 +772,9 @@ config_task_iterator_name (iterator_t*);
 const char*
 config_task_iterator_uuid (iterator_t*);
 
+int
+config_task_iterator_readable (iterator_t*);
+
 
 /* General severity related facilities. */
 
@@ -1500,6 +1503,9 @@ trash_config_in_use (config_t);
 
 int
 trash_config_writable (config_t);
+
+int
+trash_config_readable_uuid (const gchar *);
 
 int
 config_families_growing (config_t);

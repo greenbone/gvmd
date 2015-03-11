@@ -29511,6 +29511,23 @@ trash_config_writable (config_t config)
 }
 
 /**
+ * @brief Return whether a trashcan config is readable.
+ *
+ * @param[in]  config_id  Config UUID.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_config_readable_uuid (const gchar *config_id)
+{
+  config_t found;
+
+  if (find_trash ("config", config_id, &found))
+    return 0;
+  return found > 0;
+}
+
+/**
  * @brief Initialise a preference iterator.
  *
  * Assume the caller has permission to access the config.
@@ -30185,17 +30202,25 @@ void
 init_config_task_iterator (iterator_t* iterator, config_t config,
                            int ascending)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (config);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT name, uuid FROM tasks"
+                 "SELECT name, uuid, %s FROM tasks"
                  " WHERE config = %llu"
                  " AND hidden = 0"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name %s;",
+                 available,
                  config,
-                 current_credentials.uuid,
                  ascending ? "ASC" : "DESC");
 }
 
@@ -30218,6 +30243,20 @@ DEF_ACCESS (config_task_iterator_name, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (config_task_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+config_task_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 /**
  * @brief Initialise a config timeout iterator.

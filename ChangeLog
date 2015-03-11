@@ -1,3 +1,23 @@
+2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current users configs and tasks, with other
+	people's configs and tasks, when permissions allow it.
+
+	* src/manage.c (run_task): Check if user may access config.
+
+	* src/manage_sql.c (trash_config_readable_uuid): New function.
+	(init_config_task_iterator): Add column indicating whether the config is
+	readable.  Remove owner constraint on task.
+	(config_task_iterator_readable): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	TASK in GET_CONFIGS when task is not readable.  Same for config in
+	GET_TASKS when config is not readable.  In CLIENT_CREATE_TASK and
+	CLIENT_MODIFY_TASK find the config with permission, in case it is owned
+	by another user.
+
 2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/sql.c, src/sql.h, src/sql_pg.c, src/sql_sqlite3.c (sql_explain)
@@ -26,7 +46,7 @@
 	* src/manage.c (run_osp_task, run_task): Check if user may access target.
 
 	* src/manage_sql.c (trash_target_readable): New function.
-	(init_target_task_iterator): Add column indicating whether the alert is
+	(init_target_task_iterator): Add column indicating whether the target is
 	readable.  Remove owner constraint on task.
 	(target_task_iterator_readable): New function.
 
@@ -35,7 +55,7 @@
 	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
 	TASK in GET_TARGETS when task is not readable.  Same for target in
 	GET_TASKS when target is not readable.  In CLIENT_CREATE_TASK and
-	CLIENT_MODIFY_TASK find the alert with permission, in case it is owned
+	CLIENT_MODIFY_TASK find the target with permission, in case it is owned
 	by another user.
 
 2015-03-10  Hani Benhabiles <hani.benhabiles@greenbone.net>
