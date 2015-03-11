@@ -3135,8 +3135,7 @@ run_task (const char *task_id, char **report_id, int from,
       slave_t found;
 
       uuid = slave_uuid (slave);
-      // FIX get_slaves  (plural)
-      if (find_slave_with_permission (uuid, &found, "get_slave"))
+      if (find_slave_with_permission (uuid, &found, "get_slaves"))
         {
           g_free (uuid);
           return -1;

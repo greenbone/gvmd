@@ -753,6 +753,9 @@ user_has_access_uuid (const char *type, const char *uuid,
 
   assert (current_credentials.uuid);
 
+  if (permission && (valid_omp_command (permission) == 0))
+    return 0;
+
   if (!strcmp (current_credentials.uuid,  ""))
     return 1;
 
