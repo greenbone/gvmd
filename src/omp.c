@@ -11463,6 +11463,12 @@ get_ovaldi_files ()
   return result;
 }
 
+/**
+ * @brief Handle end of GET_SCANNERS element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
 static void
 handle_get_scanners (omp_parser_t *omp_parser, GError **error)
 {
@@ -11588,9 +11594,10 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
             }
           else
             SENDF_TO_CLIENT_OR_FAIL
-             ("<info><scanner><name></name><version/></scanner>"
-              "<daemon><name/><version/></daemon><protocol><name/>"
-              "<version/></protocol><description/><params/></info>");
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/></protocol><description/><params/>"
+              "</info>");
           g_free (s_name);
           g_free (s_ver);
           g_free (d_name);
@@ -11604,8 +11611,9 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
         {
           SENDF_TO_CLIENT_OR_FAIL
            ("<info><scanner><name>OpenVAS</name><version/></scanner>"
-            "<daemon><name/><version/></daemon><protocol><name/>"
-            "<version/></protocol><description/><params/></info>");
+            "<daemon><name/><version/></daemon>"
+            "<protocol><name/><version/></protocol><description/><params/>"
+            "</info>");
         }
       SEND_TO_CLIENT_OR_FAIL ("</scanner>");
     }
@@ -11617,13 +11625,20 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+/**
+ * @brief Check that a string represents a valid Certificate.
+ *
+ * @param[in]  cert_str     Certificate string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
 static int
 check_scanner_cert (const char *cert_str)
 {
   gnutls_x509_crt_t crt;
   gnutls_datum_t data;
 
-  assert (crt);
+  assert (cert_str);
   if (gnutls_x509_crt_init (&crt))
     return 1;
   data.size = strlen (cert_str);
@@ -11639,13 +11654,20 @@ check_scanner_cert (const char *cert_str)
   return 0;
 }
 
+/**
+ * @brief Check that a string represents a valid Private Key.
+ *
+ * @param[in]  cert_str     Private Key string.
+ *
+ * @return 0 if valid, 1 otherwise.
+ */
 static int
 check_scanner_private (const char *key_str)
 {
   gnutls_x509_privkey_t key;
   gnutls_datum_t data;
 
-  assert (key);
+  assert (key_str);
   if (gnutls_x509_privkey_init (&key))
     return 1;
   data.size = strlen (key_str);
@@ -11661,6 +11683,12 @@ check_scanner_private (const char *key_str)
   return 0;
 }
 
+/**
+ * @brief Handle end of CREATE_SCANNER element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
 static void
 handle_create_scanner (omp_parser_t *omp_parser, GError **error)
 {
@@ -11783,6 +11811,12 @@ create_scanner_leave:
   set_client_state (CLIENT_AUTHENTIC);
 }
 
+/**
+ * @brief Handle end of MODIFY_SCANNER element.
+ *
+ * @param[in]  omp_parser   OMP parser.
+ * @param[in]  error        Error parameter.
+ */
 static void
 handle_modify_scanner (omp_parser_t *omp_parser, GError **error)
 {

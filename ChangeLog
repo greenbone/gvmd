@@ -1,3 +1,10 @@
+2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/omp.c (handle_get_scanners, check_scanner_cert)
+	(check_scanner_private, handle_create_scanner, handle_modify_scanner):
+	Add functions documentation. Improve code style, and fix compiler
+	warning.
+
 2015-03-11  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.h: Add header.
