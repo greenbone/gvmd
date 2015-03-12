@@ -44433,7 +44433,8 @@ delete_permission (const char *permission_id, int ultimate)
       return 99;
     }
 
-  if (find_permission_with_permission (permission_id, &permission, "delete"))
+  if (find_permission_with_permission (permission_id, &permission,
+                                       "delete_permission"))
     {
       sql ("ROLLBACK;");
       return -1;

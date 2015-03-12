@@ -1,5 +1,9 @@
 2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_permission): Correct permission name.
+
+2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (copy_resource_lock): Add missing "s" to command
 	name.
 
