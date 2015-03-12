@@ -2551,6 +2551,8 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
 
   tracef ("   Running slave task %llu\n", task);
 
+  // FIX permission checks  may the user still access the slave, target, port list etc?
+
   slave = task_slave (task);
   tracef ("   %s: slave: %llu\n", __FUNCTION__, slave);
   assert (slave);
@@ -3078,6 +3080,7 @@ run_task (const char *task_id, char **report_id, int from,
   config_t config;
   lsc_credential_t ssh_credential, smb_credential, esxi_credential;
   report_t last_stopped_report;
+  port_list_t port_list;
 
   task = 0;
   if (find_task_with_permission (task_id, &task, permission))
@@ -3196,6 +3199,25 @@ run_task (const char *task_id, char **report_id, int from,
       set_task_run_status (task, run_status);
       return -2;
     }
+
+  port_list = target_port_list (target);
+  if (port_list)
+    {
+      char *uuid;
+      port_list_t found;
+
+      uuid = port_list_uuid (port_list);
+      if (find_port_list_with_permission (uuid, &found, "get_scanners"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    return -1;
 
   ssh_credential = target_ssh_lsc_credential (target);
   smb_credential = target_smb_lsc_credential (target);

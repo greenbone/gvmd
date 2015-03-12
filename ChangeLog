@@ -1,5 +1,26 @@
 2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Enable mixing of the current user's port lists and targets, with other
+	people's port lists and targets, when permissions allow it.
+
+	* src/manage.c (run_task): Check if user may access port list.
+
+	* src/manage_sql.c (modify_target): Find port list with permission, in
+	case it is owned by another user.
+	(trash_port_list_readable_uuid): New function.
+	(init_port_list_target_iterator): Add column indicating whether the port
+	list is readable.  Remove owner constraint on target.  Remove unused
+	"all" case.
+	(port_list_target_iterator_readable): New function.
+
+	* src/manage.h, src/manage_sql.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	TARGET in GET_PORT_LISTS when target is not readable.  Same for port
+	list in GET_TARGETS when port list is not readable.
+
+2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (delete_permission): Correct permission name.
 
 2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
@@ -61,10 +82,10 @@
 
 	* src/omp.c (handle_get_scanners): Send empty PERMISSIONS in TASK when
 	task is not readable
-	(omp_xml_handle_end_element): Same for scanner in
-	GET_TASKS when scanner is not readable.  In CLIENT_CREATE_TASK and
-	CLIENT_MODIFY_TASK find the scanner with permission, in case it is owned
-	by another user.
+	(omp_xml_handle_end_element): Send empty PERMISSIONS in
+	SCANNER in GET_TASKS when scanner is not readable  In CLIENT_CREATE_TASK
+	and CLIENT_MODIFY_TASK find the scanner with permission, in case it is
+	owned by another user.
 
 2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 

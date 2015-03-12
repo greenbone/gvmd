@@ -27249,7 +27249,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
 
       port_list = 0;
-      if (find_port_list (port_list_id, &port_list))
+      if (find_port_list_with_permission (port_list_id, &port_list,
+                                          "get_port_lists"))
         {
           sql ("ROLLBACK;");
           return -1;
@@ -45998,6 +45999,25 @@ trash_port_list_writable (port_list_t port_list)
 }
 
 /**
+ * @brief Return whether a trashcan port list is readable.
+ *
+ * @param[in]  port_list_id  Port list UUID.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_port_list_readable_uuid (const gchar *port_list_id)
+{
+  port_list_t found;
+
+  if (port_list_id == NULL)
+    return 0;
+  if (find_trash ("port_list", port_list_id, &found))
+    return 0;
+  return found > 0;
+}
+
+/**
  * @brief Initialise a port_range iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -46154,7 +46174,7 @@ port_range_iterator_type_int (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise a port_range iterator.
+ * @brief Initialise a port list target iterator.
  *
  * @param[in]  iterator    Iterator.
  * @param[in]  port_list   Port list.
@@ -46164,26 +46184,27 @@ void
 init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
                                 int ascending)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
 
-  if (port_list)
-    init_iterator (iterator,
-                   "SELECT uuid, name FROM targets"
-                   " WHERE port_range = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY name %s;",
-                   port_list,
-                   current_credentials.uuid,
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT uuid, name FROM targets"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
-                   " ORDER BY name %s;",
-                   current_credentials.uuid,
-                   ascending ? "ASC" : "DESC");
+  assert (port_list);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_targets"));
+  available = where_owned ("target", &get, 1, "any", 0, permissions);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "SELECT uuid, name, %s FROM targets"
+                 " WHERE port_range = %llu"
+                 " ORDER BY name %s;",
+                 available,
+                 port_list,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (available);
 }
 
 /**
@@ -46205,6 +46226,20 @@ DEF_ACCESS (port_list_target_iterator_uuid, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (port_list_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+port_list_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 
 /* Roles. */

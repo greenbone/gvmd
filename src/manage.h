@@ -2774,6 +2774,9 @@ gboolean
 find_port_list (const char*, port_list_t*);
 
 gboolean
+find_port_list_with_permission (const char *, port_list_t *, const char *);
+
+gboolean
 find_port_range (const char*, port_list_t*);
 
 int
@@ -2837,6 +2840,9 @@ int
 trash_port_list_in_use (port_list_t);
 #endif
 
+int
+trash_port_list_readable_uuid (const gchar *);
+
 void
 init_port_range_iterator (iterator_t*, port_range_t, int, int, const char*);
 
@@ -2866,6 +2872,9 @@ port_list_target_iterator_uuid (iterator_t*);
 
 const char*
 port_list_target_iterator_name (iterator_t*);
+
+int
+port_list_target_iterator_readable (iterator_t*);
 
 
 /* Roles. */
