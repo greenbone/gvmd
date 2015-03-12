@@ -1,5 +1,10 @@
 2015-03-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* src/manage_sql.c (report_counts): Change permission parameter of
+	find_report_with_permission to "get_reports" so it is a valid command.
+
+2015-03-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/schema_formats/XML/OMP.xml.in (get_aggregates): Add an example.
 
 	* doc/omp.rnc, doc/omp.html: Update from source.

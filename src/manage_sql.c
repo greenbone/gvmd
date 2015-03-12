@@ -19291,7 +19291,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
 {
   report_t report;
   // TODO Wrap in transaction.
-  if (find_report_with_permission (report_id, &report, "get_report"))
+  if (find_report_with_permission (report_id, &report, "get_reports"))
     return -1;
   // TODO Check if report was found.
   return report_counts_id (report, debugs, holes, infos, logs, warnings,
