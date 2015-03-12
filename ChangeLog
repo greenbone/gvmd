@@ -1,3 +1,8 @@
+2015-03-12  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/omp.c (xml_handle_end_element): In CLIENT_GET_AGGREGATES case,
+	set the length parameter of g_markup_escape_text to -1.
+
 2015-03-11  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/omp.c (handle_get_scanners, check_scanner_cert)

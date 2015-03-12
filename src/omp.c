@@ -16552,7 +16552,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               if (group_column)
                 value_escaped
                   = g_markup_escape_text (aggregate_iterator_value (&aggregate),
-                                          0);
+                                          -1);
               else
                 value_escaped = NULL;
 
