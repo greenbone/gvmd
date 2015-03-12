@@ -26875,7 +26875,8 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
 
   if (port_list_id)
     {
-      if (find_port_list (port_list_id, &port_list)
+      if (find_port_list_with_permission (port_list_id, &port_list,
+                                          "get_port_lists")
           || (port_list == 0))
         {
           g_free (quoted_name);

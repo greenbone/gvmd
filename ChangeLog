@@ -1,5 +1,10 @@
 2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_target): Find port list with permission, in
+	case it is owned by another user.
+
+2015-03-12  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Enable mixing of the current user's port lists and targets, with other
 	people's port lists and targets, when permissions allow it.
 
