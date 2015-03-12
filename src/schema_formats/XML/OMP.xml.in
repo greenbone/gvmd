@@ -8283,7 +8283,104 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
       </ele>
     </response>
-
+    <example>
+      <summary>Get severity statistics of NVTs by family</summary>
+      <request>
+        <get_aggregates type="nvt" group_column="family" data_column="severity">
+        </get_aggregates>
+      </request>
+      <response>
+        <get_aggregates_response status_text="OK" status="200">
+          <aggregate>
+            <data_type>nvt</data_type>
+            <data_column>severity</data_column>
+            <group_column>family</group_column>
+            <group>
+              <value>AIX Local Security Checks</value>
+              <count>1</count>
+              <c_count>1</c_count>
+              <min>3.3</min>
+              <max>3.3</max>
+              <mean>3.3</mean>
+              <sum>3.3</sum>
+              <c_sum>3.3</c_sum>
+            </group>
+            <group>
+              <value>Brute force attacks</value>
+              <count>8</count>
+              <c_count>9</c_count>
+              <min>0</min>
+              <max>7.8</max>
+              <mean>6.275</mean>
+              <sum>50.2</sum>
+              <c_sum>53.5</c_sum>
+            </group>
+            <group>
+              <value>Buffer overflow</value>
+              <count>519</count>
+              <c_count>528</c_count>
+              <min>10</min>
+              <max>9.7</max>
+              <mean>8.63083</mean>
+              <sum>4479.4</sum>
+              <c_sum>4532.9</c_sum>
+            </group>
+            <truncated>...</truncated>
+            <column_info>
+              <aggregate_column>
+                <name>value</name>
+                <stat>value</stat>
+                <type>nvt</type>
+                <column>family</column>
+                <data_type>text</data_type>
+              </aggregate_column>
+              <aggregate_column>
+                <name>count</name>
+                <stat>count</stat>
+                <type>nvt</type>
+                <column></column>
+                <data_type>integer</data_type>
+              </aggregate_column>
+              <aggregate_column>
+                <name>c_count</name>
+                <stat>c_count</stat>
+                <type>nvt</type>
+                <column></column>
+                <data_type>integer</data_type>
+              </aggregate_column>
+              <aggregate_column>
+                <name>min</name>
+                <stat>min</stat>
+                <type>nvt</type>
+                <column>severity</column>
+                <data_type>cvss</data_type>
+              </aggregate_column>
+              <truncated>...</truncated>
+            </column_info>
+          </aggregate>
+          <filters id="">
+            <term>first=1 rows=-1 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>-1</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+        </get_aggregates_response>
+      </response>
+    </example>
   </command>
 
   <command>

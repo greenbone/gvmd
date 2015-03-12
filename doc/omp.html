@@ -14574,6 +14574,104 @@ get_aggregates_response_filters_keywords_keyword_value
      }
 </pre></div>
 </div>
+<h4>7.52.3 Example: Get severity statistics of NVTs by family</h4>
+<div style="margin-left: 5%; margin-right: 5%;">
+<i>Client</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_aggregates type="nvt"
+                 group_column="family"
+                 data_column="severity"/&gt;
+</pre></div>
+<i>Manager</i><div style="margin-left: 2%; margin-right: 2%;"><pre> &lt;get_aggregates_response status_text="OK"
+                          status="200"&gt;
+   &lt;aggregate&gt;
+     &lt;data_type&gt;nvt&lt;/data_type&gt;
+     &lt;data_column&gt;severity&lt;/data_column&gt;
+     &lt;group_column&gt;family&lt;/group_column&gt;
+     &lt;group&gt;
+       &lt;value&gt;AIX Local Security Checks&lt;/value&gt;
+       &lt;count&gt;1&lt;/count&gt;
+       &lt;c_count&gt;1&lt;/c_count&gt;
+       &lt;min&gt;3.3&lt;/min&gt;
+       &lt;max&gt;3.3&lt;/max&gt;
+       &lt;mean&gt;3.3&lt;/mean&gt;
+       &lt;sum&gt;3.3&lt;/sum&gt;
+       &lt;c_sum&gt;3.3&lt;/c_sum&gt;
+     &lt;/group&gt;
+     &lt;group&gt;
+       &lt;value&gt;Brute force attacks&lt;/value&gt;
+       &lt;count&gt;8&lt;/count&gt;
+       &lt;c_count&gt;9&lt;/c_count&gt;
+       &lt;min&gt;0&lt;/min&gt;
+       &lt;max&gt;7.8&lt;/max&gt;
+       &lt;mean&gt;6.275&lt;/mean&gt;
+       &lt;sum&gt;50.2&lt;/sum&gt;
+       &lt;c_sum&gt;53.5&lt;/c_sum&gt;
+     &lt;/group&gt;
+     &lt;group&gt;
+       &lt;value&gt;Buffer overflow&lt;/value&gt;
+       &lt;count&gt;519&lt;/count&gt;
+       &lt;c_count&gt;528&lt;/c_count&gt;
+       &lt;min&gt;10&lt;/min&gt;
+       &lt;max&gt;9.7&lt;/max&gt;
+       &lt;mean&gt;8.63083&lt;/mean&gt;
+       &lt;sum&gt;4479.4&lt;/sum&gt;
+       &lt;c_sum&gt;4532.9&lt;/c_sum&gt;
+     &lt;/group&gt;
+     ...
+     &lt;column_info&gt;
+       &lt;aggregate_column&gt;
+         &lt;name&gt;value&lt;/name&gt;
+         &lt;stat&gt;value&lt;/stat&gt;
+         &lt;type&gt;nvt&lt;/type&gt;
+         &lt;column&gt;family&lt;/column&gt;
+         &lt;data_type&gt;text&lt;/data_type&gt;
+       &lt;/aggregate_column&gt;
+       &lt;aggregate_column&gt;
+         &lt;name&gt;count&lt;/name&gt;
+         &lt;stat&gt;count&lt;/stat&gt;
+         &lt;type&gt;nvt&lt;/type&gt;
+         &lt;column/&gt;
+         &lt;data_type&gt;integer&lt;/data_type&gt;
+       &lt;/aggregate_column&gt;
+       &lt;aggregate_column&gt;
+         &lt;name&gt;c_count&lt;/name&gt;
+         &lt;stat&gt;c_count&lt;/stat&gt;
+         &lt;type&gt;nvt&lt;/type&gt;
+         &lt;column/&gt;
+         &lt;data_type&gt;integer&lt;/data_type&gt;
+       &lt;/aggregate_column&gt;
+       &lt;aggregate_column&gt;
+         &lt;name&gt;min&lt;/name&gt;
+         &lt;stat&gt;min&lt;/stat&gt;
+         &lt;type&gt;nvt&lt;/type&gt;
+         &lt;column&gt;severity&lt;/column&gt;
+         &lt;data_type&gt;cvss&lt;/data_type&gt;
+       &lt;/aggregate_column&gt;
+       ...
+     &lt;/column_info&gt;
+   &lt;/aggregate&gt;
+   &lt;filters id=""&gt;
+     &lt;term&gt;first=1 rows=-1 sort=name&lt;/term&gt;
+     &lt;keywords&gt;
+       &lt;keyword&gt;
+         &lt;column&gt;first&lt;/column&gt;
+         &lt;relation&gt;=&lt;/relation&gt;
+         &lt;value&gt;1&lt;/value&gt;
+       &lt;/keyword&gt;
+       &lt;keyword&gt;
+         &lt;column&gt;rows&lt;/column&gt;
+         &lt;relation&gt;=&lt;/relation&gt;
+         &lt;value&gt;-1&lt;/value&gt;
+       &lt;/keyword&gt;
+       &lt;keyword&gt;
+         &lt;column&gt;sort&lt;/column&gt;
+         &lt;relation&gt;=&lt;/relation&gt;
+         &lt;value&gt;name&lt;/value&gt;
+       &lt;/keyword&gt;
+     &lt;/keywords&gt;
+   &lt;/filters&gt;
+ &lt;/get_aggregates_response&gt;
+</pre></div>
+</div>
 </div>
 <div>
 <div><h3 id="command_get_alerts">7.53
@@ -18869,8 +18967,8 @@ get_notes_response_note
               &lt;<b>nvt</b>&gt;
               <ul style="list-style: none">
 <li>
-          @<b>id</b>
-          (<a href="#type_uuid">uuid</a>)
+          @<b>oid</b>
+          (<a href="#type_oid">oid</a>)
           </li>
 <li>
               &lt;<b>name</b>&gt;
@@ -19119,7 +19217,7 @@ get_notes_response_note
 get_nvts_response_nvt
  = element nvt
      {
-       attribute id { uuid }
+       attribute oid { oid }
        &amp; get_nvts_response_nvt_name
        &amp; get_nvts_response_nvt_user_tags
        &amp; ( get_nvts_response_nvt_creation_time

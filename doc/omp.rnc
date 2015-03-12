@@ -11088,7 +11088,7 @@ get_nvts_response
 get_nvts_response_nvt
  = element nvt
      {
-       attribute id { uuid }
+       attribute oid { oid }
        & get_nvts_response_nvt_name
        & get_nvts_response_nvt_user_tags
        & ( get_nvts_response_nvt_creation_time
