@@ -4013,7 +4013,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     }
   g_free (command);
 
-  command = g_strdup_printf ("get_%s", type);
+  command = g_strdup_printf ("get_%ss", type);
   if (find_resource_with_permission (type, resource_id, &resource, command, 0))
     {
       g_free (command);
