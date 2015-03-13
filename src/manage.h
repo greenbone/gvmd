@@ -1777,9 +1777,14 @@ task_role_iterator_uuid (iterator_t*);
 gboolean
 find_lsc_credential (const char*, lsc_credential_t*);
 
+gboolean
+find_lsc_credential_with_permission (const char*, lsc_credential_t*,
+                                     const char*);
+
 int
 create_lsc_credential (const char*, const char*, const char*, const char*,
                        const char*, lsc_credential_t*);
+
 int
 copy_lsc_credential (const char*, const char*, const char*,
                      lsc_credential_t*);
@@ -1850,6 +1855,9 @@ const char*
 lsc_credential_target_iterator_name (iterator_t*);
 
 int
+lsc_credential_target_iterator_readable (iterator_t*);
+
+int
 trash_lsc_credential_in_use (lsc_credential_t);
 
 int
@@ -1860,6 +1868,9 @@ trash_lsc_credential_writable (lsc_credential_t);
 
 int
 lsc_credential_writable (lsc_credential_t);
+
+int
+trash_lsc_credential_readable (lsc_credential_t);
 
 
 /* Agents. */

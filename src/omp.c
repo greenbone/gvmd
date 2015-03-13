@@ -13986,12 +13986,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   init_lsc_credential_target_iterator
                    (&targets, get_iterator_resource (&credentials), 0);
                   while (next (&targets))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<target id=\"%s\">"
-                      "<name>%s</name>"
-                      "</target>",
-                      lsc_credential_target_iterator_uuid (&targets),
-                      lsc_credential_target_iterator_name (&targets));
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<target id=\"%s\">"
+                        "<name>%s</name>",
+                        lsc_credential_target_iterator_uuid (&targets),
+                        lsc_credential_target_iterator_name (&targets));
+                      if (lsc_credential_target_iterator_readable (&targets))
+                        SEND_TO_CLIENT_OR_FAIL ("</target>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</target>");
+                    }
                   cleanup_iterator (&targets);
 
                   SEND_TO_CLIENT_OR_FAIL ("</targets>");
@@ -17041,6 +17047,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   lsc_credential_t ssh_credential, smb_credential;
                   lsc_credential_t esxi_credential;
                   int port_list_trash, max_hosts, port_list_available;
+                  int ssh_lsc_credential_available;
+                  int smb_lsc_credential_available;
+                  int esxi_lsc_credential_available;
 
                   ret = get_next (&targets, &get_targets_data->get, &first,
                                   &count, init_target_iterator);
@@ -17055,40 +17064,88 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   ssh_credential = target_iterator_ssh_credential (&targets);
                   smb_credential = target_iterator_smb_credential (&targets);
                   esxi_credential = target_iterator_esxi_credential (&targets);
+                  ssh_lsc_credential_available = 1;
                   if (get_targets_data->get.trash
                       && target_iterator_ssh_trash (&targets))
                     {
                       ssh_lsc_name = trash_lsc_credential_name (ssh_credential);
                       ssh_lsc_uuid = trash_lsc_credential_uuid (ssh_credential);
+                      ssh_lsc_credential_available
+                       = trash_lsc_credential_readable (ssh_credential);
+                    }
+                  else if (ssh_credential)
+                    {
+                      lsc_credential_t found;
+
+                      ssh_lsc_name = lsc_credential_name (ssh_credential);
+                      ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
+                      if (find_lsc_credential_with_permission
+                           (ssh_lsc_uuid,
+                            &found,
+                            "get_lsc_credentials"))
+                        abort ();
+                      ssh_lsc_credential_available = (found > 0);
                     }
                   else
                     {
-                      ssh_lsc_name = lsc_credential_name (ssh_credential);
-                      ssh_lsc_uuid = lsc_credential_uuid (ssh_credential);
+                      ssh_lsc_name = NULL;
+                      ssh_lsc_uuid = NULL;
                     }
+                  smb_lsc_credential_available = 1;
                   if (get_targets_data->get.trash
                       && target_iterator_smb_trash (&targets))
                     {
                       smb_lsc_name = trash_lsc_credential_name (smb_credential);
                       smb_lsc_uuid = trash_lsc_credential_uuid (smb_credential);
+                      smb_lsc_credential_available
+                       = trash_lsc_credential_readable (smb_credential);
+                    }
+                  else if (smb_credential)
+                    {
+                      lsc_credential_t found;
+
+                      smb_lsc_name = lsc_credential_name (smb_credential);
+                      smb_lsc_uuid = lsc_credential_uuid (smb_credential);
+                      if (find_lsc_credential_with_permission
+                           (smb_lsc_uuid,
+                            &found,
+                            "get_lsc_credentials"))
+                        abort ();
+                      smb_lsc_credential_available = (found > 0);
                     }
                   else
                     {
-                      smb_lsc_name = lsc_credential_name (smb_credential);
-                      smb_lsc_uuid = lsc_credential_uuid (smb_credential);
+                      smb_lsc_name = NULL;
+                      smb_lsc_uuid = NULL;
                     }
+                  esxi_lsc_credential_available = 1;
                   if (get_targets_data->get.trash
                       && target_iterator_esxi_trash (&targets))
                     {
                       esxi_lsc_name
-                        = trash_lsc_credential_name (smb_credential);
+                       = trash_lsc_credential_name (esxi_credential);
                       esxi_lsc_uuid
-                        = trash_lsc_credential_uuid (smb_credential);
+                       = trash_lsc_credential_uuid (esxi_credential);
+                      esxi_lsc_credential_available
+                       = trash_lsc_credential_readable (esxi_credential);
+                    }
+                  else if (esxi_credential)
+                    {
+                      lsc_credential_t found;
+
+                      esxi_lsc_name = lsc_credential_name (esxi_credential);
+                      esxi_lsc_uuid = lsc_credential_uuid (esxi_credential);
+                      if (find_lsc_credential_with_permission
+                           (esxi_lsc_uuid,
+                            &found,
+                            "get_lsc_credentials"))
+                        abort ();
+                      esxi_lsc_credential_available = (found > 0);
                     }
                   else
                     {
-                      esxi_lsc_name = lsc_credential_name (esxi_credential);
-                      esxi_lsc_uuid = lsc_credential_uuid (esxi_credential);
+                      esxi_lsc_name = NULL;
+                      esxi_lsc_uuid = NULL;
                     }
                   port_list_uuid = target_iterator_port_list_uuid (&targets);
                   port_list_name = target_iterator_port_list_name (&targets);
@@ -17139,16 +17196,44 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "<ssh_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
                                            "<port>%s</port>"
-                                           "<trash>%i</trash>"
-                                           "</ssh_lsc_credential>"
+                                           "<trash>%i</trash>",
+                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
+                                           ssh_lsc_name ? ssh_lsc_name : "",
+                                           ssh_port ? ssh_port : "",
+                                           (get_targets_data->get.trash
+                                             && target_iterator_ssh_trash
+                                                 (&targets)));
+
+                  if (ssh_lsc_credential_available == 0)
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</ssh_lsc_credential>"
                                            "<smb_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
-                                           "<trash>%i</trash>"
-                                           "</smb_lsc_credential>"
+                                           "<trash>%i</trash>",
+                                           smb_lsc_uuid ? smb_lsc_uuid : "",
+                                           smb_lsc_name ? smb_lsc_name : "",
+                                           (get_targets_data->get.trash
+                                             && target_iterator_smb_trash
+                                                 (&targets)));
+
+                  if (smb_lsc_credential_available == 0)
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</smb_lsc_credential>"
                                            "<esxi_lsc_credential id=\"%s\">"
                                            "<name>%s</name>"
-                                           "<trash>%i</trash>"
-                                           "</esxi_lsc_credential>"
+                                           "<trash>%i</trash>",
+                                           esxi_lsc_uuid ? esxi_lsc_uuid : "",
+                                           esxi_lsc_name ? esxi_lsc_name : "",
+                                           (get_targets_data->get.trash
+                                             && target_iterator_esxi_trash
+                                                 (&targets)));
+
+                  if (esxi_lsc_credential_available == 0)
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</esxi_lsc_credential>"
                                            "<reverse_lookup_only>"
                                            "%s"
                                            "</reverse_lookup_only>"
@@ -17156,22 +17241,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                            "%s"
                                            "</reverse_lookup_unify>"
                                            "<alive_tests>%s</alive_tests>",
-                                           ssh_lsc_uuid ? ssh_lsc_uuid : "",
-                                           ssh_lsc_name ? ssh_lsc_name : "",
-                                           ssh_port ? ssh_port : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_ssh_trash
-                                                 (&targets)),
-                                           smb_lsc_uuid ? smb_lsc_uuid : "",
-                                           smb_lsc_name ? smb_lsc_name : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_smb_trash
-                                                 (&targets)),
-                                           esxi_lsc_uuid ? esxi_lsc_uuid : "",
-                                           esxi_lsc_name ? esxi_lsc_name : "",
-                                           (get_targets_data->get.trash
-                                             && target_iterator_esxi_trash
-                                                 (&targets)),
                                            reverse_lookup_only,
                                            reverse_lookup_unify,
                                            target_iterator_alive_tests
@@ -21386,9 +21455,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                 "CREATE_TARGET hosts must be at least one"
                                 " character long"));
           else if (create_target_data->ssh_lsc_credential_id
-                   && find_lsc_credential
+                   && find_lsc_credential_with_permission
                        (create_target_data->ssh_lsc_credential_id,
-                        &ssh_lsc_credential))
+                        &ssh_lsc_credential,
+                        "get_lsc_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->ssh_lsc_credential_id
                    && ssh_lsc_credential == 0)
@@ -21402,9 +21472,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_target_data->smb_lsc_credential_id
-                   && find_lsc_credential
+                   && find_lsc_credential_with_permission
                        (create_target_data->smb_lsc_credential_id,
-                        &smb_lsc_credential))
+                        &smb_lsc_credential,
+                        "get_lsc_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->smb_lsc_credential_id
                    && smb_lsc_credential == 0)
@@ -21418,9 +21489,10 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 }
             }
           else if (create_target_data->esxi_lsc_credential_id
-                   && find_lsc_credential
+                   && find_lsc_credential_with_permission
                        (create_target_data->esxi_lsc_credential_id,
-                        &esxi_lsc_credential))
+                        &esxi_lsc_credential,
+                        "get_lsc_credentials"))
             SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
           else if (create_target_data->esxi_lsc_credential_id
                    && esxi_lsc_credential == 0)

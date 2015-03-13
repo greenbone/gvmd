@@ -3220,8 +3220,73 @@ run_task (const char *task_id, char **report_id, int from,
     return -1;
 
   ssh_credential = target_ssh_lsc_credential (target);
+  if (ssh_credential)
+    {
+      char *uuid;
+      lsc_credential_t found;
+
+      uuid = lsc_credential_uuid (ssh_credential);
+      if (find_lsc_credential_with_permission (uuid,
+                                               &found,
+                                               "get_lsc_credentials"))
+        {
+          g_free (uuid);
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
+    }
+
   smb_credential = target_smb_lsc_credential (target);
+  if (smb_credential)
+    {
+      char *uuid;
+      lsc_credential_t found;
+
+      uuid = lsc_credential_uuid (smb_credential);
+      if (find_lsc_credential_with_permission (uuid,
+                                               &found,
+                                               "get_lsc_credentials"))
+        {
+          g_free (uuid);
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
+    }
+
   esxi_credential = target_esxi_lsc_credential (target);
+  if (esxi_credential)
+    {
+      char *uuid;
+      lsc_credential_t found;
+
+      uuid = lsc_credential_uuid (esxi_credential);
+      if (find_lsc_credential_with_permission (uuid,
+                                               &found,
+                                               "get_lsc_credentials"))
+        {
+          g_free (uuid);
+          set_task_run_status (task, run_status);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
+    }
 
   hosts = target_hosts (target);
   if (hosts == NULL)

@@ -27285,7 +27285,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       ssh_lsc_credential = 0;
       if (strcmp (ssh_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential (ssh_lsc_credential_id, &ssh_lsc_credential))
+          if (find_lsc_credential_with_permission (ssh_lsc_credential_id,
+                                                   &ssh_lsc_credential,
+                                                   "get_lsc_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -27333,7 +27335,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       smb_lsc_credential = 0;
       if (strcmp (smb_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential (smb_lsc_credential_id, &smb_lsc_credential))
+          if (find_lsc_credential_with_permission (smb_lsc_credential_id,
+                                                   &smb_lsc_credential,
+                                                   "get_lsc_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -27367,8 +27371,9 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       esxi_lsc_credential = 0;
       if (strcmp (esxi_lsc_credential_id, "0"))
         {
-          if (find_lsc_credential (esxi_lsc_credential_id,
-                                   &esxi_lsc_credential))
+          if (find_lsc_credential_with_permission (esxi_lsc_credential_id,
+                                                   &esxi_lsc_credential,
+                                                   "get_lsc_credentials"))
             {
               sql ("ROLLBACK;");
               return -1;
@@ -34054,6 +34059,31 @@ trash_lsc_credential_name (lsc_credential_t lsc_credential)
 }
 
 /**
+ * @brief Return whether a trashcan lsc_credential is readable.
+ *
+ * @param[in]  lsc_credential  LSC credential.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_lsc_credential_readable (lsc_credential_t lsc_credential)
+{
+  char *uuid;
+  lsc_credential_t found;
+
+  if (lsc_credential == 0)
+    return 0;
+  uuid = lsc_credential_uuid (lsc_credential);
+  if (find_trash ("lsc_credential", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
+}
+
+/**
  * @brief Initialise an LSC credential target iterator.
  *
  * Iterates over all targets that use the credential.
@@ -34067,13 +34097,28 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
                                      lsc_credential_t lsc_credential,
                                      int ascending)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (lsc_credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_targets"));
+  available = where_owned ("target", &get, 1, "any", 0, permissions);
+  array_free (permissions);
+
   init_iterator (iterator,
-                 "SELECT uuid, name FROM targets"
+                 "SELECT uuid, name, %s FROM targets"
                  " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu"
                  " ORDER BY name %s;",
+                 available,
                  lsc_credential,
                  lsc_credential,
                  ascending ? "ASC" : "DESC");
+
+  g_free (available);
 }
 
 /**
@@ -34095,6 +34140,20 @@ DEF_ACCESS (lsc_credential_target_iterator_uuid, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (lsc_credential_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+lsc_credential_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 
 /* Agents. */
