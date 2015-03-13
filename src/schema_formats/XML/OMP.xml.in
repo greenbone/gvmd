@@ -4563,12 +4563,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ca_pub</name>
-      <summary>Public key of CA to verify scanner certificate.</summary>
+      <summary>Certificate of CA to verify scanner certificate.</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
       <name>key_pub</name>
-      <summary>Public key to authenticate with to the Scanner.</summary>
+      <summary>Certificate to authenticate with to the Scanner.</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
@@ -14994,12 +14994,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         </ele>
         <ele>
           <name>ca_pub</name>
-          <summary>CA Public key to verify the scanner's certificate</summary>
+          <summary>CA Certificate to verify the scanner's certificate</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
           <name>key_pub</name>
-          <summary>Public key of credentials to authenticate with</summary>
+          <summary>Certificate of credentials to authenticate with</summary>
           <pattern>text</pattern>
         </ele>
         <ele>
@@ -20506,12 +20506,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     </ele>
     <ele>
       <name>ca_pub</name>
-      <summary>Public key of CA to verify scanner's certificate</summary>
+      <summary>Certificate of CA to verify scanner's certificate</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
       <name>key_pub</name>
-      <summary>Public key of credentials to authenticate with to scanner</summary>
+      <summary>Certificate of credentials to authenticate with to scanner</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
