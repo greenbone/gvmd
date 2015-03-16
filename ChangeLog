@@ -1,5 +1,26 @@
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Enable mixing of the current user's filters and alerts, with
+	other people's filters and alerts, when permissions allow it.
+
+	* src/manage_sql.c (create_alert, modify_alert): Find with permission in
+	case the alert is owned by someone else.
+	(alert_iterator_filter_readable): New function.
+	(escalate_2): Check that the user may access the filter.
+	(escalate_1, manage_alert, manage_send_alert): Add new return.
+	(init_filter_alert_iterator): Add column indicating whether the alert is
+	readable.
+	(filter_alert_iterator_readable): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	FILTER in GET_REPORT_FORMATS when filter is not readable.  Same for
+	ALERT in GET_FILTERS when alert is not readable.  Handle new returns
+	from manage_send_report and manage_alert.
+
+2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Enable mixing of the current user's report formats and alerts, with
 	other people's report formats and alerts, when permissions allow it.
 

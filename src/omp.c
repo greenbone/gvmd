@@ -12753,13 +12753,20 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
               filter_uuid = alert_iterator_filter_uuid (&alerts);
               if (filter_uuid)
-                SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "<trash>%i</trash>"
-                                         "</filter>",
-                                         filter_uuid,
-                                         alert_iterator_filter_name (&alerts),
-                                         alert_iterator_filter_trash (&alerts));
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<filter id=\"%s\">"
+                                           "<name>%s</name>"
+                                           "<trash>%i</trash>",
+                                           filter_uuid,
+                                           alert_iterator_filter_name (&alerts),
+                                           alert_iterator_filter_trash
+                                            (&alerts));
+                  if (alert_iterator_filter_readable (&alerts))
+                    SEND_TO_CLIENT_OR_FAIL ("</filter>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</filter>");
+                }
 
               /* Condition. */
 
@@ -13233,12 +13240,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                               get_iterator_resource
                                                (&filters));
                   while (next (&alerts))
-                    SENDF_TO_CLIENT_OR_FAIL
-                     ("<alert id=\"%s\">"
-                      "<name>%s</name>"
-                      "</alert>",
-                      filter_alert_iterator_uuid (&alerts),
-                      filter_alert_iterator_name (&alerts));
+                    {
+                      SENDF_TO_CLIENT_OR_FAIL
+                       ("<alert id=\"%s\">"
+                        "<name>%s</name>",
+                        filter_alert_iterator_uuid (&alerts),
+                        filter_alert_iterator_name (&alerts));
+                      if (filter_alert_iterator_readable (&alerts))
+                        SEND_TO_CLIENT_OR_FAIL ("</alert>");
+                      else
+                        SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                "</alert>");
+                    }
                   cleanup_iterator (&alerts);
                   SEND_TO_CLIENT_OR_FAIL ("</alerts>");
                 }
@@ -15459,6 +15472,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                       case -3:
                         SEND_TO_CLIENT_OR_FAIL
                          (XML_INTERNAL_ERROR ("get_reports"));
+                        if (request_report == 0)
+                          cleanup_iterator (&reports);
+                        get_reports_data_reset (get_reports_data);
+                        set_client_state (CLIENT_AUTHENTIC);
+                        return;
+                        break;
+                      case -4:
+                        SEND_TO_CLIENT_OR_FAIL
+                         (XML_ERROR_SYNTAX ("get_reports",
+                                            "Failed to find filter for"
+                                            " alert"));
                         if (request_report == 0)
                           cleanup_iterator (&reports);
                         get_reports_data_reset (get_reports_data);
@@ -25117,6 +25141,11 @@ create_task_fail:
                    (XML_ERROR_SYNTAX ("test_alert",
                                       "Failed to find report format for"
                                       " alert"));
+                  break;
+                case -3:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("test_alert",
+                                      "Failed to find filter for alert"));
                   break;
                 default: /* Programming error. */
                   assert (0);

@@ -5783,7 +5783,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
     {
       char *type;
 
-      if (find_filter (filter_id, &filter))
+      if (find_filter_with_permission (filter_id, &filter, "get_filters"))
         {
           sql ("ROLLBACK;");
           return -1;
@@ -6054,7 +6054,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
     {
       char *type;
 
-      if (find_filter (filter_id, &filter))
+      if (find_filter_with_permission (filter_id, &filter, "get_filters"))
         {
           sql ("ROLLBACK;");
           return -1;
@@ -6686,6 +6686,39 @@ alert_iterator_filter_trash (iterator_t* iterator)
       && (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
           == LOCATION_TRASH))
     return 1;
+  return 0;
+}
+
+/**
+ * @brief Return the filter readable state from an alert iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether filter is readable.
+ */
+int
+alert_iterator_filter_readable (iterator_t* iterator)
+{
+  filter_t filter;
+
+  if (iterator->done) return 0;
+
+  filter = alert_iterator_filter (iterator);
+  if (filter)
+    {
+      char *uuid;
+      uuid = alert_iterator_filter_uuid (iterator);
+      if (uuid)
+        {
+          int readable;
+          readable = user_has_access_uuid
+                      ("filter", uuid, "get_filters",
+                       iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
+                       == LOCATION_TRASH);
+          free (uuid);
+          return readable;
+        }
+    }
   return 0;
 }
 
@@ -7906,7 +7939,8 @@ static int max_attach_length = MAX_ATTACH_LENGTH;
  * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  zone               Timezone.
  *
- * @return 0 success, -1 error, -2 failed to find report format.
+ * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
+ *         find filter.
  */
 static int
 escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
@@ -7944,6 +7978,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               gchar *body, *subject;
               char *name, *notice, *from_address, *filt_id;
               gchar *base64, *type, *extension;
+              filter_t filter;
 
               base64 = NULL;
               type = NULL;
@@ -7955,6 +7990,15 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
 
               notice = alert_data (alert, "method", "notice");
               filt_id = alert_filter_id (alert);
+              if (filt_id)
+                {
+                  if (find_filter_with_permission (filt_id, &filter,
+                                                   "get_filters"))
+                    return -1;
+                  if (filter == 0)
+                    return -3;
+                }
+
               name = task_name (task);
               if (notice && strcmp (notice, "0") == 0)
                 {
@@ -8342,6 +8386,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           report_format_t report_format;
           int ret;
+          filter_t filter;
 
           if (lookup_report_format ("Sourcefire", &report_format)
               || (report_format == 0))
@@ -8366,6 +8411,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          if (filt_id)
+            {
+              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
+                return -1;
+              if (filter == 0)
+                return -3;
+            }
 
           report_content = manage_report (report, report_format,
                                           filt_id,
@@ -8435,6 +8487,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
           gsize content_length;
           report_format_t report_format;
           int ret;
+          filter_t filter;
 
           format_uuid = alert_data (alert,
                                     "method",
@@ -8478,6 +8531,13 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
               }
 
           filt_id = alert_filter_id (alert);
+          if (filt_id)
+            {
+              if (find_filter_with_permission (filt_id, &filter, "get_filters"))
+                return -1;
+              if (filter == 0)
+                return -3;
+            }
 
           report_content = manage_report (report, report_format,
                                           filt_id,
@@ -8533,7 +8593,8 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
  * @param[in]  method      Method from alert.
  * @param[in]  condition   Condition from alert, which was met by event.
  *
- * @return 0 success, -1 error, -2 failed to find report format for alert.
+ * @return 0 success, -1 error, -2 failed to find report format for alert,
+ *         -3 failed to find filter for alert.
  */
 static int
 escalate_1 (alert_t alert, task_t task, event_t event,
@@ -8571,7 +8632,7 @@ escalate_1 (alert_t alert, task_t task, event_t event,
  *
  * @return 0 success, 1 failed to find alert, 2 failed to find task,
  *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert.
+ *         for alert, -3 failed to find filter for alert.
  */
 int
 manage_alert (const char *alert_id, const char *task_id, event_t event,
@@ -24869,8 +24930,8 @@ manage_report (report_t report, report_format_t report_format,
  * @param[in]  zone                Timezone.  NULL or "" for user's default.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
- *         during alert, 1 failed to find alert, 2 failed to find filter (before
- *         anything sent to client).
+ *         during alert, -4 failed to find alert filter, 1 failed to find alert,
+ *         2 failed to find filter (before anything sent to client).
  */
 int
 manage_send_report (report_t report, report_t delta_report,
@@ -24933,6 +24994,8 @@ manage_send_report (report_t report, report_t delta_report,
                         notes, notes_details, overrides,
                         overrides_details, first_result, max_results,
                         zone);
+      if (ret == -3)
+        return -4;
       if (ret == -1)
         return -3;
       if (ret)
@@ -47480,16 +47543,26 @@ DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
 void
 init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (filter);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  available = where_owned ("alert", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT name, uuid FROM alerts"
+                 "SELECT name, uuid, %s FROM alerts"
                  " WHERE filter = %llu"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY name ASC;",
-                 filter,
-                 current_credentials.uuid);
+                 available,
+                 filter);
+
+  g_free (available);
 }
 
 /**
@@ -47511,6 +47584,20 @@ DEF_ACCESS (filter_alert_iterator_name, 0);
  *         cleanup_iterator.
  */
 DEF_ACCESS (filter_alert_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+filter_alert_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 /**
  * @brief Modify a filter.

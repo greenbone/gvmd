@@ -389,6 +389,9 @@ alert_iterator_filter_name (iterator_t*);
 int
 alert_iterator_filter_trash (iterator_t*);
 
+int
+alert_iterator_filter_readable (iterator_t*);
+
 const char*
 alert_condition_name (alert_condition_t);
 
@@ -2990,6 +2993,9 @@ split_filter (const gchar*);
 gboolean
 find_filter (const char*, filter_t*);
 
+gboolean
+find_filter_with_permission (const char*, filter_t*, const char*);
+
 char*
 filter_uuid (filter_t);
 
@@ -3050,6 +3056,9 @@ filter_alert_iterator_name (iterator_t*);
 
 const char*
 filter_alert_iterator_uuid (iterator_t*);
+
+int
+filter_alert_iterator_readable (iterator_t*);
 
 int
 modify_filter (const char*, const char*, const char*, const char*, const char*);
