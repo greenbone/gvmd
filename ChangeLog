@@ -1,5 +1,14 @@
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (tag_iterator_resource_readable): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	RESOURCE in GET_TAGS when resource is not readable.
+
+2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (setting_value_int): Add missing grouping.
 
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>

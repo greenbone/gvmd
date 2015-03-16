@@ -16988,17 +16988,22 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                   SENDF_TO_CLIENT_OR_FAIL ("<resource id=\"%s\">"
                                            "<type>%s</type>"
                                            "<name>%s</name>"
-                                           "<trash>%d</trash>"
-                                           "</resource>"
+                                           "<trash>%d</trash>",
+                                           tag_iterator_resource_uuid (&tags),
+                                           tag_iterator_resource_type (&tags),
+                                           tag_iterator_resource_name (&tags),
+                                           tag_iterator_resource_location
+                                            (&tags));
+
+                  if (tag_iterator_resource_readable (&tags) == 0)
+                    SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+
+                  SENDF_TO_CLIENT_OR_FAIL ("</resource>"
                                            "<value>%s</value>"
                                            "<active>%d</active>"
                                            "<orphan>%d</orphan>"
                                            "</tag>",
-                                           tag_iterator_resource_uuid (&tags),
-                                           tag_iterator_resource_type (&tags),
-                                           tag_iterator_resource_name (&tags),
-                                           tag_iterator_resource_location (
-                                             &tags),
                                            value,
                                            tag_iterator_active (&tags),
                                            tag_iterator_orphan (&tags));

@@ -3502,6 +3502,9 @@ const char*
 tag_iterator_resource_name (iterator_t*);
 
 int
+tag_iterator_resource_readable (iterator_t*);
+
+int
 tag_iterator_orphan (iterator_t*);
 
 int

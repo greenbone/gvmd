@@ -53375,6 +53375,48 @@ tag_iterator_resource_location (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the readable status of a resource from a tag iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if readable, otherwise 0.
+ */
+int
+tag_iterator_resource_readable (iterator_t* iterator)
+{
+  resource_t found;
+  const char *type, *uuid;
+  gchar *permission;
+
+  if (iterator->done) return 0;
+
+  type = tag_iterator_resource_type (iterator);
+  uuid = tag_iterator_resource_uuid (iterator);
+
+  if (type == NULL || uuid == NULL)
+    return 0;
+
+  if ((strcmp (type, "cpe") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0))
+    permission = g_strdup ("get_info");
+  else
+    permission = g_strdup_printf ("get_%ss", type);
+
+  found = 0;
+  find_resource_with_permission (type,
+                                 uuid,
+                                 &found,
+                                 permission,
+                                 tag_iterator_resource_location (iterator)
+                                 == LOCATION_TRASH);
+  g_free (permission);
+  return found > 0;
+}
+
+/**
  * @brief Get if a tag is active from a Tag iterator.
  *
  * @param[in]  iterator  Iterator.
