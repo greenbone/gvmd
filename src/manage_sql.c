@@ -53477,17 +53477,22 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
 {
   assert (type);
   assert (resource);
+  assert (current_credentials.uuid);
 
   init_iterator (iterator,
                  "SELECT id, uuid, name, value, comment"
                  " FROM tags"
                  " WHERE resource_type = '%s'"
-                 "   AND resource = %llu"
-                 "   %s"
+                 " AND resource = %llu"
+                 "%s"
+                 " AND ((owner IS NULL)"
+                 "      OR (owner ="
+                 "          (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY %s %s;",
                  type,
                  resource,
-                 active_only ? "AND active=1": "",
+                 active_only ? " AND active=1" : "",
+                 current_credentials.uuid,
                  sort_field ? sort_field : "active DESC, name",
                  ascending ? "ASC" : "DESC");
 

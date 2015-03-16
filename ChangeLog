@@ -1,5 +1,10 @@
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_resource_tag_iterator): Add owner clause,
+	otherwise tags of other users are included.
+
+2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Enable mixing of the current user's filters and alerts, with
 	other people's filters and alerts, when permissions allow it.
 
