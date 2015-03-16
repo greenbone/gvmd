@@ -41907,18 +41907,28 @@ void
 init_report_format_alert_iterator (iterator_t* iterator,
                                    report_format_t report_format)
 {
-  assert (current_credentials.uuid);
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (report_format);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_alerts"));
+  available = where_owned ("alert", &get, 1, "any", 0, permissions);
+  array_free (permissions);
 
   init_iterator (iterator,
-                 "SELECT DISTINCT alerts.name, alerts.uuid"
+                 "SELECT DISTINCT alerts.name, alerts.uuid, %s"
                  " FROM alerts, alert_method_data"
                  " WHERE alert_method_data.data = '%s'"
                  " AND alert_method_data.alert = alerts.id"
-                 " AND ((owner IS NULL) OR (owner ="
-                 " (SELECT id FROM users WHERE users.uuid = '%s')))"
                  " ORDER BY alerts.name ASC;",
-                 report_format_uuid(report_format),
-                 current_credentials.uuid);
+                 available,
+                 report_format_uuid (report_format));
+
+  g_free (available);
 }
 
 /**
@@ -41940,6 +41950,20 @@ DEF_ACCESS (report_format_alert_iterator_name, 0);
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (report_format_alert_iterator_uuid, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+report_format_alert_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
 
 /**
  * @brief Initialise a report format iterator.

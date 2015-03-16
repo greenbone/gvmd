@@ -15641,12 +15641,18 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                                   get_iterator_resource
                                                    (&report_formats));
                       while (next (&alerts))
-                        SENDF_TO_CLIENT_OR_FAIL
-                         ("<alert id=\"%s\">"
-                          "<name>%s</name>"
-                          "</alert>",
-                          report_format_alert_iterator_uuid (&alerts),
-                          report_format_alert_iterator_name (&alerts));
+                        {
+                          SENDF_TO_CLIENT_OR_FAIL
+                           ("<alert id=\"%s\">"
+                            "<name>%s</name>",
+                            report_format_alert_iterator_uuid (&alerts),
+                            report_format_alert_iterator_name (&alerts));
+                          if (report_format_alert_iterator_readable (&alerts))
+                            SEND_TO_CLIENT_OR_FAIL ("</alert>");
+                          else
+                            SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                                    "</alert>");
+                        }
                       cleanup_iterator (&alerts);
                       SEND_TO_CLIENT_OR_FAIL ("</alerts>");
                     }

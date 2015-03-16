@@ -2497,6 +2497,9 @@ report_format_alert_iterator_name (iterator_t*);
 const char*
 report_format_alert_iterator_uuid (iterator_t*);
 
+int
+report_format_alert_iterator_readable (iterator_t*);
+
 /**
  * @brief A report format file iterator.
  */

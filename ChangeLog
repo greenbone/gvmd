@@ -1,3 +1,17 @@
+2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Enable mixing of the current user's report formats and alerts, with
+	other people's report formats and alerts, when permissions allow it.
+
+	* src/manage_sql.c (init_report_format_alert_iterator): Add column
+	indicating whether the alert is readable.
+	(report_format_alert_iterator_readable): New function.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	ALERT in GET_REPORT_FORMATS when alert is not readable.
+
 2015-03-13  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Enable mixing of the current user's credentials and targets, with other
