@@ -49435,9 +49435,9 @@ setting_value_int (const char *uuid, int *value)
   if (sql_int ("SELECT count (*)"
                " FROM settings"
                " WHERE uuid = '%s'"
-               " AND (owner IS NULL)"
-               " OR (owner ="
-               "     (SELECT id FROM users WHERE users.uuid = '%s'));",
+               " AND ((owner IS NULL)"
+               "      OR (owner ="
+               "          (SELECT id FROM users WHERE users.uuid = '%s')));",
                quoted_uuid,
                current_credentials.uuid)
       == 0)

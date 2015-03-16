@@ -1,5 +1,9 @@
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (setting_value_int): Add missing grouping.
+
+2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_resource_tag_iterator): Add owner clause,
 	otherwise tags of other users are included.
 
