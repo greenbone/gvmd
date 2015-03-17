@@ -1528,7 +1528,7 @@ create_tables ()
 
   sql ("CREATE TABLE IF NOT EXISTS role_users_trash"
        " (id SERIAL PRIMARY KEY,"
-       "  role integer REFERENCES roles (id) ON DELETE RESTRICT,"
+       "  role integer REFERENCES roles_trash (id) ON DELETE RESTRICT,"
        "  \"user\" integer REFERENCES users (id) ON DELETE RESTRICT);");
 
   sql ("CREATE TABLE IF NOT EXISTS nvt_selectors"
