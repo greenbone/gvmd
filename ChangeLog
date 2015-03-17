@@ -1,5 +1,11 @@
 2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (delete_role, manage_restore)
+	(manage_empty_trashcan): Delete role users, before roles, for Postgres
+	integrity checks.
+
+2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Enable mixing of the current user's roles and users, with other
 	people's roles and users, when permissions allow it.
 

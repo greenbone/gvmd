@@ -46642,8 +46642,8 @@ delete_role (const char *role_id, int ultimate)
 
       tags_set_orphans ("role", role, LOCATION_TRASH);
 
-      sql ("DELETE FROM roles_trash WHERE id = %llu;", role);
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
+      sql ("DELETE FROM roles_trash WHERE id = %llu;", role);
       sql ("COMMIT;");
       return 0;
     }
@@ -46708,8 +46708,8 @@ delete_role (const char *role_id, int ultimate)
       tags_set_orphans ("role", role, LOCATION_TABLE);
     }
 
-  sql ("DELETE FROM roles WHERE id = %llu;", role);
   sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
+  sql ("DELETE FROM roles WHERE id = %llu;", role);
 
   sql ("COMMIT;");
   return 0;
@@ -48684,8 +48684,8 @@ manage_restore (const char *id)
 
       permissions_set_subjects ("role", resource, role, LOCATION_TABLE);
 
-      sql ("DELETE FROM roles_trash WHERE id = %llu;", resource);
       sql ("DELETE FROM role_users_trash WHERE role = %llu;", resource);
+      sql ("DELETE FROM roles_trash WHERE id = %llu;", resource);
       sql ("COMMIT;");
       return 0;
     }
@@ -49036,8 +49036,8 @@ manage_empty_trashcan ()
        " WHERE subject_type = 'role'"
        " AND subject IN (SELECT id from roles_trash)"
        " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";");
-  sql ("DELETE FROM roles_trash;");
   sql ("DELETE FROM role_users_trash;");
+  sql ("DELETE FROM roles_trash;");
   sql ("DELETE FROM scanners_trash;");
   sql ("DELETE FROM schedules_trash;");
   sql ("DELETE FROM slaves_trash;");
