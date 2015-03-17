@@ -3948,7 +3948,7 @@ find_resource_by_name_with_permission (const char *type, const char *name,
           gchar *uuid;
 
           uuid = sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
-                             type, resource);
+                             type, *resource);
           if (user_has_access_uuid (type, uuid, permission, 0) == 0)
             {
               g_free (uuid);
