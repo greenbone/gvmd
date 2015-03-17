@@ -1,3 +1,141 @@
+openvas-manager 6.0.0 (2015-03-17)
+
+This is the first release of the openvas-manager 6.0 module for the Open
+Vulnerability Assessment System release 8 (OpenVAS-8). The OpenVAS Manager is
+the central management service between the actual security scanner and various
+user clients.
+
+OpenVAS Manager 6.0 introduces a large number of new and improved features, for
+example scanner management, the alternative use of PostgreSQL as database back
+end and Quality of Detection (QoD) information. It also introduces the new roles
+"Guest", "Monitor" and "Super Admin". Please see the comprehensive list below
+for more details.
+
+Please make sure to read the INSTALL file for important installation and
+migration information, even and especially if you have used OpenVAS Manager
+before.
+
+Many thanks to everyone who has contributed to this release:
+Benoît Allard, Michal Ambroz, Hani Benhabiles, Henri Doreau, Michael Meyer,
+Matthew Mundell, Timo Pollmeier, Jan-Oliver Wagner and Michael Wiegand.
+
+Main changes compared to the 5.0 series:
+* OpenVAS Manager now supports the alternative use of PostgreSQL as database
+  back end instead of SQLite3.
+* Support for Scanner Management has been added. This includes the configuration
+  part for scanners accompanied with a new set of OMP commands (create_scanner,
+  get_scanners, modify_scanner, delete_scanner and verity_scanner). Next, it
+  covers the extensions of tasks with the selected scanner type and the
+  extension of Scan Configurations to reflect different scanner types.
+* Support for the new SecInfo subtype CERT-Bund Advisory (CERT_BUND_ADV) has
+  been added.
+* Support for QoD (Quality of Detection) information has been added.
+* Support for mixing objects owned by different users has been extended.
+* Support for a "Guest" role has been added.
+* Support for a "Monitor" role has been added.
+* Support for a "Super Admin" role has been added.
+* Support for associating ESXi credentials with targets has been added.
+* The new OMP command "GET_AGGREGATES" has been added in order to deliver data
+  tables for use in diagrams.
+* Support for task charts has been added.
+* Support for filtering NVTs based on their script_tags has been added.
+* A new "Modify Task" wizard has been added.
+* Support for displaying solution type information has been added.
+* Support for internal database optimization has been added.
+* Support for ownership of users, roles, groups and permissions has been
+  introduced.
+* Support for the changing of user names has been added.
+* Support for Once-off schedules has been added.
+* Support for limiting the number of times a task runs with a periodic schedule
+  has been added.
+* Support for splitting the CPE dictionary has been added to the SCAP data
+  synchronization script.
+* The "xml_split" helper script for splitting SCAP data is now installed by
+  default.
+* Report powerfilters now support the "timezone" keyword.
+* The OMP version is now included in reports.
+* Tasks on slaves are now stopped when the controlling master is terminated.
+* Alterable task now stay alterable even when their last report has been
+  removed.
+* Solution type information is now included in report formats.
+* OpenVAS Manager will no longer abort if previous attempts to the rebuild or
+  update the database have failed.
+* The results table and the OMP results objects have been extended.
+* The "Anonymous XML" report format has been added.
+* Support for displaying host authentication results has been added to the
+  LaTeX, PDF and HTML reports.
+* The GET_INFO command can now be used for NVTs as well.
+* Support for "openvasrc" files has been removed from OMP.
+* For SSH credentials, the certificate is now extracted from private key when
+  needed.
+* Preemptive Scanner connecting has been removed. Manager now only connects on
+  NVT cache update or task starting, resuming and stopping. This improves
+  response time.
+* Support for the task pausing feature has been removed. This includes the
+  removal of OMP commands "pause_task" and "resume_paused_task".
+* Support for the target locators feature has been removed. This includes the
+  removal of the OMP command "get_target_locators".
+* The "--slisten" and "--sport" command line options have been removed as they
+  are now part of the scanner properties.
+* An issue which caused individual NVT timeout values to not be transferred
+  to slaves has been fixed.
+* The "--list-users" command line option has been renamed to "--get-users".
+* The "--role" command line option now applies to "--get-users" as well.
+* The "get_results" OMP command now behaves more consistent with other get_...
+  OMP commands.
+* The task name is now included in more report formats.
+* The value of the NVT tag "affected" is now included in more report formats.
+* The performance has been improved in a number of places.
+* The strategy of SQL retries in high-load situation has been improved.
+* The handling of user groups when dropping privileges has been improved.
+* The manager will now retry starting of scheduled tasks when the start OMP fails.
+* Sorting of numerical values has been improved.
+* Library checks during package configuration have been improved and are now
+  more comprehensive and consistent.
+* Signal handling has been improved.
+* The OMP protocol documentation has been updated.
+* Code cleanups.
+
+Main changes compared to 6.0+beta6:
+* Solution type information is now included in report formats.
+* An issue with empty scan end times has been fixed.
+* Performance of report result counting has been improved.
+* A check which resulted in scheduled tasks not starting at all if they could
+  not start within a short interval has been removed.
+* Signal handling has been improved.
+* Support for splitting the CPE dictionary has been added to the SCAP data
+  synchronization script.
+* OpenVAS Manager will no longer abort if previous attempts to the rebuild or
+  update the database have failed.
+* The "Anonymous XML" report format has been added.
+* The OMP protocol documentation has been updated.
+* The GET_INFO command can now be used for NVTs as well.
+* Result in report results counting and caching functions now use a default
+  minimum QoD of 70 for consistency.
+* Support for displaying host authentication results has been added to the
+  LaTeX, PDF and HTML reports.
+* Support for CERT-Bund advisories has been improved.
+* An issues which caused a segmentation fault when rebuilding the database of 32
+  bit installations under certain circumstances has been fixed.
+* The "xml_split" helper script for splitting SCAP data is now installed by
+  default.
+* Support for mixing of the current user's targets and tasks, with other
+  people's targets and tasks has been added.
+* Support for mixing of the current user's configs and tasks, with other
+  people's configs and tasks has been added.
+* Support for mixing of the current user's scanners and tasks, with other
+  people's scanners and tasks has been added.
+* Support for mixing of the current user's port lists and targets, with other
+  people's port lists and targets has been added.
+* Support for mixing of the current user's credentials and targets, with other
+  people's credentials and targets has been added.
+* Support for mixing of the current user's report formats and alerts, with other
+  people's report formats and alerts has been added.
+* Support for mixing of the current user's filters and alerts, with other
+  people's filters and alerts has been added.
+* Code cleanups.
+
+
 openvas-manager 6.0+beta6 (2015-02-11)
 
 This is the sixth beta version of the upcoming 6.0 release of the OpenVAS
