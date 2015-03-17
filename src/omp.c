@@ -18164,11 +18164,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_user_group_iterator (&groups,
                                         get_iterator_resource (&users));
               while (next (&groups))
-                SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "</group>",
-                                         user_group_iterator_uuid (&groups),
-                                         user_group_iterator_name (&groups));
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<group id=\"%s\">"
+                                           "<name>%s</name>",
+                                           user_group_iterator_uuid (&groups),
+                                           user_group_iterator_name (&groups));
+                  if (user_group_iterator_readable (&groups))
+                    SEND_TO_CLIENT_OR_FAIL ("</group>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</group>");
+                }
               cleanup_iterator (&groups);
               SEND_TO_CLIENT_OR_FAIL ("</groups>"
                                       "</user>");

@@ -3408,6 +3408,9 @@ user_group_iterator_uuid (iterator_t*);
 const char*
 user_group_iterator_name (iterator_t*);
 
+int
+user_group_iterator_readable (iterator_t*);
+
 void
 init_user_role_iterator (iterator_t *, user_t);
 

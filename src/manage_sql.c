@@ -52751,12 +52751,27 @@ user_iterator_ifaces_allow (iterator_t* iterator)
 void
 init_user_group_iterator (iterator_t *iterator, user_t user)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (user);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_groups"));
+  available = where_owned ("group", &get, 1, "any", 0, permissions);
+  array_free (permissions);
+
   init_iterator (iterator,
-                 "SELECT DISTINCT id, uuid, name FROM groups"
+                 "SELECT DISTINCT id, uuid, name, %s FROM groups"
                  " WHERE id IN (SELECT \"group\" FROM group_users"
                  "              WHERE \"user\" = %llu)"
                  " ORDER by name;",
+                 available,
                  user);
+
+  g_free (available);
 }
 
 /**
@@ -52776,6 +52791,20 @@ DEF_ACCESS (user_group_iterator_uuid, 1);
  * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (user_group_iterator_name, 2);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+user_group_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 3);
+}
 
 /**
  * @brief Initialise an info iterator.

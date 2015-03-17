@@ -1,5 +1,19 @@
 2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Enable mixing of the current user's groups and users, with other
+	people's groups and users, when permissions allow it.
+
+	* src/manage_sql.c (init_user_group_iterator): Add column indicating
+	whether the group is readable.
+	(user_group_iterator_readable): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	GROUP in GET_USERS when group is not readable.
+
+2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Correct reference in
 	role_users_trash.
 
@@ -23,7 +37,7 @@
 	owned by someone else.
 	(init_user_role_iterator): Add column indicating whether the role is
 	readable.
-	(filter_alert_iterator_readable): New function.
+	(user_role_iterator_readable): New function.
 
 	* src/manage.h: Add headers accordingly.
 
