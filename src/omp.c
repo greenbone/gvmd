@@ -5799,35 +5799,55 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                             writable,
                             in_use);
 
-  if ((current_credentials.username
+  if (/* The user is the owner. */
+      (current_credentials.username
        && get_iterator_owner_name (iterator)
        && (strcmp (get_iterator_owner_name (iterator),
                    current_credentials.username)
            == 0))
+      /* Or the user is effectively the owner. */
       || user_has_super (current_credentials.uuid,
                          get_iterator_owner (iterator))
+      /* Or the user has Admin rights and the resource is a permission... */
       || (current_credentials.uuid
-          && ((strcmp (type, "group") == 0)
-              || ((strcmp (type, "permission") == 0)
-                  && get_iterator_uuid (iterator)
-                  && strcmp (get_iterator_uuid (iterator),
-                             PERMISSION_UUID_ADMIN_EVERYTHING))
-              || (strcmp (type, "role") == 0)
-              || (strcmp (type, "user") == 0))
+          && ((strcmp (type, "permission") == 0)
+              && get_iterator_uuid (iterator)
+              /* ... but not the special Admin permission. */
+              && strcmp (get_iterator_uuid (iterator),
+                         PERMISSION_UUID_ADMIN_EVERYTHING))
           && user_can_everything (current_credentials.uuid)))
+    {
+      buffer_xml_append_printf (buffer,
+                                "<permission>"
+                                "<name>Everything</name>"
+                                "</permission>"
+                                "</permissions>");
+    }
+  else if (current_credentials.uuid
+           && ((strcmp (type, "user") == 0)
+               || (strcmp (type, "role") == 0)
+               || (strcmp (type, "group") == 0))
+           && (get_iterator_owner (iterator) == 0)
+           && user_can_everything (current_credentials.uuid))
     {
       if ((strcmp (type, "user") == 0)
           && user_can_super_everyone (get_iterator_uuid (iterator))
           && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
         {
+          /* Resource is the Super Admin. */
           writable = 0;
           buffer_xml_append_printf (buffer,
                                     "<permission><name>get_users</name></permission>"
                                     "</permissions>");
         }
       else
+        /* The user has admin rights and it's a global user/role/group.
+         *
+         * These are left over from before users/roles/groups had owners. */
         buffer_xml_append_printf (buffer,
-                                  "<permission><name>Everything</name></permission>"
+                                  "<permission>"
+                                  "<name>Everything</name>"
+                                  "</permission>"
                                   "</permissions>");
     }
   else
@@ -5836,19 +5856,10 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       get_data_t perms_get;
 
       memset (&perms_get, '\0', sizeof (perms_get));
-      if ((strcmp (type, "group") == 0)
-          || (strcmp (type, "role") == 0)
-          || (strcmp (type, "user") == 0))
-        // TODO Do this a safer way.
-        perms_get.filter = g_strdup_printf ("name~_%s"
-                                            " owner=any"
-                                            " permission=any",
-                                            type);
-      else
-        perms_get.filter = g_strdup_printf ("resource_uuid=%s"
-                                            " owner=any"
-                                            " permission=any",
-                                            get_iterator_uuid (iterator));
+      perms_get.filter = g_strdup_printf ("resource_uuid=%s"
+                                          " owner=any"
+                                          " permission=any",
+                                          get_iterator_uuid (iterator));
       init_permission_iterator (&perms, &perms_get);
       g_free (perms_get.filter);
       while (next (&perms))

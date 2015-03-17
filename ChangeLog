@@ -1,3 +1,11 @@
+2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (send_get_common): Add a case for global
+	users/roles/groups because full access to them has been kept for all
+	admins.  Remove the special case for retrieving permissions of regular
+	users/roles/groups, because they behave like other resource types these
+	days.
+
 2015-03-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (tag_iterator_resource_readable): New function.
