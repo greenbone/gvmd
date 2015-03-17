@@ -1,3 +1,9 @@
+2015-03-17  Benoît Allard  <benoit.allard@greenbone.net>
+
+	Post release version bump.
+
+	* CMakeLists.txt: 6.0.1
+
 2015-03-17  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Preparing the openvas-manager 6.0.0 release.
