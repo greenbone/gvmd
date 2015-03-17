@@ -18147,11 +18147,17 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_user_role_iterator (&roles,
                                        get_iterator_resource (&users));
               while (next (&roles))
-                SENDF_TO_CLIENT_OR_FAIL ("<role id=\"%s\">"
-                                         "<name>%s</name>"
-                                         "</role>",
-                                         user_role_iterator_uuid (&roles),
-                                         user_role_iterator_name (&roles));
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<role id=\"%s\">"
+                                           "<name>%s</name>",
+                                           user_role_iterator_uuid (&roles),
+                                           user_role_iterator_name (&roles));
+                  if (user_role_iterator_readable (&roles))
+                    SEND_TO_CLIENT_OR_FAIL ("</role>");
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                            "</role>");
+                }
               cleanup_iterator (&roles);
 
               SEND_TO_CLIENT_OR_FAIL ("<groups>");

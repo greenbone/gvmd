@@ -1,5 +1,21 @@
 2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Enable mixing of the current user's roles and users, with other
+	people's roles and users, when permissions allow it.
+
+	* src/manage_sql.c (add_users): Find with permission in case the user is
+	owned by someone else.
+	(init_user_role_iterator): Add column indicating whether the role is
+	readable.
+	(filter_alert_iterator_readable): New function.
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (omp_xml_handle_end_element): Send empty PERMISSIONS in
+	ROLE in GET_USERS when role is not readable.
+
+2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (send_get_common): Add a case for global
 	users/roles/groups because full access to them has been kept for all
 	admins.  Remove the special case for retrieving permissions of regular

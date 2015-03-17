@@ -3336,6 +3336,9 @@ modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 /* Users. */
 
+gboolean
+find_user_by_name_with_permission (const char *, user_t *, const char *);
+
 int
 manage_create_user (GSList *, const gchar *, const gchar *, const gchar *);
 
@@ -3413,6 +3416,9 @@ user_role_iterator_uuid (iterator_t*);
 
 const char*
 user_role_iterator_name (iterator_t*);
+
+int
+user_role_iterator_readable (iterator_t*);
 
 int
 create_user (const gchar *, const gchar *, const gchar *, int, const gchar *,

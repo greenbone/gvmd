@@ -43140,7 +43140,7 @@ copy_group (const char *name, const char *comment, const char *group_id,
  * @param[in]  users     List of users.
  *
  * @return 0 success, 2 failed to find user, 4 user name validation failed,
- *         -1 error.
+ *         99 permission denied, -1 error.
  */
 static int
 add_users (const gchar *type, resource_t resource, const char *users)
@@ -43232,7 +43232,7 @@ add_users (const gchar *type, resource_t resource, const char *users)
                 }
               else
                 {
-                  /* user_find should have found it. */
+                  /* find_user_by_name should have found it. */
                   assert (0);
                   g_free (uuid);
                   g_list_free (added);
@@ -43241,6 +43241,20 @@ add_users (const gchar *type, resource_t resource, const char *users)
                 }
 
               g_free (uuid);
+            }
+
+          if (find_user_by_name_with_permission (name, &user, "get_users"))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return 99;
             }
 
           sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
@@ -51586,7 +51600,7 @@ find_user_with_permission (const char* uuid, user_t* user,
  *
  * @return FALSE on success (including if failed to find user), TRUE on error.
  */
-static gboolean
+gboolean
 find_user_by_name_with_permission (const char* name, user_t *user,
                                    const char *permission)
 {
@@ -52772,12 +52786,28 @@ DEF_ACCESS (user_group_iterator_name, 2);
 void
 init_user_role_iterator (iterator_t *iterator, user_t user)
 {
+  gchar *available;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (user);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_roles"));
+  available = where_owned ("role", &get, 1, "any", 0, permissions);
+  array_free (permissions);
+
   init_iterator (iterator,
-                 "SELECT DISTINCT id, uuid, name, order_role (name) FROM roles"
+                 "SELECT DISTINCT id, uuid, name, order_role (name), %s"
+                 " FROM roles"
                  " WHERE id IN (SELECT role FROM role_users"
                  "              WHERE \"user\" = %llu)"
                  " ORDER by order_role (name);",
+                 available,
                  user);
+
+  g_free (available);
 }
 
 /**
@@ -52797,6 +52827,20 @@ DEF_ACCESS (user_role_iterator_uuid, 1);
  * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (user_role_iterator_name, 2);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+user_role_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 4);
+}
 
 
 /* Tags */
