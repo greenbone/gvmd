@@ -16761,10 +16761,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       new_severity_sql
         = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
                           " WHERE result_new_severities.result = results.id"
-                          " AND result_new_severities.user = results.owner"
+                          " AND result_new_severities.user"
+                          "     = (SELECT id FROM users WHERE uuid = '%s')"
                           " AND override = %d"
                           " AND dynamic = %d"
                           " LIMIT 1)",
+                          current_credentials.uuid,
                           override,
                           dynamic_severity);
 
@@ -17006,10 +17008,12 @@ init_result_iterator (iterator_t* iterator, report_t report, result_t result,
       new_severity_sql
         = g_strdup_printf("(SELECT new_severity FROM result_new_severities"
                           " WHERE result_new_severities.result = results.id"
-                          " AND result_new_severities.user = results.owner"
+                          " AND result_new_severities.user"
+                          "     = (SELECT id FROM users WHERE uuid = '%s')"
                           " AND override = %d"
                           " AND dynamic = %d"
                           " LIMIT 1)",
+                          current_credentials.uuid,
                           override,
                           dynamic_severity);
 
