@@ -21361,7 +21361,7 @@ report_filter_term (int sort_order, const char* sort_field,
                           " first=%i"
                           " rows=%i"
                           " delta_states=%s"
-                          "%s%s",
+                          "%s%s%s",
                           (search_phrase
                            && strlen (search_phrase)
                            && search_phrase_exact)
@@ -21381,8 +21381,9 @@ report_filter_term (int sort_order, const char* sort_field,
                           first_result + 1,
                           max_results,
                           delta_states ? delta_states : "cgns",
-                          (zone && strlen (zone)) ? " timezone=" : "",
-                          (zone && strlen (zone)) ? zone : "");
+                          (zone && strlen (zone)) ? " timezone=\"" : "",
+                          (zone && strlen (zone)) ? zone : "",
+                          (zone && strlen (zone)) ? "\"" : "");
 }
 
 /**

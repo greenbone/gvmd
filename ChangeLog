@@ -1,5 +1,10 @@
 2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_filter_term): Quote timezone in case it has
+	multiple words, like "Coordinated Universal Time" does.
+
+2015-03-17  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_result_iterator): Get severity according to
 	current user, instead of according to result owner, because the two
 	users may have different overrides.
