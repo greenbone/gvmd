@@ -41754,7 +41754,7 @@ set_report_format_param (report_format_t report_format, const char *name,
  *
  * @param[in]  report_format  Report format.
  *
- * @return Trust: 1 yes, 2 no, 2 unknown.
+ * @return Trust: 1 yes, 2 no, 3 unknown.
  */
 int
 report_format_trust (report_format_t report_format)
