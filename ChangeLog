@@ -1,5 +1,10 @@
 2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (run_task): Use correct permission name.  Reset task
+	status on failure.
+
+2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_report_format_param): Correct doc.
 
 2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>

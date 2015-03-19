@@ -3207,14 +3207,18 @@ run_task (const char *task_id, char **report_id, int from,
       port_list_t found;
 
       uuid = port_list_uuid (port_list);
-      if (find_port_list_with_permission (uuid, &found, "get_scanners"))
+      if (find_port_list_with_permission (uuid, &found, "get_port_lists"))
         {
+          set_task_run_status (task, run_status);
           g_free (uuid);
           return -1;
         }
       g_free (uuid);
       if (found == 0)
-        return 99;
+        {
+          set_task_run_status (task, run_status);
+          return 99;
+        }
     }
   else
     return -1;
