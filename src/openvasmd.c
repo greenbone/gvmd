@@ -977,12 +977,23 @@ static void
 serve_and_schedule ()
 {
   time_t last_schedule_time = 0;
+  sigset_t sigmask_all, sigmask_current;
 
+  if (sigfillset (&sigmask_all))
+    {
+      g_critical ("%s: Error filling signal set\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask\n", __FUNCTION__);
+      exit (EXIT_FAILURE);
+    }
   while (1)
     {
       int ret, nfds;
       fd_set readfds, exceptfds;
-      struct timeval timeout;
+      struct timespec timeout;
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
@@ -1026,8 +1037,9 @@ serve_and_schedule ()
         }
 
       timeout.tv_sec = SCHEDULE_PERIOD;
-      timeout.tv_usec = 0;
-      ret = select (nfds, &readfds, NULL, &exceptfds, &timeout);
+      timeout.tv_nsec = 0;
+      ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
+                     &sigmask_current);
 
       if (ret == -1)
         {

@@ -1,5 +1,14 @@
 2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (serve_and_schedule): Use pselect to block signals
+	outside the select call, otherwise the select call will sit for
+	SCHEDULE_PERIOD when a signal is received after the termination_signal
+	check but before the select call.
+
+	* src/CMakeLists.txt: Add -lphtread to openvasmd.
+
+2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): Use correct permission name.  Reset task
 	status on failure.
 

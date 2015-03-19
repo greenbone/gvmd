@@ -64,7 +64,7 @@ add_library (otp STATIC otp.c)
 ## Program
 
 add_executable (openvasmd openvasmd.c ompd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS})
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} -lpthread)
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 
