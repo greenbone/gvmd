@@ -1,5 +1,12 @@
 2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (copy_target, delete_lsc_credential)
+	(lsc_credential_in_use, trash_lsc_credential_in_use)
+	(init_lsc_credential_target_iterator): Add missing ESXI credential
+	cases.
+
+2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_migrators.c (migrate_145_to_146): Add IF EXISTS to DROPs,
 	to avoid warning if db is old.
 

@@ -27043,8 +27043,8 @@ copy_target (const char* name, const char* comment, const char *target_id,
 {
   return copy_resource ("target", name, comment, target_id,
                         "hosts, exclude_hosts, lsc_credential, ssh_port,"
-                        " smb_lsc_credential, port_range, reverse_lookup_only,"
-                        " reverse_lookup_unify",
+                        " smb_lsc_credential, esxi_lsc_credential, port_range,"
+                        " reverse_lookup_only, reverse_lookup_unify",
                         1, new_target);
 }
 
@@ -33548,7 +33548,10 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 
 
   if (sql_int ("SELECT count(*) FROM targets"
-               " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu",
+               " WHERE lsc_credential = %llu"
+               " OR smb_lsc_credential = %llu"
+               " OR esxi_lsc_credential = %llu",
+               lsc_credential,
                lsc_credential,
                lsc_credential))
     {
@@ -33665,8 +33668,11 @@ lsc_credential_count (const get_data_t *get)
 int
 lsc_credential_in_use (lsc_credential_t lsc_credential)
 {
-  return !!sql_int ("SELECT count (*) FROM targets WHERE lsc_credential = %llu"
-                    " OR smb_lsc_credential = %llu;",
+  return !!sql_int ("SELECT count (*) FROM targets"
+                    " WHERE lsc_credential = %llu"
+                    " OR smb_lsc_credential = %llu"
+                    " OR esxi_lsc_credential = %llu;",
+                    lsc_credential,
                     lsc_credential,
                     lsc_credential);
 }
@@ -33685,7 +33691,10 @@ trash_lsc_credential_in_use (lsc_credential_t lsc_credential)
                     " WHERE (lsc_credential = %llu"
                     " AND ssh_location = " G_STRINGIFY (LOCATION_TRASH)")"
                     " OR (smb_lsc_credential = %llu"
-                    " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                    " AND smb_location = " G_STRINGIFY (LOCATION_TRASH) ")"
+                    " OR (esxi_lsc_credential = %llu"
+                    " AND esxi_location = " G_STRINGIFY (LOCATION_TRASH) ");",
+                    lsc_credential,
                     lsc_credential,
                     lsc_credential);
 }
@@ -34179,9 +34188,12 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
 
   init_iterator (iterator,
                  "SELECT uuid, name, %s FROM targets"
-                 " WHERE lsc_credential = %llu OR smb_lsc_credential = %llu"
+                 " WHERE lsc_credential = %llu"
+                 " OR smb_lsc_credential = %llu"
+                 " OR esxi_lsc_credential = %llu"
                  " ORDER BY name %s;",
                  available,
+                 lsc_credential,
                  lsc_credential,
                  lsc_credential,
                  ascending ? "ASC" : "DESC");
