@@ -10043,8 +10043,8 @@ migrate_145_to_146 ()
   /* Update the database. */
 
   /* The view result_overrides changed. */
-  sql ("DROP VIEW result_new_severities;");
-  sql ("DROP VIEW result_overrides;");
+  sql ("DROP VIEW IF EXISTS result_new_severities;");
+  sql ("DROP VIEW IF EXISTS result_overrides;");
   sql ("DELETE FROM report_counts;");
 
   /* Set the database version to 146. */
