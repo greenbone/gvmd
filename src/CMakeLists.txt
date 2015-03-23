@@ -28,6 +28,8 @@
 add_library (ovas-mngr-comm STATIC ovas-mngr-comm.c)
 include_directories (${LIBOPENVAS_OMP_INCLUDE_DIRS} ${LIBOPENVAS_MISC_INCLUDE_DIRS} ${LIBOPENVAS_BASE_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 
+find_package (Threads)
+
 if (BACKEND STREQUAL SQLITE3)
   set (BACKEND_FILES sql_sqlite3.c manage_sqlite3.c)
 else (BACKEND STREQUAL SQLITE3)
@@ -64,7 +66,7 @@ add_library (otp STATIC otp.c)
 ## Program
 
 add_executable (openvasmd openvasmd.c ompd.c)
-target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} -lpthread)
+target_link_libraries (openvasmd ovas-mngr-comm omp otp manage ${GNUTLS_LDFLAGS} ${GPGME_LDFLAGS} ${GCRYPT_LDFLAGS} ${CMAKE_THREAD_LIBS_INIT})
 
 set_target_properties (openvasmd PROPERTIES LINKER_LANGUAGE C)
 

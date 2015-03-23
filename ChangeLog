@@ -1,3 +1,8 @@
+2015-03-23  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	* src/CMakeLists.txt: Make detection of thread library dynamic instead
+	of using hardcoded linker flags.
+
 2015-03-19  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (serve_and_schedule): Use pselect to block signals
