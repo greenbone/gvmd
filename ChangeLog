@@ -1,3 +1,8 @@
+2015-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (report_severity_data): Add missing QOD field, which
+	is used by report_counts_match.
+
 2015-03-23  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	* src/CMakeLists.txt: Make detection of thread library dynamic instead

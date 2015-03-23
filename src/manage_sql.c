@@ -19273,7 +19273,7 @@ report_severity_data (report_t report, int override,
       init_iterator (&results,
                       "SELECT results.id, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
-                      " results.report, %s"
+                      " results.report, %s, results.qod"
                       " FROM results"
                       " WHERE"
                       "%s%s%s"
