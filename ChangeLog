@@ -1,3 +1,9 @@
+2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (init_task_schedule_iterator): Instead of getting
+	tasks where the owner has permission on the schedule, get tasks where
+	any user has permission on both the task and the schedule.
+
 2015-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* tools/cert_bund_update_pg.xsl, tools/cert_bund_update.xsl: Also add

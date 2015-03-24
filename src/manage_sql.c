@@ -39164,7 +39164,7 @@ int
 init_task_schedule_iterator (iterator_t* iterator)
 {
   int ret;
-  gchar *owned_clause;
+  gchar *task_clause, *schedule_clause;
   get_data_t get;
   array_t *permissions;
 
@@ -39174,9 +39174,14 @@ init_task_schedule_iterator (iterator_t* iterator)
 
   get.trash = 0;
   permissions = make_array ();
-  array_add (permissions, g_strdup ("get_tasks"));
-  owned_clause = where_owned_user ("", "tasks.owner", "schedule", &get, 1,
-                                   "any", 0, permissions);
+  array_add (permissions, g_strdup ("start_task"));
+  task_clause = where_owned_user ("", "users.id", "task", &get, 1,
+                                  "any", 0, permissions);
+
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_schedules"));
+  schedule_clause = where_owned_user ("", "users.id", "schedule", &get, 1,
+                                      "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -39190,11 +39195,15 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
-                 " AND tasks.owner = users.id"
+                 /* And a user may run the task. */
+                 " AND %s"
+                 /* And the same user has access to the schedule. */
                  " AND %s;",
-                 owned_clause);
+                 task_clause,
+                 schedule_clause);
 
-  g_free (owned_clause);
+  g_free (task_clause);
+  g_free (schedule_clause);
   return 0;
 }
 
