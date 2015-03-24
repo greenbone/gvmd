@@ -948,7 +948,13 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
 
       permission_or = g_string_new ("");
       index = 0;
-      if (permissions)
+      if (permissions == NULL || permissions->len == 0)
+        {
+          // Treat filters with no permissions keyword as "any"
+          permission_or = g_string_new ("t ()");
+          index = 1;
+        }
+      else if (permissions)
         for (; index < permissions->len; index++)
           {
             gchar *permission, *quoted;
@@ -1262,9 +1268,10 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
           owned_clause = new;
         }
 
-      if (owner_filter && (strcmp (owner_filter, "any") == 0))
+      if (owner_filter == NULL
+          || (owner_filter && (strcmp (owner_filter, "any") == 0)))
         filter_owned_clause = g_strdup (owned_clause);
-      else if (owner_filter)
+      else if (owner_filter && strcmp (owner_filter, ""))
         {
           gchar *quoted;
           quoted = sql_quote (owner_filter);

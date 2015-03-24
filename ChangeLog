@@ -1,3 +1,9 @@
+2015-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_acl.c (where_owned_user): Treat missing filter keywords
+	owner and permission as if they had the value "any". The old default
+	behavior can be reproduced by using the keywords with an empty value.
+
 2015-03-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (report_severity_data): Add missing QOD field, which
