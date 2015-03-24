@@ -1025,6 +1025,7 @@ serve_and_schedule ()
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
           raise (termination_signal);
         }
 
@@ -1092,6 +1093,7 @@ serve_and_schedule ()
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
           raise (termination_signal);
         }
 

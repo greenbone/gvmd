@@ -1,5 +1,11 @@
 2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (serve_and_schedule): Enable regular signals before
+	raise, otherwise the termination signal will be blocked and pselect will
+	run again with closed file descriptors.
+
+2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/openvasmd.c (log_config_free): New function.
 	(cleanup, update_or_rebuild_nvt_cache, main): Use log_config_free, to
 	prevent log_config from being freed twice.
