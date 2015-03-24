@@ -1,5 +1,12 @@
 2015-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	* tools/cert_bund_update_pg.xsl, tools/cert_bund_update.xsl: Also add
+	or overwrite advisories if the date is equal to the refdate as it
+	contains useful no time of day information, so they might otherwise
+	be skipped if they were published or updated on the same day.
+
+2015-03-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	* src/manage_acl.c (where_owned_user): Treat missing filter keywords
 	owner and permission as if they had the value "any". The old default
 	behavior can be reproduced by using the keywords with an empty value.
