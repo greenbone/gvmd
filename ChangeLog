@@ -1,5 +1,11 @@
 2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/openvasmd.c (log_config_free): New function.
+	(cleanup, update_or_rebuild_nvt_cache, main): Use log_config_free, to
+	prevent log_config from being freed twice.
+
+2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_task_schedule_iterator): Instead of getting
 	tasks where the owner has permission on the schedule, get tasks where
 	any user has permission on both the task and the schedule.
