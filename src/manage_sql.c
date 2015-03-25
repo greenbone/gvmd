@@ -9245,16 +9245,6 @@ trash_task_in_use (task_t task)
 int
 task_alterable (task_t task)
 {
-  char *uuid;
-
-  task_uuid (task, &uuid);
-  if (user_has_access_uuid ("task", uuid, "modify", 0) == 0)
-    {
-      free (uuid);
-      return 0;
-    }
-  free (uuid);
-
   return sql_int ("SELECT alterable FROM tasks"
                   " WHERE id = %llu",
                   task);
