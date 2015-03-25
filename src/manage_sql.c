@@ -14025,7 +14025,9 @@ task_severity (task_t task, int overrides, int offset)
                          "           WHERE reports.task = %llu"
                          "           AND reports.scan_run_status = %u"
                          "           ORDER BY reports.date DESC"
-                         "           LIMIT 1 OFFSET %d);",
+                         "           LIMIT 1 OFFSET %d)"
+                         "       AND results.qod"
+                         "            >= " G_STRINGIFY (MIN_QOD_DEFAULT) ";",
                          new_severity_sql,
                          task,
                          TASK_STATUS_DONE,

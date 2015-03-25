@@ -1,3 +1,8 @@
+2015-03-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (task_severity): Consider only results with a
+	minimum QoD of MIN_QOD_DEFAULT.
+
 2015-03-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/openvasmd.c (serve_and_schedule): Enable regular signals before
