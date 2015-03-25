@@ -1,5 +1,9 @@
 2015-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_config): Add space in SQL.
+
+2015-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_user): Do not remove the Super Admin role
 	when setting roles, because giving the user this role is not allowed.
 	This disables the ability to remove the Super Admin role from a user,

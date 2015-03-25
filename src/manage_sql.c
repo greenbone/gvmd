@@ -12990,7 +12990,7 @@ void
 set_task_config (task_t task, config_t config)
 {
   sql ("UPDATE tasks SET config = %llu, modification_time = m_now ()"
-       "WHERE id = %llu;",
+       " WHERE id = %llu;",
        config,
        task);
 }
