@@ -1764,6 +1764,11 @@ gchar *slave_esxi_credential_uuid = NULL;
 gchar *slave_target_uuid = NULL;
 
 /**
+ * @brief Slave target UUID.
+ */
+gchar *slave_port_list_uuid = NULL;
+
+/**
  * @brief Slave config UUID.
  */
 gchar *slave_config_uuid = NULL;
@@ -2030,10 +2035,12 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         {
           const char *hosts, *port, *exclude_hosts, *alive_tests;
           const char *reverse_lookup_only, *reverse_lookup_unify;
+          const char *port_list_uuid;
           gchar *hosts_copy, *exclude_hosts_copy;
           gchar *alive_tests_copy, *port_range;
           omp_create_target_opts_t opts;
           int ssh_port;
+          entity_t get_targets, child;
 
           hosts = target_iterator_hosts (&targets);
           exclude_hosts = target_iterator_exclude_hosts (&targets);
@@ -2083,6 +2090,29 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
           g_free (port_range);
           if (ret)
             goto fail_esxi_credential;
+
+          if (omp_get_targets (session, slave_target_uuid, 0, 0, &get_targets))
+            goto fail_esxi_credential;
+          child = entity_child (get_targets, "target");
+          if (child == NULL)
+            {
+              free_entity (get_targets);
+              goto fail_target;
+            }
+          child = entity_child (child, "port_list");
+          if (child == NULL)
+            {
+              free_entity (get_targets);
+              goto fail_target;
+            }
+          port_list_uuid = entity_attribute (child, "id");
+          if (port_list_uuid == NULL)
+            {
+              free_entity (get_targets);
+              goto fail_target;
+            }
+          slave_port_list_uuid = g_strdup (port_list_uuid);
+          free_entity (get_targets);
         }
       else
         {
@@ -2463,6 +2493,7 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   set_report_slave_task_uuid (current_report, "");
   omp_delete_config_ext (session, slave_config_uuid, del_opts);
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
+  omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
   omp_delete_lsc_credential_ext (session, slave_ssh_credential_uuid, del_opts);
   omp_delete_lsc_credential_ext (session, slave_smb_credential_uuid, del_opts);
   omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
@@ -2475,6 +2506,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
   slave_config_uuid = NULL;
   free (slave_target_uuid);
   slave_target_uuid = NULL;
+  free (slave_port_list_uuid);
+  slave_port_list_uuid = NULL;
   free (slave_esxi_credential_uuid);
   slave_esxi_credential_uuid = NULL;
   free (slave_smb_credential_uuid);
@@ -2499,6 +2532,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
  fail_target:
   omp_delete_target_ext (session, slave_target_uuid, del_opts);
   free (slave_target_uuid);
+  omp_delete_port_list_ext (session, slave_port_list_uuid, del_opts);
+  free (slave_port_list_uuid);
  fail_esxi_credential:
   omp_delete_lsc_credential_ext (session, slave_esxi_credential_uuid, del_opts);
   free (slave_esxi_credential_uuid);
@@ -5406,8 +5441,8 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   gnutls_session_t session;
   char *host;
   int port;
-  entity_t get_tasks, get_targets, entity, task, credential;
-  const char *slave_config_uuid, *slave_target_uuid;
+  entity_t get_tasks, get_targets, entity, task, credential, port_list;
+  const char *slave_config_uuid, *slave_target_uuid, *slave_port_list_uuid;
   const char *slave_ssh_credential_uuid, *slave_smb_credential_uuid;
 
   omp_delete_opts_t del_opts = omp_delete_opts_ultimate_defaults;
@@ -5467,6 +5502,11 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   if (entity == NULL)
     goto fail_free;
 
+  port_list = entity_child (entity, "port_list");
+  if (port_list == NULL)
+    goto fail_free;
+  slave_port_list_uuid = entity_attribute (port_list, "id");
+
   credential = entity_child (entity, "ssh_lsc_credential");
   if (credential == NULL)
     goto fail_free;
@@ -5486,6 +5526,8 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
     goto fail_target;
   if (omp_delete_target_ext (&session, slave_target_uuid, del_opts))
     goto fail_credential;
+  if (omp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts))
+    goto fail_credential;
   if (omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid,
                                      del_opts))
     goto fail;
@@ -5504,6 +5546,7 @@ delete_slave_task (slave_t slave, const char *slave_task_uuid)
   omp_delete_config_ext (&session, slave_config_uuid, del_opts);
  fail_target:
   omp_delete_target_ext (&session, slave_target_uuid, del_opts);
+  omp_delete_port_list_ext (&session, slave_port_list_uuid, del_opts);
  fail_credential:
   omp_delete_lsc_credential_ext (&session, slave_smb_credential_uuid, del_opts);
   omp_delete_lsc_credential_ext (&session, slave_ssh_credential_uuid, del_opts);

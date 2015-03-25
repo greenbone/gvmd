@@ -1,3 +1,8 @@
+2015-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (slave_port_list_uuid): New variable.
+	(slave_setup, delete_slave_task): Delete port list on slave too.
+
 2015-03-25  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (task_severity): Consider only results with a
