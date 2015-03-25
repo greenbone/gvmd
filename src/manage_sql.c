@@ -52471,7 +52471,11 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
     {
       int index;
 
-      sql ("DELETE FROM role_users WHERE \"user\" = %llu;", user);
+      sql ("DELETE FROM role_users"
+           " WHERE \"user\" = %llu"
+           " AND role != (SELECT id from roles"
+           "              WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "');",
+           user);
       index = 0;
       while (roles && (index < roles->len))
         {
