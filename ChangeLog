@@ -1,5 +1,12 @@
 2015-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (where_owned_user): Only include the global resources
+	when a GET permission is requested, instead of always including them.
+	The global resources are read only, so including them when only modify
+	permission is requested does not make sense.
+
+2015-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_permission): Allow the user to create the
 	permission if the user has "modify" access to the subject.  This allows
 	users to create permissions on roles owned by other users, for example.

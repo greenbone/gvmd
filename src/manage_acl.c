@@ -944,15 +944,17 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
     {
       gchar *permission_clause, *filter_owned_clause;
       GString *permission_or;
-      int index, table_trash;
+      int index, table_trash, permissions_include_get;
 
+      permissions_include_get = 0;
       permission_or = g_string_new ("");
       index = 0;
       if (permissions == NULL || permissions->len == 0)
         {
-          // Treat filters with no permissions keyword as "any"
+          /* Treat filters with no permissions keyword as "any". */
           permission_or = g_string_new ("t ()");
           index = 1;
+          permissions_include_get = 1;
         }
       else if (permissions)
         for (; index < permissions->len; index++)
@@ -964,8 +966,11 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
                 g_string_free (permission_or, TRUE);
                 permission_or = g_string_new ("t ()");
                 index = 1;
+                permissions_include_get = 1;
                 break;
               }
+            if (strlen (permission) > 3 && strcmp ("get_", permission) == 0)
+              permissions_include_get = 1;
             quoted = sql_quote (permission);
             if (index == 0)
               g_string_append_printf (permission_or, "name = '%s'", quoted);
@@ -974,6 +979,8 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
                                       quoted);
             g_free (quoted);
           }
+      else
+        permissions_include_get = 1;
 
       /* Check on index is because default is owner and global, for backward
        * compatibility. */
@@ -1196,10 +1203,16 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
         }
       else
         owned_clause
-         = g_strdup_printf (/* Either a global resource. */
-                            " ((%ss%s.owner IS NULL)"
+         = g_strdup_printf (/* Either a global resource (like target Localhost).
+                             *
+                             * The globals are only required when GET permission
+                             * is requested, because it is only possible to read
+                             * the globals (unless the user has super on
+                             * everything like Super Admin does, but that is
+                             * covered by the super case below). */
+                            " (%s%s%s%s%s"
                             /* Or the user is the owner. */
-                            "  OR (%ss%s.owner"
+                            "  %s (%ss%s.owner"
                             "      = (%s))"
                             /* Or the user has super permission. */
                             "  OR EXISTS (SELECT * FROM permissions"
@@ -1241,8 +1254,14 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
                             "                              WHERE \"user\""
                             "                                    = (%s)))))"
                             "  %s)",
-                            type,
-                            table_trash ? "_trash" : "",
+                            permissions_include_get ? "(" : "",
+                            permissions_include_get ? type : "",
+                            permissions_include_get ? "s" : "",
+                            permissions_include_get && table_trash
+                             ? "_trash"
+                             : "",
+                            permissions_include_get ? ".owner IS NULL)" : "",
+                            permissions_include_get ? "OR" : "",
                             type,
                             table_trash ? "_trash" : "",
                             user_sql,
