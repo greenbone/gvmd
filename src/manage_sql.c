@@ -43996,13 +43996,21 @@ create_permission (const char *name_arg, const char *comment,
   subject = 0;
   if (subject_id)
     {
-      if (find_resource (subject_type, subject_id, &subject))
+      gchar *permission;
+      permission = g_strdup_printf ("modify_%s", subject_type);
+      if (find_resource_with_permission (subject_type,
+                                         subject_id,
+                                         &subject,
+                                         permission,
+                                         0)) /* Trash. */
         {
           g_free (name);
           g_free (resource_type);
+          g_free (permission);
           sql ("ROLLBACK;");
           return -1;
         }
+      g_free (permission);
 
       if (subject == 0)
         {

@@ -1,3 +1,9 @@
+2015-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (create_permission): Allow the user to create the
+	permission if the user has "modify" access to the subject.  This allows
+	users to create permissions on roles owned by other users, for example.
+
 2015-03-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (run_task): Don't send unused ntp_client_accepts_notes and
