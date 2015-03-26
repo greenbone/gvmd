@@ -3513,23 +3513,6 @@ run_task (const char *task_id, char **report_id, int from,
       current_report = (report_t) 0;
       return -10;
     }
-  if (send_to_server ("ntp_client_accepts_notes <|> yes\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-  /** @todo Confirm this really stops scanner from sending FINISHED messages. */
-  if (send_to_server ("ntp_opt_show_end <|> no\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
 
   /* Send the scanner and task preferences. */
 

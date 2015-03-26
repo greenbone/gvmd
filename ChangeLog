@@ -1,3 +1,8 @@
+2015-03-26  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_task): Don't send unused ntp_client_accepts_notes and
+	ntp_opt_show_end preferences.
+
 2015-03-25  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (set_task_config): Add space in SQL.
