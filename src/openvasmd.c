@@ -1535,6 +1535,16 @@ main (int argc, char** argv)
           case 0:
             log_config_free (log_config);
             return EXIT_SUCCESS;
+          case 2:
+            g_critical ("%s: failed to find user '%s'\n",
+                        __FUNCTION__,
+                        delete_user);
+            log_config_free (log_config);
+            return EXIT_FAILURE;
+          case 4:
+            g_critical ("%s: user has active tasks\n", __FUNCTION__);
+            log_config_free (log_config);
+            return EXIT_FAILURE;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
             log_config_free (log_config);
