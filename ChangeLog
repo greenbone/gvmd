@@ -1,3 +1,8 @@
+2015-03-30  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (run_task): Don't send unused
+	ntp_keep_communication_alive preference.
+
 2015-03-26  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (where_owned_user): Only include the global resources

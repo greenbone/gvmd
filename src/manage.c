@@ -3503,17 +3503,6 @@ run_task (const char *task_id, char **report_id, int from,
       return -10;
     }
 
-  /* Send some fixed preferences. */
-
-  if (send_to_server ("ntp_keep_communication_alive <|> yes\n"))
-    {
-      free (hosts);
-      set_task_run_status (task, run_status);
-      set_report_scan_run_status (current_report, run_status);
-      current_report = (report_t) 0;
-      return -10;
-    }
-
   /* Send the scanner and task preferences. */
 
   if (send_config_preferences (config, "SERVER_PREFS", NULL, NULL))
