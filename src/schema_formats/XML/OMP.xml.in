@@ -206,6 +206,34 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <pattern>xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }</pattern>
   </type>
   <type>
+    <name>timezone</name>
+    <summary>A timezone</summary>
+	<description>
+	  <p>
+		The format of a timezone is the same as that of the TZ environment
+    	variable on GNU/Linux systems.  That is, the same value accepted by the
+		tzset C function.  There are three versions of the format.  Note the lack
+		of spaces in the examples.
+	  </p>
+
+	  <p>
+		"std offset" defines a simple timezone.  For example,
+		"FOO+2" defines a timezone FOO which is 2 hours behind UTC.
+	  </p>
+	  <p>
+		"std offset dst [offset],start[/time],end[/time]" defines a timezone,
+		including daylight savings time.  For example,
+		"NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
+	  </p>
+	  <p>
+		":[filespec]" refers to a predefined timezone.  For example,
+		":Africa/Johannesburg".  Note that the colon is optional.  Certain
+		acronyms are predefined, such as GB, NZ and CET.
+	  </p>
+	</description>
+    <pattern>text</pattern>
+  </type>
+  <type>
     <name>uuid</name>
     <summary>A Universally Unique Identifier (UUID)</summary>
     <pattern>xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }</pattern>
@@ -1896,7 +1924,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>timezone</name>
         <summary>Name of timezone used for dates</summary>
         <pattern>
-          text
+          timezone
         </pattern>
       </ele>
       <ele>
@@ -2696,7 +2724,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <name>timezone</name>
         <summary>The user's timezone</summary>
         <pattern>
-          text
+          timezone
         </pattern>
       </ele>
     </response>
@@ -4711,7 +4739,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow</summary>
-      <pattern>text</pattern>
+      <pattern>timezone</pattern>
     </ele>
     <response>
       <pattern>
@@ -13236,7 +13264,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
       <attrib>
         <name>timezone</name>
         <summary>The timezone to use for dates in the report</summary>
-        <type>text</type>
+        <type>timezone</type>
       </attrib>
     </pattern>
     <response>
@@ -15382,7 +15410,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
         <ele>
           <name>timezone</name>
           <summary>The timezone that the schedule follows</summary>
-          <pattern>text</pattern>
+          <pattern>timezone</pattern>
         </ele>
         <ele>
           <name>timezone_abbrev</name>
@@ -20612,7 +20640,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
     <ele>
       <name>timezone</name>
       <summary>The timezone the schedule will follow. User's timezone is used if omitted</summary>
-      <pattern>text</pattern>
+      <pattern>timezone</pattern>
     </ele>
     <ele>
       <name>duration</name>
