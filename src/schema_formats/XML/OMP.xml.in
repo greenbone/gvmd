@@ -7664,11 +7664,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -8485,6 +8491,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <e>event</e>
           <e>method</e>
           <e>filter</e>
+          <o><e>tasks</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -8673,6 +8680,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <type>uuid</type>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -8680,10 +8688,44 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the filter</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the filter</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the filter is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>Tasks using the alert</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+			<ele>
+			  <name>permissions</name>
+			  <summary>Permissions the user has on the task</summary>
+			  <pattern></pattern>
+			</ele>
           </ele>
         </ele>
       </ele>
@@ -9065,11 +9107,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the alert</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the alert</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -10729,11 +10777,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the target</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the target</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -12718,11 +12772,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the target</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the target</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -13807,11 +13867,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of the alert</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the permission</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -15044,11 +15110,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -15470,11 +15542,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -15992,11 +16070,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -16434,6 +16518,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <e>type</e>
             <e>name</e>
             <e>trash</e>
+            <o><e>permissions</e></o>
           </pattern>
           <ele>
             <name>type</name>
@@ -16450,6 +16535,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Whether the resource is in the trashcan</summary>
             <pattern><t>boolean</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the resource</summary>
+			<pattern></pattern>
+		  </ele>
         </ele>
         <ele>
           <name>value</name>
@@ -16837,6 +16927,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>port</e>
             <e>trash</e>
           </pattern>
@@ -16845,6 +16936,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the SSH LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the task</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>port</name>
             <summary>The port the LSCs will use</summary>
@@ -16868,6 +16964,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -16875,6 +16972,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the SMB LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the task</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the LSC credential is in the trashcan</summary>
@@ -16893,6 +16995,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -16900,6 +17003,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the ESXi LSC credential</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the task</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the LSC credential is in the trashcan</summary>
@@ -16920,6 +17028,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -16927,6 +17036,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the port_list</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the task</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the port_list is in the trashcan</summary>
@@ -16967,11 +17081,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>The name of the task</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>
@@ -17419,6 +17539,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -17426,6 +17547,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the config</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the config</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the config is in the trashcan</summary>
@@ -17442,6 +17568,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -17449,6 +17576,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the target</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the target</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the target is in the trashcan</summary>
@@ -17470,6 +17602,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>type</e>
           </pattern>
           <ele>
@@ -17482,6 +17615,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>Type of the scanner</summary>
             <pattern><t>integer</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the task</summary>
+			<pattern></pattern>
+		  </ele>
         </ele>
         <ele>
           <name>alert</name>
@@ -17493,6 +17631,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -17500,6 +17639,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the alert</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the alert</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the alert is in the trashcan</summary>
@@ -17559,6 +17703,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -17566,6 +17711,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the schedule</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the schedule</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the schedule is in the trashcan</summary>
@@ -17591,6 +17741,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>trash</e>
           </pattern>
           <ele>
@@ -17598,6 +17749,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
             <summary>The name of the slave</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the slave</summary>
+			<pattern></pattern>
+		  </ele>
           <ele>
             <name>trash</name>
             <summary>Whether the slave is in the trashcan</summary>
@@ -18441,12 +18597,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <required>1</required>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
           </pattern>
           <ele>
             <name>name</name>
             <summary>Name of role</summary>
             <pattern><t>name</t></pattern>
           </ele>
+		  <ele>
+			<name>permissions</name>
+			<summary>Permissions the user has on the role</summary>
+			<pattern></pattern>
+		  </ele>
         </ele>
         <ele>
           <name>groups</name>
@@ -18463,11 +18625,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <o><e>permissions</e></o>
             </pattern>
             <ele>
               <name>name</name>
               <summary>Name of group</summary>
               <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the group</summary>
+              <pattern></pattern>
             </ele>
           </ele>
         </ele>

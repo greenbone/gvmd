@@ -280,6 +280,8 @@ task_trend = xsd:token { pattern = "up|down|more|less|same" }
 threat = xsd:token { pattern = "High|Medium|Low|Alarm|Log|Debug" }
 # A unit of time.
 time_unit = xsd:token { pattern = "second|minute|hour|day|week|month|year|decade" }
+# A timezone.
+timezone = text
 # A Universally Unique Identifier (UUID).
 uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 # A Universally Unique Identifier (UUID), or the empty string.
@@ -2169,7 +2171,7 @@ report_report_filters_delta_same
 report_report_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 # Abbreviation used for timezone.
@@ -4035,14 +4037,14 @@ create_scanner_type
        text
      }
 
-# Public key of CA to verify scanner certificate..
+# Certificate of CA to verify scanner certificate..
 create_scanner_ca_pub
  = element ca_pub
      {
        text
      }
 
-# Public key to authenticate with to the Scanner..
+# Certificate to authenticate with to the Scanner..
 create_scanner_key_pub
  = element key_pub
      {
@@ -4166,7 +4168,7 @@ create_schedule_period_unit
 create_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 ## Command create_slave
@@ -5297,7 +5299,7 @@ get_reports
        & # Whether to ignore info used to split the report into pages like the filter terms "first" and "rows"..
        attribute ignore_pagination { boolean }?
        & # The timezone to use for dates in the report.
-       attribute timezone { text }?
+       attribute timezone { timezone }?
      }
 
 ## Command get_report_formats
@@ -6376,14 +6378,14 @@ modify_scanner_type
        text
      }
 
-# Public key of CA to verify scanner's certificate.
+# Certificate of CA to verify scanner's certificate.
 modify_scanner_ca_pub
  = element ca_pub
      {
        text
      }
 
-# Public key of credentials to authenticate with to scanner.
+# Certificate of credentials to authenticate with to scanner.
 modify_scanner_key_pub
  = element key_pub
      {
@@ -6473,7 +6475,7 @@ modify_schedule_first_time_year
 modify_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 # How long the task will run for.
@@ -7116,7 +7118,7 @@ authenticate_response_role
 authenticate_response_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 ## Response to commands
@@ -8422,6 +8424,7 @@ get_configs_response_config_tasks_task
      {
        attribute id { uuid }
        & get_configs_response_config_tasks_task_name
+       & get_configs_response_config_tasks_task_permissions?
      }
 
 # The name of the task.
@@ -8429,6 +8432,13 @@ get_configs_response_config_tasks_task_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_configs_response_config_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 # All families selected by the config.
@@ -9019,6 +9029,7 @@ get_alerts_response_alert
        & get_alerts_response_alert_event
        & get_alerts_response_alert_method
        & get_alerts_response_alert_filter
+       & get_alerts_response_alert_tasks?
      }
 
 # Owner of the alert.
@@ -9218,6 +9229,7 @@ get_alerts_response_alert_filter
      {
        attribute id { uuid }?
        & get_alerts_response_alert_filter_name
+       & get_alerts_response_alert_filter_permissions?
        & get_alerts_response_alert_filter_trash
      }
 
@@ -9228,11 +9240,47 @@ get_alerts_response_alert_filter_name
        name
      }
 
+# Permissions the user has on the filter.
+get_alerts_response_alert_filter_permissions
+ = element permissions
+     {
+       ""
+     }
+
 # Whether the filter is in the trashcan.
 get_alerts_response_alert_filter_trash
  = element trash
      {
        boolean
+     }
+
+# Tasks using the alert.
+get_alerts_response_alert_tasks
+ = element tasks
+     {
+       get_alerts_response_alert_tasks_task*
+     }
+
+get_alerts_response_alert_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       & get_alerts_response_alert_tasks_task_name
+       & get_alerts_response_alert_tasks_task_permissions?
+     }
+
+# The name of the task.
+get_alerts_response_alert_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+# Permissions the user has on the task.
+get_alerts_response_alert_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_alerts_response_filters
@@ -9527,6 +9575,7 @@ get_filters_response_filter_alerts_alert
      {
        attribute id { uuid }
        & get_filters_response_filter_alerts_alert_name
+       & get_filters_response_filter_alerts_alert_permissions?
      }
 
 # The name of the alert.
@@ -9534,6 +9583,13 @@ get_filters_response_filter_alerts_alert_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the alert.
+get_filters_response_filter_alerts_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_filters_response_filters
@@ -10793,6 +10849,7 @@ get_lsc_credentials_response_lsc_credential_targets_target
      {
        attribute id { uuid }
        & get_lsc_credentials_response_lsc_credential_targets_target_name
+       & get_lsc_credentials_response_lsc_credential_targets_target_permissions?
      }
 
 # The name of the target.
@@ -10800,6 +10857,13 @@ get_lsc_credentials_response_lsc_credential_targets_target_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the target.
+get_lsc_credentials_response_lsc_credential_targets_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_lsc_credentials_response_lsc_credential_public_key
@@ -12171,6 +12235,7 @@ get_port_lists_response_port_list_targets_target
      {
        attribute id { uuid }
        & get_port_lists_response_port_list_targets_target_name
+       & get_port_lists_response_port_list_targets_target_permissions?
      }
 
 # The name of the target.
@@ -12178,6 +12243,13 @@ get_port_lists_response_port_list_targets_target_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the target.
+get_port_lists_response_port_list_targets_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_port_lists_response_filters
@@ -12712,6 +12784,7 @@ get_report_formats_response_report_format_alerts_alert
        # UUID of the alert.
        attribute id { uuid }
        & get_report_formats_response_report_format_alerts_alert_name
+       & get_report_formats_response_report_format_alerts_alert_permissions?
      }
 
 # Name of the alert.
@@ -12719,6 +12792,13 @@ get_report_formats_response_report_format_alerts_alert_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the permission.
+get_report_formats_response_report_format_alerts_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_report_formats_response_report_format_param
@@ -13540,14 +13620,14 @@ get_scanners_response_scanner_type
        text
      }
 
-# CA Public key to verify the scanner's certificate.
+# CA Certificate to verify the scanner's certificate.
 get_scanners_response_scanner_ca_pub
  = element ca_pub
      {
        text
      }
 
-# Public key of credentials to authenticate with.
+# Certificate of credentials to authenticate with.
 get_scanners_response_scanner_key_pub
  = element key_pub
      {
@@ -13565,6 +13645,7 @@ get_scanners_response_scanner_tasks_task
      {
        attribute id { uuid }
        & get_scanners_response_scanner_tasks_task_name
+       & get_scanners_response_scanner_tasks_task_permissions?
      }
 
 # The name of the task.
@@ -13572,6 +13653,13 @@ get_scanners_response_scanner_tasks_task_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_scanners_response_scanner_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_scanners_response_filters
@@ -13863,7 +13951,7 @@ get_schedules_response_schedule_next_time
 get_schedules_response_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 # The abbreviated name of the timezone.
@@ -13933,6 +14021,7 @@ get_schedules_response_schedule_tasks_task
      {
        attribute id { uuid }
        & get_schedules_response_schedule_tasks_task_name
+       & get_schedules_response_schedule_tasks_task_permissions?
      }
 
 # The name of the task.
@@ -13940,6 +14029,13 @@ get_schedules_response_schedule_tasks_task_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_schedules_response_schedule_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_schedules_response_filters
@@ -14321,6 +14417,7 @@ get_slaves_response_slave_tasks_task
      {
        attribute id { uuid }
        & get_slaves_response_slave_tasks_task_name
+       & get_slaves_response_slave_tasks_task_permissions?
      }
 
 # The name of the task.
@@ -14328,6 +14425,13 @@ get_slaves_response_slave_tasks_task_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_slaves_response_slave_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_slaves_response_filters
@@ -14600,6 +14704,7 @@ get_tags_response_tag_resource
        & get_tags_response_tag_resource_type
        & get_tags_response_tag_resource_name
        & get_tags_response_tag_resource_trash
+       & get_tags_response_tag_resource_permissions?
      }
 
 # OMP type of the resource the tag is attached to.
@@ -14621,6 +14726,13 @@ get_tags_response_tag_resource_trash
  = element trash
      {
        boolean
+     }
+
+# Permissions the user has on the resource.
+get_tags_response_tag_resource_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Value associated with the tag.
@@ -14946,6 +15058,7 @@ get_targets_response_target_ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_ssh_lsc_credential_name
+       & get_targets_response_target_ssh_lsc_credential_permissions?
        & get_targets_response_target_ssh_lsc_credential_port
        & get_targets_response_target_ssh_lsc_credential_trash
      }
@@ -14955,6 +15068,13 @@ get_targets_response_target_ssh_lsc_credential_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_targets_response_target_ssh_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 # The port the LSCs will use.
@@ -14976,6 +15096,7 @@ get_targets_response_target_smb_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_smb_lsc_credential_name
+       & get_targets_response_target_smb_lsc_credential_permissions?
        & get_targets_response_target_smb_lsc_credential_trash
      }
 
@@ -14984,6 +15105,13 @@ get_targets_response_target_smb_lsc_credential_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_targets_response_target_smb_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the LSC credential is in the trashcan.
@@ -14998,6 +15126,7 @@ get_targets_response_target_esxi_lsc_credential
      {
        attribute id { uuid_or_empty }
        & get_targets_response_target_esxi_lsc_credential_name
+       & get_targets_response_target_esxi_lsc_credential_permissions?
        & get_targets_response_target_esxi_lsc_credential_trash
      }
 
@@ -15006,6 +15135,13 @@ get_targets_response_target_esxi_lsc_credential_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_targets_response_target_esxi_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the LSC credential is in the trashcan.
@@ -15027,6 +15163,7 @@ get_targets_response_target_port_list
      {
        attribute id { uuid }
        & get_targets_response_target_port_list_name
+       & get_targets_response_target_port_list_permissions?
        & get_targets_response_target_port_list_trash
      }
 
@@ -15035,6 +15172,13 @@ get_targets_response_target_port_list_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_targets_response_target_port_list_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the port_list is in the trashcan.
@@ -15077,6 +15221,7 @@ get_targets_response_target_tasks_task
      {
        attribute id { uuid }
        & get_targets_response_target_tasks_task_name
+       & get_targets_response_target_tasks_task_permissions?
      }
 
 # The name of the task.
@@ -15084,6 +15229,13 @@ get_targets_response_target_tasks_task_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the task.
+get_targets_response_target_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_filters
@@ -15418,6 +15570,7 @@ get_tasks_response_task_config
      {
        attribute id { uuid }
        & get_tasks_response_task_config_name
+       & get_tasks_response_task_config_permissions?
        & get_tasks_response_task_config_trash
      }
 
@@ -15426,6 +15579,13 @@ get_tasks_response_task_config_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the config.
+get_tasks_response_task_config_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the config is in the trashcan.
@@ -15441,6 +15601,7 @@ get_tasks_response_task_target
      {
        attribute id { uuid }
        & get_tasks_response_task_target_name
+       & get_tasks_response_task_target_permissions?
        & get_tasks_response_task_target_trash
      }
 
@@ -15449,6 +15610,13 @@ get_tasks_response_task_target_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the target.
+get_tasks_response_task_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the target is in the trashcan.
@@ -15471,6 +15639,7 @@ get_tasks_response_task_scanner
      {
        attribute id { uuid }
        & get_tasks_response_task_scanner_name
+       & get_tasks_response_task_scanner_permissions?
        & get_tasks_response_task_scanner_type
      }
 
@@ -15488,12 +15657,20 @@ get_tasks_response_task_scanner_type
        integer
      }
 
+# Permissions the user has on the task.
+get_tasks_response_task_scanner_permissions
+ = element permissions
+     {
+       ""
+     }
+
 # An alert that applies to the task.
 get_tasks_response_task_alert
  = element alert
      {
        attribute id { uuid_or_empty }
        & get_tasks_response_task_alert_name
+       & get_tasks_response_task_alert_permissions?
        & get_tasks_response_task_alert_trash
      }
 
@@ -15502,6 +15679,13 @@ get_tasks_response_task_alert_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the alert.
+get_tasks_response_task_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the alert is in the trashcan.
@@ -15556,6 +15740,7 @@ get_tasks_response_task_schedule
      {
        attribute id { uuid_or_empty }
        & get_tasks_response_task_schedule_name
+       & get_tasks_response_task_schedule_permissions?
        & get_tasks_response_task_schedule_trash
      }
 
@@ -15564,6 +15749,13 @@ get_tasks_response_task_schedule_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the schedule.
+get_tasks_response_task_schedule_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the schedule is in the trashcan.
@@ -15586,6 +15778,7 @@ get_tasks_response_task_slave
      {
        attribute id { uuid }
        & get_tasks_response_task_slave_name
+       & get_tasks_response_task_slave_permissions?
        & get_tasks_response_task_slave_trash
      }
 
@@ -15594,6 +15787,13 @@ get_tasks_response_task_slave_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the slave.
+get_tasks_response_task_slave_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Whether the slave is in the trashcan.
@@ -16225,6 +16425,7 @@ get_users_response_user_role
      {
        attribute id { uuid }
        & get_users_response_user_role_name
+       & get_users_response_user_role_permissions?
      }
 
 # Name of role.
@@ -16232,6 +16433,13 @@ get_users_response_user_role_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the role.
+get_users_response_user_role_permissions
+ = element permissions
+     {
+       ""
      }
 
 # The groups the user belongs to.
@@ -16246,6 +16454,7 @@ get_users_response_user_groups_group
      {
        attribute id { uuid }
        & get_users_response_user_groups_group_name
+       & get_users_response_user_groups_group_permissions?
      }
 
 # Name of group.
@@ -16253,6 +16462,13 @@ get_users_response_user_groups_group_name
  = element name
      {
        name
+     }
+
+# Permissions the user has on the group.
+get_users_response_user_groups_group_permissions
+ = element permissions
+     {
+       ""
      }
 
 # Host access rule for the user.

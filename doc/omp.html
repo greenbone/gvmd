@@ -105,6 +105,10 @@
 <td id="index"><div style="margin-left: 15px;">A unit of time.</div></td>
 </tr>
 <tr id="index">
+<td id="index"><a href="#type_timezone">timezone</a></td>
+<td id="index"><div style="margin-left: 15px;">A timezone.</div></td>
+</tr>
+<tr id="index">
 <td id="index"><a href="#type_uuid">uuid</a></td>
 <td id="index"><div style="margin-left: 15px;">A Universally Unique Identifier (UUID).</div></td>
 </tr>
@@ -1076,20 +1080,49 @@ ested|Stopped|Internal Error" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid">5.21
+<div><h3 id="type_timezone">5.21
+        Data Type <tt>timezone</tt>
+</h3></div>
+<p>In short: A timezone.</p>
+<p>
+		The format of a timezone is the same as that of the TZ environment
+    	variable on GNU/Linux systems.  That is, the same value accepted by the
+		tzset C function.  There are three versions of the format.  Note the lack
+		of spaces in the examples.
+	  </p>
+<p>
+		"std offset" defines a simple timezone.  For example,
+		"FOO+2" defines a timezone FOO which is 2 hours behind UTC.
+	  </p>
+<p>
+		"std offset dst [offset],start[/time],end[/time]" defines a timezone,
+		including daylight savings time.  For example,
+		"NZST-12.00:00NZDT-13:00:00,M10.1.0,M3.3.0".
+	  </p>
+<p>
+		":[filespec]" refers to a predefined timezone.  For example,
+		":Africa/Johannesburg".  Note that the colon is optional.  Certain
+		acronyms are predefined, such as GB, NZ and CET.
+	  </p>
+<h4>5.21.1 RNC</h4>
+<div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>timezone = text
+</pre></div>
+</div>
+<div>
+<div><h3 id="type_uuid">5.22
         Data Type <tt>uuid</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID).</p>
-<h4>5.21.1 RNC</h4>
+<h4>5.22.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid = xsd:token { pattern = "[0-9abcdefABCDEF\-]{1,40}" }
 </pre></div>
 </div>
 <div>
-<div><h3 id="type_uuid_or_empty">5.22
+<div><h3 id="type_uuid_or_empty">5.23
         Data Type <tt>uuid_or_empty</tt>
 </h3></div>
 <p>In short: A Universally Unique Identifier (UUID), or the empty string.</p>
-<h4>5.22.1 RNC</h4>
+<h4>5.23.1 RNC</h4>
 <div style="border: 1px solid; padding:10px; width: 85%; align: center; margin-left: auto; margin-right: auto; background: #d5d5d5;"><pre>uuid_or_empty = xsd:token { pattern = "[0-9abcdefABCDEF\-]{0,40}" }
 </pre></div>
 </div>
@@ -4703,7 +4736,7 @@ report_report_filters_delta_same
 report_report_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 report_report_timezone_abbrev
@@ -5513,7 +5546,7 @@ authenticate_response_role
 authenticate_response_timezone
  = element timezone
      {
-       text
+       timezone
      }
 </pre></div>
 </div>
@@ -9073,12 +9106,12 @@ create_role_users
 </li>
 <li>
               &lt;<b>ca_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Public key of CA to verify scanner certificate..</div>
+              <div style="margin-left: 15px; display: inline;">Certificate of CA to verify scanner certificate..</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>key_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Public key to authenticate with to the Scanner..</div>
+              <div style="margin-left: 15px; display: inline;">Certificate to authenticate with to the Scanner..</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -9396,7 +9429,7 @@ create_schedule_period_unit
 create_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>create_schedule_response
@@ -13318,6 +13351,11 @@ get_agents_response_agent_count_page
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -13730,12 +13768,19 @@ get_configs_response_config_tasks_task
      {
        attribute id { uuid }
        &amp; get_configs_response_config_tasks_task_name
+       &amp; get_configs_response_config_tasks_task_permissions?
      }
 
 get_configs_response_config_tasks_task_name
  = element name
      {
        name
+     }
+
+get_configs_response_config_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_configs_response_config_families
@@ -14871,11 +14916,39 @@ get_aggregates_response_filters_keywords_keyword_value
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the filter.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the filter is in the trashcan.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
+</li>
+<li>
+              &lt;<b>tasks</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Tasks using the alert.</div>
+<ul style="list-style: none"><li>
+              &lt;<b>task</b>&gt;
+              *<ul style="list-style: none">
+<li>
+          @<b>id</b>
+          (<a href="#type_uuid">uuid</a>)
+          </li>
+<li>
+              &lt;<b>name</b>&gt;
+              <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+</ul>
+</li></ul>
 </li>
 </ul>
 </li>
@@ -15007,6 +15080,7 @@ get_alerts_response_alert
        &amp; get_alerts_response_alert_event
        &amp; get_alerts_response_alert_method
        &amp; get_alerts_response_alert_filter
+       &amp; get_alerts_response_alert_tasks?
      }
 
 get_alerts_response_alert_owner
@@ -15180,6 +15254,7 @@ get_alerts_response_alert_filter
      {
        attribute id { uuid }?
        &amp; get_alerts_response_alert_filter_name
+       &amp; get_alerts_response_alert_filter_permissions?
        &amp; get_alerts_response_alert_filter_trash
      }
 
@@ -15189,10 +15264,42 @@ get_alerts_response_alert_filter_name
        name
      }
 
+get_alerts_response_alert_filter_permissions
+ = element permissions
+     {
+       ""
+     }
+
 get_alerts_response_alert_filter_trash
  = element trash
      {
        boolean
+     }
+
+get_alerts_response_alert_tasks
+ = element tasks
+     {
+       get_alerts_response_alert_tasks_task*
+     }
+
+get_alerts_response_alert_tasks_task
+ = element task
+     {
+       attribute id { uuid }
+       &amp; get_alerts_response_alert_tasks_task_name
+       &amp; get_alerts_response_alert_tasks_task_permissions?
+     }
+
+get_alerts_response_alert_tasks_task_name
+ = element name
+     {
+       name
+     }
+
+get_alerts_response_alert_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_alerts_response_filters
@@ -15516,6 +15623,11 @@ get_alerts_response_alert_count_page
               <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the alert.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -15828,12 +15940,19 @@ get_filters_response_filter_alerts_alert
      {
        attribute id { uuid }
        &amp; get_filters_response_filter_alerts_alert_name
+       &amp; get_filters_response_filter_alerts_alert_permissions?
      }
 
 get_filters_response_filter_alerts_alert_name
  = element name
      {
        name
+     }
+
+get_filters_response_filter_alerts_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_filters_response_filters
@@ -17999,6 +18118,11 @@ get_info_response_details
               <div style="margin-left: 15px; display: inline;">The name of the target.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the target.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -18280,12 +18404,19 @@ get_lsc_credentials_response_lsc_credential_targets_target
      {
        attribute id { uuid }
        &amp; get_lsc_credentials_response_lsc_credential_targets_target_name
+       &amp; get_lsc_credentials_response_lsc_credential_targets_target_permissions?
      }
 
 get_lsc_credentials_response_lsc_credential_targets_target_name
  = element name
      {
        name
+     }
+
+get_lsc_credentials_response_lsc_credential_targets_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_lsc_credentials_response_lsc_credential_public_key
@@ -20958,6 +21089,11 @@ get_permissions_response_permission_count_page
               <div style="margin-left: 15px; display: inline;">The name of the target.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the target.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -21276,12 +21412,19 @@ get_port_lists_response_port_list_targets_target
      {
        attribute id { uuid }
        &amp; get_port_lists_response_port_list_targets_target_name
+       &amp; get_port_lists_response_port_list_targets_target_permissions?
      }
 
 get_port_lists_response_port_list_targets_target_name
  = element name
      {
        name
+     }
+
+get_port_lists_response_port_list_targets_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_port_lists_response_filters
@@ -21830,7 +21973,7 @@ get_preferences_response_preference_default
           </li>
 <li>
           @<b>timezone</b>
-          (text)
+          (<a href="#type_timezone">timezone</a>)
           The timezone to use for dates in the report.
           </li>
 </ul>
@@ -21978,7 +22121,7 @@ get_preferences_response_preference_default
        &amp; attribute autofp { xsd:token { pattern = "0|1|2" } }?
        &amp; attribute result_hosts_only { boolean }?
        &amp; attribute ignore_pagination { boolean }?
-       &amp; attribute timezone { text }?
+       &amp; attribute timezone { timezone }?
      }
 </pre></div>
 <i>Response</i><div style="margin-left: 5%"><pre>get_reports_response
@@ -22461,6 +22604,11 @@ get_reports_response_report_count_page
               <div style="margin-left: 15px; display: inline;">Name of the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the permission.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -22834,12 +22982,19 @@ get_report_formats_response_report_format_alerts_alert
      {
        attribute id { uuid }
        &amp; get_report_formats_response_report_format_alerts_alert_name
+       &amp; get_report_formats_response_report_format_alerts_alert_permissions?
      }
 
 get_report_formats_response_report_format_alerts_alert_name
  = element name
      {
        name
+     }
+
+get_report_formats_response_report_format_alerts_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_report_formats_response_report_format_param
@@ -24271,12 +24426,12 @@ get_roles_response_role_count_page
 </li>
 <li>
               &lt;<b>ca_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">CA Public key to verify the scanner's certificate.</div>
+              <div style="margin-left: 15px; display: inline;">CA Certificate to verify the scanner's certificate.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>key_pub</b>&gt;
-              <div style="margin-left: 15px; display: inline;">Public key of credentials to authenticate with.</div>
+              <div style="margin-left: 15px; display: inline;">Certificate of credentials to authenticate with.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -24291,6 +24446,11 @@ get_roles_response_role_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -24577,12 +24737,19 @@ get_scanners_response_scanner_tasks_task
      {
        attribute id { uuid }
        &amp; get_scanners_response_scanner_tasks_task_name
+       &amp; get_scanners_response_scanner_tasks_task_permissions?
      }
 
 get_scanners_response_scanner_tasks_task_name
  = element name
      {
        name
+     }
+
+get_scanners_response_scanner_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_scanners_response_filters
@@ -24927,6 +25094,11 @@ get_scanners_response_scanner_count_page
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -25189,7 +25361,7 @@ get_schedules_response_schedule_next_time
 get_schedules_response_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 get_schedules_response_schedule_timezone_abbrev
@@ -25253,12 +25425,19 @@ get_schedules_response_schedule_tasks_task
      {
        attribute id { uuid }
        &amp; get_schedules_response_schedule_tasks_task_name
+       &amp; get_schedules_response_schedule_tasks_task_permissions?
      }
 
 get_schedules_response_schedule_tasks_task_name
  = element name
      {
        name
+     }
+
+get_schedules_response_schedule_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_schedules_response_filters
@@ -25790,6 +25969,11 @@ get_settings_response_setting_count_page
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li></ul>
 </li>
@@ -26060,12 +26244,19 @@ get_slaves_response_slave_tasks_task
      {
        attribute id { uuid }
        &amp; get_slaves_response_slave_tasks_task_name
+       &amp; get_slaves_response_slave_tasks_task_permissions?
      }
 
 get_slaves_response_slave_tasks_task_name
  = element name
      {
        name
+     }
+
+get_slaves_response_slave_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_slaves_response_filters
@@ -26497,6 +26688,11 @@ get_system_reports_response_system_report_report
               <div style="margin-left: 15px; display: inline;">Whether the resource is in the trashcan.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the resource.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -26720,6 +26916,7 @@ get_tags_response_tag_resource
        &amp; get_tags_response_tag_resource_type
        &amp; get_tags_response_tag_resource_name
        &amp; get_tags_response_tag_resource_trash
+       &amp; get_tags_response_tag_resource_permissions?
      }
 
 get_tags_response_tag_resource_type
@@ -26738,6 +26935,12 @@ get_tags_response_tag_resource_trash
  = element trash
      {
        boolean
+     }
+
+get_tags_response_tag_resource_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tags_response_tag_value
@@ -27058,6 +27261,11 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>port</b>&gt;
               <div style="margin-left: 15px; display: inline;">The port the LSCs will use.</div>
 <ul style="list-style: none"></ul>
@@ -27082,6 +27290,11 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the LSC credential is in the trashcan.</div>
 <ul style="list-style: none"></ul>
@@ -27098,6 +27311,11 @@ get_tags_response_tag_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the ESXi LSC credential.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27137,6 +27355,11 @@ get_tags_response_tag_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the port_list is in the trashcan.</div>
 <ul style="list-style: none"></ul>
@@ -27171,6 +27394,11 @@ get_tags_response_tag_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -27446,6 +27674,7 @@ get_targets_response_target_ssh_lsc_credential
      {
        attribute id { uuid_or_empty }
        &amp; get_targets_response_target_ssh_lsc_credential_name
+       &amp; get_targets_response_target_ssh_lsc_credential_permissions?
        &amp; get_targets_response_target_ssh_lsc_credential_port
        &amp; get_targets_response_target_ssh_lsc_credential_trash
      }
@@ -27454,6 +27683,12 @@ get_targets_response_target_ssh_lsc_credential_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_ssh_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_target_ssh_lsc_credential_port
@@ -27473,6 +27708,7 @@ get_targets_response_target_smb_lsc_credential
      {
        attribute id { uuid_or_empty }
        &amp; get_targets_response_target_smb_lsc_credential_name
+       &amp; get_targets_response_target_smb_lsc_credential_permissions?
        &amp; get_targets_response_target_smb_lsc_credential_trash
      }
 
@@ -27480,6 +27716,12 @@ get_targets_response_target_smb_lsc_credential_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_smb_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_target_smb_lsc_credential_trash
@@ -27493,6 +27735,7 @@ get_targets_response_target_esxi_lsc_credential
      {
        attribute id { uuid_or_empty }
        &amp; get_targets_response_target_esxi_lsc_credential_name
+       &amp; get_targets_response_target_esxi_lsc_credential_permissions?
        &amp; get_targets_response_target_esxi_lsc_credential_trash
      }
 
@@ -27500,6 +27743,12 @@ get_targets_response_target_esxi_lsc_credential_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_esxi_lsc_credential_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_target_esxi_lsc_credential_trash
@@ -27519,6 +27768,7 @@ get_targets_response_target_port_list
      {
        attribute id { uuid }
        &amp; get_targets_response_target_port_list_name
+       &amp; get_targets_response_target_port_list_permissions?
        &amp; get_targets_response_target_port_list_trash
      }
 
@@ -27526,6 +27776,12 @@ get_targets_response_target_port_list_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_port_list_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_target_port_list_trash
@@ -27563,12 +27819,19 @@ get_targets_response_target_tasks_task
      {
        attribute id { uuid }
        &amp; get_targets_response_target_tasks_task_name
+       &amp; get_targets_response_target_tasks_task_permissions?
      }
 
 get_targets_response_target_tasks_task_name
  = element name
      {
        name
+     }
+
+get_targets_response_target_tasks_task_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_targets_response_filters
@@ -27932,6 +28195,11 @@ get_targets_response_target_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the config.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the config is in the trashcan.</div>
 <ul style="list-style: none"></ul>
@@ -27949,6 +28217,11 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the target.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the target.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -27977,6 +28250,11 @@ get_targets_response_target_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the task.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">Type of the scanner.</div>
 <ul style="list-style: none"></ul>
@@ -27994,6 +28272,11 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the alert.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the alert.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -28053,6 +28336,11 @@ get_targets_response_target_count_page
 <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the schedule.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>trash</b>&gt;
               <div style="margin-left: 15px; display: inline;">Whether the schedule is in the trashcan.</div>
 <ul style="list-style: none"></ul>
@@ -28075,6 +28363,11 @@ get_targets_response_target_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">The name of the slave.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the slave.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -28658,6 +28951,7 @@ get_tasks_response_task_config
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_config_name
+       &amp; get_tasks_response_task_config_permissions?
        &amp; get_tasks_response_task_config_trash
      }
 
@@ -28665,6 +28959,12 @@ get_tasks_response_task_config_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_config_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tasks_response_task_config_trash
@@ -28678,6 +28978,7 @@ get_tasks_response_task_target
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_target_name
+       &amp; get_tasks_response_task_target_permissions?
        &amp; get_tasks_response_task_target_trash
      }
 
@@ -28685,6 +28986,12 @@ get_tasks_response_task_target_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_target_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tasks_response_task_target_trash
@@ -28704,6 +29011,7 @@ get_tasks_response_task_scanner
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_scanner_name
+       &amp; get_tasks_response_task_scanner_permissions?
        &amp; get_tasks_response_task_scanner_type
      }
 
@@ -28719,11 +29027,18 @@ get_tasks_response_task_scanner_type
        integer
      }
 
+get_tasks_response_task_scanner_permissions
+ = element permissions
+     {
+       ""
+     }
+
 get_tasks_response_task_alert
  = element alert
      {
        attribute id { uuid_or_empty }
        &amp; get_tasks_response_task_alert_name
+       &amp; get_tasks_response_task_alert_permissions?
        &amp; get_tasks_response_task_alert_trash
      }
 
@@ -28731,6 +29046,12 @@ get_tasks_response_task_alert_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_alert_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tasks_response_task_alert_trash
@@ -28778,6 +29099,7 @@ get_tasks_response_task_schedule
      {
        attribute id { uuid_or_empty }
        &amp; get_tasks_response_task_schedule_name
+       &amp; get_tasks_response_task_schedule_permissions?
        &amp; get_tasks_response_task_schedule_trash
      }
 
@@ -28785,6 +29107,12 @@ get_tasks_response_task_schedule_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_schedule_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tasks_response_task_schedule_trash
@@ -28804,6 +29132,7 @@ get_tasks_response_task_slave
      {
        attribute id { uuid }
        &amp; get_tasks_response_task_slave_name
+       &amp; get_tasks_response_task_slave_permissions?
        &amp; get_tasks_response_task_slave_trash
      }
 
@@ -28811,6 +29140,12 @@ get_tasks_response_task_slave_name
  = element name
      {
        name
+     }
+
+get_tasks_response_task_slave_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_tasks_response_task_slave_trash
@@ -29682,6 +30017,11 @@ get_tasks_response_task_count_page
               <div style="margin-left: 15px; display: inline;">Name of role.</div>
 <ul style="list-style: none"></ul>
 </li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the role.</div>
+<ul style="list-style: none"></ul>
+</li>
 </ul>
 </li>
 <li>
@@ -29697,6 +30037,11 @@ get_tasks_response_task_count_page
 <li>
               &lt;<b>name</b>&gt;
               <div style="margin-left: 15px; display: inline;">Name of group.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the group.</div>
 <ul style="list-style: none"></ul>
 </li>
 </ul>
@@ -29959,12 +30304,19 @@ get_users_response_user_role
      {
        attribute id { uuid }
        &amp; get_users_response_user_role_name
+       &amp; get_users_response_user_role_permissions?
      }
 
 get_users_response_user_role_name
  = element name
      {
        name
+     }
+
+get_users_response_user_role_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_users_response_user_groups
@@ -29978,12 +30330,19 @@ get_users_response_user_groups_group
      {
        attribute id { uuid }
        &amp; get_users_response_user_groups_group_name
+       &amp; get_users_response_user_groups_group_permissions?
      }
 
 get_users_response_user_groups_group_name
  = element name
      {
        name
+     }
+
+get_users_response_user_groups_group_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_users_response_user_hosts
@@ -32676,12 +33035,12 @@ modify_role_users
 </li>
 <li>
               &lt;<b>ca_pub</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Public key of CA to verify scanner's certificate.</div>
+              ?<div style="margin-left: 15px; display: inline;">Certificate of CA to verify scanner's certificate.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>key_pub</b>&gt;
-              ?<div style="margin-left: 15px; display: inline;">Public key of credentials to authenticate with to scanner.</div>
+              ?<div style="margin-left: 15px; display: inline;">Certificate of credentials to authenticate with to scanner.</div>
 <ul style="list-style: none"></ul>
 </li>
 <li>
@@ -32945,7 +33304,7 @@ modify_schedule_first_time_year
 modify_schedule_timezone
  = element timezone
      {
-       text
+       timezone
      }
 
 modify_schedule_duration
