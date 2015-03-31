@@ -39851,10 +39851,10 @@ create_report_format (const char *uuid, const char *name,
 
   /* Verify the signature. */
 
-  if (signature
-      || (find_signature ("report_formats", uuid, &format_signature,
-                          &format_signature_size, &uuid_actual)
-          == 0))
+  if ((find_signature ("report_formats", uuid, &format_signature,
+                       &format_signature_size, &uuid_actual)
+       == 0)
+      || signature)
     {
       char *locale;
       GString *format;
@@ -39927,7 +39927,7 @@ create_report_format (const char *uuid, const char *name,
 
       g_string_append_printf (format, "\n");
 
-      if (signature == NULL)
+      if (format_signature)
         signature = (const char*) format_signature;
 
       if (verify_signature (format->str, format->len, signature,
