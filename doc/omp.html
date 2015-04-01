@@ -20383,6 +20383,11 @@ get_overrides_response_override
               <ul style="list-style: none"></ul>
 </li>
 <li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the resource.</div>
+<ul style="list-style: none"></ul>
+</li>
+<li>
               &lt;<b>type</b>&gt;
               <div style="margin-left: 15px; display: inline;">The OMP type of the resource.</div>
 <ul style="list-style: none"></ul>
@@ -20411,6 +20416,11 @@ get_overrides_response_override
 <li>
               &lt;<b>name</b>&gt;
               <ul style="list-style: none"></ul>
+</li>
+<li>
+              &lt;<b>permissions</b>&gt;
+              ?<div style="margin-left: 15px; display: inline;">Permissions the user has on the subject.</div>
+<ul style="list-style: none"></ul>
 </li>
 <li>
               &lt;<b>type</b>&gt;
@@ -20594,6 +20604,7 @@ get_permissions_response_permission_resource
      {
        attribute id { uuid }?
        &amp; get_permissions_response_permission_resource_name
+       &amp; get_permissions_response_permission_resource_permissions?
        &amp; get_permissions_response_permission_resource_type
        &amp; get_permissions_response_permission_resource_trash
        &amp; get_permissions_response_permission_resource_deleted
@@ -20603,6 +20614,12 @@ get_permissions_response_permission_resource_name
  = element name
      {
        text
+     }
+
+get_permissions_response_permission_resource_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_permissions_response_permission_resource_type
@@ -20628,6 +20645,7 @@ get_permissions_response_permission_subject
      {
        attribute id { uuid }?
        &amp; get_permissions_response_permission_subject_name
+       &amp; get_permissions_response_permission_subject_permissions?
        &amp; get_permissions_response_permission_subject_type
        &amp; get_permissions_response_permission_subject_trash
      }
@@ -20636,6 +20654,12 @@ get_permissions_response_permission_subject_name
  = element name
      {
        text
+     }
+
+get_permissions_response_permission_subject_permissions
+ = element permissions
+     {
+       ""
      }
 
 get_permissions_response_permission_subject_type

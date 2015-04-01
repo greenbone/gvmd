@@ -12208,6 +12208,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>UUID if permission applies to a resource, else 0</summary>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>type</e>
             <e>trash</e>
             <e>deleted</e>
@@ -12215,6 +12216,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
           <ele>
             <name>name</name>
             <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the resource</summary>
+            <pattern></pattern>
           </ele>
           <ele>
             <name>type</name>
@@ -12242,12 +12248,18 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
               <summary>UUID of the subject</summary>
             </attrib>
             <e>name</e>
+            <o><e>permissions</e></o>
             <e>type</e>
             <e>trash</e>
           </pattern>
           <ele>
             <name>name</name>
             <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the subject</summary>
+            <pattern></pattern>
           </ele>
           <ele>
             <name>type</name>

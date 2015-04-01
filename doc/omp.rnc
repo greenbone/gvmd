@@ -11735,6 +11735,7 @@ get_permissions_response_permission_resource
        # UUID if permission applies to a resource, else 0.
        attribute id { uuid }?
        & get_permissions_response_permission_resource_name
+       & get_permissions_response_permission_resource_permissions?
        & get_permissions_response_permission_resource_type
        & get_permissions_response_permission_resource_trash
        & get_permissions_response_permission_resource_deleted
@@ -11744,6 +11745,13 @@ get_permissions_response_permission_resource_name
  = element name
      {
        text
+     }
+
+# Permissions the user has on the resource.
+get_permissions_response_permission_resource_permissions
+ = element permissions
+     {
+       ""
      }
 
 # The OMP type of the resource.
@@ -11774,6 +11782,7 @@ get_permissions_response_permission_subject
        # UUID of the subject.
        attribute id { uuid }?
        & get_permissions_response_permission_subject_name
+       & get_permissions_response_permission_subject_permissions?
        & get_permissions_response_permission_subject_type
        & get_permissions_response_permission_subject_trash
      }
@@ -11782,6 +11791,13 @@ get_permissions_response_permission_subject_name
  = element name
      {
        text
+     }
+
+# Permissions the user has on the subject.
+get_permissions_response_permission_subject_permissions
+ = element permissions
+     {
+       ""
      }
 
 # The OMP type of the subject: group, role or user.

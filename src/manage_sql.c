@@ -44511,6 +44511,48 @@ permission_iterator_resource_orphan (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the readable status of a resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if readable, otherwise 0.
+ */
+int
+permission_iterator_resource_readable (iterator_t* iterator)
+{
+  resource_t found;
+  const char *type, *uuid;
+  gchar *permission;
+
+  if (iterator->done) return 0;
+
+  type = permission_iterator_resource_type (iterator);
+  uuid = permission_iterator_resource_uuid (iterator);
+
+  if (type == NULL || uuid == NULL)
+    return 0;
+
+  if ((strcmp (type, "cpe") == 0)
+      || (strcmp (type, "cve") == 0)
+      || (strcmp (type, "ovaldef") == 0)
+      || (strcmp (type, "cert_bund_adv") == 0)
+      || (strcmp (type, "dfn_cert_adv") == 0))
+    permission = g_strdup ("get_info");
+  else
+    permission = g_strdup_printf ("get_%ss", type);
+
+  found = 0;
+  find_resource_with_permission (type,
+                                 uuid,
+                                 &found,
+                                 permission,
+                                 permission_iterator_resource_in_trash
+                                  (iterator));
+  g_free (permission);
+  return found > 0;
+}
+
+/**
  * @brief Get the type of subject from a permission iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -44549,6 +44591,46 @@ permission_iterator_subject_in_trash (iterator_t* iterator)
 {
   if (iterator->done) return 0;
   return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+}
+
+/**
+ * @brief Get the readable status of a subject from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if readable, otherwise 0.
+ */
+int
+permission_iterator_subject_readable (iterator_t* iterator)
+{
+  resource_t found;
+  const char *type, *uuid;
+  gchar *permission;
+
+  if (iterator->done) return 0;
+
+  type = permission_iterator_subject_type (iterator);
+  uuid = permission_iterator_subject_uuid (iterator);
+
+  if (type == NULL || uuid == NULL)
+    return 0;
+
+  if ((strcmp (type, "user") == 0)
+      || (strcmp (type, "role") == 0)
+      || (strcmp (type, "group") == 0))
+    permission = g_strdup_printf ("get_%ss", type);
+  else
+    return 0;
+
+  found = 0;
+  find_resource_with_permission (type,
+                                 uuid,
+                                 &found,
+                                 permission,
+                                 permission_iterator_subject_in_trash
+                                  (iterator));
+  g_free (permission);
+  return found > 0;
 }
 
 /**
