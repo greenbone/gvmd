@@ -1,5 +1,10 @@
 2015-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (parse_tags): Add the cvss_base_vector tag and skip
+	cvss_base, as was done in the past.
+
+2015-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (create_report_format): Prefer the signature from
 	the feed when verifying the report format for CREATE_REPORT_FORMAT,
 	because this is what VERIFY_REPORT_FORMAT does.  This ensures the trust
