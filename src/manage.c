@@ -43,6 +43,7 @@
 #include "manage.h"
 #include "scanner.h"
 #include "sql.h"
+#include "manage_acl.h"
 #include "manage_sql.h"
 #include "ovas-mngr-comm.h"
 #include "tracef.h"
@@ -3855,7 +3856,7 @@ run_task (const char *task_id, char **report_id, int from,
 int
 start_task (const char *task_id, char **report_id)
 {
-  if (user_may ("start_task") == 0)
+  if (acl_user_may ("start_task") == 0)
     return 99;
 
   return run_task (task_id, report_id, 0, "start_task");
@@ -3931,7 +3932,7 @@ stop_task (const char *task_id)
 {
   task_t task;
 
-  if (user_may ("stop_task") == 0)
+  if (acl_user_may ("stop_task") == 0)
     return 99;
 
   task = 0;
@@ -3961,7 +3962,7 @@ resume_task (const char *task_id, char **report_id)
   task_t task;
   task_status_t run_status;
 
-  if (user_may ("resume_task") == 0)
+  if (acl_user_may ("resume_task") == 0)
     return 99;
 
   task = 0;
@@ -4287,7 +4288,7 @@ init_system_report_type_iterator (report_type_iterator_t* iterator,
 {
   int ret;
 
-  if (user_may ("get_system_reports") == 0)
+  if (acl_user_may ("get_system_reports") == 0)
     return 99;
 
   ret = get_system_report_types (type, &iterator->start, &iterator->current,
@@ -6537,7 +6538,7 @@ openvas_sync_feed (const gchar * sync_script, const gchar * current_user,
   g_assert (sync_script);
   g_assert (current_user);
 
-  if (user_may (feed_type == NVT_FEED
+  if (acl_user_may (feed_type == NVT_FEED
                  ? "sync_feed"
                  : (feed_type == SCAP_FEED)
                      ? "sync_scap"
@@ -7133,7 +7134,7 @@ manage_run_wizard (const gchar *name,
 
   forked = 0;
 
-  if (user_may ("run_wizard") == 0)
+  if (acl_user_may ("run_wizard") == 0)
     return 99;
 
   if (command_error)

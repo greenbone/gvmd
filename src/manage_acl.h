@@ -34,7 +34,7 @@
  *
  * @param[in]  resource  Resource.
  */
-#define USER_MAY(resource)                                            \
+#define ACL_USER_MAY(resource)                                        \
   "SELECT count(*) > 0 FROM permissions"                              \
   " WHERE resource = " resource                                       \
   " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)             \
@@ -67,56 +67,59 @@
   "      OR name = lower ('%s'))"
 
 int
-user_may (const char *);
+acl_user_may (const char *);
 
 int
-user_can_everything (const char *);
+acl_user_can_everything (const char *);
 
 int
-role_can_super_everyone (const char *);
+acl_role_can_super_everyone (const char *);
 
 int
-user_can_super_everyone (const char *);
+acl_user_can_super_everyone (const char *);
 
 int
-user_has_super (const char *, user_t);
+acl_user_has_super (const char *, user_t);
 
 int
-user_is_admin (const char *);
+acl_user_is_admin (const char *);
 
 int
-user_is_super_admin (const char *);
+acl_user_is_user (const char *);
 
 int
-user_is_observer (const char *);
+acl_user_is_super_admin (const char *);
 
 int
-user_owns_name (const char *, const char *);
+acl_user_is_observer (const char *);
 
 int
-user_owns (const char *, resource_t, int);
+acl_user_owns_name (const char *, const char *);
 
 int
-user_is_owner (const char *, const char *);
+acl_user_owns (const char *, resource_t, int);
 
 int
-user_owns_uuid (const char *, const char *, int);
+acl_user_is_owner (const char *, const char *);
 
 int
-user_owns_trash_uuid (const char *resource, const char *uuid);
+acl_user_owns_uuid (const char *, const char *, int);
 
 int
-user_has_access_uuid (const char *, const char *, const char *, int);
+acl_user_owns_trash_uuid (const char *resource, const char *uuid);
+
+int
+acl_user_has_access_uuid (const char *, const char *, const char *, int);
 
 gchar *
-where_owned_user (const char *, const char *, const char *, const get_data_t *,
-                  int, const gchar *, resource_t, array_t *);
+acl_where_owned_user (const char *, const char *, const char *, const get_data_t *,
+                      int, const gchar *, resource_t, array_t *);
 
 gchar *
-where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
-             array_t *);
+acl_where_owned (const char *, const get_data_t *, int, const gchar *, resource_t,
+                 array_t *);
 
 gchar *
-where_owned_for_get (const char *, const char *);
+acl_where_owned_for_get (const char *, const char *);
 
 #endif /* not OPENVAS_MANAGER_MANAGE_ACL_H */

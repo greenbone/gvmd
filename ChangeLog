@@ -1,5 +1,28 @@
 2015-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add a prefix to all ACL names.
+
+	* src/manage_acl.h (USER_MAY, user_may, user_can_everything)
+	(role_can_super_everyone, user_can_super_everyone, user_has_super)
+	(user_is_admin, user_is_super_admin, user_is_observer, user_owns_name)
+	(user_owns, user_is_owner, user_owns_uuid, user_owns_trash_uuid)
+	(user_has_access_uuid, where_owned_user, where_owned)
+	(where_owned_for_get): Remove.  Renamed with acl_ prefix.
+	(ACL_USER_MAY, acl_user_may, acl_user_can_everything)
+	(acl_role_can_super_everyone, acl_user_can_super_everyone)
+	(acl_user_has_super, acl_user_is_admin, acl_user_is_super_admin)
+	(acl_user_is_observer, acl_user_owns_name, acl_user_owns)
+	(acl_user_is_owner, acl_user_owns_uuid, acl_user_owns_trash_uuid)
+	(acl_user_has_access_uuid, acl_where_owned_user, acl_where_owned)
+	(acl_where_owned_for_get): New.  Renamed with acl_ prefix.
+
+	* src/manage_acl.h: Adjust headers accordingly.
+
+	* src/manage.c, src/manage_pg.c, src/manage_sql.c, src/omp.c,
+	src/manage_sqlite3.c: Rename all ACL functions with prefix.
+
+2015-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Mark the readability of the subject and resource in GET_PERMISSIONS.
 
 	* src/manage_sql.c (permission_iterator_resource_readable)

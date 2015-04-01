@@ -2396,7 +2396,7 @@ create_tables ()
 
   /* Result views */
 
-  owned_clause = where_owned_for_get ("override", "users.id");
+  owned_clause = acl_where_owned_for_get ("override", "users.id");
 
   sql ("CREATE VIEW IF NOT EXISTS result_overrides AS"
        " SELECT users.id AS user,"

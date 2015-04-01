@@ -47,7 +47,7 @@
  * @return 1 if user has permission, else 0.
  */
 int
-user_may (const char *operation)
+acl_user_may (const char *operation)
 {
   int ret;
   gchar *quoted_operation;
@@ -65,7 +65,7 @@ user_may (const char *operation)
 
   quoted_operation = sql_quote (operation);
 
-  ret = sql_int (USER_MAY ("0"),
+  ret = sql_int (ACL_USER_MAY ("0"),
                  current_credentials.uuid,
                  current_credentials.uuid,
                  current_credentials.uuid,
@@ -87,7 +87,7 @@ user_may (const char *operation)
  * @return 1 if role can Super Admin, else 0.
  */
 int
-role_can_super_everyone (const char *role_id)
+acl_role_can_super_everyone (const char *role_id)
 {
   gchar *quoted_role_id;
   quoted_role_id = sql_quote (role_id);
@@ -119,7 +119,7 @@ role_can_super_everyone (const char *role_id)
  * @return 1 if user is a Super Admin, else 0.
  */
 int
-user_can_super_everyone (const char *uuid)
+acl_user_can_super_everyone (const char *uuid)
 {
   gchar *quoted_uuid;
 
@@ -171,7 +171,7 @@ user_can_super_everyone (const char *uuid)
  * @return 1 if user has permission, else 0.
  */
 int
-user_can_everything (const char *user_id)
+acl_user_can_everything (const char *user_id)
 {
   gchar *quoted_user_id;
   int ret;
@@ -218,7 +218,7 @@ user_can_everything (const char *user_id)
  * @return 1 if user has permission, else 0.
  */
 int
-user_has_super (const char *super_user_id, user_t other_user)
+acl_user_has_super (const char *super_user_id, user_t other_user)
 {
   gchar *quoted_super_user_id;
 
@@ -288,7 +288,7 @@ user_has_super (const char *super_user_id, user_t other_user)
  * @return 1 if user is an Admin, else 0.
  */
 int
-user_is_admin (const char *uuid)
+acl_user_is_admin (const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -311,7 +311,7 @@ user_is_admin (const char *uuid)
  * @return 1 if user is an Observer, else 0.
  */
 int
-user_is_observer (const char *uuid)
+acl_user_is_observer (const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -357,7 +357,7 @@ user_is_super_admin (const char *uuid)
  * @return 1 if user has the User role, else 0.
  */
 int
-user_is_user (const char *uuid)
+acl_user_is_user (const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -377,7 +377,7 @@ user_is_user (const char *uuid)
  *
  * @param[in]  format  Value format specifier.
  */
-#define SUPER_CLAUSE(format)                                              \
+#define ACL_SUPER_CLAUSE(format)                                          \
   "                name = 'Super'"                                        \
   /*                    Super on everyone. */                             \
   "                AND ((resource = 0)"                                   \
@@ -438,7 +438,7 @@ user_is_user (const char *uuid)
  * @param[in]  user_id  UUID of user.
  * @param[in]  trash    Whether to search trash.
  */
-#define SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
+#define ACL_SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   type,                                                       \
@@ -472,15 +472,15 @@ user_is_user (const char *uuid)
  * @return 1 if user has Super, else 0.
  */
 int
-user_has_super_on (const char *type, const char *field, const char *value,
-                   int trash)
+acl_user_has_super_on (const char *type, const char *field, const char *value,
+                       int trash)
 {
   gchar *quoted_value;
   quoted_value = sql_quote (value);
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " SUPER_CLAUSE ("'%s'") ");",
-               SUPER_CLAUSE_ARGS (type, field, quoted_value,
-                                  current_credentials.uuid, trash)))
+               "               WHERE " ACL_SUPER_CLAUSE ("'%s'") ");",
+               ACL_SUPER_CLAUSE_ARGS (type, field, quoted_value,
+                                      current_credentials.uuid, trash)))
     {
       g_free (quoted_value);
       return 1;
@@ -500,13 +500,13 @@ user_has_super_on (const char *type, const char *field, const char *value,
  * @return 1 if user has Super, else 0.
  */
 int
-user_has_super_on_resource (const char *type, const char *field,
-                            resource_t resource, int trash)
+acl_user_has_super_on_resource (const char *type, const char *field,
+                                resource_t resource, int trash)
 {
   if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " SUPER_CLAUSE ("%llu") ");",
-               SUPER_CLAUSE_ARGS (type, field, resource,
-                                  current_credentials.uuid, trash)))
+               "               WHERE " ACL_SUPER_CLAUSE ("%llu") ");",
+               ACL_SUPER_CLAUSE_ARGS (type, field, resource,
+                                      current_credentials.uuid, trash)))
     return 1;
   return 0;
 }
@@ -523,7 +523,7 @@ user_has_super_on_resource (const char *type, const char *field,
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns_name (const char *type, const char *value)
+acl_user_owns_name (const char *type, const char *value)
 {
   gchar *quoted_value;
   int ret;
@@ -539,7 +539,7 @@ user_owns_name (const char *type, const char *value)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (user_has_super_on (type, "name", value, 0))
+  if (acl_user_has_super_on (type, "name", value, 0))
     return 1;
 
   quoted_value = sql_quote (value);
@@ -564,7 +564,7 @@ user_owns_name (const char *type, const char *value)
  * @return 1 if user actually owns resource, else 0.
  */
 int
-user_is_owner (const char *type, const char *uuid)
+acl_user_is_owner (const char *type, const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -597,7 +597,7 @@ user_is_owner (const char *type, const char *uuid)
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns_uuid (const char *type, const char *uuid, int trash)
+acl_user_owns_uuid (const char *type, const char *uuid, int trash)
 {
   int ret;
   gchar *quoted_uuid;
@@ -612,7 +612,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (user_has_super_on (type, "uuid", uuid, 0))
+  if (acl_user_has_super_on (type, "uuid", uuid, 0))
     return 1;
 
   quoted_uuid = sql_quote (uuid);
@@ -655,7 +655,7 @@ user_owns_uuid (const char *type, const char *uuid, int trash)
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns (const char *type, resource_t resource, int trash)
+acl_user_owns (const char *type, resource_t resource, int trash)
 {
   int ret;
 
@@ -669,7 +669,7 @@ user_owns (const char *type, resource_t resource, int trash)
       || (strcmp (type, "dfn_cert_adv") == 0))
     return 1;
 
-  if (user_has_super_on_resource (type, "id", resource, trash))
+  if (acl_user_has_super_on_resource (type, "id", resource, trash))
     return 1;
 
   if (strcmp (type, "result") == 0)
@@ -709,7 +709,7 @@ user_owns (const char *type, resource_t resource, int trash)
  * @return 1 if user owns resource, else 0.
  */
 int
-user_owns_trash_uuid (const char *type, const char *uuid)
+acl_user_owns_trash_uuid (const char *type, const char *uuid)
 {
   int ret;
   gchar *quoted_uuid;
@@ -717,7 +717,7 @@ user_owns_trash_uuid (const char *type, const char *uuid)
   assert (current_credentials.uuid);
   assert (type && strcmp (type, "task"));
 
-  if (user_has_super_on (type, "uuid", uuid, 1))
+  if (acl_user_has_super_on (type, "uuid", uuid, 1))
     return 1;
 
   quoted_uuid = sql_quote (uuid);
@@ -744,8 +744,8 @@ user_owns_trash_uuid (const char *type, const char *uuid)
  * @return 1 if user may access resource, else 0.
  */
 int
-user_has_access_uuid (const char *type, const char *uuid,
-                      const char *permission, int trash)
+acl_user_has_access_uuid (const char *type, const char *uuid,
+                          const char *permission, int trash)
 {
   int ret, get;
   char *uuid_task;
@@ -760,7 +760,7 @@ user_has_access_uuid (const char *type, const char *uuid,
     return 1;
 
   /* The Super case is checked here. */
-  ret = user_owns_uuid (type, uuid, trash);
+  ret = acl_user_owns_uuid (type, uuid, trash);
   if (ret)
     return ret;
 
@@ -934,9 +934,10 @@ user_has_access_uuid (const char *type, const char *uuid,
  * @return Newly allocated owned clause.
  */
 gchar *
-where_owned_user (const char *user_id, const char *user_sql, const char *type,
-                  const get_data_t *get, int owned, const gchar *owner_filter,
-                  resource_t resource, array_t *permissions)
+acl_where_owned_user (const char *user_id, const char *user_sql,
+                      const char *type, const get_data_t *get, int owned,
+                      const gchar *owner_filter, resource_t resource,
+                      array_t *permissions)
 {
   gchar *owned_clause;
 
@@ -1098,7 +1099,7 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
         {
           int admin;
           assert (strcmp (user_id, ""));
-          admin = user_can_everything (user_id);
+          admin = acl_user_can_everything (user_id);
           /* A user sees permissions that involve the user.  Admin users also
            * see all higher level permissions. */
           owned_clause
@@ -1331,9 +1332,9 @@ where_owned_user (const char *user_id, const char *user_sql, const char *type,
  * @return Newly allocated owned clause.
  */
 gchar *
-where_owned (const char *type, const get_data_t *get, int owned,
-             const gchar *owner_filter, resource_t resource,
-             array_t *permissions)
+acl_where_owned (const char *type, const get_data_t *get, int owned,
+                 const gchar *owner_filter, resource_t resource,
+                 array_t *permissions)
 {
   gchar *ret, *user_sql;
   if (current_credentials.uuid)
@@ -1341,8 +1342,8 @@ where_owned (const char *type, const get_data_t *get, int owned,
                                 current_credentials.uuid);
   else
     user_sql = NULL;
-  ret = where_owned_user (current_credentials.uuid, user_sql, type, get, owned,
-                          owner_filter, resource, permissions);
+  ret = acl_where_owned_user (current_credentials.uuid, user_sql, type, get,
+                              owned, owner_filter, resource, permissions);
   g_free (user_sql);
   return ret;
 }
@@ -1357,7 +1358,7 @@ where_owned (const char *type, const get_data_t *get, int owned,
  * @return Newly allocated owned clause.
  */
 gchar *
-where_owned_for_get (const char *type, const char *user_sql)
+acl_where_owned_for_get (const char *type, const char *user_sql)
 {
   gchar *owned_clause;
   get_data_t get;
@@ -1375,17 +1376,17 @@ where_owned_for_get (const char *type, const char *user_sql)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup_printf ("get_%ss", type));
-  owned_clause = where_owned_user (current_credentials.uuid
-                                    ? current_credentials.uuid
-                                    /* Use user_sql_new. */
-                                    : "",
-                                   user_sql_new,
-                                   type,
-                                   &get,
-                                   1,              /* Do owner checks. */
-                                   "any",
-                                   0,              /* Resource. */
-                                   permissions);
+  owned_clause = acl_where_owned_user (current_credentials.uuid
+                                        ? current_credentials.uuid
+                                        /* Use user_sql_new. */
+                                        : "",
+                                       user_sql_new,
+                                       type,
+                                       &get,
+                                       1,              /* Do owner checks. */
+                                       "any",
+                                       0,              /* Resource. */
+                                       permissions);
   array_free (permissions);
   g_free (user_sql_new);
 

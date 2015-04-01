@@ -92,6 +92,7 @@
 
 #include "omp.h"
 #include "manage.h"
+#include "manage_acl.h"
 #include "manage_sql.h"
 /** @todo For access to scanner_t scanner. */
 #include "otp.h"
@@ -447,7 +448,7 @@ init_get (gchar *command, get_data_t * get, const gchar *setting_name,
 {
   gchar *filter, *replacement;
 
-  if (user_may (command) == 0)
+  if (acl_user_may (command) == 0)
     return 99;
 
   /* Get any replacement out of get->filter, before it changes.  Used to add
@@ -5806,8 +5807,8 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                    current_credentials.username)
            == 0))
       /* Or the user is effectively the owner. */
-      || user_has_super (current_credentials.uuid,
-                         get_iterator_owner (iterator))
+      || acl_user_has_super (current_credentials.uuid,
+                             get_iterator_owner (iterator))
       /* Or the user has Admin rights and the resource is a permission... */
       || (current_credentials.uuid
           && ((strcmp (type, "permission") == 0)
@@ -5815,7 +5816,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
               /* ... but not the special Admin permission. */
               && strcmp (get_iterator_uuid (iterator),
                          PERMISSION_UUID_ADMIN_EVERYTHING))
-          && user_can_everything (current_credentials.uuid)))
+          && acl_user_can_everything (current_credentials.uuid)))
     {
       buffer_xml_append_printf (buffer,
                                 "<permission>"
@@ -5828,10 +5829,10 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
                || (strcmp (type, "role") == 0)
                || (strcmp (type, "group") == 0))
            && (get_iterator_owner (iterator) == 0)
-           && user_can_everything (current_credentials.uuid))
+           && acl_user_can_everything (current_credentials.uuid))
     {
       if ((strcmp (type, "user") == 0)
-          && user_can_super_everyone (get_iterator_uuid (iterator))
+          && acl_user_can_super_everyone (get_iterator_uuid (iterator))
           && strcmp (get_iterator_uuid (iterator), current_credentials.uuid))
         {
           /* Resource is the Super Admin. */
@@ -12226,7 +12227,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("describe_auth") == 0)
+          if (acl_user_may ("describe_auth") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_auth",
@@ -12269,7 +12270,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("describe_feed") == 0)
+          if (acl_user_may ("describe_feed") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_feed",
@@ -12363,7 +12364,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("describe_scap") == 0)
+          if (acl_user_may ("describe_scap") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_scap",
@@ -12457,7 +12458,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (current_credentials.username);
 
-          if (user_may ("describe_cert") == 0)
+          if (acl_user_may ("describe_cert") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("describe_cert",
@@ -13369,7 +13370,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           const char *update_time;
           get_data_t *get;
 
-          if (user_may ("get_info") == 0)
+          if (acl_user_may ("get_info") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_info",
@@ -14153,7 +14154,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           char *feed_version;
 
-          if (user_may ("get_nvt_feed_version") == 0)
+          if (acl_user_may ("get_nvt_feed_version") == 0)
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_nvt_feed_version",
                                 "Permission denied"));
@@ -14178,7 +14179,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           char *feed_version;
 
-          if (user_may ("get_nvts") == 0)
+          if (acl_user_may ("get_nvts") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_nvts",
@@ -14331,7 +14332,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         {
           iterator_t families;
 
-          if (user_may ("get_nvt_families") == 0)
+          if (acl_user_may ("get_nvt_families") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_nvt_families",
@@ -14755,7 +14756,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           nvt_t nvt = 0;
           config_t config = 0;
 
-          if (user_may ("get_preferences") == 0)
+          if (acl_user_may ("get_preferences") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_preferences",
@@ -14848,7 +14849,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         iterator_t reports;
         int count, filtered, ret, first;
 
-        if (user_may ("get_reports") == 0)
+        if (acl_user_may ("get_reports") == 0)
           {
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("get_reports",
@@ -15819,7 +15820,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_RESULTS", element_name) == 0);
 
-          if (user_may ("get_results") == 0)
+          if (acl_user_may ("get_results") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_results",
@@ -16296,7 +16297,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           assert (strcasecmp ("GET_SETTINGS", element_name) == 0);
 
-          if (user_may ("get_settings") == 0)
+          if (acl_user_may ("get_settings") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("get_settings",
@@ -18220,7 +18221,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         break;
 
       case CLIENT_HELP:
-        if (user_may ("help") == 0)
+        if (acl_user_may ("help") == 0)
           {
             SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("help",
                                                       "Permission denied"));
@@ -18270,7 +18271,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               {
                 if ((command_disabled (omp_parser, (*commands).name) == 0)
                     && ((current_credentials.uuid == NULL)
-                        || user_may ((*commands).name)))
+                        || acl_user_may ((*commands).name)))
                   SENDF_TO_CLIENT_OR_FAIL ("<command>"
                                            "<name>%s</name>"
                                            "<summary>%s</summary>"
@@ -21790,7 +21791,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
 
           /* Check permissions. */
 
-          if (user_may ("create_task") == 0)
+          if (acl_user_may ("create_task") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_task",
                                                         "Permission denied"));
@@ -22563,7 +22564,7 @@ create_task_fail:
 
           assert (strcasecmp ("MODIFY_AUTH", element_name) == 0);
 
-          if (user_may ("modify_auth") == 0)
+          if (acl_user_may ("modify_auth") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_auth",
@@ -22661,7 +22662,7 @@ create_task_fail:
         {
           config_t config;
 
-          if (user_may ("modify_config") == 0)
+          if (acl_user_may ("modify_config") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_config",
@@ -23225,7 +23226,7 @@ create_task_fail:
 
           assert (strcasecmp ("MODIFY_NOTE", element_name) == 0);
 
-          if (user_may ("modify_note") == 0)
+          if (acl_user_may ("modify_note") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_note",
@@ -23352,7 +23353,7 @@ create_task_fail:
 
           assert (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0);
 
-          if (user_may ("modify_override") == 0)
+          if (acl_user_may ("modify_override") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_override",
@@ -24526,7 +24527,7 @@ create_task_fail:
       case CLIENT_MODIFY_TASK:
         assert (strcasecmp ("MODIFY_TASK", element_name) == 0);
 
-        if (user_may ("modify_task") == 0)
+        if (acl_user_may ("modify_task") == 0)
           {
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_task",

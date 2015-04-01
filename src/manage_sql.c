@@ -629,7 +629,7 @@ static gboolean
 find_trash (const char *type, const char *uuid, resource_t *resource)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_trash_uuid (type, quoted_uuid) == 0)
+  if (acl_user_owns_trash_uuid (type, quoted_uuid) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3789,7 +3789,7 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
 {
   gchar *quoted_uuid;
   quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid (type, quoted_uuid, 0) == 0)
+  if (acl_user_owns_uuid (type, quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3841,7 +3841,7 @@ find_resource_with_permission (const char* type, const char* uuid,
   if (uuid == NULL)
     return TRUE;
   quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
+  if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -3949,7 +3949,7 @@ find_resource_by_name_with_permission (const char *type, const char *name,
 
           uuid = sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
                              type, *resource);
-          if (user_has_access_uuid (type, uuid, permission, 0) == 0)
+          if (acl_user_has_access_uuid (type, uuid, permission, 0) == 0)
             {
               g_free (uuid);
               g_free (quoted_name);
@@ -4006,7 +4006,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
     return -1;
 
   command = g_strdup_printf ("create_%s", type);
-  if (user_may (command) == 0)
+  if (acl_user_may (command) == 0)
     {
       g_free (command);
       return 99;
@@ -4035,7 +4035,7 @@ copy_resource_lock (const char *type, const char *name, const char *comment,
       resource_t perm_resource;
       perm_resource = permission_resource (resource);
       if ((perm_resource == 0)
-          && (user_can_everything (current_credentials.uuid) == 0))
+          && (acl_user_can_everything (current_credentials.uuid) == 0))
         /* Only admins can copy permissions that apply to whole commands. */
         return 99;
     }
@@ -4405,7 +4405,7 @@ init_get_iterator (iterator_t* iterator, const char *type,
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" t ()");
   else
-    owned_clause = where_owned (type, get, owned, owner_filter, resource,
+    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                 permissions);
 
   g_free (owner_filter);
@@ -4604,7 +4604,7 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
     /* Ownership test is done above by find function. */
     owned_clause = g_strdup (" 1");
   else
-    owned_clause = where_owned (type, get, owned, owner_filter, resource,
+    owned_clause = acl_where_owned (type, get, owned, owner_filter, resource,
                                 permissions);
 
   if (strcasecmp (type, "TASK") == 0)
@@ -4909,7 +4909,7 @@ count (const char *type, const get_data_t *get, column_t *select_columns,
 
   g_free (filter);
 
-  owned_clause = where_owned (type, get, owned, owner_filter, 0, permissions);
+  owned_clause = acl_where_owned (type, get, owned, owner_filter, 0, permissions);
 
   array_free (permissions);
 
@@ -5772,7 +5772,7 @@ create_alert (const char* name, const char* comment, const char* filter_id,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_alert") == 0)
+  if (acl_user_may ("create_alert") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -6022,7 +6022,7 @@ modify_alert (const char *alert_id, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_alert") == 0)
+  if (acl_user_may ("modify_alert") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -6221,7 +6221,7 @@ delete_alert (const char *alert_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_alert") == 0)
+  if (acl_user_may ("delete_alert") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -6711,7 +6711,7 @@ alert_iterator_filter_readable (iterator_t* iterator)
       if (uuid)
         {
           int readable;
-          readable = user_has_access_uuid
+          readable = acl_user_has_access_uuid
                       ("filter", uuid, "get_filters",
                        iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
                        == LOCATION_TRASH);
@@ -6823,7 +6823,7 @@ init_task_alert_iterator (iterator_t* iterator, task_t task, event_t event)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  owned_clause = where_owned ("alert", &get, 0, "any", 0, permissions);
+  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions);
   array_free (permissions);
 
   if (event)
@@ -8643,7 +8643,7 @@ manage_alert (const char *alert_id, const char *task_id, event_t event,
   alert_condition_t condition;
   alert_method_t method;
 
-  if (user_may ("test_alert") == 0)
+  if (acl_user_may ("test_alert") == 0)
     return 99;
 
   if (find_alert_with_permission (alert_id, &alert, "test_alert"))
@@ -8848,7 +8848,7 @@ init_alert_task_iterator (iterator_t* iterator, alert_t alert,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -12494,15 +12494,15 @@ credentials_setup (credentials_t *credentials)
   credentials->role
     = g_strdup (user_is_super_admin (credentials->uuid)
                  ? "Super Admin"
-                 : (user_is_admin (credentials->uuid)
+                 : (acl_user_is_admin (credentials->uuid)
                      ? "Admin"
-                     : (user_is_observer (credentials->uuid)
+                     : (acl_user_is_observer (credentials->uuid)
                          ? "Observer"
-                         : (user_is_user (credentials->uuid)
+                         : (acl_user_is_user (credentials->uuid)
                              ? "User"
                              : ""))));
 
-  if (user_may ("authenticate") == 0)
+  if (acl_user_may ("authenticate") == 0)
     {
       free (credentials->uuid);
       credentials->uuid = NULL;
@@ -13970,7 +13970,7 @@ task_severity (task_t task, int overrides, int offset)
     {
       gchar *owned_clause;
 
-      owned_clause = where_owned_for_get ("override", NULL);
+      owned_clause = acl_where_owned_for_get ("override", NULL);
 
       ov = g_strdup_printf
             ("SELECT overrides.new_severity"
@@ -14312,7 +14312,7 @@ find_result_with_permission (const char* uuid, result_t* result,
                              const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("result", quoted_uuid, permission, 0) == 0)
+  if (acl_user_has_access_uuid ("result", quoted_uuid, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *result = 0;
@@ -15270,7 +15270,7 @@ create_report (array_t *results, const char *task_id, const char *task_name,
   pid_t pid;
   host_detail_t *detail;
 
-  if (user_may ("create_report") == 0)
+  if (acl_user_may ("create_report") == 0)
     return 99;
 
   if (task_id == NULL && task_name == NULL)
@@ -15717,7 +15717,7 @@ report_add_result (report_t report, result_t result)
          " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, 1, 0);",
          report, current_credentials.uuid, severity);
 
-  owned_clause = where_owned_for_get ("override", NULL);
+  owned_clause = acl_where_owned_for_get ("override", NULL);
 
   ov_severity_str
     = sql_string ("SELECT coalesce (overrides.new_severity, %1.1f)"
@@ -17937,7 +17937,7 @@ init_asset_iterator (iterator_t* iterator, int first_result,
         {
           gchar *ov, *owned_clause;
 
-          owned_clause = where_owned_for_get ("override", NULL);
+          owned_clause = acl_where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
@@ -18629,7 +18629,7 @@ report_scan_result_count (report_t report, const char* levels,
       else
         severity_sql = g_strdup ("results.severity");
 
-      owned_clause = where_owned_for_get ("override", NULL);
+      owned_clause = acl_where_owned_for_get ("override", NULL);
 
       ov = g_strdup_printf
             ("SELECT overrides.new_severity"
@@ -18899,7 +18899,7 @@ report_severity_data_prepare ()
   sql_stmt_t *stmt;
   gchar *owned_clause;
 
-  owned_clause = where_owned_for_get ("override", NULL);
+  owned_clause = acl_where_owned_for_get ("override", NULL);
   stmt = sql_prepare ("SELECT 1 FROM overrides"
                       " WHERE (overrides.nvt = $1)"
                       " AND %s"
@@ -18926,7 +18926,7 @@ report_severity_data_prepare_full (task_t task)
   sql_stmt_t *full_stmt;
   gchar *owned_clause;
 
-  owned_clause = where_owned_for_get ("override", NULL);
+  owned_clause = acl_where_owned_for_get ("override", NULL);
   full_stmt = sql_prepare
                ("SELECT severity_to_type (overrides.new_severity),"
                  "       overrides.new_severity"
@@ -18993,7 +18993,7 @@ report_severity_data (report_t report, int override,
   gchar *quoted_host, *severity_sql, *qod_sql, *owned_clause;
   int ret;
 
-  owned_clause = where_owned_for_get ("override", NULL);
+  owned_clause = acl_where_owned_for_get ("override", NULL);
 
   if (override
       && sql_int ("SELECT count(*)"
@@ -19843,7 +19843,7 @@ modify_report (const char *report_id, const char *comment)
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_report") == 0)
+  if (acl_user_may ("modify_report") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -19894,7 +19894,7 @@ delete_report (const char *report_id, int dummy)
 
   sql_begin_exclusive ();
 
-  if (user_may ("delete_report") == 0)
+  if (acl_user_may ("delete_report") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -21090,7 +21090,7 @@ filtered_host_count (const char *levels, const char *search_phrase,
         {
           gchar *ov, *owned_clause;
 
-          owned_clause = where_owned_for_get ("override", NULL);
+          owned_clause = acl_where_owned_for_get ("override", NULL);
 
           ov = g_strdup_printf
                 ("SELECT overrides.new_severity"
@@ -25964,7 +25964,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_task") == 0)
+  if (acl_user_may ("delete_task") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -26272,7 +26272,7 @@ set_scan_ports (report_t report, const char* host, unsigned int current,
 gboolean
 find_task (const char* uuid, task_t* task)
 {
-  if (user_owns_uuid ("task", uuid, 0) == 0)
+  if (acl_user_owns_uuid ("task", uuid, 0) == 0)
     {
       *task = 0;
       return FALSE;
@@ -26340,7 +26340,7 @@ find_trash_task_with_permission (const char* uuid, task_t* task,
 static gboolean
 find_trash_task (const char* uuid, task_t* task)
 {
-  if (user_owns_uuid ("task", uuid, 1) == 0)
+  if (acl_user_owns_uuid ("task", uuid, 1) == 0)
     {
       *task = 0;
       return FALSE;
@@ -26881,7 +26881,7 @@ create_target (const char* name, const char* hosts, const char* exclude_hosts,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_target") == 0)
+  if (acl_user_may ("create_target") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -27059,7 +27059,7 @@ delete_target (const char *target_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_target") == 0)
+  if (acl_user_may ("delete_target") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -27217,7 +27217,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_target") == 0)
+  if (acl_user_may ("modify_target") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -28425,7 +28425,7 @@ init_target_task_iterator (iterator_t* iterator, target_t target)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -28488,7 +28488,7 @@ gboolean
 find_config (const char* uuid, config_t* config)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("config", quoted_uuid, 0) == 0)
+  if (acl_user_owns_uuid ("config", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *config = 0;
@@ -28665,7 +28665,7 @@ create_config (const char* proposed_name, const char* comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_config") == 0)
+  if (acl_user_may ("create_config") == 0)
     {
       sql ("ROLLBACK;");
       free (selector_uuid);
@@ -28782,7 +28782,7 @@ create_config_from_scanner (const char *scanner_id, const char *name,
   assert (scanner_id);
   sql_begin_immediate ();
 
-  if (user_may ("create_config") == 0)
+  if (acl_user_may ("create_config") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -29158,7 +29158,7 @@ delete_config (const char *config_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_config") == 0)
+  if (acl_user_may ("delete_config") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -30283,7 +30283,7 @@ init_config_task_iterator (iterator_t* iterator, config_t config,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -33015,7 +33015,7 @@ gboolean
 find_lsc_credential (const char* uuid, lsc_credential_t* lsc_credential)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("lsc_credential", quoted_uuid, 0) == 0)
+  if (acl_user_owns_uuid ("lsc_credential", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *lsc_credential = 0;
@@ -33102,7 +33102,7 @@ create_lsc_credential (const char* name, const char* comment, const char* login,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_lsc_credential") == 0)
+  if (acl_user_may ("create_lsc_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -33414,7 +33414,7 @@ modify_lsc_credential (const char *lsc_credential_id,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_lsc_credential") == 0)
+  if (acl_user_may ("modify_lsc_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -33483,7 +33483,7 @@ delete_lsc_credential (const char *lsc_credential_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_lsc_credential") == 0)
+  if (acl_user_may ("delete_lsc_credential") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -34175,7 +34175,7 @@ init_lsc_credential_target_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = where_owned ("target", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -34588,7 +34588,7 @@ create_agent (const char* name, const char* comment, const char* installer_64,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_agent") == 0)
+  if (acl_user_may ("create_agent") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -34766,7 +34766,7 @@ modify_agent (const char *agent_id, const char *name, const char *comment)
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_agent") == 0)
+  if (acl_user_may ("modify_agent") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -34824,7 +34824,7 @@ delete_agent (const char *agent_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_agent") == 0)
+  if (acl_user_may ("delete_agent") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -34965,7 +34965,7 @@ verify_agent (const char *agent_id)
 
   sql_begin_immediate ();
 
-  if (user_may ("verify_agent") == 0)
+  if (acl_user_may ("verify_agent") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -35457,7 +35457,7 @@ create_note (const char* active, const char* nvt, const char* text,
   gchar *quoted_nvt;
   double severity_dbl;
 
-  if (user_may ("create_note") == 0)
+  if (acl_user_may ("create_note") == 0)
     return 99;
 
   if (nvt == NULL)
@@ -35586,7 +35586,7 @@ delete_note (const char *note_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_note") == 0)
+  if (acl_user_may ("delete_note") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -36347,7 +36347,7 @@ create_override (const char* active, const char* nvt, const char* text,
   gchar *quoted_nvt;
   double severity_dbl, new_severity_dbl;
 
-  if (user_may ("create_override") == 0)
+  if (acl_user_may ("create_override") == 0)
     return 99;
 
   if (nvt == NULL)
@@ -36538,7 +36538,7 @@ delete_override (const char *override_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_override") == 0)
+  if (acl_user_may ("delete_override") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -37011,7 +37011,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     {
       gchar *owned_clause;
 
-      owned_clause = where_owned_for_get ("override", NULL);
+      owned_clause = acl_where_owned_for_get ("override", NULL);
 
       result_clause = g_strdup_printf
                        (" AND (overrides.nvt"
@@ -37158,7 +37158,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     {
       gchar *owned_clause;
 
-      owned_clause = where_owned_for_get ("override", NULL);
+      owned_clause = acl_where_owned_for_get ("override", NULL);
 
       result_clause = g_strdup_printf
                        (" AND (overrides.nvt ="
@@ -37729,7 +37729,7 @@ create_scanner (const char* name, const char *comment, const char *host,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_scanner") == 0)
+  if (acl_user_may ("create_scanner") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -37856,7 +37856,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("modify_scanner") == 0)
+  if (acl_user_may ("modify_scanner") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -37949,7 +37949,7 @@ delete_scanner (const char *scanner_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_scanner") == 0)
+  if (acl_user_may ("delete_scanner") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -38159,7 +38159,7 @@ init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -38502,7 +38502,7 @@ verify_scanner (const char *scanner_id, char **version)
   get_data_t get;
   iterator_t scanner;
 
-  if (user_may ("verify_scanner") == 0)
+  if (acl_user_may ("verify_scanner") == 0)
     return 99;
   memset (&get, '\0', sizeof (get));
   get.id = g_strdup (scanner_id);
@@ -38592,7 +38592,7 @@ create_schedule (const char* name, const char *comment, time_t first_time,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_schedule") == 0)
+  if (acl_user_may ("create_schedule") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -38709,7 +38709,7 @@ delete_schedule (const char *schedule_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_schedule") == 0)
+  if (acl_user_may ("delete_schedule") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -39167,12 +39167,12 @@ init_task_schedule_iterator (iterator_t* iterator)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("start_task"));
-  task_clause = where_owned_user ("", "users.id", "task", &get, 1,
+  task_clause = acl_where_owned_user ("", "users.id", "task", &get, 1,
                                   "any", 0, permissions);
 
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_schedules"));
-  schedule_clause = where_owned_user ("", "users.id", "schedule", &get, 1,
+  schedule_clause = acl_where_owned_user ("", "users.id", "schedule", &get, 1,
                                       "any", 0, permissions);
   array_free (permissions);
 
@@ -39495,7 +39495,7 @@ init_schedule_task_iterator (iterator_t* iterator, schedule_t schedule)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
   init_iterator (iterator,
                  "SELECT id, uuid, name, %s FROM tasks"
@@ -39576,7 +39576,7 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_schedule") == 0)
+  if (acl_user_may ("modify_schedule") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -39746,7 +39746,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
 
   assert (current_credentials.uuid);
 
-  if (user_owns_name ("report_format", name) == 0)
+  if (acl_user_owns_name ("report_format", name) == 0)
     {
       *report_format = 0;
       return FALSE;
@@ -39942,7 +39942,7 @@ create_report_format (const char *uuid, const char *name,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_report_format") == 0)
+  if (acl_user_may ("create_report_format") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -40650,7 +40650,7 @@ modify_report_format (const char *report_format_id, const char *name,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_report_format") == 0)
+  if (acl_user_may ("modify_report_format") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -40723,7 +40723,7 @@ delete_report_format (const char *report_format_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_report_format") == 0)
+  if (acl_user_may ("delete_report_format") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -41174,7 +41174,7 @@ verify_report_format (const char *report_format_id)
 
   sql_begin_immediate ();
 
-  if (user_may ("verify_report_format") == 0)
+  if (acl_user_may ("verify_report_format") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -41997,7 +41997,7 @@ init_report_format_alert_iterator (iterator_t* iterator,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = where_owned ("alert", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -42290,7 +42290,7 @@ create_slave (const char* name, const char* comment, const char* host,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_slave") == 0)
+  if (acl_user_may ("create_slave") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -42398,7 +42398,7 @@ modify_slave (const char *slave_id, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_slave") == 0)
+  if (acl_user_may ("modify_slave") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -42479,7 +42479,7 @@ delete_slave (const char *slave_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_slave") == 0)
+  if (acl_user_may ("delete_slave") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -42906,7 +42906,7 @@ init_slave_task_iterator (iterator_t* iterator, slave_t slave)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_tasks"));
-  available = where_owned ("task", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("task", &get, 1, "any", 0, permissions);
   array_free (permissions);
   init_iterator (iterator,
                  "SELECT id, uuid, name, %s FROM tasks"
@@ -43315,7 +43315,7 @@ create_group (const char *group_name, const char *comment, const char *users,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_group") == 0)
+  if (acl_user_may ("create_group") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -43367,7 +43367,7 @@ delete_group (const char *group_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_group") == 0)
+  if (acl_user_may ("delete_group") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -43676,7 +43676,7 @@ modify_group (const char *group_id, const char *name, const char *comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("modify_group") == 0)
+  if (acl_user_may ("modify_group") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -43910,7 +43910,7 @@ create_permission (const char *name_arg, const char *comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_permission") == 0)
+  if (acl_user_may ("create_permission") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -43968,8 +43968,8 @@ create_permission (const char *name_arg, const char *comment,
           return 3;
         }
 
-      if ((user_is_owner (resource_type, resource_id) == 0)
-          && (user_can_super_everyone (current_credentials.uuid) == 0))
+      if ((acl_user_is_owner (resource_type, resource_id) == 0)
+          && (acl_user_can_super_everyone (current_credentials.uuid) == 0))
         {
           g_free (name);
           g_free (resource_type);
@@ -43987,7 +43987,7 @@ create_permission (const char *name_arg, const char *comment,
 
   /* Ensure the user may grant this permission. */
   if (((resource == 0) || strcasecmp (name, "super") == 0)
-      && (user_can_everything (current_credentials.uuid) == 0))
+      && (acl_user_can_everything (current_credentials.uuid) == 0))
     {
       sql ("ROLLBACK;");
       return 99;
@@ -44649,7 +44649,7 @@ find_permission_with_permission (const char *uuid, permission_t *resource,
                                  const char *permission)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_has_access_uuid ("permission", quoted_uuid, permission, 0) == 0)
+  if (acl_user_has_access_uuid ("permission", quoted_uuid, permission, 0) == 0)
     {
       g_free (quoted_uuid);
       *resource = 0;
@@ -44697,7 +44697,7 @@ delete_permission (const char *permission_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_permission") == 0)
+  if (acl_user_may ("delete_permission") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -44824,7 +44824,7 @@ modify_permission (const char *permission_id, const char *name,
 
   sql_begin_immediate ();
 
-  if (user_may ("modify_permission") == 0)
+  if (acl_user_may ("modify_permission") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -44975,7 +44975,7 @@ modify_permission (const char *permission_id, const char *name,
               return 99;
             }
 
-          if (user_can_everything (current_credentials.uuid) == 0)
+          if (acl_user_can_everything (current_credentials.uuid) == 0)
             {
               g_free (resource_type);
               sql ("ROLLBACK;");
@@ -45078,7 +45078,7 @@ gboolean
 find_port_list (const char* uuid, port_list_t* port_list)
 {
   gchar *quoted_uuid = sql_quote (uuid);
-  if (user_owns_uuid ("port_list", quoted_uuid, 0) == 0)
+  if (acl_user_owns_uuid ("port_list", quoted_uuid, 0) == 0)
     {
       g_free (quoted_uuid);
       *port_list = 0;
@@ -45438,7 +45438,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       sql_begin_immediate ();
 
-      if (user_may ("create_port_list") == 0)
+      if (acl_user_may ("create_port_list") == 0)
         {
           sql ("ROLLBACK;");
           return 99;
@@ -45507,7 +45507,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_port_list") == 0)
+  if (acl_user_may ("create_port_list") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -45633,7 +45633,7 @@ modify_port_list (const char *port_list_id, const char *name,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_port_list") == 0)
+  if (acl_user_may ("modify_port_list") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -45733,7 +45733,7 @@ create_port_range (const char *port_list_id, const char *type,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_port_range") == 0)
+  if (acl_user_may ("create_port_range") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -45814,7 +45814,7 @@ delete_port_list (const char *port_list_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_port_list") == 0)
+  if (acl_user_may ("delete_port_list") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -45944,7 +45944,7 @@ delete_port_range (const char *port_range_id, int dummy)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_port_range") == 0)
+  if (acl_user_may ("delete_port_range") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -46321,7 +46321,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    "  OR ((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
                    "  OR (CAST (%i AS boolean)"
-                   "      AND (" USER_MAY ("port_list") ")))"
+                   "      AND (" ACL_USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    port_list,
@@ -46348,7 +46348,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
                    "  OR ((SELECT owner FROM port_lists%s WHERE id = port_list)"
                    "      = (SELECT id FROM users WHERE users.uuid = '%s'))"
                    "  OR (CAST (%i AS boolean)"
-                   "      AND (" USER_MAY ("port_list") ")))"
+                   "      AND (" ACL_USER_MAY ("port_list") ")))"
                    " ORDER BY %s %s;",
                    trash ? "_trash" : "",
                    trash ? "_trash" : "",
@@ -46471,7 +46471,7 @@ init_port_list_target_iterator (iterator_t* iterator, port_list_t port_list,
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_targets"));
-  available = where_owned ("target", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("target", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -46542,10 +46542,10 @@ copy_role (const char *name, const char *comment, const char *role_id,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_role") == 0)
+  if (acl_user_may ("create_role") == 0)
     return 99;
 
-  if (role_can_super_everyone (role_id))
+  if (acl_role_can_super_everyone (role_id))
     return 99;
 
   ret = copy_resource_lock ("role", name, comment, role_id, NULL, 1, &new_role,
@@ -46604,7 +46604,7 @@ create_role (const char *role_name, const char *comment, const char *users,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_role") == 0)
+  if (acl_user_may ("create_role") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -46699,7 +46699,7 @@ delete_role (const char *role_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_role") == 0)
+  if (acl_user_may ("delete_role") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -46991,7 +46991,7 @@ modify_role (const char *role_id, const char *name, const char *comment,
 
   sql_begin_immediate ();
 
-  if (user_may ("modify_role") == 0)
+  if (acl_user_may ("modify_role") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -47293,7 +47293,7 @@ create_filter (const char *name, const char *comment, const char *type,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_filter") == 0)
+  if (acl_user_may ("create_filter") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -47408,7 +47408,7 @@ delete_filter (const char *filter_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_filter") == 0)
+  if (acl_user_may ("delete_filter") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -47683,7 +47683,7 @@ init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_alerts"));
-  available = where_owned ("alert", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -47762,7 +47762,7 @@ modify_filter (const char *filter_id, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_filter") == 0)
+  if (acl_user_may ("modify_filter") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -48066,7 +48066,7 @@ manage_restore (const char *id)
 
   sql_begin_immediate ();
 
-  if (user_may ("restore") == 0)
+  if (acl_user_may ("restore") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -49121,7 +49121,7 @@ manage_empty_trashcan ()
 
   sql_begin_immediate ();
 
-  if (user_may ("empty_trashcan") == 0)
+  if (acl_user_may ("empty_trashcan") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -49615,7 +49615,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_setting") == 0)
+  if (acl_user_may ("modify_setting") == 0)
     return 99;
 
   if (r_errdesc)
@@ -51819,7 +51819,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_user") == 0)
+  if (acl_user_may ("create_user") == 0)
     {
       sql ("ROLLBACK;");
       g_free (generated);
@@ -51936,7 +51936,7 @@ create_user (const gchar * name, const gchar * password, const gchar * hosts,
           continue;
         }
 
-      if (forbid_super_admin && role_can_super_everyone (role_id))
+      if (forbid_super_admin && acl_role_can_super_everyone (role_id))
         {
           sql ("ROLLBACK;");
           return 99;
@@ -51988,7 +51988,7 @@ copy_user (const char* name, const char* comment, const char *user_id,
   int ret;
   gchar *quoted_uuid;
 
-  if (user_can_super_everyone (user_id))
+  if (acl_user_can_super_everyone (user_id))
     return 99;
 
   sql_begin_immediate ();
@@ -52065,7 +52065,7 @@ delete_user (const char *user_id_arg, const char *name_arg, int ultimate,
 
   sql_begin_exclusive ();
 
-  if (user_may ("delete_user") == 0)
+  if (acl_user_may ("delete_user") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -52374,7 +52374,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 
   sql_begin_immediate ();
 
-  if (user_may ("modify_user") == 0)
+  if (acl_user_may ("modify_user") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -52404,14 +52404,14 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
                      user);
 
   /* The only user that can edit a Super Admin is the Super Admin themself. */
-  if (user_can_super_everyone (uuid) && strcmp (uuid, current_credentials.uuid))
+  if (acl_user_can_super_everyone (uuid) && strcmp (uuid, current_credentials.uuid))
     {
       g_free (uuid);
       sql ("ROLLBACK;");
       return 99;
     }
 
-  was_admin = user_is_admin (uuid);
+  was_admin = acl_user_is_admin (uuid);
 
   if (password)
     {
@@ -52601,7 +52601,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
               return 1;
             }
 
-          if (role_can_super_everyone (role_id))
+          if (acl_role_can_super_everyone (role_id))
             {
               sql ("ROLLBACK;");
               return 99;
@@ -52619,7 +52619,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 
   if (was_admin)
     {
-      is_admin = user_is_admin (uuid);
+      is_admin = acl_user_is_admin (uuid);
       g_free (uuid);
       if (is_admin)
         return 0;
@@ -52629,7 +52629,7 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
       return 4;
     }
 
-  is_admin = user_is_admin (uuid);
+  is_admin = acl_user_is_admin (uuid);
   g_free (uuid);
   if (is_admin)
     {
@@ -52881,7 +52881,7 @@ init_user_group_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_groups"));
-  available = where_owned ("group", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("group", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -52945,7 +52945,7 @@ init_user_role_iterator (iterator_t *iterator, user_t user)
   get.trash = 0;
   permissions = make_array ();
   array_add (permissions, g_strdup ("get_roles"));
-  available = where_owned ("role", &get, 1, "any", 0, permissions);
+  available = acl_where_owned ("role", &get, 1, "any", 0, permissions);
   array_free (permissions);
 
   init_iterator (iterator,
@@ -53059,7 +53059,7 @@ create_tag (const char * name, const char * comment, const char * value,
 
   sql_begin_immediate ();
 
-  if (user_may ("create_tag") == 0)
+  if (acl_user_may ("create_tag") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -53174,7 +53174,7 @@ delete_tag (const char *tag_id, int ultimate)
 
   sql_begin_immediate ();
 
-  if (user_may ("delete_tag") == 0)
+  if (acl_user_may ("delete_tag") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
@@ -53270,7 +53270,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
 
   assert (current_credentials.uuid);
 
-  if (user_may ("modify_tag") == 0)
+  if (acl_user_may ("modify_tag") == 0)
     {
       sql ("ROLLBACK;");
       return 99;
