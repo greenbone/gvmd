@@ -1,3 +1,9 @@
+2015-04-01  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
+	Preparing the openvas-manager 6.0.1 release.
+
+	* CHANGES: Updated.
+
 2015-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage.c (modify_permission): Find subject with modify permission,

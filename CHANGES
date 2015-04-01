@@ -1,3 +1,36 @@
+openvas-manager 6.0.1 (2015-04-01)
+
+This is the first maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release addresses various improvements and bug fixes of which
+none is particularly outstanding, but not all just minor either.
+
+Many thanks to everyone who contributed to this release:
+Matthew Mundell, Timo Pollmeier and Michael Wiegand.
+
+Main changes compared to 6.0.0:
+* Treat missing filter keywords owner and permission as if they had the
+  value "any". The old default behavior can be reproduced by using the
+  keywords with an empty value.
+* Task severity: Consider based on QoD default (70%) instead of 0%.
+  This way the task severity matches the results severity when using
+  defaults.
+* Allow the user to create a permission if the user has "modify" access
+  to the subject. This allows users to create permissions on roles owned
+  by other users, for example.
+* Bugfix to enable autoamtic update of CERT-Bund.
+* Bugfix to re-add the cvss base vector of NVTs.
+* Bugfixes/improvements about object managment for objects
+  with dependencies dependencies (for example: target has
+  credentials).
+* Always set trust as "yes" for predefined report formats.
+* Bugfix: Quote timezones as these can have multiple words.
+* Bugfix: Get results severity based on user, not based on owner.
+* Improved package config and build routine.
+* Various minor bugfixes.
+
+
 openvas-manager 6.0.0 (2015-03-17)
 
 This is the first release of the openvas-manager 6.0 module for the Open
