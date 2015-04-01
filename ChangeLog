@@ -1,5 +1,11 @@
 2015-04-01  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	Post branch version bump.
+
+	* CMakeLists.txt: Updated version to 6.1+beta1.
+
+2015-04-01  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	Post-release version bump.
 
 	* CMakeLists.txt: Updated version number 6.0.2.
