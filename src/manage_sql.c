@@ -44917,6 +44917,8 @@ modify_permission (const char *permission_id, const char *name,
 
   if (subject_type)
     {
+      gchar *permission_name;
+
       if (strcmp (subject_type, "group")
           && strcmp (subject_type, "role")
           && strcmp (subject_type, "user"))
@@ -44932,12 +44934,19 @@ modify_permission (const char *permission_id, const char *name,
         }
 
       subject = 0;
+      permission_name = g_strdup_printf ("modify_%s", subject_type);
 
-      if (find_resource (subject_type, subject_id, &subject))
+      if (find_resource_with_permission (subject_type,
+                                         subject_id,
+                                         &subject,
+                                         permission_name,
+                                         0)) /* Trash. */
         {
+          g_free (permission_name);
           sql ("ROLLBACK;");
           return -1;
         }
+      g_free (permission_name);
 
       if (subject == 0)
         {

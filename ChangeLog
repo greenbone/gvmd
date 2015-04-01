@@ -1,5 +1,10 @@
 2015-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (modify_permission): Find subject with modify permission,
+	as is done in create_permission.
+
+2015-03-31  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (parse_tags): Add the cvss_base_vector tag and skip
 	cvss_base, as was done in the past.
 
