@@ -1537,7 +1537,7 @@ sql_user_can_everything (sqlite3_context *context, int argc,
       return;
     }
 
-  sqlite3_result_int (context, user_can_everything ((char *) uuid));
+  sqlite3_result_int (context, acl_user_can_everything ((char *) uuid));
 }
 
 /**
@@ -1572,7 +1572,7 @@ sql_user_owns (sqlite3_context *context, int argc,
       return;
     }
 
-  sqlite3_result_int (context, user_owns ((char *) type, resource, 0));
+  sqlite3_result_int (context, acl_user_owns ((char *) type, resource, 0));
 }
 
 /**

@@ -1,5 +1,10 @@
 2015-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite3.c (sql_user_can_everything, sql_user_owns): Add new
+	prefix on function names.
+
+2015-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add a prefix to all ACL names.
 
 	* src/manage_acl.h (USER_MAY, user_may, user_can_everything)
