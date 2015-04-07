@@ -1,5 +1,14 @@
 2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (note_count, init_note_iterator): Remove the
+	ownership clause from the NVT case, because it was too restrictive,
+	and "count" and "init_get_iterator" add full ownership clauses.
+	(override_count, init_override_iterator): Remove ownership clause
+	from NVT case, because it's a duplicate of the one added by count or
+	init_get_iterator.
+
+2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Move SQL global check into the access control layer.
 
 	* src/manage_acl.h (ACL_IS_GLOBAL): New macro.

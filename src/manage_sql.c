@@ -35967,12 +35967,9 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
   else if (nvt)
     {
       result_clause = g_strdup_printf
-                       (" AND (notes.nvt ="
-                        " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND ((notes.owner IS NULL) OR (notes.owner ="
-                        " (SELECT id FROM users WHERE users.uuid = '%s')))",
-                        nvt,
-                        current_credentials.uuid);
+                       (" AND (notes.nvt = (SELECT oid FROM nvts"
+                        "                   WHERE nvts.id = %llu))",
+                        nvt);
     }
   else
     result_clause = NULL;
@@ -36109,12 +36106,9 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
   else if (nvt)
     {
       result_clause = g_strdup_printf
-                       (" AND (notes.nvt ="
-                        " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND ((notes.owner IS NULL) OR (notes.owner ="
-                        " (SELECT id FROM users WHERE users.uuid = '%s')))",
-                        nvt,
-                        current_credentials.uuid);
+                       (" AND (notes.nvt = (SELECT oid FROM nvts"
+                        "                   WHERE nvts.id = %llu))",
+                        nvt);
     }
   else
     result_clause = NULL;
@@ -36986,18 +36980,10 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
     }
   else if (nvt)
     {
-      gchar *owned_clause;
-
-      owned_clause = acl_where_owned_for_get ("override", NULL);
-
       result_clause = g_strdup_printf
                        (" AND (overrides.nvt"
-                        "      = (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND %s",
-                        nvt,
-                        owned_clause);
-
-      g_free (owned_clause);
+                        "      = (SELECT oid FROM nvts WHERE nvts.id = %llu))",
+                        nvt);
     }
   else
     result_clause = NULL;
@@ -37133,18 +37119,10 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
     }
   else if (nvt)
     {
-      gchar *owned_clause;
-
-      owned_clause = acl_where_owned_for_get ("override", NULL);
-
       result_clause = g_strdup_printf
-                       (" AND (overrides.nvt ="
-                        " (SELECT oid FROM nvts WHERE nvts.id = %llu))"
-                        " AND %s",
-                        nvt,
-                        owned_clause);
-
-      g_free (owned_clause);
+                       (" AND (overrides.nvt = (SELECT oid FROM nvts"
+                       "                        WHERE nvts.id = %llu))",
+                        nvt);
     }
   else
     result_clause = NULL;
