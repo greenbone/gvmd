@@ -507,17 +507,13 @@ resource_with_name_exists (const char *name, const char *type,
     ret = sql_int ("SELECT COUNT(*) FROM %ss"
                    " WHERE name = '%s'"
                    " AND id != %llu"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.id FROM users"
-                   "                   WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    quoted_type, quoted_name, resource,
                    current_credentials.uuid);
   else
     ret = sql_int ("SELECT COUNT(*) FROM %ss"
                    " WHERE name = '%s'"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.id FROM users"
-                   "                   WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    quoted_type, quoted_name, current_credentials.uuid);
 
   g_free (quoted_name);
@@ -8265,10 +8261,7 @@ escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
                 = sql_string ("SELECT value FROM settings"
                               " WHERE name"
                               "       = 'Report Export File Name'"
-                              " AND ((owner IS NULL)"
-                              "      OR (owner ="
-                              "          (SELECT id FROM users"
-                              "           WHERE users.uuid = '%s')))"
+                              " AND " ACL_USER_OWNS ()
                               " ORDER BY owner DESC LIMIT 1;",
                               current_credentials.uuid);
 
@@ -9023,9 +9016,7 @@ init_user_task_iterator (iterator_t* iterator, int trash)
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM tasks"
-                 " WHERE ((owner IS NULL)"
-                 "        OR (owner = (SELECT id FROM users"
-                 "                     WHERE users.uuid = '%s')))"
+                 " WHERE " ACL_USER_OWNS ()
                  "%s;",
                  columns,
                  current_credentials.uuid,
@@ -12518,20 +12509,14 @@ credentials_setup (credentials_t *credentials)
   credentials->severity_class
     = sql_string ("SELECT value FROM settings"
                   " WHERE name = 'Severity Class'"
-                  " AND ((owner IS NULL)"
-                  "      OR (owner ="
-                  "          (SELECT id FROM users"
-                  "           WHERE users.uuid = '%s')))"
+                  " AND " ACL_USER_OWNS ()
                   " ORDER BY owner DESC LIMIT 1;",
                   credentials->uuid);
 
   credentials->dynamic_severity
     = sql_int ("SELECT value FROM settings"
                 " WHERE name = 'Dynamic Severity'"
-                " AND ((owner IS NULL)"
-                "      OR (owner ="
-                "          (SELECT id FROM users"
-                "           WHERE users.uuid = '%s')))"
+                " AND " ACL_USER_OWNS ()
                 " ORDER BY owner DESC LIMIT 1;",
                 credentials->uuid);
 
@@ -27685,9 +27670,7 @@ init_user_target_iterator (iterator_t* iterator, target_t target)
                  "SELECT %s"
                  " FROM targets"
                  " WHERE id = %llu"
-                 " AND ((owner IS NULL)"
-                 "      OR (owner = (SELECT id FROM users"
-                 "                   WHERE users.uuid = '%s')));",
+                 " AND " ACL_USER_OWNS () ";",
                  columns,
                  target,
                  current_credentials.uuid);
@@ -29364,9 +29347,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
     sql = g_strdup_printf ("SELECT %s"
                            " FROM configs%s"
                            " WHERE id = %llu"
-                           " AND ((owner IS NULL) OR (owner ="
-                           " (SELECT id FROM users"
-                           "  WHERE users.uuid = '%s')))"
+                           " AND " ACL_USER_OWNS ()
                            " ORDER BY %s %s;",
                            columns,
                            trash ? "_trash" : "",
@@ -29377,9 +29358,7 @@ init_user_config_iterator (iterator_t* iterator, config_t config, int trash,
   else
     sql = g_strdup_printf ("SELECT %s"
                            " FROM configs%s"
-                           " WHERE ((owner IS NULL) OR (owner ="
-                           " (SELECT id FROM users"
-                           "  WHERE users.uuid = '%s')))"
+                           " WHERE " ACL_USER_OWNS ()
                            " ORDER BY %s %s;",
                            columns,
                            trash ? "_trash" : "",
@@ -33838,8 +33817,7 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
                    "SELECT %s"
                    " FROM lsc_credentials%s"
                    " WHERE id = %llu"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
+                   " AND " ACL_USER_OWNS ()
                    " ORDER BY %s %s;",
                    columns,
                    trash ? "_trash" : "",
@@ -33851,8 +33829,7 @@ init_user_lsc_credential_iterator (iterator_t* iterator,
     init_iterator (iterator,
                    "SELECT %s"
                    " FROM lsc_credentials%s"
-                   " WHERE ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')))"
+                   " WHERE " ACL_USER_OWNS ()
                    " ORDER BY %s %s;",
                    columns,
                    trash ? "_trash" : "",
@@ -39755,8 +39732,7 @@ lookup_report_format (const char* name, report_format_t* report_format)
   switch (sql_int64 (report_format,
                      "SELECT id FROM report_formats"
                      " WHERE name = '%s'"
-                     " AND ((owner IS NULL) OR (owner ="
-                     " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                     " AND " ACL_USER_OWNS () ";",
                      quoted_name,
                      current_credentials.uuid))
     {
@@ -45449,8 +45425,7 @@ create_port_list (const char* id, const char* name, const char* comment,
       quoted_id = sql_quote (id);
       if (sql_int ("SELECT COUNT(*) FROM port_lists"
                    " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    quoted_id,
                    current_credentials.uuid))
         {
@@ -45461,8 +45436,7 @@ create_port_list (const char* id, const char* name, const char* comment,
 
       if (sql_int ("SELECT COUNT(*) FROM port_lists_trash"
                    " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT users.id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    quoted_id,
                    current_credentials.uuid))
         {
@@ -48085,8 +48059,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM agents"
                    " WHERE name ="
                    " (SELECT name FROM agents_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48134,8 +48107,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM configs"
                    " WHERE name ="
                    " (SELECT name FROM configs_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48198,8 +48170,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM alerts"
                    " WHERE name ="
                    " (SELECT name FROM alerts_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48286,8 +48257,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM filters"
                    " WHERE name ="
                    " (SELECT name FROM filters_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48339,8 +48309,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM groups"
                    " WHERE name ="
                    " (SELECT name FROM groups_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48391,8 +48360,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM lsc_credentials"
                    " WHERE name ="
                    " (SELECT name FROM lsc_credentials_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48550,8 +48518,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM port_lists"
                    " WHERE name ="
                    " (SELECT name FROM port_lists_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48614,8 +48581,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM report_formats"
                    " WHERE name ="
                    " (SELECT name FROM report_formats_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48771,8 +48737,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM roles"
                    " WHERE name ="
                    " (SELECT name FROM roles_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48820,8 +48785,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM scanners"
                    " WHERE name ="
                    " (SELECT name FROM scanners_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource, current_credentials.uuid))
         {
           sql ("ROLLBACK;");
@@ -48859,8 +48823,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM schedules"
                    " WHERE name ="
                    " (SELECT name FROM schedules_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48912,8 +48875,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM slaves"
                    " WHERE name ="
                    " (SELECT name FROM slaves_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -48993,8 +48955,7 @@ manage_restore (const char *id)
       if (sql_int ("SELECT count(*) FROM targets"
                    " WHERE name ="
                    " (SELECT name FROM targets_trash WHERE id = %llu)"
-                   " AND ((owner IS NULL) OR (owner ="
-                   " (SELECT id FROM users WHERE users.uuid = '%s')));",
+                   " AND " ACL_USER_OWNS () ";",
                    resource,
                    current_credentials.uuid))
         {
@@ -49386,9 +49347,7 @@ char *
 setting_filter (const char *resource)
 {
   return sql_string ("SELECT value FROM settings WHERE name = '%s Filter'"
-                     " AND ((owner IS NULL)"
-                     "      OR (owner ="
-                     "          (SELECT id FROM users WHERE users.uuid = '%s')))"
+                     " AND " ACL_USER_OWNS () ""
                      " ORDER BY owner DESC;",
                      resource,
                      current_credentials.uuid);
@@ -49469,9 +49428,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    "SELECT %s"
                    " FROM settings"
                    " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT id FROM users"
-                   "                   WHERE users.uuid = '%s')))"
+                   " AND " ACL_USER_OWNS ()
                    /* Force the user's setting to come before the default. */
                    " ORDER BY owner DESC;",
                    columns,
@@ -49566,9 +49523,7 @@ setting_value_int (const char *uuid, int *value)
   if (sql_int ("SELECT count (*)"
                " FROM settings"
                " WHERE uuid = '%s'"
-               " AND ((owner IS NULL)"
-               "      OR (owner ="
-               "          (SELECT id FROM users WHERE users.uuid = '%s')));",
+               " AND " ACL_USER_OWNS () ";",
                quoted_uuid,
                current_credentials.uuid)
       == 0)
@@ -49581,9 +49536,7 @@ setting_value_int (const char *uuid, int *value)
   *value = sql_int ("SELECT value"
                     " FROM settings"
                     " WHERE uuid = '%s'"
-                    " AND ((owner IS NULL)"
-                    "      OR (owner ="
-                    "       (SELECT id FROM users WHERE users.uuid = '%s')))"
+                    " AND " ACL_USER_OWNS ()
                     /* Force the user's setting to come before the default. */
                     " ORDER BY owner DESC;",
                     quoted_uuid,
@@ -53721,9 +53674,7 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  " WHERE resource_type = '%s'"
                  " AND resource = %llu"
                  "%s"
-                 " AND ((owner IS NULL)"
-                 "      OR (owner ="
-                 "          (SELECT id FROM users WHERE users.uuid = '%s')))"
+                 " AND " ACL_USER_OWNS ()
                  " ORDER BY %s %s;",
                  type,
                  resource,

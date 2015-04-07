@@ -66,6 +66,20 @@
   "                                       length ('%s') - 5)))"       \
   "      OR name = lower ('%s'))"
 
+
+/**
+ * @brief Generate SQL for user ownership check.
+ *
+ * This is the SQL clause for selecting global resources and resources owned
+ * directly by the user.
+ *
+ * Caller must organise the single argument, the user's UUID, as a string.
+ */
+#define ACL_USER_OWNS()                                        \
+  " ((owner IS NULL)"                                          \
+  "  OR (owner = (SELECT users.id FROM users"                  \
+  "               WHERE users.uuid = '%s')))"
+
 int
 acl_user_may (const char *);
 

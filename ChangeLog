@@ -1,3 +1,16 @@
+2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move more SQL into the ACL layer.
+
+	* src/manage_acl.h (ACL_USER_OWNS): New macro.
+
+	* src/manage_sql.c (resource_with_name_exists, escalate_2)
+	(init_user_task_iterator, credentials_setup, init_user_target_iterator)
+	(init_user_config_iterator, init_user_lsc_credential_iterator)
+	(lookup_report_format, create_port_list, manage_restore)
+	(init_setting_iterator, setting_value_int)
+	(init_resource_tag_iterator): Use ACL_USER_OWNS.
+
 2015-04-01  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite3.c (sql_user_can_everything, sql_user_owns): Add new
@@ -1468,7 +1481,6 @@
 
 	When scheduling only consider the schedule if the task owner has
 	permission to access the schedule.
-
 	* src/manage_acl.c (where_owned_user): New function.  Was where_owned.
 	Add user args.
 	(where_owned): Call through to where_owned_user.
