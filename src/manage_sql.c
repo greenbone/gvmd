@@ -10554,7 +10554,7 @@ check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10565,7 +10565,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '5f5a8712-8017-11e1-8556-406186ea4fc5'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10575,7 +10575,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '20f3034c-e709-11e1-87e7-406186ea4fc5'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10586,7 +10586,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'f16bb236-a32d-4cd5-a880-e0fcf2599f59'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10596,7 +10596,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10606,7 +10606,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10616,7 +10616,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'a6ac88c5-729c-41ba-ac0a-deea4a3441f2'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10627,7 +10627,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -10638,7 +10638,7 @@ check_db_settings ()
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
-               " AND owner IS NULL;")
+               " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
@@ -41226,7 +41226,7 @@ report_format_uuid (report_format_t report_format)
 char *
 report_format_owner_uuid (report_format_t report_format)
 {
-  if (sql_int ("SELECT owner IS NULL FROM report_formats"
+  if (sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats"
                " WHERE id = %llu;",
                report_format))
     return NULL;
@@ -41394,7 +41394,7 @@ set_report_format_name (report_format_t report_format, const char *name)
 int
 report_format_global (report_format_t report_format)
 {
-  return sql_int ("SELECT owner is NULL FROM report_formats"
+  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats"
                   " WHERE id = %llu;",
                   report_format);
 }
@@ -41409,7 +41409,7 @@ report_format_global (report_format_t report_format)
 int
 trash_report_format_global (report_format_t report_format)
 {
-  return sql_int ("SELECT owner is NULL FROM report_formats_trash"
+  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats_trash"
                   " WHERE id = %llu;",
                   report_format);
 }
@@ -41453,7 +41453,7 @@ report_format_predefined (report_format_t report_format)
 static int
 report_format_trash_global (report_format_t report_format)
 {
-  return sql_int ("SELECT owner is NULL FROM report_formats_trash"
+  return sql_int ("SELECT " ACL_IS_GLOBAL () " FROM report_formats_trash"
                   " WHERE id = %llu;",
                   report_format);
 }
@@ -49635,7 +49635,7 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       if (sql_int ("SELECT count(*) FROM settings"
                    " WHERE uuid = '%s'"
-                   " AND owner IS NULL;",
+                   " AND " ACL_IS_GLOBAL () ";",
                    quoted_uuid,
                    current_credentials.uuid)
           == 0)
@@ -49711,10 +49711,10 @@ modify_setting (const gchar *uuid, const gchar *name,
              " ('%s',"
              "  (SELECT id FROM users WHERE uuid = '%s'),"
              "  (SELECT name FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL"
+             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
              "   LIMIT 1),"
              "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL"
+             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
              "   LIMIT 1),"
              "  '%s');",
              quoted_uuid,
@@ -49782,7 +49782,7 @@ modify_setting (const gchar *uuid, const gchar *name,
              "  (SELECT id FROM users WHERE uuid = '%s'),"
              "  '%s',"
              "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
              "  '%s');",
              uuid,
              current_credentials.uuid,
@@ -49981,7 +49981,7 @@ modify_setting (const gchar *uuid, const gchar *name,
              "  (SELECT id FROM users WHERE uuid = '%s'),"
              "  '%s',"
              "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND owner IS NULL),"
+             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
              "  '%s');",
              uuid,
              current_credentials.uuid,

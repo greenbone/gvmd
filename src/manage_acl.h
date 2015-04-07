@@ -66,6 +66,13 @@
   "                                       length ('%s') - 5)))"       \
   "      OR name = lower ('%s'))"
 
+/**
+ * @brief Generate SQL for global check.
+ *
+ * This is the SQL clause for selecting global resources.
+ */
+#define ACL_IS_GLOBAL()                                    \
+  "owner IS NULL"
 
 /**
  * @brief Generate SQL for user ownership check.
@@ -76,7 +83,7 @@
  * Caller must organise the single argument, the user's UUID, as a string.
  */
 #define ACL_USER_OWNS()                                        \
-  " ((owner IS NULL)"                                          \
+  " ((" ACL_IS_GLOBAL () ")"                                   \
   "  OR (owner = (SELECT users.id FROM users"                  \
   "               WHERE users.uuid = '%s')))"
 

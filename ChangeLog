@@ -1,6 +1,17 @@
 2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	Move more SQL into the ACL layer.
+	Move SQL global check into the access control layer.
+
+	* src/manage_acl.h (ACL_IS_GLOBAL): New macro.
+	(ACL_USER_OWNS): Use ACL_IS_GLOBAL.
+
+	* src/manage_sql.c (check_db_settings, report_format_uuid)
+	(set_report_format_name, report_format_global, report_format_predefined)
+	(modify_setting): Use ACL_IS_GLOBAL.
+
+2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Move more SQL into the access control layer.
 
 	* src/manage_acl.h (ACL_USER_OWNS): New macro.
 
