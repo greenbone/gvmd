@@ -1,5 +1,9 @@
 2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (init_setting_iterator): Free quoted_uuid.
+
+2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (ABSOLUTE_MAX_IPS_PER_TARGET): New define.
 	(manage_encrypt_all_credentials, init_manage_internal)
 	(manage_create_scanner, manage_delete_scanner, manage_modify_scanner)

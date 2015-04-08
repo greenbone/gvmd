@@ -49442,6 +49442,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    sql_select_limit (max),
                    first);
 
+  g_free (quoted_uuid);
   g_free (columns);
   g_free (clause);
 }
