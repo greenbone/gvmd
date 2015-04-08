@@ -1,5 +1,14 @@
 2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (ABSOLUTE_MAX_IPS_PER_TARGET): New define.
+	(manage_encrypt_all_credentials, init_manage_internal)
+	(manage_create_scanner, manage_delete_scanner, manage_modify_scanner)
+	(manage_verify_scanner, manage_create_user, manage_delete_user)
+	(manage_get_users, manage_get_scanners, manage_set_password)
+	(manage_optimize): Use ABSOLUTE_MAX_IPS_PER_TARGET.
+
+2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c
 	(make_port_ranges_all_tcp_nmap_5_51_top_100): Use COMMIT for
 	consistency.

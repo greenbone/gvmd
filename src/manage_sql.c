@@ -73,6 +73,13 @@
 #include "splint.h"
 #endif
 
+/**
+ * @brief Absolute maximum number of IPs per target.
+ *
+ * The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255".
+ */
+#define ABSOLUTE_MAX_IPS_PER_TARGET 70000
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -5303,7 +5310,7 @@ manage_encrypt_all_credentials (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -12075,9 +12082,8 @@ init_manage_internal (GSList *log_config,
    *         manage_migrate
    *             init_manage_process (sorts out db state itself) */
 
-  /* The number of 70000 is choosen to cover "192.168.0.0-192.168.255.255" */
   if ((max_ips_per_target <= 0)
-      || (max_ips_per_target > 70000))
+      || (max_ips_per_target > ABSOLUTE_MAX_IPS_PER_TARGET))
     return -4;
 
   max_hosts = max_ips_per_target;
@@ -37341,7 +37347,7 @@ manage_create_scanner (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -37426,7 +37432,7 @@ manage_delete_scanner (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -37491,7 +37497,7 @@ manage_modify_scanner (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -37592,7 +37598,7 @@ manage_verify_scanner (GSList *log_config, const gchar *database,
     return -1;
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -51307,7 +51313,7 @@ manage_create_user (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -51392,7 +51398,7 @@ manage_delete_user (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -51448,7 +51454,7 @@ manage_get_users (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -51508,7 +51514,7 @@ manage_get_scanners (GSList *log_config, const gchar *database)
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -51589,7 +51595,7 @@ manage_set_password (GSList *log_config, const gchar *database,
 
   db = database ? database : sql_default_database ();
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
@@ -54059,7 +54065,7 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
   db = database ? database : sql_default_database ();
   success_text = NULL;
 
-  ret = init_manage_helper (log_config, db, 70000, NULL);
+  ret = init_manage_helper (log_config, db, ABSOLUTE_MAX_IPS_PER_TARGET, NULL);
   assert (ret != -4);
   if (ret)
     return ret;
