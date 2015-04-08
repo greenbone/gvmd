@@ -1,5 +1,10 @@
 2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sqlite.c (manage_create_sql_functions): Correct name in
+	message.
+
+2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (init_setting_iterator): Free quoted_uuid.
 
 2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>

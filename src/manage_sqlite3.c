@@ -1705,7 +1705,7 @@ manage_create_sql_functions ()
                                NULL)            /* xFinal. */
       != SQLITE_OK)
     {
-      g_warning ("%s: failed to create host_contains", __FUNCTION__);
+      g_warning ("%s: failed to create hosts_contains", __FUNCTION__);
       return -1;
     }
 
