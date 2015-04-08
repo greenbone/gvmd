@@ -13219,7 +13219,7 @@ set_task_requested (task_t task, task_status_t *status)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_WAITING
       || run_status == TASK_STATUS_DELETE_WAITING)
     {
-      sql ("END;");
+      sql ("COMMIT;");
       *status = run_status;
       return 1;
     }

@@ -121,5 +121,5 @@ make_port_ranges_all_tcp_nmap_5_51_top_100 (port_list_t list)
   RANGE (PORT_PROTOCOL_UDP, 49190, 49194);
   RANGE (PORT_PROTOCOL_UDP, 49200, 49201);
 
-  sql ("END TRANSACTION");
+  sql ("COMMIT;");
 }

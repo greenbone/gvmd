@@ -1,3 +1,25 @@
+2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_100.c
+	(make_port_ranges_all_tcp_nmap_5_51_top_100): Use COMMIT for
+	consistency.
+
+	* src/manage_ranges_all_tcp_nmap_5_51_top_1000.c
+	(make_port_ranges_all_tcp_nmap_5_51_top_1000): Use COMMIT for
+	consistency.
+
+	* src/manage_ranges_iana_tcp_2012.c
+	(make_port_ranges_iana_tcp_2012): Use COMMIT for consistency.
+
+	* src/manage_ranges_iana_tcp_udp_2012.c
+	(make_port_ranges_iana_tcp_udp_2012): Use COMMIT for consistency.
+
+	* src/manage_ranges_nmap_5_51_top_2000_top_100.c
+	(make_port_ranges_nmap_5_51_top_2000_top_100): Use COMMIT for
+	consistency.
+
+	* src/manage_sql.c (set_task_requested): Use COMMIT for consistency.
+
 2015-04-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (report_counts_match): Add missing quotes around oid

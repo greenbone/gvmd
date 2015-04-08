@@ -732,5 +732,5 @@ make_port_ranges_iana_tcp_2012 (port_list_t list)
   RANGE (PORT_PROTOCOL_TCP, 48556, 48556);
   RANGE (PORT_PROTOCOL_TCP, 48619, 48619);
 
-  sql ("END TRANSACTION");
+  sql ("COMMIT;");
 }
