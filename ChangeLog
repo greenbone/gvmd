@@ -1,3 +1,7 @@
+2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/openvasmd.c: Remove arg from log_config_free calls.
+
 2015-04-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (note_count, init_note_iterator): Remove the

@@ -625,7 +625,7 @@ cleanup ()
     }
 #endif /* LOG */
   tracef ("   Exiting.\n");
-  if (log_config) log_config_free (log_config);
+  if (log_config) log_config_free ();
 
   /* Tear down authentication system conf, if any. */
   openvas_auth_tear_down ();
@@ -824,7 +824,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
         break;
       case -2:
         g_critical ("%s: database is wrong version\n", __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
         break;
       case -3:
@@ -832,7 +832,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
       case -1:
       default:
         g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
     }
 
@@ -842,7 +842,7 @@ update_or_rebuild_nvt_cache (int update_nvt_cache, int register_cleanup,
     {
       g_critical ("%s: failed to register `atexit' cleanup function\n",
                   __FUNCTION__);
-      log_config_free (log_config);
+      log_config_free ();
       exit (EXIT_FAILURE);
     }
 
@@ -1366,25 +1366,25 @@ main (int argc, char** argv)
       switch (manage_optimize (log_config, database, optimize))
         {
           case 0:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_SUCCESS;
           case 1:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;
@@ -1422,7 +1422,7 @@ main (int argc, char** argv)
                                    scanner_ca_pub, scanner_key_pub,
                                    scanner_key_priv);
       g_free (stype);
-      log_config_free (log_config);
+      log_config_free ();
       switch (ret)
         {
           case 0:
@@ -1474,7 +1474,7 @@ main (int argc, char** argv)
                                    stype, scanner_ca_pub, scanner_key_pub,
                                    scanner_key_priv);
       g_free (stype);
-      log_config_free (log_config);
+      log_config_free ();
       switch (ret)
         {
           case 0:
@@ -1504,22 +1504,22 @@ main (int argc, char** argv)
       switch (manage_create_user (log_config, database, create_user, role))
         {
           case 0:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_SUCCESS;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;
@@ -1533,32 +1533,32 @@ main (int argc, char** argv)
       switch (manage_delete_user (log_config, database, delete_user))
         {
           case 0:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_SUCCESS;
           case 2:
             g_critical ("%s: failed to find user '%s'\n",
                         __FUNCTION__,
                         delete_user);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case 4:
             g_critical ("%s: user has active tasks\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
     }
@@ -1569,22 +1569,22 @@ main (int argc, char** argv)
       switch (manage_get_users (log_config, database, role))
         {
           case 0:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_SUCCESS;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
     }
@@ -1593,7 +1593,7 @@ main (int argc, char** argv)
     {
       /* List the users and then exit. */
       int ret = manage_get_scanners (log_config, database);
-      log_config_free (log_config);
+      log_config_free ();
       switch (ret)
         {
           case 0:
@@ -1618,7 +1618,7 @@ main (int argc, char** argv)
 
       /* Delete the scanner and then exit. */
       ret = manage_delete_scanner (log_config, database, delete_scanner);
-      log_config_free (log_config);
+      log_config_free ();
       switch (ret)
         {
           case 0:
@@ -1646,7 +1646,7 @@ main (int argc, char** argv)
 
       /* Delete the scanner and then exit. */
       ret = manage_verify_scanner (log_config, database, verify_scanner);
-      log_config_free (log_config);
+      log_config_free ();
       switch (ret)
         {
           case 0:
@@ -1681,26 +1681,26 @@ main (int argc, char** argv)
       switch (manage_set_password (log_config, database, user, new_password))
         {
           case 0:
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_SUCCESS;
           case 1:
             g_critical ("%s: failed to find user\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
     }
@@ -1783,24 +1783,24 @@ main (int argc, char** argv)
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
       fprintf (stderr, "Encryption succeeded.\n");
-      log_config_free (log_config);
+      log_config_free ();
       return EXIT_SUCCESS;
     }
 
@@ -1814,24 +1814,24 @@ main (int argc, char** argv)
           case -2:
             g_critical ("%s: database is wrong version\n", __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -3:
             g_critical ("%s: database must be initialised"
                         " (with --update or --rebuild)\n",
                         __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
           case -1:
           default:
             g_critical ("%s: internal error\n", __FUNCTION__);
             fprintf (stderr, "Decryption failed.\n");
-            log_config_free (log_config);
+            log_config_free ();
             return EXIT_FAILURE;
         }
       fprintf (stderr, "Decryption succeeded.\n");
-      log_config_free (log_config);
+      log_config_free ();
       return EXIT_SUCCESS;
     }
 
@@ -1895,7 +1895,7 @@ main (int argc, char** argv)
         {
           g_critical ("%s: Manager port must be a number between 0 and 65536\n",
                       __FUNCTION__);
-          log_config_free (log_config);
+          log_config_free ();
           exit (EXIT_FAILURE);
         }
       manager_port = htons (manager_port);
@@ -1921,7 +1921,7 @@ main (int argc, char** argv)
               g_critical ("%s: Manager port must be a number between 0 and"
                           " 65536\n",
                           __FUNCTION__);
-              log_config_free (log_config);
+              log_config_free ();
               exit (EXIT_FAILURE);
             }
           manager_port_2 = htons (manager_port_2);
@@ -1944,12 +1944,12 @@ main (int argc, char** argv)
             g_critical ("%s: failed to fork into background: %s\n",
                         __FUNCTION__,
                         strerror (errno));
-            log_config_free (log_config);
+            log_config_free ();
             exit (EXIT_FAILURE);
             break;
           default:
             /* Parent. */
-            log_config_free (log_config);
+            log_config_free ();
             exit (EXIT_SUCCESS);
             break;
         }
@@ -1964,25 +1964,25 @@ main (int argc, char** argv)
         break;
       case -2:
         g_critical ("%s: database is wrong version\n", __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
         break;
       case -3:
         g_critical ("%s: database must be initialised"
                     " (with --update or --rebuild)\n",
                     __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
         break;
       case -4:
         g_critical ("%s: --max-ips-per-target out of range\n", __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
         break;
       case -1:
       default:
         g_critical ("%s: failed to initialise OMP daemon\n", __FUNCTION__);
-        log_config_free (log_config);
+        log_config_free ();
         exit (EXIT_FAILURE);
     }
 
@@ -1992,7 +1992,7 @@ main (int argc, char** argv)
     {
       g_critical ("%s: failed to register `atexit' cleanup function\n",
                   __FUNCTION__);
-      log_config_free (log_config);
+      log_config_free ();
       exit (EXIT_FAILURE);
     }
 
