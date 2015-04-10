@@ -1,3 +1,7 @@
+2015-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_pg.c (create_tables): Line SQL up for clarity.
+
 2015-04-10  Sven Haardiek <sven.haardiek@greenbone.net>
 
 	* CMakeLists.txt: Fixed cmake error while compiling with postgresql
