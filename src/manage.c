@@ -2933,6 +2933,7 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
   osp_connection_t *connection;
   char *target_str;
   GHashTable *options;
+  int ret;
 
   options = get_osp_task_options (task, target);
   if (!options)
@@ -2944,12 +2945,12 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
       return -1;
     }
   target_str = target_hosts (target);
-  *scan_id = osp_start_scan (connection, target_str, options);
+  ret = osp_start_scan (connection, target_str, options, scan_id);
 
   g_hash_table_destroy (options);
   osp_connection_close (connection);
   g_free (target_str);
-  return 0;
+  return ret;
 }
 
 /**
@@ -2964,7 +2965,7 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
 static int
 fork_osp_scan_handler (task_t task, target_t target)
 {
-  char *report_id, title[128];
+  char *report_id, *response = NULL, title[128];
   int rc;
   report_t report;
 
@@ -2986,11 +2987,26 @@ fork_osp_scan_handler (task_t task, target_t target)
    * Else, exit(1) in error cases like connection to scanner failure.
    */
   reinit_manage_process ();
-  if (launch_osp_task (task, target, &report_id) || !report_id)
+  if (launch_osp_task (task, target, &response))
     {
-      set_task_run_status (task, TASK_STATUS_STOPPED);
+      result_t result;
+      const char *type;
+
+      report_id = openvas_uuid_make ();
+      report = make_report (task, report_id, TASK_STATUS_DONE);
+      g_free (report_id);
+
+      type = threat_message_type ("Error");
+      if (!response)
+        response = g_strdup ("Couldn't connect to the scanner");
+      result = make_osp_result (task, "", "", type, response, "");
+      report_add_result (report, result);
+      g_free (response);
+
+      set_task_run_status (task, TASK_STATUS_DONE);
       exit (-1);
     }
+  report_id = response;
   report = make_report (task, report_id, TASK_STATUS_RUNNING);
   set_task_run_status (task, TASK_STATUS_RUNNING);
 

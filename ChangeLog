@@ -1,3 +1,9 @@
+2015-03-30  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	* src/manage.c (launch_osp_task): Adjust osp_start_scan() call.
+	(fork_osp_scan_handler): Adjust launch_osp_task() response handling. On
+	scan launching failure, add report error before finishing the scan.
+
 2015-04-10  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_pg.c (create_tables): Line SQL up for clarity.
