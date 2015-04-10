@@ -1,3 +1,9 @@
+2015-04-10  Sven Haardiek <sven.haardiek@greenbone.net>
+
+	* src/manage_sqlite.c (manage_create_sql_functions): Fixed cmake error
+	while compliling with postgresql support. This patch was developed by Ryan
+	Schulze.
+
 2015-04-08  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sqlite.c (manage_create_sql_functions): Correct name in
