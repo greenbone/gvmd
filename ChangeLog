@@ -1,3 +1,8 @@
+2015-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_severity_data): Add QoD clause in case
+	without overrides.
+
 2015-03-30  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage.c (launch_osp_task): Adjust osp_start_scan() call.
