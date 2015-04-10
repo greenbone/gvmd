@@ -19262,6 +19262,8 @@ report_severity_data (report_t report, int override,
       else
         severity_sql = g_strdup ("results.severity");
 
+      qod_sql = where_qod (min_qod);
+
       init_iterator (&results,
                       "SELECT results.id, results.nvt, results.type,"
                       " results.host, results.port, results.description,"
@@ -19269,12 +19271,16 @@ report_severity_data (report_t report, int override,
                       " FROM results"
                       " WHERE"
                       "%s%s%s"
-                      " results.report = %llu;",
+                      " results.report = %llu"
+                      " %s;",
                       severity_sql,
                       host ? " results.host = '" : "",
                       host ? quoted_host : "",
                       host ? "' AND" : "",
-                      report);
+                      report,
+                      qod_sql);
+
+      g_free (qod_sql);
       g_free (severity_sql);
       if (host)
         g_free (quoted_host);

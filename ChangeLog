@@ -1,3 +1,10 @@
+2015-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22101.
+
+	* src/manage_sql.c (report_severity_data): Add QoD clause in case
+	without overrides.
+
 2015-04-10  Sven Haardiek <sven.haardiek@greenbone.net>
 
 	* CMakeLists.txt: Fixed cmake error while compliling with postgresql
