@@ -205,15 +205,14 @@ if (BACKEND STREQUAL SQLITE3)
   pkg_check_modules (SQLITE3 REQUIRED sqlite3)
 else (BACKEND STREQUAL SQLITE3)
   message (STATUS "Looking for PostgreSQL...")
+  find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
+  execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
+                   OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
+                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(PostgreSQL_ADDITIONAL_SEARCH_PATHS ${PostgreSQL_SERVER_INCLUDE_DIRS})
   find_package (PostgreSQL REQUIRED)
   if (NOT PostgreSQL_FOUND)
     message (SEND_ERROR "The PostgreSQL library is required.")
-  else (NOT PostgreSQL_FOUND)
-    find_program (PG_CONFIG_EXECUTABLE pg_config DOC "pg_config")
-
-    execute_process (COMMAND ${PG_CONFIG_EXECUTABLE} --includedir-server
-                     OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIRS
-                     OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif (NOT PostgreSQL_FOUND)
 endif (BACKEND STREQUAL SQLITE3)
 
