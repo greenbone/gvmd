@@ -175,6 +175,14 @@ cleanup-port-names
   format "telnet (23/tcp)", reducing it to the new format "23/tcp".
   This makes filtering results and delta reports more consistent.
 
+rebuild-report-cache
+  This clears the cache containing the unfiltered result counts of all reports
+  and fully rebuilds it.
+
+update-report-cache
+  This creates the cache containing the unfiltered result counts of all reports
+  that are not cached yet.
+
 
 Import/Update IANA Services Names
 ---------------------------------

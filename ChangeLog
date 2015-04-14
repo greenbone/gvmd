@@ -1,5 +1,29 @@
 2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22109.
+
+	Add new --optimize options rebuild-report-cache and
+	update-report-cache.
+
+	* INSTALL: Add description of new --optimize options.
+
+	* src/manage_sql.c (report_severity_data): Add prototype and make
+	static.
+	(cache_report_counts): Add prototype and new make_transaction parameter
+	to make the SQL transaction commands optional, so it can also be run
+	inside another transaction.
+	(reports_build_count_cache): New function.
+	(report_counts_id_filt): Add make_transaction parameter to call of
+	cache_report_counts.
+	(manage_optimize): Add new options rebuild-report-cache and
+	update-report-cache.
+
+	* src/manage.h (reports_build_count_cache): New function prototype.
+
+	* src/openvasmd.c (main): Add new --optimize options to help text.
+
+2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22076.
 
 	* src/manage_sql.c (report_counts_match): Add missing quotes around oid
