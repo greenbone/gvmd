@@ -180,6 +180,12 @@ family_count ();
 static int
 report_counts_cache_exists (report_t, int);
 
+static void report_severity_data (report_t, int, const char *, const char *,
+                                  const char *, const char *, int, int,
+                                  severity_data_t*, severity_data_t*);
+
+static int cache_report_counts (report_t, int, severity_data_t*, int);
+
 static char*
 task_owner_uuid (task_t);
 
@@ -15096,6 +15102,109 @@ reports_clear_count_cache (int override)
 }
 
 /**
+ * @brief Rebuild the report count cache for all reports and users.
+ *
+ * @param[in]  clear        Whether to clear the cache before rebuilding.
+ * @param[out] changes_out  The number of processed user/report combinations.
+ */
+void
+reports_build_count_cache (int clear, int* changes_out)
+{
+  int changes;
+  int user_changes, user_changes_no_ov, user_changes_ov;
+  iterator_t users;
+  iterator_t reports;
+  gchar *old_uuid, *old_username;
+  changes = 0;
+
+  if (clear)
+    {
+      reports_clear_count_cache (0);
+      reports_clear_count_cache (1);
+    }
+
+  old_uuid = current_credentials.uuid;
+  old_username = current_credentials.username;
+  init_iterator (&users, "SELECT id, uuid, name FROM users;");
+  while (next (&users))
+    {
+      user_changes = 0;
+      user_changes_no_ov = 0;
+      user_changes_ov = 0;
+      gchar *user_uuid = g_strdup (iterator_string (&users, 1));
+      gchar *user_name = g_strdup (iterator_string (&users, 2));
+      gchar *owned_clause;
+      g_debug ("%s: Rebuilding report cache for user '%s' (%s)",
+               __FUNCTION__, user_name, user_uuid);
+      current_credentials.uuid = user_uuid;
+      current_credentials.username = user_name;
+
+      owned_clause = acl_where_owned_for_get ("report", NULL);
+      init_iterator (&reports,
+                      "SELECT id, uuid FROM reports",
+                      owned_clause);
+      g_free (owned_clause);
+      while (next (&reports))
+        {
+          report_t report = iterator_int64 (&reports, 0);
+          const char* report_id = iterator_string (&reports, 1);
+          if (acl_user_has_access_uuid ("report", report_id, NULL, 0))
+            {
+              int updated = 0;
+              severity_data_t severity_data;
+
+              // Cache report without overrides
+              if (clear || report_counts_cache_exists (report, 0) == 0)
+                {
+                  init_severity_data (&severity_data);
+                  report_severity_data (report, 0, NULL, NULL, NULL,
+                                        NULL, 0, 0, &severity_data,
+                                        NULL);
+                  cache_report_counts (report, 0, &severity_data, 0);
+                  cleanup_severity_data (&severity_data);
+                  updated = 1;
+                  user_changes_no_ov++;
+                }
+
+              // Cache report with overrides
+              if (clear || report_counts_cache_exists (report, 1) == 0)
+                {
+                  init_severity_data (&severity_data);
+                  report_severity_data (report, 1, NULL, NULL, NULL,
+                                        NULL, 0, 0, &severity_data,
+                                        NULL);
+                  cache_report_counts (report, 1, &severity_data, 0);
+                  cleanup_severity_data (&severity_data);
+                  updated = 1;
+                  user_changes_ov++;
+                }
+
+              if (updated)
+                {
+                  changes++;
+                  user_changes++;
+                }
+            }
+        }
+      cleanup_iterator (&reports);
+
+      g_debug ("%s: Rebuilt cache for %d reports"
+               " (%d with overrides / %d without)",
+               __FUNCTION__, user_changes,
+               user_changes_ov, user_changes_no_ov);
+
+      g_free (user_uuid);
+      g_free (user_name);
+    }
+  cleanup_iterator (&users);
+  current_credentials.uuid = old_uuid;
+  current_credentials.username = old_username;
+
+  if (changes_out)
+    *changes_out = changes;
+}
+
+/**
  * @brief Cached report counts.
  *
  * @param[in]  report  Report.
@@ -18969,7 +19078,7 @@ report_severity_data_prepare_full (task_t task)
  * @param[out] severity_data           The severity data struct to store counts in.
  * @param[out] filtered_severity_data  The severity data struct to store counts in.
  */
-void
+static void
 report_severity_data (report_t report, int override,
                       const char *host, const char *min_cvss_base,
                       const char *min_qod,
@@ -19409,11 +19518,13 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
  * @param[in]   report    Report.
  * @param[in]   override  Whether overrides were applied to the results.
  * @param[in]   data      Severity data struct containing the message counts.
+ * @param[in]   make_transaction  True to wrap in an exclusive transaction.
  *
  * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
  */
 static int
-cache_report_counts (report_t report, int override, severity_data_t* data)
+cache_report_counts (report_t report, int override, severity_data_t* data,
+                     int make_transaction)
 {
   /* Try cache results.  Give up if the database is locked because this could
    * happen while the caller has an SQL statement open.  If another process
@@ -19427,9 +19538,12 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
   if (setting_dynamic_severity_int ())
     return 0;
 
-  ret = sql_begin_exclusive_giveup ();
-  if (ret)
-    return ret;
+  if (make_transaction)
+    {
+      ret = sql_begin_exclusive_giveup ();
+      if (ret)
+        return ret;
+    }
 
   ret = sql_giveup ("DELETE FROM report_counts"
                     " WHERE report = %llu"
@@ -19439,7 +19553,8 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                     report, override, current_credentials.uuid);
   if (ret)
     {
-      sql ("ROLLBACK;");
+      if (make_transaction)
+        sql ("ROLLBACK;");
       return ret;
     }
 
@@ -19457,7 +19572,8 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                         report, current_credentials.uuid, override);
       if (ret)
         {
-          sql ("ROLLBACK;");
+          if (make_transaction)
+            sql ("ROLLBACK;");
           return ret;
         }
     }
@@ -19493,7 +19609,8 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
                                 severity, data->counts[i], end_time);
               if (ret)
                 {
-                  sql ("ROLLBACK;");
+                  if (make_transaction)
+                    sql ("ROLLBACK;");
                   return ret;
                 }
             }
@@ -19501,13 +19618,15 @@ cache_report_counts (report_t report, int override, severity_data_t* data)
           severity = severity_data_value (i);
         }
     }
-  ret = sql_giveup ("COMMIT;");
-  if (ret)
+  if (make_transaction)
     {
-      sql ("ROLLBACK;");
-      return ret;
+      ret = sql_giveup ("COMMIT;");
+      if (ret)
+        {
+          sql ("ROLLBACK;");
+          return ret;
+        }
     }
-
   return 0;
 }
 
@@ -19625,7 +19744,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (autofp == 0 && host == NULL
       && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL)
-    cache_report_counts (report, override, &severity_data);
+    cache_report_counts (report, override, &severity_data, 1);
 
   cleanup_severity_data (&severity_data);
   cleanup_severity_data (&filtered_severity_data);
@@ -54183,6 +54302,36 @@ manage_optimize (GSList *log_config, const gchar *database, const gchar *name)
                                       " Ports converted from old format: %d,"
                                       " removed IANA port names: %d.",
                                       changes_old_format, changes_iana);
+    }
+  else if (strcasecmp (name, "rebuild-report-cache") == 0)
+    {
+      int changes;
+
+      sql_begin_exclusive ();
+
+      reports_build_count_cache (1, &changes);
+
+      sql ("COMMIT;");
+
+      success_text = g_strdup_printf ("Optimized: rebuild-report-cache."
+                                      " Result counts recalculated for %d"
+                                      " report/user combinations.",
+                                      changes);
+    }
+  else if (strcasecmp (name, "update-report-cache") == 0)
+    {
+      int changes;
+
+      sql_begin_exclusive ();
+
+      reports_build_count_cache (0, &changes);
+
+      sql ("COMMIT;");
+
+      success_text = g_strdup_printf ("Optimized: update-report-cache."
+                                      " Result counts calculated for %d"
+                                      " report/user combinations.",
+                                      changes);
     }
   else
     {

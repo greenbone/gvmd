@@ -915,6 +915,9 @@ void
 reports_clear_count_cache (int);
 
 void
+reports_build_count_cache (int, int*);
+
+void
 report_cache_counts (report_t);
 
 double
