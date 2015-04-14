@@ -1,3 +1,14 @@
+2015-04-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
+
+	Backport parts of r21567.
+
+	* src/lsc_user.c (create_ssh_key): New function.
+	(ssh_privkey_create, ssh_pubkey_create): Remove functions.
+	(lsc_user_keys_create): Adjust function to use create_ssh_key()
+	accordingly to create a private key.
+
+	* src/lsc_user.h: Adjust function header.
+
 2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r21601.
