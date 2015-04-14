@@ -1,5 +1,13 @@
 2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r21601.
+
+	* src/manage.c (slave_setup): Add options exclude_hosts, alive_test,
+	reverse_lookup_only and reverse_lookup_unify when creating target.
+	Rename fail_credential label to fail_smb_credential.
+
+2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22076.
 
 	* src/manage_sql.c (report_counts_match): Add missing quotes around oid
