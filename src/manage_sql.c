@@ -18807,7 +18807,7 @@ report_counts_match (iterator_t *results, const char *search_phrase,
           || (strcmp (iterator_string (results, 5), search_phrase) == 0)
           /* NVT Tag or CVE. */
           || sql_int ("SELECT EXISTS (SELECT 1 FROM nvts"
-                      "               WHERE oid = %s"
+                      "               WHERE oid = '%s'"
                       "               AND (tag LIKE '%%%%=%s|%%%%'"
                       "                    OR cve LIKE '%%%%%s%%%%'))",
                       iterator_string (results, 1),

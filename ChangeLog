@@ -1,3 +1,10 @@
+2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r22076.
+
+	* src/manage_sql.c (report_counts_match): Add missing quotes around oid
+	value in search_phrase && search_phrase_exact case.
+
 2015-04-10  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22101.
