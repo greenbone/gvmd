@@ -2425,7 +2425,8 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
       /* Create the task on the slave. */
 
       {
-        gchar *max_checks, *max_hosts;
+        gchar *in_assets, *max_checks, *max_hosts, *source_iface;
+        gchar *hosts_ordering;
         omp_create_task_opts_t opts;
 
         opts = omp_create_task_opts_defaults;
@@ -2434,15 +2435,31 @@ slave_setup (slave_t slave, gnutls_session_t *session, int *socket,
         opts.name = name;
         opts.comment = "Slave task created by Master";
 
+        in_assets = task_preference_value (task, "in_assets");
         max_checks = task_preference_value (task, "max_checks");
         max_hosts = task_preference_value (task, "max_hosts");
+        source_iface = task_preference_value (task, "source_iface");
+        hosts_ordering = task_hosts_ordering (task);
 
+        opts.alterable = 0;
+        opts.in_assets = in_assets;
         opts.max_checks = max_checks ? max_checks : MAX_CHECKS_DEFAULT;
         opts.max_hosts = max_hosts ? max_hosts : MAX_HOSTS_DEFAULT;
+        opts.source_iface = source_iface;
+        opts.hosts_ordering = hosts_ordering;
+
+        opts.alert_ids = NULL;
+        opts.observers = NULL;
+        opts.observer_groups = NULL;
+        opts.schedule_id = NULL;
+        opts.slave_id = NULL;
 
         ret = omp_create_task_ext (session, opts, &slave_task_uuid);
+        g_free (in_assets);
         g_free (max_checks);
         g_free (max_hosts);
+        g_free (source_iface);
+        g_free (hosts_ordering);
         if (ret)
           goto fail_config;
       }

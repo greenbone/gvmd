@@ -1,3 +1,11 @@
+2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Backport r21687, excluding unsupported option "scanner".
+
+	* src/manage.c (slave_setup): Set task preferences/options alterable,
+	in_assets, source_iface and hosts_ordering. Initialize other fields
+	of opts with NULL.
+
 2015-04-14  Hani Benhabiles  <hani.benhabiles@greenbone.net>
 
 	Backport parts of r21567.
