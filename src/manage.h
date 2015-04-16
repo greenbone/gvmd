@@ -205,6 +205,7 @@ typedef enum scanner_type {
   SCANNER_TYPE_NONE = 0,
   SCANNER_TYPE_OSP,
   SCANNER_TYPE_OPENVAS,
+  SCANNER_TYPE_CVE,
   SCANNER_TYPE_MAX,
 } scanner_type_t;
 
@@ -940,6 +941,10 @@ result_t
 make_osp_result (task_t, const char*, const char*, const char*, const char*,
                  const char *);
 
+result_t
+make_cve_result (task_t, const char*, const char*, const char*, double,
+                 const char*);
+
 /**
  * @brief A CREATE_REPORT result.
  */
@@ -1234,6 +1239,27 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
                     int (*) (const char *, void*), void *, const char *,
                     const char *, const char *, int, const char *,
                     const char *, int, int, const gchar *, const char *);
+
+
+
+/* Reports. */
+
+void
+init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,
+                              const char *, const char *, const char *, int,
+                              const char *);
+
+double
+prognosis_iterator_cvss_double (iterator_t*);
+
+const char*
+prognosis_iterator_cpe (iterator_t*);
+
+const char*
+prognosis_iterator_cve (iterator_t*);
+
+const char*
+prognosis_iterator_description (iterator_t*);
 
 
 /* Targets. */
@@ -3179,6 +3205,9 @@ init_cve_info_iterator (iterator_t*, get_data_t*, const char*);
 
 int
 cve_info_count (const get_data_t *get);
+
+gchar *
+cve_cvss_base (const gchar *);
 
 /* OVAL defintions */
 int

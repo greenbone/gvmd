@@ -10150,6 +10150,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
+                                    "<type>%s</type>"
                                     "<name>%s</name>"
                                     "</nvt>"
                                     "<creation_time>%s</creation_time>"
@@ -10168,6 +10169,12 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                      : "",
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
+                                    // FIX function,ovaldef
+                                    g_str_has_prefix
+                                     (note_iterator_nvt_oid (notes),
+                                      "CVE-")
+                                     ? "cve"
+                                     : "nvt",
                                     get_iterator_creation_time (notes),
                                     get_iterator_modification_time (notes),
                                     note_iterator_active (notes),
@@ -10207,7 +10214,10 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
-            "<nvt oid=\"%s\"><name>%s</name></nvt>"
+            "<nvt oid=\"%s\">"
+            "<name>%s</name>"
+            "<type>%s</type>"
+            "</nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
             "<writable>1</writable>"
@@ -10226,6 +10236,12 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              : "",
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
+            // FIX function,ovaldef
+            g_str_has_prefix
+             (note_iterator_nvt_oid (notes),
+              "CVE-")
+             ? "cve"
+             : "nvt",
             get_iterator_creation_time (notes),
             get_iterator_modification_time (notes),
             note_iterator_active (notes),
@@ -10389,6 +10405,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
                                     "<name>%s</name>"
+                                    "<type>%s</type>"
                                     "</nvt>"
                                     "<creation_time>%s</creation_time>"
                                     "<modification_time>%s</modification_time>"
@@ -10410,6 +10427,12 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                      : "",
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
+                                    // FIX function,ovaldef
+                                    g_str_has_prefix
+                                     (override_iterator_nvt_oid (overrides),
+                                      "CVE-")
+                                     ? "cve"
+                                     : "nvt",
                                     get_iterator_creation_time (overrides),
                                     get_iterator_modification_time (overrides),
                                     override_iterator_active (overrides),
@@ -10457,7 +10480,10 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
           buffer_xml_append_printf
            (buffer,
             "<owner><name>%s</name></owner>"
-            "<nvt oid=\"%s\"><name>%s</name></nvt>"
+            "<nvt oid=\"%s\">"
+            "<name>%s</name>"
+            "<type>%s</type>"
+            "</nvt>"
             "<creation_time>%s</creation_time>"
             "<modification_time>%s</modification_time>"
             "<writable>1</writable>"
@@ -10478,6 +10504,12 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              : "",
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
+            // FIX function,ovaldef
+            g_str_has_prefix
+             (override_iterator_nvt_oid (overrides),
+              "CVE-")
+             ? "cve"
+             : "nvt",
             get_iterator_creation_time (overrides),
             get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
@@ -10907,6 +10939,29 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
 
   assert (results);
   assert (buffer);
+
+  if (g_str_has_prefix (oid, "CVE-"))
+    {
+      gchar *cvss_base;
+      cvss_base = cve_cvss_base (oid);
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\">"
+                                "<type>cve</type>"
+                                "<name>%s</name>"
+                                "</nvt>"
+                                "<cve id='%s'>"
+                                "<cvss_base>%s</cvss_base>"
+                                "<cpe id='%s'/>"
+                                "</cve>",
+                                oid,
+                                oid,
+                                oid,
+                                cvss_base,
+                                result_iterator_port (results));
+      g_free (cvss_base);
+      return;
+    }
+
   if (g_str_has_prefix (oid, "oval:"))
     {
       int ret;
@@ -10922,16 +10977,22 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
       if (!next (&iterator))
         abort ();
       cves = ovaldef_cves (oid);
-      buffer_xml_append_printf
-       (buffer,
-        "<nvt oid=\"%s\"><name>%s</name><family/><cvss_base>%s</cvss_base>"
-        "<cve>%s</cve><bid/><tags>summary=%s</tags><xref/>",
-        oid,
-        ovaldef_info_iterator_title (&iterator),
-        ovaldef_info_iterator_max_cvss (&iterator),
-        cves ?: "",
-        ovaldef_info_iterator_description (&iterator));
-      g_free (cves);
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\">"
+                                "<type>ovaldef</type>"
+                                "<name>%s</name>"
+                                "<family/>"
+                                "<cvss_base>%s</cvss_base>"
+                                "<cve>%s</cve>"
+                                "<bid/>"
+                                "<tags>summary=%s</tags>"
+                                "<xref/>",
+                                oid,
+                                ovaldef_info_iterator_title (&iterator),
+                                ovaldef_info_iterator_max_cvss (&iterator),
+                                cves ?: "",
+                                ovaldef_info_iterator_description (&iterator));
+                                g_free (cves);
       g_free (get.id);
       cleanup_iterator (&iterator);
     }
@@ -10942,18 +11003,24 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
       if (!cvss_base && !strcmp (oid, "0"))
         cvss_base = "0.0";
 
-      buffer_xml_append_printf
-       (buffer,
-        "<nvt oid=\"%s\"><name>%s</name><family>%s</family>"
-        "<cvss_base>%s</cvss_base><cve>%s</cve><bid>%s</bid>"
-        "<xref>%s</xref><tags>%s</tags>",
-        oid, result_iterator_nvt_name (results) ?: oid,
-        result_iterator_nvt_family (results) ?: "",
-        cvss_base ?: "",
-        result_iterator_nvt_cve (results) ?: "",
-        result_iterator_nvt_bid (results) ?: "",
-        result_iterator_nvt_xref (results) ?: "",
-        result_iterator_nvt_tag (results) ?: "");
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\">"
+                                "<type>nvt</type>"
+                                "<name>%s</name>"
+                                "<family>%s</family>"
+                                "<cvss_base>%s</cvss_base>"
+                                "<cve>%s</cve>"
+                                "<bid>%s</bid>"
+                                "<xref>%s</xref>"
+                                "<tags>%s</tags>",
+                                oid,
+                                result_iterator_nvt_name (results) ?: oid,
+                                result_iterator_nvt_family (results) ?: "",
+                                cvss_base ?: "",
+                                result_iterator_nvt_cve (results) ?: "",
+                                result_iterator_nvt_bid (results) ?: "",
+                                result_iterator_nvt_xref (results) ?: "",
+                                result_iterator_nvt_tag (results) ?: "");
     }
 
   results_xml_append_cert (buffer, oid);
@@ -21964,36 +22031,6 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
-          if (find_config_with_permission (create_task_data->config_id,
-                                           &config,
-                                           "get_configs"))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (config == 0)
-            {
-              if (send_find_error_to_client ("create_task", "config",
-                                             create_task_data->config_id,
-                                             omp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          if (find_target_with_permission (create_task_data->target_id,
-                                           &target,
-                                           "get_targets"))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (target == 0)
-            {
-              if (send_find_error_to_client ("create_task", "target",
-                                             create_task_data->target_id,
-                                             omp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
           if (find_scanner_with_permission (create_task_data->scanner_id,
                                             &scanner,
                                             "get_scanners"))
@@ -22009,11 +22046,45 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                 error_send_to_client (error);
               goto create_task_fail;
             }
-          if (!create_task_check_config_scanner (config, scanner))
+          if ((scanner == 0) || (scanner_type (scanner) != SCANNER_TYPE_CVE))
             {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "Scanner and config mismatched types."));
+              if (find_config_with_permission (create_task_data->config_id,
+                                               &config,
+                                               "get_configs"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (config == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "config",
+                                                 create_task_data->config_id,
+                                                 omp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+
+              if (!create_task_check_config_scanner (config, scanner))
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Scanner and config mismatched types."));
+                  goto create_task_fail;
+                }
+            }
+          if (find_target_with_permission (create_task_data->target_id,
+                                           &target,
+                                           "get_targets"))
+            {
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
+            }
+          if (target == 0)
+            {
+              if (send_find_error_to_client ("create_task", "target",
+                                             create_task_data->target_id,
+                                             omp_parser))
+                error_send_to_client (error);
               goto create_task_fail;
             }
           if (create_task_data->slave_id
@@ -24620,7 +24691,8 @@ create_task_fail:
               }
             else
               {
-                int fail = 0;
+                int fail = 0, type_of_scanner;
+                scanner_t scanner;
 
                 /** @todo It'd probably be better to allow only one
                  * modification at a time, that is, one parameter or one of
@@ -24661,7 +24733,48 @@ create_task_fail:
                       }
                   }
 
-                if (fail == 0 && modify_task_data->config_id)
+                scanner = 0;
+                if (fail == 0 && modify_task_data->scanner_id)
+                  {
+                    if (strcmp (modify_task_data->scanner_id, "0") == 0)
+                      {
+                        /* Leave it as is. */
+                      }
+                    else if ((fail = (task_run_status (task)
+                                      != TASK_STATUS_NEW
+                                      && (task_alterable (task) == 0))))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX
+                         ("modify_task", "Status must be New to edit Scanner"));
+                    else if ((fail = find_scanner_with_permission
+                                      (modify_task_data->scanner_id,
+                                       &scanner,
+                                       "get_scanners")))
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_INTERNAL_ERROR ("modify_task"));
+                    else if (scanner == 0)
+                      {
+                        if (send_find_error_to_client
+                             ("modify_task", "scanner",
+                              modify_task_data->scanner_id, omp_parser))
+                          {
+                            error_send_to_client (error);
+                            return;
+                          }
+                        fail = 1;
+                      }
+                    else
+                      set_task_scanner (task, scanner);
+                  }
+
+                if (scanner == 0)
+                  type_of_scanner = scanner_type (task_scanner (task));
+                else
+                  type_of_scanner = scanner_type (scanner);
+
+                if (fail == 0
+                    && type_of_scanner != SCANNER_TYPE_CVE
+                    && modify_task_data->config_id)
                   {
                     config_t config = 0;
 
@@ -24911,41 +25024,6 @@ create_task_fail:
                       }
                     else
                       set_task_target (task, target);
-                  }
-
-                if (fail == 0 && modify_task_data->scanner_id)
-                  {
-                    scanner_t scanner = 0;
-
-                    if (strcmp (modify_task_data->scanner_id, "0") == 0)
-                      {
-                        /* Leave it as is. */
-                      }
-                    else if ((fail = (task_run_status (task)
-                                      != TASK_STATUS_NEW
-                                      && (task_alterable (task) == 0))))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX
-                         ("modify_task", "Status must be New to edit Scanner"));
-                    else if ((fail = find_scanner_with_permission
-                                      (modify_task_data->scanner_id,
-                                       &scanner,
-                                       "get_scanners")))
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_INTERNAL_ERROR ("modify_task"));
-                    else if (scanner == 0)
-                      {
-                        if (send_find_error_to_client
-                             ("modify_task", "scanner",
-                              modify_task_data->scanner_id, omp_parser))
-                          {
-                            error_send_to_client (error);
-                            return;
-                          }
-                        fail = 1;
-                      }
-                    else
-                      set_task_scanner (task, scanner);
                   }
 
                 if (fail == 0 && modify_task_data->preferences)

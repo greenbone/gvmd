@@ -69,6 +69,7 @@
 #include <openvas/base/cvss.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
+#include <openvas/base/openvas_hosts.h>
 #include <openvas/omp/omp.h>
 #include <openvas/misc/openvas_server.h>
 #include <openvas/misc/nvt_categories.h>
@@ -2954,6 +2955,197 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
 }
 
 /**
+ * @brief Fork a child to handle a CVE scan's calculating and inserting.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_cve_scan_handler (task_t task, target_t target)
+{
+  int pid;
+  char *report_id, title[128], *hosts;
+  openvas_hosts_t *openvas_hosts;
+  openvas_host_t *openvas_host;
+
+  assert (task);
+  assert (target);
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        break;
+      case -1:
+        /* Parent, failed to fork. */
+        // FIX but there is no report yet  (same for osp)
+        set_task_run_status (task, TASK_STATUS_STOPPED);
+        return -1;
+      default:
+        /* Parent, successfully forked. */
+        g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
+        return 0;
+    }
+
+  /* Child.
+   *
+   * Re-open DB and do prognostic calculation.  On success exit(0), else
+   * exit(1).
+   */
+  reinit_manage_process ();
+  // FIX same for osp
+  manage_session_init (current_credentials.uuid);
+
+  if (create_current_report (task, &report_id, TASK_STATUS_RUNNING))
+    {
+      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      g_free (report_id);
+      exit (1);
+    }
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+
+  snprintf (title, sizeof (title), "openvasmd (CVE): %s handler", report_id);
+  proctitle_set (title);
+
+  hosts = target_hosts (target);
+  if (hosts == NULL)
+    {
+      tracef ("   %s: target hosts is NULL.\n", __FUNCTION__);
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      g_free (report_id);
+      exit (1);
+    }
+
+  reset_task (task);
+  set_task_start_time_epoch (task, time (NULL));
+  set_scan_start_time_epoch (current_report, time (NULL));
+
+  // FIX new func
+  openvas_hosts = openvas_hosts_new (hosts);
+  free (hosts);
+  while ((openvas_host = openvas_hosts_next (openvas_hosts)))
+    {
+      report_host_t report_host;
+      gchar *ip, *host;
+
+      host = openvas_host_value_str (openvas_host);
+
+      ip = report_host_ip (host);
+      if (ip == NULL)
+        ip = g_strdup (host);
+
+      g_debug ("%s: ip: %s", __FUNCTION__, ip);
+
+      if (host_nthlast_report_host (ip, &report_host, 1))
+        {
+          tracef ("   %s: failed to get nthlast report.\n", __FUNCTION__);
+          set_task_run_status (task, TASK_STATUS_STOPPED);
+          openvas_hosts_free (openvas_hosts);
+          g_free (ip);
+          g_free (report_id);
+          exit (1);
+        }
+      g_free (report_id);
+
+      g_debug ("%s: report_host: %llu", __FUNCTION__, report_host);
+
+      if (report_host)
+        {
+          iterator_t report_hosts;
+          init_host_iterator (&report_hosts, 0, NULL, report_host);
+          if (next (&report_hosts))
+            {
+              iterator_t prognosis;
+
+              init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
+                                            NULL, NULL, NULL, 0, NULL);
+              while (next (&prognosis))
+                {
+                  const char *threat;
+                  gchar *desc;
+                  result_t result;
+
+                  threat = cvss_threat (prognosis_iterator_cvss_double
+                                         (&prognosis));
+
+                  desc = g_strdup_printf ("The host carries the product: %s\n"
+                                          "It is vulnerable according to: %s.\n"
+                                          "\n"
+                                          "%s",
+                                          prognosis_iterator_cpe (&prognosis),
+                                          prognosis_iterator_cve (&prognosis),
+                                          prognosis_iterator_description
+                                           (&prognosis));
+
+                  g_debug ("%s: making result with threat [%s] desc [%s]", __FUNCTION__, threat, desc);
+
+                  result = make_cve_result
+                            (task, ip,
+                             prognosis_iterator_cpe (&prognosis),
+                             prognosis_iterator_cve (&prognosis),
+                             prognosis_iterator_cvss_double (&prognosis),
+                             desc);
+                  g_free (desc);
+                  if (current_report) report_add_result (current_report, result);
+                }
+              cleanup_iterator (&prognosis);
+            }
+          cleanup_iterator (&report_hosts);
+        }
+
+      g_free (ip);
+    }
+  openvas_hosts_free (openvas_hosts);
+  set_task_run_status (task, TASK_STATUS_DONE);
+  set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+  current_report = 0;
+  current_scanner_task = (task_t) 0;
+  g_free (report_id);
+  exit (0);
+}
+
+/**
+ * @brief Start a task on an OSP scanner.
+ *
+ * @param[in]   task_id    The task ID.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+static int
+run_cve_task (task_t task)
+{
+  target_t target;
+
+  target = task_target (task);
+  if (target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  if (fork_cve_scan_handler (task, target))
+    {
+      g_warning ("Couldn't fork CVE scan handler.\n");
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
  * @param[in]   task        The task.
@@ -3140,6 +3332,27 @@ run_task (const char *task_id, char **report_id, int from,
   if (task == 0)
     return 3;
 
+  scanner = task_scanner (task);
+  if (scanner)
+    {
+      char *uuid;
+      scanner_t found;
+
+      uuid = scanner_uuid (scanner);
+      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+  else
+    assert (0);
+  if (scanner_type (scanner) == SCANNER_TYPE_CVE)
+    return run_cve_task  (task);
+
   config = task_config (task);
   if (config)
     {
@@ -3162,24 +3375,6 @@ run_task (const char *task_id, char **report_id, int from,
   else
     return -1;
 
-  scanner = task_scanner (task);
-  if (scanner)
-    {
-      char *uuid;
-      scanner_t found;
-
-      uuid = scanner_uuid (scanner);
-      if (find_scanner_with_permission (uuid, &found, "get_scanners"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-  else
-    assert (0);
   if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS)
     return run_osp_task  (task);
 

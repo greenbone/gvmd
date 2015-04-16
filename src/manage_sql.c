@@ -577,7 +577,7 @@ resource_with_name_exists_global (const char *name, const char *type,
  *
  * @return Static threat name.
  */
-static const char *
+const char *
 cvss_threat (double cvss)
 {
   if (cvss < 0.0 || cvss > 10.0)
@@ -613,7 +613,7 @@ member (GPtrArray *array, const char *string)
  * @param[in]  array   Array.
  * @param[in]  string  String.  Copied into array.
  */
-static void
+void
 array_add_new_string (array_t *array, const gchar *string)
 {
   guint index;
@@ -10345,6 +10345,16 @@ check_db_scanners ()
       g_free (quoted_key_pub);
       g_free (quoted_key_priv);
     }
+
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+               SCANNER_UUID_CVE) == 0)
+    sql ("INSERT INTO scanners"
+         " (uuid, owner, name, host, port, type, ca_pub, key_pub, key_priv,"
+         "  creation_time, modification_time)"
+         " VALUES ('" SCANNER_UUID_CVE "', NULL, 'CVE',"
+         " 'localhost', 9391, %d, NULL, NULL, NULL, m_now (), m_now ());",
+         SCANNER_TYPE_CVE);
+
   return 0;
 }
 
@@ -13101,6 +13111,8 @@ set_task_scanner (task_t task, scanner_t scanner)
 {
   sql ("UPDATE tasks SET scanner = %llu, modification_time = m_now ()"
        " WHERE id = %llu;", scanner, task);
+  if (scanner_type (scanner) == SCANNER_TYPE_CVE)
+    sql ("UPDATE tasks SET config = 0 WHERE id = %llu;", task);
 }
 
 /**
@@ -14546,6 +14558,37 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
 }
 
 /**
+ * @brief Make a CVE result.
+ *
+ * @param[in]  task         The task associated with the result.
+ * @param[in]  host         Host.
+ * @param[in]  port         The port the result refers to.
+ * @param[in]  nvt          The OID of the NVT that produced the result.
+ * @param[in]  cvss         CVSS base.
+ * @param[in]  description  Description of the result.
+ *
+ * @return A result descriptor for the new result, 0 if error.
+ */
+result_t
+make_cve_result (task_t task, const char* host, const char* port,
+                 const char *nvt, double cvss, const char* description)
+{
+  gchar *quoted_descr;
+  quoted_descr = sql_quote (description ?: "");
+  sql ("INSERT into results"
+       " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
+       "  description, uuid, qod, qod_type)"
+       " VALUES"
+       " (NULL, m_now (), %llu, '%s', '%s', '%s', '', '%1.1f', '%s',"
+       "  '%s', make_uuid (), %i, '');",
+       task, host ?: "", port ?: "", nvt, cvss, cvss_threat (cvss),
+       quoted_descr, QOD_DEFAULT);
+
+  g_free (quoted_descr);
+  return sql_last_insert_id ();
+}
+
+/**
  * @brief Return the UUID of a result.
  *
  * @param[in]   result  Result.
@@ -14945,7 +14988,7 @@ prognosis_order_by (const char* sort_field, int ascending)
  * @param[in]  sort_order     Whether to sort in ascending order.
  * @param[in]  sort_field     Name of the field to sort by.
  */
-static void
+void
 init_host_prognosis_iterator (iterator_t* iterator, report_host_t report_host,
                               int first_result, int max_results,
                               const char *levels, const char *search_phrase,
@@ -21075,7 +21118,7 @@ free_host_ports (GTree *host_ports, gpointer dummy)
  * @param[in]  report_host  Report host.
  * @param[in]  position     Position from end.
  */
-static gboolean
+gboolean
 host_nthlast_report_host (const char *host, report_host_t *report_host,
                           int position)
 {
@@ -25546,6 +25589,30 @@ manage_send_report (report_t report, report_t delta_report,
   }
 }
 
+/**
+ * @brief Get the IP of a host, using the 'hostname' report host details.
+ *
+ * The most recent host detail takes preference.
+ *
+ * @param[in]  host  Host name or IP.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+gchar*
+report_host_ip (const char *host)
+{
+  gchar *quoted_host, *ret;
+  quoted_host = sql_quote (host);
+  ret = sql_string ("SELECT host FROM report_hosts"
+                    " WHERE id = (SELECT report_host FROM report_host_details"
+                    "             WHERE name = 'hostname'"
+                    "             AND value = 'localhost'"
+                    "             ORDER BY id DESC LIMIT 1);",
+                    quoted_host);
+  g_free (quoted_host);
+  return ret;
+}
+
 
 /* More task stuff. */
 
@@ -26875,8 +26942,9 @@ validate_port (const char *port)
 
 /**
  * @brief Validate a single port.
- * @brief May come in values such as 100/foo and 100/foo (IANA: bar).
- * @brief Will also validate values such as: general/tcp.
+ *
+ * May come in values such as 100/foo and 100/foo (IANA: bar).
+ * Will also validate values such as: general/tcp.
  *
  * @param[in]   port      A port.
  *
@@ -26890,6 +26958,9 @@ validate_results_port (const char *port)
 
   if (!port)
     return 1;
+
+  if (g_str_has_prefix (port, "cpe:"))
+    return 0;
 
   if (strncmp ("general/", port, 8) == 0)
     return 0;
@@ -29145,14 +29216,22 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 1;
 
   if (strcmp (config_id, "0"))
+    // FIX what happens when permission denied?
     find_config_with_permission (config_id, &config, "get_configs");
   else
     config = task_config (task);
 
+  // FIX what happens when permission denied or failed to find?
+  // FIX if 0 leaving then it the same?  then need to get scanner_type of existing scanner
   find_scanner_with_permission (scanner_id, &scanner, "get_scanners");
 
-  ctype = config_type (config);
   stype = scanner_type (scanner);
+
+  /* CVE Scanner. */
+  if (stype == SCANNER_TYPE_CVE)
+    return config ? 0 : 1;
+
+  ctype = config_type (config);
   /* OSP Scanner with OSP config. */
   if (stype == SCANNER_TYPE_OSP && ctype == 1)
     return 1;
@@ -35572,9 +35651,18 @@ create_note (const char* active, const char* nvt, const char* text,
     return -1;
 
   quoted_nvt = sql_quote (nvt);
-  if (strcmp (nvt, "0")
-      && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
-          == 0))
+  if (g_str_has_prefix (nvt, "CVE-"))
+    {
+      if (sql_int ("SELECT count (*) FROM cves WHERE uuid = '%s'", quoted_nvt)
+          == 0)
+        {
+          g_free (quoted_nvt);
+          return 1;
+        }
+    }
+  else if (strcmp (nvt, "0")
+           && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+               == 0))
     {
       g_free (quoted_nvt);
       return 1;
@@ -35931,7 +36019,14 @@ modify_note (note_t note, const char *active, const char* text,
  {                                                                         \
    { "notes.id", "id" },                                                   \
    { "notes.uuid", "uuid" },                                               \
-   { " (SELECT name FROM nvts WHERE oid = notes.nvt)", "name" },           \
+   {                                                                       \
+     "(CASE"                                                               \
+     " WHEN notes.nvt LIKE 'CVE-%%'"                                       \
+     " THEN notes.nvt"                                                     \
+     " ELSE (SELECT name FROM nvts WHERE oid = notes.nvt)"                 \
+     " END)",                                                              \
+     "name"                                                                \
+   },                                                                      \
    { "CAST ('' AS TEXT)", NULL },                                          \
    { "iso_time (notes.creation_time)", NULL },                             \
    { "iso_time (notes.modification_time)", NULL },                         \
@@ -35949,7 +36044,14 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes.result", "result" },                                           \
    { "notes.end_time", NULL },                                             \
    { "(notes.end_time = 0) OR (notes.end_time >= m_now ())", "active" },   \
-   { "(SELECT name FROM nvts WHERE oid = notes.nvt)", "nvt" },             \
+   {                                                                       \
+     "(CASE"                                                               \
+     " WHEN notes.nvt LIKE 'CVE-%%'"                                       \
+     " THEN notes.nvt"                                                     \
+     " ELSE (SELECT name FROM nvts WHERE oid = notes.nvt)"                 \
+     " END)",                                                              \
+     "nvt"                                                                 \
+   },                                                                      \
    { "notes.nvt", "nvt_id" },                                              \
    { "(SELECT uuid FROM tasks WHERE id = notes.task)", "task_id" },        \
    { "(SELECT name FROM tasks WHERE id = notes.task)", "task_name" },      \
@@ -35984,7 +36086,14 @@ modify_note (note_t note, const char *active, const char* text,
    { "notes_trash.end_time", NULL },                                             \
    { "(notes_trash.end_time = 0) OR (notes_trash.end_time >= m_now ())",         \
      "active" },                                                                 \
-   { "(SELECT name FROM nvts WHERE oid = notes_trash.nvt)", "nvt" },             \
+   {                                                                             \
+     "(CASE"                                                                     \
+     " WHEN notes.nvt LIKE 'CVE-%%'"                                             \
+     " THEN notes.nvt"                                                           \
+     " ELSE (SELECT name FROM nvts WHERE oid = notes_trash.nvt)"                 \
+     " END)",                                                                    \
+     "nvt"                                                                       \
+   },                                                                            \
    { "notes_trash.nvt", "nvt_id" },                                              \
    { "(SELECT uuid FROM tasks WHERE id = notes_trash.task)", "task_id" },        \
    { "(SELECT name FROM tasks WHERE id = notes_trash.task)", "task_name" },      \
@@ -36459,9 +36568,18 @@ create_override (const char* active, const char* nvt, const char* text,
     return -1;
 
   quoted_nvt = sql_quote (nvt);
-  if (strcmp (nvt, "0")
-      && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
-          == 0))
+  if (g_str_has_prefix (nvt, "CVE-"))
+    {
+      if (sql_int ("SELECT count (*) FROM cves WHERE uuid = '%s'", quoted_nvt)
+          == 0)
+        {
+          g_free (quoted_nvt);
+          return 1;
+        }
+    }
+  else if (strcmp (nvt, "0")
+           && (sql_int ("SELECT count (*) FROM nvts WHERE oid = '%s'", quoted_nvt)
+               == 0))
     {
       g_free (quoted_nvt);
       return 1;
@@ -36919,7 +37037,14 @@ modify_override (override_t override, const char *active, const char* text,
  {                                                                          \
    { "overrides.id", "id" },                                                \
    { "overrides.uuid", "uuid" },                                            \
-   { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "name" },         \
+   {                                                                        \
+     "(CASE"                                                                \
+     " WHEN overrides.nvt LIKE 'CVE-%%'"                                    \
+     " THEN overrides.nvt"                                                  \
+     " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
+     " END)",                                                               \
+     "name"                                                                 \
+   },                                                                       \
    { "CAST ('' AS TEXT)", NULL },                                           \
    { "iso_time (overrides.creation_time)", NULL },                          \
    { "iso_time (overrides.modification_time)", NULL },                      \
@@ -36944,7 +37069,14 @@ modify_override (override_t override, const char *active, const char* text,
      "(overrides.end_time = 0) OR (overrides.end_time >= m_now ())",        \
      "active"                                                               \
    },                                                                       \
-   { "(SELECT name FROM nvts WHERE oid = overrides.nvt)", "nvt" },          \
+   {                                                                        \
+     "(CASE"                                                                \
+     " WHEN overrides.nvt LIKE 'CVE-%%'"                                    \
+     " THEN overrides.nvt"                                                  \
+     " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
+     " END)",                                                               \
+     "name"                                                                 \
+   },                                                                       \
    { "overrides.nvt", "nvt_id" },                                           \
    { "(SELECT uuid FROM tasks WHERE id = overrides.task)", "task_id" },     \
    { "(SELECT name FROM tasks WHERE id = overrides.task)", "task_name" },   \
@@ -36990,7 +37122,14 @@ modify_override (override_t override, const char *active, const char* text,
      " OR (overrides_trash.end_time >= m_now ())",                          \
      "active"                                                               \
    },                                                                       \
-   { "(SELECT name FROM nvts WHERE oid = overrides_trash.nvt)", "nvt" },    \
+   {                                                                        \
+     "(CASE"                                                                \
+     " WHEN overrides.nvt LIKE 'CVE-%%'"                                    \
+     " THEN overrides.nvt"                                                  \
+     " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
+     " END)",                                                               \
+     "nvt"                                                                  \
+   },                                                                       \
    { "overrides_trash.nvt", "nvt_id" },                                     \
    {                                                                        \
      "(SELECT uuid FROM tasks WHERE id = overrides_trash.task)",            \
@@ -37875,12 +38014,15 @@ create_scanner (const char* name, const char *comment, const char *host,
  * @param[out] new_scanner  New scanner.
  *
  * @return 0 success, 1 scanner exists already, 2 failed to find existing
- *         scanner, -1 error.
+ *         scanner, -1 error, 99 permission denied.
  */
 int
 copy_scanner (const char* name, const char* comment, const char *scanner_id,
               scanner_t* new_scanner)
 {
+  if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0)
+    return 99;
+
   return copy_resource ("scanner", name, comment, scanner_id,
                         "host, port, type, ca_pub, key_pub, key_priv", 1,
                         new_scanner);
@@ -38032,6 +38174,9 @@ int
 delete_scanner (const char *scanner_id, int ultimate)
 {
   scanner_t scanner = 0;
+
+  if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0)
+    return 99;
 
   sql_begin_immediate ();
 
@@ -38626,6 +38771,8 @@ verify_scanner (const char *scanner_id, char **version)
         *version = g_strdup ("OTP/2.0");
       return 0;
     }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
+    return 0;
   assert (0);
   return -1;
 }
@@ -50406,6 +50553,25 @@ init_cpe_info_iterator (iterator_t* iterator, get_data_t *get, const char *name)
                            clause,
                            FALSE);
   g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Get the short file name for an OVALDEF.
+ *
+ * @param[in]  cve  Full OVAL identifier with file suffix.
+ *
+ * @return The file name of the OVAL definition relative to the SCAP directory,
+ *         Freed by g_free.
+ */
+gchar *
+cve_cvss_base (const gchar *cve)
+{
+  gchar *quoted_cve, *ret;
+  quoted_cve = sql_quote (cve);
+  ret = sql_string ("SELECT cvss FROM cves WHERE name = '%s'",
+                    quoted_cve);
+  g_free (quoted_cve);
   return ret;
 }
 

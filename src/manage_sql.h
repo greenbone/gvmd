@@ -208,6 +208,11 @@
 #define SCANNER_UUID_DEFAULT "08b69003-5fc2-4037-a479-93b440211c73"
 
 /**
+ * @brief UUID of 'CVE' scanner.
+ */
+#define SCANNER_UUID_CVE "6acd0832-df90-11e4-b9d5-28d24461215b"
+
+/**
  * @brief Trust constant for error.
  */
 #define TRUST_ERROR 0
@@ -248,6 +253,15 @@ int manage_db_empty ();
 void manage_transaction_start ();
 
 void manage_transaction_stop (gboolean);
+
+gboolean
+host_nthlast_report_host (const char *, report_host_t *, int);
+
+const char *
+cvss_threat (double);
+
+char*
+report_host_ip (const char *);
 
 gchar *tag_value (const gchar *, const gchar *);
 

@@ -1,5 +1,40 @@
 2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Add CVE scanning: prognostic scanning via a predefined builtin scanner,
+	the CVE Scanner.
+
+	* src/manage.c (fork_cve_scan_handler, run_cve_task): New function.
+	(run_task): Add CVE case.  Check the scanner before the config, because
+	the CVE scan does not require the config check.
+
+	* src/manage_sql.c (cvss_threat, array_add_new_string): Export for
+	manage.c.
+	(check_db_scanners): Add CVE case.
+	(set_task_scanner): Clear the config for CVE scanner.
+	(make_cve_result): New function.
+	(init_host_prognosis_iterator, host_nthlast_report_host): Export for
+	manage.c.
+	(report_host_ip): New function.
+	(validate_results_port): Make brief doc brief.  Add CPE case.
+	(modify_task_check_config_scanner): Add CVE scanner case.
+	(create_note, NOTE_ITERATOR_COLUMNS, NOTE_ITERATOR_TRASH_COLUMNS)
+	(create_override, OVERRIDE_ITERATOR_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Add CVE NVT case.
+	(copy_scanner, delete_scanner): Refuse to copy or delete CVE scanner.
+	(verify_scanner): Add CVE scanner.
+	(cve_cvss_base): New function.
+
+	* src/manage.h, src/manage_sql.h: Add headers accordingly.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Add NVT type.
+	(results_xml_append_nvt): Add CVE case.  Align other cases in a more
+	structured way.
+	(omp_xml_handle_end_element): In CREATE_TASK find scanner first, skip
+	config check for CVE scanner, update scanner first, and skip config
+	update for CVE scanner.
+
+2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_pg.c (create_tables): Line SQL up for clarity.
 
 2015-04-14  Timo Pollmeier <timo.pollmeier@greenbone.net>
