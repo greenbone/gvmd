@@ -14937,7 +14937,7 @@ prognosis_order_by (const char* sort_field, int ascending)
 {
   GString* order_sql = g_string_new ("");
 
-  if ((sort_field == NULL) && strcmp (sort_field, "ROWID") == 0)
+  if ((sort_field == NULL) || strcmp (sort_field, "ROWID") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY cves.id %s",
                             ascending ? "ASC" : "DESC");

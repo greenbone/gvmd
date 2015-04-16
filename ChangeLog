@@ -1,5 +1,10 @@
 2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (prognosis_where_cvss_base): Correct operator from
+	last patch.
+
+2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (prognosis_where_cvss_base): Add missing space.
 	Allow sort_field to be NULL, because fork_cve_scan_handler passes it
 	as NULL.
