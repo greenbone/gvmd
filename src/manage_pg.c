@@ -2176,7 +2176,7 @@ create_tables ()
        "                   WHERE nvts.oid = results.nvt))"
        "      ELSE"
        "        (SELECT CAST (cvss_base AS double precision) FROM nvts"
-       "          WHERE nvts.oid = results.nvt)"
+       "         WHERE nvts.oid = results.nvt)"
        "      END"
        "    ELSE"
        "      CASE WHEN override != 0 THEN"
@@ -2202,7 +2202,7 @@ create_tables ()
        "         WHEN 1 THEN"
        "          (CASE WHEN"
        "           (((SELECT family FROM nvts WHERE oid = results.nvt)"
-       "              IN (" LSC_FAMILY_LIST "))"
+       "             IN (" LSC_FAMILY_LIST "))"
        "            OR results.nvt = '0'" /* Open ports previously had 0 NVT. */
        "            OR EXISTS"
        "              (SELECT id FROM nvts"
