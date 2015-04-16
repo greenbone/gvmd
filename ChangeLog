@@ -1,5 +1,10 @@
 2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_scan_start_time_epoch)
+	(set_scan_end_time_epoch): Use id instead of ROWID, for Postgres.
+
+2015-04-16  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Add CVE scanning: prognostic scanning via a predefined builtin scanner,
 	the CVE Scanner.
 

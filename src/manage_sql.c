@@ -18365,7 +18365,7 @@ set_scan_start_time (report_t report, const char* timestamp)
 void
 set_scan_start_time_epoch (report_t report, time_t timestamp)
 {
-  sql ("UPDATE reports SET start_time = %i WHERE ROWID = %llu;",
+  sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
        timestamp, report);
 }
 
@@ -18427,7 +18427,7 @@ void
 set_scan_end_time_epoch (report_t report, time_t timestamp)
 {
   if (timestamp)
-    sql ("UPDATE reports SET end_time = %i WHERE ROWID = %llu;",
+    sql ("UPDATE reports SET end_time = %i WHERE id = %llu;",
          timestamp, report);
 }
 
