@@ -14935,9 +14935,9 @@ prognosis_where_cvss_base (const char* min_cvss_base)
 static GString *
 prognosis_order_by (const char* sort_field, int ascending)
 {
-  GString* order_sql = g_string_new("");
+  GString* order_sql = g_string_new ("");
 
-  if (strcmp (sort_field, "ROWID") == 0)
+  if ((sort_field == NULL) && strcmp (sort_field, "ROWID") == 0)
     g_string_append_printf (order_sql,
                             " ORDER BY cves.id %s",
                             ascending ? "ASC" : "DESC");
