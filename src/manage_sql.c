@@ -54182,6 +54182,14 @@ trash_tag_writable (tag_t tag)
   return 0;
 }
 
+/**
+ * @brief Return the SQL column definition for a resource iterator.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The SQL column definitions.
+ */
 char*
 type_columns (const char *type, int apply_overrides)
 {
@@ -54234,6 +54242,14 @@ type_columns (const char *type, int apply_overrides)
 }
 
 // FIX
+/**
+ * @brief Return the columns for a resource iterator.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The columns.
+ */
 column_t *
 type_select_columns (const char *type, int apply_overrides)
 {
@@ -54270,6 +54286,14 @@ type_select_columns (const char *type, int apply_overrides)
   return NULL;
 }
 
+/**
+ * @brief Return the filter columns for a resource iterator.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The filter columns.
+ */
 const char**
 type_filter_columns (const char *type, int apply_overrides)
 {
@@ -54325,6 +54349,14 @@ type_filter_columns (const char *type, int apply_overrides)
 
 }
 
+/**
+ * @brief Return the SQL column definition for a trash resource iterator.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The SQL column definitions.
+ */
 char*
 type_trash_columns (const char *type, int apply_overrides)
 {
@@ -54344,6 +54376,14 @@ type_trash_columns (const char *type, int apply_overrides)
     return NULL;
 }
 
+/**
+ * @brief Return the subquery definition for a resource type.
+ *
+ * @param[in]  type             Resource type to get columns of.
+ * @param[in]  apply_overrides  Whether to apply overrides.
+ *
+ * @return The SQL subquery definition.
+ */
 gchar*
 type_opts_table (const char *type, int apply_overrides)
 {
@@ -54357,6 +54397,14 @@ type_opts_table (const char *type, int apply_overrides)
     return NULL;
 }
 
+/**
+ * @brief Return the table name or union for a resource type.
+ *
+ * @param[in]  type   Resource type to get columns of.
+ * @param[in]  trash  Whether to get the trash table.
+ *
+ * @return The SQL column definitions.
+ */
 char*
 type_table (const char *type, int trash)
 {
