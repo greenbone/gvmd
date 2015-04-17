@@ -3679,6 +3679,9 @@ char*
 type_trash_columns (const char *, int);
 
 gchar*
+type_opts_table (const char *, int);
+
+gchar*
 type_table (const char *, int);
 
 gboolean

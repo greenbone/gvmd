@@ -1,5 +1,22 @@
 2015-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Adapt Task and aggregate iterators to use the new FROM clause options
+	instead of macro parameters.
+
+	* src/manage_sql.c (init_aggregate_iterator): Get SQL for the opts
+	table of the current type and add them to the FROM clause.
+	(TASK_ITERATOR_COLUMNS): Remove macro parameters and use extra
+	columns added in FROM clause for the options instead.
+	(task_iterator_opts_table): New function.
+	(init_user_task_iterator, init_task_iterator, task_count, type_columns)
+	(type_select_columns, type_trash_columns): Adapt to new structure of
+	TASK_ITERATOR_COLUMNS.
+	(type_opts_table): New function.
+
+	* src/manage.h (type_opts_table): New function prototype.
+
+2015-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Allow setting options like autofp and overrides in iterator columns
 	via an addition to the FROM clause, which is more flexible than
 	macro parmeters. Use this in init_result_get_iterator.
