@@ -1,3 +1,27 @@
+openvas-manager 5.0.10 (2015-04-17)
+
+This is the tenth maintenance release of the openvas-manager 5.0 module for
+the Open Vulnerability Assessment System release 7 (OpenVAS-7). The OpenVAS
+Manager is the central management service between the actual security scanner
+and various user clients.
+
+This release raises the minimum required version of OpenVAS Libraries to 7.0.10.
+It ensures that the trust status for predefined report formats is reported
+correctly and that target options and task preferences are correctly transferred
+to slaves. It improves exact powerfilter searches and SSH key generation.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Matthew Mundell and Timo Pollmeier.
+
+Main changes since 5.0.9:
+* The required minimum OpenVAS Libraries version has increased to 7.0.10.
+* Ensure the trust status for predefined report formats is reported correctly.
+* Ensure target options and task preferences are correctly transferred to scan
+  slaves.
+* Improve handling of exact search phrases in powerfilter.
+* Improve SSH key generation.
+
+
 openvas-manager 5.0.9 (2015-03-04)
 
 This is the ninth maintenance release of the openvas-manager 5.0 module for
