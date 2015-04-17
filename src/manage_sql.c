@@ -16811,6 +16811,27 @@ where_search_phrase (const char* search_phrase, int exact)
   }
 
 /**
+ * @brief Generate the extra_tables string for a result iterator.
+ *
+ * @param[in]  autofp    Whether to apply auto FP filter.
+ * @param[in]  override  Whether to apply overrides.
+ * @param[in]  dynamic   Whether to use dynamic severity scores.
+ *
+ * @return Newly allocated string with the extra_tables clause.
+ */
+static gchar*
+result_iterator_opts_table (int autofp, int override, int dynamic)
+{
+  return g_strdup_printf (", (SELECT"
+                          "   %d AS autofp,"
+                          "   %d AS override,"
+                          "   %d AS dynamic) AS opts",
+                          autofp,
+                          override,
+                          dynamic);
+}
+
+/**
  * @brief Initialise a result iterator.
  *
  * @param[in]  iterator    Iterator.
@@ -16829,13 +16850,7 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   gchar *extra_tables;
 
   extra_tables
-    = g_strdup_printf (", (SELECT"
-                       "   %d AS autofp,"
-                       "   %d AS override,"
-                       "   %d AS dynamic) AS opts",
-                       autofp,
-                       override,
-                       dynamic_severity);
+    = result_iterator_opts_table (autofp, override, dynamic_severity);
 
   ret = init_get_iterator (iterator,
                             "result",
@@ -16872,13 +16887,7 @@ result_count (const get_data_t *get,
   gchar *extra_tables;
 
   extra_tables
-    = g_strdup_printf (", (SELECT"
-                       "   %d AS autofp,"
-                       "   %d AS override,"
-                       "   %d AS dynamic) AS opts",
-                       autofp,
-                       override,
-                       dynamic_severity);
+    = result_iterator_opts_table (autofp, override, dynamic_severity);
 
   ret = count ("result", get,
                 columns,
