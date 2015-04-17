@@ -1,5 +1,16 @@
 2015-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Adapt Report iterators to use the new FROM clause options instead of
+	macro parameters.
+
+	* src/manage_sql.c (REPORT_ITERATOR_COLUMNS): Remove macro parameters
+	and use extra columns added in FROM clause for the options instead.
+	(report_iterator_opts_table): New function.
+	(report_count, init_report_iterator): Adapt to new structure of
+	REPORT_ITERATOR_COLUMNS.
+
+2015-04-17  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Adapt Task and aggregate iterators to use the new FROM clause options
 	instead of macro parameters.
 
