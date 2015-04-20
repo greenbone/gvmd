@@ -22497,10 +22497,6 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                           "\n"
                           "%s"
                           "</description>"
-                          "<cve id='%s'>"
-                          "<cvss_base>%s</cvss_base>"
-                          "<cpe id='%s'/>"
-                          "</cve>"
                           "</result>",
                           ip,
                           prognosis_iterator_cve (&prognosis),
@@ -22511,10 +22507,7 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                           prognosis_iterator_cpe (&prognosis),
                           prognosis_iterator_cve (&prognosis),
                           prognosis_iterator_description
-                           (&prognosis),
-                          prognosis_iterator_cve (&prognosis),
-                          prognosis_iterator_cvss (&prognosis),
-                          prognosis_iterator_cpe (&prognosis));
+                           (&prognosis));
 
                    max_results--;
                  }

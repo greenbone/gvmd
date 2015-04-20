@@ -1,5 +1,10 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (print_report_prognostic_xml): Remove CVE from RESULT
+	now that the info is in NVT.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (print_report_host_details_xml): Add NVT/TYPE.
 	(print_report_prognostic_xml): Send CVE details in NVT too.
 
