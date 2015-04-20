@@ -1,3 +1,8 @@
+2015-04-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (init_get_iterator): Correct insertion order of
+	"_trash" suffix and extra_tables into the SQL string.
+
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (print_report_prognostic_xml): Remove CVE from RESULT
