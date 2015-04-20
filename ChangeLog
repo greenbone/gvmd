@@ -1,5 +1,10 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (NOTE_ITERATOR_TRASH_COLUMNS)
+	(OVERRIDE_ITERATOR_TRASH_COLUMNS): Correct table name in nvt column.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	More CVE scanner cleanups.
 
 	* src/manage.c (fork_cve_scan_handler): Set scan and task end time.  Add

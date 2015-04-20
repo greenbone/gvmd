@@ -36198,8 +36198,8 @@ modify_note (note_t note, const char *active, const char* text,
      "active" },                                                                 \
    {                                                                             \
      "(CASE"                                                                     \
-     " WHEN notes.nvt LIKE 'CVE-%%'"                                             \
-     " THEN notes.nvt"                                                           \
+     " WHEN notes_trash.nvt LIKE 'CVE-%%'"                                       \
+     " THEN notes_trash.nvt"                                                     \
      " ELSE (SELECT name FROM nvts WHERE oid = notes_trash.nvt)"                 \
      " END)",                                                                    \
      "nvt"                                                                       \
@@ -37235,9 +37235,9 @@ modify_override (override_t override, const char *active, const char* text,
    },                                                                       \
    {                                                                        \
      "(CASE"                                                                \
-     " WHEN overrides.nvt LIKE 'CVE-%%'"                                    \
-     " THEN overrides.nvt"                                                  \
-     " ELSE (SELECT name FROM nvts WHERE oid = overrides.nvt)"              \
+     " WHEN overrides_trash.nvt LIKE 'CVE-%%'"                              \
+     " THEN overrides_trash.nvt"                                            \
+     " ELSE (SELECT name FROM nvts WHERE oid = overrides_trash.nvt)"        \
      " END)",                                                               \
      "nvt"                                                                  \
    },                                                                       \
