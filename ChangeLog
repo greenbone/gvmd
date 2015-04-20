@@ -1,5 +1,13 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (fork_cve_scan_handler): Create the report before
+	forking and reset the report if fork fails, like the OTP scan does.
+	On failure go to Internal Error instead of Stopped.  On failure set
+	the report status too, to match the task.
+	(run_cve_task): Let fork_cve_scan_handler set the run status.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* ChangeLog: Remove entry added accidentally in last commit.
 
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>

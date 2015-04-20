@@ -3067,6 +3067,15 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   assert (task);
   assert (target);
+
+  if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
+    {
+      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      return -1;
+    }
+
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
   pid = fork ();
   switch (pid)
     {
@@ -3074,9 +3083,11 @@ fork_cve_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
-        // FIX but there is no report yet  (same for osp)
-        set_task_run_status (task, TASK_STATUS_STOPPED);
-        return -1;
+        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_report_scan_run_status (current_report,
+                                    TASK_STATUS_INTERNAL_ERROR);
+        current_report = (report_t) 0;
+        return -9;
       default:
         /* Parent, successfully forked. */
         g_debug ("%s: %i forked %i", __FUNCTION__, getpid (), pid);
@@ -3093,13 +3104,6 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   /* Setup the task. */
 
-  if (create_current_report (task, &report_id, TASK_STATUS_RUNNING))
-    {
-      tracef ("   %s: failed to create report.\n", __FUNCTION__);
-      set_task_run_status (task, TASK_STATUS_STOPPED);
-      g_free (report_id);
-      exit (1);
-    }
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "openvasmd (CVE): %s handler", report_id);
@@ -3110,7 +3114,8 @@ fork_cve_scan_handler (task_t task, target_t target)
   if (hosts == NULL)
     {
       tracef ("   %s: target hosts is NULL.\n", __FUNCTION__);
-      set_task_run_status (task, TASK_STATUS_STOPPED);
+      set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+      set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
       exit (1);
     }
 
@@ -3126,6 +3131,7 @@ fork_cve_scan_handler (task_t task, target_t target)
     if (cve_scan_host (task, openvas_host))
       {
         set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_report_scan_run_status (current_report, TASK_STATUS_INTERNAL_ERROR);
         openvas_hosts_free (openvas_hosts);
         exit (1);
       }
@@ -3171,7 +3177,6 @@ run_cve_task (task_t task)
         return 99;
     }
 
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
   if (fork_cve_scan_handler (task, target))
     {
       g_warning ("Couldn't fork CVE scan handler.\n");
