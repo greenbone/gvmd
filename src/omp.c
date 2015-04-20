@@ -10948,12 +10948,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer)
                                 "<nvt oid=\"%s\">"
                                 "<type>cve</type>"
                                 "<name>%s</name>"
-                                "</nvt>"
-                                "<cve id='%s'>"
                                 "<cvss_base>%s</cvss_base>"
                                 "<cpe id='%s'/>"
-                                "</cve>",
-                                oid,
+                                "</nvt>",
                                 oid,
                                 oid,
                                 cvss_base,

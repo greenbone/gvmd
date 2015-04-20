@@ -1,3 +1,18 @@
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	More CVE scanner cleanups.
+
+	* src/manage.c (fork_cve_scan_handler): Set scan and task end time.  Add
+	a report_host for each host.  Add host details to mark the report as a
+	CVE scan.
+
+	* src/manage_sql.c (set_task_end_time_epoch): New function.
+	(host_nthlast_report_host): Exclude reports from CVE scans.
+
+	* src/manage.h: Add header accordingly.
+
+	* src/omp.c (results_xml_append_nvt): Move CVE info into NVT.
+
 2015-04-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (init_get_iterator): Correct insertion order of

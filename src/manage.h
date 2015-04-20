@@ -607,6 +607,9 @@ void
 set_task_end_time (task_t task, char* time);
 
 void
+set_task_end_time_epoch (task_t, time_t);
+
+void
 add_task_alert (task_t, alert_t);
 
 int

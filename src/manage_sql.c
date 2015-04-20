@@ -18399,6 +18399,21 @@ set_task_end_time (task_t task, char* time)
 }
 
 /**
+ * @brief Set the end time of a task.
+ *
+ * @param[in]  task  Task.
+ * @param[in]  time  New time.  Freed before return.  If NULL, clear end time.
+ */
+void
+set_task_end_time_epoch (task_t task, time_t time)
+{
+  if (time)
+    sql ("UPDATE tasks SET end_time = %i WHERE id = %llu;", time, task);
+  else
+    sql ("UPDATE tasks SET end_time = NULL WHERE id = %llu;", task);
+}
+
+/**
  * @brief Get the start time of a scan.
  *
  * @param[in]  report  The report associated with the scan.
@@ -21234,6 +21249,9 @@ host_nthlast_report_host (const char *host, report_host_t *report_host,
                      "      AND task_preferences.name = 'in_assets')"
                      "     = 'yes'"
                      " AND report_hosts.end_time IS NOT NULL"
+                     " AND NOT EXISTS (SELECT * FROM report_host_details"
+                     "                 WHERE report_host = report_hosts.id"
+                     "                 AND name = 'CVE Scan')"
                      " ORDER BY id DESC LIMIT 1 OFFSET %i;",
                      quoted_host,
                      position - 1))

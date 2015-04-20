@@ -3059,7 +3059,10 @@ fork_cve_scan_handler (task_t task, target_t target)
           if (next (&report_hosts))
             {
               iterator_t prognosis;
+              int added, start_time;
 
+              start_time = time (NULL);
+              added = 0;
               init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
                                             NULL, NULL, NULL, 0, NULL);
               while (next (&prognosis))
@@ -3089,9 +3092,21 @@ fork_cve_scan_handler (task_t task, target_t target)
                              prognosis_iterator_cvss_double (&prognosis),
                              desc);
                   g_free (desc);
-                  if (current_report) report_add_result (current_report, result);
+                  if (current_report)
+                    {
+                      added = 1;
+                      report_add_result (current_report, result);
+                    }
                 }
               cleanup_iterator (&prognosis);
+
+              if (added)
+                {
+                  manage_report_host_add (current_report, ip, start_time,
+                                          time (NULL));
+                  insert_report_host_detail (current_report, ip, "cve", "",
+                                             "CVE Scanner", "CVE Scan", "1");
+                }
             }
           cleanup_iterator (&report_hosts);
         }
@@ -3099,6 +3114,8 @@ fork_cve_scan_handler (task_t task, target_t target)
       g_free (ip);
     }
   openvas_hosts_free (openvas_hosts);
+  set_scan_end_time_epoch (current_report, time (NULL));
+  set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_DONE);
   set_report_scan_run_status (current_report, TASK_STATUS_DONE);
   current_report = 0;
