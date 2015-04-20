@@ -13342,11 +13342,13 @@ task_iterator_current_report (iterator_t *iterator)
       || run_status == TASK_STATUS_DELETE_ULTIMATE_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED
       || run_status == TASK_STATUS_STOP_REQUESTED_GIVEUP
-      || run_status == TASK_STATUS_STOPPED)
+      || run_status == TASK_STATUS_STOPPED
+      || run_status == TASK_STATUS_INTERNAL_ERROR)
     {
       return (unsigned int) sql_int ("SELECT max(id) FROM reports"
                                      " WHERE task = %llu"
                                      " AND (scan_run_status = %u"
+                                     " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
                                      " OR scan_run_status = %u"
@@ -13360,7 +13362,8 @@ task_iterator_current_report (iterator_t *iterator)
                                      TASK_STATUS_DELETE_ULTIMATE_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED,
                                      TASK_STATUS_STOP_REQUESTED_GIVEUP,
-                                     TASK_STATUS_STOPPED);
+                                     TASK_STATUS_STOPPED,
+                                     TASK_STATUS_INTERNAL_ERROR);
     }
   return (report_t) 0;
 }

@@ -1,6 +1,25 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage.c (NOTE_ITERATOR_TRASH_COLUMNS)
+	* src/manage.c (run_task): When the fork fails set the task to internal
+	error instead of to the previous run state, and set the report to match,
+	because the report has been created already.
+
+	* src/manage_sql.c (task_iterator_current_report): Add internal error to
+	the "current report" states, so that the Status link in GSA Tasks goes
+	to the report from the internal error when the task has status Internal
+	Error.
+
+	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK move the
+	-6 and -10 cases down into order, and add the missing -9 case.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (fork_cve_scan_handler):
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage.c (cve_scan_host): New function.
+	(fork_cve_scan_handler): Move host scan to new function.
 
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 

@@ -25741,23 +25741,6 @@ create_task_fail:
                                       start_task_data->task_id,
                                       "started");
                       break;
-                    case -10:
-                      /* Forked task process: error. */
-                      current_error = -10;
-                      g_set_error (error,
-                                   G_MARKUP_ERROR,
-                                   G_MARKUP_ERROR_INVALID_CONTENT,
-                                   "Dummy error for current_error");
-                      break;
-                    case -6:
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task",
-                                          "There is already a task running in"
-                                          " this process"));
-                      log_event_fail ("task", "Task",
-                                      start_task_data->task_id,
-                                      "started");
-                      break;
                     case -1:
                       /* Internal error. */
                       SEND_TO_CLIENT_OR_FAIL
@@ -25780,6 +25763,9 @@ create_task_fail:
                        * target is created. */
                       assert (0);
                       /*@fallthrough@*/
+                    case -9:
+                      /* Fork failed. */
+                      /*@fallthrough@*/
                     case -3: /* Failed to create report. */
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                       log_event_fail ("task", "Task",
@@ -25791,6 +25777,23 @@ create_task_fail:
                       log_event_fail ("task", "Task",
                                       start_task_data->task_id,
                                       "started");
+                      break;
+                    case -6:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("start_task",
+                                          "There is already a task running in"
+                                          " this process"));
+                      log_event_fail ("task", "Task",
+                                      start_task_data->task_id,
+                                      "started");
+                      break;
+                    case -10:
+                      /* Forked task process: error. */
+                      current_error = -10;
+                      g_set_error (error,
+                                   G_MARKUP_ERROR,
+                                   G_MARKUP_ERROR_INVALID_CONTENT,
+                                   "Dummy error for current_error");
                       break;
                     default: /* Programming error. */
                       assert (0);

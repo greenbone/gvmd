@@ -3634,6 +3634,17 @@ run_task (const char *task_id, char **report_id, int from,
       return -1;
     }
 
+  /* Every fail exit from here must reset to this run status, and must
+   * clear current_report. */
+
+  /** @todo On fail exits only, may need to honour request states that one of
+   *        the other processes has set on the task (stop_task,
+   *        request_delete_task). */
+
+  /** @todo Also reset status on report, as current_scanner_task is 0 here. */
+
+  run_status = TASK_STATUS_INTERNAL_ERROR;
+
   /* Fork a child to start and handle the task while the parent responds to
    * the client. */
 
@@ -3651,6 +3662,7 @@ run_task (const char *task_id, char **report_id, int from,
                    __FUNCTION__,
                    strerror (errno));
         set_task_run_status (task, run_status);
+        set_report_scan_run_status (current_report, run_status);
         current_report = (report_t) 0;
         free (hosts);
         return -9;
@@ -3662,17 +3674,6 @@ run_task (const char *task_id, char **report_id, int from,
         return 0;
         break;
     }
-
-  /* Every fail exit from here must reset to this run status, and must
-   * clear current_report. */
-
-  /** @todo On fail exits only, may need to honour request states that one of
-   *        the other processes has set on the task (stop_task,
-   *        request_delete_task). */
-
-  /** @todo Also reset status on report, as current_scanner_task is 0 here. */
-
-  run_status = TASK_STATUS_INTERNAL_ERROR;
 
   /* Reset any running information. */
 
