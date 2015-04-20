@@ -1,5 +1,9 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* ChangeLog: Remove entry added accidentally in last commit.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (run_task): When the fork fails set the task to internal
 	error instead of to the previous run state, and set the report to match,
 	because the report has been created already.
@@ -11,10 +15,6 @@
 
 	* src/omp.c (omp_xml_handle_end_element): In CLIENT_START_TASK move the
 	-6 and -10 cases down into order, and add the missing -9 case.
-
-2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
-
-	* src/manage.c (fork_cve_scan_handler):
 
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
