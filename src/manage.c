@@ -2955,6 +2955,100 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
 }
 
 /**
+ * @brief Perform a CVE "scan" on a host.
+ *
+ * @param[in]  task          Task.
+ * @param[in]  openvas_host  Host.
+ *
+ * @return 0 success, 1 failed to get nthlast report for a host.
+ */
+static int
+cve_scan_host (task_t task, openvas_host_t *openvas_host)
+{
+  report_host_t report_host;
+  gchar *ip, *host;
+
+  host = openvas_host_value_str (openvas_host);
+
+  ip = report_host_ip (host);
+  if (ip == NULL)
+    ip = g_strdup (host);
+
+  g_debug ("%s: ip: %s", __FUNCTION__, ip);
+
+  if (host_nthlast_report_host (ip, &report_host, 1))
+    {
+      tracef ("   %s: failed to get nthlast report.\n", __FUNCTION__);
+      g_free (ip);
+      return 1;
+    }
+
+  g_debug ("%s: report_host: %llu", __FUNCTION__, report_host);
+
+  if (report_host)
+    {
+      iterator_t report_hosts;
+      init_host_iterator (&report_hosts, 0, NULL, report_host);
+      if (next (&report_hosts))
+        {
+          iterator_t prognosis;
+          int added, start_time;
+
+          start_time = time (NULL);
+          added = 0;
+          init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
+                                        NULL, NULL, NULL, 0, NULL);
+          while (next (&prognosis))
+            {
+              const char *threat;
+              gchar *desc;
+              result_t result;
+
+              threat = cvss_threat (prognosis_iterator_cvss_double
+                                     (&prognosis));
+
+              desc = g_strdup_printf ("The host carries the product: %s\n"
+                                      "It is vulnerable according to: %s.\n"
+                                      "\n"
+                                      "%s",
+                                      prognosis_iterator_cpe (&prognosis),
+                                      prognosis_iterator_cve (&prognosis),
+                                      prognosis_iterator_description
+                                       (&prognosis));
+
+              g_debug ("%s: making result with threat [%s] desc [%s]", __FUNCTION__, threat, desc);
+
+              result = make_cve_result
+                        (task, ip,
+                         prognosis_iterator_cpe (&prognosis),
+                         prognosis_iterator_cve (&prognosis),
+                         prognosis_iterator_cvss_double (&prognosis),
+                         desc);
+              g_free (desc);
+              if (current_report)
+                {
+                  added = 1;
+                  report_add_result (current_report, result);
+                }
+            }
+          cleanup_iterator (&prognosis);
+
+          if (added)
+            {
+              manage_report_host_add (current_report, ip, start_time,
+                                      time (NULL));
+              insert_report_host_detail (current_report, ip, "cve", "",
+                                         "CVE Scanner", "CVE Scan", "1");
+            }
+        }
+      cleanup_iterator (&report_hosts);
+    }
+
+  g_free (ip);
+  return 0;
+}
+
+/**
  * @brief Fork a child to handle a CVE scan's calculating and inserting.
  *
  * @param[in]   task        The task.
@@ -2992,11 +3086,12 @@ fork_cve_scan_handler (task_t task, target_t target)
   /* Child.
    *
    * Re-open DB and do prognostic calculation.  On success exit(0), else
-   * exit(1).
-   */
+   * exit(1). */
   reinit_manage_process ();
   // FIX same for osp
   manage_session_init (current_credentials.uuid);
+
+  /* Setup the task. */
 
   if (create_current_report (task, &report_id, TASK_STATUS_RUNNING))
     {
@@ -3008,6 +3103,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   set_task_run_status (task, TASK_STATUS_RUNNING);
 
   snprintf (title, sizeof (title), "openvasmd (CVE): %s handler", report_id);
+  g_free (report_id);
   proctitle_set (title);
 
   hosts = target_hosts (target);
@@ -3015,7 +3111,6 @@ fork_cve_scan_handler (task_t task, target_t target)
     {
       tracef ("   %s: target hosts is NULL.\n", __FUNCTION__);
       set_task_run_status (task, TASK_STATUS_STOPPED);
-      g_free (report_id);
       exit (1);
     }
 
@@ -3023,104 +3118,27 @@ fork_cve_scan_handler (task_t task, target_t target)
   set_task_start_time_epoch (task, time (NULL));
   set_scan_start_time_epoch (current_report, time (NULL));
 
-  // FIX new func
+  /* Add the results. */
+
   openvas_hosts = openvas_hosts_new (hosts);
   free (hosts);
   while ((openvas_host = openvas_hosts_next (openvas_hosts)))
-    {
-      report_host_t report_host;
-      gchar *ip, *host;
-
-      host = openvas_host_value_str (openvas_host);
-
-      ip = report_host_ip (host);
-      if (ip == NULL)
-        ip = g_strdup (host);
-
-      g_debug ("%s: ip: %s", __FUNCTION__, ip);
-
-      if (host_nthlast_report_host (ip, &report_host, 1))
-        {
-          tracef ("   %s: failed to get nthlast report.\n", __FUNCTION__);
-          set_task_run_status (task, TASK_STATUS_STOPPED);
-          openvas_hosts_free (openvas_hosts);
-          g_free (ip);
-          g_free (report_id);
-          exit (1);
-        }
-      g_free (report_id);
-
-      g_debug ("%s: report_host: %llu", __FUNCTION__, report_host);
-
-      if (report_host)
-        {
-          iterator_t report_hosts;
-          init_host_iterator (&report_hosts, 0, NULL, report_host);
-          if (next (&report_hosts))
-            {
-              iterator_t prognosis;
-              int added, start_time;
-
-              start_time = time (NULL);
-              added = 0;
-              init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
-                                            NULL, NULL, NULL, 0, NULL);
-              while (next (&prognosis))
-                {
-                  const char *threat;
-                  gchar *desc;
-                  result_t result;
-
-                  threat = cvss_threat (prognosis_iterator_cvss_double
-                                         (&prognosis));
-
-                  desc = g_strdup_printf ("The host carries the product: %s\n"
-                                          "It is vulnerable according to: %s.\n"
-                                          "\n"
-                                          "%s",
-                                          prognosis_iterator_cpe (&prognosis),
-                                          prognosis_iterator_cve (&prognosis),
-                                          prognosis_iterator_description
-                                           (&prognosis));
-
-                  g_debug ("%s: making result with threat [%s] desc [%s]", __FUNCTION__, threat, desc);
-
-                  result = make_cve_result
-                            (task, ip,
-                             prognosis_iterator_cpe (&prognosis),
-                             prognosis_iterator_cve (&prognosis),
-                             prognosis_iterator_cvss_double (&prognosis),
-                             desc);
-                  g_free (desc);
-                  if (current_report)
-                    {
-                      added = 1;
-                      report_add_result (current_report, result);
-                    }
-                }
-              cleanup_iterator (&prognosis);
-
-              if (added)
-                {
-                  manage_report_host_add (current_report, ip, start_time,
-                                          time (NULL));
-                  insert_report_host_detail (current_report, ip, "cve", "",
-                                             "CVE Scanner", "CVE Scan", "1");
-                }
-            }
-          cleanup_iterator (&report_hosts);
-        }
-
-      g_free (ip);
-    }
+    if (cve_scan_host (task, openvas_host))
+      {
+        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        openvas_hosts_free (openvas_hosts);
+        exit (1);
+      }
   openvas_hosts_free (openvas_hosts);
+
+  /* Set the end states. */
+
   set_scan_end_time_epoch (current_report, time (NULL));
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_DONE);
   set_report_scan_run_status (current_report, TASK_STATUS_DONE);
   current_report = 0;
   current_scanner_task = (task_t) 0;
-  g_free (report_id);
   exit (0);
 }
 
