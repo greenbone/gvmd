@@ -1,3 +1,8 @@
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (print_report_host_details_xml): Add NVT/TYPE.
+	(print_report_prognostic_xml): Send CVE details in NVT too.
+
 2015-04-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	* src/manage_sql.c (where_search_phrase): Filter for search_phrase also

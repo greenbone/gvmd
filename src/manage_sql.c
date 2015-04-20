@@ -21826,6 +21826,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream)
              "<port>%s</port>"                                             \
              "<description>%s</description>"                               \
              "<nvt oid=\"%s\">"                                            \
+             "<type>nvt</type>"                                            \
              "<name>%s</name>"                                             \
              "<cvss_base>%s</cvss_base>"                                   \
              "</nvt>"                                                      \
@@ -22483,8 +22484,11 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                           "<result>"
                           "<host>%s</host>"
                           "<port>0</port>"
-                          "<nvt oid=\"0\">"
-                          "<name/>"
+                          "<nvt oid=\"%s\">"
+                          "<type>cve</type>"
+                          "<name>%s</name>"
+                          "<cvss_base>%s</cvss_base>"
+                          "<cpe id='%s'/>"
                           "</nvt>"
                           "<threat>%s</threat>"
                           "<description>"
@@ -22499,6 +22503,10 @@ print_report_prognostic_xml (FILE *out, const char *host, int first_result, int
                           "</cve>"
                           "</result>",
                           ip,
+                          prognosis_iterator_cve (&prognosis),
+                          prognosis_iterator_cve (&prognosis),
+                          prognosis_iterator_cvss (&prognosis),
+                          prognosis_iterator_cpe (&prognosis),
                           threat,
                           prognosis_iterator_cpe (&prognosis),
                           prognosis_iterator_cve (&prognosis),
