@@ -1,5 +1,10 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (omp_xml_handle_end_element): Use existing Internal Error
+	case for -1.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (handle_osp_scan): Rename report_id to scan_id, because
 	it refers only to the scan/report on the scanner now.
 	(fork_osp_scan_handler): Create the report before forking and reset the

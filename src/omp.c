@@ -25741,13 +25741,6 @@ create_task_fail:
                                       start_task_data->task_id,
                                       "started");
                       break;
-                    case -1:
-                      /* Internal error. */
-                      SEND_TO_CLIENT_OR_FAIL
-                       (XML_ERROR_SYNTAX ("start_task", "Internal error."));
-                      log_event_fail ("task", "Task", start_task_data->task_id,
-                                      "started");
-                      break;
                     case -2:
                       /* Task lacks target.  This is true for container
                        * tasks. */
@@ -25767,6 +25760,7 @@ create_task_fail:
                       /* Fork failed. */
                       /*@fallthrough@*/
                     case -3: /* Failed to create report. */
+                    case -1:
                       SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("start_task"));
                       log_event_fail ("task", "Task",
                                       start_task_data->task_id,
