@@ -15296,7 +15296,7 @@ reports_build_count_cache (int clear, int* changes_out)
 }
 
 /**
- * @brief Cached report counts.
+ * @brief Cache report counts.
  *
  * @param[in]  report  Report.
  */

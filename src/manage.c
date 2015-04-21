@@ -158,6 +158,29 @@
  */
 #define MAX_HOSTS_DEFAULT "20"
 
+
+/* Helpers. */
+
+/**
+ * @brief Free an slist of pointers, including the pointers.
+ *
+ * @param[in]  list  The list.
+ */
+/** @todo Duplicate in openvas_string module (openvas_string_list_free) .
+  *       Find proper module to place this function. */
+void
+slist_free (GSList* list)
+{
+  GSList *head = list;
+  while (list)
+    {
+      g_free (list->data);
+      list = g_slist_next (list);
+    }
+  g_slist_free (head);
+}
+
+
 /* Severity related functions. */
 
 /**
@@ -1486,24 +1509,66 @@ send_alive_test_preferences (target_t target)
 
 /** @todo g_convert back to ISO-8559-1 for scanner? */
 
+
+/* Slave tasks. */
+
+/* Defined in omp.c. */
+void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
+
 /**
- * @brief Free an slist of pointers, including the pointers.
- *
- * @param[in]  list  The list.
+ * @brief Number of seconds to sleep between polls to slave.
  */
-/** @todo Duplicate in openvas_string module (openvas_string_list_free) .
-  *       Find proper module to place this function. */
-void
-slist_free (GSList* list)
-{
-  GSList *head = list;
-  while (list)
-    {
-      g_free (list->data);
-      list = g_slist_next (list);
-    }
-  g_slist_free (head);
-}
+#define RUN_SLAVE_TASK_SLEEP_SECONDS 25
+
+/**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_ssh_credential_uuid = NULL;
+
+/**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_smb_credential_uuid = NULL;
+
+/**
+ * @brief Slave credential UUID.
+ */
+gchar *slave_esxi_credential_uuid = NULL;
+
+/**
+ * @brief Slave target UUID.
+ */
+gchar *slave_target_uuid = NULL;
+
+/**
+ * @brief Slave target UUID.
+ */
+gchar *slave_port_list_uuid = NULL;
+
+/**
+ * @brief Slave config UUID.
+ */
+gchar *slave_config_uuid = NULL;
+
+/**
+ * @brief Slave task UUID.
+ */
+gchar *slave_task_uuid = NULL;
+
+/**
+ * @brief Slave report UUID.
+ */
+gchar *slave_report_uuid = NULL;
+
+/**
+ * @brief Slave session.
+ */
+gnutls_session_t *slave_session = NULL;
+
+/**
+ * @brief Slave socket.
+ */
+int *slave_socket = NULL;
 
 /**
  * @brief Update the locally cached task progress from the slave.
@@ -1565,15 +1630,6 @@ slave_authenticate (gnutls_session_t *session, slave_t slave)
     return -1;
   return 0;
 }
-
-/* Defined in omp.c. */
-void buffer_config_preference_xml (GString *, iterator_t *, config_t, int);
-
-
-/**
- * @brief Number of seconds to sleep between polls to slave.
- */
-#define RUN_SLAVE_TASK_SLEEP_SECONDS 25
 
 /**
  * @brief Connect to a slave.
@@ -1744,56 +1800,6 @@ update_end_times (entity_t report, int add_host_details)
 
   return 0;
 }
-
-/**
- * @brief Slave credential UUID.
- */
-gchar *slave_ssh_credential_uuid = NULL;
-
-/**
- * @brief Slave credential UUID.
- */
-gchar *slave_smb_credential_uuid = NULL;
-
-/**
- * @brief Slave credential UUID.
- */
-gchar *slave_esxi_credential_uuid = NULL;
-
-/**
- * @brief Slave target UUID.
- */
-gchar *slave_target_uuid = NULL;
-
-/**
- * @brief Slave target UUID.
- */
-gchar *slave_port_list_uuid = NULL;
-
-/**
- * @brief Slave config UUID.
- */
-gchar *slave_config_uuid = NULL;
-
-/**
- * @brief Slave task UUID.
- */
-gchar *slave_task_uuid = NULL;
-
-/**
- * @brief Slave report UUID.
- */
-gchar *slave_report_uuid = NULL;
-
-/**
- * @brief Slave session.
- */
-gnutls_session_t *slave_session = NULL;
-
-/**
- * @brief Slave socket.
- */
-int *slave_socket = NULL;
 
 /**
  * @brief Cleanup slave.  Callback for atexit.
@@ -2656,6 +2662,9 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
   return 0;
 }
 
+
+/* OSP tasks. */
+
 /**
  * @brief Give a task's OSP scan options in a hash table.
  *
@@ -2955,6 +2964,141 @@ launch_osp_task (task_t task, target_t target, char **scan_id)
 }
 
 /**
+ * @brief Fork a child to handle an OSP scan's fetching and inserting.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_osp_scan_handler (task_t task, target_t target)
+{
+  char *report_id, *scan_id, title[128];
+  int rc;
+
+  assert (task);
+  assert (target);
+
+  if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
+    {
+      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      return -1;
+    }
+
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
+  switch (fork ())
+    {
+      case 0:
+        break;
+      case -1:
+        /* Parent, failed to fork. */
+        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_report_scan_run_status (current_report,
+                                    TASK_STATUS_INTERNAL_ERROR);
+        current_report = (report_t) 0;
+        return -9;
+      default:
+        /* Parent, successfully forked. */
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+  scan_id = NULL;
+  if (launch_osp_task (task, target, &scan_id))
+    {
+      result_t result;
+      const char *type;
+
+      type = threat_message_type ("Error");
+      if (scan_id == NULL)
+        scan_id = g_strdup ("Couldn't connect to the scanner");
+      result = make_osp_result (task, "", "", type, scan_id, "");
+      report_add_result (current_report, result);
+      g_free (scan_id);
+
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+
+      g_free (report_id);
+      exit (-1);
+    }
+
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+  set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
+
+  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
+  g_free (report_id);
+  proctitle_set (title);
+
+  rc = handle_osp_scan (task, current_report, scan_id);
+  g_free (scan_id);
+  if (rc == 0)
+    {
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+    }
+  else if (rc == 1)
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
+    }
+  else
+    abort ();
+
+  current_report = 0;
+  current_scanner_task = (task_t) 0;
+  exit (rc);
+}
+
+/**
+ * @brief Start a task on an OSP scanner.
+ *
+ * @param[in]   task_id    The task ID.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+int
+run_osp_task (task_t task)
+{
+  target_t target;
+
+  target = task_target (task);
+  if (target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  if (fork_osp_scan_handler (task, target))
+    {
+      g_warning ("Couldn't fork OSP scan handler.\n");
+      return -1;
+    }
+  return 0;
+}
+
+
+/* CVE tasks. */
+
+/**
  * @brief Perform a CVE "scan" on a host.
  *
  * @param[in]  task          Task.
@@ -3148,7 +3292,7 @@ fork_cve_scan_handler (task_t task, target_t target)
 }
 
 /**
- * @brief Start a task on an OSP scanner.
+ * @brief Start a CVE task.
  *
  * @param[in]   task_id    The task ID.
  *
@@ -3184,140 +3328,18 @@ run_cve_task (task_t task)
   return 0;
 }
 
-/**
- * @brief Fork a child to handle an OSP scan's fetching and inserting.
- *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- *
- * @return Parent returns with 0 if success, -1 if failure. Child process
- *         doesn't return and simply exits.
- */
-static int
-fork_osp_scan_handler (task_t task, target_t target)
-{
-  char *report_id, *scan_id, title[128];
-  int rc;
-
-  assert (task);
-  assert (target);
-
-  if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
-    {
-      tracef ("   %s: failed to create report.\n", __FUNCTION__);
-      return -1;
-    }
-
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
-
-  switch (fork ())
-    {
-      case 0:
-        break;
-      case -1:
-        /* Parent, failed to fork. */
-        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
-        set_report_scan_run_status (current_report,
-                                    TASK_STATUS_INTERNAL_ERROR);
-        current_report = (report_t) 0;
-        return -9;
-      default:
-        /* Parent, successfully forked. */
-        return 0;
-    }
-
-  /* Child: Re-open DB after fork and periodically check scan progress.
-   * If progress == 100%: Parse the report results and other info then exit(0).
-   * Else, exit(1) in error cases like connection to scanner failure.
-   */
-  reinit_manage_process ();
-  manage_session_init (current_credentials.uuid);
-  scan_id = NULL;
-  if (launch_osp_task (task, target, &scan_id))
-    {
-      result_t result;
-      const char *type;
-
-      type = threat_message_type ("Error");
-      if (scan_id == NULL)
-        scan_id = g_strdup ("Couldn't connect to the scanner");
-      result = make_osp_result (task, "", "", type, scan_id, "");
-      report_add_result (current_report, result);
-      g_free (scan_id);
-
-      set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
-
-      g_free (report_id);
-      exit (-1);
-    }
-
-  set_task_run_status (task, TASK_STATUS_RUNNING);
-  set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
-
-  snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
-  g_free (report_id);
-  proctitle_set (title);
-
-  rc = handle_osp_scan (task, current_report, scan_id);
-  g_free (scan_id);
-  if (rc == 0)
-    {
-      set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
-    }
-  else if (rc == 1)
-    {
-      set_task_run_status (task, TASK_STATUS_STOPPED);
-      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
-    }
-  else
-    abort ();
-
-  current_report = 0;
-  current_scanner_task = (task_t) 0;
-  exit (rc);
-}
+
+/* OTP tasks. */
 
 /**
- * @brief Start a task on an OSP scanner.
+ * @brief Initialise some values of the OpenVAS scanner.
  *
- * @param[in]   task_id    The task ID.
+ * @param[in]  scanner  Scanner.
  *
- * @return 0 success, 99 permission denied, -1 error.
+ * @return 0 success, -1 error.
  */
-int
-run_osp_task (task_t task)
-{
-  target_t target;
-
-  target = task_target (task);
-  if (target)
-    {
-      char *uuid;
-      target_t found;
-
-      uuid = target_uuid (target);
-      if (find_target_with_permission (uuid, &found, "get_targets"))
-        {
-          g_free (uuid);
-          return -1;
-        }
-      g_free (uuid);
-      if (found == 0)
-        return 99;
-    }
-
-  if (fork_osp_scan_handler (task, target))
-    {
-      g_warning ("Couldn't fork OSP scan handler.\n");
-      return -1;
-    }
-  return 0;
-}
-
 static int
-scanner_connect (scanner_t scanner)
+scanner_setup (scanner_t scanner)
 {
   int ret, port;
   char *host, *ca_pub, *key_pub, *key_priv;
@@ -3450,7 +3472,8 @@ run_task (const char *task_id, char **report_id, int from,
     }
 
   /* Classic OpenVAS Scanner. If task has no scanner, use default one. */
-  if (scanner_connect (scanner))
+
+  if (scanner_setup (scanner))
     return -5;
 
   if (!openvas_scanner_connected ()
@@ -4153,7 +4176,7 @@ stop_task_internal (task_t task)
           scanner_t scanner = task_scanner (task);
 
           assert (scanner);
-          if (scanner_connect (scanner))
+          if (scanner_setup (scanner))
             return -5;
           if (!openvas_scanner_connected ()
               && (openvas_scanner_connect () || openvas_scanner_init (0)))
@@ -4244,7 +4267,7 @@ resume_task (const char *task_id, char **report_id)
 }
 
 
-/* Scanner messaging. */
+/* OTP Scanner messaging. */
 
 /**
  * @brief Acknowledge a scanner BYE.

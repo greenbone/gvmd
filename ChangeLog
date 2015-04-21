@@ -1,5 +1,16 @@
 2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c: Add more sections.  Move headers up to section start.
+	(slist_free, fork_osp_scan_handler, run_osp_task): Move to better section.
+	(run_cve_task): Correct doc.
+	(scanner_connect): Remove.  Now scanner_setup.
+	(scanner_setup): New function.  Was scanner_connect.  Add doc comment.
+	Update callers.
+
+	* src/manage_sql.c (report_cache_counts): Correct doc typo.
+
+2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (set_task_preferences): For CVE tasks always set
 	in_assets to "no".
 
