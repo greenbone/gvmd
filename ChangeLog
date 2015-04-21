@@ -1,5 +1,14 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (handle_osp_scan): Rename report_id to scan_id, because
+	it refers only to the scan/report on the scanner now.
+	(fork_osp_scan_handler): Create the report before forking and reset the
+	report if fork fails, like the OTP scan does.  In the process separate
+	the report UUID from the scan/report UUID of the scanner.
+	(run_osp_task): Let fork_osp_scan_handler take care of the task status.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c (fork_cve_scan_handler): Create the report before
 	forking and reset the report if fork fails, like the OTP scan does.
 	On failure go to Internal Error instead of Stopped.  On failure set

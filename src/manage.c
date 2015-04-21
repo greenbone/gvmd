@@ -2810,14 +2810,14 @@ delete_osp_scan (const char *report_id, const char *host, int port,
 /**
  * @brief Handle an ongoing OSP scan, until success or failure.
  *
- * @param[in]   task        The task.
- * @param[in]   report      The scan report.
- * @param[in]   report_id   The scan report uuid.
+ * @param[in]   task      The task.
+ * @param[in]   report    The report.
+ * @param[in]   scan_id   The UUID of the scan on the scanner.
  *
  * @return 0 if success, -1 if failure.
  */
 static int
-handle_osp_scan (task_t task, report_t report, const char *report_id)
+handle_osp_scan (task_t task, report_t report, const char *scan_id)
 {
   char *host, *ca_pub, *key_pub, *key_priv;
   int rc, port;
@@ -2843,7 +2843,7 @@ handle_osp_scan (task_t task, report_t report, const char *report_id)
           break;
         }
 
-      progress = osp_get_scan (connection, report_id, &report_xml);
+      progress = osp_get_scan (connection, scan_id, &report_xml);
       osp_connection_close (connection);
       assert (progress <= 100 && progress >= 0);
       if (progress == 100)
@@ -2851,7 +2851,7 @@ handle_osp_scan (task_t task, report_t report, const char *report_id)
           /* Parse the report XML. */
           parse_osp_report (task, report, report_xml);
           g_free (report_xml);
-          delete_osp_scan (report_id, host, port, ca_pub, key_pub, key_priv);
+          delete_osp_scan (scan_id, host, port, ca_pub, key_pub, key_priv);
           rc = 0;
           break;
         }
@@ -3197,20 +3197,33 @@ run_cve_task (task_t task)
 static int
 fork_osp_scan_handler (task_t task, target_t target)
 {
-  char *report_id, *response = NULL, title[128];
+  char *report_id, *scan_id, title[128];
   int rc;
-  report_t report;
 
   assert (task);
   assert (target);
+
+  if (create_current_report (task, &report_id, TASK_STATUS_REQUESTED))
+    {
+      tracef ("   %s: failed to create report.\n", __FUNCTION__);
+      return -1;
+    }
+
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
   switch (fork ())
     {
       case 0:
         break;
       case -1:
-        set_task_run_status (task, TASK_STATUS_STOPPED);
-        return -1;
+        /* Parent, failed to fork. */
+        set_task_run_status (task, TASK_STATUS_INTERNAL_ERROR);
+        set_report_scan_run_status (current_report,
+                                    TASK_STATUS_INTERNAL_ERROR);
+        current_report = (report_t) 0;
+        return -9;
       default:
+        /* Parent, successfully forked. */
         return 0;
     }
 
@@ -3219,47 +3232,50 @@ fork_osp_scan_handler (task_t task, target_t target)
    * Else, exit(1) in error cases like connection to scanner failure.
    */
   reinit_manage_process ();
-  if (launch_osp_task (task, target, &response))
+  scan_id = NULL;
+  if (launch_osp_task (task, target, &scan_id))
     {
       result_t result;
       const char *type;
 
-      report_id = openvas_uuid_make ();
-      report = make_report (task, report_id, TASK_STATUS_DONE);
-      g_free (report_id);
-
       type = threat_message_type ("Error");
-      if (!response)
-        response = g_strdup ("Couldn't connect to the scanner");
-      result = make_osp_result (task, "", "", type, response, "");
-      report_add_result (report, result);
-      g_free (response);
+      if (scan_id == NULL)
+        scan_id = g_strdup ("Couldn't connect to the scanner");
+      result = make_osp_result (task, "", "", type, scan_id, "");
+      report_add_result (current_report, result);
+      g_free (scan_id);
 
       set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
+
+      g_free (report_id);
       exit (-1);
     }
-  report_id = response;
-  report = make_report (task, report_id, TASK_STATUS_RUNNING);
-  set_task_run_status (task, TASK_STATUS_RUNNING);
 
-  report_id = report_uuid (report);
+  set_task_run_status (task, TASK_STATUS_RUNNING);
+  set_report_scan_run_status (current_report, TASK_STATUS_RUNNING);
+
   snprintf (title, sizeof (title), "openvasmd (OSP): %s handler", report_id);
+  g_free (report_id);
   proctitle_set (title);
 
-  rc = handle_osp_scan (task, report, report_id);
+  rc = handle_osp_scan (task, current_report, scan_id);
+  g_free (scan_id);
   if (rc == 0)
     {
       set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (report, TASK_STATUS_DONE);
+      set_report_scan_run_status (current_report, TASK_STATUS_DONE);
     }
   else if (rc == 1)
     {
       set_task_run_status (task, TASK_STATUS_STOPPED);
-      set_report_scan_run_status (report, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (current_report, TASK_STATUS_STOPPED);
     }
   else
     abort ();
-  g_free (report_id);
+
+  current_report = 0;
+  current_scanner_task = (task_t) 0;
   exit (rc);
 }
 
@@ -3292,8 +3308,6 @@ run_osp_task (task_t task)
         return 99;
     }
 
-  /* Fork OSP scan handler. */
-  set_task_run_status (task, TASK_STATUS_REQUESTED);
   if (fork_osp_scan_handler (task, target))
     {
       g_warning ("Couldn't fork OSP scan handler.\n");
