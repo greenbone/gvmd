@@ -1,5 +1,11 @@
 2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (create_permission): Allow the user to create a
+	resource permission if the user has GET access to the subject, as
+	requiring MODIFY access to the subject is too strict.
+
+2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage.c: Add more sections.  Move headers up to section start.
 	(slist_free, fork_osp_scan_handler, run_osp_task): Move to better section.
 	(run_cve_task): Correct doc.

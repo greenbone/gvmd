@@ -44360,9 +44360,30 @@ create_permission (const char *name_arg, const char *comment,
     }
 
   subject = 0;
-  if (subject_id)
+  assert (subject_id);
+  if (resource)
+    {
+      /* Permission on a particular resource.  Only need read access to the
+       * subject. */
+
+      if (find_resource_with_permission (subject_type,
+                                         subject_id,
+                                         &subject,
+                                         NULL, /* GET permission. */
+                                         0))   /* Trash. */
+        {
+          g_free (name);
+          g_free (resource_type);
+          sql ("ROLLBACK;");
+          return -1;
+        }
+    }
+  else
     {
       gchar *permission;
+
+      /* Command level permission.  Must have write access to the subject. */
+
       permission = g_strdup_printf ("modify_%s", subject_type);
       if (find_resource_with_permission (subject_type,
                                          subject_id,
@@ -44377,14 +44398,14 @@ create_permission (const char *name_arg, const char *comment,
           return -1;
         }
       g_free (permission);
+    }
 
-      if (subject == 0)
-        {
-          g_free (name);
-          g_free (resource_type);
-          sql ("ROLLBACK;");
-          return 2;
-        }
+  if (subject == 0)
+    {
+      g_free (name);
+      g_free (resource_type);
+      sql ("ROLLBACK;");
+      return 2;
     }
 
   quoted_name = sql_quote (name);
