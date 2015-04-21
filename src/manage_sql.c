@@ -29306,7 +29306,8 @@ modify_task_check_slave_scanner (task_t task, const char *slave_id,
  * @param[in]  config_id    ID of config. "0" to use task's config.
  * @param[in]  scanner_id   ID of scanner.
  *
- * @return 1 if config and scanner types match, 0 otherwise.
+ * @return 0 if config and scanner types match, 1 do not match, 2 failed to
+ *         find config, 3 failed to find scanner, -1 error.
  */
 int
 modify_task_check_config_scanner (task_t task, const char *config_id,
@@ -29322,38 +29323,48 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     scanner_id = "0";
 
   if (!strcmp (config_id, "0") && !strcmp (scanner_id, "0"))
-    return 1;
+    return 0;
 
   if (strcmp (config_id, "0"))
-    // FIX what happens when permission denied?
-    find_config_with_permission (config_id, &config, "get_configs");
+    {
+      if (find_config_with_permission (config_id, &config, "get_configs"))
+        return -1;
+      if (config == 0)
+        return 2;
+    }
   else
     config = task_config (task);
 
-  // FIX what happens when permission denied or failed to find?
-  // FIX if 0 leaving then it the same?  then need to get scanner_type of existing scanner
-  find_scanner_with_permission (scanner_id, &scanner, "get_scanners");
+  if (strcmp (scanner_id, "0"))
+    {
+      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
+        return -1;
+      if (scanner == 0)
+        return 3;
+    }
+  else
+    scanner = task_scanner (task);
 
   stype = scanner_type (scanner);
 
   /* CVE Scanner. */
   if (stype == SCANNER_TYPE_CVE)
-    return config ? 0 : 1;
+    return config ? 1 : 0;
 
   ctype = config_type (config);
   /* OSP Scanner with OSP config. */
   if (stype == SCANNER_TYPE_OSP && ctype == 1)
-    return 1;
+    return 0;
 
   /* OpenVAS Scanner with OpenVAS config. */
   if (stype == SCANNER_TYPE_OPENVAS && ctype == 0)
-    return 1;
+    return 0;
 
   /* Default Scanner with OpenVAS Config. */
   if (scanner == 0 && ctype == 0)
-    return 1;
+    return 0;
 
-  return 0;
+  return 1;
 }
 
 /**

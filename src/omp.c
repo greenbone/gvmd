@@ -24645,11 +24645,46 @@ create_task_fail:
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("modify_task",
                                   "Slave used with non-default Scanner."));
-            else if (!modify_task_check_config_scanner
-                       (task, modify_task_data->config_id,
-                        modify_task_data->scanner_id))
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("modify_task", "Config and Scanner types mismatch."));
+            else if ((ret = modify_task_check_config_scanner
+                              (task, modify_task_data->config_id,
+                               modify_task_data->scanner_id)))
+              {
+                switch (ret)
+                  {
+                    case 1:
+                      SEND_TO_CLIENT_OR_FAIL
+                       (XML_ERROR_SYNTAX ("modify_task",
+                                          "Config and Scanner types mismatch"));
+                      break;
+                    case 2:
+                      if (send_find_error_to_client
+                           ("modify_task", "config",
+                            modify_task_data->config_id,
+                            omp_parser))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                      break;
+                    case 3:
+                      if (send_find_error_to_client
+                           ("modify_task", "scanner",
+                            modify_task_data->scanner_id,
+                            omp_parser))
+                        {
+                          error_send_to_client (error);
+                          return;
+                        }
+                      break;
+                    default:
+                      assert (0);
+                      /*@fallthrough@*/
+                    case -1:
+                      SEND_TO_CLIENT_OR_FAIL
+                        (XML_INTERNAL_ERROR ("modify_task"));
+                      break;
+                  }
+              }
             else if (modify_task_data->action)
               {
                 if (modify_task_data->file_name == NULL)
