@@ -1,5 +1,10 @@
 2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (set_task_preferences): For CVE tasks always set
+	in_assets to "no".
+
+2015-04-21  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (modify_task_check_config_scanner): Pass find returns
 	on to caller.  Skip finding scanner when given "0", as for config.
 

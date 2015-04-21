@@ -33274,7 +33274,11 @@ set_task_preferences (task_t task, array_t *preferences)
               if (pair->value)
                 {
                   gchar *quoted_value;
-                  quoted_value = sql_quote (pair->value);
+                  if ((strcmp (pair->name, "in_assets") == 0)
+                      && scanner_type (task_scanner (task)) == SCANNER_TYPE_CVE)
+                    quoted_value = g_strdup ("no");
+                  else
+                    quoted_value = sql_quote (pair->value);
                   sql_begin_immediate ();
                   if (sql_int ("SELECT COUNT(*) FROM task_preferences"
                                " WHERE task = %llu AND name = '%s';",
