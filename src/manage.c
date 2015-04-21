@@ -3099,7 +3099,6 @@ fork_cve_scan_handler (task_t task, target_t target)
    * Re-open DB and do prognostic calculation.  On success exit(0), else
    * exit(1). */
   reinit_manage_process ();
-  // FIX same for osp
   manage_session_init (current_credentials.uuid);
 
   /* Setup the task. */
@@ -3232,6 +3231,7 @@ fork_osp_scan_handler (task_t task, target_t target)
    * Else, exit(1) in error cases like connection to scanner failure.
    */
   reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
   scan_id = NULL;
   if (launch_osp_task (task, target, &scan_id))
     {

@@ -1,5 +1,10 @@
 2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage.c (fork_osp_scan_handler): Init manage session, in case the
+	OSP handling ever uses the current_credentials table.
+
+2015-04-20  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (omp_xml_handle_end_element): Use existing Internal Error
 	case for -1.
 
