@@ -3120,6 +3120,8 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
 
   g_debug ("%s: ip: %s", __FUNCTION__, ip);
 
+  /* Get the last report that applies to the host. */
+
   if (host_nthlast_report_host (ip, &report_host, 1))
     {
       tracef ("   %s: failed to get nthlast report.\n", __FUNCTION__);
@@ -3132,14 +3134,21 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
   if (report_host)
     {
       iterator_t report_hosts;
+
+      /* Get the report_host for the host. */
+
       init_host_iterator (&report_hosts, 0, NULL, report_host);
       if (next (&report_hosts))
         {
           iterator_t prognosis;
-          int added, start_time;
+          int prognosis_report_host, start_time;
+          array_t *apps;
+
+          /* Add a prognosis report_host and prognosis results.  Buffer Apps. */
 
           start_time = time (NULL);
-          added = 0;
+          prognosis_report_host = 0;
+          apps = make_array ();
           init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
                                         NULL, NULL, NULL, 0, NULL);
           while (next (&prognosis))
@@ -3147,6 +3156,12 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
               const char *threat;
               gchar *desc;
               result_t result;
+
+              if (current_report && (prognosis_report_host == 0))
+                prognosis_report_host = manage_report_host_add (current_report,
+                                                                ip,
+                                                                start_time,
+                                                                0);
 
               threat = cvss_threat (prognosis_iterator_cvss_double
                                      (&prognosis));
@@ -3171,19 +3186,45 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
               g_free (desc);
               if (current_report)
                 {
-                  added = 1;
                   report_add_result (current_report, result);
+                  array_add_new_string (apps,
+                                        prognosis_iterator_cpe (&prognosis));
                 }
             }
           cleanup_iterator (&prognosis);
 
-          if (added)
+          if (prognosis_report_host)
             {
-              manage_report_host_add (current_report, ip, start_time,
-                                      time (NULL));
+              int index;
+
+              /* Add host details for the Apps and their locations. */
+
+              index = apps->len;
+              while (index--)
+                {
+                  iterator_t locations;
+                  gchar *app;
+
+                  app = g_ptr_array_index (apps, index);
+                  insert_report_host_detail (current_report, ip, "cve", "",
+                                             "CVE Scanner", "App", app);
+                  init_app_location_iterator (&locations, report_host, app);
+                  while (next (&locations))
+                    insert_report_host_detail (current_report, ip, "cve", "",
+                                               "CVE Scanner", app,
+                                               app_location_iterator_value
+                                                (&locations));
+                  cleanup_iterator (&locations);
+                }
+
+              /* Complete the report_host. */
+
+              report_host_set_end_time (prognosis_report_host, time (NULL));
               insert_report_host_detail (current_report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
             }
+
+          array_free (apps);
         }
       cleanup_iterator (&report_hosts);
     }

@@ -1248,6 +1248,12 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
 /* Reports. */
 
 void
+init_app_location_iterator (iterator_t*, report_host_t, const gchar *);
+
+const char*
+app_location_iterator_value (iterator_t*);
+
+void
 init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,
                               const char *, const char *, const char *, int,
                               const char *);
@@ -3389,8 +3395,11 @@ manage_delete_user (GSList *, const gchar *, const gchar *);
 int
 manage_get_users (GSList *, const gchar *, const gchar *);
 
-void
+report_host_t
 manage_report_host_add (report_t, const char *, time_t, time_t);
+
+void
+report_host_set_end_time (report_host_t, time_t);
 
 int
 manage_set_password (GSList *, const gchar *, const gchar *, const gchar *);

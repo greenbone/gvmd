@@ -14886,6 +14886,38 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
 }
 
 /**
+ * @brief Initialise an App location iterator.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  report_host  Report host.
+ * @param[in]  app          CPE.
+ */
+void
+init_app_location_iterator (iterator_t* iterator, report_host_t report_host,
+                            const gchar *app)
+{
+  gchar *quoted_app;
+  quoted_app = sql_quote (app);
+  init_iterator (iterator,
+                 "SELECT value FROM report_host_details"
+                 " WHERE report_host = %llu"
+                 " AND name = '%s';",
+                 report_host,
+                 quoted_app);
+  g_free (quoted_app);
+}
+
+/**
+ * @brief Get the location from an app location iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Location, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (app_location_iterator_value, 0);
+
+/**
  * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
  *
  * @param[in]  search_phrase  Phrase that results must include.  All results if
@@ -49648,9 +49680,9 @@ manage_empty_trashcan ()
  * @param[in]  start    Start time.
  * @param[in]  end      End time.
  *
- * @return 0 success, -1 failed to parse XML.
+ * @return Report host.
  */
-void
+report_host_t
 manage_report_host_add (report_t report, const char *host, time_t start,
                         time_t end)
 {
@@ -49664,6 +49696,20 @@ manage_report_host_add (report_t report, const char *host, time_t start,
        report, quoted_host, (long long) start, (long long) end, report,
        quoted_host);
   g_free (quoted_host);
+  return sql_last_insert_id ();
+}
+
+/**
+ * @brief Set end time of a report host.
+ *
+ * @param[in]  report_host  Report host.
+ * @param[in]  end_time     End time.
+ */
+void
+report_host_set_end_time (report_host_t report_host, time_t end_time)
+{
+  sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
+       end_time, report_host);
 }
 
 /**

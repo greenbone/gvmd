@@ -1,3 +1,19 @@
+2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Include Apps in CVE scan reports.
+
+	* src/manage.c (cve_scan_host): Add comments.  Buffer Apps when adding
+	results, and add host details for the Apps afterwards.  Add the report
+	host when adding the results, instead of using the flag "added".
+
+	* src/manage_sql.c (init_app_location_iterator)
+	(app_location_iterator_value, report_host_set_end_time): New functions.
+	(manage_report_host_add): Return the report host.
+
+	* src/manage.c: Update headers accordingly.
+
+	* src/manage_sql.h (array_add_new_string): Export for manage.c.
+
 2015-04-22  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/manage_sql.c (find_trash): Add check for function parameter.
