@@ -14635,7 +14635,6 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
  *
  * @param[in]  task         The task associated with the result.
  * @param[in]  host         Host.
- * @param[in]  port         The port the result refers to.
  * @param[in]  nvt          The OID of the NVT that produced the result.
  * @param[in]  cvss         CVSS base.
  * @param[in]  description  Description of the result.
@@ -14643,8 +14642,8 @@ make_result (task_t task, const char* host, const char* port, const char* nvt,
  * @return A result descriptor for the new result, 0 if error.
  */
 result_t
-make_cve_result (task_t task, const char* host, const char* port,
-                 const char *nvt, double cvss, const char* description)
+make_cve_result (task_t task, const char* host, const char *nvt, double cvss,
+                 const char* description)
 {
   gchar *quoted_descr;
   quoted_descr = sql_quote (description ?: "");
@@ -14652,9 +14651,9 @@ make_cve_result (task_t task, const char* host, const char* port,
        " (owner, date, task, host, port, nvt, nvt_version, severity, type,"
        "  description, uuid, qod, qod_type)"
        " VALUES"
-       " (NULL, m_now (), %llu, '%s', '%s', '%s', '', '%1.1f', '%s',"
+       " (NULL, m_now (), %llu, '%s', '', '%s', '', '%1.1f', '%s',"
        "  '%s', make_uuid (), %i, '');",
-       task, host ?: "", port ?: "", nvt, cvss, cvss_threat (cvss),
+       task, host ?: "", nvt, cvss, cvss_threat (cvss),
        quoted_descr, QOD_DEFAULT);
 
   g_free (quoted_descr);

@@ -1,5 +1,14 @@
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (make_cve_result): Remove port arg.  Set port to ''
+	always.
+
+	* src/manage.h: Adjust header accordingly.
+
+	* src/manage.c (cve_scan_host): Remove port arg.
+
+2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (report_host_ip): Add missing format specifier.  Was
 	always scanning localhost.
 

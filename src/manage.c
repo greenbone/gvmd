@@ -3179,7 +3179,6 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
 
               result = make_cve_result
                         (task, ip,
-                         prognosis_iterator_cpe (&prognosis),
                          prognosis_iterator_cve (&prognosis),
                          prognosis_iterator_cvss_double (&prognosis),
                          desc);
