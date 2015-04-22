@@ -1,5 +1,9 @@
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (buffer_notes_xml): Correct order of elements.
+
+2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (make_cve_result): Remove port arg.  Set port to ''
 	always.
 

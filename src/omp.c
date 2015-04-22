@@ -10151,8 +10151,8 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
           buffer_xml_append_printf (buffer,
                                     "<owner><name>%s</name></owner>"
                                     "<nvt oid=\"%s\">"
-                                    "<type>%s</type>"
                                     "<name>%s</name>"
+                                    "<type>%s</type>"
                                     "</nvt>"
                                     "<creation_time>%s</creation_time>"
                                     "<modification_time>%s</modification_time>"
