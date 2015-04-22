@@ -9910,7 +9910,7 @@ send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
  *         -5 failed to get report counts, -6 failed to get timestamp.
  */
 static int
-send_reports (task_t task, int apply_overrides,
+send_reports (task_t task, int apply_overrides, int min_qod,
               int (*write_to_client) (const char*, void*),
               void* write_to_client_data)
 {
@@ -9931,7 +9931,8 @@ send_reports (task_t task, int apply_overrides,
       uuid = report_uuid (index);
 
       if (report_counts (uuid, &debugs, &holes, &infos, &logs, &warnings,
-                         &false_positives, &severity, apply_overrides, 0))
+                         &false_positives, &severity, apply_overrides,
+                         0, min_qod))
         {
           free (uuid);
           return -5;
@@ -15303,7 +15304,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
         if ((get_reports_data->report_get.id == NULL)
             || (strlen (get_reports_data->report_get.id) == 0))
           {
-            gchar *overrides, *filter;
+            gchar *overrides, *min_qod, *filter;
             get_data_t * get;
 
             /* For simplicity, use a fixed result filter when filtering
@@ -15325,13 +15326,19 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
             overrides
              = filter_term_value (filter ? filter : get->filter,
                                   "apply_overrides");
+            min_qod
+             = filter_term_value (filter ? filter : get->filter,
+                                  "min_qod");
             g_free (filter);
 
             /* Setup result filter from overrides. */
             get_reports_data->get.filter
-             = g_strdup_printf ("apply_overrides=%i",
-                                overrides && strcmp (overrides, "0"));
+             = g_strdup_printf ("apply_overrides=%i min_qod=%s",
+                                overrides && strcmp (overrides, "0"),
+                                min_qod ? min_qod
+                                        : G_STRINGIFY (MIN_QOD_DEFAULT));
             g_free (overrides);
+            g_free (min_qod);
           }
 
         ret = init_report_iterator (&reports, &get_reports_data->report_get);
@@ -17612,7 +17619,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                      &debugs, &holes_2, &infos_2, &logs,
                                      &warnings_2, &false_positives,
                                      &severity_2, apply_overrides,
-                                     0))
+                                     0, min_qod))
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
 
@@ -17672,7 +17679,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                                         &logs, &warnings_2,
                                         &false_positives, &severity_2,
                                         apply_overrides,
-                                        0))
+                                        0, min_qod))
                     /** @todo Either fail better or abort at SQL level. */
                     abort ();
 
@@ -17734,7 +17741,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                             &debugs, &holes, &infos, &logs,
                             &warnings, &false_positives, &severity,
                             apply_overrides,
-                            0))
+                            0, min_qod))
                         /** @todo Either fail better or abort at SQL level. */
                         abort ();
                     }
@@ -18080,6 +18087,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
                    */
                   send_reports (index,
                                 apply_overrides,
+                                min_qod,
                                 write_to_client,
                                 write_to_client_data);
                 }

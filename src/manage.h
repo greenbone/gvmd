@@ -635,7 +635,7 @@ task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
                             double);
 
 const char *
-task_trend (task_t, int);
+task_trend (task_t, int, int);
 
 int
 task_schedule_periods (task_t);
@@ -659,10 +659,10 @@ int
 task_schedule_next_time_tz (task_t);
 
 char *
-task_severity (task_t, int, int);
+task_severity (task_t, int, int, int);
 
 double
-task_severity_double (task_t, int, int);
+task_severity_double (task_t, int, int, int);
 
 int
 task_debugs_size (task_t);
@@ -925,7 +925,7 @@ void
 report_cache_counts (report_t);
 
 double
-report_severity (report_t, int);
+report_severity (report_t, int, int);
 
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
@@ -1036,7 +1036,7 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
 
 int
 report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
-               int, int);
+               int, int, int);
 
 int
 report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*, int,
@@ -3682,7 +3682,7 @@ char*
 type_trash_columns (const char *, int);
 
 gchar*
-type_opts_table (const char *, int);
+type_opts_table (const char *, int, int);
 
 gchar*
 type_table (const char *, int);

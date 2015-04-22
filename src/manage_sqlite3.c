@@ -842,9 +842,10 @@ void
 sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
 {
   unsigned int overrides;
+  int min_qod;
   task_t task;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
@@ -855,7 +856,12 @@ sql_task_trend (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  sqlite3_result_text (context, task_trend (task, overrides), -1,
+  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[2]);
+
+  sqlite3_result_text (context, task_trend (task, overrides, min_qod), -1,
                        SQLITE_TRANSIENT);
 }
 
@@ -868,6 +874,7 @@ typedef struct
   gchar *severity;            ///< Severity.
   task_t overrides_task;      ///< Task.
   gchar *overrides_severity;  ///< Severity.
+  int min_qod;                ///< Minimum QoD.
 } sql_severity_t;
 
 /**
@@ -888,6 +895,7 @@ clear_cache (void *cache_arg)
   cache->severity = NULL;
   free (cache->overrides_severity);
   cache->overrides_severity = NULL;
+  cache->min_qod = -1;
 }
 
 /**
@@ -901,13 +909,16 @@ clear_cache (void *cache_arg)
  * @param[in]  context    SQL context.
  * @param[in]  task       Task.
  * @param[in]  overrides  Overrides flag.
+ * @param[in]  min_qod    Minimum QoD of report results to count.
  *
  * @return Severity.
  */
 static char *
-cached_task_severity (sqlite3_context *context, task_t task, int overrides)
+cached_task_severity (sqlite3_context *context, task_t task, int overrides,
+                      int min_qod)
 {
   static sql_severity_t static_cache = { .task = 0, .severity = NULL,
+                                         .min_qod = MIN_QOD_DEFAULT,
                                          .overrides_task = 0,
                                          .overrides_severity = NULL };
   sql_severity_t *cache;
@@ -918,26 +929,26 @@ cached_task_severity (sqlite3_context *context, task_t task, int overrides)
     {
       if (overrides)
         {
-          if (cache->overrides_task == task)
+          if (cache->overrides_task == task && cache->min_qod == min_qod)
             return cache->overrides_severity;
           /* Replace the cached severity. */
           cache->overrides_task = task;
           free (cache->overrides_severity);
-          cache->overrides_severity = task_severity (task, 1, 0);
+          cache->overrides_severity = task_severity (task, 1, min_qod, 0);
           return cache->overrides_severity;
         }
       else
         {
-          if (cache->task == task)
+          if (cache->task == task && cache->min_qod == min_qod)
             return cache->severity;
           /* Replace the cached severity. */
           cache->task = task;
           free (cache->severity);
-          cache->severity = task_severity (task, 0, 0);
+          cache->severity = task_severity (task, 0, min_qod, 0);
           return cache->severity;
         }
     }
-  severity = task_severity (task, overrides, 0);
+  severity = task_severity (task, overrides, min_qod, 0);
   /* Setup the cached severity. */
   cache = &static_cache;
   if (overrides)
@@ -970,10 +981,11 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
   report_t last_report;
   const char *threat;
   unsigned int overrides;
+  int min_qod;
   char* severity;
   double severity_dbl;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
@@ -984,7 +996,12 @@ sql_task_threat_level (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  severity = cached_task_severity (context, task, overrides);
+  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[2]);
+
+  severity = cached_task_severity (context, task, overrides, min_qod);
 
   if (severity == NULL
       || sscanf (severity, "%lf", &severity_dbl) != 1)
@@ -1047,7 +1064,7 @@ sql_report_progress (sqlite3_context *context, int argc, sqlite3_value** argv)
 /**
  * @brief Calculate the severity of a report.
  *
- * This is a callback for a scalar SQL function of two argument.
+ * This is a callback for a scalar SQL function of three arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1059,8 +1076,9 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
   report_t report;
   double severity;
   unsigned int overrides;
+  int min_qod;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
   report = sqlite3_value_int64 (argv[0]);
   if (report == 0)
@@ -1071,7 +1089,12 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  severity = report_severity (report, overrides);
+  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[2]);
+
+  severity = report_severity (report, overrides, min_qod);
 
   sqlite3_result_double (context, severity);
   return;
@@ -1082,19 +1105,22 @@ sql_report_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
  *
  * @param[in] report     The report to count the results of.
  * @param[in] overrides  Whether to apply overrides.
+ * @param[in] min_qod    Minimum QoD of results to count.
  * @param[in] level      Severity level of which to count results.
  *
  * @return    The number of results.
  */
 static int
-report_severity_count (report_t report, int overrides,
+report_severity_count (report_t report, int overrides, int min_qod,
                        char *level)
 {
   int debugs, false_positives, logs, lows, mediums, highs;
 
+  gchar *min_qod_str = g_strdup_printf ("%d", min_qod);
   report_counts_id (report, &debugs, &highs, &lows, &logs, &mediums,
                     &false_positives, NULL, overrides, NULL, 0,
-                    G_STRINGIFY (MIN_QOD_DEFAULT)); // TODO: Make a param
+                    min_qod_str);
+  g_free (min_qod_str);
 
   if (strcasecmp (level, "Debug") == 0)
     return debugs;
@@ -1115,7 +1141,7 @@ report_severity_count (report_t report, int overrides,
 /**
  * @brief Get the number of results of a given severity level in a report.
  *
- * This is a callback for a scalar SQL function of three arguments.
+ * This is a callback for a scalar SQL function of four arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1127,10 +1153,11 @@ sql_report_severity_count (sqlite3_context *context, int argc,
 {
   report_t report;
   unsigned int overrides;
+  int min_qod;
   char* level;
   int count;
 
-  assert (argc == 3);
+  assert (argc == 4);
 
   report = sqlite3_value_int64 (argv[0]);
   if (report == 0)
@@ -1141,14 +1168,19 @@ sql_report_severity_count (sqlite3_context *context, int argc,
 
   overrides = sqlite3_value_int (argv[1]);
 
-  level = (char*) sqlite3_value_text (argv[2]);
+  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[2]);
+
+  level = (char*) sqlite3_value_text (argv[3]);
   if (level == 0)
     {
       sqlite3_result_text (context, "", -1, SQLITE_TRANSIENT);
       return;
     }
 
-  count = report_severity_count (report, overrides, level);
+  count = report_severity_count (report, overrides, min_qod, level);
 
   sqlite3_result_int (context, count);
   return;
@@ -1157,7 +1189,7 @@ sql_report_severity_count (sqlite3_context *context, int argc,
 /**
  * @brief Calculate the severity of a task.
  *
- * This is a callback for a scalar SQL function of one argument.
+ * This is a callback for a scalar SQL function of two arguments.
  *
  * @param[in]  context  SQL context.
  * @param[in]  argc     Number of arguments.
@@ -1171,8 +1203,9 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
   char *severity;
   double severity_double;
   unsigned int overrides;
+  int min_qod;
 
-  assert (argc == 2);
+  assert (argc == 3);
 
   task = sqlite3_value_int64 (argv[0]);
   if (task == 0)
@@ -1183,7 +1216,12 @@ sql_task_severity (sqlite3_context *context, int argc, sqlite3_value** argv)
 
   overrides = sqlite3_value_int (argv[1]);
 
-  severity = cached_task_severity (context, task, overrides);
+  if (sqlite3_value_type (argv[2]) == SQLITE_NULL)
+    min_qod = MIN_QOD_DEFAULT;
+  else
+    min_qod = sqlite3_value_int (argv[2]);
+
+  severity = cached_task_severity (context, task, overrides, min_qod);
   severity_double = severity ? g_strtod (severity, 0) : 0.0;
   tracef ("   %s: %llu: %s\n", __FUNCTION__, task, severity);
   if (severity)
@@ -1851,7 +1889,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "task_trend",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_task_trend,
@@ -1865,7 +1903,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "task_threat_level",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_task_threat_level,
@@ -1893,7 +1931,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "report_severity",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_report_severity,
@@ -1907,7 +1945,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "report_severity_count",
-                               3,               /* Number of args. */
+                               4,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_report_severity_count,
@@ -1921,7 +1959,7 @@ manage_create_sql_functions ()
 
   if (sqlite3_create_function (task_db,
                                "task_severity",
-                               2,               /* Number of args. */
+                               3,               /* Number of args. */
                                SQLITE_UTF8,
                                NULL,            /* Callback data. */
                                sql_task_severity,

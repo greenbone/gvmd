@@ -238,7 +238,7 @@ manage_create_sql_functions ()
       created = 1;
     }
 
-  sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer)"
+  sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer, integer)"
        " RETURNS text AS $$"
        /* Calculate the trend of a task. */
        " DECLARE"
@@ -274,20 +274,26 @@ manage_create_sql_functions ()
        /*  Check if the severity score changed. */
        "   last_report := task_last_report ($1);"
        "   second_last_report := task_second_last_report ($1);"
-       "   severity_a := report_severity (last_report, $2);"
-       "   severity_b := report_severity (second_last_report, $2);"
+       "   severity_a := report_severity (last_report, $2, $3);"
+       "   severity_b := report_severity (second_last_report, $2, $3);"
        "   IF severity_a > severity_b THEN"
        "     RETURN 'up'::text;"
        "   ELSIF severity_b > severity_a THEN"
        "     RETURN 'down'::text;"
        "   END IF;"
        /*  Calculate trend. */
-       "   high_a := report_severity_count (last_report, $2, 'high');"
-       "   high_b := report_severity_count (second_last_report, $2, 'high');"
-       "   medium_a := report_severity_count (last_report, $2, 'medium');"
-       "   medium_b := report_severity_count (second_last_report, $2, 'medium');"
-       "   low_a := report_severity_count (last_report, $2, 'low');"
-       "   low_b := report_severity_count (second_last_report, $2, 'low');"
+       "   high_a := report_severity_count (last_report, $2, $3,"
+       "                                    'high');"
+       "   high_b := report_severity_count (second_last_report, $2, $3,"
+       "                                    'high');"
+       "   medium_a := report_severity_count (last_report, $2, $3,"
+       "                                      'medium');"
+       "   medium_b := report_severity_count (second_last_report, $2, $3,"
+       "                                      'medium');"
+       "   low_a := report_severity_count (last_report, $2, $3,"
+       "                                   'low');"
+       "   low_b := report_severity_count (second_last_report, $2, $3,"
+       "                                   'low');"
        "   IF high_a > 0 THEN"
        "     threat_a := 4;"
        "   ELSIF medium_a > 0 THEN"
@@ -859,7 +865,8 @@ manage_create_sql_functions ()
  "   " severity_sql ")"
 
       sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
-           "                                            overrides integer)"
+           "                                            overrides integer,"
+           "                                            min_qod integer)"
            " RETURNS double precision AS $$"
            /* Calculate the severity of a report. */
            "  WITH max_severity AS (SELECT max(severity) AS max"
@@ -867,6 +874,8 @@ manage_create_sql_functions ()
            // FIX should have user like report_counts_cache_exists?  c version too?
            "                        WHERE report = $1"
            "                        AND override = $2"
+           // TODO: caching for non-default QoD
+           "                        AND " G_STRINGIFY (MIN_QOD_DEFAULT) " = $3"
            "                        AND (end_time = 0 or end_time >= m_now ()))"
            "  SELECT CASE"
            "         WHEN EXISTS (SELECT max FROM max_severity)"
@@ -884,7 +893,8 @@ manage_create_sql_functions ()
                                         "       WHERE nvts.oid = results.nvt)"
                                         " ELSE results.severity END") ")"
            "               FROM results"
-           "               WHERE results.report = $1)"
+           "               WHERE results.report = $1"
+           "                 AND results.qod >= $3)"
            "         WHEN dynamic_severity ()"
            /*        Dynamic severity, overrides off. */
            "         THEN (SELECT max (CASE"
@@ -900,12 +910,14 @@ manage_create_sql_functions ()
            "                                 END)"
            "                           END)"
            "               FROM results"
-           "               WHERE results.report = $1)"
+           "               WHERE results.report = $1"
+           "                 AND results.qod >= $3)"
            "         WHEN $2::boolean"
            /*        Overrides on. */
            "         THEN (SELECT max (" OVERRIDES_SQL ("results.severity") ")"
            "               FROM results"
-           "               WHERE results.report = $1)"
+           "               WHERE results.report = $1"
+           "                 AND results.qod >= $3)"
            /*        Overrides off. */
            "         ELSE (SELECT max (CASE"
            "                           WHEN results.type IS NULL"
@@ -913,7 +925,8 @@ manage_create_sql_functions ()
            "                           ELSE results.severity"
            "                           END)"
            "               FROM results"
-           "               WHERE results.report = $1)"
+           "               WHERE results.report = $1"
+           "                 AND results.qod >= $3)"
            "         END;"
            "$$ LANGUAGE SQL;");
 
@@ -930,19 +943,21 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;");
 
       sql ("CREATE OR REPLACE FUNCTION"
-           " report_severity_count (report integer, overrides integer, level text)"
+           " report_severity_count (report integer, overrides integer,"
+           "                        min_qod integer, level text)"
            " RETURNS bigint AS $$"
            /* Calculate the severity of a report. */
            "  WITH severity_count AS (SELECT sum (count) AS total"
            "                          FROM report_counts"
            "                          WHERE report = $1"
            "                          AND override = $2"
+           "                          AND " G_STRINGIFY (MIN_QOD_DEFAULT) " = $3"
            "                          AND (end_time = 0 or end_time >= m_now ())"
            "                          AND (severity"
            "                               BETWEEN level_min_severity"
-           "                                        ($3, severity_class ())"
+           "                                        ($4, severity_class ())"
            "                                       AND level_max_severity"
-           "                                            ($3, severity_class ())))"
+           "                                            ($4, severity_class ())))"
            "  SELECT CASE"
            "         WHEN EXISTS (SELECT total FROM severity_count)"
            "              AND (SELECT total FROM severity_count) IS NOT NULL"
@@ -952,6 +967,7 @@ manage_create_sql_functions ()
            "         THEN (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
+           "               AND results.qod >= $3"
            "               AND (" OVERRIDES_SQL
                                    ("CASE"
                                     " WHEN results.severity"
@@ -961,15 +977,15 @@ manage_create_sql_functions ()
                                     "       WHERE nvts.oid = results.nvt)"
                                     " ELSE results.severity END")
            "                    BETWEEN level_min_severity"
-           "                             ($3, severity_class ())"
+           "                             ($4, severity_class ())"
            "                            AND level_max_severity"
-           "                                 ($3, severity_class ())))"
+           "                                 ($4, severity_class ())))"
            "         WHEN dynamic_severity ()"
            /*        Dynamic severity, overrides off. */
            "         THEN (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
-           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
+           "               AND results.qod >= $3"
            "               AND ((CASE"
            "                     WHEN results.type IS NULL"
            "                     THEN 0::real"
@@ -982,32 +998,32 @@ manage_create_sql_functions ()
            "                           ELSE results.severity"
            "                           END)"
            "                     END)"
-           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                    BETWEEN level_min_severity ($4, severity_class ())"
            "                            AND level_max_severity"
-           "                                 ($3, severity_class ())))"
+           "                                 ($4, severity_class ())))"
            "         WHEN $2::boolean"
            /*        Overrides on. */
            "         THEN (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
-           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
+           "               AND results.qod >= $3"
            "               AND (" OVERRIDES_SQL ("results.severity")
-           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                    BETWEEN level_min_severity ($4, severity_class ())"
            "                            AND level_max_severity"
-           "                                 ($3, severity_class ())))"
+           "                                 ($4, severity_class ())))"
            /*        Overrides off. */
            "         ELSE (SELECT count (*)"
            "               FROM results"
            "               WHERE results.report = $1"
-           "               AND qod >= " G_STRINGIFY (MIN_QOD_DEFAULT)
+           "               AND results.qod >= $3"
            "               AND ((CASE"
            "                     WHEN results.type IS NULL"
            "                     THEN 0::real"
            "                     ELSE results.severity"
            "                     END)"
-           "                    BETWEEN level_min_severity ($3, severity_class ())"
+           "                    BETWEEN level_min_severity ($4, severity_class ())"
            "                            AND level_max_severity"
-           "                                 ($3, severity_class ())))"
+           "                                 ($4, severity_class ())))"
            "         END;"
            "$$ LANGUAGE SQL;");
 
@@ -1027,7 +1043,8 @@ manage_create_sql_functions ()
            "$$ LANGUAGE SQL;",
            TASK_STATUS_DONE);
 
-      sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer)"
+      sql ("CREATE OR REPLACE FUNCTION task_severity (integer, integer,"
+           "                                          integer)"
            " RETURNS double precision AS $$"
            /* Calculate the severity of a task. */
            "  SELECT CASE"
@@ -1051,7 +1068,8 @@ manage_create_sql_functions ()
            "                                       WHERE reports.task = $1"
            "                                       AND reports.scan_run_status = %u"
            "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0))"
+           "                                                LIMIT 1 OFFSET 0)"
+           "                 AND results.qod >= $3)"
            "         WHEN dynamic_severity ()"
            /*        Dynamic severity, overrides off. */
            "         THEN (SELECT round (max (CASE"
@@ -1067,7 +1085,8 @@ manage_create_sql_functions ()
            "                                       WHERE reports.task = $1"
            "                                       AND reports.scan_run_status = %u"
            "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0))"
+           "                                                LIMIT 1 OFFSET 0)"
+           "                 AND results.qod >= $3)"
            "         WHEN CAST ($2 AS boolean)"
            /*        Overrides on. */
            "         THEN (SELECT round"
@@ -1079,7 +1098,8 @@ manage_create_sql_functions ()
            "                                       WHERE reports.task = $1"
            "                                       AND reports.scan_run_status = %u"
            "                                       ORDER BY reports.date DESC"
-           "                                       LIMIT 1 OFFSET 0))"
+           "                                       LIMIT 1 OFFSET 0)"
+           "                 AND results.qod >= $3)"
            /*        Overrides off. */
            // FIX need rounding in sqlite?
            "         ELSE (SELECT round (max (results.severity)::numeric, 2)"
@@ -1088,7 +1108,8 @@ manage_create_sql_functions ()
            "                                       WHERE reports.task = $1"
            "                                       AND reports.scan_run_status = %u"
            "                                       ORDER BY reports.date DESC"
-           "                                                LIMIT 1 OFFSET 0))"
+           "                                                LIMIT 1 OFFSET 0)"
+           "                 AND results.qod >= $3)"
            "         END;"
            "$$ LANGUAGE SQL;",
            TASK_STATUS_DONE,
@@ -1305,10 +1326,11 @@ manage_create_sql_functions ()
            "         END;"
            "$$ LANGUAGE SQL;");
 
-      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer)"
+      sql ("CREATE OR REPLACE FUNCTION task_threat_level (integer, integer,"
+           "                                              integer)"
            " RETURNS text AS $$"
            /* Calculate the threat level of a task. */
-           "  SELECT severity_to_level (task_severity ($1, $2), 0);"
+           "  SELECT severity_to_level (task_severity ($1, $2, $3), 0);"
            "$$ LANGUAGE SQL;");
     }
 
