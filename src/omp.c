@@ -11602,11 +11602,16 @@ handle_get_scanners (omp_parser_t *omp_parser, GError **error)
 
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
       SENDF_TO_CLIENT_OR_FAIL
-       ("<host>%s</host><port>%d</port><type>%d</type>"
-        "<ca_pub>%s</ca_pub><key_pub>%s</key_pub>",
-        scanner_iterator_host (&scanners), scanner_iterator_port (&scanners),
-        scanner_iterator_type (&scanners), scanner_iterator_ca_pub (&scanners),
-        scanner_iterator_key_pub (&scanners));
+       ("<host>%s</host>"
+        "<port>%d</port>"
+        "<type>%d</type>"
+        "<ca_pub>%s</ca_pub>"
+        "<key_pub>%s</key_pub>",
+        scanner_iterator_host (&scanners) ?: "",
+        scanner_iterator_port (&scanners) ?: 0,
+        scanner_iterator_type (&scanners),
+        scanner_iterator_ca_pub (&scanners) ?: "",
+        scanner_iterator_key_pub (&scanners) ?: "");
       count++;
       if (get_scanners_data->get.details)
         {

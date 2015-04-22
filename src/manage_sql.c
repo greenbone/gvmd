@@ -10403,7 +10403,7 @@ check_db_scanners ()
          " (uuid, owner, name, host, port, type, ca_pub, key_pub, key_priv,"
          "  creation_time, modification_time)"
          " VALUES ('" SCANNER_UUID_CVE "', NULL, 'CVE',"
-         " 'localhost', 9391, %d, NULL, NULL, NULL, m_now (), m_now ());",
+         " '', 0, %d, NULL, NULL, NULL, m_now (), m_now ());",
          SCANNER_TYPE_CVE);
 
   return 0;
