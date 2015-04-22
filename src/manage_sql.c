@@ -25791,7 +25791,7 @@ report_host_ip (const char *host)
   ret = sql_string ("SELECT host FROM report_hosts"
                     " WHERE id = (SELECT report_host FROM report_host_details"
                     "             WHERE name = 'hostname'"
-                    "             AND value = 'localhost'"
+                    "             AND value = '%s'"
                     "             ORDER BY id DESC LIMIT 1);",
                     quoted_host);
   g_free (quoted_host);

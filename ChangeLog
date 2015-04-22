@@ -1,5 +1,10 @@
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (report_host_ip): Add missing format specifier.  Was
+	always scanning localhost.
+
+2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Include Apps in CVE scan reports.
 
 	* src/manage.c (cve_scan_host): Add comments.  Buffer Apps when adding
