@@ -1,5 +1,15 @@
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (note_iterator_nvt_type)
+	(override_iterator_nvt_type): New function
+
+	* src/manage.h: Add headers accordingly.
+
+	* src/omp.c (buffer_notes_xml, buffer_overrides_xml): Use function to
+	get NVT type.
+
+2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/omp.c (buffer_notes_xml): Correct order of elements.
 
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>

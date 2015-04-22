@@ -36711,6 +36711,31 @@ note_iterator_active (iterator_t* iterator)
 DEF_ACCESS (note_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 9);
 
 /**
+ * @brief Get the NVT type from a note iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT type, or NULL.  Static string.
+ */
+const char *
+note_iterator_nvt_type (iterator_t *iterator)
+{
+  const char *oid;
+
+  oid = note_iterator_nvt_oid (iterator);
+  if (oid == NULL)
+    return NULL;
+
+  if (g_str_has_prefix (oid, "CVE-"))
+    return "cve";
+
+  if (g_str_has_prefix (oid, "oval:"))
+    return "ovaldef";
+
+  return "nvt";
+}
+
+/**
  * @brief Get the severity from a note iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -37769,6 +37794,31 @@ override_iterator_active (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (override_iterator_nvt_name, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get the NVT type from a override iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return NVT type, or NULL.  Static string.
+ */
+const char *
+override_iterator_nvt_type (iterator_t *iterator)
+{
+  const char *oid;
+
+  oid = override_iterator_nvt_oid (iterator);
+  if (oid == NULL)
+    return NULL;
+
+  if (g_str_has_prefix (oid, "CVE-"))
+    return "cve";
+
+  if (g_str_has_prefix (oid, "oval:"))
+    return "ovaldef";
+
+  return "nvt";
+}
 
 /**
  * @brief Get the severity from an override iterator.

@@ -2044,6 +2044,9 @@ note_iterator_active (iterator_t*);
 const char*
 note_iterator_nvt_name (iterator_t *);
 
+const char *
+note_iterator_nvt_type (iterator_t *);
+
 const char*
 note_iterator_severity (iterator_t *);
 
@@ -2117,6 +2120,9 @@ override_iterator_active (iterator_t*);
 
 const char*
 override_iterator_nvt_name (iterator_t *);
+
+const char *
+override_iterator_nvt_type (iterator_t *);
 
 const char*
 override_iterator_severity (iterator_t *);

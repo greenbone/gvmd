@@ -10170,12 +10170,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
                                      : "",
                                     note_iterator_nvt_oid (notes),
                                     note_iterator_nvt_name (notes),
-                                    // FIX function,ovaldef
-                                    g_str_has_prefix
-                                     (note_iterator_nvt_oid (notes),
-                                      "CVE-")
-                                     ? "cve"
-                                     : "nvt",
+                                    note_iterator_nvt_type (notes),
                                     get_iterator_creation_time (notes),
                                     get_iterator_modification_time (notes),
                                     note_iterator_active (notes),
@@ -10237,12 +10232,7 @@ buffer_notes_xml (GString *buffer, iterator_t *notes, int include_notes_details,
              : "",
             note_iterator_nvt_oid (notes),
             note_iterator_nvt_name (notes),
-            // FIX function,ovaldef
-            g_str_has_prefix
-             (note_iterator_nvt_oid (notes),
-              "CVE-")
-             ? "cve"
-             : "nvt",
+            note_iterator_nvt_type (notes),
             get_iterator_creation_time (notes),
             get_iterator_modification_time (notes),
             note_iterator_active (notes),
@@ -10428,12 +10418,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
                                      : "",
                                     override_iterator_nvt_oid (overrides),
                                     override_iterator_nvt_name (overrides),
-                                    // FIX function,ovaldef
-                                    g_str_has_prefix
-                                     (override_iterator_nvt_oid (overrides),
-                                      "CVE-")
-                                     ? "cve"
-                                     : "nvt",
+                                    override_iterator_nvt_type (overrides),
                                     get_iterator_creation_time (overrides),
                                     get_iterator_modification_time (overrides),
                                     override_iterator_active (overrides),
@@ -10505,12 +10490,7 @@ buffer_overrides_xml (GString *buffer, iterator_t *overrides,
              : "",
             override_iterator_nvt_oid (overrides),
             override_iterator_nvt_name (overrides),
-            // FIX function,ovaldef
-            g_str_has_prefix
-             (override_iterator_nvt_oid (overrides),
-              "CVE-")
-             ? "cve"
-             : "nvt",
+            override_iterator_nvt_type (overrides),
             get_iterator_creation_time (overrides),
             get_iterator_modification_time (overrides),
             override_iterator_active (overrides),
