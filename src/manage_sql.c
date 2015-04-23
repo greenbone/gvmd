@@ -29434,7 +29434,12 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   /* CVE Scanner. */
   if (stype == SCANNER_TYPE_CVE)
-    return config ? 1 : 0;
+    return strcmp (scanner_id, "0")
+            /* Selecting the CVE Scanner will clear the config. */
+            ? 0
+            /* CVE Scanner is currently selected, so the only option is to
+             * leave the config alone. */
+            : (config ? 1 : 0);
 
   ctype = config_type (config);
   /* OSP Scanner with OSP config. */

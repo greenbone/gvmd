@@ -1,5 +1,11 @@
 2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/manage_sql.c (modify_task_check_config_scanner): In the CVE
+	scanner case, ignore the config when explicitly selecting the CVE
+	scanner, because the config will be cleared when setting the scanner.
+
+2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (trash_config_readable_uuid): Init found.
 
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
