@@ -1,7 +1,11 @@
+2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (trash_config_readable_uuid): Init found.
+
 2015-04-22  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (note_iterator_nvt_type)
-	(override_iterator_nvt_type): New function
+	(override_iterator_nvt_type): New functions.
 
 	* src/manage.h: Add headers accordingly.
 

@@ -29989,6 +29989,7 @@ trash_config_readable_uuid (const gchar *config_id)
 {
   config_t found;
 
+  found = 0;
   if (find_trash ("config", config_id, &found))
     return 0;
   return found > 0;
