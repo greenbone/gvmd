@@ -1,3 +1,22 @@
+2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Adjust CVE scan host details so that the product host detail is
+	generated.
+
+	* src/manage.c (cve_scan_host): Add the product location to the
+	description.  Make the CVE the source NVT of the host details.  Add an
+	app host detail for each result instead of only adding one host detail
+	per app.  Add the location host detail that matches the specific app
+	and cve, and add detected_by and detected_at host details.
+
+	* src/manage_sql.c (result_detection_reference): Add detected_at to
+	product SQL to be safe.  Add special case for CVE NVT name.
+	(init_app_location_iterator, app_location_iterator_value): Remove.  No
+	longer used.
+	(cve_app_location): New function.
+
+	* src/manage.h: Adjust headers accordingly.
+
 2015-04-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
 	* src/report_formats/PDF/generate: Add a note why a second run of pdflatex

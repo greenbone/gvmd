@@ -3142,19 +3142,17 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
         {
           iterator_t prognosis;
           int prognosis_report_host, start_time;
-          array_t *apps;
 
-          /* Add a prognosis report_host and prognosis results.  Buffer Apps. */
+          /* Add report_host with prognosis results and host details. */
 
           start_time = time (NULL);
           prognosis_report_host = 0;
-          apps = make_array ();
           init_host_prognosis_iterator (&prognosis, report_host, 0, -1,
                                         NULL, NULL, NULL, 0, NULL);
           while (next (&prognosis))
             {
-              const char *threat;
-              gchar *desc;
+              const char *threat, *app, *cve;
+              gchar *desc, *location;
               result_t result;
 
               if (current_report && (prognosis_report_host == 0))
@@ -3166,64 +3164,65 @@ cve_scan_host (task_t task, openvas_host_t *openvas_host)
               threat = cvss_threat (prognosis_iterator_cvss_double
                                      (&prognosis));
 
+              app = prognosis_iterator_cpe (&prognosis);
+              cve = prognosis_iterator_cve (&prognosis);
+              location = cve_app_location (report_host, cve, app);
+
               desc = g_strdup_printf ("The host carries the product: %s\n"
                                       "It is vulnerable according to: %s.\n"
+                                      "%s%s%s"
                                       "\n"
                                       "%s",
-                                      prognosis_iterator_cpe (&prognosis),
-                                      prognosis_iterator_cve (&prognosis),
+                                      app,
+                                      cve,
+                                      location
+                                       ? "The product was found at: "
+                                       : "",
+                                      location ? location : "",
+                                      location ? ".\n" : "",
                                       prognosis_iterator_description
                                        (&prognosis));
 
               g_debug ("%s: making result with threat [%s] desc [%s]", __FUNCTION__, threat, desc);
 
               result = make_cve_result
-                        (task, ip,
-                         prognosis_iterator_cve (&prognosis),
+                        (task, ip, cve,
                          prognosis_iterator_cvss_double (&prognosis),
                          desc);
               g_free (desc);
               if (current_report)
                 {
                   report_add_result (current_report, result);
-                  array_add_new_string (apps,
-                                        prognosis_iterator_cpe (&prognosis));
+
+                  insert_report_host_detail (current_report, ip, "cve", cve,
+                                             "CVE Scanner", "App", app);
+
+                  if (location)
+                    {
+                      insert_report_host_detail (current_report, ip, "cve", cve,
+                                                 "CVE Scanner", app, location);
+
+                      insert_report_host_detail (current_report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_at",
+                                                 location);
+                      insert_report_host_detail (current_report, ip, "cve", cve,
+                                                 "CVE Scanner", "detected_by",
+                                                 /* Detected by itself. */
+                                                 cve);
+                    }
                 }
+              g_free (location);
             }
           cleanup_iterator (&prognosis);
 
           if (prognosis_report_host)
             {
-              int index;
-
-              /* Add host details for the Apps and their locations. */
-
-              index = apps->len;
-              while (index--)
-                {
-                  iterator_t locations;
-                  gchar *app;
-
-                  app = g_ptr_array_index (apps, index);
-                  insert_report_host_detail (current_report, ip, "cve", "",
-                                             "CVE Scanner", "App", app);
-                  init_app_location_iterator (&locations, report_host, app);
-                  while (next (&locations))
-                    insert_report_host_detail (current_report, ip, "cve", "",
-                                               "CVE Scanner", app,
-                                               app_location_iterator_value
-                                                (&locations));
-                  cleanup_iterator (&locations);
-                }
-
               /* Complete the report_host. */
 
               report_host_set_end_time (prognosis_report_host, time (NULL));
               insert_report_host_detail (current_report, ip, "cve", "",
                                          "CVE Scanner", "CVE Scan", "1");
             }
-
-          array_free (apps);
         }
       cleanup_iterator (&report_hosts);
     }

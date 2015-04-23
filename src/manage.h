@@ -1246,11 +1246,8 @@ manage_send_report (report_t, report_t, report_format_t, const get_data_t *,
 
 /* Reports. */
 
-void
-init_app_location_iterator (iterator_t*, report_host_t, const gchar *);
-
-const char*
-app_location_iterator_value (iterator_t*);
+gchar *
+cve_app_location (report_host_t, const gchar *, const gchar *);
 
 void
 init_host_prognosis_iterator (iterator_t*, report_host_t, int, int,

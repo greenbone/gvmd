@@ -14744,12 +14744,16 @@ result_detection_reference (result_t result, char **ref, char **product,
                          "                      WHERE report = %s"
                          "                      AND host = '%s')"
                          " AND source_name = '%s'"
+                         " AND name != 'detected_at'"
                          " AND value = '%s';",
                          report, host, *oid, *location);
   if (*product == NULL)
     goto detect_cleanup;
 
-  *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
+  if (g_str_has_prefix (*oid, "CVE-"))
+    *name = g_strdup (*oid);
+  else
+    *name = sql_string ("SELECT name FROM nvts WHERE oid = '%s';", *oid);
   if (*name == NULL)
     goto detect_cleanup;
 
@@ -14891,30 +14895,37 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
  * @param[in]  report_host  Report host.
  * @param[in]  app          CPE.
  */
-void
-init_app_location_iterator (iterator_t* iterator, report_host_t report_host,
-                            const gchar *app)
+gchar *
+cve_app_location (report_host_t report_host, const gchar *cve,
+                  const gchar *app)
 {
-  gchar *quoted_app;
-  quoted_app = sql_quote (app);
-  init_iterator (iterator,
-                 "SELECT value FROM report_host_details"
-                 " WHERE report_host = %llu"
-                 " AND name = '%s';",
-                 report_host,
-                 quoted_app);
-  g_free (quoted_app);
-}
+  gchar *quoted_app, *quoted_cve, *ret;
 
-/**
- * @brief Get the location from an app location iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Location, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (app_location_iterator_value, 0);
+  assert (cve && app);
+
+  quoted_app = sql_quote (app);
+  quoted_cve = sql_quote (cve);
+
+  ret = sql_string ("SELECT value FROM report_host_details"
+                    " WHERE report_host = %llu"
+                    " AND name = '%s'"
+                    " AND source_type = 'nvt'"
+                    " AND source_name"
+                    "     = (SELECT source_name FROM report_host_details"
+                    "        WHERE report_host = %llu"
+                    "        AND source_type = 'nvt'"
+                    "        AND name = 'App'"
+                    "        AND value = '%s');",
+                    report_host,
+                    quoted_app,
+                    report_host,
+                    quoted_app);
+
+  g_free (quoted_app);
+  g_free (quoted_cve);
+
+  return ret;
+}
 
 /**
  * @brief Return SQL WHERE for restricting a SELECT to a search phrase.
