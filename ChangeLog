@@ -1,5 +1,11 @@
 2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* src/omp.c (ADD_DETAIL): Remove.  Now function add_detail.
+	(add_detail): New function.  Was ADD_DETAIL.  Update caller.
+	(results_xml_append_cert, results_xml_append_nvt): Add missing doc args.
+
+2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Adjust CVE scan host details so that the product host detail is
 	generated.
 

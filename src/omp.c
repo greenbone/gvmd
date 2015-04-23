@@ -10870,17 +10870,29 @@ buffer_result_overrides_xml (GString *buffer, result_t result, task_t task,
 
 /**
  * @brief Add a detail block to a XML buffer.
+ *
+ * @param[in]  buffer  Buffer.
+ * @param[in]  name    Name.
+ * @param[in]  value   Value.
  */
-#define ADD_DETAIL(buff, dname, dvalue) do { \
-                                buffer_xml_append_printf (buff,   \
-                                                          "<detail>"          \
-                                                          "<name>%s</name>"   \
-                                                          "<value>%s</value>" \
-                                                          "</detail>",        \
-                                                          dname,              \
-                                                          dvalue);            \
-                                } while (0)
+static void
+add_detail (GString *buffer, const gchar *name, const gchar *value)
+{
+  buffer_xml_append_printf (buffer,
+                            "<detail>"
+                            "<name>%s</name>"
+                            "<value>%s</value>"
+                            "</detail>",
+                            name,
+                            value);
+}
 
+/**
+ * @brief Append a CERT element to an XML buffer.
+ *
+ * @param[in]  buffer  Buffer.
+ * @param[in]  oid     OID.
+ */
 static void
 results_xml_append_cert (GString *buffer, const char *oid)
 {
@@ -10913,6 +10925,12 @@ results_xml_append_cert (GString *buffer, const char *oid)
   buffer_xml_append_printf (buffer, "</cert>");
 }
 
+/**
+ * @brief Append an NVT element to an XML buffer.
+ *
+ * @param[in]  results  Results.
+ * @param[in]  buffer   Buffer.
+ */
 static void
 results_xml_append_nvt (iterator_t *results, GString *buffer)
 {
@@ -11147,10 +11165,10 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                                 "<details>",
                                 detect_ref);
 
-      ADD_DETAIL(buffer, "product", detect_cpe);
-      ADD_DETAIL(buffer, "location", detect_loc);
-      ADD_DETAIL(buffer, "source_oid", detect_oid);
-      ADD_DETAIL(buffer, "source_name", detect_name);
+      add_detail (buffer, "product", detect_cpe);
+      add_detail (buffer, "location", detect_loc);
+      add_detail (buffer, "source_oid", detect_oid);
+      add_detail (buffer, "source_name", detect_name);
 
       buffer_xml_append_printf (buffer,
                                 "</details>"
