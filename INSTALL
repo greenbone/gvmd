@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.16
 * gnutls >= 2.8
 * openvas-libraries >= 8.0.0
-* sqlite3
+* sqlite3 library
 * pkg-config
 
 Prerequisites for building documentation:
