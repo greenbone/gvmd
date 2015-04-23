@@ -1,5 +1,10 @@
 2015-04-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
 
+	* src/report_formats/PDF/generate: Add a note why a second run of pdflatex
+	is relevant.
+
+2015-04-23  Jan-Oliver Wagner <jan-oliver.wagner@greenbone.net>
+
 	* INSTALL: Add a note that it is the library that we need regarding sqlite3
 
 2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
