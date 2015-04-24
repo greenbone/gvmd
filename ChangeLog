@@ -1,3 +1,44 @@
+2015-04-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	Add min_qod to the report_counts and allow caching for non-default
+	min_qod values.  Hence increase database version to 147.  Add database
+	migration from version 146 to 147.
+
+	* CMakeLists.txt (OPENVASMD_DATABASE_VERSION): Increase to 147.
+
+	* src/manage_migrators.c (migrate_146_to_147): New function.
+	(database_migrators): Add migrate_146_to_147.
+
+	* src/manage_pg.c (manage_create_sql_functions): In the report_severity
+	and report_severity_count functions, compare the min_qod parameter to
+	the new min_qod column in the report_counts table.
+	(create_tables): Add column min_qod to the report_counts table.
+
+	* src/manage_sqlite3.c (create_tables): Add column min_qod to the
+	report_counts table.
+
+	* src/manage_sql.c (reports_build_count_cache): Pass MIN_QOD_DEFAULT
+	to report caching functions.
+	(report_add_result): Update report_counts cache for all min_qod values
+	that currently have a cache.
+	(report_scan_result_count): Use cache for non-default min_qod as well.
+	(report_counts_match): Use MIN_QOD_DEFAULT if min_qod is not a number
+	and also handle the case where min_qod is NULL.
+	(report_counts): Free min_qod_str.
+	(report_counts_cache_exists, report_counts_from_cache)
+	(cache_report_counts): Add min_qod parameter and use new column in
+	report_counts cache.
+	(report_counts_id_filt, report_severity): Use cache for non-default
+	min_qod as well.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_TASKS make
+	parsing of min_qod_str more consistent with other functions. Clean up
+	allocation and deallocation of min_qod_str.
+
+	* doc/db_postgres.sql (report_counts): Add column min_qod.
+
+	* doc/db.png: Update from source.
+
 2015-04-23  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/omp.c (ADD_DETAIL): Remove.  Now function add_detail.

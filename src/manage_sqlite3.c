@@ -2330,7 +2330,7 @@ create_tables ()
        "  slave_uuid, slave_name, slave_host, slave_port, source_iface);");
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id INTEGER PRIMARY KEY, report INTEGER, user INTEGER,"
-       "  severity, count, override, end_time INTEGER);");
+       "  severity, count, override, end_time INTEGER, min_qod INTEGER);");
   sql ("CREATE INDEX IF NOT EXISTS report_counts_by_report_and_override"
        " ON report_counts (report, override);");
   sql ("CREATE TABLE IF NOT EXISTS results"

@@ -178,13 +178,13 @@ int
 family_count ();
 
 static int
-report_counts_cache_exists (report_t, int);
+report_counts_cache_exists (report_t, int, int);
 
 static void report_severity_data (report_t, int, const char *, const char *,
                                   const char *, const char *, int, int,
                                   severity_data_t*, severity_data_t*);
 
-static int cache_report_counts (report_t, int, severity_data_t*, int);
+static int cache_report_counts (report_t, int, int, severity_data_t*, int);
 
 static char*
 task_owner_uuid (task_t);
@@ -15310,28 +15310,34 @@ reports_build_count_cache (int clear, int* changes_out)
             {
               int updated = 0;
               severity_data_t severity_data;
+              int min_qod = MIN_QOD_DEFAULT;
+              gchar *min_qod_str = G_STRINGIFY (MIN_QOD_DEFAULT);
 
               // Cache report without overrides
-              if (clear || report_counts_cache_exists (report, 0) == 0)
+              if (clear
+                  || report_counts_cache_exists (report, 0, min_qod) == 0)
                 {
                   init_severity_data (&severity_data);
-                  report_severity_data (report, 0, NULL, NULL, NULL,
+                  report_severity_data (report, 0, NULL, NULL, min_qod_str,
                                         NULL, 0, 0, &severity_data,
                                         NULL);
-                  cache_report_counts (report, 0, &severity_data, 0);
+                  cache_report_counts (report, 0, min_qod,
+                                       &severity_data, 0);
                   cleanup_severity_data (&severity_data);
                   updated = 1;
                   user_changes_no_ov++;
                 }
 
               // Cache report with overrides
-              if (clear || report_counts_cache_exists (report, 1) == 0)
+              if (clear
+                  || report_counts_cache_exists (report, 1, min_qod) == 0)
                 {
                   init_severity_data (&severity_data);
-                  report_severity_data (report, 1, NULL, NULL, NULL,
+                  report_severity_data (report, 1, NULL, NULL, min_qod_str,
                                         NULL, 0, 0, &severity_data,
                                         NULL);
-                  cache_report_counts (report, 1, &severity_data, 0);
+                  cache_report_counts (report, 1, min_qod,
+                                       &severity_data, 0);
                   cleanup_severity_data (&severity_data);
                   updated = 1;
                   user_changes_ov++;
@@ -15938,6 +15944,7 @@ report_add_result (report_t report, result_t result)
   int qod;
   rowid_t rowid;
   gchar *owned_clause;
+  iterator_t min_qod_in_use;
 
   if (report == 0 || result == 0)
     return;
@@ -15951,29 +15958,44 @@ report_add_result (report_t report, result_t result)
   qod = sql_int ("SELECT qod FROM results WHERE id = %llu;",
                  result);
 
-  if (qod < MIN_QOD_DEFAULT)
-    return;
-
   severity = sql_double ("SELECT severity FROM results WHERE id = %llu;",
                          result);
 
-  rowid = 0;
-  sql_int64 (&rowid,
-             "SELECT id FROM report_counts"
-             " WHERE report = %llu"
-             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
-             " AND override = 0"
-             " AND severity = %1.1f;",
-             report, current_credentials.uuid, severity);
-  if (rowid)
-    sql ("UPDATE report_counts SET count = count + 1"
-         " WHERE id = %llu;", rowid);
-  else
-    sql ("INSERT INTO report_counts"
-         " (report, \"user\", override, severity, count, end_time)"
-         " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %1.1f, 1, 0);",
-         report, current_credentials.uuid, severity);
+  init_iterator (&min_qod_in_use,
+                 "SELECT DISTINCT min_qod"
+                 " FROM report_counts"
+                 " WHERE report = %llu"
+                 " AND override = 0"
+                 " AND \"user\" = (SELECT id FROM users"
+                 "                 WHERE users.uuid = '%s')"
+                 " ORDER BY min_qod DESC",
+                 report,
+                 current_credentials.uuid);
+  while (next (&min_qod_in_use)
+         && qod >= iterator_int (&min_qod_in_use, 0))
+    {
+      int min_qod = iterator_int (&min_qod_in_use, 0);
+      rowid = 0;
+      sql_int64 (&rowid,
+                "SELECT id FROM report_counts"
+                " WHERE report = %llu"
+                " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
+                " AND override = 0"
+                " AND severity = %1.1f;"
+                " AND min_qod = %d",
+                report, current_credentials.uuid, severity, min_qod);
+      if (rowid)
+        sql ("UPDATE report_counts SET count = count + 1"
+            " WHERE id = %llu;", rowid);
+      else
+        sql ("INSERT INTO report_counts"
+            " (report, \"user\", override, min_qod, severity, count, end_time)"
+            " VALUES"
+            " (%llu, (SELECT id FROM users WHERE uuid='%s'), 0, %d,"
+            "  %1.1f, 1, 0);",
+            report, current_credentials.uuid, min_qod, severity);
+    }
+  cleanup_iterator (&min_qod_in_use);
 
   owned_clause = acl_where_owned_for_get ("override", NULL);
 
@@ -16014,25 +16036,43 @@ report_add_result (report_t report, result_t result)
       || (sscanf (ov_severity_str, "%lf", &ov_severity) != 1))
     ov_severity = severity;
 
-  rowid = 0;
-  sql_int64 (&rowid,
-             "SELECT id FROM report_counts"
-             " WHERE report = %llu"
-             " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
-             " AND override = 1"
-             " AND severity = %1.1f;",
-             report, current_credentials.uuid, ov_severity);
-  if (rowid)
-    sql ("UPDATE report_counts"
-         " SET count = count + 1"
-         " WHERE id = %llu;",
-         rowid);
-  else
-    sql ("INSERT INTO report_counts"
-         " (report, \"user\", override, severity, count, end_time)"
-         " VALUES"
-         " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %1.1f, 1, 0);",
-         report, current_credentials.uuid, ov_severity);
+  init_iterator (&min_qod_in_use,
+                 "SELECT DISTINCT min_qod"
+                 " FROM report_counts"
+                 " WHERE report = %llu"
+                 " AND override = 0"
+                 " AND \"user\" = (SELECT id FROM users"
+                 "                 WHERE users.uuid = '%s')"
+                 " ORDER BY min_qod DESC",
+                 report,
+                 current_credentials.uuid);
+  while (next (&min_qod_in_use)
+         && qod >= iterator_int (&min_qod_in_use, 0))
+    {
+      int min_qod = iterator_int (&min_qod_in_use, 0);
+      rowid = 0;
+      sql_int64 (&rowid,
+                "SELECT id FROM report_counts"
+                " WHERE report = %llu"
+                " AND \"user\" = (SELECT id FROM users WHERE users.uuid = '%s')"
+                " AND override = 1"
+                " AND severity = %1.1f;"
+                " AND min_qod = %d",
+                report, current_credentials.uuid, ov_severity, min_qod);
+      if (rowid)
+        sql ("UPDATE report_counts"
+            " SET count = count + 1"
+            " WHERE id = %llu;",
+            rowid);
+      else
+        sql ("INSERT INTO report_counts"
+            " (report, \"user\", override, severity, count, end_time)"
+            " VALUES"
+            " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %d,"
+            "  %1.1f, 1, 0);",
+            report, current_credentials.uuid, min_qod, ov_severity);
+    }
+  cleanup_iterator (&min_qod_in_use);
 
   sql ("UPDATE report_counts"
        " SET end_time = (SELECT coalesce(min(overrides.end_time), 0)"
@@ -18915,18 +18955,19 @@ report_scan_result_count (report_t report, const char* levels,
   GString *levels_sql, *phrase_sql, *cvss_sql;
   gchar *qod_sql;
   gchar *new_severity_sql = NULL;
+  int min_qod_int;
 
   phrase_sql = where_search_phrase (search_phrase, search_phrase_exact);
   cvss_sql = where_cvss_base (min_cvss_base);
   qod_sql = where_qod (min_qod);
 
-  if (report_counts_cache_exists (report, override)
+  if (min_qod == NULL || sscanf (min_qod, "%d", &min_qod_int) != 1)
+    min_qod_int = MIN_QOD_DEFAULT;
+
+  if (report_counts_cache_exists (report, override, min_qod_int)
       && autofp == 0
       && (min_cvss_base == NULL || strcmp (min_cvss_base, "") == 0)
-      && (search_phrase == NULL || strcmp (search_phrase, "") == 0)
-      && (min_qod == NULL
-          || strcmp (min_qod, "") == 0
-          || strcmp (min_qod, G_STRINGIFY (MIN_QOD_DEFAULT)) == 0))
+      && (search_phrase == NULL || strcmp (search_phrase, "") == 0))
     {
       *count = sql_int ("SELECT sum (count)"
                         " FROM report_counts"
@@ -18934,8 +18975,10 @@ report_scan_result_count (report_t report, const char* levels,
                         "   AND override = %d"
                         "   AND \"user\" = (SELECT id FROM users"
                         "                   WHERE users.uuid = '%s')"
+                        "   AND min_qod = %d"
                         "   AND severity >= " G_STRINGIFY (SEVERITY_FP) ";",
-                        report, override, current_credentials.uuid);
+                        report, override, current_credentials.uuid,
+                        min_qod_int);
       return 0;
     }
 
@@ -19113,8 +19156,8 @@ report_counts_match (iterator_t *results, const char *search_phrase,
   if (min_qod)
     {
       int min_qod_int;
-      if (sscanf (min_qod, "%d", &min_qod_int) != 1)
-        min_qod_int = -1;
+      if (min_qod == NULL || sscanf (min_qod, "%d", &min_qod_int) != 1)
+        min_qod_int = MIN_QOD_DEFAULT;
 
       if (iterator_int (results, 8) < min_qod_int)
         return 0;
@@ -19688,6 +19731,7 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
   ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
                           false_positives, severity, override, NULL, autofp,
                           min_qod_str);
+  g_free (min_qod_str);
   return ret;
 }
 
@@ -19695,11 +19739,12 @@ report_counts (const char* report_id, int* debugs, int* holes, int* infos,
  * @brief Test if a counts cache exists for a report and the current user.
  * @param[in]           report    The report to check.
  * @param[in]           override  Whether to check for overridden results.
+ * @param[in]           min_qod   Minimum QoD of results to count.
  *
  * @return 1 if cache exists, 0 otherwise.
  */
 static int
-report_counts_cache_exists (report_t report, int override)
+report_counts_cache_exists (report_t report, int override, int min_qod)
 {
   if (setting_dynamic_severity_int ())
     return 0;
@@ -19709,8 +19754,9 @@ report_counts_cache_exists (report_t report, int override)
                     "   AND override = %d"
                     "   AND \"user\" = (SELECT id FROM users"
                     "                   WHERE users.uuid = '%s')"
+                    "   AND min_qod = %d"
                     "   AND (end_time = 0 OR end_time >= m_now ()));",
-                    report, override, current_credentials.uuid);
+                    report, override, current_credentials.uuid, min_qod);
 }
 
 /**
@@ -19718,10 +19764,12 @@ report_counts_cache_exists (report_t report, int override)
  *
  * @param[in]           report    The report to get counts from.
  * @param[in]           override  Whether to get overridden results.
+ * @param[in]           min_qod   Minimum QoD of results to count.
  * @param[out]          data      The severity_data_t to save counts in.
  */
 static void
-report_counts_from_cache (report_t report, int override, severity_data_t* data)
+report_counts_from_cache (report_t report, int override, int min_qod,
+                          severity_data_t* data)
 {
   iterator_t iterator;
   init_iterator (&iterator,
@@ -19730,8 +19778,9 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
                  "   AND override = %i"
                  "   AND \"user\" = (SELECT id FROM users"
                  "                   WHERE users.uuid = '%s')"
+                 "   AND min_qod = %d"
                  "   AND (end_time = 0 OR end_time >= m_now ());",
-                 report, override, current_credentials.uuid);
+                 report, override, current_credentials.uuid, min_qod);
   while (next (&iterator))
     {
       severity_data_add_count (data,
@@ -19746,14 +19795,15 @@ report_counts_from_cache (report_t report, int override, severity_data_t* data)
  *
  * @param[in]   report    Report.
  * @param[in]   override  Whether overrides were applied to the results.
+ * @param[in]   min_qod   The minimum QoD of the results.
  * @param[in]   data      Severity data struct containing the message counts.
  * @param[in]   make_transaction  True to wrap in an exclusive transaction.
  *
  * @return      0 if successful, 1 gave up, -1 error (see sql_giveup).
  */
 static int
-cache_report_counts (report_t report, int override, severity_data_t* data,
-                     int make_transaction)
+cache_report_counts (report_t report, int override, int min_qod,
+                     severity_data_t* data, int make_transaction)
 {
   /* Try cache results.  Give up if the database is locked because this could
    * happen while the caller has an SQL statement open.  If another process
@@ -19777,9 +19827,10 @@ cache_report_counts (report_t report, int override, severity_data_t* data,
   ret = sql_giveup ("DELETE FROM report_counts"
                     " WHERE report = %llu"
                     "   AND override = %i"
+                    "   AND min_qod = %i"
                     "   AND \"user\" = (SELECT id FROM users"
                     "                   WHERE users.uuid = '%s');",
-                    report, override, current_credentials.uuid);
+                    report, override, min_qod, current_credentials.uuid);
   if (ret)
     {
       if (make_transaction)
@@ -19791,14 +19842,14 @@ cache_report_counts (report_t report, int override, severity_data_t* data,
     {
       /* Create dummy entry for empty reports */
       ret = sql_giveup ("INSERT INTO report_counts"
-                        " (report, \"user\", override, severity, count,"
-                        "  end_time)"
+                        " (report, \"user\", override, min_qod, severity,"
+                        "  count, end_time)"
                         " VALUES (%llu,"
                         "         (SELECT id FROM users"
                         "          WHERE users.uuid = '%s'),"
-                        "         %d, " G_STRINGIFY (SEVERITY_MISSING) ","
+                        "         %d, %d, " G_STRINGIFY (SEVERITY_MISSING) ","
                         "         0, 0);",
-                        report, current_credentials.uuid, override);
+                        report, current_credentials.uuid, override, min_qod);
       if (ret)
         {
           if (make_transaction)
@@ -19828,14 +19879,14 @@ cache_report_counts (report_t report, int override, severity_data_t* data,
           if (data->counts[i] > 0)
             {
               ret = sql_giveup ("INSERT INTO report_counts"
-                                " (report, \"user\", override, severity, count,"
-                                "  end_time)"
+                                " (report, \"user\", override, min_qod,"
+                                "  severity, count, end_time)"
                                 " VALUES (%llu,"
                                 "         (SELECT id FROM users"
                                 "          WHERE users.uuid = '%s'),"
-                                "         %d, %1.1f, %d, %d);",
+                                "         %d, %d, %1.1f, %d, %d);",
                                 report, current_credentials.uuid, override,
-                                severity, data->counts[i], end_time);
+                                min_qod, severity, data->counts[i], end_time);
               if (ret)
                 {
                   if (make_transaction)
@@ -19905,6 +19956,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 {
   int filtered_requested, cache_exists;
   const char *severity_class;
+  int min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
 
   filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
@@ -19916,7 +19968,10 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
       || strcmp (current_credentials.uuid, "") == 0)
     g_warning ("%s: called by NULL or dummy user", __FUNCTION__);
 
-  cache_exists = report_counts_cache_exists (report, override);
+  if (min_qod == NULL || sscanf (min_qod, "%d", &min_qod_int) != 1)
+    min_qod_int = MIN_QOD_DEFAULT;
+
+  cache_exists = report_counts_cache_exists (report, override, min_qod_int);
 
   init_severity_data (&severity_data);
   init_severity_data (&filtered_severity_data);
@@ -19934,16 +19989,15 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
   if (min_cvss_base && strcmp (min_cvss_base, "") == 0)
     min_cvss_base = NULL;
 
-  // TODO: Cache different min_qod values
   if (cache_exists && autofp == 0 && host == NULL && min_cvss_base == NULL
-      && ((min_qod && strcmp (min_qod, G_STRINGIFY (MIN_QOD_DEFAULT)) == 0)
-          || min_qod == NULL)
       && search_phrase == NULL)
     {
       /* Get unfiltered counts from cache. */
-      report_counts_from_cache (report, override, &severity_data);
+      report_counts_from_cache (report, override, min_qod_int,
+                                &severity_data);
       if (filtered_requested)
-        report_counts_from_cache (report, override, &filtered_severity_data);
+        report_counts_from_cache (report, override, min_qod_int,
+                                  &filtered_severity_data);
     }
   else
     {
@@ -19973,7 +20027,7 @@ report_counts_id_filt (report_t report, int* debugs, int* holes, int* infos,
 
   if (autofp == 0 && host == NULL
       && cache_exists == 0 && min_cvss_base == NULL && search_phrase == NULL)
-    cache_report_counts (report, override, &severity_data, 1);
+    cache_report_counts (report, override, min_qod_int, &severity_data, 1);
 
   cleanup_severity_data (&severity_data);
   cleanup_severity_data (&filtered_severity_data);
@@ -20027,16 +20081,16 @@ report_severity (report_t report, int overrides, int min_qod)
   double severity;
   iterator_t iterator;
 
-  // TODO: Cache for non-default QoD.
   init_iterator (&iterator,
                  "SELECT max(severity)"
                  " FROM report_counts"
                  " WHERE report = %llu"
                  " AND override = %d"
+                 " AND user = (SELECT id FROM users WHERE uuid = '%s')"
+                 " AND min_qod = %d"
                  " AND (end_time = 0 or end_time >= m_now ());",
-                 report, overrides);
+                 report, overrides, current_credentials.uuid, min_qod);
   if (next (&iterator)
-      && min_qod == MIN_QOD_DEFAULT
       && (iterator_null (&iterator, 0) == 0))
     {
       g_debug ("%s: max(severity)=%s", __FUNCTION__,

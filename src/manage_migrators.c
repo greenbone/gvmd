@@ -10056,6 +10056,39 @@ migrate_145_to_146 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 146 to version 147.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_146_to_147 ()
+{
+  sql_begin_exclusive ();
+
+  /* Ensure that the database is currently version 146. */
+
+  if (manage_db_version () != 146)
+    {
+      sql ("ROLLBACK;");
+      return -1;
+    }
+
+  /* Update the database. */
+
+  /* The view result_overrides changed. */
+  sql ("ALTER TABLE report_counts ADD COLUMN min_qod INTEGER;");
+  sql ("UPDATE report_counts SET min_qod = %d;", MIN_QOD_DEFAULT);
+
+  /* Set the database version to 147. */
+
+  set_db_version (147);
+
+  sql ("COMMIT;");
+
+  return 0;
+}
+
 #ifdef SQL_IS_SQLITE
 #define SQLITE_OR_NULL(function) function
 #else
@@ -10213,6 +10246,7 @@ static migrator_t database_migrators[]
     {144, migrate_143_to_144},
     {145, migrate_144_to_145},
     {146, migrate_145_to_146},
+    {147, migrate_146_to_147},
     /* End marker. */
     {-1, NULL}};
 

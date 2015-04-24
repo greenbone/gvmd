@@ -874,8 +874,7 @@ manage_create_sql_functions ()
            // FIX should have user like report_counts_cache_exists?  c version too?
            "                        WHERE report = $1"
            "                        AND override = $2"
-           // TODO: caching for non-default QoD
-           "                        AND " G_STRINGIFY (MIN_QOD_DEFAULT) " = $3"
+           "                        AND min_qod = $3"
            "                        AND (end_time = 0 or end_time >= m_now ()))"
            "  SELECT CASE"
            "         WHEN EXISTS (SELECT max FROM max_severity)"
@@ -951,7 +950,7 @@ manage_create_sql_functions ()
            "                          FROM report_counts"
            "                          WHERE report = $1"
            "                          AND override = $2"
-           "                          AND " G_STRINGIFY (MIN_QOD_DEFAULT) " = $3"
+           "                          AND min_qod = $3"
            "                          AND (end_time = 0 or end_time >= m_now ())"
            "                          AND (severity"
            "                               BETWEEN level_min_severity"
@@ -1877,7 +1876,8 @@ create_tables ()
        "  severity decimal,"
        "  count integer,"
        "  override integer,"
-       "  end_time integer);");
+       "  end_time integer,"
+       "  min_qod integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS results"
        " (id SERIAL PRIMARY KEY,"

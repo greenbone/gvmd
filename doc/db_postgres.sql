@@ -452,7 +452,8 @@ CREATE TABLE report_counts
   severity decimal,
   count integer,
   override integer,
-  end_time integer);
+  end_time integer,
+  min_qod integer);
 
 CREATE TABLE report_format_params
  (id SERIAL PRIMARY KEY,
