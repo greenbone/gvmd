@@ -16970,15 +16970,29 @@ result_iterator_opts_table (int autofp, int override, int dynamic)
  */
 int
 init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
-                          int autofp, int override, int dynamic_severity)
+                          int autofp, int override, int min_qod,
+                          int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *extra_tables;
+  gchar *min_qod_str, *min_qod_clause;
+  gchar *extra_tables, *extra_where;
 
   extra_tables
     = result_iterator_opts_table (autofp, override, dynamic_severity);
+
+  min_qod_str = g_strdup_printf ("%d", min_qod);
+  min_qod_clause = where_qod (min_qod_str);
+  g_free (min_qod_str);
+
+  extra_where = g_strdup_printf("%s%s",
+                                min_qod_clause,
+                                get->trash
+                                  ? "AND ((SELECT (hidden = 2) FROM tasks"
+                                    "      WHERE tasks.id = task))"
+                                  : "AND ((SELECT (hidden = 0) FROM tasks"
+                                    "      WHERE tasks.id = task))");
 
   ret = init_get_iterator (iterator,
                             "result",
@@ -16988,13 +17002,10 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
                             filter_columns,
                             0,
                             extra_tables,
-                            get->trash
-                              ? "AND ((SELECT (hidden = 2) FROM tasks"
-                                "      WHERE tasks.id = task))"
-                              : "AND ((SELECT (hidden = 0) FROM tasks"
-                                "      WHERE tasks.id = task))",
+                            extra_where,
                             TRUE);
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 
@@ -17007,28 +17018,40 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
  */
 int
 result_count (const get_data_t *get,
-              int autofp, int override, int dynamic_severity)
+              int autofp, int override, int min_qod,
+              int dynamic_severity)
 {
   static const char *filter_columns[] = RESULT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = RESULT_ITERATOR_COLUMNS;
   int ret;
-  gchar *extra_tables;
+  gchar *min_qod_str, *min_qod_clause;
+  gchar *extra_tables, *extra_where;
 
   extra_tables
     = result_iterator_opts_table (autofp, override, dynamic_severity);
+
+  min_qod_str = g_strdup_printf ("%d", min_qod);
+  min_qod_clause = where_qod (min_qod_str);
+  g_free (min_qod_str);
+
+  extra_where = g_strdup_printf("%s%s",
+                                min_qod_clause,
+                                get->trash
+                                  ? "AND ((SELECT (hidden = 2) FROM tasks"
+                                    "      WHERE tasks.id = task))"
+                                  : "AND ((SELECT (hidden = 0) FROM tasks"
+                                    "      WHERE tasks.id = task))");
+
 
   ret = count ("result", get,
                 columns,
                 columns,
                 filter_columns, 0,
                 extra_tables,
-                get->trash
-                  ? "AND ((SELECT (hidden = 2) FROM tasks"
-                    "      WHERE tasks.id = task))"
-                  : "AND ((SELECT (hidden = 0) FROM tasks"
-                    "      WHERE tasks.id = task))",
+                extra_where,
                 TRUE);
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 

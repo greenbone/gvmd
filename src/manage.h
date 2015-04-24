@@ -1108,10 +1108,10 @@ const char*
 report_iterator_uuid (iterator_t*);
 
 int
-result_count (const get_data_t *, int, int, int);
+result_count (const get_data_t *, int, int, int, int);
 
 int
-init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int);
+init_result_get_iterator (iterator_t*, const get_data_t *, int, int, int, int);
 
 void
 init_result_iterator (iterator_t*, task_t, result_t, int, int, int,
