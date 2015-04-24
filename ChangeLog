@@ -1,3 +1,16 @@
+2015-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Use the create_permission arg checks for modify_permission too.  This
+	brings modify_permission up to date, including allowing the user to
+	modify a resource permission if the user has GET access to the subject.
+
+	* src/manage_sql.c (check_permission_args): New function.  From
+	create_permission.
+	(create_permission): Call check_permission_args to do arg checks.
+	(permission_subject_id, permission_resource_type)
+	(permission_resource_id): New functions.
+	(modify_permission): Let check_permission_args do the arg checks.
+
 2015-04-24  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Add min_qod filter keyword for get_results so the QoD filtering can be
@@ -7,7 +20,7 @@
 	parameter min_qod.
 
 	* src/manage.h (init_result_get_iterator, result_count): Add parameter.
-	
+
 	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_RESULTS
 	get min_qod filter keyword and pass it to init_result_get_iterator and
 	result_count.
