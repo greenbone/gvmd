@@ -1,3 +1,19 @@
+2015-04-27  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Minor adjustments to match structural changes in openvas-libraries.
+
+	* src/manage.h: Adjust include path.
+
+	* src/omp.c: Adjust include path.
+
+	* src/CMakeLists.txt: Link against libopenvas_osp as well.
+
+	* CMakeLists.txt: Add dependency on libopenvas_osp, bump minimum
+	required version for openvas-libraries.
+
+	* INSTALL: Ensure minimum required version for openvas-libraries
+	matches CMakeLists.txt.
+
 2015-04-24  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Use the create_permission arg checks for modify_permission too.  This

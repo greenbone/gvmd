@@ -38,7 +38,7 @@
 #include <openvas/base/credentials.h>
 #include <openvas/base/nvti.h> /* for nvti_t */
 #include <openvas/base/openvas_networking.h>
-#include <openvas/base/osp.h>
+#include <openvas/osp/osp.h>
 
 /**
  * @brief Name value pair.

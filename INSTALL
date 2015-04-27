@@ -13,7 +13,7 @@ Prerequisites:
 * cmake
 * glib-2.0 >= 2.16
 * gnutls >= 2.8
-* openvas-libraries >= 8.0.0
+* openvas-libraries >= 8.1.0
 * sqlite3 library
 * pkg-config
 

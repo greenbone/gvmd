@@ -115,7 +115,7 @@
 #include <gnutls/x509.h>
 
 #include <openvas/base/nvti.h>
-#include <openvas/base/osp.h>
+#include <openvas/osp/osp.h>
 #include <openvas/base/openvas_string.h>
 #include <openvas/base/openvas_file.h>
 #include <openvas/base/openvas_networking.h>
