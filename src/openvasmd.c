@@ -213,16 +213,6 @@ int manager_socket = -1;
  */
 int manager_socket_2 = -1;
 
-/**
- * @brief The IP address of this program, "the manager".
- */
-struct sockaddr_in manager_address;
-
-/**
- * @brief The optional, second IP address of this program, "the manager".
- */
-struct sockaddr_in manager_address_2;
-
 #if LOG
 /**
  * @brief The log stream.
@@ -1124,7 +1114,96 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
            errp);
 }
 
-/* Main. */
+/**
+ * @brief Set a socket to listen for connections.
+ *
+ * @param[in]   address_str     IP or hostname to bind to.
+ * @param[in]   port_str        Port to bind to.
+ * @param[out]  socket          Socket listened on.
+ */
+static int
+manager_listen (const char *address_str, const char *port_str, int *soc)
+{
+  struct sockaddr_storage address;
+  struct sockaddr_in *addr4 = (struct sockaddr_in *) &address;
+  struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *) &address;
+  int port, optval;
+
+  if (!address_str)
+    return 0;
+  if (port_str)
+    {
+      port = atoi (port_str);
+      if (port <= 0 || port >= 65536)
+        {
+          g_warning ("Manager port must be a number between 1 and 65535");
+          log_config_free ();
+          return -1;
+        }
+      port = htons (port);
+    }
+  else
+    {
+      struct servent *servent = getservbyname ("otp", "tcp");
+      if (servent)
+        port = servent->s_port;
+      else
+        port = htons (OPENVASMD_PORT);
+    }
+
+  if (inet_pton (AF_INET6, address_str, &addr6->sin6_addr) > 0)
+    {
+      address.ss_family = AF_INET6;
+      addr6->sin6_port = port;
+    }
+  else if (inet_pton (AF_INET, address_str, &addr4->sin_addr) > 0)
+    {
+      address.ss_family = AF_INET;
+      addr4->sin_port = port;
+    }
+  else
+    {
+      g_warning ("Failed to create manager address %s", address_str);
+      return -1;
+    }
+
+  if (address.ss_family == AF_INET6)
+    *soc = socket (PF_INET6, SOCK_STREAM, 0);
+  else
+    *soc = socket (PF_INET, SOCK_STREAM, 0);
+  if (manager_socket == -1)
+    {
+      g_warning ("Failed to create manager socket: %s", strerror (errno));
+      return -1;
+    }
+  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
+   * error" removes the connection between `select' and `accept'. */
+  if (fcntl (*soc, F_SETFL, O_NONBLOCK) == -1)
+    {
+      g_warning ("Failed to set manager socket flag: %s", strerror (errno));
+      return -1;
+    }
+
+  if (setsockopt (*soc, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof (int)))
+    {
+      g_warning ("Failed to set SO_REUSEADDR on socket: %s", strerror (errno));
+      return -1;
+    }
+
+  if (bind (*soc, (struct sockaddr *) &address, sizeof (address))
+      == -1)
+    {
+      g_warning ("Failed to bind manager socket: %s", strerror (errno));
+      return -1;
+    }
+  if (listen (*soc, MAX_CONNECTIONS) == -1)
+    {
+      g_warning ("Failed to listen on manager socket: %s", strerror (errno));
+      return -1;
+    }
+
+  return 0;
+}
 
 /**
  * @brief Entry point to the manager.
@@ -1144,8 +1223,6 @@ set_gnutls_priority (gnutls_session_t *session, const char *priority)
 int
 main (int argc, char** argv)
 {
-  int manager_port, manager_port_2;
-
   /* Process options. */
 
   static gboolean backup_database = FALSE;
@@ -1892,48 +1969,6 @@ main (int argc, char** argv)
 
   /* Run the standard manager. */
 
-  if (manager_port_string)
-    {
-      manager_port = atoi (manager_port_string);
-      if (manager_port <= 0 || manager_port >= 65536)
-        {
-          g_critical ("%s: Manager port must be a number between 0 and 65536\n",
-                      __FUNCTION__);
-          log_config_free ();
-          exit (EXIT_FAILURE);
-        }
-      manager_port = htons (manager_port);
-    }
-  else
-    {
-      struct servent *servent = getservbyname ("otp", "tcp");
-      if (servent)
-        /** @todo Free servent? */
-        manager_port = servent->s_port;
-      else
-        manager_port = htons (OPENVASMD_PORT);
-    }
-
-  manager_port_2 = -1;  /* Quiet compiler warning. */
-  if (manager_address_string_2)
-    {
-      if (manager_port_string_2)
-        {
-          manager_port_2 = atoi (manager_port_string_2);
-          if (manager_port_2 <= 0 || manager_port_2 >= 65536)
-            {
-              g_critical ("%s: Manager port must be a number between 0 and"
-                          " 65536\n",
-                          __FUNCTION__);
-              log_config_free ();
-              exit (EXIT_FAILURE);
-            }
-          manager_port_2 = htons (manager_port_2);
-        }
-      else
-        manager_port_2 = manager_port;
-    }
-
   if (foreground == FALSE)
     {
       /* Fork into the background. */
@@ -2013,27 +2048,6 @@ main (int argc, char** argv)
 
   /* Create the manager socket(s). */
 
-  manager_socket = socket (PF_INET, SOCK_STREAM, 0);
-  if (manager_socket == -1)
-    {
-      g_critical ("%s: failed to create manager socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-
-  if (manager_address_string_2)
-    {
-      manager_socket_2 = socket (PF_INET, SOCK_STREAM, 0);
-      if (manager_socket_2 == -1)
-        {
-          g_critical ("%s: failed to create second manager socket: %s\n",
-                      __FUNCTION__,
-                      strerror (errno));
-          exit (EXIT_FAILURE);
-        }
-    }
-
 #if LOG
   /* Open the log file. */
 
@@ -2084,145 +2098,15 @@ main (int argc, char** argv)
   if (dh_params && set_gnutls_dhparams (client_credentials, dh_params))
     g_warning ("Couldn't set DH parameters from %s\n", dh_params);
 
-  /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-   * error" removes the connection between `select' and `accept'. */
-  if (fcntl (manager_socket, F_SETFL, O_NONBLOCK) == -1)
-    {
-      g_critical ("%s: failed to set manager socket flag: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-
-  {
-    int optval = 1;
-    if (setsockopt (manager_socket,
-                    SOL_SOCKET, SO_REUSEADDR,
-                    &optval, sizeof (int)))
-      {
-        g_critical ("%s: failed to set SO_REUSEADDR on manager socket: %s\n",
-                    __FUNCTION__,
-                    strerror (errno));
-        exit (EXIT_FAILURE);
-      }
-  }
-
-  if (manager_address_string_2)
-    {
-      /* The socket must have O_NONBLOCK set, in case an "asynchronous network
-       * error" removes the connection between `select' and `accept'. */
-      if (fcntl (manager_socket_2, F_SETFL, O_NONBLOCK) == -1)
-        {
-          g_critical ("%s: failed to set manager socket flag: %s\n",
-                      __FUNCTION__,
-                      strerror (errno));
-          exit (EXIT_FAILURE);
-        }
-
-      {
-        int optval = 1;
-        if (setsockopt (manager_socket_2,
-                        SOL_SOCKET, SO_REUSEADDR,
-                        &optval, sizeof (int)))
-          {
-            g_critical ("%s: failed to set SO_REUSEADDR on manager socket:"
-                        " %s\n",
-                        __FUNCTION__,
-                        strerror (errno));
-            exit (EXIT_FAILURE);
-          }
-      }
-    }
-
-  /* Bind the manager socket to a port. */
-
-  manager_address.sin_family = AF_INET;
-  manager_address.sin_port = manager_port;
-  if (manager_address_string)
-    {
-      if (!inet_aton (manager_address_string, &manager_address.sin_addr))
-        {
-          g_critical ("%s: failed to create manager address %s\n",
-                      __FUNCTION__,
-                      manager_address_string);
-          exit (EXIT_FAILURE);
-        }
-    }
-  else
-    manager_address.sin_addr.s_addr = INADDR_ANY;
-
-  if (bind (manager_socket,
-            (struct sockaddr *) &manager_address,
-            sizeof (manager_address))
-      == -1)
-    {
-      g_critical ("%s: failed to bind manager socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-
-  infof ("   Manager bound to address %s port %i\n",
-         manager_address_string ? manager_address_string : "*",
-         ntohs (manager_address.sin_port));
   if (disable_encrypted_credentials)
     g_message ("Encryption of credentials has been disabled.");
 
-
-  /* Bind the second manager socket to a port. */
-
-  if (manager_address_string_2)
-    {
-      manager_address_2.sin_family = AF_INET;
-      manager_address_2.sin_port = manager_port_2;
-      if (manager_address_string_2)
-        {
-          if (!inet_aton (manager_address_string_2,
-                          &manager_address_2.sin_addr))
-            {
-              g_critical ("%s: failed to create second manager address %s\n",
-                          __FUNCTION__,
-                          manager_address_string_2);
-              exit (EXIT_FAILURE);
-            }
-        }
-      else
-        manager_address_2.sin_addr.s_addr = INADDR_ANY;
-
-      if (bind (manager_socket_2,
-                (struct sockaddr *) &manager_address_2,
-                sizeof (manager_address_2))
-          == -1)
-        {
-          g_critical ("%s: failed to bind second manager socket: %s\n",
-                      __FUNCTION__,
-                      strerror (errno));
-          exit (EXIT_FAILURE);
-        }
-
-      infof ("   Manager also bound to address %s port %i\n",
-             manager_address_string_2 ? manager_address_string_2 : "*",
-             ntohs (manager_address_2.sin_port));
-    }
-
-  /* Enable connections to the sockets. */
-
-  if (listen (manager_socket, MAX_CONNECTIONS) == -1)
-    {
-      g_critical ("%s: failed to listen on manager socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
-
-  if (manager_address_string_2
-      && (listen (manager_socket_2, MAX_CONNECTIONS) == -1))
-    {
-      g_critical ("%s: failed to listen on second manager socket: %s\n",
-                  __FUNCTION__,
-                  strerror (errno));
-      exit (EXIT_FAILURE);
-    }
+  if (manager_listen (manager_address_string ?: "::", manager_port_string,
+                      &manager_socket))
+    return EXIT_FAILURE;
+  if (manager_listen (manager_address_string_2, manager_port_string_2,
+                      &manager_socket_2))
+    return EXIT_FAILURE;
 
   /* Initialize the authentication system. */
 
