@@ -1317,6 +1317,10 @@ main (int argc, char** argv)
   g_free (rc_name);
   setup_log_handlers (log_config);
 
+#if !GLIB_CHECK_VERSION (2, 32, 0)
+  if (!g_thread_supported ()) g_thread_init (NULL);
+#endif
+
   infof ("   OpenVAS Manager version %s (DB revision %i)\n",
          OPENVASMD_VERSION,
          manage_db_supported_version ());
