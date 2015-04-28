@@ -1,3 +1,13 @@
+2015-04-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
+
+	Backport r22241.
+
+	* src/openvasmd.c (manager_listen): New function. Add support for IPv6
+	addresses.
+	(main): Call manager_listen() to create listener sockets, parse address
+	and port values and bind sockets for both possible addresses.
+	(manager_address, manager_address_2): Remove variables.
+
 2015-04-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Backport r22227.
