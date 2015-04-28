@@ -1,3 +1,8 @@
+2015-04-28  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
+	* src/manage_sql.c (report_add_result): Add missing column "min_qod"
+	when creating cache entries with overrides.
+
 2015-04-28  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Ensure openvas-manager builds with GLib =< 2.32 by making sure the

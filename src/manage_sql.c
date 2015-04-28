@@ -16066,7 +16066,7 @@ report_add_result (report_t report, result_t result)
             rowid);
       else
         sql ("INSERT INTO report_counts"
-            " (report, \"user\", override, severity, count, end_time)"
+            " (report, \"user\", override, min_qod, severity, count, end_time)"
             " VALUES"
             " (%llu, (SELECT id FROM users WHERE uuid='%s'), 1, %d,"
             "  %1.1f, 1, 0);",
