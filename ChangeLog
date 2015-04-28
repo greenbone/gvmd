@@ -1,3 +1,20 @@
+2015-04-28  Michael Wiegand <michael.wiegand@greenbone.net>
+
+	Backport r22227.
+
+	Ensure openvas-manager builds with GLib =< 2.32 by making sure the
+	GLib thread API is initialised when using older GLib versions. Based
+	on patch suggested by Miguel Angel Cabrera Moya.
+
+	* src/openvasmd.c (main): Initialise old GLib thread API when
+	necessary.
+
+	* CMakeLists.txt: Check for presence of libgthread if necessary and
+	gather flags.
+
+	* src/CMakeLists.txt: Make sure LDFLAGS set when linking against
+	libgthread is necessary are used in linking.
+
 2015-04-20  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
 	Backport r22158.

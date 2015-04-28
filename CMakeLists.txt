@@ -201,6 +201,17 @@ pkg_check_modules (LIBOPENVAS_MISC REQUIRED libopenvas_misc>=8.0.0)
 pkg_check_modules (LIBOPENVAS_BASE REQUIRED libopenvas_base>=8.0.0)
 pkg_check_modules (GNUTLS REQUIRED gnutls>=2.8)
 pkg_check_modules (GLIB REQUIRED glib-2.0>=2.16)
+
+# Linking against libgthread is only required for GLib versions using the old,
+# deprecated thread API, i.e. version 2.30 and earlier.
+if (${GLIB_VERSION} VERSION_LESS "2.32.0")
+  set (GTHREAD_REQUIRED TRUE)
+endif (${GLIB_VERSION} VERSION_LESS "2.32.0")
+
+if (GTHREAD_REQUIRED)
+  pkg_check_modules (GTHREAD REQUIRED gthread-2.0)
+endif (GTHREAD_REQUIRED)
+
 if (BACKEND STREQUAL SQLITE3)
   pkg_check_modules (SQLITE3 REQUIRED sqlite3)
 else (BACKEND STREQUAL SQLITE3)
