@@ -1,3 +1,8 @@
+2015-04-30  Sven Haardiek <sven@haardiek.de>
+
+	* src/CMakeLists.txt: Set properties VERSION and SOVERSION for
+	manage-pg-server to set SONAME of manage-pg-server correct
+
 2015-04-28  Hani Benhabiles <hani.benhabiles@greenbone.net>
 
 	* src/openvasmd.c (manager_listen): New function. Add support for IPv6

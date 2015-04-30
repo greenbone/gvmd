@@ -37,6 +37,8 @@ else (BACKEND STREQUAL SQLITE3)
 
   add_library (manage-pg-server SHARED
                manage_pg_server.c manage_utils.c)
+  set_target_properties (manage-pg-server PROPERTIES SOVERSION "${CPACK_PACKAGE_VERSION_MAJOR}")
+  set_target_properties (manage-pg-server PROPERTIES VERSION "${CPACK_PACKAGE_VERSION}")
   include_directories (${PostgreSQL_INCLUDE_DIRS} ${PostgreSQL_SERVER_INCLUDE_DIRS})
 endif (BACKEND STREQUAL SQLITE3)
 
