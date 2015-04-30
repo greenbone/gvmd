@@ -1,3 +1,28 @@
+openvas-manager 6.0.2 (2015-04-30)
+
+This is the second maintenance release of the openvas-manager 6.0 module for
+the Open Vulnerability Assessment System release 8 (OpenVAS-8).
+
+This release adds support for listening on IPv6 addresses, fixes inconsistencies
+in the reported severity level and improves the handling of search phrases.
+
+Many thanks to everyone who contributed to this release:
+Hani Benhabiles, Miguel Angel Cabrera Moya, Sven Haardiek, Timo Pollmeier, Ryan
+Schulze and Michael Wiegand.
+
+Main changes compared to 6.0.1:
+* Support for listening on IPv6 addresses has been added.
+* An issue which caused inconsistencies in the reported severity level when
+  removing overrides in some circumstances has been addressed.
+* Improved handling of exact search phrases in powerfilter.
+* An issue which cause the search phrase to not be applied properly when
+  filtering NVTs has been addressed.
+* Two new "--optimize" options have been added.
+* The detection of the PostgreSQL include directories has been made more robust.
+* An issue which prevented openvas-manager from building with GLib =< 2.32 has
+  been addressed.
+
+
 openvas-manager 6.0.1 (2015-04-01)
 
 This is the first maintenance release of the openvas-manager 6.0 module for
