@@ -1,3 +1,12 @@
+2015-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22277.
+
+	* src/manage_sql.c (move_report_format_dir): New function.  Works across
+	devices.
+	(delete_report_format, manage_restore): Use move_report_format_dir so
+	that copying across devices works.
+
 2015-04-30  Michael Wiegand <michael.wiegand@greenbone.net>
 
 	Post release version bump.
