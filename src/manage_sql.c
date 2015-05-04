@@ -41288,6 +41288,88 @@ modify_report_format (const char *report_format_id, const char *name,
 }
 
 /**
+ * @brief Move a report format directory.
+ *
+ * @param[in]  dir      Old dir.
+ * @param[in]  new_dir  New dir.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+move_report_format_dir (const char *dir, const char *new_dir)
+{
+  if (g_file_test (dir, G_FILE_TEST_EXISTS)
+      && openvas_file_check_is_dir (dir))
+    {
+      if (rename (dir, new_dir))
+        {
+          GError *error;
+          GDir *directory;
+          const gchar *entry;
+
+          if (errno == EXDEV)
+            {
+              /* Across devices, move by hand. */
+
+              if (g_mkdir_with_parents (new_dir, 0755 /* "rwxr-xr-x" */))
+                {
+                  g_warning ("%s: failed to create dir %s", __FUNCTION__,
+                             new_dir);
+                  return -1;
+                }
+
+              error = NULL;
+              directory = g_dir_open (dir, 0, &error);
+
+              if (directory == NULL)
+                {
+                  g_warning ("%s: failed to g_dir_open %s: %s\n",
+                             __FUNCTION__, dir, error->message);
+                  g_error_free (error);
+                  return -1;
+                }
+
+              entry = NULL;
+              while ((entry = g_dir_read_name (directory)))
+                {
+                  gchar *entry_path, *new_path;
+                  entry_path = g_build_filename (dir, entry, NULL);
+                  new_path = g_build_filename (new_dir, entry, NULL);
+                  if (openvas_file_move (entry_path, new_path) == FALSE)
+                    {
+                      g_warning ("%s: failed to move %s to %s",
+                                 __FUNCTION__, entry_path, new_path);
+                      g_free (entry_path);
+                      g_free (new_path);
+                      g_dir_close (directory);
+                      return -1;
+                    }
+                  g_free (entry_path);
+                  g_free (new_path);
+                }
+
+              g_dir_close (directory);
+
+              openvas_file_remove_recurse (dir);
+            }
+          else
+            {
+              g_warning ("%s: rename %s to %s: %s\n",
+                         __FUNCTION__, dir, new_dir, strerror (errno));
+              return -1;
+            }
+        }
+    }
+  else
+    {
+      g_warning ("%s: report dir missing: %s\n",
+                 __FUNCTION__, dir);
+      return -1;
+    }
+  return 0;
+}
+
+/**
  * @brief Delete a report format.
  *
  * @param[in]  report_format_id  UUID of Report format.
@@ -41566,22 +41648,8 @@ delete_report_format (const char *report_format_id, int ultimate)
                                   report_format_string,
                                   NULL);
       g_free (report_format_string);
-      if (g_file_test (dir, G_FILE_TEST_EXISTS))
+      if (move_report_format_dir (dir, new_dir))
         {
-          if (rename (dir, new_dir))
-            {
-              g_warning ("%s: rename %s to %s: %s\n",
-                         __FUNCTION__, dir, new_dir, strerror (errno));
-              g_free (dir);
-              g_free (new_dir);
-              sql ("ROLLBACK;");
-              return -1;
-            }
-        }
-      else
-        {
-          g_warning ("%s: report dir missing: %s\n",
-                     __FUNCTION__, dir);
           g_free (dir);
           g_free (new_dir);
           sql ("ROLLBACK;");
@@ -49315,22 +49383,8 @@ manage_restore (const char *id)
                                     resource_string,
                                     NULL);
       g_free (resource_string);
-      if (g_file_test (trash_dir, G_FILE_TEST_EXISTS))
+      if (move_report_format_dir (trash_dir, dir))
         {
-          if (rename (trash_dir, dir))
-            {
-              g_warning ("%s: rename %s to %s: %s\n",
-                         __FUNCTION__, trash_dir, dir, strerror (errno));
-              g_free (dir);
-              g_free (trash_dir);
-              sql ("ROLLBACK;");
-              return -1;
-            }
-        }
-      else
-        {
-          g_warning ("%s: report trash dir missing: %s\n",
-                     __FUNCTION__, trash_dir);
           g_free (dir);
           g_free (trash_dir);
           sql ("ROLLBACK;");
