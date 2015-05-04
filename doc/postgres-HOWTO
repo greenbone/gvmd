@@ -1,11 +1,13 @@
 OPENVAS-MANAGER POSTGRESQL BACKEND HOWTO
 ========================================
 
-WARNING: This is work in progress, and far from ready for any realistic use.
+Please note: Everything should work using Postgres, but this backend has
+seen little testing so far.  The reference system used for development is
+Debian GNU/Linux 'Jessie' 8.
 
 1 Install Postgres.
 
-	(Debian: postgresql, postgresql-contrib, postgresql-server-dev-9.1).
+	(Debian: postgresql, postgresql-contrib, postgresql-server-dev-9.4).
 
 2 Run cmake with this additional parameter:
 
@@ -48,7 +50,7 @@ Migrating from SQLite to PostgreSQL
 
   If you accidently already rebuild the database or for other reasons
   want to start from scratch, apply the dopping of all data as
-  described below. 
+  described below.
 
 2 Run "openvasmd --rebuild".
 
