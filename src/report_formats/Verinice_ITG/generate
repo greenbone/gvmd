@@ -38,4 +38,4 @@ xsltproc ./Verinice_ITG.xsl $1 | \
         xmlstarlet fo >  $TMP/verinice.xml && \
 cd $TMP && zip - *
 cd $STARTDIR
-#rm -r $TMP
+rm -r $TMP
