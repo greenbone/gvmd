@@ -24,7 +24,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#xsltproc --stringparam filename $FILENAME ./gsm_verinice_ism.xsl $XMLFILE | sed -e "s/\ xmlns=\"\"//g" | xmlstarlet fo > output_ism.xml
+#xsltproc --stringparam filename $FILENAME ./Verinice_ISM.xsl $XMLFILE | sed -e "s/\ xmlns=\"\"//g" | xmlstarlet fo > output_ism.xml
 TMP=`mktemp -d` || exit 1
 STARTDIR=`pwd`
 XMLFILE=`readlink -f $1`
@@ -33,7 +33,7 @@ FILENAME=`basename $1`
 REPORT_ID=`xmlstarlet sel -t -v /report/task/@id $XMLFILE`
 
 cp $XMLFILE $TMP/$REPORT_ID-report-file\_$FILENAME
-xsltproc ./gsm_verinice_itg.xsl $1 | \
+xsltproc ./Verinice_ITG.xsl $1 | \
         sed -e "s/\ xmlns=\"\"//g" | \
         xmlstarlet fo >  $TMP/verinice.xml && \
 cd $TMP && zip - *
