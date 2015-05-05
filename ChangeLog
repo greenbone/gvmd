@@ -1,7 +1,12 @@
 2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
-	* src/manage_sql.c (tools/greenbone-certdata-sync.in)
-	(tools/openvas-migrate-to-postgres.in tools/openvas-portnames-update.in)
+	* src/manage_sql.c (tools/greenbone-scapdata-sync.in): Remove execute
+	permission, as this is an .in file.
+
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (tools/openvas-migrate-to-postgres.in)
+	(tools/openvas-portnames-update.in)
 	(tools/openvas-scapdata-sync.in): Remove execute permission, as these are
 	.in files.
 
