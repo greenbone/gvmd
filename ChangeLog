@@ -1,3 +1,22 @@
+2015-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Make report format "Verinice ITG" predefined.
+
+	* src/manage_sql.c (check_db_report_formats)
+	(format_predefined): Add Verinice ITG.
+
+	* CMakeLists.txt: Install Verinice ITG.
+
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/Verinice_ITG/create_report_import: Remove.
+
+	* src/report_formats/Verinice_ITG/gsm_verinice_itg.xsl: Remove.  Now
+	Verinice_ITG.xsl.
+
+	* src/report_formats/Verinice_ITG/Verinice_ITG.xsl: New file.  Was
+	gsm_verinice_itg.xsl.
+
 2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* report_formats/verinice-itg: Remove.  Now in src/report_formats.
