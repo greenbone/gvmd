@@ -1,3 +1,14 @@
+2015-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22286.
+
+	Make report format "Verinice ITG" predefined.
+
+	* src/manage_sql.c (check_db_report_formats)
+	(format_predefined): Add Verinice ITG.
+
+	* CMakeLists.txt: Install Verinice ITG.
+
 2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22284.

@@ -11588,6 +11588,23 @@ check_db_report_formats ()
       report_format_verify (report_format);
     }
 
+  if (sql_int ("SELECT count(*) FROM report_formats"
+               " WHERE uuid = '50c9950a-f326-11e4-800c-28d24461215b';")
+      == 0)
+    {
+      report_format_t report_format;
+      sql ("INSERT into report_formats (uuid, owner, name, summary, description,"
+           " extension, content_type, signature, trust, trust_time, flags,"
+           " creation_time, modification_time)"
+           " VALUES ('50c9950a-f326-11e4-800c-28d24461215b', NULL, 'Verinice ITG',"
+           " 'Greenbone Verinice ITG Report, v1.0.1.',"
+           " 'IT-Grundschutz Report for Verinice import, version 1.0.1.\n',"
+           " 'vna', 'application/zip', '', %i, %i, 1, m_now (), m_now ());",
+           TRUST_YES, time (NULL));
+      report_format = sql_last_insert_id ();
+      report_format_verify (report_format);
+    }
+
   return 0;
 }
 
@@ -41661,6 +41678,7 @@ report_format_predefined (report_format_t report_format)
                   " OR uuid = 'a994b278-1f62-11e1-96ac-406186ea4fc5'"
                   " OR uuid = '9e5e5deb-879e-4ecc-8be6-a71cd0875cdd'"
                   " OR uuid = 'c15ad349-bd8d-457a-880a-c7056532ee15'"
+                  " OR uuid = '50c9950a-f326-11e4-800c-28d24461215b'"
                   " FROM report_formats"
                   " WHERE id = %llu;",
                   report_format);
