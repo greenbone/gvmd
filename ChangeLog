@@ -1,5 +1,12 @@
 2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	* report_formats/verinice-itg: Remove.  Now in src/report_formats.
+
+	* src/report_formats/Verinice_ITG: New directory.  Was
+	report_formats/verinice-itg.
+
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	* src/manage_sql.c (tools/greenbone-scapdata-sync.in): Remove execute
 	permission, as this is an .in file.
 
