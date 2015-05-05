@@ -1,3 +1,10 @@
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/manage_sql.c (tools/greenbone-certdata-sync.in)
+	(tools/openvas-migrate-to-postgres.in tools/openvas-portnames-update.in)
+	(tools/openvas-scapdata-sync.in): Remove execute permission, as these are
+	.in files.
+
 2015-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	* src/manage_sql.c (move_report_format_dir): New function.  Works across
