@@ -1,3 +1,12 @@
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22283.
+
+	* report_formats/verinice-itg: Remove.  Now in src/report_formats.
+
+	* src/report_formats/Verinice_ITG: New directory.  Was
+	report_formats/verinice-itg.
+
 2015-05-04  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22277.
