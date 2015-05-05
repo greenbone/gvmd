@@ -1,3 +1,7 @@
+2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	* src/report_formats/Verinice_ITG/generate: Correct XSL file name.
+
 2015-04-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Make report format "Verinice ITG" predefined.
