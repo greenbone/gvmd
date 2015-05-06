@@ -20481,7 +20481,7 @@ trim_partial_report (report_t report)
        "  WHERE results.report = %llu"
        "  AND report_hosts.report = %llu"
        "  AND results.host = report_hosts.host"
-       "  AND report_hosts.end_time is NULL);",
+       "  AND report_hosts.end_time = 0);",
        report,
        report);
 
@@ -20490,7 +20490,7 @@ trim_partial_report (report_t report)
   sql ("DELETE FROM report_host_details WHERE report_host IN"
        " (SELECT report_hosts.id FROM report_hosts"
        "  WHERE report_hosts.report = %llu"
-       "  AND report_hosts.end_time is NULL);",
+       "  AND report_hosts.end_time = 0);",
        report);
 
   sql ("DELETE FROM report_hosts"
