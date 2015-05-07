@@ -1,3 +1,12 @@
+2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
+	Backport r22299.
+
+	* src/openvasmd.c (accept_and_maybe_fork): Add sigmask_current arg.
+	Restore this sigmask in the forked child so that it has sensible signal
+	handling.
+	(serve_and_schedule): Pass sigmask to restore to accept_and_maybe_fork.
+
 2015-05-05  Matthew Mundell <matthew.mundell@greenbone.net>
 
 	Backport r22288.
