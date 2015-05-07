@@ -8955,8 +8955,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Filter columns for task iterator.
  */
 #define TASK_ITERATOR_FILTER_COLUMNS                                          \
- { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first", "last", "threat", \
-   "trend", "severity", "schedule", "next_due", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
+   "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
+   "first", "last", NULL }
 
 #define TASK_ITERATOR_COLUMNS(overrides)                                    \
  {                                                                          \
@@ -8972,7 +8973,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
      " ORDER BY date ASC LIMIT 1)",                                         \
-     "first"                                                                \
+     "first_report"                                                         \
    },                                                                       \
    { "task_threat_level (id, " overrides ")", "threat" },                   \
    { "task_trend (id, " overrides ")", "trend" },                           \
@@ -8982,7 +8983,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      /* TODO 1 == TASK_STATUS_DONE */                                       \
      " AND scan_run_status = 1"                                             \
      " ORDER BY date DESC LIMIT 1)",                                        \
-     "last"                                                                 \
+     "last_report"                                                          \
    },                                                                       \
    { "task_severity (id, " overrides ")", "severity" },                     \
    {                                                                        \
@@ -9008,6 +9009,20 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ELSE schedule_next_time"                                             \
      " END)",                                                               \
      "next_due"                                                             \
+   },                                                                       \
+   {                                                                        \
+     "(SELECT date FROM reports WHERE task = tasks.id"                      \
+     /* TODO 1 == TASK_STATUS_DONE */                                       \
+     " AND scan_run_status = 1"                                             \
+     " ORDER BY date ASC LIMIT 1)",                                         \
+     "first"                                                                \
+   },                                                                       \
+   {                                                                        \
+     "(SELECT date FROM reports WHERE task = tasks.id"                      \
+     /* TODO 1 == TASK_STATUS_DONE */                                       \
+     " AND scan_run_status = 1"                                             \
+     " ORDER BY date DESC LIMIT 1)",                                        \
+     "last"                                                                 \
    },                                                                       \
    { NULL, NULL }                                                           \
  }

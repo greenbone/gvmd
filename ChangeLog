@@ -1,5 +1,14 @@
 2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22311.
+
+	* src/manage_sql.c (TASK_ITERATOR_FILTER_COLUMNS)
+	(TASK_ITERATOR_COLUMNS): Rename first and last to first_report and
+	last_report.  Add first and last.  This is so that sorting by last
+	sorts by date, to match the Last column on the GSA Tasks page.
+
+2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22306.
 
 	* src/manage.c (slave_sleep_connect): Also stop for
