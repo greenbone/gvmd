@@ -337,13 +337,14 @@ serve_client (int server_socket, int client_socket)
 /**
  * @brief Accept and fork.
  *
- * @param[in]  server_socket  Manager socket.
+ * @param[in]  server_socket    Manager socket.
+ * @param[in]  sigmask_current  Sigmask to restore in child.
  *
  * Accept the client connection and fork a child process to serve the client.
  * The child calls \ref serve_client to do the rest of the work.
  */
 static void
-accept_and_maybe_fork (int server_socket)
+accept_and_maybe_fork (int server_socket, sigset_t *sigmask_current)
 {
   /* Accept the client connection. */
   pid_t pid;
@@ -378,6 +379,9 @@ accept_and_maybe_fork (int server_socket)
           struct sigaction action;
 
           is_parent = 0;
+
+          /* Restore the sigmask that was blanked for pselect. */
+          pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
 
           memset (&action, '\0', sizeof (action));
           sigemptyset (&action.sa_mask);
@@ -1067,9 +1071,9 @@ serve_and_schedule ()
               exit (EXIT_FAILURE);
             }
           if (FD_ISSET (manager_socket, &readfds))
-            accept_and_maybe_fork (manager_socket);
+            accept_and_maybe_fork (manager_socket, &sigmask_current);
           if ((manager_socket_2 > -1) && FD_ISSET (manager_socket_2, &readfds))
-            accept_and_maybe_fork (manager_socket_2);
+            accept_and_maybe_fork (manager_socket_2, &sigmask_current);
         }
 
       if (manage_schedule (fork_connection_for_schedular, scheduling_enabled)
