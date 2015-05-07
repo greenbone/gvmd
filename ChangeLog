@@ -1,5 +1,13 @@
 2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
 
+	Backport r22306.
+
+	* src/manage.c (slave_sleep_connect): Also stop for
+	TASK_STATUS_STOP_REQUESTED.
+	(run_slave_task): Add stop check to initial connect loop.
+
+2015-05-07  Matthew Mundell <matthew.mundell@greenbone.net>
+
 	Backport r22299.
 
 	* src/openvasmd.c (accept_and_maybe_fork): Add sigmask_current arg.
