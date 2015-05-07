@@ -1698,7 +1698,8 @@ slave_sleep_connect (slave_t slave, const char *host, int port, task_t task,
 {
   do
     {
-      if (task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+      if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+          || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
         {
           tracef ("   %s: task stopped for giveup\n", __FUNCTION__);
           set_task_run_status (current_scanner_task, TASK_STATUS_STOPPED);
@@ -2637,7 +2638,17 @@ run_slave_task (task_t task, target_t target, lsc_credential_t
         return -1;
       }
     else
-      openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      {
+        if ((task_run_status (task) == TASK_STATUS_STOP_REQUESTED_GIVEUP)
+            || (task_run_status (task) == TASK_STATUS_STOP_REQUESTED))
+          {
+            set_task_run_status (task, TASK_STATUS_STOPPED);
+            free (host);
+            free (name);
+            return 0;
+          }
+        openvas_sleep (RUN_SLAVE_TASK_SLEEP_SECONDS);
+      }
 
   while (1)
     {
