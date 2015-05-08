@@ -1,5 +1,54 @@
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22182.
+
+	Add min_qod filtering for Task and Report lists.
+
+	* src/manage_pg.c (manage_create_sql_functions): Add min_qod parameter
+	to SQL functions task_trend, report_severity, report_severity_count,
+	task_severity and task_threat_level.
+
+	* src/manage_sql.c (init_aggregate_iterator): Add min_qod from filter
+	as parameter to type_opts_table call.
+	(condition_met): Add MIN_QOD_DEFAULT as parameter to calls of
+	task_severity_double.
+	(TASK_ITERATOR_COLUMNS): Add min_qod parameter for task_threat_level,
+	task_trend and task_severity SQL functions.
+	(task_iterator_opts_table): Add min_qod parameter and column.
+	(init_user_task_iterator): Add MIN_QOD_DEFAULT as min_qod parameter
+	for task_iterator_opts_table.
+	(init_task_iterator, task_count): Add min_qod from filter as parameter
+	for task_iterator_opts_table.
+	(task_severity, task_severity_double): Add min_qod parameter.
+	(REPORT_ITERATOR_COLUMNS): Add min_qod parameter for report_severity
+	and report_severity_count SQL functions.
+	(report_iterator_opts_table): Add min_qod parameter and column.
+	(report_count): Add MIN_QOD_DEFAULT as min_qod parameter
+	for task_iterator_opts_table.
+	(init_report_iterator): Add min_qod from filter as parameter
+	for report_iterator_opts_table.
+	(report_counts, report_severity, task_trend, type_opts_table): Add
+	min_qod parameter.
+
+	* src/manage_sqlite3.c (sql_task_trend): Add min_qod parameter.
+	(sql_severity_t, clear_cache): Add min_qod field.
+	(cached_task_severity, sql_task_threat_level, sql_report_severity)
+	(report_severity_count, sql_report_severity_count, sql_task_severity):
+	Add min_qod parameter.
+	(manage_create_sql_functions): Increase parameter counts to account for
+	new min_qod parameter of task_trend, task_threat_level, report_severity
+	report_severity_count and task_severity.
+
+	* src/manage.h (task_trend, task_severity, task_severity_double)
+	(report_severity, report_counts, type_opts_table): Add parameter.
+
+	* src/omp.c (send_reports): Add min_qod parameter.
+	(omp_xml_handle_end_element): In CLIENT_GET_REPORTS case, get min_qod
+	from report_filter and add it to the new results filter.
+	In CLIENT_GET_TASKS case use min_qod when getting counts of reports.
+
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22164.
 
 	* src/manage_sql.c (init_get_iterator): Correct insertion order of

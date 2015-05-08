@@ -4532,8 +4532,8 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                          const char *extra_tables, const char *extra_where)
 {
   int owned;
-  gchar* apply_overrides_str;
-  int apply_overrides;
+  gchar *apply_overrides_str, *min_qod_str;
+  int apply_overrides, min_qod;
   column_t *select_columns;
   gchar *columns;
   gchar *trash_columns;
@@ -4572,13 +4572,16 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
 
   apply_overrides_str = filter_term_value (filter ? filter : get->filter, "apply_overrides");
   apply_overrides = apply_overrides_str ? atoi (apply_overrides_str) : 1;
+  min_qod_str = filter_term_value (filter ? filter : get->filter, "min_qod");
+  min_qod = min_qod_str ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
   g_free (apply_overrides_str);
+  g_free (min_qod_str);
 
   select_columns = type_select_columns (type, apply_overrides);
   columns = type_columns (type, apply_overrides);
   trash_columns = type_trash_columns (type, apply_overrides);
   filter_columns = type_filter_columns (type, apply_overrides);
-  opts_table = type_opts_table (type, apply_overrides);
+  opts_table = type_opts_table (type, apply_overrides, min_qod);
 
   if (columns == NULL || filter_columns == NULL)
     {
@@ -8747,7 +8750,8 @@ condition_met (task_t task, alert_t alert,
 
               condition_severity_dbl = g_ascii_strtod (condition_severity_str,
                                                        0);
-              task_severity_dbl = task_severity_double (task, 1, 0);
+              task_severity_dbl = task_severity_double (task, 1,
+                                                        MIN_QOD_DEFAULT, 0);
 
               if (task_severity_dbl >= condition_severity_dbl)
                 {
@@ -8768,8 +8772,10 @@ condition_met (task_t task, alert_t alert,
            * report. */
 
           direction = alert_data (alert, "condition", "direction");
-          last_severity = task_severity_double (task, 1, 0);
-          second_last_severity = task_severity_double (task, 1, 1);
+          last_severity = task_severity_double (task, 1,
+                                                MIN_QOD_DEFAULT, 0);
+          second_last_severity = task_severity_double (task, 1,
+                                                       MIN_QOD_DEFAULT, 1);
           if (direction
               && last_severity > SEVERITY_MISSING
               && second_last_severity > SEVERITY_MISSING)
@@ -8985,8 +8991,8 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date ASC LIMIT 1)",                                         \
      "first_report"                                                         \
    },                                                                       \
-   { "task_threat_level (id, opts.override)", "threat" },                   \
-   { "task_trend (id, opts.override)", "trend" },                           \
+   { "task_threat_level (id, opts.override, opts.min_qod)", "threat" },     \
+   { "task_trend (id, opts.override, opts.min_qod)", "trend" },             \
    { "run_status_name (run_status)", "status" },                            \
    {                                                                        \
      "(SELECT uuid FROM reports WHERE task = tasks.id"                      \
@@ -8995,7 +9001,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY date DESC LIMIT 1)",                                        \
      "last_report"                                                          \
    },                                                                       \
-   { "task_severity (id, opts.override)", "severity" },                     \
+   { "task_severity (id, opts.override, opts.min_qod)", "severity" },       \
    {                                                                        \
      "(SELECT count(*) FROM reports"                                        \
      /* TODO 1 == TASK_STATUS_DONE */                                       \
@@ -9041,16 +9047,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
  * @brief Generate the extra_tables string for a task iterator.
  *
  * @param[in]  override  Whether to apply overrides.
- *
+ * @param[in]  min_qod   Minimum QoD of results to count.
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-task_iterator_opts_table (int override)
+task_iterator_opts_table (int override, int min_qod)
 {
   return g_strdup_printf (", (SELECT"
-                          "   %d AS override)"
+                          "   %d AS override,"
+                          "   %d AS min_qod)"
                           "  AS opts",
-                          override);
+                          override,
+                          min_qod);
 }
 
 /**
@@ -9066,7 +9074,7 @@ init_user_task_iterator (iterator_t* iterator, int trash)
   gchar *extra_tables;
   gchar *columns;
 
-  extra_tables = task_iterator_opts_table (0);
+  extra_tables = task_iterator_opts_table (0, MIN_QOD_DEFAULT);
 
   columns = columns_build_select (select_columns);
 
@@ -9102,7 +9110,7 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
-  int overrides;
+  int overrides, min_qod;
   gchar *extra_tables;
   int ret;
 
@@ -9115,11 +9123,16 @@ init_task_iterator (iterator_t* iterator, const get_data_t *get)
   else
     filter = NULL;
   value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  free (filter);
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  extra_tables = task_iterator_opts_table (overrides);
+  value = filter_term_value (filter ? filter : get->filter, "min_qod");
+  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
+    min_qod = MIN_QOD_DEFAULT;
+  g_free (value);
+  free (filter);
+
+  extra_tables = task_iterator_opts_table (overrides, min_qod);
 
   ret = init_get_iterator (iterator,
                             "task",
@@ -12799,7 +12812,7 @@ task_count (const get_data_t *get)
   static column_t columns[] = TASK_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
-  int overrides;
+  int overrides, min_qod;
   gchar *extra_tables;
   int ret;
 
@@ -12812,11 +12825,16 @@ task_count (const get_data_t *get)
   else
     filter = NULL;
   value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  free (filter);
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  extra_tables = task_iterator_opts_table (overrides);
+  value = filter_term_value (filter ? filter : get->filter, "min_qod");
+  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
+    min_qod = MIN_QOD_DEFAULT;
+  g_free (value);
+  free (filter);
+
+  extra_tables = task_iterator_opts_table (overrides, min_qod);
 
   ret = count ("task", get,
                 columns,
@@ -14020,6 +14038,7 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
  *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  min_qod    Minimum QoD of results to count.
  * @param[in]  offset     Offset of report to get severity from:
  *                        0 = use last report, 1 = use next to last report
  *
@@ -14027,7 +14046,7 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
  *  allocated string, else NULL.
  */
 char *
-task_severity (task_t task, int overrides, int offset)
+task_severity (task_t task, int overrides, int min_qod, int offset)
 {
   char* severity;
   gchar *severity_sql, *ov, *new_severity_sql;
@@ -14100,11 +14119,12 @@ task_severity (task_t task, int overrides, int offset)
                          "           ORDER BY reports.date DESC"
                          "           LIMIT 1 OFFSET %d)"
                          "       AND results.qod"
-                         "            >= " G_STRINGIFY (MIN_QOD_DEFAULT) ";",
+                         "            >= %d;",
                          new_severity_sql,
                          task,
                          TASK_STATUS_DONE,
-                         offset);
+                         offset,
+                         min_qod);
 
   g_free (new_severity_sql);
 
@@ -14116,6 +14136,7 @@ task_severity (task_t task, int overrides, int offset)
  *
  * @param[in]  task       Task.
  * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  min_qod    Minimum QoD of results to count.
  * @param[in]  offset     Offset of report to get severity from:
  *                        0 = use last report, 1 = use next to last report
  *
@@ -14123,11 +14144,11 @@ task_severity (task_t task, int overrides, int offset)
  *         else SEVERITY_MISSING.
  */
 double
-task_severity_double (task_t task, int overrides, int offset)
+task_severity_double (task_t task, int overrides, int min_qod, int offset)
 {
   char* severity;
   double severity_dbl;
-  severity = task_severity (task, overrides, offset);
+  severity = task_severity (task, overrides, min_qod, offset);
 
   if (severity == NULL || sscanf (severity, "%lf", &severity_dbl) != 1)
     {
@@ -15998,7 +16019,7 @@ report_add_result (report_t report, result_t result)
    { "(SELECT uuid FROM tasks WHERE tasks.id = task)", "task_id" },          \
    { "date", NULL },                                                         \
    { "(SELECT name FROM tasks WHERE tasks.id = task)", "task" },             \
-   { "report_severity (id, opts.override)", "severity" },                    \
+   { "report_severity (id, opts.override, opts.min_qod)", "severity" },      \
    {                                                                         \
      "(CASE WHEN (SELECT target IS NULL FROM tasks WHERE tasks.id = task)"   \
      "  THEN 'Container'"                                                    \
@@ -16011,13 +16032,17 @@ report_add_result (report_t report, result_t result)
      "status"                                                                \
    },                                                                        \
    {                                                                         \
-     " report_severity_count (id, opts.override, 'False Positive')",         \
-     "false_positive"                                                        \
-   },                                                                        \
-   { "report_severity_count (id, opts.override, 'Log')", "log" },            \
-   { "report_severity_count (id, opts.override, 'Low')", "low" },            \
-   { "report_severity_count (id, opts.override, 'Medium')", "medium" },      \
-   { "report_severity_count (id, opts.override, 'High')", "high" },          \
+     " report_severity_count (id, opts.override, opts.min_qod,"              \
+     "                        'False Positive')",                            \
+     "false_positive" },                                                     \
+   { "report_severity_count (id, opts.override, opts.min_qod, 'Log')",       \
+     "log" },                                                                \
+   { "report_severity_count (id, opts.override, opts.min_qod, 'Low')",       \
+     "low" },                                                                \
+   { "report_severity_count (id, opts.override, opts.min_qod, 'Medium')",    \
+     "medium" },                                                             \
+   { "report_severity_count (id, opts.override, opts.min_qod, 'High')",      \
+     "high" },                                                               \
    {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner"                                                                \
@@ -16029,16 +16054,19 @@ report_add_result (report_t report, result_t result)
  * @brief Generate the extra_tables string for a report iterator.
  *
  * @param[in]  override  Whether to apply overrides.
+ * @param[in]  min_qod   Minimum QoD of results to count.
  *
  * @return Newly allocated string with the extra_tables clause.
  */
 static gchar*
-report_iterator_opts_table (int override)
+report_iterator_opts_table (int override, int min_qod)
 {
   return g_strdup_printf (", (SELECT"
-                          "   %d AS override)"
+                          "   %d AS override,"
+                          "   %d AS min_qod)"
                           "  AS opts",
-                          override);
+                          override,
+                          min_qod);
 }
 
 /**
@@ -16056,7 +16084,7 @@ report_count (const get_data_t *get)
   gchar *extra_tables;
   int ret;
 
-  extra_tables = report_iterator_opts_table (0);
+  extra_tables = report_iterator_opts_table (0, MIN_QOD_DEFAULT);
 
   ret = count ("report", get, columns, NULL,
                 filter_columns, 0,
@@ -16090,7 +16118,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   static column_t columns[] = REPORT_ITERATOR_COLUMNS;
   char *filter;
   gchar *value;
-  int overrides;
+  int overrides, min_qod;
   gchar *extra_tables;
   int ret;
 
@@ -16103,11 +16131,16 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   else
     filter = NULL;
   value = filter_term_value (filter ? filter : get->filter, "apply_overrides");
-  free (filter);
   overrides = value && strcmp (value, "0");
   g_free (value);
 
-  extra_tables = report_iterator_opts_table (overrides);
+  value = filter_term_value (filter ? filter : get->filter, "min_qod");
+  if (value == NULL || sscanf (value, "%d", &min_qod) != 1)
+    min_qod = MIN_QOD_DEFAULT;
+  g_free (value);
+  free (filter);
+
+  extra_tables = report_iterator_opts_table (overrides, min_qod);
 
   ret = init_get_iterator (iterator,
                             "report",
@@ -19577,16 +19610,19 @@ report_severity_data (report_t report, int override,
 int
 report_counts (const char* report_id, int* debugs, int* holes, int* infos,
                int* logs, int* warnings, int* false_positives, double* severity,
-               int override, int autofp)
+               int override, int autofp, int min_qod)
 {
   report_t report;
+  gchar *min_qod_str = g_strdup_printf ("%d", min_qod);
+  int ret;
   // TODO Wrap in transaction.
   if (find_report_with_permission (report_id, &report, "get_reports"))
     return -1;
   // TODO Check if report was found.
-  return report_counts_id (report, debugs, holes, infos, logs, warnings,
-                           false_positives, severity, override, NULL, autofp,
-                           G_STRINGIFY (MIN_QOD_DEFAULT));
+  ret = report_counts_id (report, debugs, holes, infos, logs, warnings,
+                          false_positives, severity, override, NULL, autofp,
+                          min_qod_str);
+  return ret;
 }
 
 /**
@@ -19915,15 +19951,17 @@ report_counts_id (report_t report, int* debugs, int* holes, int* infos,
  *
  * @param[in]  report     Report.
  * @param[in]  overrides  Whether to apply overrides.
+ * @param[in]  min_qod    Minimum QoD of results to count.
  *
  * @return Severity score of the report.
  */
 double
-report_severity (report_t report, int overrides)
+report_severity (report_t report, int overrides, int min_qod)
 {
   double severity;
   iterator_t iterator;
 
+  // TODO: Cache for non-default QoD.
   init_iterator (&iterator,
                  "SELECT max(severity)"
                  " FROM report_counts"
@@ -19932,6 +19970,7 @@ report_severity (report_t report, int overrides)
                  " AND (end_time = 0 or end_time >= m_now ());",
                  report, overrides);
   if (next (&iterator)
+      && min_qod == MIN_QOD_DEFAULT
       && (iterator_null (&iterator, 0) == 0))
     {
       g_debug ("%s: max(severity)=%s", __FUNCTION__,
@@ -19940,10 +19979,12 @@ report_severity (report_t report, int overrides)
     }
   else
     {
+      gchar *min_qod_str = g_strdup_printf ("%d", min_qod);
       g_debug ("%s: could not get max from cache", __FUNCTION__);
       report_counts_id (report, NULL, NULL, NULL, NULL, NULL,
                         NULL, &severity, overrides, NULL, 0,
-                        G_STRINGIFY (MIN_QOD_DEFAULT));
+                        min_qod_str);
+      g_free (min_qod_str);
     }
   cleanup_iterator (&iterator);
   return severity;
@@ -25821,16 +25862,18 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
  *
  * @param[in]  task      Task.
  * @param[in]  override  Whether to override the threat.
+ * @param[in]  min_qod   The minimum QoD of results to count.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 const char *
-task_trend (task_t task, int override)
+task_trend (task_t task, int override, int min_qod)
 {
   report_t last_report, second_last_report;
   int holes_a, warns_a, infos_a, logs_a, false_positives_a;
   int holes_b, warns_b, infos_b, logs_b, false_positives_b;
   double severity_a, severity_b;
+  gchar *min_qod_str;
 
   /* Ensure there are enough reports. */
 
@@ -25857,11 +25900,13 @@ task_trend (task_t task, int override)
   if (last_report == 0)
     return "";
 
+  min_qod_str = g_strdup_printf ("%d", min_qod);
+
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   if (report_counts_id (last_report, NULL, &holes_a, &infos_a, &logs_a, &warns_a,
                         &false_positives_a, &severity_a, override, NULL, 0,
-                        G_STRINGIFY (MIN_QOD_DEFAULT))) //TODO: Make a parameter
+                        min_qod_str))
     /** @todo Either fail better or abort at SQL level. */
     abort ();
 
@@ -25869,16 +25914,21 @@ task_trend (task_t task, int override)
 
   task_second_last_report (task, &second_last_report);
   if (second_last_report == 0)
-    return "";
+    {
+      g_free (min_qod_str);
+      return "";
+    }
 
   /* Count the logs and false positives too, as report_counts_id is faster
    * with all five. */
   if (report_counts_id (second_last_report, NULL, &holes_b, &infos_b, &logs_b,
                         &warns_b, &false_positives_b, &severity_b, override,
-                        NULL, 0, G_STRINGIFY (MIN_QOD_DEFAULT)))
+                        NULL, 0, min_qod_str))
                         //TODO: Make param
     /** @todo Either fail better or abort at SQL level. */
     abort ();
+
+  g_free (min_qod_str);
 
   return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
                           holes_b, warns_b, infos_b, severity_b);
@@ -54294,13 +54344,13 @@ type_trash_columns (const char *type, int apply_overrides)
  * @return The SQL subquery definition.
  */
 gchar*
-type_opts_table (const char *type, int apply_overrides)
+type_opts_table (const char *type, int apply_overrides, int min_qod)
 {
   if (type == NULL)
     return NULL;
   else if (strcasecmp (type, "TASK") == 0)
     {
-      return task_iterator_opts_table (apply_overrides);
+      return task_iterator_opts_table (apply_overrides, min_qod);
     }
   else
     return NULL;
