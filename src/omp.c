@@ -15882,8 +15882,9 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
           else
             {
               iterator_t results;
+              gchar *min_qod_str;
               int max;
-              int autofp, apply_overrides, dynamic_severity;
+              int autofp, apply_overrides, min_qod, dynamic_severity;
 
               if (get_results_data->autofp)
                 autofp = get_results_data->autofp;
@@ -15911,6 +15912,13 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               else
                 apply_overrides = 1;
 
+              min_qod_str = filter_term_value (get_results_data->get.filter,
+                                               "min_qod");
+              if (min_qod_str == NULL
+                  || sscanf (min_qod_str, "%d", &min_qod) != 1)
+                min_qod = MIN_QOD_DEFAULT;
+              g_free (min_qod_str);
+
               dynamic_severity = setting_dynamic_severity_int ();
 
               SEND_TO_CLIENT_OR_FAIL ("<get_results_response"
@@ -15922,6 +15930,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               init_result_get_iterator (&results, &get_results_data->get,
                                         autofp,
                                         apply_overrides,
+                                        min_qod,
                                         dynamic_severity);
 
               if (next (&results))
@@ -15972,6 +15981,7 @@ omp_xml_handle_end_element (/*@unused@*/ GMarkupParseContext* context,
               filtered = get_results_data->get.id
                           ? 1 : result_count (&get_results_data->get,
                                               autofp, apply_overrides,
+                                              min_qod,
                                               dynamic_severity);
 
               SEND_GET_END("result", &get_results_data->get, count, filtered);

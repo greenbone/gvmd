@@ -1,5 +1,21 @@
 2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
 
+	Backport r22205.
+
+	Add min_qod filter keyword for get_results so the QoD filtering can be
+	consistent with get_tasks and get_reports.
+
+	* src/manage_sql.c (init_result_get_iterator, result_count): Add
+	parameter min_qod.
+
+	* src/manage.h (init_result_get_iterator, result_count): Add parameter.
+
+	* src/omp.c (xml_handle_end_element): In case CLIENT_GET_RESULTS
+	get min_qod filter keyword and pass it to init_result_get_iterator and
+	result_count.
+
+2015-05-08  Timo Pollmeier <timo.pollmeier@greenbone.net>
+
 	Backport r22182.
 
 	Add min_qod filtering for Task and Report lists.
